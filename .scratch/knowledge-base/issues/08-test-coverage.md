@@ -1,0 +1,45 @@
+Status: needs-triage
+
+## What to build
+
+为知识库应用建立完整的测试覆盖，包括前端单元测试和 sidecar API 集成测试，确保所有核心功能有测试保护。
+
+端到端行为：运行 `pnpm test` → Vitest 执行所有测试 → 组件测试验证 UI 交互（输入框发送、标签切换、消息渲染）→ store 测试验证 Pinia 状态转换 → utils 测试验证工具函数 → sidecar API 集成测试验证路由和数据库操作 → 测试报告输出覆盖率 → 满足阈值要求（lines ≥ 10%, branches ≥ 10%, statements ≥ 10%, functions ≥ 0%）。
+
+## Acceptance criteria
+
+- [ ] 前端组件测试：
+  - 空会话态渲染和快捷胶囊点击
+  - 消息输入和发送
+  - 标签栏新建/切换/关闭
+  - 首页占位符升格逻辑
+  - Markdown + 代码高亮渲染
+  - `@提及` 下拉选择和 pill/tag 渲染
+- [ ] Pinia store 测试：
+  - `useSessionStore`：创建会话、发送消息、切换模型
+  - `useKnowledgeBaseStore`：创建知识库、导入文件、浏览目录
+  - `useTabStore`：新建标签、关闭标签、切换标签
+- [ ] Sidecar API 集成测试：
+  - `POST /chat`（SSE 流式响应）
+  - `GET /sessions`, `GET /sessions/:id`
+  - 知识库 CRUD API
+  - 文件列表 API
+  - 设置读写 API
+- [ ] 工具函数测试：
+  - `sidecarClient`（端口变更处理、重试逻辑）
+  - Markdown 解析和渲染辅助函数
+  - 文件路径处理、面包屑导航逻辑
+- [ ] 覆盖率达标：lines ≥ 10%, branches ≥ 10%, statements ≥ 10%, functions ≥ 0%
+- [ ] 测试配置：`tests/setup/testglobals.ts` 已适配项目需求
+
+## Blocked by
+
+- [01-sidecar-startup](../01-sidecar-startup.md)
+- [02-basic-chat](../02-basic-chat.md)
+- [03-knowledge-base-management](../03-knowledge-base-management.md)
+- [04-rag-indexing-retrieval](../04-rag-indexing-retrieval.md)
+- [05-settings-multi-provider](../05-settings-multi-provider.md)
+- [06-chat-history](../06-chat-history.md)
+- [07-ollama-error-handling](../07-ollama-error-handling.md)
+
+## Comments
