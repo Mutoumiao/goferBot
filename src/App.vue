@@ -1,11 +1,29 @@
 <script setup lang="ts">
+import { onMounted, watch } from 'vue'
+import SplashScreen from './components/SplashScreen.vue'
 import GreetComponent from './components/GreetComponent.vue'
+import { initSidecar, sidecarStatus } from './composables/useSidecar'
+import { useStore } from './store'
+
 const store = useStore()
-store.initApp()
+
+onMounted(() => {
+  initSidecar()
+})
+
+watch(sidecarStatus, (s) => {
+  if (s === 'ready') {
+    store.initApp()
+  }
+})
 </script>
 
 <template>
-  <main class="flex-1 flex flex-col items-center justify-center min-h-screen">
+  <SplashScreen />
+  <main
+    v-if="sidecarStatus === 'ready'"
+    class="flex min-h-screen flex-1 flex-col items-center justify-center"
+  >
     <h1>Welcome to Tauri 2 + Vue</h1>
 
     <div class="flex flex-row">
