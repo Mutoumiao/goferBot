@@ -1,95 +1,97 @@
-# Tauri + Vue + Vite Template
+# Knowledge Base（知识库）
 
-![Screenshot](./public/v2_screenshot.webp)
+基于 Tauri v2 的本地知识库桌面应用。用户可导入 Markdown、TXT 等文档进行管理，并保存问答历史记录。所有数据存储在本地系统用户目录下，无需联网即可使用。
 
-A production-ready template to build fast, secure desktop apps with Tauri and Vue.
+## 功能特性
 
-## Features
+- **本地文档管理**：导入 Markdown、TXT 等文本文件，集中浏览和管理
+- **问答历史**：保存与系统的问答交互记录，支持历史回溯
+- **本地数据存储**：所有数据保存在系统用户目录的 `knowledge-base/` 文件夹中，隐私可控
+- **跨平台**：基于 Tauri v2，支持 Windows、macOS、Linux（及未来的移动端）
 
-- **Vue 3 + TypeScript** - Type-safe frontend with devtools
-- **Tailwind 4** - CSS preconfigured for native app development
-- **Vite** - Fast builds with [AutoImport](https://github.com/antfu/unplugin-auto-import) for cleaner code
-- **Vitest** - Unit testing ready to go
-- **CI/CD included** - GitHub Actions for automated testing, builds, and releases
-- **VS Code ready** - Debugging configs and recommended extensions
+## 技术栈
 
-## Quick Start
+| 层级 | 技术 |
+|------|------|
+| 前端框架 | Vue 3 + TypeScript + Vite |
+| 桌面框架 | Tauri v2 (Rust) |
+| 状态管理 | Pinia |
+| CSS 框架 | Tailwind CSS v4 |
+| 测试框架 | Vitest + @vue/test-utils |
+| 包管理器 | pnpm |
 
-1. Install [Tauri prerequisites](https://tauri.app/start/prerequisites/)
-2. Clone and install dependencies:
+## 快速开始
 
-```sh
-pnpm i
+### 环境要求
+
+- [Node.js](https://nodejs.org/)（建议 LTS 版本）
+- [Rust](https://rustup.rs/)
+- [pnpm](https://pnpm.io/)
+
+### 安装依赖
+
+```bash
+pnpm install
 ```
 
-1. Run the development server (starts both the backend and frontend dev servers and opens the devtools):
+### 启动开发模式
 
-```sh
+```bash
+pnpm dev
+```
+
+此命令会同时启动 Vite 开发服务器和 Vue Devtools。
+
+### 构建生产版本
+
+```bash
+pnpm build
+```
+
+### Tauri 专用命令
+
+```bash
+# Tauri 开发模式
 pnpm tauri dev
+
+# Tauri 生产构建
+pnpm tauri build
+
+# 检查 Rust 代码
+pnpm check
 ```
 
-## Project Structure and Usage
+## 测试
 
-A Tauri app has [two processes](https://tauri.app/concept/process-model/):
-
-- **Core Process** (`backend`, or _main_ process in Electron terminology)
-- **WebView process** (`frontend`, _renderer_ in Electron)
-
-### Frontend (TS, PnPM)
-
-Frontend code lives in `src/`. See `package.json` for all available commands.
-
-**Testing:**
-
-```sh
+```bash
+# 运行单元测试
 pnpm test
 ```
 
-### Backend (Rust, Cargo)
+测试配置：
+- 测试文件：`tests/unit/**/*.test.ts`、`src/**/*.spec.ts`
+- 覆盖率提供方：v8
+- 覆盖率阈值：lines ≥ 10%, branches ≥ 10%, statements ≥ 10%
 
-Backend code lives in `src-tauri/`.
+## 开发规范
 
-**Finding outdated dependencies** (requires [cargo-outdated](https://github.com/kbknapp/cargo-outdated)):
+本项目遵循严格的 Tauri v2 开发约束，详见 [`CONSTRAINTS.md`](./CONSTRAINTS.md)。核心规则包括：
 
-```sh
-cd src-tauri && cargo outdated
-```
+- 所有 Rust 命令必须注册到 `generate_handler!` 宏中
+- 异步命令参数禁止使用借用类型（`&str`）
+- 渲染进程禁止直接访问文件系统，所有 I/O 通过 IPC 委托给 Rust 后端
+- 所有插件功能使用前必须在 `capabilities/default.json` 中声明权限
 
-**Upgrading dependencies** (requires [cargo-edit](https://github.com/killercup/cargo-edit)):
+## 相关文档
 
-```sh
-cd src-tauri && cargo upgrade
-```
+| 文档 | 说明 |
+|------|------|
+| [`CLAUDE.md`](./CLAUDE.md) | 项目全局指南（编码规范、注意事项） |
+| [`CONSTRAINTS.md`](./CONSTRAINTS.md) | Tauri v2 不可协商规则 |
+| [`CONTEXT.md`](./CONTEXT.md) | 领域术语表 |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | 架构说明与模块职责 |
+| [`PROGRESS.md`](./PROGRESS.md) | 项目进度与待办事项 |
 
-### Debugging
+## 许可证
 
-- The `dev` command has by default `RUST_BACKTRACE=1` set which makes Rust output full backtraces to the console. (Remove it from the `package.json` command if you don't want it).
-- If you use VS Code, you can debug Rust code with the included `Debug Tauri` config.
-
-### Building and releasing
-
-#### Building
-
-The project has GitHub Actions set up which will automatically test and build your app with every push and PR. To build manually run:
-
-```sh
-pnpm tauri build
-```
-
-#### Releasing a new version
-
-1. Bump version number by running `pnpm bump [x.y.z]`
-2. Run `pnpm check` to update `Cargo.lock`
-3. Tag the commit you want to release with `vX.Y.Z`
-4. Edit the release notes and push (also tags!)
-5. Github workflow will automatically build a new draft release for this version. Publish when ready 🎉
-
-## Follow Along
-
-- Follow [@uninen on X](https://x.com/uninen) or [uninen.net on Bluesky](https://bsky.app/profile/uninen.net)
-- Read my learnings around Tauri / Vue / TypeScript and other Web dev topics from my [Today I Learned blog](https://til.unessa.net/)
-- If you speak Finnish, check out [Koneoppiblogi](https://koneoppiblogi.uninen.net)
-
-## Contributing
-
-Contributions are welcome! Please [be nice](./CODE_OF_CONDUCT.md) when interacting with others.
+待补充

@@ -1,14 +1,41 @@
 # 知识库应用（Knowledge-base）
 
-应用描述待补充
+基于 Tauri v2 的本地知识库桌面应用。用户可导入文档（Markdown、TXT 等）进行管理，并保存问答历史记录。应用数据存储在系统用户目录下的 `knowledge-base/` 文件夹中。
 
 ## 项目结构
 
-待补充
+```
+├── src/                    # Vue 3 前端源码
+│   ├── components/         # Vue 组件
+│   ├── assets/             # 静态资源
+│   ├── App.vue             # 根组件
+│   ├── main.ts             # 入口文件
+│   └── store.ts            # Pinia 状态管理
+├── src-tauri/              # Tauri Rust 后端
+│   ├── src/                # Rust 源码
+│   ├── Cargo.toml          # Rust 依赖
+│   └── tauri.conf.json     # Tauri 配置
+├── tests/                  # 测试
+│   ├── setup/              # 测试配置
+│   └── unit/               # 单元测试
+├── docs/                   # 文档
+│   └── agents/             # Agent 技能配置
+├── public/                 # 公共资源
+├── vite.config.ts          # Vite 配置
+├── vitest.config.ts        # Vitest 配置
+└── package.json            # 前端依赖
+```
 
 ## 技术栈
 
-待补充
+- **前端框架**：Vue 3 + TypeScript + Vite
+- **桌面框架**：Tauri v2 (Rust)
+- **状态管理**：Pinia
+- **CSS 框架**：Tailwind CSS v4
+- **测试框架**：Vitest + @vue/test-utils
+- **包管理器**：pnpm
+- **图标方案**：@egoist/tailwindcss-icons + Material Design Icons
+- **自动导入**：unplugin-auto-import + unplugin-vue-components
 
 ## 项目 UI 要求
 
@@ -26,11 +53,22 @@
 
 ## 启动命令
 
-待补充
+- `pnpm dev` —— 启动开发模式（同时运行 Vite dev server 和 Vue Devtools）
+- `pnpm build` —— 构建生产版本（TypeScript 类型检查 + Vite 构建）
+- `pnpm preview` —— 预览生产构建
+- `pnpm type-check` —— 仅运行 TypeScript 类型检查
+- `pnpm check` —— 检查 Rust 代码（`cargo check`）
+- `pnpm tauri <cmd>` —— 运行 Tauri CLI 命令（如 `pnpm tauri dev`、`pnpm tauri build`）
 
 ## 测试验证
 
-待补充
+- **测试框架**：Vitest
+- **测试文件**：`tests/unit/**/*.test.ts`、`src/**/*.spec.ts`
+- **测试配置**：`tests/setup/testglobals.ts`
+- **覆盖率提供方**：v8
+- **覆盖率阈值**：lines ≥ 10%, branches ≥ 10%, statements ≥ 10%, functions ≥ 0%
+- **覆盖率包含范围**：`src/**/*.ts`、`src/**/*.vue`（排除 `src/main.ts`）
+- **运行命令**：`pnpm test`
 
 ## 注意事项
 
@@ -100,3 +138,17 @@
 ***
 
 **这些准则有效的标志是：** diff 中不必要的变更更少，因过度复杂而导致的重写更少，澄清问题出现在实施前而非犯错后。
+
+## Agent skills
+
+### Issue tracker
+
+问题以本地 Markdown 文件的形式存放在 `.scratch/` 目录下。详见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+使用默认的标准标签词汇。详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+单上下文仓库，`CONTEXT.md` 和 `docs/adr/` 位于仓库根目录。详见 `docs/agents/domain.md`。
