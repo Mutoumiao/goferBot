@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import fs from 'node:fs'
+import * as fs from 'node:fs'
 import path from 'node:path'
 import { nanoid } from 'nanoid'
 import db from '../db.js'
