@@ -4,6 +4,7 @@ import SplashScreen from './components/SplashScreen.vue'
 import SideBar from './components/SideBar.vue'
 import TabBar from './components/TabBar.vue'
 import ChatPage from './components/ChatPage.vue'
+import KnowledgeBasePage from './components/KnowledgeBasePage.vue'
 import { initSidecar, sidecarStatus } from './composables/useSidecar'
 import { useSessionStore } from './stores/session'
 
@@ -74,12 +75,7 @@ function openSettings() {
       />
       <main class="relative flex-1 overflow-hidden bg-surface-0">
         <ChatPage v-if="sessionStore.activeTab?.type === 'chat'" />
-        <div
-          v-else-if="sessionStore.activeTab?.type === 'knowledgeBase'"
-          class="flex h-full items-center justify-center text-text-secondary"
-        >
-          知识库管理（由 #03 实现）
-        </div>
+        <KnowledgeBasePage v-else-if="sessionStore.activeTab?.type === 'knowledgeBase'" />
         <div
           v-else-if="sessionStore.activeTab?.type === 'history'"
           class="flex h-full items-center justify-center text-text-secondary"

@@ -33,6 +33,7 @@ export default defineConfig({
           '@/store': ['useStore'],
           '@/stores/session': ['useSessionStore'],
           '@/stores/settings': ['useSettingsStore'],
+          '@/stores/knowledgeBase': ['useKnowledgeBaseStore'],
         },
       ],
       dts: 'auto-imports.d.ts',
