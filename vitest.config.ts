@@ -16,6 +16,7 @@ export default mergeConfig(
       globals: true,
       include: ['tests/unit/**/*.test.ts', 'src/**/*.spec.ts'],
       root: fileURLToPath(new URL('./', import.meta.url)),
+      environment: 'happy-dom',
       setupFiles: ['./tests/setup/testglobals.ts'],
       coverage: {
         provider: 'v8',
