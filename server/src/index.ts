@@ -2,20 +2,11 @@ import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import fs from 'node:fs'
 import path from 'node:path'
-import os from 'node:os'
 import net from 'node:net'
+import { getAppDataDir } from './utils.js'
 
 const DEFAULT_PORT = 11451
 const MAX_PORT_ATTEMPTS = 100
-
-function getAppDataDir(): string {
-  const base = process.env.APP_DATA_DIR ?? os.homedir()
-  const dir = path.join(base, 'knowledge-base')
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-  return dir
-}
 
 function writePortFile(port: number): void {
   const portFile = path.join(getAppDataDir(), '.sidecar-port')
