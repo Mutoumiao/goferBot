@@ -29,3 +29,23 @@ export interface ChatRequest {
   knowledgeBaseIds?: string[]
   config: LLMConfig
 }
+
+export interface KnowledgeBase {
+  id: string
+  name: string
+  path: string
+  created_at: number
+  deleted_at: number | null
+}
+
+export interface FileItem {
+  name: string
+  type: 'file' | 'directory'
+  size?: number
+  updatedAt: number
+}
+
+export interface ImportFile {
+  name: string
+  content: string
+}
