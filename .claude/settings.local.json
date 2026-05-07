@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"D:\\\\projects\\\\ai-stared-project\\\\knowledge-base\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "Bash(git *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\projects\\\\ai-stared-project\\\\knowledge-base\\\\src-tauri\" -Recurse -File)",
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Path \"D:\\\\projects\\\\ai-stared-project\\\\knowledge-base\\\\.worktrees\\\\sidecar-startup\")",
+      "Bash(taskkill *)",
+      "Bash(taskkill /F /PID 11396)",
+      "Bash(taskkill /F /PID 31420)",
+      "Bash(taskkill /F /IM tauri-app.exe)",
+      "Bash(git merge-base *)"
+    ]
+  }
+}
