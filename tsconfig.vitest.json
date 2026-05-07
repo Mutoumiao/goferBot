@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.app.json",
   "include": ["tests/unit/**/*.ts", "src/**/*.ts", "src/**/*.vue"],
+  "exclude": ["tests/unit/server"],
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",

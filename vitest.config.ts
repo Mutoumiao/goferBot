@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import { mergeConfig } from 'vite'
 import { defineConfig } from 'vitest/config'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { version as pkgVersion } from './package.json'
 import viteConfig from './vite.config'
 
@@ -9,9 +10,20 @@ if (process.env.NODE_ENV === 'production') {
   process.env.VITE_APP_BUILD_EPOCH = new Date().getTime().toString()
 }
 
+const filteredPlugins =
+  viteConfig.plugins?.filter((p: unknown) => {
+    const plugin = p as { name?: string }
+    return plugin?.name !== 'vite-plugin-node-polyfills'
+  }) ?? []
+
 export default mergeConfig(
-  viteConfig,
+  { ...viteConfig, plugins: filteredPlugins },
   defineConfig({
+    plugins: [
+      nodePolyfills({
+        exclude: ['fs', 'path', 'os'],
+      }),
+    ],
     test: {
       globals: true,
       include: ['tests/unit/**/*.test.ts', 'src/**/*.spec.ts'],
