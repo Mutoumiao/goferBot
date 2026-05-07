@@ -4,6 +4,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import net from 'node:net'
 import { getAppDataDir } from './utils.js'
+import chatRoutes from './routes/chat.js'
+import sessionRoutes from './routes/sessions.js'
 
 const DEFAULT_PORT = 11451
 const MAX_PORT_ATTEMPTS = 100
@@ -46,6 +48,9 @@ async function main(): Promise<void> {
   app.get('/health', (c) => {
     return c.json({ status: 'ok' })
   })
+
+  app.route('/chat', chatRoutes)
+  app.route('/sessions', sessionRoutes)
 
   serve({
     fetch: app.fetch,
