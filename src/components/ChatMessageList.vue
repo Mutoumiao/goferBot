@@ -22,11 +22,21 @@ watch(
 </script>
 
 <template>
-  <div ref="containerRef" class="flex-1 overflow-y-auto space-y-4 p-4">
+  <div ref="containerRef" class="flex-1 overflow-y-auto space-y-5 p-5">
+    <!-- Empty state hint -->
+    <div
+      v-if="messages.length === 0"
+      class="flex h-full flex-col items-center justify-center text-text-tertiary"
+    >
+      <span class="i-mdi-chat-outline mb-3 text-4xl opacity-30" />
+      <p class="text-sm">开始你的第一次对话</p>
+    </div>
+
     <ChatMessage
-      v-for="msg in messages"
+      v-for="(msg, index) in messages"
       :key="msg.id"
       :message="msg"
+      :style="{ animationDelay: `${index * 30}ms` }"
     />
   </div>
 </template>

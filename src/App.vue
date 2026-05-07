@@ -55,9 +55,10 @@ function openSettings() {
   <SplashScreen />
   <div
     v-if="sidecarStatus === 'ready'"
-    class="flex h-screen bg-gray-800 text-gray-200"
+    class="flex h-screen bg-surface-0 text-text-primary"
   >
     <SideBar
+      :active-type="sessionStore.activeTab?.type ?? 'chat'"
       @open-chat="ensureHomeTab"
       @open-knowledge-base="openKnowledgeBase"
       @open-history="openHistory"
@@ -71,23 +72,23 @@ function openSettings() {
         @close="sessionStore.closeTab"
         @new-chat="ensureHomeTab"
       />
-      <main class="flex-1 overflow-hidden">
+      <main class="relative flex-1 overflow-hidden bg-surface-0">
         <ChatPage v-if="sessionStore.activeTab?.type === 'chat'" />
         <div
           v-else-if="sessionStore.activeTab?.type === 'knowledgeBase'"
-          class="flex h-full items-center justify-center text-gray-400"
+          class="flex h-full items-center justify-center text-text-secondary"
         >
           知识库管理（由 #03 实现）
         </div>
         <div
           v-else-if="sessionStore.activeTab?.type === 'history'"
-          class="flex h-full items-center justify-center text-gray-400"
+          class="flex h-full items-center justify-center text-text-secondary"
         >
           对话历史（由 #06 实现）
         </div>
         <div
           v-else-if="sessionStore.activeTab?.type === 'settings'"
-          class="flex h-full items-center justify-center text-gray-400"
+          class="flex h-full items-center justify-center text-text-secondary"
         >
           设置（由 #05 实现）
         </div>

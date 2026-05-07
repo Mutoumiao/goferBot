@@ -14,31 +14,57 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex h-[38px] shrink-0 items-center gap-1 border-b border-gray-700 bg-gray-800 px-2">
-    <div class="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
+  <div class="flex h-10 shrink-0 items-center gap-0.5 border-b border-border-default bg-surface-1 px-2">
+    <div class="flex flex-1 gap-0.5 overflow-x-auto no-scrollbar">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         :class="[
-          'flex shrink-0 items-center gap-1.5 rounded-t-md px-3 py-1.5 text-sm transition-colors',
+          'group relative flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-all duration-200',
           activeTabId === tab.id
-            ? 'bg-gray-700 text-gray-200'
-            : 'text-gray-400 hover:bg-gray-700/50 hover:text-gray-200',
+            ? 'bg-surface-3 text-text-primary'
+            : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary',
         ]"
         @click="emit('switch', tab.id)"
       >
-        <span class="max-w-[120px] truncate">{{ tab.title }}</span>
+        <!-- Tab icon for non-chat tabs -->
+        <span
+          v-if="tab.type === 'knowledgeBase'"
+          class="i-mdi-folder text-xs opacity-70"
+        />
+        <span
+          v-else-if="tab.type === 'history'"
+          class="i-mdi-history text-xs opacity-70"
+        />
+        <span
+          v-else-if="tab.type === 'settings'"
+          class="i-mdi-cog text-xs opacity-70"
+        />
+
+        <span class="max-w-[140px] truncate">{{ tab.title }}</span>
+
+        <!-- Close button -->
         <span
           v-if="tab.closable"
-          class="icon-[mdi--close] ml-0.5 cursor-pointer rounded p-0.5 text-xs hover:bg-gray-600 hover:text-red-400"
+          :class="[
+            'i-mdi-close ml-0.5 cursor-pointer rounded p-0.5 text-[10px] opacity-0 transition-all duration-150',
+            activeTabId === tab.id
+              ? 'text-text-tertiary group-hover:opacity-100 hover:bg-surface-4 hover:text-danger-400'
+              : 'text-text-tertiary group-hover:opacity-100 hover:bg-surface-3 hover:text-danger-400',
+          ]"
           @click.stop="emit('close', tab.id)"
         />
       </button>
     </div>
+
+    <!-- New chat button -->
     <button
-      class="icon-[mdi--plus] shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+      class="ml-1 flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-text-tertiary transition-all duration-200 hover:bg-surface-2 hover:text-text-secondary"
       title="新建会话"
       @click="emit('newChat')"
-    />
+    >
+      <span class="i-mdi-plus text-sm" />
+      <span class="hidden sm:inline">新会话</span>
+    </button>
   </div>
 </template>

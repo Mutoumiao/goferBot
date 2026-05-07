@@ -10,22 +10,46 @@ defineProps<{
 <template>
   <div
     :class="[
-      'flex w-full',
+      'message-enter flex w-full',
       message.role === 'user' ? 'justify-end' : 'justify-start',
     ]"
   >
-    <div
-      :class="[
-        'max-w-[85%] rounded-lg px-4 py-2.5 shadow-sm',
-        message.role === 'user'
-          ? 'bg-blue-100 text-gray-900'
-          : 'bg-white text-gray-900',
-      ]"
-    >
-      <div v-if="message.role === 'user'" class="whitespace-pre-wrap text-sm leading-relaxed">
-        {{ message.content }}
+    <div class="flex max-w-[85%] gap-3">
+      <!-- AI Avatar -->
+      <div
+        v-if="message.role === 'assistant'"
+        class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-500/10"
+      >
+        <span class="i-mdi-robot text-sm text-accent-400" />
       </div>
-      <MarkdownRender v-else :content="message.content" />
+
+      <div
+        :class="[
+          'relative overflow-hidden rounded-2xl px-4 py-3 shadow-sm',
+          message.role === 'user'
+            ? 'bg-accent-600 text-white'
+            : 'border border-border-subtle bg-surface-3 text-text-primary',
+        ]"
+      >
+        <!-- AI message top accent line -->
+        <div
+          v-if="message.role === 'assistant'"
+          class="absolute left-0 top-0 h-full w-[2px] bg-accent-500/40"
+        />
+
+        <div v-if="message.role === 'user'" class="whitespace-pre-wrap text-sm leading-relaxed">
+          {{ message.content }}
+        </div>
+        <MarkdownRender v-else :content="message.content" />
+      </div>
+
+      <!-- User Avatar -->
+      <div
+        v-if="message.role === 'user'"
+        class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-4"
+      >
+        <span class="i-mdi-account text-sm text-text-secondary" />
+      </div>
     </div>
   </div>
 </template>
