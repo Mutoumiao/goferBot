@@ -2,6 +2,7 @@ mod sidecar;
 
 use sidecar::{emit_sidecar_ready, wait_for_port};
 use tauri::Manager;
+use tauri_plugin_dialog::DialogExt;
 use tokio::sync::Mutex;
 
 pub struct SidecarHandle {
@@ -85,6 +86,76 @@ async fn restart_sidecar(
     Ok(())
 }
 
+use serde_json::json;
+use std::fs;
+
+#[tauri::command]
+async fn import_files(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SidecarHandle>>,
+    knowledge_base_id: String,
+    target_path: String,
+) -> Result<usize, String> {
+    let port = state
+        .lock()
+        .await
+        .get_port()
+        .ok_or("Sidecar not ready".to_string())?;
+
+    // 打开系统文件对话框（多选）
+    let file_paths = app
+        .dialog()
+        .file()
+        .add_filter("Text Documents", &["txt", "md", "markdown"])
+        .blocking_pick_files();
+
+    let mut paths: Vec<std::path::PathBuf> = Vec::new();
+    if let Some(p) = file_paths {
+        for f in p {
+            if let Some(path) = f.as_path() {
+                paths.push(path.to_path_buf());
+            }
+        }
+    }
+
+    if paths.is_empty() {
+        return Ok(0);
+    }
+
+    let client = reqwest::Client::new();
+    let url = format!(
+        "http://127.0.0.1:{}/knowledge-bases/{}/files",
+        port, knowledge_base_id
+    );
+
+    let mut imported = 0;
+
+    for file_path in paths {
+        let content = fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
+        let file_name = file_path
+            .file_name()
+            .ok_or("Invalid file path".to_string())?
+            .to_string_lossy()
+            .to_string();
+
+        let payload = json!({
+            "path": target_path,
+            "files": [{ "name": file_name, "content": content }]
+        });
+
+        client
+            .post(&url)
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        imported += 1;
+    }
+
+    Ok(imported)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -110,7 +181,13 @@ pub fn run() {
         })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_prevent_default::init())
-        .invoke_handler(tauri::generate_handler![greet, get_sidecar_port, restart_sidecar])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            get_sidecar_port,
+            restart_sidecar,
+            import_files
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
