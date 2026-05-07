@@ -15,7 +15,8 @@
     "bump": "node bump-version.cjs",
     "check": "cargo check --manifest-path src-tauri/Cargo.toml",
     "server:dev": "pnpm --dir server dev",
-    "server:build": "pnpm --dir server build"
+    "server:build": "pnpm --dir server build",
+    "issue:sync": "node scripts/issue-sync.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",

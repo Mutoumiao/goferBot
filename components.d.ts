@@ -12,5 +12,6 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     GreetComponent: typeof import('./src/components/GreetComponent.vue')['default']
+    SplashScreen: typeof import('./src/components/SplashScreen.vue')['default']
   }
 }

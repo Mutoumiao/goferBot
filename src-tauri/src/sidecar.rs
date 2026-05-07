@@ -100,13 +100,23 @@ async fn monitor_loop(
     shutdown_rx: &mut tokio::sync::mpsc::Receiver<()>,
 ) {
     let mut is_restart = false;
+    let mut spawn_failures = 0u32;
 
     loop {
         let mut child = match spawn_sidecar(&app_handle) {
-            Ok(c) => c,
+            Ok(c) => {
+                spawn_failures = 0;
+                c
+            }
             Err(e) => {
+                spawn_failures += 1;
                 eprintln!("Failed to spawn sidecar: {}", e);
-                tokio::time::sleep(Duration::from_secs(5)).await;
+                let delay = if spawn_failures > 5 {
+                    Duration::from_secs(60)
+                } else {
+                    Duration::from_secs(5)
+                };
+                tokio::time::sleep(delay).await;
                 continue;
             }
         };
@@ -114,9 +124,10 @@ async fn monitor_loop(
         match wait_for_port(&app_handle, 30).await {
             Ok(port) => {
                 {
-                    let state: tauri::State<std::sync::Mutex<crate::SidecarHandle>> =
+                    let state: tauri::State<tokio::sync::Mutex<crate::SidecarHandle>> =
                         app_handle.state();
-                    *state.lock().unwrap().port.lock().unwrap() = Some(port);
+                    let mut handle = state.lock().await;
+                    handle.port = Some(port);
                 }
                 if is_restart {
                     emit_sidecar_restarted(&app_handle, port);
@@ -144,9 +155,10 @@ async fn monitor_loop(
                 }
 
                 {
-                    let state: tauri::State<std::sync::Mutex<crate::SidecarHandle>> =
+                    let state: tauri::State<tokio::sync::Mutex<crate::SidecarHandle>> =
                         app_handle.state();
-                    *state.lock().unwrap().port.lock().unwrap() = None;
+                    let mut handle = state.lock().await;
+                    handle.port = None;
                 }
 
                 if let Ok(port_file) = get_port_file_path(&app_handle) {

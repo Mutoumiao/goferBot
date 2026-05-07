@@ -11,6 +11,8 @@ export const sidecarError = ref<string>('')
 
 let initDone = false
 let timeoutId: ReturnType<typeof setTimeout> | null = null
+let readyUnlisten: (() => void) | null = null
+let restartedUnlisten: (() => void) | null = null
 
 function clearTimeoutIfAny(): void {
   if (timeoutId) {
@@ -36,19 +38,23 @@ export async function initSidecar(): Promise<void> {
     // sidecar not ready yet, wait for events
   }
 
-  await listen<{ port: number }>('sidecar-ready', (event) => {
-    setSidecarPort(event.payload.port)
-    sidecarPort.value = event.payload.port
-    sidecarStatus.value = 'ready'
-    clearTimeoutIfAny()
-  })
+  if (!readyUnlisten) {
+    readyUnlisten = await listen<{ port: number }>('sidecar-ready', (event) => {
+      setSidecarPort(event.payload.port)
+      sidecarPort.value = event.payload.port
+      sidecarStatus.value = 'ready'
+      clearTimeoutIfAny()
+    })
+  }
 
-  await listen<{ port: number }>('sidecar-restarted', (event) => {
-    setSidecarPort(event.payload.port)
-    sidecarPort.value = event.payload.port
-    sidecarStatus.value = 'ready'
-    clearTimeoutIfAny()
-  })
+  if (!restartedUnlisten) {
+    restartedUnlisten = await listen<{ port: number }>('sidecar-restarted', (event) => {
+      setSidecarPort(event.payload.port)
+      sidecarPort.value = event.payload.port
+      sidecarStatus.value = 'ready'
+      clearTimeoutIfAny()
+    })
+  }
 
   timeoutId = setTimeout(() => {
     if (sidecarStatus.value !== 'ready') {
@@ -77,4 +83,8 @@ export function _resetSidecarStateForTest(): void {
   sidecarPort.value = null
   sidecarError.value = ''
   clearTimeoutIfAny()
+  readyUnlisten?.()
+  restartedUnlisten?.()
+  readyUnlisten = null
+  restartedUnlisten = null
 }

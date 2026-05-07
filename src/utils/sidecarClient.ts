@@ -17,13 +17,12 @@ export async function sidecarFetch(
   options: RequestInit = {},
   retries = 3
 ): Promise<Response> {
-  if (!currentPort) {
-    throw new Error('Sidecar port not available')
-  }
-
-  const url = `http://127.0.0.1:${currentPort}${path}`
-
   for (let i = 0; i <= retries; i++) {
+    const port = currentPort
+    if (!port) {
+      throw new Error('Sidecar port not available')
+    }
+    const url = `http://127.0.0.1:${port}${path}`
     try {
       const response = await fetch(url, options)
       if (response.ok || i === retries) {
@@ -35,7 +34,11 @@ export async function sidecarFetch(
     }
   }
 
-  return fetch(url, options)
+  const finalPort = currentPort
+  if (!finalPort) {
+    throw new Error('Sidecar port not available')
+  }
+  return fetch(`http://127.0.0.1:${finalPort}${path}`, options)
 }
 
 export async function healthCheck(): Promise<boolean> {
