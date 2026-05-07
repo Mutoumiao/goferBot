@@ -74,6 +74,38 @@
 
 **权衡**：这些准则偏向谨慎而非速度。对于琐碎任务，请自行判断。
 
+### Worktree 开发规范
+
+本项目使用 Git worktree 进行功能分支隔离开发。Worktree 与原仓库共享 git 历史，但**不共享 `node_modules`**。
+
+每次在 worktree 中完成开发并合并回 `master` 后，必须在**主仓库工作目录**执行以下步骤同步依赖环境：
+
+```bash
+# 1. 同步根目录依赖（package.json / pnpm-lock.yaml 可能已变更）
+pnpm install
+
+# 2. 同步 sidecar 子项目依赖
+pnpm --dir server install
+
+# 3. 确保 better-sqlite3 原生绑定存在
+#    （pnpm v10 默认忽略构建脚本，需手动触发预构建下载）
+cd server && npx prebuild-install --download
+
+# 4. 运行全量测试验证主仓库状态
+pnpm test
+pnpm type-check
+cd server && pnpm build
+```
+
+**为什么必须这样做**：worktree 中安装的新依赖（如 `happy-dom`、`markdown-it`、`better-sqlite3`）只存在于 worktree 的 `node_modules/` 下。`package.json` 和 `pnpm-lock.yaml` 虽然通过 git 同步到了 master，但 master 工作目录的 `node_modules/` 不会自动更新，导致合并后测试/构建直接崩溃。
+
+### pnpm v10 与原生模块
+
+- pnpm v10 默认**忽略所有包的构建脚本**（包括 `better-sqlite3`）。
+- `better-sqlite3` 是原生 C++ 模块，安装后需要通过 `prebuild-install` 下载对应平台的 `.node` 二进制文件。
+- 若在新环境（如新克隆、CI、新 worktree）中安装 sidecar 依赖后运行报错 `Could not locate the bindings file`，请执行 `cd server && npx prebuild-install --download`。
+- 长期可在 `server/.npmrc` 中添加 `ignore-scripts=false` 避免此问题。
+
 ## 1. 编码前思考
 
 **不要假设。不要隐藏困惑。明确提出权衡。**

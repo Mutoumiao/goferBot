@@ -59,3 +59,9 @@
 
 - **MUST** 在发布构建前运行 `pnpm type-check` 和 `pnpm check`（`cargo check`），确保 TypeScript 和 Rust 侧均无编译错误。
 - **MUST NOT** 使用未签名的更新包或 HTTP 端点分发更新。生产环境更新必须使用 `cargo tauri signer generate` 生成的密钥签名，并通过 HTTPS 端点提供。
+- **MUST** 在运行 `pnpm tauri dev` 或构建前，确保 `server/dist/index.js` 存在。Rust 的 `spawn_sidecar` 不会自动编译 sidecar TypeScript，缺失构建产物会导致 sidecar 启动直接失败。修改 `server/src/` 后必须重新执行 `cd server && pnpm build`。
+- **MUST** 在安装包含原生 C++ 模块（如 `better-sqlite3`）的依赖后，验证 `.node` 绑定文件存在。pnpm v10 默认忽略构建脚本，不会自动触发 `node-gyp rebuild`。建议在新环境执行 `cd server && npx prebuild-install --download`，或在 `server/.npmrc` 中配置 `ignore-scripts=false`。
+
+## 前端 IPC 错误处理
+
+- **MUST** 在前端所有异步 IPC 初始化代码（如 `listen()`、`invoke()`）中包裹 try-catch。Tauri v2 权限异常会抛出 Error 而非返回失败状态，未捕获的异常会导致初始化流程永久中断（如 `initDone` 已置位但后续超时逻辑未注册）。
