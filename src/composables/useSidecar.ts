@@ -38,22 +38,29 @@ export async function initSidecar(): Promise<void> {
     // sidecar not ready yet, wait for events
   }
 
-  if (!readyUnlisten) {
-    readyUnlisten = await listen<{ port: number }>('sidecar-ready', (event) => {
-      setSidecarPort(event.payload.port)
-      sidecarPort.value = event.payload.port
-      sidecarStatus.value = 'ready'
-      clearTimeoutIfAny()
-    })
-  }
+  try {
+    if (!readyUnlisten) {
+      readyUnlisten = await listen<{ port: number }>('sidecar-ready', (event) => {
+        setSidecarPort(event.payload.port)
+        sidecarPort.value = event.payload.port
+        sidecarStatus.value = 'ready'
+        clearTimeoutIfAny()
+      })
+    }
 
-  if (!restartedUnlisten) {
-    restartedUnlisten = await listen<{ port: number }>('sidecar-restarted', (event) => {
-      setSidecarPort(event.payload.port)
-      sidecarPort.value = event.payload.port
-      sidecarStatus.value = 'ready'
-      clearTimeoutIfAny()
-    })
+    if (!restartedUnlisten) {
+      restartedUnlisten = await listen<{ port: number }>('sidecar-restarted', (event) => {
+        setSidecarPort(event.payload.port)
+        sidecarPort.value = event.payload.port
+        sidecarStatus.value = 'ready'
+        clearTimeoutIfAny()
+      })
+    }
+  } catch (e) {
+    console.error('[sidecar] Failed to listen for events:', e)
+    sidecarStatus.value = 'error'
+    sidecarError.value = '无法监听服务状态，请检查权限配置'
+    return
   }
 
   timeoutId = setTimeout(() => {
