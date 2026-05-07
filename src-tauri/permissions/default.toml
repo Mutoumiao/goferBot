@@ -1,0 +1,20 @@
+[default]
+identifier = "default"
+description = "Default set of permissions for the application"
+permissions = ["allow-get-sidecar-port", "allow-restart-sidecar"]
+
+[[permission]]
+identifier = "allow-get-sidecar-port"
+description = "Allow getting the sidecar port"
+
+[permission.commands]
+allow = ["get_sidecar_port"]
+deny = []
+
+[[permission]]
+identifier = "allow-restart-sidecar"
+description = "Allow restarting the sidecar"
+
+[permission.commands]
+allow = ["restart_sidecar"]
+deny = []
