@@ -32,6 +32,37 @@ export interface ChatRequest {
 
 export type TabType = 'chat' | 'knowledgeBase' | 'history' | 'settings'
 
+export interface KnowledgeBase {
+  id: string
+  name: string
+  path: string
+  created_at: number
+  deleted_at: number | null
+}
+
+export interface FileItem {
+  name: string
+  type: 'file' | 'directory'
+  size?: number
+  updatedAt: number
+}
+
+export interface SearchResultItem extends FileItem {
+  relativePath: string
+}
+
+export interface BrowseState {
+  type: 'browse'
+  path: string
+}
+
+export interface SearchState {
+  type: 'search'
+  query: string
+}
+
+export type HistoryEntry = BrowseState | SearchState
+
 export interface Tab {
   id: string
   type: TabType
