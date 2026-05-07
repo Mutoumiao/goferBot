@@ -11,7 +11,12 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ChatInput: typeof import('./src/components/ChatInput.vue')['default']
+    ChatMessage: typeof import('./src/components/ChatMessage.vue')['default']
+    ChatMessageList: typeof import('./src/components/ChatMessageList.vue')['default']
+    EmptySession: typeof import('./src/components/EmptySession.vue')['default']
     GreetComponent: typeof import('./src/components/GreetComponent.vue')['default']
+    MarkdownRender: typeof import('./src/components/MarkdownRender.vue')['default']
     SplashScreen: typeof import('./src/components/SplashScreen.vue')['default']
   }
 }

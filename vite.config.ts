@@ -31,6 +31,8 @@ export default defineConfig({
         'pinia',
         {
           '@/store': ['useStore'],
+          '@/stores/session': ['useSessionStore'],
+          '@/stores/settings': ['useSettingsStore'],
         },
       ],
       dts: 'auto-imports.d.ts',
