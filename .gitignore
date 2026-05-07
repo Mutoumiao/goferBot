@@ -26,3 +26,5 @@ LOCAL_NOTES.md
 .env
 target/
 .worktrees/
+
+docs/design-discussions/*
