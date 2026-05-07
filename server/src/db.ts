@@ -26,6 +26,14 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at);
+
+  CREATE TABLE IF NOT EXISTS knowledge_bases (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    path TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    deleted_at INTEGER
+  );
 `)
 
 export default db
