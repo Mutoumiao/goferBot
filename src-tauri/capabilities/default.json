@@ -8,6 +8,7 @@
     "core:event:allow-listen",
     "allow-get-sidecar-port",
     "allow-restart-sidecar",
+    "allow-import-files",
     "dialog:default"
   ]
 }

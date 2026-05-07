@@ -42,6 +42,7 @@ fn get_server_script_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, Stri
 
 pub fn spawn_sidecar(app_handle: &tauri::AppHandle) -> Result<tokio::process::Child, String> {
     let script = get_server_script_path(app_handle)?;
+    println!("[sidecar] Starting sidecar from: {}", script.display());
     let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
 
     let child = Command::new("node")

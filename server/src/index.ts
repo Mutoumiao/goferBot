@@ -46,8 +46,18 @@ async function main(): Promise<void> {
 
   const app = new Hono()
 
+  app.use('*', async (c, next) => {
+    c.header('Access-Control-Allow-Origin', '*')
+    c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    c.header('Access-Control-Allow-Headers', 'Content-Type')
+    if (c.req.method === 'OPTIONS') {
+      return c.body(null, 204)
+    }
+    await next()
+  })
+
   app.get('/health', (c) => {
-    return c.json({ status: 'ok' })
+    return c.json({ status: 'ok', cors: 'manual-v2' })
   })
 
   app.route('/chat', chatRoutes)

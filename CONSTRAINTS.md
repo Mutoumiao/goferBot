@@ -22,6 +22,33 @@
 - **MUST NOT** 安装插件后跳过权限配置。缺少插件权限字符串会导致静默运行时失败，表现为功能无响应而非显式报错。
 - **MUST** 确保 `src-tauri/capabilities/default.json` 中至少包含 `"core:default"`。
 
+#### 自定义 IPC 命令权限
+
+新增 `#[tauri::command]` 后，权限配置必须覆盖以下两个文件，缺一不可：
+
+1. **`src-tauri/permissions/default.toml`** —— 定义权限标识符与允许/拒绝的命令列表：
+   ```toml
+   [[permission]]
+   identifier = "allow-my-command"
+   description = "..."
+
+   [permission.commands]
+   allow = ["my_command"]
+   deny = []
+   ```
+
+2. **`src-tauri/capabilities/default.json`** —— 在 `permissions` 数组中引用已定义的权限标识符：
+   ```json
+   "permissions": [
+     "core:default",
+     "allow-my-command"
+   ]
+   ```
+
+- **MUST NOT** 仅修改 `permissions/*.toml` 而忘记在 `capabilities/*.json` 中引用。这是最常见的权限遗漏原因：权限已定义但未分配给任何窗口，导致运行时仍报 `not allowed`。
+- **MUST NOT** 手动修改 `src-tauri/gen/schemas/` 下的自动生成文件。该目录由 `tauri-build` 在编译时生成，手动修改会被后续构建覆盖。若 schema 未同步，应执行 `cargo clean` 后重新运行 `cargo check` 或 `pnpm tauri dev` 触发重新生成。
+- **MUST** 在新增命令后运行 `cargo check --manifest-path src-tauri/Cargo.toml` 验证权限配置有效性。`tauri-build` 会在编译时校验 capability 与 permission 的引用关系，配置错误会导致编译失败。
+
 ### 状态管理
 
 - **MUST** 对需要从多个命令访问的可变共享状态使用 `std::sync::Mutex<T>`（或 `tokio::sync::Mutex<T>`）。

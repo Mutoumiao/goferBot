@@ -61,6 +61,7 @@
 |--------|------|------|
 | `get_sidecar_port` | `lib.rs` | 查询当前 Sidecar 监听端口；若未就绪返回错误 |
 | `restart_sidecar` | `lib.rs` | 优雅关闭并重新启动 Sidecar 子进程 |
+| `import_files` | `lib.rs` | 打开系统文件对话框，读取选中文件并通过 HTTP POST 导入到指定知识库 |
 
 ### 关键状态：`SidecarHandle`
 
