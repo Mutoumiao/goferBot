@@ -6,13 +6,17 @@ import TabBar from './components/TabBar.vue'
 import ChatPage from './components/ChatPage.vue'
 import KnowledgeBasePage from './components/KnowledgeBasePage.vue'
 import RecycleBinPage from './components/RecycleBinPage.vue'
+import SettingsPage from './components/SettingsPage.vue'
 import { initSidecar, sidecarStatus } from './composables/useSidecar'
 import { useSessionStore } from './stores/session'
+import { useSettingsStore } from './stores/settings'
 
 const sessionStore = useSessionStore()
+const settingsStore = useSettingsStore()
 
 onMounted(() => {
   initSidecar()
+  settingsStore.loadConfig()
 })
 
 function ensureHomeTab() {
@@ -21,7 +25,15 @@ function ensureHomeTab() {
     sessionStore.switchTab(homeTab.id)
   } else {
     const newHomeId = `home-${Date.now()}`
-    sessionStore.addTab({ id: newHomeId, type: 'chat', title: '首页', closable: true })
+    const defaultCfg = settingsStore.getLLMConfig()
+    sessionStore.addTab({
+      id: newHomeId,
+      type: 'chat',
+      title: '首页',
+      closable: true,
+      provider: defaultCfg?.provider,
+      model: defaultCfg?.model,
+    })
   }
 }
 
@@ -93,12 +105,7 @@ function openRecycleBin() {
         >
           对话历史（由 #06 实现）
         </div>
-        <div
-          v-else-if="sessionStore.activeTab?.type === 'settings'"
-          class="flex h-full items-center justify-center text-text-secondary"
-        >
-          设置（由 #05 实现）
-        </div>
+        <SettingsPage v-else-if="sessionStore.activeTab?.type === 'settings'" />
         <RecycleBinPage v-else-if="sessionStore.activeTab?.type === 'recycleBin'" />
       </main>
     </div>
