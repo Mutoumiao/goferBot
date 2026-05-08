@@ -26,7 +26,7 @@ describe('loadKnowledgeBases', () => {
   it('should populate the knowledge base list', async () => {
     sidecarFetch.mockResolvedValueOnce({
       json: async () => [
-        { id: 'kb1', name: 'KB One', path: '/tmp/kb1', created_at: 1, deleted_at: null },
+        { id: 'kb1', name: 'KB One', path: '/tmp/kb1', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' },
       ],
     } as Response)
 
@@ -48,6 +48,9 @@ describe('createKnowledgeBase', () => {
         path: '/tmp/new-kb',
         created_at: Date.now(),
         deleted_at: null,
+        is_pinned: 0,
+        sort_order: 0,
+        icon: 'mdi-database',
       }),
     } as Response)
 
@@ -71,7 +74,7 @@ describe('selectKb', () => {
 
     const store = useKnowledgeBaseStore()
     store.knowledgeBases = [
-      { id: 'kb1', name: 'KB One', path: '/tmp/kb1', created_at: 1, deleted_at: null },
+      { id: 'kb1', name: 'KB One', path: '/tmp/kb1', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' },
     ]
 
     await store.selectKb('kb1')

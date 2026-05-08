@@ -36,6 +36,9 @@ export interface KnowledgeBase {
   path: string
   created_at: number
   deleted_at: number | null
+  is_pinned: number
+  sort_order: number
+  icon: string
 }
 
 export interface FileItem {

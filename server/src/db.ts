@@ -36,4 +36,15 @@ db.exec(`
   );
 `)
 
+// Migration: add is_pinned, sort_order, icon to knowledge_bases
+try {
+  db.exec(`ALTER TABLE knowledge_bases ADD COLUMN is_pinned INTEGER DEFAULT 0;`)
+} catch { /* already exists */ }
+try {
+  db.exec(`ALTER TABLE knowledge_bases ADD COLUMN sort_order INTEGER DEFAULT 0;`)
+} catch { /* already exists */ }
+try {
+  db.exec(`ALTER TABLE knowledge_bases ADD COLUMN icon TEXT DEFAULT 'mdi-database';`)
+} catch { /* already exists */ }
+
 export default db
