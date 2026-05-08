@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
+import { confirmDialog } from '@/utils/confirm'
 import FileExplorer from './FileExplorer.vue'
 import ContextMenu from './ContextMenu.vue'
 import EditKbDialog from './EditKbDialog.vue'
@@ -10,6 +11,7 @@ const store = useKnowledgeBaseStore()
 const showNewKbDialog = ref(false)
 const newKbName = ref('')
 const newKbError = ref('')
+const isCreatingKb = ref(false)
 
 // Context menu state
 const contextMenuVisible = ref(false)
@@ -48,16 +50,23 @@ function openNewKbDialog() {
 }
 
 async function confirmCreateKb() {
+  if (isCreatingKb.value) return
   const name = newKbName.value.trim()
   if (!name) {
     newKbError.value = '请输入知识库名称'
     return
   }
+  isCreatingKb.value = true
   try {
     await store.createKnowledgeBase(name)
     showNewKbDialog.value = false
+    newKbName.value = ''
+    newKbError.value = ''
   } catch {
     newKbError.value = store.error || '创建失败'
+    store.error = null
+  } finally {
+    isCreatingKb.value = false
   }
 }
 
@@ -95,7 +104,10 @@ function onEditKb() {
 
 async function onDeleteKb() {
   if (contextMenuTargetKbId.value) {
-    await store.deleteKnowledgeBase(contextMenuTargetKbId.value)
+    const kb = store.knowledgeBases.find((k) => k.id === contextMenuTargetKbId.value)
+    if (kb && (await confirmDialog(`确认将知识库「${kb.name}」移入回收站？`))) {
+      await store.deleteKnowledgeBase(contextMenuTargetKbId.value)
+    }
   }
   closeContextMenu()
 }
@@ -127,6 +139,7 @@ function onNavigateToBreadcrumb(index: number) {
 
 function onSearch(query: string) {
   if (!query.trim()) {
+    store.searchQuery = ''
     store.navigateToPath('')
     return
   }
@@ -197,7 +210,6 @@ function onCopyFile(fileName: string) {
         >
           <span :class="`i-${kb.icon || 'mdi-database'} text-lg`" />
           <span class="truncate text-sm">{{ kb.name }}</span>
-          <span v-if="kb.is_pinned" class="i-mdi-pin text-xs text-accent-400 ml-auto" />
         </div>
 
         <div v-if="store.knowledgeBases.length === 0 && !store.isLoading" class="px-2 py-4 text-center text-xs text-text-tertiary">
@@ -246,7 +258,7 @@ function onCopyFile(fileName: string) {
       <div class="py-1">
         <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onPinKb">
           <span class="i-mdi-pin text-sm" />
-          <span>{{ store.knowledgeBases.find(k => k.id === contextMenuTargetKbId)?.is_pinned ? '取消置顶' : '置顶' }}</span>
+          <span>置顶</span>
         </button>
         <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onEditKb">
           <span class="i-mdi-pencil text-sm" />
@@ -298,7 +310,13 @@ function onCopyFile(fileName: string) {
             <p v-if="newKbError" class="mt-2 text-xs text-red-400">{{ newKbError }}</p>
             <div class="mt-4 flex justify-end gap-2">
               <button class="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="showNewKbDialog = false">取消</button>
-              <button class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500" @click="confirmCreateKb">创建</button>
+              <button
+              class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500 disabled:opacity-50"
+              :disabled="isCreatingKb"
+              @click="confirmCreateKb"
+            >
+              {{ isCreatingKb ? '创建中...' : '创建' }}
+            </button>
             </div>
           </div>
         </div>

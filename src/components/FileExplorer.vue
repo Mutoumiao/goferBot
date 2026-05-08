@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
+import { confirmDialog } from '@/utils/confirm'
 import type { FileItem, SearchResultItem } from '@/types'
 import ContextMenu from './ContextMenu.vue'
 import InlineRename from './InlineRename.vue'
@@ -39,7 +40,7 @@ const displayItems = computed(() => {
   return props.files.map((f) => ({ ...f, displayPath: f.name }))
 })
 
-function onItemDoubleClick(item: FileItem | SearchResultItem) {
+function onItemClick(item: FileItem | SearchResultItem) {
   if (item.type === 'directory') {
     if ('relativePath' in item) {
       emit('openDirectory', item.relativePath)
@@ -117,9 +118,11 @@ function onRenameCancel() {
   renamingFile.value = null
 }
 
-function onDeleteClick() {
+async function onDeleteClick() {
   if (contextMenuFile.value) {
-    emit('deleteFile', contextMenuFile.value)
+    if (await confirmDialog(`确认永久删除文件「${contextMenuFile.value}」？此操作不可撤销。`)) {
+      emit('deleteFile', contextMenuFile.value)
+    }
   }
   closeFileContextMenu()
 }
@@ -204,7 +207,7 @@ function onCreateFolderClick() {
           v-for="item in displayItems"
           :key="item.name + ('relativePath' in item ? item.relativePath : '')"
           class="col-span-3 grid cursor-pointer grid-cols-subgrid items-center rounded-md px-3 py-2 transition-colors hover:bg-surface-2"
-          @dblclick="onItemDoubleClick(item)"
+          @click="onItemClick(item)"
           @contextmenu.stop="onContextMenu($event, item.name)"
         >
           <div class="flex items-center gap-2 overflow-hidden">

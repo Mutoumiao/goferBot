@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import FileExplorer from '@/components/FileExplorer.vue'
+import { confirmDialog } from '@/utils/confirm'
+
+vi.mock('@/utils/confirm')
 
 const ContextMenuStub = {
   template: '<div v-if="visible" data-testid="context-menu"><slot /></div>',
@@ -62,20 +65,20 @@ describe('FileExplorer', () => {
     expect(wrapper.text()).toContain('a/match.md')
   })
 
-  it('emits openDirectory on double-clicking a folder', async () => {
+  it('emits openDirectory on clicking a folder', async () => {
     const wrapper = mountExplorer({
       files: [{ name: 'folder1', type: 'directory', updatedAt: 1700000000000 }],
     })
-    await wrapper.find('[class*="cursor-pointer"]').trigger('dblclick')
+    await wrapper.find('[class*="cursor-pointer"]').trigger('click')
     expect(wrapper.emitted('openDirectory')).toHaveLength(1)
     expect(wrapper.emitted('openDirectory')![0]).toEqual(['folder1'])
   })
 
-  it('does not emit openDirectory on double-clicking a file', async () => {
+  it('does not emit openDirectory on clicking a file', async () => {
     const wrapper = mountExplorer({
       files: [{ name: 'doc.md', type: 'file', size: 100, updatedAt: 1700000000000 }],
     })
-    await wrapper.find('[class*="cursor-pointer"]').trigger('dblclick')
+    await wrapper.find('[class*="cursor-pointer"]').trigger('click')
     expect(wrapper.emitted('openDirectory')).toBeUndefined()
   })
 
@@ -84,7 +87,7 @@ describe('FileExplorer', () => {
       files: [{ name: 'sub', type: 'directory', updatedAt: 1700000000000 }],
       breadcrumb: ['folderA'],
     })
-    await wrapper.find('[class*="cursor-pointer"]').trigger('dblclick')
+    await wrapper.find('[class*="cursor-pointer"]').trigger('click')
     expect(wrapper.emitted('openDirectory')![0]).toEqual(['folderA/sub'])
   })
 
@@ -193,7 +196,8 @@ describe('FileExplorer', () => {
     expect(wrapper.emitted('renameFile')![0]).toEqual(['old.md', 'new'])
   })
 
-  it('emits deleteFile when clicking delete in context menu', async () => {
+  it('emits deleteFile when confirming delete in context menu', async () => {
+    vi.mocked(confirmDialog).mockResolvedValue(true)
     const wrapper = mountExplorer({
       files: [{ name: 'del.md', type: 'file', size: 100, updatedAt: 1700000000000 }],
     })
@@ -202,9 +206,27 @@ describe('FileExplorer', () => {
 
     const deleteBtn = wrapper.findAll('button').find((b) => b.text().includes('永久删除'))
     await deleteBtn!.trigger('click')
+    await flushPromises()
 
+    expect(confirmDialog).toHaveBeenCalled()
     expect(wrapper.emitted('deleteFile')).toHaveLength(1)
     expect(wrapper.emitted('deleteFile')![0]).toEqual(['del.md'])
+  })
+
+  it('does not emit deleteFile when canceling delete in context menu', async () => {
+    vi.mocked(confirmDialog).mockResolvedValue(false)
+    const wrapper = mountExplorer({
+      files: [{ name: 'del.md', type: 'file', size: 100, updatedAt: 1700000000000 }],
+    })
+    const row = wrapper.find('[class*="cursor-pointer"]')
+    await row.trigger('contextmenu')
+
+    const deleteBtn = wrapper.findAll('button').find((b) => b.text().includes('永久删除'))
+    await deleteBtn!.trigger('click')
+    await flushPromises()
+
+    expect(confirmDialog).toHaveBeenCalled()
+    expect(wrapper.emitted('deleteFile')).toBeUndefined()
   })
 
   it('emits moveFile when clicking move in context menu', async () => {

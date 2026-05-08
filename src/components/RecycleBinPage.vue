@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
+import { confirmDialog } from '@/utils/confirm'
 
 const store = useKnowledgeBaseStore()
 
@@ -8,8 +9,18 @@ onMounted(() => {
   store.loadDeletedKnowledgeBases()
 })
 
-function onRestore(id: string) {
-  store.restoreKnowledgeBase(id)
+async function onRestore(id: string) {
+  const kb = store.deletedKnowledgeBases.find((k) => k.id === id)
+  if (kb && (await confirmDialog(`确认恢复知识库「${kb.name}」？`))) {
+    store.restoreKnowledgeBase(id)
+  }
+}
+
+async function onPermanentDelete(id: string) {
+  const kb = store.deletedKnowledgeBases.find((k) => k.id === id)
+  if (kb && (await confirmDialog(`确认彻底删除知识库「${kb.name}」？此操作不可撤销。`))) {
+    store.permanentlyDeleteKnowledgeBase(id)
+  }
 }
 
 function formatDate(ts: number): string {
@@ -47,12 +58,20 @@ function formatDate(ts: number): string {
               <div class="text-xs text-text-tertiary">删除于 {{ formatDate(kb.deleted_at!) }}</div>
             </div>
           </div>
-          <button
-            class="rounded-md px-3 py-1.5 text-sm text-accent-400 transition-colors hover:bg-accent-500/10"
-            @click="onRestore(kb.id)"
-          >
-            恢复
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              class="rounded-md px-3 py-1.5 text-sm text-accent-400 transition-colors hover:bg-accent-500/10"
+              @click="onRestore(kb.id)"
+            >
+              恢复
+            </button>
+            <button
+              class="rounded-md px-3 py-1.5 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+              @click="onPermanentDelete(kb.id)"
+            >
+              彻底删除
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-shell": "^2.3.5",
     "@vue/devtools": "^8.0.5",
     "highlight.js": "^11.11.1",

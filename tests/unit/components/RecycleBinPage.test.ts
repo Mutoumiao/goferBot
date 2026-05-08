@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import RecycleBinPage from '@/components/RecycleBinPage.vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
+import { confirmDialog } from '@/utils/confirm'
+
+vi.mock('@/utils/confirm')
 
 function mountPage(storeOverrides?: Record<string, unknown>) {
   const pinia = createTestingPinia({
@@ -51,7 +54,8 @@ describe('RecycleBinPage', () => {
     expect(wrapper.text()).toContain('恢复')
   })
 
-  it('calls restoreKnowledgeBase when clicking restore', async () => {
+  it('calls restoreKnowledgeBase when confirming restore', async () => {
+    vi.mocked(confirmDialog).mockResolvedValue(true)
     const wrapper = mountPage({
       deletedKnowledgeBases: [
         { id: 'kb1', name: 'Old KB', icon: 'mdi-database', deleted_at: 1700000000000 },
@@ -59,6 +63,22 @@ describe('RecycleBinPage', () => {
     })
     const store = useKnowledgeBaseStore()
     await wrapper.find('button').trigger('click')
+    await flushPromises()
+    expect(confirmDialog).toHaveBeenCalled()
     expect(store.restoreKnowledgeBase).toHaveBeenCalledWith('kb1')
+  })
+
+  it('does not call restoreKnowledgeBase when canceling restore', async () => {
+    vi.mocked(confirmDialog).mockResolvedValue(false)
+    const wrapper = mountPage({
+      deletedKnowledgeBases: [
+        { id: 'kb1', name: 'Old KB', icon: 'mdi-database', deleted_at: 1700000000000 },
+      ],
+    })
+    const store = useKnowledgeBaseStore()
+    await wrapper.find('button').trigger('click')
+    await flushPromises()
+    expect(confirmDialog).toHaveBeenCalled()
+    expect(store.restoreKnowledgeBase).not.toHaveBeenCalled()
   })
 })
