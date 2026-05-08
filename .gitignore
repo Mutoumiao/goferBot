@@ -28,3 +28,4 @@ target/
 .worktrees/
 
 docs/design-discussions/*
+.claude/settings.local.json
