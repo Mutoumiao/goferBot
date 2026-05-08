@@ -57,7 +57,7 @@ export const useSessionStore = defineStore('session', () => {
     messages.value.set(sessionId, data.messages ?? [])
   }
 
-  async function sendMessage(content: string, config: LLMConfig) {
+  async function sendMessage(content: string, config: LLMConfig, knowledgeBaseIds?: string[]) {
     sendError.value = null
     isSending.value = true
 
@@ -75,6 +75,7 @@ export const useSessionStore = defineStore('session', () => {
         session_id: sessionId,
         role: 'user',
         content,
+        knowledge_base_ids: knowledgeBaseIds ? JSON.stringify(knowledgeBaseIds) : null,
         created_at: Date.now(),
       }
 
@@ -89,7 +90,7 @@ export const useSessionStore = defineStore('session', () => {
       const response = await sidecarFetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, sessionId, config }),
+        body: JSON.stringify({ message: content, sessionId, knowledgeBaseIds, config }),
       })
 
       if (!response.ok) {
