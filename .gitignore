@@ -30,3 +30,10 @@ target/
 docs/design-discussions/*
 .claude/settings.local.json
 bugs/*
+
+# Playwright
+tests/e2e/report/
+tests/e2e/test-results/
+playwright-report/
+test-results/
+playwright/.cache/
