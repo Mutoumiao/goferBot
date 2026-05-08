@@ -29,3 +29,4 @@ target/
 
 docs/design-discussions/*
 .claude/settings.local.json
+bugs/*
