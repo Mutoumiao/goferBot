@@ -15,7 +15,7 @@
 | 核心功能 | #02 基础对话 | closed | SSE 流式问答、会话标签管理、消息存储 |
 | 核心功能 | #03 知识库管理 | closed | CRUD、文件导入、资源管理器、回收站 |
 | 增强功能 | #03b 右键菜单与文件操作 | closed | 置顶、修改资料、新建文件夹、重命名、移动/复制、回收站页面 |
-| 核心功能 | #04 RAG 索引检索 | ready-for-agent | sqlite-vec + FTS5 混合搜索、索引队列、`@提及` 交互 |
+| 核心功能 | #04 RAG 索引检索 | closed | sqlite-vec + FTS5 混合搜索、索引队列、`@提及` 交互 |
 | 索引同步 | #04b 文件操作后索引同步 | ready-for-agent | 跨库移动/复制/重命名后的 document_chunks 同步 |
 | 配置系统 | #05 多提供商设置 | ready-for-agent | 设置页、多 LLM 配置、Embedding 配置、温度参数 |
 | 历史管理 | #06 对话历史 | ready-for-agent | 历史列表、恢复会话、删除、重命名 |
@@ -154,6 +154,7 @@
 | `02-basic-chat-test-cases.md` | #02 |
 | `03-knowledge-base-management-test-cases.md` | #03 |
 | `03b-kb-context-menus-and-file-operations-test-cases.md` | #03b |
+| `04-rag-indexing-retrieval-test-cases.md` | #04 |
 
 ---
 
