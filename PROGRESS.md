@@ -20,7 +20,7 @@
 | 配置系统 | #05 多提供商设置 | ready-for-agent | 设置页、多 LLM 配置、Embedding 配置、温度参数 |
 | 历史管理 | #06 对话历史 | ready-for-agent | 历史列表、恢复会话、删除、重命名 |
 | 本地模型 | #07 Ollama 与错误处理 | ready-for-agent | Ollama 本地模型、全局错误处理、Loading/空状态 |
-| 质量保障 | #08 测试覆盖 | ready-for-agent | 完整测试覆盖、组件测试、Store 测试、API 测试 |
+| 质量保障 | #08 测试覆盖 | in-progress | 34 个测试文件、236 条用例全部通过，持续补充中 |
 
 ---
 
@@ -80,67 +80,71 @@
   - 移动/复制弹窗：左栏知识库列表 + 右栏文件夹列表 + 面包屑导航
   - 回收站页面：已删除知识库列表 + 恢复操作
 
+### #04 RAG 索引检索
+
+- **状态**：`closed`
+- **文件**：`.scratch/knowledge-base/issues/04-rag-indexing-retrieval.md`
+- **验收标准**：全部达成
+- **关键交付**：
+  - SQLite Schema：`document_chunks` 表 + `vec_document_chunks`（sqlite-vec HNSW）+ `fts_document_chunks`（FTS5）
+  - Sidecar 启动时加载 sqlite-vec 扩展，自动创建虚拟表
+  - 后台索引队列：文件导入后自动入队，LangChain `TextLoader` + `RecursiveCharacterTextSplitter` 分块
+  - Embedding API 服务：支持 OpenAI 与 DeepSeek 提供商，自动回退默认 baseUrl
+  - 混合搜索：`vec_distance_cosine` 向量搜索 Top-5 + FTS5 全文搜索 Top-5 + RRF 融合排序
+  - 聊天集成：`POST /chat` 支持 `knowledgeBaseIds`，检索失败时通过 SSE `warning` 事件通知前端
+  - 前端 `@提及` 交互：输入 `@` 弹出知识库下拉列表，选择后渲染 pill/tag，支持多选和删除
+  - 索引进度条与文件索引状态（已索引/排队中/失败）实时显示
+  - `messages` 表增加 `knowledge_base_ids` JSON 数组字段
+
 ---
 
 ## 后续计划
 
-### 第一波：知识库增强（可并行）
+### 第一波：索引同步（依赖已解除，可立即开始）
 
-#### #03b 知识库右键菜单与文件操作
-
-- **状态**：`closed`
-- **依赖**：#03
-- **优先级**：高
-- **内容**：补齐 #03 遗漏的前端交互——知识库列表右键菜单（置顶/修改资料/删除）、文件区域右键菜单（新建文件夹/重命名/移动/复制/删除）、回收站页面入口、行内重命名编辑、移动/复制弹窗、命名冲突处理
-
-#### #04 RAG 索引检索
+#### #04b 文件操作后索引同步
 
 - **状态**：`ready-for-agent`
-- **依赖**：#02、#03
+- **依赖**：#03b（closed）、#04（closed）
 - **优先级**：高
-- **内容**：文件导入后自动索引队列、LangChain 分块、Embedding API、sqlite-vec HNSW 向量索引、FTS5 全文索引、混合搜索（RRF 融合）、前端 `@提及` 知识库交互
+- **内容**：跨库移动/复制/重命名后，同步更新 `document_chunks` / `vec_document_chunks` / `fts_document_chunks`，复用 #04 的索引队列做增量更新
 
-### 第二波：配置与历史（依赖 #04 完成后）
+### 第二波：配置与历史（可并行）
 
 #### #05 多提供商设置
 
 - **状态**：`ready-for-agent`
-- **依赖**：#02
+- **依赖**：#02（closed）
 - **优先级**：中
 - **内容**：设置页 UI、多 LLM 提供商配置（OpenAI/Claude/DeepSeek/Custom/Ollama）、Embedding 配置、温度滑块、每会话模型切换
+- **计划文档**：`docs/superpowers/plans/2026-05-08-settings-multi-provider.md`
 
 #### #06 对话历史
 
 - **状态**：`ready-for-agent`
-- **依赖**：#02
+- **依赖**：#02（closed）
 - **优先级**：中
 - **内容**：历史会话列表页、点击恢复（复用首页占位符或新建标签）、删除历史、重命名会话
+- **计划文档**：`docs/superpowers/plans/2026-05-08-chat-history.md`
 
 ### 第三波：本地化与稳定性（依赖 #05 完成后）
 
 #### #07 Ollama 本地模型与错误处理
 
 - **状态**：`ready-for-agent`
-- **依赖**：#02、#05
+- **依赖**：#02（closed）、#05
 - **优先级**：中
 - **内容**：Ollama 本地模型支持（OpenAI 兼容格式）、全局错误处理（API/网络/sidecar 不可达）、Loading 指示器、空状态引导、输入框禁用状态
 
-#### #04b 文件操作后索引同步
-
-- **状态**：`ready-for-agent`
-- **依赖**：#03、#03b、#04
-- **优先级**：中
-- **内容**：跨库移动/复制/重命名后，同步更新 `document_chunks` / `vec_document_chunks` / `fts_document_chunks`，复用 #04 的索引队列做增量更新
-
-### 第四波：质量保障（全部功能完成后）
+### 第四波：质量保障（持续进行）
 
 #### #08 测试覆盖
 
 - **状态**：`in-progress`
 - **依赖**：#01 ~ #07
-- **优先级**：低（最后执行）
+- **优先级**：低
 - **内容**：补全所有前端组件测试、Store 测试、Sidecar API 集成测试、工具函数测试，覆盖率达标（lines >= 10%, branches >= 10%）
-- **进度**：已补充 FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage 组件测试，以及 settings store、KB Store 剩余方法测试。当前 25 个测试文件，158 个用例全部通过。
+- **进度**：当前 **34 个测试文件，236 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema。
 
 ---
 
@@ -155,6 +159,8 @@
 | `03-knowledge-base-management-test-cases.md` | #03 |
 | `03b-kb-context-menus-and-file-operations-test-cases.md` | #03b |
 | `04-rag-indexing-retrieval-test-cases.md` | #04 |
+| `05-settings-multi-provider-test-cases.md` | #05 |
+| `06-chat-history-test-cases.md` | #06 |
 
 ---
 

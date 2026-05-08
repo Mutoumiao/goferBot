@@ -52,18 +52,18 @@ Category: enhancement
 - 前端 `@提及` — 输入 `@` 弹出知识库下拉列表，选择后渲染为 pill/tag，支持多选和删除
 
 **Acceptance criteria:**
-- [ ] SQLite Schema：`document_chunks` 表 + `vec_document_chunks` + `fts_document_chunks`
-- [ ] Sidecar 启动时加载 `sqlite-vec` 扩展（跨平台 `.dll`/`.dylib`/`.so`）
-- [ ] 索引队列：文件导入后自动加入队列，sidecar 后台按顺序处理
-- [ ] LangChain `TextLoader` + `RecursiveCharacterTextSplitter`（chunkSize=500, overlap=50）
-- [ ] 调用 Embedding API 获取向量，同步写入三张表/虚拟表
-- [ ] 前端索引进度条显示当前索引状态
-- [ ] 知识库管理页显示文件索引状态（已索引/排队中/失败）
-- [ ] 支持手动触发"重建索引"API
-- [ ] 前端 `@提及` 交互：输入 `@` 弹出下拉列表，选择后渲染 pill/tag，支持多选和删除
-- [ ] `POST /chat` body 支持 `knowledgeBaseIds?: string[]`
-- [ ] 混合搜索：向量搜索（语义相似）+ 全文搜索（关键词匹配）+ RRF 融合排序
-- [ ] `messages` 表增加 `knowledge_base_ids` 字段（JSON 数组格式）
+- [x] SQLite Schema：`document_chunks` 表 + `vec_document_chunks` + `fts_document_chunks`
+- [x] Sidecar 启动时加载 `sqlite-vec` 扩展（跨平台 `.dll`/`.dylib`/`.so`）
+- [x] 索引队列：文件导入后自动加入队列，sidecar 后台按顺序处理
+- [x] LangChain `TextLoader` + `RecursiveCharacterTextSplitter`（chunkSize=500, overlap=50）
+- [x] 调用 Embedding API 获取向量，同步写入三张表/虚拟表
+- [x] 前端索引进度条显示当前索引状态
+- [x] 知识库管理页显示文件索引状态（已索引/排队中/失败）
+- [x] 支持手动触发"重建索引"API
+- [x] 前端 `@提及` 交互：输入 `@` 弹出下拉列表，选择后渲染 pill/tag，支持多选和删除
+- [x] `POST /chat` body 支持 `knowledgeBaseIds?: string[]`
+- [x] 混合搜索：向量搜索（语义相似）+ 全文搜索（关键词匹配）+ RRF 融合排序
+- [x] `messages` 表增加 `knowledge_base_ids` 字段（JSON 数组格式）
 
 **Out of scope:**
 - 多提供商 Embedding 配置细节（由 #05 提供配置系统，本 issue 只需能读取配置并调用）
