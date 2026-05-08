@@ -19,7 +19,7 @@ function ensureDir(dir: string): void {
 // GET /knowledge-bases — 列出未删除的知识库
 app.get('/', (c) => {
   const rows = db
-    .prepare('SELECT * FROM knowledge_bases WHERE deleted_at IS NULL ORDER BY is_pinned DESC, sort_order DESC, created_at DESC')
+    .prepare('SELECT * FROM knowledge_bases WHERE deleted_at IS NULL ORDER BY sort_order DESC, created_at DESC')
     .all() as KnowledgeBase[]
   return c.json(rows)
 })
@@ -38,7 +38,7 @@ app.post('/', async (c) => {
     .get(name) as { id: string } | undefined
 
   if (existing) {
-    return c.json({ error: 'Knowledge base already exists' }, 409)
+    return c.json({ error: '你已存在同名的知识库' }, 409)
   }
 
   const id = nanoid()
@@ -75,7 +75,7 @@ app.patch('/:id', async (c) => {
       .prepare('SELECT id FROM knowledge_bases WHERE name = ? AND deleted_at IS NULL')
       .get(trimmed) as { id: string } | undefined
     if (conflict && conflict.id !== id) {
-      return c.json({ error: 'Name already exists' }, 409)
+      return c.json({ error: '你已存在同名的知识库' }, 409)
     }
     newName = trimmed
     newPath = path.join(DOCS_DIR, newName)
@@ -99,30 +99,35 @@ app.patch('/:id', async (c) => {
 
 // DELETE /knowledge-bases/:id — 移入回收站
 app.delete('/:id', (c) => {
-  const id = c.req.param('id')
-  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ?').get(id) as KnowledgeBase | undefined
+  try {
+    const id = c.req.param('id')
+    const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ?').get(id) as KnowledgeBase | undefined
 
-  if (!kb || kb.deleted_at) {
-    return c.json({ error: 'Not found' }, 404)
+    if (!kb || kb.deleted_at) {
+      return c.json({ error: 'Not found' }, 404)
+    }
+
+    const timestamp = Date.now()
+    const trashName = `${kb.name}-${timestamp}`
+    const trashPath = path.join(TRASH_DIR, trashName)
+
+    ensureDir(TRASH_DIR)
+
+    if (fs.existsSync(kb.path)) {
+      fs.renameSync(kb.path, trashPath)
+    }
+
+    db.prepare('UPDATE knowledge_bases SET path = ?, deleted_at = ? WHERE id = ?').run(
+      trashPath,
+      timestamp,
+      id
+    )
+
+    return c.json({ success: true })
+  } catch (err) {
+    console.error('Delete knowledge base error:', err)
+    return c.json({ error: '删除失败', detail: String(err) }, 500)
   }
-
-  const timestamp = Date.now()
-  const trashName = `${kb.name}-${timestamp}`
-  const trashPath = path.join(TRASH_DIR, trashName)
-
-  ensureDir(TRASH_DIR)
-
-  if (fs.existsSync(kb.path)) {
-    fs.renameSync(kb.path, trashPath)
-  }
-
-  db.prepare('UPDATE knowledge_bases SET path = ?, deleted_at = ? WHERE id = ?').run(
-    trashPath,
-    timestamp,
-    id
-  )
-
-  return c.json({ success: true })
 })
 
 // POST /knowledge-bases/:id/restore — 从回收站恢复
@@ -136,10 +141,23 @@ app.post('/:id/restore', (c) => {
 
   let targetName = kb.name
   let targetPath = path.join(DOCS_DIR, targetName)
+  let counter = 1
 
-  if (fs.existsSync(targetPath)) {
-    targetName = `${kb.name}-副本`
+  // 同时避免数据库名称冲突和物理目录冲突
+  while (true) {
+    const conflict = db
+      .prepare('SELECT id FROM knowledge_bases WHERE name = ? AND deleted_at IS NULL')
+      .get(targetName) as { id: string } | undefined
+    const pathExists = fs.existsSync(targetPath)
+    if ((!conflict || conflict.id === id) && !pathExists) {
+      break
+    }
+    targetName = `${kb.name}-副本${counter > 1 ? `(${counter})` : ''}`
     targetPath = path.join(DOCS_DIR, targetName)
+    counter++
+    if (counter > 100) {
+      return c.json({ error: '无法找到可用名称' }, 500)
+    }
   }
 
   if (fs.existsSync(kb.path)) {
@@ -451,6 +469,26 @@ app.get('/deleted', (c) => {
     .prepare('SELECT * FROM knowledge_bases WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC')
     .all() as KnowledgeBase[]
   return c.json(rows)
+})
+
+// DELETE /knowledge-bases/:id/permanent — permanently delete knowledge base
+app.delete('/:id/permanent', (c) => {
+  const id = c.req.param('id')
+  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ?').get(id) as KnowledgeBase | undefined
+
+  if (!kb || !kb.deleted_at) {
+    return c.json({ error: 'Not found or not in recycle bin' }, 404)
+  }
+
+  // 删除物理目录（如果在 .trash/ 中）
+  if (fs.existsSync(kb.path)) {
+    fs.rmSync(kb.path, { recursive: true, force: true })
+  }
+
+  // 从数据库物理删除
+  db.prepare('DELETE FROM knowledge_bases WHERE id = ?').run(id)
+
+  return c.json({ success: true })
 })
 
 // DELETE /knowledge-bases/:id/files/:path — permanently delete file

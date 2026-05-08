@@ -29,7 +29,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS knowledge_bases (
     id TEXT PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
     path TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     deleted_at INTEGER
@@ -46,5 +46,47 @@ try {
 try {
   db.exec(`ALTER TABLE knowledge_bases ADD COLUMN icon TEXT DEFAULT 'mdi-database';`)
 } catch { /* already exists */ }
+
+// Migration: remove table-level UNIQUE constraint on knowledge_bases.name
+// and replace with a partial unique index (only active / non-deleted rows)
+function migrateKnowledgeBaseUniqueConstraint(): void {
+  const indexes = db.prepare("PRAGMA index_list('knowledge_bases')").all() as Array<{
+    name: string
+    unique: number
+    origin: string
+  }>
+
+  const autoUniqueIndex = indexes.find(
+    (idx) => idx.unique === 1 && idx.origin === 'u'
+  )
+  if (autoUniqueIndex) {
+    const cols = db
+      .prepare(`PRAGMA index_info('${autoUniqueIndex.name}')`)
+      .all() as Array<{ name: string }>
+    if (cols.some((c) => c.name === 'name')) {
+      db.exec(`
+        CREATE TABLE knowledge_bases_new (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          path TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          deleted_at INTEGER,
+          is_pinned INTEGER DEFAULT 0,
+          sort_order INTEGER DEFAULT 0,
+          icon TEXT DEFAULT 'mdi-database'
+        );
+        INSERT INTO knowledge_bases_new SELECT * FROM knowledge_bases;
+        DROP TABLE knowledge_bases;
+        ALTER TABLE knowledge_bases_new RENAME TO knowledge_bases;
+      `)
+    }
+  }
+
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_kb_name_active ON knowledge_bases(name) WHERE deleted_at IS NULL;
+  `)
+}
+
+migrateKnowledgeBaseUniqueConstraint()
 
 export default db
