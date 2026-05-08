@@ -130,8 +130,8 @@ export function deleteFileChunks(knowledgeBaseId: string, relativePath: string):
 
   for (const row of rows) {
     db.prepare('DELETE FROM document_chunks WHERE id = ?').run(row.id)
-    db.prepare('DELETE FROM vec_document_chunks WHERE chunk_id = ?').run(row.id)
-    db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?').run(row.id)
+    try { db.prepare('DELETE FROM vec_document_chunks WHERE chunk_id = ?').run(row.id) } catch { /* ignore */ }
+    try { db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?').run(row.id) } catch { /* ignore */ }
   }
 }
 
@@ -165,8 +165,8 @@ export function syncFtsFilePaths(
 
   for (const row of rows) {
     const newFilePath = newPathPrefix + row.file_path.slice(oldPathPrefix.length)
-    deleteFts.run(row.id)
-    insertFts.run(row.id, row.content, newFilePath)
+    try { deleteFts.run(row.id) } catch { /* ignore */ }
+    try { insertFts.run(row.id, row.content, newFilePath) } catch { /* ignore */ }
   }
 }
 
