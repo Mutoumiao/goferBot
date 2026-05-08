@@ -202,7 +202,9 @@ knowledge-base/
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | 架构说明与模块职责 |
 | [`docs/prd-v1.md`](./docs/prd-v1.md) | 产品需求文档（PRD）v1 |
 | [`docs/adr/`](./docs/adr/) | 架构决策记录（ADR） |
+| [`docs/test-cases/`](./docs/test-cases/) | 测试用例（按 Issue 编号独立文件，如 `01-*.md`、`03b-*.md`） |
 | [`.scratch/knowledge-base/issues/`](./.scratch/knowledge-base/issues/) | Issue 跟踪（含验收标准与依赖声明） |
+| [`PROGRESS.md`](./PROGRESS.md) | 项目进度追踪（Issue 执行状态与后续开发计划） |
 
 ---
 

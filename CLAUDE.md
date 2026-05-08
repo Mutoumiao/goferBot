@@ -34,12 +34,14 @@
 │   ├── adr/                      # 架构决策记录（Architecture Decision Records）
 │   ├── superpowers/plans/        # 功能执行计划（按日期组织的实现方案）
 │   ├── design-discussions/       # 设计讨论记录
+│   ├── test-cases/               # 测试用例（按 Issue 编号独立文件，如 01-*.md、03b-*.md）
 │   └── prd-v1.md                 # 产品需求文档
 ├── .scratch/                     # 临时工作区（不纳入版本控制核心）
 │   └── knowledge-base/
 │       ├── PRD.md                # 产品需求总纲
 │       └── issues/               # Issue 跟踪（01-sidecar-startup ~ 08-test-coverage）
 ├── public/                       # 公共资源
+├── PROGRESS.md                   # 项目进度追踪（Issue 执行状态与后续计划）
 ├── vite.config.ts                # Vite 配置
 ├── vitest.config.ts              # Vitest 配置
 └── package.json                  # 前端依赖
@@ -111,3 +113,4 @@ Agent **必须**使用 Bash/POSIX 语法，禁止 PowerShell 特有语法（`$en
 - **Domain docs**：单上下文仓库，`CONTEXT.md` 和 `docs/adr/` 位于根目录。详见 `docs/agents/domain.md`。
 - **ADR**：`docs/adr/` 目录下的编号决策记录（如 `0001-*.md`）。涉及架构变动前应先查阅。
 - **执行计划**：`docs/superpowers/plans/` 目录下按日期组织的实现方案（`YYYY-MM-DD-<feature>.md`）。执行前应先阅读。
+- **进度追踪**：`PROGRESS.md` 记录所有 Issue 的执行状态与后续计划，开发前应先查阅当前进度。
