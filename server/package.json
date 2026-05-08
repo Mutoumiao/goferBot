@@ -9,9 +9,12 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
+    "@langchain/textsplitters": "^0.1.0",
     "better-sqlite3": "^12.9.0",
     "hono": "^4.7.0",
-    "nanoid": "^5.1.11"
+    "langchain": "^0.3.0",
+    "nanoid": "^5.1.11",
+    "sqlite-vec": "^0.1.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
