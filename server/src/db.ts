@@ -117,4 +117,14 @@ try {
   db.exec(`ALTER TABLE messages ADD COLUMN knowledge_base_ids TEXT;`)
 } catch { /* already exists */ }
 
+export async function loadVectorExtensions(): Promise<void> {
+  try {
+    const sqliteVec = await import('sqlite-vec')
+    sqliteVec.load(db)
+    console.log('[db] sqlite-vec extension loaded')
+  } catch (err) {
+    console.error('[db] Failed to load sqlite-vec extension:', err)
+  }
+}
+
 export default db

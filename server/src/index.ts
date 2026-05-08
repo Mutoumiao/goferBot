@@ -8,6 +8,8 @@ import chatRoutes from './routes/chat.js'
 import sessionRoutes from './routes/sessions.js'
 import knowledgeBaseRoutes from './routes/knowledgeBases.js'
 import { syncKnowledgeBasesFromDisk } from './sync.js'
+import { loadVectorExtensions } from './db.js'
+import db from './db.js'
 
 const DEFAULT_PORT = 11451
 const MAX_PORT_ATTEMPTS = 100
@@ -46,6 +48,33 @@ async function main(): Promise<void> {
   writePortFile(port)
 
   syncKnowledgeBasesFromDisk()
+
+  // 启动时加载 sqlite-vec 扩展并创建虚拟表
+  await loadVectorExtensions()
+
+  try {
+    db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS vec_document_chunks USING vec0(
+        chunk_id TEXT PRIMARY KEY,
+        embedding FLOAT[1536]
+      );
+    `)
+  } catch (e) {
+    console.warn('[db] vec_document_chunks creation skipped (sqlite-vec may not be available):', (e as Error).message)
+  }
+
+  try {
+    db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
+        content,
+        file_path,
+        content='document_chunks',
+        content_rowid='id'
+      );
+    `)
+  } catch (e) {
+    console.warn('[db] fts_document_chunks creation skipped:', (e as Error).message)
+  }
 
   const app = new Hono()
 
