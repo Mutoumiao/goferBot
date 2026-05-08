@@ -245,6 +245,12 @@ function onCopyFile(fileName: string) {
         <span class="shrink-0 text-[11px] text-text-tertiary">
           {{ store.indexStatus.get(store.selectedKbId)?.indexedFiles }}/{{ store.indexStatus.get(store.selectedKbId)?.totalFiles }}
         </span>
+        <span
+          v-if="store.indexStatus.get(store.selectedKbId)?.pendingFiles"
+          class="shrink-0 text-[11px] text-text-tertiary"
+        >
+          队列中 {{ store.indexStatus.get(store.selectedKbId)?.pendingFiles }} 个文件待处理
+        </span>
       </div>
 
       <FileExplorer

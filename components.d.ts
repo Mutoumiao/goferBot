@@ -21,6 +21,8 @@ declare module 'vue' {
     FileExplorer: typeof import('./src/components/FileExplorer.vue')['default']
     GreetComponent: typeof import('./src/components/GreetComponent.vue')['default']
     InlineRename: typeof import('./src/components/InlineRename.vue')['default']
+    KbMentionDropdown: typeof import('./src/components/KbMentionDropdown.vue')['default']
+    KbMentionPill: typeof import('./src/components/KbMentionPill.vue')['default']
     KnowledgeBasePage: typeof import('./src/components/KnowledgeBasePage.vue')['default']
     MarkdownRender: typeof import('./src/components/MarkdownRender.vue')['default']
     MoveCopyDialog: typeof import('./src/components/MoveCopyDialog.vue')['default']
