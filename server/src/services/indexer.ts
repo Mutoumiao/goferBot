@@ -143,22 +143,22 @@ export function updateChunkFilePaths(
   newPath: string
 ): void {
   db.prepare(
-    `UPDATE document_chunks SET file_path = ? || SUBSTR(file_path, LENGTH(?) + 1)
-     WHERE knowledge_base_id = ? AND file_path LIKE ? || '%'`
-  ).run(newPath, oldPath, knowledgeBaseId, oldPath)
+    `UPDATE document_chunks SET file_path = ?
+     WHERE knowledge_base_id = ? AND file_path = ?`
+  ).run(newPath, knowledgeBaseId, oldPath)
 }
 
 export function syncFtsFilePaths(
   knowledgeBaseId: string,
-  oldPathPrefix: string,
-  newPathPrefix: string
+  oldPath: string,
+  newPath: string
 ): void {
   const rows = db
     .prepare(
       `SELECT id, content, file_path FROM document_chunks
-       WHERE knowledge_base_id = ? AND file_path LIKE ?`
+       WHERE knowledge_base_id = ? AND file_path = ?`
     )
-    .all(knowledgeBaseId, `${oldPathPrefix}%`) as Array<{ id: string; content: string; file_path: string }>
+    .all(knowledgeBaseId, oldPath) as Array<{ id: string; content: string; file_path: string }>
 
   const deleteFts = db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?')
   const insertFts = db.prepare(
@@ -166,9 +166,8 @@ export function syncFtsFilePaths(
   )
 
   for (const row of rows) {
-    const newFilePath = newPathPrefix + row.file_path.slice(oldPathPrefix.length)
     try { deleteFts.run(row.id) } catch { /* ignore */ }
-    try { insertFts.run(row.id, row.content, newFilePath) } catch { /* ignore */ }
+    try { insertFts.run(row.id, row.content, newPath) } catch { /* ignore */ }
   }
 }
 

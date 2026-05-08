@@ -174,7 +174,7 @@ describe('PATCH /knowledge-bases/:id/files/:path', () => {
 })
 
 describe('PATCH /knowledge-bases/:id', () => {
-  it('should update document_chunks.file_path prefix after kb rename', async () => {
+  it('should not modify document_chunks.file_path on kb rename', async () => {
     const createRes = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -182,7 +182,7 @@ describe('PATCH /knowledge-bases/:id', () => {
     })
     const kb = (await createRes.json()) as { id: string }
 
-    insertFakeChunk(kb.id, 'OldKb/notes.md', 'notes content')
+    insertFakeChunk(kb.id, 'notes.md', 'notes content')
 
     const patchRes = await app.request(`/${kb.id}`, {
       method: 'PATCH',
@@ -194,6 +194,6 @@ describe('PATCH /knowledge-bases/:id', () => {
     const row = db.prepare('SELECT file_path FROM document_chunks WHERE knowledge_base_id = ?').get(kb.id) as
       | { file_path: string }
       | undefined
-    expect(row?.file_path).toBe('NewKb/notes.md')
+    expect(row?.file_path).toBe('notes.md')
   })
 })

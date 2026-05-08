@@ -83,11 +83,6 @@ app.patch('/:id', async (c) => {
       ensureDir(DOCS_DIR)
       fs.renameSync(kb.path, newPath)
     }
-
-    // Sync index file_path prefixes
-    const { updateChunkFilePaths, syncFtsFilePaths } = await import('../services/indexer.js')
-    updateChunkFilePaths(id, `${kb.name}/`, `${newName}/`)
-    syncFtsFilePaths(id, `${kb.name}/`, `${newName}/`)
   }
 
   const icon = body.icon !== undefined ? body.icon : kb.icon
