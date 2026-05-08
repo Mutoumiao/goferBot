@@ -83,6 +83,11 @@ app.patch('/:id', async (c) => {
       ensureDir(DOCS_DIR)
       fs.renameSync(kb.path, newPath)
     }
+
+    // Sync index file_path prefixes
+    const { updateChunkFilePaths, syncFtsFilePaths } = await import('../services/indexer.js')
+    updateChunkFilePaths(id, `${kb.name}/`, `${newName}/`)
+    syncFtsFilePaths(id, `${kb.name}/`, `${newName}/`)
   }
 
   const icon = body.icon !== undefined ? body.icon : kb.icon
@@ -377,6 +382,12 @@ app.patch('/:id/files/*', async (c) => {
 
   fs.renameSync(oldFullPath, newFullPath)
 
+  const { updateChunkFilePaths, syncFtsFilePaths } = await import('../services/indexer.js')
+  const oldRelativePath = filePath
+  const newRelativePath = dir === '.' ? newFileName : `${dir}/${newFileName}`
+  updateChunkFilePaths(id, oldRelativePath, newRelativePath)
+  syncFtsFilePaths(id, oldRelativePath, newRelativePath)
+
   return c.json({ name: newFileName, path: dir === '.' ? newFileName : `${dir}/${newFileName}` })
 })
 
@@ -430,6 +441,21 @@ app.post('/move', async (c) => {
 
   fs.renameSync(srcFullPath, dstFullPath)
 
+  const { deleteFileChunks, enqueueIndexTask } = await import('../services/indexer.js')
+
+  // Delete source index
+  deleteFileChunks(body.sourceKbId, body.sourcePath)
+
+  // Queue target index
+  const dstRelativePath = body.targetPath
+    ? `${body.targetPath}/${fileName}`
+    : fileName
+  enqueueIndexTask({
+    knowledgeBaseId: body.targetKbId,
+    filePath: dstFullPath,
+    relativePath: dstRelativePath,
+  })
+
   return c.json({ success: true })
 })
 
@@ -470,6 +496,16 @@ app.post('/copy', async (c) => {
   const dstFullPath = path.join(dstDir, uniqueName)
 
   fs.copyFileSync(srcFullPath, dstFullPath)
+
+  const { enqueueIndexTask } = await import('../services/indexer.js')
+  const dstRelativePath = body.targetPath
+    ? `${body.targetPath}/${uniqueName}`
+    : uniqueName
+  enqueueIndexTask({
+    knowledgeBaseId: body.targetKbId,
+    filePath: dstFullPath,
+    relativePath: dstRelativePath,
+  })
 
   return c.json({ success: true, name: uniqueName })
 })
