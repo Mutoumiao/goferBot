@@ -198,6 +198,40 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     }
   }
 
+  async function moveFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
+    error.value = null
+    try {
+      const res = await sidecarFetch('/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceKbId, sourcePath, targetKbId, targetPath }),
+      })
+      if (!res.ok) throw new Error('移动失败')
+      if (selectedKbId.value === sourceKbId || selectedKbId.value === targetKbId) {
+        await loadFiles(currentPath.value)
+      }
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function copyFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
+    error.value = null
+    try {
+      const res = await sidecarFetch('/copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceKbId, sourcePath, targetKbId, targetPath }),
+      })
+      if (!res.ok) throw new Error('复制失败')
+      if (selectedKbId.value === targetKbId) {
+        await loadFiles(currentPath.value)
+      }
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
   return {
     knowledgeBases,
     selectedKbId,
@@ -224,5 +258,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     goBack,
     goForward,
     importFiles,
+    moveFile,
+    copyFile,
   }
 })
