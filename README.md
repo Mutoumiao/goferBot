@@ -64,15 +64,7 @@
 
 ## 架构决策（ADR）
 
-本项目所有重大架构决策均通过 **ADR（Architecture Decision Records）** 形式记录，确保设计意图可追踪、可复盘：
-
-| ADR | 决策 | 状态 |
-|-----|------|------|
-| [ADR-0001](docs/adr/0001-node-sidecar-architecture.md) | 引入 Node.js Hono Sidecar 作为业务层 | Accepted |
-| [ADR-0002](docs/adr/0002-rag-vector-storage.md) | SQLite + `sqlite-vec` HNSW + FTS5 混合搜索 | Accepted |
-| [ADR-0003](docs/adr/0003-file-operations-index-sync.md) | 文件操作后即时同步 RAG 索引 | Accepted |
-
----
+本项目所有重大架构决策均通过 **ADR（Architecture Decision Records）** 形式记录，确保设计意图可追踪、可复盘。
 
 ## Harness Engineering 实践
 
