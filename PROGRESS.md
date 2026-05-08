@@ -16,7 +16,7 @@
 | 核心功能 | #03 知识库管理 | closed | CRUD、文件导入、资源管理器、回收站 |
 | 增强功能 | #03b 右键菜单与文件操作 | closed | 置顶、修改资料、新建文件夹、重命名、移动/复制、回收站页面 |
 | 核心功能 | #04 RAG 索引检索 | closed | sqlite-vec + FTS5 混合搜索、索引队列、`@提及` 交互 |
-| 索引同步 | #04b 文件操作后索引同步 | ready-for-agent | 跨库移动/复制/重命名后的 document_chunks 同步 |
+| 索引同步 | #04b 文件操作后索引同步 | closed | 跨库移动/复制/重命名后的 document_chunks 同步 |
 | 配置系统 | #05 多提供商设置 | ready-for-agent | 设置页、多 LLM 配置、Embedding 配置、温度参数 |
 | 历史管理 | #06 对话历史 | ready-for-agent | 历史列表、恢复会话、删除、重命名 |
 | 本地模型 | #07 Ollama 与错误处理 | ready-for-agent | Ollama 本地模型、全局错误处理、Loading/空状态 |
@@ -96,18 +96,20 @@
   - 索引进度条与文件索引状态（已索引/排队中/失败）实时显示
   - `messages` 表增加 `knowledge_base_ids` JSON 数组字段
 
+### #04b 文件操作后索引同步
+
+- **状态**：`closed`
+- **文件**：`.scratch/knowledge-base/issues/04b-index-sync-for-file-operations.md`
+- **验收标准**：全部达成（经 code review 修正知识库重命名逻辑）
+- **关键交付**：
+  - `indexer.ts`：`deleteFileChunks`（导出）、`updateChunkFilePaths`、`syncFtsFilePaths`
+  - `knowledgeBases.ts`：`POST /move` 删除源索引+目标入队、`POST /copy` 目标入队、`PATCH /:id/files/*` 更新 file_path
+  - `indexSync.test.ts`：覆盖移动/复制/文件重命名/知识库重命名四种场景
+  - 修复：`indexFile` 文件不存在时静默跳过、测试环境 `db.close()` 与 Windows `EBUSY` 冲突
+
 ---
 
 ## 后续计划
-
-### 第一波：索引同步（依赖已解除，可立即开始）
-
-#### #04b 文件操作后索引同步
-
-- **状态**：`ready-for-agent`
-- **依赖**：#03b（closed）、#04（closed）
-- **优先级**：高
-- **内容**：跨库移动/复制/重命名后，同步更新 `document_chunks` / `vec_document_chunks` / `fts_document_chunks`，复用 #04 的索引队列做增量更新
 
 ### 第二波：配置与历史（可并行）
 

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: closed
 Category: enhancement
 
 ## What to build
@@ -14,13 +14,13 @@ Category: enhancement
 
 ## Acceptance criteria
 
-- [ ] Sidecar：`POST /files/move` 处理完成后，将源文件从源知识库的 `document_chunks` + `vec_document_chunks` + `fts_document_chunks` 中移除，将文件加入目标知识库的索引队列
-- [ ] Sidecar：`POST /files/copy` 处理完成后，将副本加入目标知识库的索引队列
-- [ ] Sidecar：知识库重命名（`PATCH /knowledge-bases/:id` 名称变更）后，同步更新 `document_chunks` 表中该知识库所有记录的 `file_path` 前缀（`docs/<旧名>/...` → `docs/<新名>/...`），同时更新 `vec_document_chunks` 和 `fts_document_chunks` 中的关联记录
-- [ ] Sidecar：文件重命名（`PATCH /knowledge-bases/:id/files/:path`）后，同步更新 `document_chunks` 表中对应记录的 `file_path`
-- [ ] 前端：跨库移动/复制后，目标知识库管理页显示新增文件的索引状态（排队中/已索引）
-- [ ] 前端：知识库重命名和文件重命名后，知识库管理页的文件索引状态保持一致
-- [ ] 索引队列需支持"增量更新"模式：对于移动/复制/重命名的文件，避免全量重建索引，只做必要的删除+重新索引
+- [x] Sidecar：`POST /files/move` 处理完成后，将源文件从源知识库的 `document_chunks` + `vec_document_chunks` + `fts_document_chunks` 中移除，将文件加入目标知识库的索引队列
+- [x] Sidecar：`POST /files/copy` 处理完成后，将副本加入目标知识库的索引队列
+- [x] Sidecar：知识库重命名（`PATCH /knowledge-bases/:id` 名称变更）后，`document_chunks.file_path` 存储相对路径不受知识库目录重命名影响，无需同步更新（经 code review 确认）
+- [x] Sidecar：文件重命名（`PATCH /knowledge-bases/:id/files/:path`）后，同步更新 `document_chunks` 表中对应记录的 `file_path`
+- [x] 前端：跨库移动/复制后，目标知识库管理页显示新增文件的索引状态（排队中/已索引）——复用 #04 已有索引进度机制
+- [x] 前端：知识库重命名和文件重命名后，知识库管理页的文件索引状态保持一致
+- [x] 索引队列需支持"增量更新"模式：对于移动/复制/重命名的文件，避免全量重建索引，只做必要的删除+重新索引
 
 ## Blocked by
 
@@ -49,11 +49,11 @@ Category: enhancement
 - `POST /files/move` / `POST /files/copy` / `PATCH /knowledge-bases/:id` / `PATCH /knowledge-bases/:id/files/:path` — #03b 已实现的 API，本 issue 在其 handler 中补充索引同步逻辑
 
 **Acceptance criteria:**
-- [ ] 跨库移动：源知识库移除索引，目标知识库重新索引
-- [ ] 跨库复制：目标知识库重新索引副本
-- [ ] 知识库重命名：同步更新所有 `document_chunks.file_path` 前缀
-- [ ] 文件重命名：同步更新对应 `document_chunks.file_path`
-- [ ] 前端显示索引进度状态
+- [x] 跨库移动：源知识库移除索引，目标知识库重新索引
+- [x] 跨库复制：目标知识库重新索引副本
+- [x] 知识库重命名：`document_chunks.file_path` 存储相对路径，不受知识库目录重命名影响（经 code review 确认）
+- [x] 文件重命名：同步更新对应 `document_chunks.file_path`
+- [x] 前端显示索引进度状态
 
 **Out of scope:**
 - 新的前端页面或 UI 组件（由 #03b 提供）
