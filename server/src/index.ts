@@ -7,6 +7,7 @@ import { getAppDataDir } from './utils.js'
 import chatRoutes from './routes/chat.js'
 import sessionRoutes from './routes/sessions.js'
 import knowledgeBaseRoutes from './routes/knowledgeBases.js'
+import { syncKnowledgeBasesFromDisk } from './sync.js'
 
 const DEFAULT_PORT = 11451
 const MAX_PORT_ATTEMPTS = 100
@@ -44,7 +45,14 @@ async function main(): Promise<void> {
   const port = await findAvailablePort(DEFAULT_PORT)
   writePortFile(port)
 
+  syncKnowledgeBasesFromDisk()
+
   const app = new Hono()
+
+  app.onError((err, c) => {
+    console.error('Hono error:', err)
+    return c.json({ error: 'Internal server error' }, 500)
+  })
 
   app.use('*', async (c, next) => {
     c.header('Access-Control-Allow-Origin', '*')
@@ -76,4 +84,12 @@ async function main(): Promise<void> {
 main().catch((err) => {
   console.error('Failed to start sidecar:', err)
   process.exit(1)
+})
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err)
+})
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason)
 })

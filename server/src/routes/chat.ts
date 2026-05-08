@@ -42,23 +42,28 @@ app.post('/', async (c) => {
   return streamSSE(c, async (stream) => {
     let assistantContent = ''
 
-    await streamChatCompletion(history, config, async (chunk) => {
-      assistantContent += chunk
-      await stream.writeSSE({ data: JSON.stringify({ content: chunk }) })
-    })
+    try {
+      await streamChatCompletion(history, config, async (chunk) => {
+        assistantContent += chunk
+        await stream.writeSSE({ data: JSON.stringify({ content: chunk }) })
+      })
 
-    // Save assistant message after stream completes
-    const assistantId = nanoid()
-    db.prepare(
-      'INSERT INTO messages (id, session_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)'
-    ).run(assistantId, sessionId, 'assistant', assistantContent, Date.now())
+      // Save assistant message after stream completes
+      const assistantId = nanoid()
+      db.prepare(
+        'INSERT INTO messages (id, session_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(assistantId, sessionId, 'assistant', assistantContent, Date.now())
 
-    db.prepare('UPDATE sessions SET updated_at = ?, message_count = message_count + 1 WHERE id = ?').run(
-      Date.now(),
-      sessionId
-    )
-
-    await stream.close()
+      db.prepare('UPDATE sessions SET updated_at = ?, message_count = message_count + 1 WHERE id = ?').run(
+        Date.now(),
+        sessionId
+      )
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Stream error'
+      await stream.writeSSE({ event: 'error', data: JSON.stringify({ error: message }) })
+    } finally {
+      await stream.close()
+    }
   })
 })
 
