@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import type { AppConfig } from '@/types'
 
 const store = useSettingsStore()
 
@@ -24,23 +25,28 @@ const embeddingProviders = [
 
 const hasChanges = ref(false)
 
+const localConfig = reactive<AppConfig>(JSON.parse(JSON.stringify(store.config)))
+
+watch(
+  () => store.config,
+  (newVal) => {
+    Object.assign(localConfig, JSON.parse(JSON.stringify(newVal)))
+  },
+  { deep: true },
+)
+
 function markChanged() {
   hasChanges.value = true
 }
 
 async function handleSave() {
-  await store.saveConfig({
-    providers: { ...store.config.providers },
-    embeddingProvider: { ...store.config.embeddingProvider },
-    temperature: store.config.temperature,
-    defaultChatProvider: store.config.defaultChatProvider,
-  })
+  await store.saveConfig(JSON.parse(JSON.stringify(localConfig)))
   hasChanges.value = false
 }
 
 const defaultProviderOptions = computed(() =>
   llmProviderKeys
-    .filter((k) => k !== 'ollama' || store.config.providers.ollama.enabled)
+    .filter((k) => k !== 'ollama' || localConfig.providers.ollama.enabled)
     .map((k) => ({ value: k, label: llmProviderLabels[k] })),
 )
 </script>
@@ -91,17 +97,17 @@ const defaultProviderOptions = computed(() =>
             <button
               :class="[
                 'relative h-5 w-9 rounded-full transition-colors',
-                store.config.providers.ollama.enabled ? 'bg-accent-500' : 'bg-surface-4',
+                localConfig.providers.ollama.enabled ? 'bg-accent-500' : 'bg-surface-4',
               ]"
               @click="
-                store.config.providers.ollama.enabled = !store.config.providers.ollama.enabled;
+                localConfig.providers.ollama.enabled = !localConfig.providers.ollama.enabled;
                 markChanged()
               "
             >
               <span
                 :class="[
                   'absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform',
-                  store.config.providers.ollama.enabled ? 'left-4.5 translate-x-0' : 'left-0.5',
+                  localConfig.providers.ollama.enabled ? 'left-4.5 translate-x-0' : 'left-0.5',
                 ]"
               />
             </button>
@@ -111,7 +117,7 @@ const defaultProviderOptions = computed(() =>
           <div v-if="activeLlmTab !== 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">API Key</label>
             <input
-              v-model="store.config.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].apiKey"
+              v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].apiKey"
               type="password"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入 API Key"
@@ -123,7 +129,7 @@ const defaultProviderOptions = computed(() =>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">模型</label>
             <input
-              v-model="store.config.providers[activeLlmTab].model"
+              v-model="localConfig.providers[activeLlmTab].model"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入模型名称"
@@ -135,7 +141,7 @@ const defaultProviderOptions = computed(() =>
           <div v-if="activeLlmTab !== 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">Base URL</label>
             <input
-              v-model="store.config.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].baseUrl"
+              v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].baseUrl"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="留空使用默认地址"
@@ -147,7 +153,7 @@ const defaultProviderOptions = computed(() =>
           <div v-if="activeLlmTab === 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">服务地址</label>
             <input
-              v-model="store.config.providers.ollama.url"
+              v-model="localConfig.providers.ollama.url"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="http://localhost:11434"
@@ -160,7 +166,7 @@ const defaultProviderOptions = computed(() =>
         <div class="mt-5 border-t border-border-default pt-4">
           <label class="mb-1 block text-sm text-text-secondary">默认对话提供商</label>
           <select
-            v-model="store.config.defaultChatProvider"
+            v-model="localConfig.defaultChatProvider"
             class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
             @change="markChanged"
           >
@@ -184,7 +190,7 @@ const defaultProviderOptions = computed(() =>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">提供商</label>
             <select
-              v-model="store.config.embeddingProvider.provider"
+              v-model="localConfig.embeddingProvider.provider"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               @change="markChanged"
             >
@@ -200,7 +206,7 @@ const defaultProviderOptions = computed(() =>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">API Key</label>
             <input
-              v-model="store.config.embeddingProvider.apiKey"
+              v-model="localConfig.embeddingProvider.apiKey"
               type="password"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入 API Key"
@@ -210,7 +216,7 @@ const defaultProviderOptions = computed(() =>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">模型</label>
             <input
-              v-model="store.config.embeddingProvider.model"
+              v-model="localConfig.embeddingProvider.model"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入模型名称"
@@ -220,7 +226,7 @@ const defaultProviderOptions = computed(() =>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">Base URL</label>
             <input
-              v-model="store.config.embeddingProvider.baseUrl"
+              v-model="localConfig.embeddingProvider.baseUrl"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="留空使用默认地址"
@@ -238,10 +244,10 @@ const defaultProviderOptions = computed(() =>
         <div>
           <div class="mb-2 flex items-center justify-between">
             <label class="text-sm text-text-secondary">温度参数</label>
-            <span class="text-sm font-medium text-text-primary">{{ store.config.temperature.toFixed(1) }}</span>
+            <span class="text-sm font-medium text-text-primary">{{ localConfig.temperature.toFixed(1) }}</span>
           </div>
           <input
-            v-model.number="store.config.temperature"
+            v-model.number="localConfig.temperature"
             type="range"
             min="0"
             max="2"

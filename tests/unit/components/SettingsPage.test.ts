@@ -29,13 +29,12 @@ describe('SettingsPage', () => {
 
   it('changing temperature marks dirty and save button becomes enabled', async () => {
     const wrapper = mount(SettingsPage)
-    const store = useSettingsStore()
 
     const saveBtn = wrapper.find('button:disabled')
     expect(saveBtn.exists()).toBe(true)
 
-    store.config.temperature = 1.5
-    await wrapper.find('input[type="range"]').trigger('input')
+    const range = wrapper.find('input[type="range"]')
+    await range.setValue('1.5')
 
     const enabledSave = wrapper.find('button:not(:disabled)')
     expect(enabledSave.text()).toBe('保存')

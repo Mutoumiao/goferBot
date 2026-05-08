@@ -38,6 +38,9 @@ export const useSettingsStore = defineStore('settings', () => {
       ...config.value,
       ...updates,
       providers: updates.providers ? { ...config.value.providers, ...updates.providers } : config.value.providers,
+      embeddingProvider: updates.embeddingProvider
+        ? { ...config.value.embeddingProvider, ...updates.embeddingProvider }
+        : config.value.embeddingProvider,
     } as AppConfig
     const res = await sidecarFetch('/settings', {
       method: 'POST',
@@ -88,7 +91,7 @@ export const useSettingsStore = defineStore('settings', () => {
         if ((p as OllamaConfig).enabled) {
           list.push({ key, name: names[key] || key, model: (p as OllamaConfig).model })
         }
-      } else if ((p as ChatProviderConfig).apiKey || (p as ChatProviderConfig).model) {
+      } else if ((p as ChatProviderConfig).apiKey) {
         list.push({ key, name: names[key] || key, model: (p as ChatProviderConfig).model })
       }
     }

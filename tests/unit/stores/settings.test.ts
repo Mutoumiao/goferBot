@@ -77,4 +77,52 @@ describe('useSettingsStore', () => {
       apiKey: '',
     })
   })
+
+  it('configuredProviders requires apiKey for cloud providers', () => {
+    const store = useSettingsStore()
+    store.config.providers.openai = { apiKey: '', model: 'gpt-4', baseUrl: '' }
+    store.config.providers.deepseek = { apiKey: 'key', model: 'deepseek-chat', baseUrl: '' }
+    store.config.providers.ollama = { enabled: false, url: '', model: '' }
+
+    const list = store.configuredProviders
+    expect(list.some((p) => p.key === 'openai')).toBe(false)
+    expect(list.some((p) => p.key === 'deepseek')).toBe(true)
+    expect(list.some((p) => p.key === 'ollama')).toBe(false)
+  })
+
+  it('configuredProviders includes ollama only when enabled', () => {
+    const store = useSettingsStore()
+    store.config.providers.ollama = { enabled: true, url: 'http://localhost:11434', model: 'llama2' }
+
+    const list = store.configuredProviders
+    expect(list.some((p) => p.key === 'ollama')).toBe(true)
+  })
+
+  it('saveConfig deep-merges embeddingProvider fields', async () => {
+    vi.mocked(sidecarFetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    } as Response)
+
+    const store = useSettingsStore()
+    store.config.embeddingProvider = {
+      provider: 'openai',
+      apiKey: 'old-key',
+      model: 'text-embedding-3-small',
+      baseUrl: 'https://api.openai.com',
+    }
+
+    await store.saveConfig({ embeddingProvider: { provider: 'siliconflow' } as any })
+
+    expect(store.config.embeddingProvider.provider).toBe('siliconflow')
+    expect(store.config.embeddingProvider.apiKey).toBe('old-key')
+    expect(store.config.embeddingProvider.model).toBe('text-embedding-3-small')
+    expect(sidecarFetch).toHaveBeenCalledWith(
+      '/settings',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('siliconflow'),
+      }),
+    )
+  })
 })
