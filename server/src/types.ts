@@ -60,3 +60,35 @@ export interface EmbeddingConfig {
   baseUrl: string
   apiKey: string
 }
+
+export interface ChatProviderConfig {
+  apiKey: string
+  model: string
+  baseUrl: string
+}
+
+export interface OllamaConfig {
+  enabled: boolean
+  url: string
+  model: string
+}
+
+export interface EmbeddingProviderConfig {
+  provider: string
+  apiKey: string
+  model: string
+  baseUrl: string
+}
+
+export interface AppConfig {
+  providers: {
+    openai: ChatProviderConfig
+    claude: ChatProviderConfig
+    deepseek: ChatProviderConfig
+    custom: ChatProviderConfig
+    ollama: OllamaConfig
+  }
+  embeddingProvider: EmbeddingProviderConfig
+  temperature: number
+  defaultChatProvider: string
+}

@@ -7,6 +7,7 @@ import { getAppDataDir } from './utils.js'
 import chatRoutes from './routes/chat.js'
 import sessionRoutes from './routes/sessions.js'
 import knowledgeBaseRoutes from './routes/knowledgeBases.js'
+import settingsRoutes from './routes/settings.js'
 import { syncKnowledgeBasesFromDisk } from './sync.js'
 import { loadVectorExtensions } from './db.js'
 import db from './db.js'
@@ -99,6 +100,7 @@ async function main(): Promise<void> {
   app.route('/chat', chatRoutes)
   app.route('/sessions', sessionRoutes)
   app.route('/knowledge-bases', knowledgeBaseRoutes)
+  app.route('/settings', settingsRoutes)
 
   serve({
     fetch: app.fetch,

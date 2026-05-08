@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { sidecarFetch } from '@/utils/sidecarClient'
+import { useSettingsStore } from './settings'
 import type { Message, Tab, LLMConfig } from '@/types'
 
 export const useSessionStore = defineStore('session', () => {
@@ -41,8 +42,17 @@ export const useSessionStore = defineStore('session', () => {
 
     // 删光后自动新建首页
     if (tabs.value.length === 0) {
+      const settingsStore = useSettingsStore()
+      const defaultCfg = settingsStore.getLLMConfig()
       const newHomeId = `home-${Date.now()}`
-      tabs.value.push({ id: newHomeId, type: 'chat', title: '首页', closable: true })
+      tabs.value.push({
+        id: newHomeId,
+        type: 'chat',
+        title: '首页',
+        closable: true,
+        provider: defaultCfg?.provider,
+        model: defaultCfg?.model,
+      })
       activeTabId.value = newHomeId
     }
   }
@@ -104,14 +114,20 @@ export const useSessionStore = defineStore('session', () => {
         if (activeIdx !== -1) {
           tabs.value[activeIdx].sessionId = sessionId
           tabs.value[activeIdx].title = content.slice(0, 20) + (content.length > 20 ? '...' : '')
+          tabs.value[activeIdx].provider = config.provider
+          tabs.value[activeIdx].model = config.model
         }
 
+        const settingsStore = useSettingsStore()
+        const defaultCfg = settingsStore.getLLMConfig()
         const newHomeId = `home-${Date.now()}`
         tabs.value.push({
           id: newHomeId,
           type: 'chat',
           title: '首页',
           closable: true,
+          provider: defaultCfg?.provider,
+          model: defaultCfg?.model,
         })
       }
 
