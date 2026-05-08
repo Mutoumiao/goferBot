@@ -104,7 +104,7 @@ async function indexFile(task: IndexTask): Promise<void> {
   const now = Date.now()
 
   db.transaction(() => {
-    deleteExistingChunks(task.knowledgeBaseId, task.relativePath)
+    deleteFileChunks(task.knowledgeBaseId, task.relativePath)
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkId = nanoid()
@@ -123,7 +123,7 @@ async function indexFile(task: IndexTask): Promise<void> {
   console.log(`[indexer] Indexed ${chunks.length} chunks for ${task.relativePath}`)
 }
 
-function deleteExistingChunks(knowledgeBaseId: string, relativePath: string): void {
+export function deleteFileChunks(knowledgeBaseId: string, relativePath: string): void {
   const rows = db
     .prepare('SELECT id FROM document_chunks WHERE knowledge_base_id = ? AND file_path = ?')
     .all(knowledgeBaseId, relativePath) as Array<{ id: string }>
@@ -132,6 +132,41 @@ function deleteExistingChunks(knowledgeBaseId: string, relativePath: string): vo
     db.prepare('DELETE FROM document_chunks WHERE id = ?').run(row.id)
     db.prepare('DELETE FROM vec_document_chunks WHERE chunk_id = ?').run(row.id)
     db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?').run(row.id)
+  }
+}
+
+export function updateChunkFilePaths(
+  knowledgeBaseId: string,
+  oldPath: string,
+  newPath: string
+): void {
+  db.prepare(
+    `UPDATE document_chunks SET file_path = ? || SUBSTR(file_path, LENGTH(?) + 1)
+     WHERE knowledge_base_id = ? AND file_path LIKE ? || '%'`
+  ).run(newPath, oldPath, knowledgeBaseId, oldPath)
+}
+
+export function syncFtsFilePaths(
+  knowledgeBaseId: string,
+  oldPathPrefix: string,
+  newPathPrefix: string
+): void {
+  const rows = db
+    .prepare(
+      `SELECT id, content, file_path FROM document_chunks
+       WHERE knowledge_base_id = ? AND file_path LIKE ?`
+    )
+    .all(knowledgeBaseId, `${oldPathPrefix}%`) as Array<{ id: string; content: string; file_path: string }>
+
+  const deleteFts = db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?')
+  const insertFts = db.prepare(
+    `INSERT INTO fts_document_chunks (rowid, content, file_path) VALUES (?, ?, ?)`
+  )
+
+  for (const row of rows) {
+    const newFilePath = newPathPrefix + row.file_path.slice(oldPathPrefix.length)
+    deleteFts.run(row.id)
+    insertFts.run(row.id, row.content, newFilePath)
   }
 }
 
