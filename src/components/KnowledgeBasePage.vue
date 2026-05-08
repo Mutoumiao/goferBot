@@ -203,6 +203,7 @@ function onCopyFile(fileName: string) {
       <div class="flex items-center justify-between border-b border-surface-3 px-3 py-3">
         <span class="text-sm font-medium text-text-primary">知识库</span>
         <button
+          data-testid="create-kb-btn"
           class="flex h-7 w-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
           @click="openNewKbDialog"
         >
@@ -210,10 +211,11 @@ function onCopyFile(fileName: string) {
         </button>
       </div>
 
-      <div class="flex-1 overflow-auto p-2">
+      <div data-testid="kb-list" class="flex-1 overflow-auto p-2">
         <div
           v-for="kb in store.knowledgeBases"
           :key="kb.id"
+          data-testid="kb-item"
           class="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 transition-colors"
           :class="store.selectedKbId === kb.id ? 'bg-accent-600/15 text-accent-400' : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'"
           @click="onSelectKb(kb.id)"
@@ -255,6 +257,7 @@ function onCopyFile(fileName: string) {
 
       <FileExplorer
         v-if="store.selectedKb"
+        data-testid="file-explorer"
         :files="store.files"
         :search-results="store.searchResults"
         :search-query="store.searchQuery"
@@ -283,6 +286,7 @@ function onCopyFile(fileName: string) {
 
     <!-- KB Context Menu -->
     <ContextMenu
+      data-testid="context-menu"
       :visible="contextMenuVisible"
       :x="contextMenuX"
       :y="contextMenuY"
@@ -335,6 +339,7 @@ function onCopyFile(fileName: string) {
             <h3 class="mb-3 text-base font-medium text-text-primary">新建知识库</h3>
             <input
               v-model="newKbName"
+              data-testid="kb-name-input"
               type="text"
               placeholder="输入知识库名称"
               class="w-full rounded-md border border-surface-3 bg-surface-0 px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none transition-colors focus:border-accent-500"
@@ -344,6 +349,7 @@ function onCopyFile(fileName: string) {
             <div class="mt-4 flex justify-end gap-2">
               <button class="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="showNewKbDialog = false">取消</button>
               <button
+              data-testid="kb-create-confirm"
               class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500 disabled:opacity-50"
               :disabled="isCreatingKb"
               @click="confirmCreateKb"

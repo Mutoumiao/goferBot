@@ -52,6 +52,7 @@ defineExpose({ handleKeydown })
 <template>
   <div
     v-if="visible && filtered.length > 0"
+    data-testid="kb-mention-dropdown"
     class="absolute bottom-full left-0 mb-2 max-h-48 w-64 overflow-y-auto rounded-lg border border-border-default bg-surface-1 shadow-lg"
   >
     <div

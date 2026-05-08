@@ -12,6 +12,7 @@ const emit = defineEmits<{
 
 <template>
   <span
+    data-testid="kb-mention-pill"
     class="inline-flex items-center gap-1 rounded-md bg-accent-500/15 px-2 py-0.5 text-xs font-medium text-accent-600"
   >
     <span :class="[props.kb.icon || 'i-mdi-database', 'text-sm']" />

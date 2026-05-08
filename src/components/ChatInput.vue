@@ -99,7 +99,7 @@ const displayInput = computed(() => input.value)
 </script>
 
 <template>
-  <div class="border-t border-border-default bg-surface-1 p-4">
+  <div data-testid="chat-input" class="border-t border-border-default bg-surface-1 p-4">
     <div
       :class="[
         'relative flex items-end gap-2 rounded-xl border bg-surface-2 px-3 py-2.5 transition-all duration-200',
@@ -142,6 +142,7 @@ const displayInput = computed(() => input.value)
       </div>
 
       <button
+        data-testid="chat-send-btn"
         :disabled="!displayInput.trim() || loading"
         :class="[
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200',

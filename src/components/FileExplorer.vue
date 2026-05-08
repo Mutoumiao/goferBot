@@ -148,7 +148,7 @@ function onCreateFolderClick() {
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-0" @contextmenu="onContextMenu($event)">
+  <div data-testid="file-explorer" class="flex h-full flex-col bg-surface-0" @contextmenu="onContextMenu($event)">
     <!-- Toolbar -->
     <div class="flex items-center gap-3 border-b border-surface-3 px-4 py-3">
       <div class="flex gap-1">

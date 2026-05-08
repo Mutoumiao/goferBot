@@ -9,6 +9,7 @@ defineProps<{
 
 <template>
   <div
+    data-testid="chat-message"
     :class="[
       'message-enter flex w-full',
       message.role === 'user' ? 'justify-end' : 'justify-start',

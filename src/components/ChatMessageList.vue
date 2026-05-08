@@ -22,7 +22,7 @@ watch(
 </script>
 
 <template>
-  <div ref="containerRef" class="flex-1 overflow-y-auto space-y-5 p-5">
+  <div ref="containerRef" data-testid="chat-message-list" class="flex-1 overflow-y-auto space-y-5 p-5">
     <!-- Empty state hint -->
     <div
       v-if="messages.length === 0"
