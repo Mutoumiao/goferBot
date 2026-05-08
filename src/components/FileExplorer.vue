@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { FileItem, SearchResultItem } from '@/types'
+import ContextMenu from './ContextMenu.vue'
+import InlineRename from './InlineRename.vue'
 
 const props = defineProps<{
   files: FileItem[]
@@ -18,6 +20,11 @@ const emit = defineEmits<{
   importFiles: []
   goBack: []
   goForward: []
+  createFolder: []
+  renameFile: [oldName: string, newName: string]
+  moveFile: [fileName: string]
+  copyFile: [fileName: string]
+  deleteFile: [fileName: string]
 }>()
 
 const displayItems = computed(() => {
@@ -53,48 +60,98 @@ function formatSize(bytes?: number): string {
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleString('zh-CN')
 }
+
+// Context menu
+const contextMenuVisible = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuFile = ref<string | null>(null)
+const contextMenuIsBlank = ref(false)
+
+function onContextMenu(event: MouseEvent, fileName?: string) {
+  event.preventDefault()
+  contextMenuVisible.value = true
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuFile.value = fileName || null
+  contextMenuIsBlank.value = !fileName
+}
+
+function closeFileContextMenu() {
+  contextMenuVisible.value = false
+  contextMenuFile.value = null
+  contextMenuIsBlank.value = false
+}
+
+// Inline rename
+const renamingFile = ref<string | null>(null)
+
+function onRenameClick() {
+  if (contextMenuFile.value) {
+    renamingFile.value = contextMenuFile.value
+  }
+  closeFileContextMenu()
+}
+
+function onRenameSave(oldName: string, newName: string) {
+  renamingFile.value = null
+  if (newName && newName !== oldName) {
+    emit('renameFile', oldName, newName)
+  }
+}
+
+function onRenameCancel() {
+  renamingFile.value = null
+}
+
+function onDeleteClick() {
+  if (contextMenuFile.value) {
+    emit('deleteFile', contextMenuFile.value)
+  }
+  closeFileContextMenu()
+}
+
+function onMoveClick() {
+  if (contextMenuFile.value) {
+    emit('moveFile', contextMenuFile.value)
+  }
+  closeFileContextMenu()
+}
+
+function onCopyClick() {
+  if (contextMenuFile.value) {
+    emit('copyFile', contextMenuFile.value)
+  }
+  closeFileContextMenu()
+}
+
+function onCreateFolderClick() {
+  closeFileContextMenu()
+  emit('createFolder')
+}
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-0">
+  <div class="flex h-full flex-col bg-surface-0" @contextmenu="onContextMenu($event)">
     <!-- Toolbar -->
     <div class="flex items-center gap-3 border-b border-surface-3 px-4 py-3">
-      <!-- Navigation buttons -->
       <div class="flex gap-1">
-        <button
-          class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-          @click="emit('goBack')"
-        >
+        <button class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="emit('goBack')">
           <span class="i-mdi-chevron-left text-lg" />
         </button>
-        <button
-          class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-          @click="emit('goForward')"
-        >
+        <button class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="emit('goForward')">
           <span class="i-mdi-chevron-right text-lg" />
         </button>
       </div>
 
-      <!-- Breadcrumb -->
       <div class="flex flex-1 items-center gap-1 overflow-hidden">
-        <button
-          class="shrink-0 text-sm text-text-secondary hover:text-text-primary"
-          @click="emit('navigateToBreadcrumb', -1)"
-        >
-          根目录
-        </button>
+        <button class="shrink-0 text-sm text-text-secondary hover:text-text-primary" @click="emit('navigateToBreadcrumb', -1)">根目录</button>
         <template v-for="(segment, idx) in breadcrumb" :key="idx">
           <span class="i-mdi-chevron-right text-xs text-text-tertiary" />
-          <button
-            class="truncate text-sm text-text-secondary hover:text-text-primary"
-            @click="emit('navigateToBreadcrumb', idx)"
-          >
-            {{ segment }}
-          </button>
+          <button class="truncate text-sm text-text-secondary hover:text-text-primary" @click="emit('navigateToBreadcrumb', idx)">{{ segment }}</button>
         </template>
       </div>
 
-      <!-- Search -->
       <div class="relative">
         <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary i-mdi-magnify" />
         <input
@@ -106,11 +163,7 @@ function formatDate(ts: number): string {
         />
       </div>
 
-      <!-- Import button -->
-      <button
-        class="flex items-center gap-1.5 rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500"
-        @click="emit('importFiles')"
-      >
+      <button class="flex items-center gap-1.5 rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500" @click="emit('importFiles')">
         <span class="i-mdi-plus text-sm" />
         添加文件
       </button>
@@ -128,27 +181,30 @@ function formatDate(ts: number): string {
       </div>
 
       <div v-else class="grid grid-cols-[1fr_auto_auto] gap-1">
-        <!-- Header -->
         <div class="col-span-3 grid grid-cols-subgrid px-3 py-2 text-xs font-medium text-text-tertiary">
           <span>名称</span>
           <span class="text-right">大小</span>
           <span class="text-right">修改时间</span>
         </div>
 
-        <!-- Items -->
         <div
           v-for="item in displayItems"
           :key="item.name + ('relativePath' in item ? item.relativePath : '')"
           class="col-span-3 grid cursor-pointer grid-cols-subgrid items-center rounded-md px-3 py-2 transition-colors hover:bg-surface-2"
           @dblclick="onItemDoubleClick(item)"
+          @contextmenu.stop="onContextMenu($event, item.name)"
         >
           <div class="flex items-center gap-2 overflow-hidden">
-            <span
-              class="shrink-0 text-lg"
-              :class="item.type === 'directory' ? 'i-mdi-folder text-amber-400' : 'i-mdi-file-document-outline text-text-secondary'"
-            />
+            <span class="shrink-0 text-lg" :class="item.type === 'directory' ? 'i-mdi-folder text-amber-400' : 'i-mdi-file-document-outline text-text-secondary'" />
             <div class="min-w-0">
-              <div class="truncate text-sm text-text-primary">{{ item.name }}</div>
+              <InlineRename
+                v-if="renamingFile === item.name"
+                :name="item.name"
+                :editing="true"
+                @save="(newName) => onRenameSave(item.name, newName)"
+                @cancel="onRenameCancel"
+              />
+              <div v-else class="truncate text-sm text-text-primary">{{ item.name }}</div>
               <div v-if="'relativePath' in item && item.relativePath !== item.name" class="truncate text-xs text-text-tertiary">
                 {{ item.relativePath }}
               </div>
@@ -159,5 +215,34 @@ function formatDate(ts: number): string {
         </div>
       </div>
     </div>
+
+    <!-- Context Menu -->
+    <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @close="closeFileContextMenu">
+      <div v-if="contextMenuIsBlank" class="py-1">
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onCreateFolderClick">
+          <span class="i-mdi-folder-plus text-sm" />
+          <span>新建文件夹</span>
+        </button>
+      </div>
+      <div v-else class="py-1">
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onRenameClick">
+          <span class="i-mdi-pencil text-sm" />
+          <span>重命名</span>
+        </button>
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onMoveClick">
+          <span class="i-mdi-folder-move text-sm" />
+          <span>移动到...</span>
+        </button>
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onCopyClick">
+          <span class="i-mdi-content-copy text-sm" />
+          <span>复制到...</span>
+        </button>
+        <div class="my-1 border-t border-surface-3" />
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10" @click="onDeleteClick">
+          <span class="i-mdi-delete-forever text-sm" />
+          <span>永久删除</span>
+        </button>
+      </div>
+    </ContextMenu>
   </div>
 </template>

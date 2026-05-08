@@ -246,6 +246,116 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     }
   }
 
+  async function renameKnowledgeBase(id: string, name: string) {
+    error.value = null
+    try {
+      const res = await sidecarFetch(`/knowledge-bases/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      if (!res.ok) throw new Error('重命名失败')
+      const updated = (await res.json()) as KnowledgeBase
+      const idx = knowledgeBases.value.findIndex((kb) => kb.id === id)
+      if (idx !== -1) knowledgeBases.value[idx] = updated
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function updateKbIcon(id: string, icon: string) {
+    error.value = null
+    try {
+      const res = await sidecarFetch(`/knowledge-bases/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ icon }),
+      })
+      if (!res.ok) throw new Error('更新图标失败')
+      const updated = (await res.json()) as KnowledgeBase
+      const idx = knowledgeBases.value.findIndex((kb) => kb.id === id)
+      if (idx !== -1) knowledgeBases.value[idx] = updated
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function togglePin(id: string) {
+    const kb = knowledgeBases.value.find((k) => k.id === id)
+    if (!kb) return
+    const newPinned = kb.is_pinned ? 0 : 1
+    error.value = null
+    try {
+      const res = await sidecarFetch(`/knowledge-bases/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_pinned: newPinned }),
+      })
+      if (!res.ok) throw new Error('置顶失败')
+      const updated = (await res.json()) as KnowledgeBase
+      const idx = knowledgeBases.value.findIndex((k) => k.id === id)
+      if (idx !== -1) knowledgeBases.value[idx] = updated
+      knowledgeBases.value = [...knowledgeBases.value].sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return b.is_pinned - a.is_pinned
+        if (a.is_pinned) return b.sort_order - a.sort_order
+        return b.created_at - a.created_at
+      })
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function createFolder(name: string) {
+    if (!selectedKbId.value) return
+    error.value = null
+    try {
+      const res = await sidecarFetch(`/knowledge-bases/${selectedKbId.value}/folders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, path: currentPath.value }),
+      })
+      if (!res.ok) throw new Error('创建文件夹失败')
+      await loadFiles(currentPath.value)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function renameFile(oldName: string, newName: string) {
+    if (!selectedKbId.value) return
+    error.value = null
+    try {
+      const relativePath = currentPath.value ? `${currentPath.value}/${oldName}` : oldName
+      const res = await sidecarFetch(`/knowledge-bases/${selectedKbId.value}/files/${relativePath}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newName }),
+      })
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({ error: '重命名失败' }))) as { error: string }
+        throw new Error(err.error)
+      }
+      await loadFiles(currentPath.value)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function deleteFile(fileName: string) {
+    if (!selectedKbId.value) return
+    error.value = null
+    try {
+      const relativePath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName
+      const res = await sidecarFetch(`/knowledge-bases/${selectedKbId.value}/files/${relativePath}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('删除失败')
+      await loadFiles(currentPath.value)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
   return {
     knowledgeBases,
     selectedKbId,
@@ -276,5 +386,11 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     importFiles,
     moveFile,
     copyFile,
+    renameKnowledgeBase,
+    updateKbIcon,
+    togglePin,
+    createFolder,
+    renameFile,
+    deleteFile,
   }
 })

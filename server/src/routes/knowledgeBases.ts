@@ -454,4 +454,24 @@ app.get('/deleted', (c) => {
   return c.json(rows)
 })
 
+// DELETE /knowledge-bases/:id/files/:path — permanently delete file
+app.delete('/:id/files/*', (c) => {
+  const id = c.req.param('id')
+  const prefix = `/${id}/files/`
+  const filePath = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : ''
+
+  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(id) as
+    | KnowledgeBase
+    | undefined
+  if (!kb) return c.json({ error: 'Not found' }, 404)
+
+  const fullPath = path.join(kb.path, filePath)
+  if (!fullPath.startsWith(kb.path) || !fs.existsSync(fullPath)) {
+    return c.json({ error: 'File not found' }, 404)
+  }
+
+  fs.unlinkSync(fullPath)
+  return c.json({ success: true })
+})
+
 export default app

@@ -2,11 +2,36 @@
 import { ref, onMounted, computed } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import FileExplorer from './FileExplorer.vue'
+import ContextMenu from './ContextMenu.vue'
+import EditKbDialog from './EditKbDialog.vue'
+import RecycleBinPage from './RecycleBinPage.vue'
+import MoveCopyDialog from './MoveCopyDialog.vue'
 
 const store = useKnowledgeBaseStore()
 const showNewKbDialog = ref(false)
 const newKbName = ref('')
 const newKbError = ref('')
+
+// Context menu state
+const contextMenuVisible = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuTargetKbId = ref<string | null>(null)
+
+// Edit dialog
+const showEditDialog = ref(false)
+const editKbId = ref('')
+const editKbName = ref('')
+const editKbIcon = ref('')
+
+// Recycle bin
+const showRecycleBin = ref(false)
+
+// Move/Copy dialog
+const moveCopyMode = ref<'move' | 'copy'>('move')
+const moveCopyVisible = ref(false)
+const moveCopySourceKbId = ref('')
+const moveCopySourcePath = ref('')
 
 onMounted(() => {
   store.loadKnowledgeBases()
@@ -37,6 +62,57 @@ async function confirmCreateKb() {
   }
 }
 
+// KB list context menu
+function onKbContextMenu(event: MouseEvent, kbId: string) {
+  event.preventDefault()
+  contextMenuVisible.value = true
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuTargetKbId.value = kbId
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextMenuTargetKbId.value = null
+}
+
+function onPinKb() {
+  if (contextMenuTargetKbId.value) {
+    store.togglePin(contextMenuTargetKbId.value)
+  }
+  closeContextMenu()
+}
+
+function onEditKb() {
+  const kb = store.knowledgeBases.find((k) => k.id === contextMenuTargetKbId.value)
+  if (kb) {
+    editKbId.value = kb.id
+    editKbName.value = kb.name
+    editKbIcon.value = kb.icon || 'mdi-database'
+    showEditDialog.value = true
+  }
+  closeContextMenu()
+}
+
+async function onDeleteKb() {
+  if (contextMenuTargetKbId.value) {
+    await store.deleteKnowledgeBase(contextMenuTargetKbId.value)
+  }
+  closeContextMenu()
+}
+
+async function onSaveEditKb(name: string, icon: string) {
+  if (editKbId.value) {
+    if (name !== editKbName.value) {
+      await store.renameKnowledgeBase(editKbId.value, name)
+    }
+    if (icon !== editKbIcon.value) {
+      await store.updateKbIcon(editKbId.value, icon)
+    }
+  }
+  showEditDialog.value = false
+}
+
 function onOpenDirectory(path: string) {
   store.navigateToPath(path)
 }
@@ -52,7 +128,6 @@ function onNavigateToBreadcrumb(index: number) {
 
 function onSearch(query: string) {
   if (!query.trim()) {
-    // 返回浏览根目录
     store.navigateToPath('')
     return
   }
@@ -61,6 +136,33 @@ function onSearch(query: string) {
 
 function onImportFiles() {
   store.importFiles()
+}
+
+function onCreateFolder() {
+  const defaultName = `未命名文件夹_${Date.now().toString().slice(-4)}`
+  store.createFolder(defaultName)
+}
+
+function onRenameFile(oldName: string, newName: string) {
+  store.renameFile(oldName, newName)
+}
+
+function onDeleteFile(fileName: string) {
+  store.deleteFile(fileName)
+}
+
+function onMoveFile(fileName: string) {
+  moveCopyMode.value = 'move'
+  moveCopySourceKbId.value = store.selectedKbId || ''
+  moveCopySourcePath.value = store.currentPath ? `${store.currentPath}/${fileName}` : fileName
+  moveCopyVisible.value = true
+}
+
+function onCopyFile(fileName: string) {
+  moveCopyMode.value = 'copy'
+  moveCopySourceKbId.value = store.selectedKbId || ''
+  moveCopySourcePath.value = store.currentPath ? `${store.currentPath}/${fileName}` : fileName
+  moveCopyVisible.value = true
 }
 </script>
 
@@ -85,21 +187,36 @@ function onImportFiles() {
           class="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 transition-colors"
           :class="store.selectedKbId === kb.id ? 'bg-accent-600/15 text-accent-400' : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'"
           @click="store.selectKb(kb.id)"
+          @contextmenu="onKbContextMenu($event, kb.id)"
         >
-          <span class="i-mdi-bookshelf text-lg" />
+          <span :class="`i-${kb.icon || 'mdi-database'} text-lg`" />
           <span class="truncate text-sm">{{ kb.name }}</span>
+          <span v-if="kb.is_pinned" class="i-mdi-pin text-xs text-accent-400 ml-auto" />
         </div>
 
         <div v-if="store.knowledgeBases.length === 0 && !store.isLoading" class="px-2 py-4 text-center text-xs text-text-tertiary">
           暂无知识库，点击 + 创建
         </div>
       </div>
+
+      <!-- Recycle bin entry -->
+      <div class="border-t border-surface-3 p-2">
+        <button
+          class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+          :class="showRecycleBin ? 'bg-accent-600/15 text-accent-400' : ''"
+          @click="showRecycleBin = !showRecycleBin"
+        >
+          <span class="i-mdi-delete text-lg" />
+          <span>回收站</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Right: file explorer -->
+    <!-- Right: file explorer or recycle bin -->
     <div class="flex-1">
+      <RecycleBinPage v-if="showRecycleBin" />
       <FileExplorer
-        v-if="store.selectedKb"
+        v-else-if="store.selectedKb"
         :files="store.files"
         :search-results="store.searchResults"
         :search-query="store.searchQuery"
@@ -112,12 +229,59 @@ function onImportFiles() {
         @import-files="onImportFiles"
         @go-back="store.goBack"
         @go-forward="store.goForward"
+        @create-folder="onCreateFolder"
+        @rename-file="onRenameFile"
+        @move-file="onMoveFile"
+        @copy-file="onCopyFile"
+        @delete-file="onDeleteFile"
       />
       <div v-else class="flex h-full flex-col items-center justify-center gap-3 text-text-tertiary">
         <span class="i-mdi-bookshelf text-5xl" />
         <span class="text-sm">选择一个知识库或创建新库</span>
       </div>
     </div>
+
+    <!-- KB Context Menu -->
+    <ContextMenu
+      :visible="contextMenuVisible"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      @close="closeContextMenu"
+    >
+      <div class="py-1">
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onPinKb">
+          <span class="i-mdi-pin text-sm" />
+          <span>{{ store.knowledgeBases.find(k => k.id === contextMenuTargetKbId)?.is_pinned ? '取消置顶' : '置顶' }}</span>
+        </button>
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onEditKb">
+          <span class="i-mdi-pencil text-sm" />
+          <span>修改资料</span>
+        </button>
+        <div class="my-1 border-t border-surface-3" />
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10" @click="onDeleteKb">
+          <span class="i-mdi-delete text-sm" />
+          <span>移入回收站</span>
+        </button>
+      </div>
+    </ContextMenu>
+
+    <!-- Edit KB Dialog -->
+    <EditKbDialog
+      :visible="showEditDialog"
+      :initial-name="editKbName"
+      :initial-icon="editKbIcon"
+      @close="showEditDialog = false"
+      @save="onSaveEditKb"
+    />
+
+    <!-- Move/Copy Dialog -->
+    <MoveCopyDialog
+      :visible="moveCopyVisible"
+      :mode="moveCopyMode"
+      :source-kb-id="moveCopySourceKbId"
+      :source-path="moveCopySourcePath"
+      @close="moveCopyVisible = false"
+    />
 
     <!-- New KB Dialog -->
     <Teleport to="body">
@@ -138,18 +302,8 @@ function onImportFiles() {
             />
             <p v-if="newKbError" class="mt-2 text-xs text-red-400">{{ newKbError }}</p>
             <div class="mt-4 flex justify-end gap-2">
-              <button
-                class="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-                @click="showNewKbDialog = false"
-              >
-                取消
-              </button>
-              <button
-                class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500"
-                @click="confirmCreateKb"
-              >
-                创建
-              </button>
+              <button class="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="showNewKbDialog = false">取消</button>
+              <button class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500" @click="confirmCreateKb">创建</button>
             </div>
           </div>
         </div>
@@ -173,12 +327,6 @@ function onImportFiles() {
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
