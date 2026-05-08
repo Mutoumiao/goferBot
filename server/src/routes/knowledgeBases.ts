@@ -352,4 +352,98 @@ app.patch('/:id/files/*', async (c) => {
   return c.json({ name: newFileName, path: dir === '.' ? newFileName : `${dir}/${newFileName}` })
 })
 
+function getUniqueFileName(dir: string, fileName: string): string {
+  if (!fs.existsSync(path.join(dir, fileName))) return fileName
+  const ext = path.extname(fileName)
+  const base = path.basename(fileName, ext)
+  let counter = 1
+  let candidate = `${base}(${counter})${ext}`
+  while (fs.existsSync(path.join(dir, candidate))) {
+    counter++
+    candidate = `${base}(${counter})${ext}`
+  }
+  return candidate
+}
+
+// POST /move — move file between knowledge bases
+app.post('/move', async (c) => {
+  const body = await c.req.json<{
+    sourceKbId: string
+    sourcePath: string
+    targetKbId: string
+    targetPath: string
+  }>()
+
+  const srcKb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(body.sourceKbId) as
+    | KnowledgeBase
+    | undefined
+  const dstKb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(body.targetKbId) as
+    | KnowledgeBase
+    | undefined
+
+  if (!srcKb || !dstKb) {
+    return c.json({ error: 'Source or target not found' }, 404)
+  }
+
+  const srcFullPath = path.join(srcKb.path, body.sourcePath)
+  const dstDir = path.join(dstKb.path, body.targetPath)
+
+  if (!srcFullPath.startsWith(srcKb.path) || !dstDir.startsWith(dstKb.path)) {
+    return c.json({ error: 'Invalid path' }, 400)
+  }
+
+  if (!fs.existsSync(srcFullPath)) {
+    return c.json({ error: 'Source file not found' }, 404)
+  }
+
+  ensureDir(dstDir)
+  const fileName = path.basename(body.sourcePath)
+  const dstFullPath = path.join(dstDir, fileName)
+
+  fs.renameSync(srcFullPath, dstFullPath)
+
+  return c.json({ success: true })
+})
+
+// POST /copy — copy file between knowledge bases
+app.post('/copy', async (c) => {
+  const body = await c.req.json<{
+    sourceKbId: string
+    sourcePath: string
+    targetKbId: string
+    targetPath: string
+  }>()
+
+  const srcKb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(body.sourceKbId) as
+    | KnowledgeBase
+    | undefined
+  const dstKb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(body.targetKbId) as
+    | KnowledgeBase
+    | undefined
+
+  if (!srcKb || !dstKb) {
+    return c.json({ error: 'Source or target not found' }, 404)
+  }
+
+  const srcFullPath = path.join(srcKb.path, body.sourcePath)
+  const dstDir = path.join(dstKb.path, body.targetPath)
+
+  if (!srcFullPath.startsWith(srcKb.path) || !dstDir.startsWith(dstKb.path)) {
+    return c.json({ error: 'Invalid path' }, 400)
+  }
+
+  if (!fs.existsSync(srcFullPath)) {
+    return c.json({ error: 'Source file not found' }, 404)
+  }
+
+  ensureDir(dstDir)
+  const fileName = path.basename(body.sourcePath)
+  const uniqueName = getUniqueFileName(dstDir, fileName)
+  const dstFullPath = path.join(dstDir, uniqueName)
+
+  fs.copyFileSync(srcFullPath, dstFullPath)
+
+  return c.json({ success: true, name: uniqueName })
+})
+
 export default app

@@ -165,3 +165,95 @@ describe('PATCH /knowledge-bases/:id/files/:path', () => {
     expect(json.name).toBe('renamed.txt')
   })
 })
+
+describe('POST /files/move', () => {
+  it('should move file between knowledge bases', async () => {
+    const srcRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'SourceKB' }),
+    })
+    const srcKb = (await srcRes.json()) as { id: string }
+
+    const dstRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'DestKB' }),
+    })
+    const dstKb = (await dstRes.json()) as { id: string }
+
+    await app.request(`/${srcKb.id}/files`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', files: [{ name: 'move-me.md', content: '# Move' }] }),
+    })
+
+    const res = await app.request('/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceKbId: srcKb.id,
+        sourcePath: 'move-me.md',
+        targetKbId: dstKb.id,
+        targetPath: '',
+      }),
+    })
+
+    expect(res.status).toBe(200)
+
+    // Verify file moved
+    const srcFiles = await app.request(`/${srcKb.id}/files`)
+    const srcJson = (await srcFiles.json()) as { items: Array<{ name: string }> }
+    expect(srcJson.items.find((i) => i.name === 'move-me.md')).toBeUndefined()
+
+    const dstFiles = await app.request(`/${dstKb.id}/files`)
+    const dstJson = (await dstFiles.json()) as { items: Array<{ name: string }> }
+    expect(dstJson.items.find((i) => i.name === 'move-me.md')).toBeDefined()
+  })
+})
+
+describe('POST /files/copy', () => {
+  it('should copy file to another knowledge base with auto suffix on conflict', async () => {
+    const srcRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'CopySrc' }),
+    })
+    const srcKb = (await srcRes.json()) as { id: string }
+
+    const dstRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'CopyDst' }),
+    })
+    const dstKb = (await dstRes.json()) as { id: string }
+
+    await app.request(`/${srcKb.id}/files`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', files: [{ name: 'dup.md', content: '# A' }] }),
+    })
+    await app.request(`/${dstKb.id}/files`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', files: [{ name: 'dup.md', content: '# B' }] }),
+    })
+
+    const res = await app.request('/copy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceKbId: srcKb.id,
+        sourcePath: 'dup.md',
+        targetKbId: dstKb.id,
+        targetPath: '',
+      }),
+    })
+
+    expect(res.status).toBe(200)
+
+    const dstFiles = await app.request(`/${dstKb.id}/files`)
+    const dstJson = (await dstFiles.json()) as { items: Array<{ name: string }> }
+    expect(dstJson.items.find((i) => i.name === 'dup(1).md')).toBeDefined()
+  })
+})
