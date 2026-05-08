@@ -127,7 +127,7 @@ describe('ChatPage', () => {
     const input = wrapper.findComponent(ChatInput)
     input.vm.$emit('send', 'new message')
 
-    expect(sessionStore.sendMessage).toHaveBeenCalledWith('new message', settingsStore.getLLMConfig())
+    expect(sessionStore.sendMessage).toHaveBeenCalledWith('new message', settingsStore.getLLMConfig(), undefined)
   })
 
   it('calls store.sendMessage when EmptySession emits send', () => {
@@ -138,6 +138,6 @@ describe('ChatPage', () => {
     const empty = wrapper.findComponent(EmptySession)
     empty.vm.$emit('send', 'first message')
 
-    expect(sessionStore.sendMessage).toHaveBeenCalledWith('first message', settingsStore.getLLMConfig())
+    expect(sessionStore.sendMessage).toHaveBeenCalledWith('first message', settingsStore.getLLMConfig(), undefined)
   })
 })
