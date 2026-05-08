@@ -12,14 +12,6 @@ const { default: db } = await import('../../../../server/src/db.js')
 
 beforeAll(() => {
   fs.mkdirSync(testDir, { recursive: true })
-})
-
-afterAll(() => {
-  db.close()
-  fs.rmSync(testDir, { recursive: true, force: true })
-})
-
-beforeAll(() => {
   // 在测试环境中确保虚拟表存在（测试不经过 index.ts 的启动流程）
   try {
     db.exec(`
@@ -34,11 +26,15 @@ beforeAll(() => {
       CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
         content,
         file_path,
-        content='document_chunks',
-        content_rowid='id'
+        tokenize='unicode61'
       );
     `)
   } catch { /* FTS5 可能不可用 */ }
+})
+
+afterAll(() => {
+  db.close()
+  fs.rmSync(testDir, { recursive: true, force: true })
 })
 
 beforeEach(() => {
