@@ -11,6 +11,14 @@ test.describe('聊天 @提及 交互', () => {
       route.fulfill({ json: mockKnowledgeBases })
     })
 
+    await page.route('http://127.0.0.1:*/sessions', (route) => {
+      if (route.request().method() === 'POST') {
+        route.fulfill({ status: 201, json: { id: 'sess-new', title: '首页', created_at: new Date().toISOString() } })
+      } else {
+        route.fulfill({ json: [] })
+      }
+    })
+
     await page.route('http://127.0.0.1:*/chat', (route) => {
       if (route.request().method() === 'POST') {
         route.fulfill({
@@ -23,15 +31,26 @@ test.describe('聊天 @提及 交互', () => {
       }
     })
 
-    const chatPage = new ChatPage(page)
-    await chatPage.goto()
+    // 导航到首页，加载知识库列表，再进入对话态
+    await page.goto('/')
+
+    // 先切换到知识库页面，让知识库列表加载
+    await page.getByRole('button', { name: '知识库', exact: true }).click()
+    await page.waitForSelector('[data-testid="kb-item"]')
+
+    // 切回问答页面
+    await page.getByRole('button', { name: '问答', exact: true }).click()
+
+    // 点击快捷提问进入对话态
+    await page.getByText('什么是 RAG 检索增强生成？').click()
+    await page.waitForSelector('[data-testid="chat-input"]')
   })
 
   test('输入 @ 弹出知识库下拉列表', async ({ page }) => {
     const chatPage = new ChatPage(page)
     await chatPage.triggerMention()
     await expect(chatPage.mentionDropdown).toBeVisible()
-    await expect(chatPage.mentionDropdown.locator('li')).toHaveCount(2)
+    await expect(chatPage.mentionDropdown.locator('[data-testid="kb-mention-item"]')).toHaveCount(2)
   })
 
   test('选择知识库后渲染 pill', async ({ page }) => {
@@ -48,9 +67,10 @@ test.describe('聊天 @提及 交互', () => {
 
     await page.route('http://127.0.0.1:*/chat', (route) => {
       if (route.request().method() === 'POST') {
-        route.request().text().then((text) => {
-          capturedBody = JSON.parse(text)
-        })
+        const postData = route.request().postData()
+        if (postData) {
+          capturedBody = JSON.parse(postData)
+        }
         route.fulfill({
           status: 200,
           headers: { 'content-type': 'text/event-stream' },

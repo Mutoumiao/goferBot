@@ -25,11 +25,15 @@ export class ChatPage {
   }
 
   async triggerMention() {
-    await this.input.fill('@')
+    await this.input.click()
+    // 绕过键盘布局差异，直接派发 key 为 '@' 的 keydown 事件
+    await this.input.evaluate((el: HTMLElement) => {
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: '@', bubbles: true }))
+    })
   }
 
   async selectMentionItem(index: number = 0) {
-    await this.mentionDropdown.locator('li').nth(index).click()
+    await this.mentionDropdown.locator('[data-testid="kb-mention-item"]').nth(index).click()
   }
 
   async getMessages(): Promise<Locator[]> {

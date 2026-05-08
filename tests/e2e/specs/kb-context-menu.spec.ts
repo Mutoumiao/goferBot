@@ -5,11 +5,7 @@ import { KnowledgeBasePage } from '../pages/KnowledgeBasePage'
 
 test.describe('知识库右键菜单', () => {
   test.beforeEach(async ({ page }) => {
-    await injectMockTauri(page, {
-      async get_sidecar_port() {
-        return 11451
-      },
-    })
+    await injectMockTauri(page)
 
     await page.route('http://127.0.0.1:*/knowledge-bases', (route) => {
       route.fulfill({ json: mockKnowledgeBases })
@@ -23,8 +19,9 @@ test.describe('知识库右键菜单', () => {
       route.fulfill({ json: { totalFiles: 10, indexedFiles: 7, pendingFiles: 0 } })
     })
 
-    const kbPage = new KnowledgeBasePage(page)
-    await kbPage.goto()
+    // 导航到首页，然后切换到知识库标签页
+    await page.goto('/')
+    await page.getByRole('button', { name: '知识库', exact: true }).click()
   })
 
   test('右键知识库弹出菜单', async ({ page }) => {

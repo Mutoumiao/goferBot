@@ -58,6 +58,7 @@ defineExpose({ handleKeydown })
     <div
       v-for="(kb, i) in filtered"
       :key="kb.id"
+      data-testid="kb-mention-item"
       :class="[
         'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors',
         i === selectedIndex ? 'bg-accent-500/10 text-accent-600' : 'text-text-primary hover:bg-surface-3',
