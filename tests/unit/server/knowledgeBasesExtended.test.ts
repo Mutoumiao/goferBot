@@ -75,3 +75,41 @@ describe('PATCH /knowledge-bases/:id', () => {
     expect(updated.is_pinned).toBe(1)
   })
 })
+
+describe('POST /knowledge-bases/:id/folders', () => {
+  it('should create a folder in knowledge base', async () => {
+    const createRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'FolderKB' }),
+    })
+    const kb = (await createRes.json()) as { id: string }
+
+    const res = await app.request(`/${kb.id}/folders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'NewFolder', path: '' }),
+    })
+
+    expect(res.status).toBe(201)
+    const json = (await res.json()) as { name: string }
+    expect(json.name).toBe('NewFolder')
+  })
+
+  it('should reject empty folder name', async () => {
+    const createRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'FolderKB2' }),
+    })
+    const kb = (await createRes.json()) as { id: string }
+
+    const res = await app.request(`/${kb.id}/folders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '', path: '' }),
+    })
+
+    expect(res.status).toBe(400)
+  })
+})

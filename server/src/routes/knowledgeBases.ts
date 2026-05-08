@@ -283,4 +283,34 @@ app.get('/:id/search', (c) => {
   return c.json({ query, results })
 })
 
+// POST /knowledge-bases/:id/folders — create new folder
+app.post('/:id/folders', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json<{ name: string; path?: string }>()
+  const folderName = body.name?.trim()
+  const relativePath = body.path || ''
+
+  if (!folderName) {
+    return c.json({ error: 'Folder name is required' }, 400)
+  }
+
+  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(id) as
+    | KnowledgeBase
+    | undefined
+
+  if (!kb) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  const targetDir = path.join(kb.path, relativePath, folderName)
+
+  if (!targetDir.startsWith(kb.path)) {
+    return c.json({ error: 'Invalid path' }, 400)
+  }
+
+  ensureDir(targetDir)
+
+  return c.json({ name: folderName, path: relativePath ? `${relativePath}/${folderName}` : folderName }, 201)
+})
+
 export default app
