@@ -13,7 +13,8 @@ const llmProviderLabels: Record<string, string> = {
   ollama: 'Ollama',
 }
 
-const activeLlmTab = ref<string>('openai')
+type ProviderKey = 'openai' | 'claude' | 'deepseek' | 'custom' | 'ollama'
+const activeLlmTab = ref<ProviderKey>('openai')
 
 const embeddingProviders = [
   { value: 'openai', label: 'OpenAI' },
@@ -110,7 +111,7 @@ const defaultProviderOptions = computed(() =>
           <div v-if="activeLlmTab !== 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">API Key</label>
             <input
-              v-model="store.config.providers[activeLlmTab as Exclude<typeof activeLlmTab, 'ollama'>].apiKey"
+              v-model="store.config.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].apiKey"
               type="password"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入 API Key"
@@ -131,10 +132,10 @@ const defaultProviderOptions = computed(() =>
           </div>
 
           <!-- Base URL -->
-          <div>
+          <div v-if="activeLlmTab !== 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">Base URL</label>
             <input
-              v-model="store.config.providers[activeLlmTab].baseUrl"
+              v-model="store.config.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].baseUrl"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="留空使用默认地址"

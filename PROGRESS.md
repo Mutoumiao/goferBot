@@ -17,7 +17,7 @@
 | 增强功能 | #03b 右键菜单与文件操作 | closed | 置顶、修改资料、新建文件夹、重命名、移动/复制、回收站页面 |
 | 核心功能 | #04 RAG 索引检索 | closed | sqlite-vec + FTS5 混合搜索、索引队列、`@提及` 交互 |
 | 索引同步 | #04b 文件操作后索引同步 | closed | 跨库移动/复制/重命名后的 document_chunks 同步 |
-| 配置系统 | #05 多提供商设置 | ready-for-agent | 设置页、多 LLM 配置、Embedding 配置、温度参数 |
+| 配置系统 | #05 多提供商设置 | closed | 设置页、多 LLM 配置、Embedding 配置、温度参数、每会话模型切换 |
 | 历史管理 | #06 对话历史 | ready-for-agent | 历史列表、恢复会话、删除、重命名 |
 | 本地模型 | #07 Ollama 与错误处理 | ready-for-agent | Ollama 本地模型、全局错误处理、Loading/空状态 |
 | 质量保障 | #08 测试覆盖 | in-progress | 34 个测试文件、236 条用例全部通过，持续补充中 |
@@ -115,11 +115,18 @@
 
 #### #05 多提供商设置
 
-- **状态**：`ready-for-agent`
+- **状态**：`closed`
 - **依赖**：#02（closed）
 - **优先级**：中
 - **内容**：设置页 UI、多 LLM 提供商配置（OpenAI/Claude/DeepSeek/Custom/Ollama）、Embedding 配置、温度滑块、每会话模型切换
 - **计划文档**：`docs/superpowers/plans/2026-05-08-settings-multi-provider.md`
+- **关键交付**：
+  - `config.json` 多提供商结构持久化，`GET/POST /settings` Sidecar API
+  - 前端 `AppConfig` 类型与 `useSettingsStore`：API 读写、`getLLMConfig` 转换、`configuredProviders` 计算属性
+  - `SettingsPage.vue`：LLM 提供商 Tab 卡片、Embedding 卡片、通用设置（温度滑块）卡片
+  - `ModelSelector.vue`：对话页顶部模型下拉切换，仅影响当前会话
+  - 新建会话继承全局 `defaultChatProvider`，`Tab` 增加 `provider`/`model` 快照字段
+  - `sendMessage` 升格首页时记录 provider/model，无可用配置时提示用户前往设置
 
 #### #06 对话历史
 
@@ -146,7 +153,7 @@
 - **依赖**：#01 ~ #07
 - **优先级**：低
 - **内容**：补全所有前端组件测试、Store 测试、Sidecar API 集成测试、工具函数测试，覆盖率达标（lines >= 10%, branches >= 10%）
-- **进度**：当前 **34 个测试文件，236 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema。
+- **进度**：当前 **38 个测试文件，251 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown、SettingsPage、ModelSelector 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema、settings。
 
 ---
 

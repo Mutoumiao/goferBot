@@ -23,11 +23,17 @@ describe('ChatPage', () => {
           ...overrides?.session,
         },
         settings: {
-          llmConfig: {
-            provider: 'test',
-            model: 'test',
-            baseUrl: '',
-            apiKey: 'key',
+          config: {
+            providers: {
+              openai: { apiKey: '', model: '', baseUrl: '' },
+              claude: { apiKey: '', model: '', baseUrl: '' },
+              deepseek: { apiKey: 'key', model: 'test', baseUrl: '' },
+              custom: { apiKey: '', model: '', baseUrl: '' },
+              ollama: { enabled: false, url: '', model: '' },
+            },
+            embeddingProvider: { provider: 'openai', apiKey: '', model: '', baseUrl: '' },
+            temperature: 0.7,
+            defaultChatProvider: 'deepseek',
           },
         },
       },
@@ -121,7 +127,7 @@ describe('ChatPage', () => {
     const input = wrapper.findComponent(ChatInput)
     input.vm.$emit('send', 'new message')
 
-    expect(sessionStore.sendMessage).toHaveBeenCalledWith('new message', settingsStore.llmConfig)
+    expect(sessionStore.sendMessage).toHaveBeenCalledWith('new message', settingsStore.getLLMConfig())
   })
 
   it('calls store.sendMessage when EmptySession emits send', () => {
@@ -132,6 +138,6 @@ describe('ChatPage', () => {
     const empty = wrapper.findComponent(EmptySession)
     empty.vm.$emit('send', 'first message')
 
-    expect(sessionStore.sendMessage).toHaveBeenCalledWith('first message', settingsStore.llmConfig)
+    expect(sessionStore.sendMessage).toHaveBeenCalledWith('first message', settingsStore.getLLMConfig())
   })
 })

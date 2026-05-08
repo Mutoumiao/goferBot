@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { sidecarFetch } from '@/utils/sidecarClient'
-import type { AppConfig, LLMConfig } from '@/types'
+import type { AppConfig, LLMConfig, ChatProviderConfig, OllamaConfig } from '@/types'
 
 const DEFAULT_CONFIG: AppConfig = {
   providers: {
