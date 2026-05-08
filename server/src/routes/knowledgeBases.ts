@@ -313,4 +313,43 @@ app.post('/:id/folders', async (c) => {
   return c.json({ name: folderName, path: relativePath ? `${relativePath}/${folderName}` : folderName }, 201)
 })
 
+// PATCH /knowledge-bases/:id/files/:path — rename file (keeps extension)
+app.patch('/:id/files/*', async (c) => {
+  const id = c.req.param('id')
+  const prefix = `/${id}/files/`
+  const filePath = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : ''
+  const body = await c.req.json<{ newName: string }>()
+  const newBaseName = body.newName?.trim()
+
+  if (!newBaseName) {
+    return c.json({ error: 'New name is required' }, 400)
+  }
+
+  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(id) as
+    | KnowledgeBase
+    | undefined
+
+  if (!kb) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  const oldFullPath = path.join(kb.path, filePath)
+  if (!oldFullPath.startsWith(kb.path) || !fs.existsSync(oldFullPath)) {
+    return c.json({ error: 'File not found' }, 404)
+  }
+
+  const ext = path.extname(filePath)
+  const dir = path.dirname(filePath)
+  const newFileName = ext ? `${newBaseName}${ext}` : newBaseName
+  const newFullPath = path.join(kb.path, dir, newFileName)
+
+  if (newFullPath !== oldFullPath && fs.existsSync(newFullPath)) {
+    return c.json({ error: 'Name already exists' }, 409)
+  }
+
+  fs.renameSync(oldFullPath, newFullPath)
+
+  return c.json({ name: newFileName, path: dir === '.' ? newFileName : `${dir}/${newFileName}` })
+})
+
 export default app

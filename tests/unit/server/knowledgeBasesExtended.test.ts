@@ -113,3 +113,55 @@ describe('POST /knowledge-bases/:id/folders', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('PATCH /knowledge-bases/:id/files/:path', () => {
+  it('should rename a file', async () => {
+    const createRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'RenameKB' }),
+    })
+    const kb = (await createRes.json()) as { id: string }
+
+    await app.request(`/${kb.id}/files`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', files: [{ name: 'old.md', content: '# Hello' }] }),
+    })
+
+    const res = await app.request(`/${kb.id}/files/old.md`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newName: 'new' }),
+    })
+
+    expect(res.status).toBe(200)
+    const json = (await res.json()) as { name: string }
+    expect(json.name).toBe('new.md')
+  })
+
+  it('should keep extension when renaming', async () => {
+    const createRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'ExtKB' }),
+    })
+    const kb = (await createRes.json()) as { id: string }
+
+    await app.request(`/${kb.id}/files`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', files: [{ name: 'test.txt', content: 'content' }] }),
+    })
+
+    const res = await app.request(`/${kb.id}/files/test.txt`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newName: 'renamed' }),
+    })
+
+    expect(res.status).toBe(200)
+    const json = (await res.json()) as { name: string }
+    expect(json.name).toBe('renamed.txt')
+  })
+})
