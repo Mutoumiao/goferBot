@@ -14,6 +14,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const deletedKnowledgeBases = ref<KnowledgeBase[]>([])
+  const indexStatus = ref<Map<string, { totalFiles: number; indexedFiles: number; pendingFiles: number }>>(new Map())
 
   // Navigation history stack
   const history = ref<HistoryEntry[]>([{ type: 'browse', path: '' }])
@@ -367,6 +368,18 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     }
   }
 
+  async function loadIndexStatus(kbId: string) {
+    try {
+      const res = await sidecarFetch(`/knowledge-bases/${kbId}/index-status`)
+      if (res.ok) {
+        const data = (await res.json()) as { totalFiles: number; indexedFiles: number; pendingFiles: number }
+        indexStatus.value.set(kbId, data)
+      }
+    } catch (e) {
+      console.error('Failed to load index status:', e)
+    }
+  }
+
   return {
     knowledgeBases,
     selectedKbId,
@@ -383,6 +396,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     canGoForward,
     breadcrumb,
     deletedKnowledgeBases,
+    indexStatus,
     loadKnowledgeBases,
     createKnowledgeBase,
     deleteKnowledgeBase,
@@ -404,5 +418,6 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     createFolder,
     renameFile,
     deleteFile,
+    loadIndexStatus,
   }
 })

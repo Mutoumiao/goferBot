@@ -43,6 +43,17 @@ const isSearchMode = computed(() => {
   return state?.type === 'search'
 })
 
+const indexProgress = computed(() => {
+  const status = store.selectedKbId ? store.indexStatus.get(store.selectedKbId) : undefined
+  if (!status || status.totalFiles === 0) return 0
+  return Math.round((status.indexedFiles / status.totalFiles) * 100)
+})
+
+async function onSelectKb(id: string) {
+  await store.selectKb(id)
+  await store.loadIndexStatus(id)
+}
+
 function openNewKbDialog() {
   newKbName.value = ''
   newKbError.value = ''
@@ -205,7 +216,7 @@ function onCopyFile(fileName: string) {
           :key="kb.id"
           class="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 transition-colors"
           :class="store.selectedKbId === kb.id ? 'bg-accent-600/15 text-accent-400' : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'"
-          @click="store.selectKb(kb.id)"
+          @click="onSelectKb(kb.id)"
           @contextmenu="onKbContextMenu($event, kb.id)"
         >
           <span :class="`i-${kb.icon || 'mdi-database'} text-lg`" />
@@ -219,7 +230,23 @@ function onCopyFile(fileName: string) {
     </div>
 
     <!-- Right: file explorer -->
-    <div class="flex-1">
+    <div class="flex-1 flex flex-col">
+      <!-- Index status bar -->
+      <div
+        v-if="store.selectedKbId && store.indexStatus.get(store.selectedKbId)"
+        class="flex items-center gap-2 border-b border-surface-3 bg-surface-1 px-4 py-1.5"
+      >
+        <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
+          <div
+            class="h-full rounded-full bg-accent-500 transition-all"
+            :style="{ width: indexProgress + '%' }"
+          />
+        </div>
+        <span class="shrink-0 text-[11px] text-text-tertiary">
+          {{ store.indexStatus.get(store.selectedKbId)?.indexedFiles }}/{{ store.indexStatus.get(store.selectedKbId)?.totalFiles }}
+        </span>
+      </div>
+
       <FileExplorer
         v-if="store.selectedKb"
         :files="store.files"
