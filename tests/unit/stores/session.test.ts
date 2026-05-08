@@ -25,7 +25,7 @@ describe('useSessionStore', () => {
     const store = useSessionStore()
     expect(store.tabs).toHaveLength(1)
     expect(store.tabs[0].title).toBe('首页')
-    expect(store.tabs[0].closable).toBe(false)
+    expect(store.tabs[0].closable).toBe(true)
   })
 
   it('switches active tab', () => {

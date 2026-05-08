@@ -104,6 +104,17 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     }
   }
 
+  async function permanentlyDeleteKnowledgeBase(id: string) {
+    error.value = null
+    try {
+      const res = await sidecarFetch(`/knowledge-bases/${id}/permanent`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('彻底删除失败')
+      deletedKnowledgeBases.value = deletedKnowledgeBases.value.filter((k) => k.id !== id)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
   async function loadDeletedKnowledgeBases() {
     isLoading.value = true
     error.value = null
@@ -216,7 +227,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function moveFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
     error.value = null
     try {
-      const res = await sidecarFetch('/move', {
+      const res = await sidecarFetch('/knowledge-bases/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sourceKbId, sourcePath, targetKbId, targetPath }),
@@ -233,7 +244,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function copyFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
     error.value = null
     try {
-      const res = await sidecarFetch('/copy', {
+      const res = await sidecarFetch('/knowledge-bases/copy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sourceKbId, sourcePath, targetKbId, targetPath }),
@@ -284,23 +295,20 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function togglePin(id: string) {
     const kb = knowledgeBases.value.find((k) => k.id === id)
     if (!kb) return
-    const newPinned = kb.is_pinned ? 0 : 1
     error.value = null
     try {
       const res = await sidecarFetch(`/knowledge-bases/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_pinned: newPinned }),
+        body: JSON.stringify({ sort_order: Date.now() }),
       })
       if (!res.ok) throw new Error('置顶失败')
       const updated = (await res.json()) as KnowledgeBase
       const idx = knowledgeBases.value.findIndex((k) => k.id === id)
       if (idx !== -1) knowledgeBases.value[idx] = updated
-      knowledgeBases.value = [...knowledgeBases.value].sort((a, b) => {
-        if (a.is_pinned !== b.is_pinned) return b.is_pinned - a.is_pinned
-        if (a.is_pinned) return b.sort_order - a.sort_order
-        return b.created_at - a.created_at
-      })
+      knowledgeBases.value = [...knowledgeBases.value].sort(
+        (a, b) => b.sort_order - a.sort_order || b.created_at - a.created_at
+      )
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     }
@@ -380,6 +388,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     deleteKnowledgeBase,
     restoreKnowledgeBase,
     loadDeletedKnowledgeBases,
+    permanentlyDeleteKnowledgeBase,
     selectKb,
     loadFiles,
     navigateToPath,

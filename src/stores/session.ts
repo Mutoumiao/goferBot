@@ -6,7 +6,7 @@ import type { Message, Tab, LLMConfig } from '@/types'
 export const useSessionStore = defineStore('session', () => {
   // Tabs
   const tabs = ref<Tab[]>([
-    { id: 'home', type: 'chat', title: '首页', closable: false },
+    { id: 'home', type: 'chat', title: '首页', closable: true },
   ])
   const activeTabId = ref<string>('home')
 
@@ -28,11 +28,22 @@ export const useSessionStore = defineStore('session', () => {
 
   function closeTab(tabId: string) {
     const idx = tabs.value.findIndex((t) => t.id === tabId)
-    if (idx === -1 || !tabs.value[idx].closable) return
+    if (idx === -1) return
+
+    const tab = tabs.value[idx]
+    // 只剩一个空首页时不可删除
+    if (tabs.value.length === 1 && tab.type === 'chat' && !tab.sessionId) return
 
     tabs.value.splice(idx, 1)
     if (activeTabId.value === tabId) {
-      activeTabId.value = tabs.value[Math.min(idx, tabs.value.length - 1)]?.id ?? 'home'
+      activeTabId.value = tabs.value[Math.min(idx, tabs.value.length - 1)]?.id ?? ''
+    }
+
+    // 删光后自动新建首页
+    if (tabs.value.length === 0) {
+      const newHomeId = `home-${Date.now()}`
+      tabs.value.push({ id: newHomeId, type: 'chat', title: '首页', closable: true })
+      activeTabId.value = newHomeId
     }
   }
 
@@ -99,7 +110,7 @@ export const useSessionStore = defineStore('session', () => {
           id: newHomeId,
           type: 'chat',
           title: '首页',
-          closable: false,
+          closable: true,
         })
       }
 

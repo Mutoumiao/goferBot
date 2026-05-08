@@ -21,7 +21,7 @@ function ensureHomeTab() {
     sessionStore.switchTab(homeTab.id)
   } else {
     const newHomeId = `home-${Date.now()}`
-    sessionStore.addTab({ id: newHomeId, type: 'chat', title: '首页', closable: false })
+    sessionStore.addTab({ id: newHomeId, type: 'chat', title: '首页', closable: true })
   }
 }
 

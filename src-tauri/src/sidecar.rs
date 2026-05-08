@@ -130,6 +130,7 @@ async fn monitor_loop(
                     let mut handle = state.lock().await;
                     handle.port = Some(port);
                 }
+                println!("[sidecar] Sidecar ready on http://127.0.0.1:{}", port);
                 if is_restart {
                     emit_sidecar_restarted(&app_handle, port);
                 } else {

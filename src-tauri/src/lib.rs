@@ -131,7 +131,8 @@ async fn import_files(
     let mut imported = 0;
 
     for file_path in paths {
-        let content = fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
+        let bytes = fs::read(&file_path).map_err(|e| e.to_string())?;
+        let content = String::from_utf8_lossy(&bytes).to_string();
         let file_name = file_path
             .file_name()
             .ok_or("Invalid file path".to_string())?

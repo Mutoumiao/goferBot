@@ -51,6 +51,10 @@ function onSave() {
 </script>
 
 <template>
+  <!-- Safelist for tailwindcss-icons JIT scanner -->
+  <div class="hidden">
+    <span class="i-mdi-database i-mdi-books i-mdi-bookshelf i-mdi-folder i-mdi-folder-open i-mdi-file-document i-mdi-notebook i-mdi-book-open-page-variant i-mdi-school i-mdi-brain" />
+  </div>
   <Teleport to="body">
     <Transition name="fade">
       <div

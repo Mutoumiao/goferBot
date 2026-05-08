@@ -65,7 +65,7 @@ describe('useKnowledgeBaseStore remaining actions', () => {
     store.historyIndex = 0
 
     await store.moveFile('kb1', 'file.md', 'kb2', '')
-    expect(sidecarFetch).toHaveBeenCalledWith('/move', expect.any(Object))
+    expect(sidecarFetch).toHaveBeenCalledWith('/knowledge-bases/move', expect.any(Object))
   })
 
   it('copyFile calls POST /copy and refreshes files if target is selected', async () => {
@@ -80,7 +80,7 @@ describe('useKnowledgeBaseStore remaining actions', () => {
     store.historyIndex = 0
 
     await store.copyFile('kb1', 'file.md', 'kb2', '')
-    expect(sidecarFetch).toHaveBeenCalledWith('/copy', expect.any(Object))
+    expect(sidecarFetch).toHaveBeenCalledWith('/knowledge-bases/copy', expect.any(Object))
   })
 
   it('renameKnowledgeBase updates local list', async () => {
