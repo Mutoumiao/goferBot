@@ -4,9 +4,7 @@ import { nanoid } from 'nanoid'
 import { TextLoader } from 'langchain/document_loaders/fs/text'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 import db from '../db.js'
-import { getEmbedding } from './embedding.js'
-import type { EmbeddingConfig } from './embedding.js'
-import { getAppDataDir } from '../utils.js'
+import { getEmbedding, getEmbeddingConfigFromSettings } from './embedding.js'
 
 export interface IndexTask {
   knowledgeBaseId: string
@@ -52,17 +50,19 @@ async function processQueue(): Promise<void> {
   if (isProcessing) return
   isProcessing = true
 
-  while (queue.length > 0) {
-    const task = queue.shift()
-    if (!task) continue
-    try {
-      await indexFile(task)
-    } catch (err) {
-      console.error('[indexer] Failed to index file:', task.filePath, err)
+  try {
+    while (queue.length > 0) {
+      const task = queue.shift()
+      if (!task) continue
+      try {
+        await indexFile(task)
+      } catch (err) {
+        console.error('[indexer] Failed to index file:', task.filePath, err)
+      }
     }
+  } finally {
+    isProcessing = false
   }
-
-  isProcessing = false
 }
 
 async function indexFile(task: IndexTask): Promise<void> {
@@ -70,8 +70,6 @@ async function indexFile(task: IndexTask): Promise<void> {
   const docs = await loader.load()
   const fullText = docs.map((d) => d.pageContent).join('\n')
   if (!fullText.trim()) return
-
-  deleteExistingChunks(task.knowledgeBaseId, task.relativePath)
 
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 500,
@@ -100,22 +98,27 @@ async function indexFile(task: IndexTask): Promise<void> {
   )
 
   const insertFts = db.prepare(
-    `INSERT INTO fts_document_chunks (content, file_path) VALUES (?, ?)`
+    `INSERT INTO fts_document_chunks (rowid, content, file_path) VALUES (?, ?, ?)`
   )
 
   const now = Date.now()
-  for (let i = 0; i < chunks.length; i++) {
-    const chunkId = nanoid()
-    const embeddingBlob = embeddings[i] ? Buffer.from(new Float32Array(embeddings[i]).buffer) : null
 
-    insertChunk.run(chunkId, task.knowledgeBaseId, task.relativePath, chunks[i], embeddingBlob, i, now)
-    if (embeddings[i]) {
-      insertVec.run(chunkId, JSON.stringify(embeddings[i]))
-    } else {
-      insertVec.run(chunkId, JSON.stringify([]))
+  db.transaction(() => {
+    deleteExistingChunks(task.knowledgeBaseId, task.relativePath)
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkId = nanoid()
+      const embeddingBlob = embeddings[i] ? Buffer.from(new Float32Array(embeddings[i]).buffer) : null
+
+      insertChunk.run(chunkId, task.knowledgeBaseId, task.relativePath, chunks[i], embeddingBlob, i, now)
+      if (embeddings[i]) {
+        insertVec.run(chunkId, JSON.stringify(embeddings[i]))
+      } else {
+        insertVec.run(chunkId, JSON.stringify([]))
+      }
+      insertFts.run(chunkId, chunks[i], task.relativePath)
     }
-    insertFts.run(chunks[i], task.relativePath)
-  }
+  })()
 
   console.log(`[indexer] Indexed ${chunks.length} chunks for ${task.relativePath}`)
 }
@@ -129,24 +132,6 @@ function deleteExistingChunks(knowledgeBaseId: string, relativePath: string): vo
     db.prepare('DELETE FROM document_chunks WHERE id = ?').run(row.id)
     db.prepare('DELETE FROM vec_document_chunks WHERE chunk_id = ?').run(row.id)
     db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?').run(row.id)
-  }
-}
-
-function getEmbeddingConfigFromSettings(): EmbeddingConfig | null {
-  const configPath = path.join(getAppDataDir(), 'config.json')
-  if (!fs.existsSync(configPath)) return null
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-    const ec = config.embeddingProvider
-    if (!ec || !ec.apiKey) return null
-    return {
-      provider: ec.provider || 'openai',
-      model: ec.model || 'text-embedding-3-small',
-      baseUrl: ec.baseUrl || '',
-      apiKey: ec.apiKey,
-    }
-  } catch {
-    return null
   }
 }
 

@@ -1,33 +1,13 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import fs from 'node:fs'
-import path from 'node:path'
 import { nanoid } from 'nanoid'
 import db from '../db.js'
 import { streamChatCompletion } from '../services/llm.js'
 import { hybridSearch, buildRagPrompt } from '../services/rag.js'
-import { getAppDataDir } from '../utils.js'
-import type { ChatRequest, EmbeddingConfig } from '../types.js'
+import { getEmbeddingConfigFromSettings } from '../services/embedding.js'
+import type { ChatRequest } from '../types.js'
 
 const app = new Hono()
-
-function getEmbeddingConfig(): EmbeddingConfig | null {
-  const configPath = path.join(getAppDataDir(), 'config.json')
-  if (!fs.existsSync(configPath)) return null
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-    const ec = config.embeddingProvider
-    if (!ec || !ec.apiKey) return null
-    return {
-      provider: ec.provider || 'openai',
-      model: ec.model || 'text-embedding-3-small',
-      baseUrl: ec.baseUrl || '',
-      apiKey: ec.apiKey,
-    }
-  } catch {
-    return null
-  }
-}
 
 app.post('/', async (c) => {
   const body = await c.req.json<ChatRequest>()
@@ -63,10 +43,10 @@ app.post('/', async (c) => {
     .all(sessionId) as Array<{ role: string; content: string }>
 
   // RAG retrieval
-  let systemPrompt: string | undefined
+  let ragError: string | undefined
   if (knowledgeBaseIds && knowledgeBaseIds.length > 0) {
     try {
-      const embeddingConfig = getEmbeddingConfig()
+      const embeddingConfig = getEmbeddingConfigFromSettings()
       if (embeddingConfig) {
         const chunks = await hybridSearch(message, knowledgeBaseIds, embeddingConfig)
         if (chunks.length > 0) {
@@ -78,20 +58,27 @@ app.post('/', async (c) => {
             }
           }
         }
+      } else {
+        ragError = 'Embedding 配置缺失，无法检索知识库'
       }
     } catch (err) {
       console.error('[chat] RAG retrieval failed:', err)
+      ragError = '知识库检索失败，将直接回答'
     }
   }
 
   return streamSSE(c, async (stream) => {
+    if (ragError) {
+      await stream.writeSSE({ event: 'warning', data: JSON.stringify({ message: ragError }) })
+    }
+
     let assistantContent = ''
 
     try {
       await streamChatCompletion(history, config, async (chunk) => {
         assistantContent += chunk
         await stream.writeSSE({ data: JSON.stringify({ content: chunk }) })
-      }, systemPrompt)
+      })
 
       // Save assistant message after stream completes
       const assistantId = nanoid()

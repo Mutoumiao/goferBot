@@ -40,9 +40,8 @@ async function vectorSearch(
           `SELECT v.chunk_id, v.distance, d.content, d.file_path
            FROM vec_document_chunks v
            JOIN document_chunks d ON v.chunk_id = d.id
-           WHERE v.embedding MATCH ? AND d.knowledge_base_id = ?
-           ORDER BY v.distance
-           LIMIT ?`
+           WHERE v.embedding MATCH ? AND d.knowledge_base_id = ? AND k = ?
+           ORDER BY v.distance`
         )
         .all(queryVec, kbId, topK) as Array<{
           chunk_id: string

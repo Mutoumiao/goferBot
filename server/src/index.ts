@@ -68,8 +68,7 @@ async function main(): Promise<void> {
       CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
         content,
         file_path,
-        content='document_chunks',
-        content_rowid='id'
+        tokenize='unicode61'
       );
     `)
   } catch (e) {

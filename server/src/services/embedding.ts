@@ -1,3 +1,6 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { getAppDataDir } from '../utils.js'
 import type { LLMConfig } from '../types.js'
 
 export interface EmbeddingConfig {
@@ -15,6 +18,24 @@ function getDefaultEmbeddingBaseUrl(provider: string): string {
       return 'https://api.siliconflow.cn'
     default:
       return ''
+  }
+}
+
+export function getEmbeddingConfigFromSettings(): EmbeddingConfig | null {
+  const configPath = path.join(getAppDataDir(), 'config.json')
+  if (!fs.existsSync(configPath)) return null
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+    const ec = config.embeddingProvider
+    if (!ec || !ec.apiKey) return null
+    return {
+      provider: ec.provider || 'openai',
+      model: ec.model || 'text-embedding-3-small',
+      baseUrl: ec.baseUrl || '',
+      apiKey: ec.apiKey,
+    }
+  } catch {
+    return null
   }
 }
 
