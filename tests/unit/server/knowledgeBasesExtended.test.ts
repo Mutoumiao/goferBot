@@ -257,3 +257,20 @@ describe('POST /files/copy', () => {
     expect(dstJson.items.find((i) => i.name === 'dup(1).md')).toBeDefined()
   })
 })
+
+describe('GET /knowledge-bases/deleted', () => {
+  it('should return deleted knowledge bases', async () => {
+    const createRes = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'DeletedKB' }),
+    })
+    const kb = (await createRes.json()) as { id: string }
+    await app.request(`/${kb.id}`, { method: 'DELETE' })
+
+    const res = await app.request('/deleted')
+    expect(res.status).toBe(200)
+    const list = (await res.json()) as Array<{ name: string }>
+    expect(list.find((k) => k.name === 'DeletedKB')).toBeDefined()
+  })
+})

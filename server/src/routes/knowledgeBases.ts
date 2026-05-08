@@ -446,4 +446,12 @@ app.post('/copy', async (c) => {
   return c.json({ success: true, name: uniqueName })
 })
 
+// GET /deleted — list deleted (trashed) knowledge bases
+app.get('/deleted', (c) => {
+  const rows = db
+    .prepare('SELECT * FROM knowledge_bases WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC')
+    .all() as KnowledgeBase[]
+  return c.json(rows)
+})
+
 export default app

@@ -13,6 +13,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   const searchQuery = ref('')
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const deletedKnowledgeBases = ref<KnowledgeBase[]>([])
 
   // Navigation history stack
   const history = ref<HistoryEntry[]>([{ type: 'browse', path: '' }])
@@ -99,6 +100,19 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
       knowledgeBases.value.unshift(kb)
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  async function loadDeletedKnowledgeBases() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const res = await sidecarFetch('/knowledge-bases/deleted')
+      deletedKnowledgeBases.value = (await res.json()) as KnowledgeBase[]
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -247,10 +261,12 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     canGoBack,
     canGoForward,
     breadcrumb,
+    deletedKnowledgeBases,
     loadKnowledgeBases,
     createKnowledgeBase,
     deleteKnowledgeBase,
     restoreKnowledgeBase,
+    loadDeletedKnowledgeBases,
     selectKb,
     loadFiles,
     navigateToPath,
