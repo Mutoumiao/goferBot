@@ -245,6 +245,17 @@ app.post('/:id/files', async (c) => {
     fs.writeFileSync(filePath, file.content, 'utf-8')
   }
 
+  // 触发索引队列
+  const { enqueueIndexTask } = await import('../services/indexer.js')
+  for (const file of files) {
+    const filePath = path.join(targetDir, file.name)
+    enqueueIndexTask({
+      knowledgeBaseId: id,
+      filePath,
+      relativePath: relativePath ? `${relativePath}/${file.name}` : file.name,
+    })
+  }
+
   return c.json({ imported: files.length })
 })
 
@@ -508,6 +519,48 @@ app.delete('/:id/files/*', (c) => {
 
   fs.unlinkSync(fullPath)
   return c.json({ success: true })
+})
+
+// POST /knowledge-bases/:id/index — 重建索引
+app.post('/:id/index', async (c) => {
+  const id = c.req.param('id')
+  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(id) as
+    | KnowledgeBase
+    | undefined
+
+  if (!kb) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  // 删除该知识库已有的所有 chunks
+  const rows = db.prepare('SELECT id FROM document_chunks WHERE knowledge_base_id = ?').all(id) as Array<{ id: string }>
+  for (const row of rows) {
+    db.prepare('DELETE FROM document_chunks WHERE id = ?').run(row.id)
+    db.prepare('DELETE FROM vec_document_chunks WHERE chunk_id = ?').run(row.id)
+    db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?').run(row.id)
+  }
+
+  // 重新加入队列
+  const { enqueueKnowledgeBase } = await import('../services/indexer.js')
+  enqueueKnowledgeBase(id, kb.path)
+
+  return c.json({ success: true, queued: true })
+})
+
+// GET /knowledge-bases/:id/index-status — 索引状态
+app.get('/:id/index-status', async (c) => {
+  const id = c.req.param('id')
+  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(id) as
+    | KnowledgeBase
+    | undefined
+
+  if (!kb) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  const { getIndexStatus } = await import('../services/indexer.js')
+  const status = getIndexStatus(id)
+  return c.json(status)
 })
 
 export default app
