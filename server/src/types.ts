@@ -13,6 +13,7 @@ export interface Message {
   session_id: string
   role: 'user' | 'assistant'
   content: string
+  knowledge_base_ids: string | null
   created_at: number
 }
 

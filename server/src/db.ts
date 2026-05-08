@@ -89,4 +89,32 @@ function migrateKnowledgeBaseUniqueConstraint(): void {
 
 migrateKnowledgeBaseUniqueConstraint()
 
+// document_chunks 原始表
+const documentChunksSql = `
+CREATE TABLE IF NOT EXISTS document_chunks (
+  id TEXT PRIMARY KEY,
+  knowledge_base_id TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  content TEXT NOT NULL,
+  embedding BLOB,
+  chunk_index INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (knowledge_base_id) REFERENCES knowledge_bases(id)
+);
+CREATE INDEX IF NOT EXISTS idx_chunks_kb ON document_chunks(knowledge_base_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_file ON document_chunks(knowledge_base_id, file_path);
+`
+
+try {
+  db.exec(documentChunksSql)
+} catch (e) {
+  console.error('Failed to create document_chunks table:', e)
+  throw e
+}
+
+// Migration: messages 表增加 knowledge_base_ids 列
+try {
+  db.exec(`ALTER TABLE messages ADD COLUMN knowledge_base_ids TEXT;`)
+} catch { /* already exists */ }
+
 export default db
