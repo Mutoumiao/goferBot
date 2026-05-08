@@ -21,6 +21,7 @@
 | 历史管理 | #06 对话历史 | ready-for-agent | 历史列表、恢复会话、删除、重命名 |
 | 本地模型 | #07 Ollama 与错误处理 | ready-for-agent | Ollama 本地模型、全局错误处理、Loading/空状态 |
 | 质量保障 | #08 测试覆盖 | in-progress | 34 个测试文件、236 条用例全部通过，持续补充中 |
+| 质量保障 | #09 端到端测试 | in-progress | 阶1 前端 E2E 已搭建（6 条 Playwright 用例通过），阶2/阶3 待搭建 |
 
 ---
 
@@ -148,6 +149,18 @@
 - **内容**：补全所有前端组件测试、Store 测试、Sidecar API 集成测试、工具函数测试，覆盖率达标（lines >= 10%, branches >= 10%）
 - **进度**：当前 **34 个测试文件，236 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema。
 
+#### #09 端到端测试
+
+- **状态**：`in-progress`
+- **依赖**：#01 / #03b / #04 / #04b / #05 / #06
+- **优先级**：中
+- **内容**：三阶端到端测试体系：阶1 Playwright 前端 E2E（mock IPC）、阶2 Vitest + 真实 Sidecar 集成、阶3 Playwright + WebView2 CDP 全链路验收
+- **进度**：
+  - 阶1 已搭建：Playwright 配置、`tauri-ipc.ts` mock、`fixtures/knowledge-bases.ts`、Page Objects（ChatPage / KnowledgeBasePage）、`kb-context-menu.spec.ts`（3 条通过）、`chat-mention.spec.ts`（3 条通过）。`pnpm test:e2e` 稳定通过 6 条用例。
+  - 待补充阶1：settings.spec.ts（#05）、chat-history.spec.ts（#06）、kb-context-menu 剩余 9 个场景、http-routes.ts 统一拦截层、HistoryPage / SettingsPage Page Objects。
+  - 阶2 未开始：需创建 `tests/integration/`、`vitest.integration.config.ts`、mock Embedding/LLM server、sidecar 生命周期管理。
+  - 阶3 未开始：需创建 `tests/e2e-full/`、CDP 配置、Tauri 调试端口暴露。
+
 ---
 
 ## 测试用例
@@ -166,4 +179,4 @@
 
 ---
 
-*最后更新：2026-05-08*
+*最后更新：2026-05-08（新增 #09 端到端测试阶1搭建进度）*

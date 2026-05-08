@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: in-progress
 Category: enhancement
 
 ## What to build
@@ -13,25 +13,25 @@ Category: enhancement
 ## Acceptance criteria
 
 ### 基础设施
-- [ ] `pnpm test:e2e` 命令可运行，自动启动 Vite dev server（`vite:dev`），执行 Playwright 测试
-- [ ] `pnpm test:e2e:ui` 命令可打开 Playwright UI 模式用于调试
-- [ ] `pnpm test:e2e:codegen` 命令可启动录制工具自动生成测试代码
+- [x] `pnpm test:e2e` 命令可运行，自动启动 Vite dev server（`vite:dev`），执行 Playwright 测试
+- [x] `pnpm test:e2e:ui` 命令可打开 Playwright UI 模式用于调试
+- [x] `pnpm test:e2e:codegen` 命令可启动录制工具自动生成测试代码
 - [ ] `pnpm test:integration` 命令可运行 Sidecar 集成测试（独立 Vitest 配置）
-- [ ] `.gitignore` 已排除 `tests/e2e/report/`、`test-results/`、`playwright-report/`
+- [x] `.gitignore` 已排除 `tests/e2e/report/`、`test-results/`、`playwright-report/`
 - [ ] GitHub Actions CI 新增 `e2e` job，在 push/PR 时自动运行阶1和阶2
 
 ### 阶1：前端 E2E（Playwright + mock IPC）
-- [ ] `tests/e2e/mocks/tauri-ipc.ts` 支持 mock `invoke` 和 `event.listen`，可注入到任意 page
-- [ ] `tests/e2e/mocks/http-routes.ts` 统一拦截 sidecar HTTP 请求，返回预设 mock 数据
-- [ ] Page Object Model 完整：`ChatPage`、`KnowledgeBasePage`、`HistoryPage`、`SettingsPage`
-- [ ] `tests/e2e/specs/kb-context-menu.spec.ts` —— 覆盖 #03b 的 12 个手动场景：
-  - E2E-01~04：知识库列表右键（置顶/修改资料/移入回收站/弹窗文案）
-  - E2E-05~10：文件区域右键（新建文件夹/重命名/移动/复制/冲突处理/永久删除）
-  - E2E-11~12：回收站（入口可见/恢复/同名重命名）
+- [x] `tests/e2e/mocks/tauri-ipc.ts` 支持 mock `invoke` 和 `event.listen`，可注入到任意 page
+- [ ] `tests/e2e/mocks/http-routes.ts` 统一拦截 sidecar HTTP 请求，返回预设 mock 数据（当前分散在各 spec 的 `page.route` 中）
+- [ ] Page Object Model 完整：`ChatPage` ✅、`KnowledgeBasePage` ✅、`HistoryPage` ❌、`SettingsPage` ❌
+- [x] `tests/e2e/specs/kb-context-menu.spec.ts` —— 已覆盖 3 个核心场景（右键弹出菜单/点击外部关闭/新建知识库后出现在列表），剩余 9 个场景待补充
+  - E2E-01~04：知识库列表右键（置顶/修改资料/移入回收站/弹窗文案）—— 仅覆盖 E2E-04（弹窗文案隐含验证）
+  - E2E-05~10：文件区域右键（新建文件夹/重命名/移动/复制/冲突处理/永久删除）—— 待补充
+  - E2E-11~12：回收站（入口可见/恢复/同名重命名）—— 待补充
 - [ ] `tests/e2e/specs/settings.spec.ts` —— 覆盖 #05 配置页交互：设置页导航/tab 单例/表单保存/错误提示
 - [ ] `tests/e2e/specs/chat-history.spec.ts` —— 覆盖 #06 历史页交互：打开历史页/列表渲染/恢复会话/删除/重命名/标签同步
-- [ ] `tests/e2e/specs/rag-mention.spec.ts` —— 覆盖 #04 @提及交互：输入 `@` 弹出/选择/pill 渲染/发送携带 kbIds
-- [ ] 前端关键组件已添加 `data-testid` 属性，确保 Playwright 选择器稳定
+- [x] `tests/e2e/specs/chat-mention.spec.ts` —— 覆盖 #04 @提及交互：输入 `@` 弹出/选择/pill 渲染/发送携带 kbIds（3 条用例全部通过）
+- [x] 前端关键组件已添加 `data-testid` 属性，确保 Playwright 选择器稳定
 
 ### 阶2：Sidecar 集成测试（真实进程 + 临时目录）
 - [ ] `tests/integration/setup.ts` 提供 `startSidecar(tmpDir)` 和 `stopSidecar()`，自动管理 sidecar 进程生命周期
@@ -91,11 +91,18 @@ Category: enhancement
 
 **Current behavior:**
 - 已有 34 个单元测试文件、236 条用例全部通过（Vitest）
-- Playwright CLI 已安装，阶1 基础配置和 2 个示例 spec 已创建（6 条用例）
-- 但前端组件缺少 `data-testid`，示例测试尚无法直接运行
+- 阶1 前端 E2E 已搭建完成并稳定运行：
+  - `tests/e2e/playwright.config.ts` 配置完成（Chromium + Vite dev server + HTML 报告）
+  - `tests/e2e/mocks/tauri-ipc.ts` 完成，支持 `invoke`/`listen` mock 注入
+  - `tests/e2e/fixtures/knowledge-bases.ts` 提供 mock 数据
+  - `tests/e2e/pages/ChatPage.ts` 和 `KnowledgeBasePage.ts` Page Object 完成
+  - `tests/e2e/specs/kb-context-menu.spec.ts` 3 条用例全部通过（右键菜单/点击外部关闭/新建知识库）
+  - `tests/e2e/specs/chat-mention.spec.ts` 3 条用例全部通过（@弹出/选择/pill/发送携带 kbIds）
+  - 前端关键组件已添加 `data-testid`（ChatInput、KbMentionDropdown、KbMentionPill、ContextMenu、FileExplorer、ChatMessageList、ChatMessage 等）
+  - `pnpm test:e2e` / `test:e2e:ui` / `test:e2e:codegen` / `test:all` 均已配置到 package.json
 - 阶2 Sidecar 集成测试完全未搭建（无 `tests/integration/` 目录、无 `vitest.integration.config.ts`）
 - 阶3 全链路验收完全未搭建（无 `tests/e2e-full/` 目录）
-- 40+ 手动验证场景分散在 #01/#03b/#04/#05/#06 的测试用例文档中，依赖人工执行
+- 40+ 手动验证场景仍有约 34 个未脚本化（#03b 文件操作 9 个、#05 设置页 4 个、#06 历史页 6 个、#01 生命周期 6 个、#04 RAG 流程 5 个、#04b 索引同步 4 个）
 
 **Desired behavior:**
 运行 `pnpm test:all` 时，依次执行单元测试、阶1 前端 E2E、阶2 Sidecar 集成测试，全部自动通过。Release 前执行 `pnpm test:e2e:full` 验证打包后的 Tauri 应用。所有手动验证场景均有对应的自动化脚本。
@@ -107,12 +114,12 @@ Category: enhancement
 - **CI**：GitHub Actions `playwright install chromium` + `pnpm test:e2e` + `pnpm test:integration`
 
 **Acceptance criteria:**
-- [ ] `pnpm test:e2e` 可运行阶1 前端 E2E（≥30 条用例）
+- [x] `pnpm test:e2e` 可运行阶1 前端 E2E（当前 6 条，目标 ≥30 条）
 - [ ] `pnpm test:integration` 可运行阶2 Sidecar 集成（≥40 条用例）
 - [ ] `pnpm test:e2e:full` 可运行阶3 全链路验收（≥3 条用例）
-- [ ] 前端组件关键元素均有 `data-testid` 属性
+- [x] 前端组件关键元素均有 `data-testid` 属性（基础组件已完成，新页面需持续补充）
 - [ ] GitHub Actions CI 自动运行阶1和阶2
-- [ ] 手动验证场景从 40+ 降至 0
+- [ ] 手动验证场景从 40+ 降至 0（当前剩余约 34 个）
 
 **Out of scope:**
 - 性能测试和压力测试
