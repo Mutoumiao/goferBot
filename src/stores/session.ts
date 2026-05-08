@@ -104,6 +104,8 @@ export const useSessionStore = defineStore('session', () => {
         if (activeIdx !== -1) {
           tabs.value[activeIdx].sessionId = sessionId
           tabs.value[activeIdx].title = content.slice(0, 20) + (content.length > 20 ? '...' : '')
+          tabs.value[activeIdx].provider = config.provider
+          tabs.value[activeIdx].model = config.model
         }
 
         const newHomeId = `home-${Date.now()}`

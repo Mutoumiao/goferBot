@@ -72,6 +72,24 @@ describe('useSessionStore', () => {
     expect(store.activeMessages[1].content).toBe('你好')
   })
 
+  it('promotes home tab with provider and model on first message', async () => {
+    vi.mocked(sidecarFetch).mockResolvedValue({
+      ok: true,
+      body: createMockStream('data: {"content":"你好"}\n\n'),
+    } as Response)
+
+    const store = useSessionStore()
+    await store.sendMessage('你好', {
+      provider: 'openai',
+      model: 'gpt-4',
+      baseUrl: '',
+      apiKey: 'key',
+    })
+
+    expect(store.tabs[0].provider).toBe('openai')
+    expect(store.tabs[0].model).toBe('gpt-4')
+  })
+
   it('appends messages to existing session', async () => {
     vi.mocked(sidecarFetch).mockResolvedValue({
       ok: true,

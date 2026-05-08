@@ -5,19 +5,63 @@ import { useSettingsStore } from '@/stores/settings'
 import EmptySession from './EmptySession.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatInput from './ChatInput.vue'
+import ModelSelector from './ModelSelector.vue'
 
 const store = useSessionStore()
 const settings = useSettingsStore()
 
 const isEmpty = computed(() => !store.activeTab?.sessionId && store.activeMessages.length === 0)
 
+const currentProvider = computed(() => store.activeTab?.provider)
+const currentModel = computed(() => store.activeTab?.model)
+
 function handleSend(content: string) {
-  store.sendMessage(content, settings.llmConfig)
+  const cfg = store.activeTab?.provider
+    ? settings.getLLMConfig(store.activeTab.provider)
+    : settings.getLLMConfig()
+  if (!cfg) {
+    store.sendError = '未配置可用的 LLM 提供商，请前往设置'
+    return
+  }
+  store.sendMessage(content, cfg)
+}
+
+function handleModelChange(provider: string, model: string) {
+  const idx = store.tabs.findIndex((t) => t.id === store.activeTabId)
+  if (idx !== -1) {
+    store.tabs[idx].provider = provider
+    store.tabs[idx].model = model
+  }
+}
+
+function handleTitleBlur(e: FocusEvent) {
+  const target = e.target as HTMLInputElement
+  const idx = store.tabs.findIndex((t) => t.id === store.activeTabId)
+  if (idx !== -1) {
+    store.tabs[idx].title = target.value.trim() || store.tabs[idx].title
+  }
 }
 </script>
 
 <template>
   <div class="flex h-full flex-col">
+    <!-- Top bar -->
+    <div
+      v-if="!isEmpty"
+      class="flex h-12 shrink-0 items-center justify-between border-b border-border-default bg-surface-1 px-4"
+    >
+      <input
+        :value="store.activeTab?.title ?? '首页'"
+        class="bg-transparent text-sm font-medium text-text-primary outline-none"
+        @blur="handleTitleBlur"
+      />
+      <ModelSelector
+        :provider="currentProvider"
+        :model="currentModel"
+        @change="handleModelChange"
+      />
+    </div>
+
     <EmptySession v-if="isEmpty" @send="handleSend" />
     <template v-else>
       <ChatMessageList :messages="store.activeMessages" />
