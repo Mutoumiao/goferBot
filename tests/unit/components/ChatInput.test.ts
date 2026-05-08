@@ -14,7 +14,7 @@ describe('ChatInput', () => {
     await textarea.setValue('hello')
     await wrapper.find('button').trigger('click')
     expect(wrapper.emitted('send')).toHaveLength(1)
-    expect(wrapper.emitted('send')![0]).toEqual(['hello'])
+    expect(wrapper.emitted('send')![0]).toEqual(['hello', []])
   })
 
   it('emits send on Enter key', async () => {
@@ -23,7 +23,7 @@ describe('ChatInput', () => {
     await textarea.setValue('world')
     await textarea.trigger('keydown', { key: 'Enter', shiftKey: false })
     expect(wrapper.emitted('send')).toHaveLength(1)
-    expect(wrapper.emitted('send')![0]).toEqual(['world'])
+    expect(wrapper.emitted('send')![0]).toEqual(['world', []])
   })
 
   it('does not emit send on Shift+Enter', async () => {
