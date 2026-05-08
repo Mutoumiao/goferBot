@@ -14,12 +14,19 @@ function getDefaultBaseUrl(provider: string): string {
 export async function streamChatCompletion(
   messages: Array<{ role: string; content: string }>,
   config: LLMConfig,
-  onChunk: (content: string) => void | Promise<void>
+  onChunk: (content: string) => void | Promise<void>,
+  systemPrompt?: string
 ): Promise<void> {
   const url = config.baseUrl || getDefaultBaseUrl(config.provider)
   if (!url) {
     throw new Error(`Unknown provider: ${config.provider}`)
   }
+
+  const apiMessages: Array<{ role: string; content: string }> = []
+  if (systemPrompt) {
+    apiMessages.push({ role: 'system', content: systemPrompt })
+  }
+  apiMessages.push(...messages)
 
   const response = await fetch(`${url}/v1/chat/completions`, {
     method: 'POST',
@@ -29,7 +36,7 @@ export async function streamChatCompletion(
     },
     body: JSON.stringify({
       model: config.model,
-      messages,
+      messages: apiMessages,
       stream: true,
     }),
   })

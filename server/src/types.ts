@@ -53,3 +53,10 @@ export interface ImportFile {
   name: string
   content: string
 }
+
+export interface EmbeddingConfig {
+  provider: string
+  model: string
+  baseUrl: string
+  apiKey: string
+}
