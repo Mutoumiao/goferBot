@@ -70,4 +70,10 @@ describe('sidecarClient', () => {
     const result = await healthCheck()
     expect(result).toBe(false)
   })
+
+  it('healthCheck returns false when request times out', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('The operation was aborted'))
+    const result = await healthCheck()
+    expect(result).toBe(false)
+  })
 })

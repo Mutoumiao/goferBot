@@ -22,6 +22,17 @@ beforeEach(() => {
   invoke.mockClear()
 })
 
+describe('initial state', () => {
+  it('has correct default state', () => {
+    const store = useKnowledgeBaseStore()
+    expect(store.knowledgeBases).toEqual([])
+    expect(store.selectedKbId).toBeNull()
+    expect(store.files).toEqual([])
+    expect(store.history).toEqual([{ type: 'browse', path: '' }])
+    expect(store.historyIndex).toBe(0)
+  })
+})
+
 describe('loadKnowledgeBases', () => {
   it('should populate the knowledge base list', async () => {
     sidecarFetch.mockResolvedValueOnce({
@@ -35,6 +46,16 @@ describe('loadKnowledgeBases', () => {
 
     expect(store.knowledgeBases.length).toBe(1)
     expect(store.knowledgeBases[0].name).toBe('KB One')
+  })
+
+  it('should set error and isLoading on failure', async () => {
+    sidecarFetch.mockRejectedValueOnce(new Error('Network error'))
+
+    const store = useKnowledgeBaseStore()
+    await store.loadKnowledgeBases()
+
+    expect(store.error).toContain('Network error')
+    expect(store.isLoading).toBe(false)
   })
 })
 
@@ -63,6 +84,22 @@ describe('createKnowledgeBase', () => {
 
     expect(store.knowledgeBases.length).toBe(1)
     expect(store.selectedKbId).toBe('new-kb')
+  })
+
+  it('should throw and set error on duplicate name', async () => {
+    sidecarFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'Knowledge base already exists' }),
+    } as Response)
+
+    const store = useKnowledgeBaseStore()
+    store.knowledgeBases = [
+      { id: 'kb1', name: 'Existing', path: '/tmp', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' },
+    ]
+
+    await expect(store.createKnowledgeBase('Existing')).rejects.toThrow('Knowledge base already exists')
+    expect(store.error).toContain('already exists')
+    expect(store.knowledgeBases).toHaveLength(1)
   })
 })
 
@@ -142,6 +179,60 @@ describe('searchFiles', () => {
     expect(store.searchResults.length).toBe(1)
     expect(store.searchQuery).toBe('match')
     expect(store.history[store.historyIndex].type).toBe('search')
+  })
+
+  it('should clear results on empty query', async () => {
+    const store = useKnowledgeBaseStore()
+    store.selectedKbId = 'kb1'
+    store.searchResults = [{ name: 'prev.md', type: 'file' as const, size: 1, updatedAt: 1, relativePath: 'prev.md' }]
+
+    await store.searchFiles('')
+
+    expect(store.searchResults).toEqual([])
+  })
+})
+
+describe('breadcrumb', () => {
+  it('computes breadcrumb from current path', () => {
+    const store = useKnowledgeBaseStore()
+    store.history = [{ type: 'browse', path: 'a/b/c' }]
+    store.historyIndex = 0
+    expect(store.breadcrumb).toEqual(['a', 'b', 'c'])
+  })
+
+  it('returns empty breadcrumb for root path', () => {
+    const store = useKnowledgeBaseStore()
+    store.history = [{ type: 'browse', path: '' }]
+    store.historyIndex = 0
+    expect(store.breadcrumb).toEqual([])
+  })
+
+  it('returns empty breadcrumb when in search mode', () => {
+    const store = useKnowledgeBaseStore()
+    store.history = [{ type: 'search', query: 'q' }]
+    store.historyIndex = 0
+    expect(store.breadcrumb).toEqual([])
+  })
+})
+
+describe('history truncation', () => {
+  it('truncates forward history when navigating to new path', async () => {
+    sidecarFetch.mockResolvedValue({
+      json: async () => ({ items: [] }),
+    } as Response)
+
+    const store = useKnowledgeBaseStore()
+    store.selectedKbId = 'kb1'
+
+    store.navigateToPath('folderA')
+    store.navigateToPath('folderA/subB')
+    store.goBack()
+    expect(store.historyIndex).toBe(1)
+
+    store.navigateToPath('folderC')
+    expect(store.history).toHaveLength(3)
+    expect(store.history[2].path).toBe('folderC')
+    expect(store.canGoForward).toBe(false)
   })
 })
 

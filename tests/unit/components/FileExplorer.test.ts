@@ -119,6 +119,15 @@ describe('FileExplorer', () => {
     expect(wrapper.emitted('search')![0]).toEqual(['query'])
   })
 
+  it('emits empty search when input is cleared', async () => {
+    const wrapper = mountExplorer()
+    const input = wrapper.find('input[type="text"]')
+    await input.setValue('')
+    await input.trigger('keyup.enter')
+    expect(wrapper.emitted('search')).toHaveLength(1)
+    expect(wrapper.emitted('search')![0]).toEqual([''])
+  })
+
   it('emits importFiles on add button click', async () => {
     const wrapper = mountExplorer()
     const addBtn = wrapper.findAll('button').find((b) => b.text().includes('添加文件'))

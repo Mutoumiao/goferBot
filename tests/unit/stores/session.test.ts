@@ -112,4 +112,49 @@ describe('useSessionStore', () => {
     expect(store.sendError).toContain('Bad Request')
     expect(store.isSending).toBe(false)
   })
+
+  it('sets isSending to true during message send and false after', async () => {
+    vi.mocked(sidecarFetch).mockResolvedValue({
+      ok: true,
+      body: createMockStream('data: {"content":"reply"}\n\n'),
+    } as Response)
+
+    const store = useSessionStore()
+    const promise = store.sendMessage('hello', {
+      provider: 'test',
+      model: 'test',
+      baseUrl: '',
+      apiKey: 'key',
+    })
+
+    expect(store.isSending).toBe(true)
+    await promise
+    expect(store.isSending).toBe(false)
+  })
+
+  it('appends streaming content to assistant message chunk by chunk', async () => {
+    vi.mocked(sidecarFetch).mockResolvedValue({
+      ok: true,
+      body: createMockStream(
+        'data: {"content":"Hello "}\n\ndata: {"content":"world"}\n\ndata: {"content":"!"}\n\n'
+      ),
+    } as Response)
+
+    const store = useSessionStore()
+    store.addTab({ id: 't1', type: 'chat', title: 'Stream', closable: true, sessionId: 'sess-1' })
+    store.messages.set('sess-1', [
+      { id: 'm1', session_id: 'sess-1', role: 'user', content: 'prev', created_at: 1 },
+    ])
+
+    await store.sendMessage('stream', {
+      provider: 'test',
+      model: 'test',
+      baseUrl: '',
+      apiKey: 'key',
+    })
+
+    const msgs = store.messages.get('sess-1')
+    expect(msgs).toHaveLength(3)
+    expect(msgs![msgs!.length - 1].content).toBe('Hello world!')
+  })
 })

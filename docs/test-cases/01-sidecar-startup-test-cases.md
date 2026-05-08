@@ -58,7 +58,7 @@
 | TC-01-026 | 事件监听权限异常 | `listen()` 抛出权限错误 | 调用 `initSidecar()` | `sidecarStatus = 'error'`，错误信息提示权限配置 |
 
 **已有自动化测试**: `tests/unit/composables/useSidecar.test.ts`  
-**覆盖范围**: TC-01-019 ~ TC-01-026
+**覆盖范围**: TC-01-019 ~ TC-01-026（全部覆盖）
 
 ## 1.6 前端 — sidecarClient 工具
 
@@ -73,7 +73,7 @@
 | TC-01-033 | healthCheck 超时 | sidecar 无响应 | 调用 `healthCheck()` | 返回 `false`（AbortSignal 2s 超时） |
 
 **已有自动化测试**: `tests/unit/utils/sidecarClient.test.ts`  
-**覆盖范围**: TC-01-027 ~ TC-01-033
+**覆盖范围**: TC-01-027 ~ TC-01-033（全部覆盖）
 
 ---
 

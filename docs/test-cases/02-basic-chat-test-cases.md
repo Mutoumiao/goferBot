@@ -35,7 +35,7 @@
 | TC-02-018 | 单例页面标签不重复 | 已存在 knowledge-base 标签 | `addTab({ type: 'knowledge-base' })` | 不重复添加，切换到已有标签（注：由 App.vue 或调用方保证） |
 
 **已有自动化测试**: `tests/unit/stores/session.test.ts`  
-**覆盖范围**: TC-02-009 ~ TC-02-018
+**覆盖范围**: TC-02-009 ~ TC-02-017（TC-02-018 单例标签防重复由调用方/App.vue 保证，不在 store 层测试）
 
 ## 2.3 前端 — ChatPage 组件
 
@@ -63,7 +63,7 @@
 | TC-02-030 | loading 时禁用发送 | `loading = true` | 尝试点击发送按钮 | 按钮 disabled 或点击无响应 |
 
 **已有自动化测试**: `tests/unit/components/ChatInput.test.ts`  
-**覆盖范围**: TC-02-026 ~ TC-02-030
+**覆盖范围**: TC-02-026 ~ TC-02-030（全部覆盖）
 
 ## 2.5 前端 — MarkdownRender 组件
 
@@ -77,7 +77,8 @@
 | TC-02-036 | 列表渲染 | content = "- a\n- b" | 挂载组件 | 存在 `<ul><li>a</li><li>b</li></ul>` |
 
 **已有自动化测试**: `tests/unit/components/MarkdownRender.test.ts`  
-**覆盖范围**: TC-02-031 ~ TC-02-033
+**覆盖范围**: TC-02-031、TC-02-032、TC-02-035、TC-02-036  
+**待实现**: TC-02-033（代码块复制按钮渲染）、TC-02-034（点击复制按钮）—— 复制按钮生成逻辑尚未接入 `renderMarkdown`
 
 ## 2.6 前端 — ChatMessage 组件
 
@@ -119,33 +120,12 @@
 **已有自动化测试**: `tests/unit/components/EmptySession.test.ts`  
 **覆盖范围**: TC-02-047 ~ TC-02-052
 
-## 2.6 前端 — ChatMessageList 组件
-
-| TC-ID | 测试项 | 前置条件 | 测试步骤 | 预期结果 |
-|---|---|---|---|---|
-| TC-02-037 | 空消息列表显示空态 | `messages = []` | 挂载组件 | 显示空状态提示或无消息占位 |
-| TC-02-038 | 消息列表渲染 | `messages` 有 user 和 assistant 各一条 | 挂载组件 | 渲染两条消息，用户消息靠右，AI 消息靠左 |
-| TC-02-039 | 用户消息样式 | 有 user 消息 | 挂载组件 | 用户消息区域有浅色背景类名 |
-| TC-02-040 | AI 消息 Markdown 渲染 | assistant 消息包含 Markdown | 挂载组件 | 消息内容通过 MarkdownRender 组件渲染 |
-| TC-02-041 | 滚动到底部 | 消息列表更新 | 添加新消息后 | 自动滚动到列表最底部 |
-| TC-02-042 | 流式消息实时更新 | assistant 消息的 content 被外部修改 | 更新 props | 组件重新渲染，显示最新内容 |
-
-## 2.7 前端 — EmptySession 组件
-
-| TC-ID | 测试项 | 前置条件 | 测试步骤 | 预期结果 |
-|---|---|---|---|---|
-| TC-02-043 | 大输入框渲染 | 无 | 挂载组件 | 存在居中的大输入框和发送按钮 |
-| TC-02-044 | 快捷提问胶囊渲染 | 无 | 挂载组件 | 存在 3-4 个固定文案的快捷提问胶囊按钮 |
-| TC-02-045 | 点击胶囊发送对应问题 | 点击第一个胶囊 | 模拟点击 | 触发 `send` 事件，payload 为胶囊文案 |
-| TC-02-046 | 输入框发送 | 输入"问题"，点击发送 | 模拟输入和点击 | 触发 `send` 事件，payload 为"问题" |
-
 ---
 
 ## 待补充的自动化测试
 
 | TC-ID 范围 | 测试层 | 建议方案 |
 |---|---|---|
-| TC-02-001 ~ TC-02-008 | Sidecar API / SQLite | 为 `POST /chat`、`GET /sessions` 添加 Hono 路由测试，验证 SSE 格式和数据库写入 |
 | TC-02-001 ~ TC-02-008 | Sidecar API / SQLite | 为 `POST /chat`、`GET /sessions` 添加 Hono 路由测试，验证 SSE 格式和数据库写入 |
 
 ---

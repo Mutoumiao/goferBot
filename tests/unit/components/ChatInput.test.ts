@@ -3,6 +3,11 @@ import { mount } from '@vue/test-utils'
 import ChatInput from '@/components/ChatInput.vue'
 
 describe('ChatInput', () => {
+  it('renders a textarea element', () => {
+    const wrapper = mount(ChatInput)
+    expect(wrapper.find('textarea').exists()).toBe(true)
+  })
+
   it('emits send on button click', async () => {
     const wrapper = mount(ChatInput)
     const textarea = wrapper.find('textarea')

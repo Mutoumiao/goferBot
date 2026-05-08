@@ -24,4 +24,20 @@ describe('MarkdownRender', () => {
     expect(wrapper.html()).toContain('<pre')
     expect(wrapper.html()).toContain('hljs')
   })
+
+  it('renders inline code', () => {
+    const wrapper = mount(MarkdownRender, {
+      props: { content: '使用 `npm install`' },
+    })
+    expect(wrapper.html()).toContain('<code>npm install</code>')
+  })
+
+  it('renders unordered list', () => {
+    const wrapper = mount(MarkdownRender, {
+      props: { content: '- a\n- b' },
+    })
+    expect(wrapper.html()).toContain('<ul>')
+    expect(wrapper.html()).toContain('<li>a</li>')
+    expect(wrapper.html()).toContain('<li>b</li>')
+  })
 })

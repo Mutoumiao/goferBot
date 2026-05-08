@@ -23,7 +23,7 @@
 | TC-03-011 | 恢复未删除的知识库 | deleted_at 为 NULL | POST restore | 返回 404 |
 
 **已有自动化测试**: `tests/unit/server/knowledgeBases.test.ts`  
-**覆盖范围**: TC-03-001 ~ TC-03-011
+**覆盖范围**: TC-03-001 ~ TC-03-011（全部覆盖）
 
 ## 3.2 Sidecar API — 文件操作
 
@@ -42,7 +42,7 @@
 | TC-03-022 | 搜索跨目录匹配 | 子目录中也有匹配项 | GET 请求 | results 包含所有层级中匹配的文件和目录，带 relativePath |
 
 **已有自动化测试**: `tests/unit/server/knowledgeBases.test.ts`  
-**覆盖范围**: TC-03-012 ~ TC-03-022
+**覆盖范围**: TC-03-012 ~ TC-03-022（全部覆盖）
 
 ## 3.3 前端 — useKnowledgeBaseStore（Pinia）
 
@@ -67,8 +67,8 @@
 | TC-03-039 | 搜索态面包屑为空 | history 当前项为 search | 读取 `breadcrumb` | 返回 `[]` |
 | TC-03-040 | 前进截断历史 | historyIndex 不在末尾，再 push 新路径 | `navigateToPath('new')` | history 中被截断，只保留到当前 index 为止，再追加新项 |
 
-**已有自动化测试**: `src/stores/knowledgeBase.spec.ts`  
-**覆盖范围**: TC-03-023 ~ TC-03-040
+**已有自动化测试**: `src/stores/knowledgeBase.spec.ts` + `tests/unit/stores/knowledgeBaseRemaining.test.ts` + `tests/unit/stores/knowledgeBaseExtended.test.ts`  
+**覆盖范围**: TC-03-023 ~ TC-03-040（全部覆盖，分散在 3 个 store 测试文件中）
 
 ## 3.4 前端 — KnowledgeBasePage 组件
 
@@ -87,7 +87,7 @@
 | TC-03-051 | 生命周期 onMounted 加载列表 | 无 | 挂载组件 | 自动调用 `store.loadKnowledgeBases()` |
 
 **已有自动化测试**: `tests/unit/components/KnowledgeBasePage.test.ts`  
-**覆盖范围**: TC-03-041 ~ TC-03-051（基础渲染和交互覆盖，弹窗验证细节待手动验证）
+**覆盖范围**: TC-03-041 ~ TC-03-051（全部覆盖）
 
 ## 3.5 前端 — FileExplorer 组件
 
@@ -104,7 +104,7 @@
 | TC-03-060 | 后退/前进按钮状态 | `canGoBack = false`，`canGoForward = false` | 挂载组件 | 后退/前进按钮 disabled 或隐藏 |
 
 **已有自动化测试**: `tests/unit/components/FileExplorer.test.ts`  
-**覆盖范围**: TC-03-052 ~ TC-03-060（基础渲染和事件触发覆盖，按钮 disabled 状态样式待手动验证）
+**覆盖范围**: TC-03-052 ~ TC-03-059（TC-03-060 前进/后退按钮 disabled 状态由父组件/store 控制，未在组件层单独测试）
 
 ## 3.6 集成 — 文件导入链路（前端 → Rust → Sidecar）
 

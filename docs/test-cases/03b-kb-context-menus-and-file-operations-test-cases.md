@@ -84,13 +84,13 @@
 | UI-07 | 按 Escape 取消编辑 | 按 Escape 键 | 触发 `cancel` 事件 | `InlineRename.test.ts` |
 | UI-08 | 失焦时保存新名称 | 输入 `newname`，触发 blur | 触发 `save` 事件，参数为 `newname` | `InlineRename.test.ts` |
 
-### 2.3 EditKbDialog.vue（手动验证）
+### 2.3 EditKbDialog.vue
 
-| 编号 | 场景 | 操作 | 预期结果 |
-|------|------|------|----------|
-| UI-09 | 弹窗正确显示当前名称和图标 | 打开修改资料弹窗 | 输入框预填原名称，图标网格中高亮当前图标 |
-| UI-10 | 保存时触发 save 事件 | 修改名称并选择新图标，点击保存 | 触发 `save` 事件，携带新名称和新图标 |
-| UI-11 | 点击关闭或遮罩取消 | 点击关闭按钮或遮罩层 | 触发 `close` 事件，不触发 `save` |
+| 编号 | 场景 | 操作 | 预期结果 | 自动化测试 |
+|------|------|------|----------|------------|
+| UI-09 | 弹窗正确显示当前名称和图标 | 打开修改资料弹窗 | 输入框预填原名称，图标网格中高亮当前图标 | `EditKbDialog.test.ts` |
+| UI-10 | 保存时触发 save 事件 | 修改名称并选择新图标，点击保存 | 触发 `save` 事件，携带新名称和新图标 | `EditKbDialog.test.ts` |
+| UI-11 | 点击关闭或遮罩取消 | 点击关闭按钮或遮罩层 | 触发 `close` 事件，不触发 `save` | `EditKbDialog.test.ts` |
 
 ### 2.4 MoveCopyDialog.vue（手动验证）
 
@@ -101,12 +101,12 @@
 | UI-14 | 面包屑导航可点击 | 双击进入子文件夹，点击面包屑 | 面包屑正确显示路径，点击可回退到对应层级 |
 | UI-15 | 点击确认触发移动/复制 | 选择目标库和路径，点击"移动至此" | 触发对应 sidecar API，弹窗关闭 |
 
-### 2.5 RecycleBinPage.vue（手动验证）
+### 2.5 RecycleBinPage.vue
 
-| 编号 | 场景 | 操作 | 预期结果 |
-|------|------|------|----------|
-| UI-16 | 显示已删除知识库列表 | 进入回收站页面 | 列表展示已删除知识库名称和删除时间 |
-| UI-17 | 恢复知识库 | 点击恢复按钮 | 该知识库从回收站消失，回到知识库列表；若同名则重命名为"原名-副本" |
+| 编号 | 场景 | 操作 | 预期结果 | 自动化测试 |
+|------|------|------|----------|------------|
+| UI-16 | 显示已删除知识库列表 | 进入回收站页面 | 列表展示已删除知识库名称和删除时间 | `RecycleBinPage.test.ts` |
+| UI-17 | 恢复知识库 | 点击恢复按钮 | 该知识库从回收站消失，回到知识库列表；若同名则重命名为"原名-副本" | `RecycleBinPage.test.ts` |
 
 ---
 
@@ -158,10 +158,10 @@
 | 类别 | 自动化测试数 | 手动验证数 | 总计 |
 |------|-------------|-----------|------|
 | Sidecar API | 10 | 0 | 10 |
-| 前端组件 | 33 | 7 | 40 |
+| 前端组件 | 38 | 2 | 40 |
 | Store | 14 | 0 | 14 |
 | 端到端交互 | 0 | 12 | 12 |
-| **合计** | **57** | **19** | **76** |
+| **合计** | **62** | **14** | **76** |
 
 ---
 
@@ -177,3 +177,11 @@
 | `tests/unit/components/RecycleBinPage.test.ts` | 回收站页面测试（5 例） |
 | `tests/unit/stores/knowledgeBaseExtended.test.ts` | Store 扩展测试（3 例） |
 | `tests/unit/stores/knowledgeBaseRemaining.test.ts` | Store 剩余方法测试（8 例） |
+| `tests/unit/components/EditKbDialog.test.ts` | 修改资料弹窗自动化测试（7 例，覆盖 UI-09 ~ UI-11） |
+| `tests/unit/components/RecycleBinPage.test.ts` | 回收站页面自动化测试（5 例，覆盖 UI-16 ~ UI-17） |
+
+> **补充说明**：以下测试文件虽未在本 Issue 测试用例中逐条列出，但已作为独立组件/模块的自动化测试存在：
+> - `tests/unit/stores/settings.test.ts` — Settings Store（4 例）
+> - `tests/unit/components/TabBar.test.ts` — TabBar 组件（6 例）
+> - `tests/unit/components/SideBar.test.ts` — SideBar 组件（7 例）
+> - `tests/unit/components/SplashScreen.test.ts` — SplashScreen 组件（4 例）

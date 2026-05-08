@@ -105,4 +105,28 @@ describe('useSidecar', () => {
     expect(tauriApi.invoke).toHaveBeenCalledWith('restart_sidecar')
     expect(sidecarStatus.value).toBe('loading')
   })
+
+  it('should be idempotent when initSidecar is called multiple times', async () => {
+    vi.mocked(tauriApi.invoke).mockResolvedValue(11451)
+    await initSidecar()
+    expect(sidecarStatus.value).toBe('ready')
+    expect(sidecarPort.value).toBe(11451)
+
+    // Clear mock to track only calls from second initSidecar
+    vi.mocked(tauriApi.invoke).mockClear()
+    await initSidecar()
+    // Second call should not re-execute; port stays at first value
+    expect(sidecarPort.value).toBe(11451)
+    expect(vi.mocked(tauriApi.invoke)).not.toHaveBeenCalled()
+  })
+
+  it('should set error when listen throws permission error', async () => {
+    vi.mocked(tauriApi.invoke).mockRejectedValue(new Error('not ready'))
+    vi.mocked(tauriEvent.listen).mockRejectedValue(new Error('permission denied'))
+
+    await initSidecar()
+
+    expect(sidecarStatus.value).toBe('error')
+    expect(sidecarError.value).toContain('权限')
+  })
 })
