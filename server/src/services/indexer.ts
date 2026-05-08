@@ -66,6 +66,8 @@ async function processQueue(): Promise<void> {
 }
 
 async function indexFile(task: IndexTask): Promise<void> {
+  if (!fs.existsSync(task.filePath)) return
+
   const loader = new TextLoader(task.filePath)
   const docs = await loader.load()
   const fullText = docs.map((d) => d.pageContent).join('\n')

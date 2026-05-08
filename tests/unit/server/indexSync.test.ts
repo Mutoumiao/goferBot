@@ -33,7 +33,7 @@ beforeAll(() => {
 
 afterAll(() => {
   db.close()
-  fs.rmSync(testDir, { recursive: true, force: true })
+  try { fs.rmSync(testDir, { recursive: true, force: true }) } catch { /* ignore */ }
 })
 
 beforeEach(() => {
