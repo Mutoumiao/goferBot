@@ -4,7 +4,6 @@ import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import FileExplorer from './FileExplorer.vue'
 import ContextMenu from './ContextMenu.vue'
 import EditKbDialog from './EditKbDialog.vue'
-import RecycleBinPage from './RecycleBinPage.vue'
 import MoveCopyDialog from './MoveCopyDialog.vue'
 
 const store = useKnowledgeBaseStore()
@@ -24,8 +23,8 @@ const editKbId = ref('')
 const editKbName = ref('')
 const editKbIcon = ref('')
 
-// Recycle bin
-const showRecycleBin = ref(false)
+// Auto rename after creating folder
+const autoRenameFile = ref<string>()
 
 // Move/Copy dialog
 const moveCopyMode = ref<'move' | 'copy'>('move')
@@ -138,9 +137,16 @@ function onImportFiles() {
   store.importFiles()
 }
 
-function onCreateFolder() {
+async function onCreateFolder() {
   const defaultName = `未命名文件夹_${Date.now().toString().slice(-4)}`
-  store.createFolder(defaultName)
+  const createdName = await store.createFolder(defaultName)
+  if (createdName) {
+    autoRenameFile.value = createdName
+  }
+}
+
+function onAutoRenameConsumed() {
+  autoRenameFile.value = undefined
 }
 
 function onRenameFile(oldName: string, newName: string) {
@@ -198,31 +204,19 @@ function onCopyFile(fileName: string) {
           暂无知识库，点击 + 创建
         </div>
       </div>
-
-      <!-- Recycle bin entry -->
-      <div class="border-t border-surface-3 p-2">
-        <button
-          class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-          :class="showRecycleBin ? 'bg-accent-600/15 text-accent-400' : ''"
-          @click="showRecycleBin = !showRecycleBin"
-        >
-          <span class="i-mdi-delete text-lg" />
-          <span>回收站</span>
-        </button>
-      </div>
     </div>
 
-    <!-- Right: file explorer or recycle bin -->
+    <!-- Right: file explorer -->
     <div class="flex-1">
-      <RecycleBinPage v-if="showRecycleBin" />
       <FileExplorer
-        v-else-if="store.selectedKb"
+        v-if="store.selectedKb"
         :files="store.files"
         :search-results="store.searchResults"
         :search-query="store.searchQuery"
         :breadcrumb="store.breadcrumb"
         :is-search-mode="isSearchMode"
         :is-loading="store.isLoading"
+        :auto-rename-item="autoRenameFile"
         @open-directory="onOpenDirectory"
         @navigate-to-breadcrumb="onNavigateToBreadcrumb"
         @search="onSearch"
@@ -234,6 +228,7 @@ function onCopyFile(fileName: string) {
         @move-file="onMoveFile"
         @copy-file="onCopyFile"
         @delete-file="onDeleteFile"
+        @auto-rename-consumed="onAutoRenameConsumed"
       />
       <div v-else class="flex h-full flex-col items-center justify-center gap-3 text-text-tertiary">
         <span class="i-mdi-bookshelf text-5xl" />

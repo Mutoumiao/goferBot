@@ -32,7 +32,6 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
       plugins: [pinia],
       stubs: {
         FileExplorer: true,
-        RecycleBinPage: true,
         ContextMenu: true,
         EditKbDialog: true,
         MoveCopyDialog: true,
@@ -55,13 +54,6 @@ describe('KnowledgeBasePage', () => {
       selectedKbId: 'kb1',
     })
     expect(wrapper.findComponent({ name: 'FileExplorer' }).exists()).toBe(true)
-  })
-
-  it('shows RecycleBinPage when recycle bin is toggled', async () => {
-    const wrapper = mountPage()
-    const recycleBtn = wrapper.findAll('button').find((b) => b.text().includes('回收站'))
-    await recycleBtn!.trigger('click')
-    expect(wrapper.findComponent({ name: 'RecycleBinPage' }).exists()).toBe(true)
   })
 
   it('calls loadKnowledgeBases on mount', () => {

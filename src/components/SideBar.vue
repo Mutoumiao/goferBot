@@ -10,6 +10,7 @@ const emit = defineEmits<{
   openKnowledgeBase: []
   openHistory: []
   openSettings: []
+  openRecycleBin: []
 }>()
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
 ]
 
 const bottomItems = [
+  { type: 'recycleBin' as TabType, icon: 'i-mdi-delete', label: '回收站', action: () => emit('openRecycleBin') },
   { type: 'history' as TabType, icon: 'i-mdi-history', label: '历史', action: () => emit('openHistory') },
   { type: 'settings' as TabType, icon: 'i-mdi-cog', label: '设置', action: () => emit('openSettings') },
 ]

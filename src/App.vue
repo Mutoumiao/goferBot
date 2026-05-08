@@ -5,6 +5,7 @@ import SideBar from './components/SideBar.vue'
 import TabBar from './components/TabBar.vue'
 import ChatPage from './components/ChatPage.vue'
 import KnowledgeBasePage from './components/KnowledgeBasePage.vue'
+import RecycleBinPage from './components/RecycleBinPage.vue'
 import { initSidecar, sidecarStatus } from './composables/useSidecar'
 import { useSessionStore } from './stores/session'
 
@@ -50,6 +51,15 @@ function openSettings() {
     sessionStore.addTab({ id: 'settings', type: 'settings', title: '设置', closable: true })
   }
 }
+
+function openRecycleBin() {
+  const existing = sessionStore.tabs.find((t) => t.type === 'recycleBin')
+  if (existing) {
+    sessionStore.switchTab(existing.id)
+  } else {
+    sessionStore.addTab({ id: 'recycleBin', type: 'recycleBin', title: '回收站', closable: true })
+  }
+}
 </script>
 
 <template>
@@ -64,6 +74,7 @@ function openSettings() {
       @open-knowledge-base="openKnowledgeBase"
       @open-history="openHistory"
       @open-settings="openSettings"
+      @open-recycle-bin="openRecycleBin"
     />
     <div class="flex flex-1 flex-col overflow-hidden">
       <TabBar
@@ -88,6 +99,7 @@ function openSettings() {
         >
           设置（由 #05 实现）
         </div>
+        <RecycleBinPage v-else-if="sessionStore.activeTab?.type === 'recycleBin'" />
       </main>
     </div>
   </div>

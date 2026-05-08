@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import type { FileItem, SearchResultItem } from '@/types'
 import ContextMenu from './ContextMenu.vue'
 import InlineRename from './InlineRename.vue'
@@ -11,6 +11,7 @@ const props = defineProps<{
   breadcrumb: string[]
   isSearchMode: boolean
   isLoading: boolean
+  autoRenameItem?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{
   moveFile: [fileName: string]
   copyFile: [fileName: string]
   deleteFile: [fileName: string]
+  autoRenameConsumed: []
 }>()
 
 const displayItems = computed(() => {
@@ -85,6 +87,17 @@ function closeFileContextMenu() {
 
 // Inline rename
 const renamingFile = ref<string | null>(null)
+
+watchEffect(() => {
+  if (
+    props.autoRenameItem &&
+    props.files.some((f) => f.name === props.autoRenameItem) &&
+    renamingFile.value !== props.autoRenameItem
+  ) {
+    renamingFile.value = props.autoRenameItem
+    emit('autoRenameConsumed')
+  }
+})
 
 function onRenameClick() {
   if (contextMenuFile.value) {

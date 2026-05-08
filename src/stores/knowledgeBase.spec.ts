@@ -231,7 +231,7 @@ describe('history truncation', () => {
 
     store.navigateToPath('folderC')
     expect(store.history).toHaveLength(3)
-    expect(store.history[2].path).toBe('folderC')
+    expect((store.history[2] as { type: string; path: string }).path).toBe('folderC')
     expect(store.canGoForward).toBe(false)
   })
 })

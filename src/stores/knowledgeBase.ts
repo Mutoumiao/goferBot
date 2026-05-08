@@ -98,6 +98,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
       const kb = (await res.json()) as KnowledgeBase
       knowledgeBases.value = knowledgeBases.value.filter((k) => k.id !== id)
       knowledgeBases.value.unshift(kb)
+      deletedKnowledgeBases.value = deletedKnowledgeBases.value.filter((k) => k.id !== id)
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     }
@@ -315,7 +316,9 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
         body: JSON.stringify({ name, path: currentPath.value }),
       })
       if (!res.ok) throw new Error('创建文件夹失败')
+      const data = (await res.json()) as { name: string }
       await loadFiles(currentPath.value)
+      return data.name
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     }

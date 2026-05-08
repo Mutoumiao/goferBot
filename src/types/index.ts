@@ -30,7 +30,7 @@ export interface ChatRequest {
   config: LLMConfig
 }
 
-export type TabType = 'chat' | 'knowledgeBase' | 'history' | 'settings'
+export type TabType = 'chat' | 'knowledgeBase' | 'history' | 'settings' | 'recycleBin'
 
 export interface KnowledgeBase {
   id: string

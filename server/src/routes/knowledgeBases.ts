@@ -316,8 +316,7 @@ app.post('/:id/folders', async (c) => {
 // PATCH /knowledge-bases/:id/files/:path — rename file (keeps extension)
 app.patch('/:id/files/*', async (c) => {
   const id = c.req.param('id')
-  const prefix = `/${id}/files/`
-  const filePath = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : ''
+  const filePath = c.req.path.replace(new RegExp(`^.*/${id}/files/`), '') || ''
   const body = await c.req.json<{ newName: string }>()
   const newBaseName = body.newName?.trim()
 
@@ -457,8 +456,7 @@ app.get('/deleted', (c) => {
 // DELETE /knowledge-bases/:id/files/:path — permanently delete file
 app.delete('/:id/files/*', (c) => {
   const id = c.req.param('id')
-  const prefix = `/${id}/files/`
-  const filePath = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : ''
+  const filePath = c.req.path.replace(new RegExp(`^.*/${id}/files/`), '') || ''
 
   const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ? AND deleted_at IS NULL').get(id) as
     | KnowledgeBase
