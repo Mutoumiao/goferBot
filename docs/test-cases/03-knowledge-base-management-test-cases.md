@@ -86,6 +86,9 @@
 | TC-03-050 | 点击错误关闭按钮 | 错误 Toast 显示中 | 点击关闭按钮 | `store.error` 被设为 `null`，Toast 消失 |
 | TC-03-051 | 生命周期 onMounted 加载列表 | 无 | 挂载组件 | 自动调用 `store.loadKnowledgeBases()` |
 
+**已有自动化测试**: `tests/unit/components/KnowledgeBasePage.test.ts`  
+**覆盖范围**: TC-03-041 ~ TC-03-051（基础渲染和交互覆盖，弹窗验证细节待手动验证）
+
 ## 3.5 前端 — FileExplorer 组件
 
 | TC-ID | 测试项 | 前置条件 | 测试步骤 | 预期结果 |
@@ -99,6 +102,9 @@
 | TC-03-058 | 搜索框空值返回根目录 | 输入清空 | 清空输入 | 触发 `search` 事件，空字符串，组件返回根目录 |
 | TC-03-059 | 导入文件按钮 | 点击导入按钮 | 模拟点击 | 触发 `import-files` 事件 |
 | TC-03-060 | 后退/前进按钮状态 | `canGoBack = false`，`canGoForward = false` | 挂载组件 | 后退/前进按钮 disabled 或隐藏 |
+
+**已有自动化测试**: `tests/unit/components/FileExplorer.test.ts`  
+**覆盖范围**: TC-03-052 ~ TC-03-060（基础渲染和事件触发覆盖，按钮 disabled 状态样式待手动验证）
 
 ## 3.6 集成 — 文件导入链路（前端 → Rust → Sidecar）
 
@@ -117,8 +123,6 @@
 
 | TC-ID 范围 | 测试层 | 建议方案 |
 |---|---|---|
-| TC-03-041 ~ TC-03-051 | 前端组件 | 补充 `tests/unit/components/KnowledgeBasePage.test.ts` |
-| TC-03-052 ~ TC-03-060 | 前端组件 | 补充 `tests/unit/components/FileExplorer.test.ts` |
 | TC-03-061 ~ TC-03-066 | Tauri 集成 | 在 Tauri 测试环境中验证 `import_files` IPC 全链路 |
 
 ---

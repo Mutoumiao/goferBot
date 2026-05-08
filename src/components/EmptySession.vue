@@ -21,6 +21,13 @@ function handleSend() {
   input.value = ''
 }
 
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    handleSend()
+  }
+}
+
 function sendQuick(content: string) {
   emit('send', content)
 }
@@ -54,7 +61,7 @@ function sendQuick(content: string) {
           rows="3"
           class="w-full resize-none rounded-2xl border border-border-default bg-surface-2 p-4 pr-14 text-text-primary placeholder-text-tertiary outline-none transition-all duration-200 focus:border-accent-500/50 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)]"
           placeholder="输入你的问题..."
-          @keydown.enter.prevent="handleSend"
+          @keydown="handleKeydown"
         />
         <button
           class="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-xl bg-accent-500 text-white shadow-lg shadow-accent-glow transition-all duration-200 hover:bg-accent-400 active:scale-95 disabled:opacity-40 disabled:shadow-none"

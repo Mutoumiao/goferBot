@@ -77,7 +77,47 @@
 | TC-02-036 | 列表渲染 | content = "- a\n- b" | 挂载组件 | 存在 `<ul><li>a</li><li>b</li></ul>` |
 
 **已有自动化测试**: `tests/unit/components/MarkdownRender.test.ts`  
-**覆盖范围**: TC-02-031 ~ TC-02-036
+**覆盖范围**: TC-02-031 ~ TC-02-033
+
+## 2.6 前端 — ChatMessage 组件
+
+| TC-ID | 测试项 | 前置条件 | 测试步骤 | 预期结果 |
+|---|---|---|---|---|
+| TC-02-037 | 用户消息右对齐白色背景 | message.role = 'user' | 挂载组件 | 根元素有 justify-end 类，消息气泡有 bg-accent-600 类 |
+| TC-02-038 | AI 消息左对齐边框背景 | message.role = 'assistant' | 挂载组件 | 根元素有 justify-start 类，消息气泡有 border-border-subtle 类 |
+| TC-02-039 | 用户头像显示 | user 消息 | 挂载组件 | 显示用户头像（i-mdi-account），不显示 AI 头像 |
+| TC-02-040 | AI 头像和 accent 线显示 | assistant 消息 | 挂载组件 | 显示 AI 头像（i-mdi-robot），左侧有 accent 装饰线 |
+| TC-02-041 | AI 消息 Markdown 渲染 | assistant 内容含 Markdown | 挂载组件 | 使用 MarkdownRender 组件渲染内容 |
+| TC-02-042 | 用户消息纯文本渲染 | user 内容 | 挂载组件 | 使用 whitespace-pre-wrap 显示纯文本 |
+
+**已有自动化测试**: `tests/unit/components/ChatMessage.test.ts`  
+**覆盖范围**: TC-02-037 ~ TC-02-042
+
+## 2.7 前端 — ChatMessageList 组件
+
+| TC-ID | 测试项 | 前置条件 | 测试步骤 | 预期结果 |
+|---|---|---|---|---|
+| TC-02-043 | 空消息列表 | messages = [] | 挂载组件 | 不渲染 ChatMessage |
+| TC-02-044 | 消息列表渲染 | messages 有两条 | 挂载组件 | 渲染两个 ChatMessage，顺序正确 |
+| TC-02-045 | 新消息自动滚动到底部 | 消息列表更新 | setProps 新增消息 | 容器调用 scrollTo 滚动到底部 |
+| TC-02-046 | 消息数不变时不滚动 | 消息数相同 | setProps 替换内容 | 不触发 scrollTo |
+
+**已有自动化测试**: `tests/unit/components/ChatMessageList.test.ts`  
+**覆盖范围**: TC-02-043 ~ TC-02-046
+
+## 2.8 前端 — EmptySession 组件
+
+| TC-ID | 测试项 | 前置条件 | 测试步骤 | 预期结果 |
+|---|---|---|---|---|
+| TC-02-047 | 快捷提问胶囊渲染 | 无 | 挂载组件 | 存在多个快捷提问按钮 |
+| TC-02-048 | 点击胶囊发送对应问题 | 无 | 点击胶囊 | 触发 send 事件，payload 为胶囊文案 |
+| TC-02-049 | Enter 发送 | 输入内容 | 按 Enter | 触发 send 事件，清空输入框 |
+| TC-02-050 | Shift+Enter 不发送 | 输入内容 | 按 Shift+Enter | 不触发 send |
+| TC-02-051 | 空输入禁用发送按钮 | 输入框为空 | 挂载组件 | 发送按钮 disabled |
+| TC-02-052 | 点击发送按钮发送并清空 | 输入内容 | 点击发送 | 触发 send，输入框清空 |
+
+**已有自动化测试**: `tests/unit/components/EmptySession.test.ts`  
+**覆盖范围**: TC-02-047 ~ TC-02-052
 
 ## 2.6 前端 — ChatMessageList 组件
 
@@ -106,8 +146,7 @@
 | TC-ID 范围 | 测试层 | 建议方案 |
 |---|---|---|
 | TC-02-001 ~ TC-02-008 | Sidecar API / SQLite | 为 `POST /chat`、`GET /sessions` 添加 Hono 路由测试，验证 SSE 格式和数据库写入 |
-| TC-02-037 ~ TC-02-042 | 前端组件 | 补充 `tests/unit/components/ChatMessageList.test.ts` |
-| TC-02-043 ~ TC-02-046 | 前端组件 | 补充 `tests/unit/components/EmptySession.test.ts` |
+| TC-02-001 ~ TC-02-008 | Sidecar API / SQLite | 为 `POST /chat`、`GET /sessions` 添加 Hono 路由测试，验证 SSE 格式和数据库写入 |
 
 ---
 

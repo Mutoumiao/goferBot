@@ -12,8 +12,8 @@ const emit = defineEmits<{
   save: [name: string, icon: string]
 }>()
 
-const name = ref('')
-const icon = ref('')
+const name = ref(props.initialName)
+const icon = ref(props.initialIcon)
 const error = ref('')
 
 const iconOptions = [

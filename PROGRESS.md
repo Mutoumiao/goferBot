@@ -136,10 +136,11 @@
 
 #### #08 测试覆盖
 
-- **状态**：`ready-for-agent`
+- **状态**：`in-progress`
 - **依赖**：#01 ~ #07
 - **优先级**：低（最后执行）
 - **内容**：补全所有前端组件测试、Store 测试、Sidecar API 集成测试、工具函数测试，覆盖率达标（lines >= 10%, branches >= 10%）
+- **进度**：已补充 FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage 组件测试，以及 settings store、KB Store 剩余方法测试。当前 25 个测试文件，158 个用例全部通过。
 
 ---
 
@@ -152,6 +153,7 @@
 | `01-sidecar-startup-test-cases.md` | #01 |
 | `02-basic-chat-test-cases.md` | #02 |
 | `03-knowledge-base-management-test-cases.md` | #03 |
+| `03b-kb-context-menus-and-file-operations-test-cases.md` | #03b |
 
 ---
 
