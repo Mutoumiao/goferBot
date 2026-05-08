@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
+import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import EmptySession from './EmptySession.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatInput from './ChatInput.vue'
 
 const store = useSessionStore()
 const settings = useSettingsStore()
+const kbStore = useKnowledgeBaseStore()
 
 const isEmpty = computed(() => !store.activeTab?.sessionId && store.activeMessages.length === 0)
 
-function handleSend(content: string) {
-  store.sendMessage(content, settings.llmConfig)
+function handleSend(content: string, knowledgeBaseIds?: string[]) {
+  store.sendMessage(content, settings.llmConfig, knowledgeBaseIds)
 }
+
+onMounted(() => {
+  if (kbStore.knowledgeBases.length === 0) {
+    kbStore.loadKnowledgeBases()
+  }
+})
 </script>
 
 <template>
@@ -21,7 +29,11 @@ function handleSend(content: string) {
     <EmptySession v-if="isEmpty" @send="handleSend" />
     <template v-else>
       <ChatMessageList :messages="store.activeMessages" />
-      <ChatInput :loading="store.isSending" @send="handleSend" />
+      <ChatInput
+        :loading="store.isSending"
+        :knowledge-bases="kbStore.knowledgeBases"
+        @send="handleSend"
+      />
     </template>
 
     <!-- Error toast -->
