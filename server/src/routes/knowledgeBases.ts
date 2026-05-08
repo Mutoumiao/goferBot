@@ -19,7 +19,7 @@ function ensureDir(dir: string): void {
 // GET /knowledge-bases — 列出未删除的知识库
 app.get('/', (c) => {
   const rows = db
-    .prepare('SELECT * FROM knowledge_bases WHERE deleted_at IS NULL ORDER BY created_at DESC')
+    .prepare('SELECT * FROM knowledge_bases WHERE deleted_at IS NULL ORDER BY is_pinned DESC, sort_order DESC, created_at DESC')
     .all() as KnowledgeBase[]
   return c.json(rows)
 })
@@ -54,6 +54,47 @@ app.post('/', async (c) => {
 
   const created = db.prepare('SELECT * FROM knowledge_bases WHERE id = ?').get(id) as KnowledgeBase
   return c.json(created, 201)
+})
+
+// PATCH /knowledge-bases/:id — 更新知识库（重命名、图标、置顶）
+app.patch('/:id', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json<Partial<Pick<KnowledgeBase, 'name' | 'icon' | 'is_pinned' | 'sort_order'>>>()
+
+  const kb = db.prepare('SELECT * FROM knowledge_bases WHERE id = ?').get(id) as KnowledgeBase | undefined
+  if (!kb || kb.deleted_at) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  let newName = kb.name
+  let newPath = kb.path
+
+  if (body.name !== undefined && body.name.trim() && body.name.trim() !== kb.name) {
+    const trimmed = body.name.trim()
+    const conflict = db
+      .prepare('SELECT id FROM knowledge_bases WHERE name = ? AND deleted_at IS NULL')
+      .get(trimmed) as { id: string } | undefined
+    if (conflict && conflict.id !== id) {
+      return c.json({ error: 'Name already exists' }, 409)
+    }
+    newName = trimmed
+    newPath = path.join(DOCS_DIR, newName)
+    if (fs.existsSync(kb.path)) {
+      ensureDir(DOCS_DIR)
+      fs.renameSync(kb.path, newPath)
+    }
+  }
+
+  const icon = body.icon !== undefined ? body.icon : kb.icon
+  const is_pinned = body.is_pinned !== undefined ? body.is_pinned : kb.is_pinned
+  const sort_order = body.sort_order !== undefined ? body.sort_order : kb.sort_order
+
+  db.prepare(
+    'UPDATE knowledge_bases SET name = ?, path = ?, icon = ?, is_pinned = ?, sort_order = ? WHERE id = ?'
+  ).run(newName, newPath, icon, is_pinned, sort_order, id)
+
+  const updated = db.prepare('SELECT * FROM knowledge_bases WHERE id = ?').get(id) as KnowledgeBase
+  return c.json(updated)
 })
 
 // DELETE /knowledge-bases/:id — 移入回收站
