@@ -27,9 +27,13 @@ const emit = defineEmits<{
         ]"
         @click="emit('switch', tab.id)"
       >
-        <!-- Tab icon for non-chat tabs -->
+        <!-- Tab icon -->
         <span
-          v-if="tab.type === 'knowledgeBase'"
+          v-if="tab.type === 'chat'"
+          class="i-mdi-chat-outline text-xs opacity-70"
+        />
+        <span
+          v-else-if="tab.type === 'knowledgeBase'"
           class="i-mdi-folder text-xs opacity-70"
         />
         <span
@@ -40,12 +44,16 @@ const emit = defineEmits<{
           v-else-if="tab.type === 'settings'"
           class="i-mdi-cog text-xs opacity-70"
         />
+        <span
+          v-else-if="tab.type === 'recycleBin'"
+          class="i-mdi-delete text-xs opacity-70"
+        />
 
         <span class="max-w-[140px] truncate">{{ tab.title }}</span>
 
         <!-- Close button -->
         <span
-          v-if="tab.closable"
+          v-if="tab.closable && tabs.length > 1"
           :class="[
             'i-mdi-close ml-0.5 cursor-pointer rounded p-0.5 text-[10px] opacity-0 transition-all duration-150',
             activeTabId === tab.id
