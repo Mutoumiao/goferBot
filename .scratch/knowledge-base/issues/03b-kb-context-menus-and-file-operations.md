@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: closed
 Category: enhancement
 
 ## What to build
@@ -9,26 +9,26 @@ Category: enhancement
 
 ## Acceptance criteria
 
-- [ ] 数据库 Schema 变更：`knowledge_bases` 表增加 `is_pinned`（INTEGER）、`sort_order`（INTEGER）、`icon`（TEXT，默认 `"mdi-database"`）
-- [ ] Sidecar API：`PATCH /knowledge-bases/:id` 支持修改名称、图标、置顶状态
-- [ ] Sidecar API：`POST /knowledge-bases/:id/folders` 新建文件夹（body: `{ name, path }`）
-- [ ] Sidecar API：`PATCH /knowledge-bases/:id/files/:path` 重命名（body: `{ newName }`，只改文件名不改扩展名）
-- [ ] Sidecar API：`POST /files/move` 跨库移动（body: `{ sourceKbId, sourcePath, targetKbId, targetPath }`）
-- [ ] Sidecar API：`POST /files/copy` 跨库复制（body 同上）
-- [ ] Sidecar API：知识库重命名时同步变更物理目录名（`docs/<旧名>/` → `docs/<新名>/`）
-- [ ] 前端：自定义 Vue 右键菜单组件（阻止原生 contextmenu，点击外部关闭）
-- [ ] 前端：知识库列表右键菜单项——置顶（toggle）、修改资料（弹窗表单：名称输入框 + MDI 图标网格）、删除（二次确认弹窗，按钮文案"移入回收站"）
-- [ ] 前端：知识库列表排序——置顶项在上，按 `sort_order` 排序；非置顶项在下，按创建时间排序
-- [ ] 前端：文件区域空白处右键菜单——新建文件夹（默认名 `未命名文件夹_短时间戳`，立即进入行内编辑）
-- [ ] 前端：文件/文件夹右键菜单——重命名（行内编辑）、移动到、复制到、删除
-- [ ] 前端：文件行内重命名——单击文件名变为输入框，原文件名（不含扩展名）自动选中，Enter 或失焦保存，Esc 取消
-- [ ] 前端：移动/复制弹窗——左栏知识库列表，右栏仅文件夹列表，顶部面包屑（含回退/前进），底部"取消" + "移动至此"/"复制至此"
-- [ ] 前端：命名冲突处理——复制时自动加 `(1)` 后缀；重命名时冲突则阻止并提示
-- [ ] 前端：删除差异化弹窗——知识库删除用"移入回收站"按钮（说明可恢复）；文件删除用红色"永久删除"按钮（强调不可撤销）
-- [ ] 前端：左侧知识库列表底部增加"回收站"固定入口项
-- [ ] 前端：回收站页面——展示已删除知识库列表（名称、删除时间），支持恢复按钮
-- [ ] ⚠️ 跨库移动/复制后的 RAG 索引同步：本 issue 实现物理文件操作和前端 UI，索引同步逻辑依赖 #04 的索引队列，由 #04b 补充实现
-- [ ] ⚠️ 知识库重命名和文件重命名后的 `document_chunks.file_path` 同步：本 issue 更新 `knowledge_bases.path` 和物理目录，若 #04 已完成则同步更新 `document_chunks`，否则由 #04b 补充
+- [x] 数据库 Schema 变更：`knowledge_bases` 表增加 `is_pinned`（INTEGER）、`sort_order`（INTEGER）、`icon`（TEXT，默认 `"mdi-database"`）
+- [x] Sidecar API：`PATCH /knowledge-bases/:id` 支持修改名称、图标、置顶状态
+- [x] Sidecar API：`POST /knowledge-bases/:id/folders` 新建文件夹（body: `{ name, path }`）
+- [x] Sidecar API：`PATCH /knowledge-bases/:id/files/:path` 重命名（body: `{ newName }`，只改文件名不改扩展名）
+- [x] Sidecar API：`POST /files/move` 跨库移动（body: `{ sourceKbId, sourcePath, targetKbId, targetPath }`）
+- [x] Sidecar API：`POST /files/copy` 跨库复制（body 同上）
+- [x] Sidecar API：知识库重命名时同步变更物理目录名（`docs/<旧名>/` → `docs/<新名>/`）
+- [x] 前端：自定义 Vue 右键菜单组件（阻止原生 contextmenu，点击外部关闭）
+- [x] 前端：知识库列表右键菜单项——置顶（toggle）、修改资料（弹窗表单：名称输入框 + MDI 图标网格）、删除（二次确认弹窗，按钮文案"移入回收站"）
+- [x] 前端：知识库列表排序——置顶项在上，按 `sort_order` 排序；非置顶项在下，按创建时间排序
+- [x] 前端：文件区域空白处右键菜单——新建文件夹（默认名 `未命名文件夹_短时间戳`，立即进入行内编辑）
+- [x] 前端：文件/文件夹右键菜单——重命名（行内编辑）、移动到、复制到、删除
+- [x] 前端：文件行内重命名——单击文件名变为输入框，原文件名（不含扩展名）自动选中，Enter 或失焦保存，Esc 取消
+- [x] 前端：移动/复制弹窗——左栏知识库列表，右栏仅文件夹列表，顶部面包屑（含回退/前进），底部"取消" + "移动至此"/"复制至此"
+- [x] 前端：命名冲突处理——复制时自动加 `(1)` 后缀；重命名时冲突则阻止并提示
+- [x] 前端：删除差异化弹窗——知识库删除用"移入回收站"按钮（说明可恢复）；文件删除用红色"永久删除"按钮（强调不可撤销）
+- [x] 前端：左侧知识库列表底部增加"回收站"固定入口项
+- [x] 前端：回收站页面——展示已删除知识库列表（名称、删除时间），支持恢复按钮
+- [x] ⚠️ 跨库移动/复制后的 RAG 索引同步：本 issue 实现物理文件操作和前端 UI，索引同步逻辑依赖 #04 的索引队列，由 #04b 补充实现
+- [x] ⚠️ 知识库重命名和文件重命名后的 `document_chunks.file_path` 同步：本 issue 更新 `knowledge_bases.path` 和物理目录，若 #04 已完成则同步更新 `document_chunks`，否则由 #04b 补充
 
 ## Blocked by
 
@@ -63,14 +63,14 @@ Category: enhancement
 - 回收站页面 — 已删除知识库列表 + 恢复操作
 
 **Acceptance criteria:**
-- [ ] `knowledge_bases` 表增加 `is_pinned`、`sort_order`、`icon` 字段
-- [ ] 知识库列表右键菜单：置顶、修改资料（弹窗）、删除（移入回收站）
-- [ ] 文件区域空白处右键：新建文件夹（默认名带时间戳，立即编辑）
-- [ ] 文件/文件夹右键：重命名（行内编辑）、移动到、复制到、删除（永久删除）
-- [ ] 移动/复制弹窗：左栏选知识库，右栏仅文件夹，面包屑导航，底部确认按钮
-- [ ] 删除弹窗差异化：知识库"移入回收站"，文件红色"永久删除"
-- [ ] 左侧知识库列表底部增加"回收站"入口，点击打开回收站页面
-- [ ] 回收站页面支持恢复已删除知识库（同名冲突重命名为"<原名>-副本"）
+- [x] `knowledge_bases` 表增加 `is_pinned`、`sort_order`、`icon` 字段
+- [x] 知识库列表右键菜单：置顶、修改资料（弹窗）、删除（移入回收站）
+- [x] 文件区域空白处右键：新建文件夹（默认名带时间戳，立即编辑）
+- [x] 文件/文件夹右键：重命名（行内编辑）、移动到、复制到、删除（永久删除）
+- [x] 移动/复制弹窗：左栏选知识库，右栏仅文件夹，面包屑导航，底部确认按钮
+- [x] 删除弹窗差异化：知识库"移入回收站"，文件红色"永久删除"
+- [x] 左侧知识库列表底部增加"回收站"入口，点击打开回收站页面
+- [x] 回收站页面支持恢复已删除知识库（同名冲突重命名为"<原名>-副本"）
 
 **Out of scope:**
 - RAG 索引同步（由 #04b 在 #04 完成后补充）

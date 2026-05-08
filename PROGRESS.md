@@ -14,7 +14,7 @@
 | 基础设施 | #01 Sidecar 启动 | closed | Tauri ↔ Node.js Sidecar 启动、发现、生命周期管理 |
 | 核心功能 | #02 基础对话 | closed | SSE 流式问答、会话标签管理、消息存储 |
 | 核心功能 | #03 知识库管理 | closed | CRUD、文件导入、资源管理器、回收站 |
-| 增强功能 | #03b 右键菜单与文件操作 | ready-for-agent | 置顶、修改资料、新建文件夹、重命名、移动/复制、回收站页面 |
+| 增强功能 | #03b 右键菜单与文件操作 | closed | 置顶、修改资料、新建文件夹、重命名、移动/复制、回收站页面 |
 | 核心功能 | #04 RAG 索引检索 | ready-for-agent | sqlite-vec + FTS5 混合搜索、索引队列、`@提及` 交互 |
 | 索引同步 | #04b 文件操作后索引同步 | ready-for-agent | 跨库移动/复制/重命名后的 document_chunks 同步 |
 | 配置系统 | #05 多提供商设置 | ready-for-agent | 设置页、多 LLM 配置、Embedding 配置、温度参数 |
@@ -66,6 +66,20 @@
   - 面包屑回退/前进：维护导航历史栈（browse + search 状态）
   - 回收站机制：物理移动至 `.trash/`、恢复、同名冲突重命名为"-副本"
 
+### #03b 知识库右键菜单与文件操作
+
+- **状态**：`closed`
+- **文件**：`.scratch/knowledge-base/issues/03b-kb-context-menus-and-file-operations.md`
+- **验收标准**：全部达成
+- **关键交付**：
+  - 数据库 Schema 变更：`knowledge_bases` 表增加 `is_pinned`、`sort_order`、`icon` 字段
+  - Sidecar API：`PATCH /knowledge-bases/:id`、`POST /:id/folders`、`PATCH /:id/files/:path`、`POST /move`、`POST /copy`、`GET /deleted`
+  - 前端组件：`ContextMenu.vue`、`InlineRename.vue`、`EditKbDialog.vue`、`MoveCopyDialog.vue`、`RecycleBinPage.vue`
+  - 知识库列表右键：置顶 toggle、修改资料弹窗、移入回收站
+  - 文件区域右键：新建文件夹、重命名、移动/复制、永久删除
+  - 移动/复制弹窗：左栏知识库列表 + 右栏文件夹列表 + 面包屑导航
+  - 回收站页面：已删除知识库列表 + 恢复操作
+
 ---
 
 ## 后续计划
@@ -74,7 +88,7 @@
 
 #### #03b 知识库右键菜单与文件操作
 
-- **状态**：`ready-for-agent`
+- **状态**：`closed`
 - **依赖**：#03
 - **优先级**：高
 - **内容**：补齐 #03 遗漏的前端交互——知识库列表右键菜单（置顶/修改资料/删除）、文件区域右键菜单（新建文件夹/重命名/移动/复制/删除）、回收站页面入口、行内重命名编辑、移动/复制弹窗、命名冲突处理
