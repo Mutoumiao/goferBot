@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
@@ -10,8 +10,37 @@ process.env.APP_DATA_DIR = testDir
 const { default: app } = await import('../../../../server/src/routes/knowledgeBases.js')
 const { default: db } = await import('../../../../server/src/db.js')
 
+beforeAll(() => {
+  fs.mkdirSync(testDir, { recursive: true })
+  try {
+    db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS vec_document_chunks USING vec0(
+        chunk_id TEXT PRIMARY KEY,
+        embedding FLOAT[1536]
+      );
+    `)
+  } catch { /* sqlite-vec 可能不可用 */ }
+  try {
+    db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
+        content,
+        file_path,
+        tokenize='unicode61'
+      );
+    `)
+  } catch { /* FTS5 可能不可用 */ }
+})
+
+afterAll(() => {
+  db.close()
+  fs.rmSync(testDir, { recursive: true, force: true })
+})
+
 beforeEach(() => {
   db.exec('DELETE FROM knowledge_bases')
+  db.exec('DELETE FROM document_chunks')
+  try { db.exec('DELETE FROM vec_document_chunks') } catch { /* ignore */ }
+  try { db.exec('DELETE FROM fts_document_chunks') } catch { /* ignore */ }
 })
 
 describe('PATCH /knowledge-bases/:id', () => {
