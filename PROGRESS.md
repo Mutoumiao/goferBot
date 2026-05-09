@@ -2,7 +2,7 @@
 
 本文档记录 Knowledge Base 应用所有 Issue 的执行进度与后续开发计划。
 
-> **更新日期**：2026-05-08  
+> **更新日期**：2026-05-09  
 > **对应 Issue 目录**：`.scratch/knowledge-base/issues/`
 
 ---
@@ -18,9 +18,10 @@
 | 核心功能 | #04 RAG 索引检索 | closed | sqlite-vec + FTS5 混合搜索、索引队列、`@提及` 交互 |
 | 索引同步 | #04b 文件操作后索引同步 | closed | 跨库移动/复制/重命名后的 document_chunks 同步 |
 | 配置系统 | #05 多提供商设置 | closed | 设置页、多 LLM 配置、Embedding 配置、温度参数、每会话模型切换 |
+| 安全加固 | #05b API Key 安全存储 | open | OS keychain / safeStorage 加密存储 API Key，被 #05 阻塞 |
 | 历史管理 | #06 对话历史 | ready-for-agent | 历史列表、恢复会话、删除、重命名 |
 | 本地模型 | #07 Ollama 与错误处理 | ready-for-agent | Ollama 本地模型、全局错误处理、Loading/空状态 |
-| 质量保障 | #08 测试覆盖 | in-progress | 34 个测试文件、236 条用例全部通过，持续补充中 |
+| 质量保障 | #08 测试覆盖 | in-progress | 38 个测试文件、254 条用例全部通过，持续补充中 |
 | 质量保障 | #09 端到端测试 | in-progress | 阶1 前端 E2E 已搭建（6 条 Playwright 用例通过），阶2/阶3 待搭建 |
 
 ---
@@ -129,6 +130,18 @@
   - 新建会话继承全局 `defaultChatProvider`，`Tab` 增加 `provider`/`model` 快照字段
   - `sendMessage` 升格首页时记录 provider/model，无可用配置时提示用户前往设置
 
+#### #05b API Key 安全存储
+
+- **状态**：`open`
+- **依赖**：#05（closed）
+- **优先级**：高
+- **内容**：将 `config.json` 中的 API Key 从明文存储改为 OS keychain / Tauri safeStorage 加密存储，防止本地明文暴露
+- **验收标准**：
+  - Sidecar 写入配置时提取 `apiKey` 加密存入 keychain，`config.json` 中保留占位符
+  - Sidecar 读取配置时自动从 keychain 解密回填
+  - 首次启动检测到明文 apiKey 时自动迁移
+  - 关闭后删除 `server/src/routes/settings.ts` 中的 TODO 注释
+
 #### #06 对话历史
 
 - **状态**：`ready-for-agent`
@@ -154,7 +167,7 @@
 - **依赖**：#01 ~ #07
 - **优先级**：低
 - **内容**：补全所有前端组件测试、Store 测试、Sidecar API 集成测试、工具函数测试，覆盖率达标（lines >= 10%, branches >= 10%）
-- **进度**：当前 **38 个测试文件，251 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown、SettingsPage、ModelSelector 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema、settings。
+- **进度**：当前 **38 个测试文件，254 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown、SettingsPage、ModelSelector 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema、settings。
 
 #### #09 端到端测试
 
@@ -186,4 +199,4 @@
 
 ---
 
-*最后更新：2026-05-08（新增 #09 端到端测试阶1搭建进度）*
+*最后更新：2026-05-09（同步 issue 状态：#05 标记为 closed，#05b 新建收录，#08 更新测试计数为 254）*

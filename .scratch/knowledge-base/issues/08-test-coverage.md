@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: in-progress
 Category: enhancement
 
 ## What to build
