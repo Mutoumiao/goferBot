@@ -89,6 +89,8 @@ onMounted(() => {
       <ChatMessageList :messages="store.activeMessages" :is-sending="store.isSending" @retry="handleRetry" />
       <ChatInput
         :loading="store.isSending"
+        :disabled="!settings.getLLMConfig()"
+        disabled-hint="未配置 LLM 模型，请前往设置"
         :knowledge-bases="kbStore.knowledgeBases"
         @send="handleSend"
       />

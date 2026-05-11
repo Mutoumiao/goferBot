@@ -6,6 +6,8 @@ import KbMentionPill from './KbMentionPill.vue'
 
 const props = defineProps<{
   loading?: boolean
+  disabled?: boolean
+  disabledHint?: string
   knowledgeBases?: KnowledgeBase[]
 }>()
 
@@ -84,7 +86,7 @@ function onCloseDropdown() {
 
 function handleSend() {
   const content = extractPlainText()
-  if (!content || props.loading) return
+  if (!content || props.loading || props.disabled) return
   emit('send', content, selectedKbs.value.map((k) => k.id))
   input.value = ''
   selectedKbs.value = []
@@ -122,9 +124,9 @@ const displayInput = computed(() => input.value)
             ref="textareaRef"
             v-model="input"
             rows="1"
-            class="max-h-40 w-full resize-none bg-transparent text-sm leading-relaxed text-text-primary placeholder-text-tertiary outline-none"
-            placeholder="输入问题，Shift + Enter 换行，Enter 发送，@提及知识库..."
-            :disabled="loading"
+            class="max-h-40 w-full resize-none bg-transparent text-sm leading-relaxed text-text-primary placeholder-text-tertiary outline-none disabled:cursor-not-allowed"
+            :placeholder="disabled ? (disabledHint || '发送不可用') : '输入问题，Shift + Enter 换行，Enter 发送，@提及知识库...'"
+            :disabled="loading || disabled"
             @keydown="handleKeydown"
             @input="handleInput"
             @focus="isFocused = true"
@@ -143,10 +145,10 @@ const displayInput = computed(() => input.value)
 
       <button
         data-testid="chat-send-btn"
-        :disabled="!displayInput.trim() || loading"
+        :disabled="!displayInput.trim() || loading || disabled"
         :class="[
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200',
-          displayInput.trim() && !loading
+          displayInput.trim() && !loading && !disabled
             ? 'bg-accent-500 text-white shadow-lg shadow-accent-glow hover:bg-accent-400 active:scale-95'
             : 'bg-surface-4 text-text-tertiary',
         ]"
