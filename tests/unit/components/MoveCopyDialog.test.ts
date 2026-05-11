@@ -46,4 +46,10 @@ describe('MoveCopyDialog', () => {
     await wrapper.find('.bg-black\\/50').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
+
+  it('does not emit close on dialog content click', async () => {
+    const wrapper = mountDialog({ visible: true, mode: 'move', sourceKbId: 'kb1', sourcePath: 'file.txt' })
+    await wrapper.find('.flex-col.rounded-lg').trigger('click')
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
 })

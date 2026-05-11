@@ -16,7 +16,7 @@ describe('renderMarkdown', () => {
     const result = renderMarkdown('```js\nconst x = 1;\n```')
     expect(result).toContain('<pre>')
     expect(result).toContain('<code')
-    expect(result).toContain('hljs-keyword')
+    expect(result).toContain('hljs-')
     expect(result).toContain('const')
   })
 

@@ -12,13 +12,13 @@ describe('KbMentionPill', () => {
 
   it('renders custom icon', () => {
     const wrapper = mount(KbMentionPill, { props: { kb } })
-    expect(wrapper.html()).toContain('mdi-books')
+    expect(wrapper.find('span.mdi-books').exists()).toBe(true)
   })
 
   it('renders default database icon when no icon', () => {
     const kbNoIcon = { ...kb, icon: '' }
     const wrapper = mount(KbMentionPill, { props: { kb: kbNoIcon } })
-    expect(wrapper.html()).toContain('i-mdi-database')
+    expect(wrapper.find('span.i-mdi-database').exists()).toBe(true)
   })
 
   it('emits remove on close button click', async () => {

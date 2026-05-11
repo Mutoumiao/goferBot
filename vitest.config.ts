@@ -33,7 +33,8 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         reporter: ['text', 'json', 'json-summary'],
-        include: ['!src/main.ts', 'src/**/*.ts', 'src/**/*.vue'],
+        include: ['src/**/*.ts', 'src/**/*.vue'],
+        exclude: ['src/main.ts'],
         thresholds: {
           lines: 70,
           functions: 60,
