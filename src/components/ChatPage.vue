@@ -28,6 +28,20 @@ function handleSend(content: string, knowledgeBaseIds?: string[]) {
   store.sendMessage(content, cfg, knowledgeBaseIds)
 }
 
+function handleRetry() {
+  const msgs = store.activeMessages
+  const lastUserMsg = [...msgs].reverse().find((m) => m.role === 'user')
+  if (!lastUserMsg) return
+  const cfg = store.activeTab?.provider
+    ? settings.getLLMConfig(store.activeTab.provider)
+    : settings.getLLMConfig()
+  if (!cfg) {
+    store.sendError = '未配置可用的 LLM 提供商，请前往设置'
+    return
+  }
+  store.sendMessage(lastUserMsg.content, cfg)
+}
+
 function handleModelChange(provider: string, model: string) {
   const idx = store.tabs.findIndex((t) => t.id === store.activeTabId)
   if (idx !== -1) {
@@ -72,7 +86,7 @@ onMounted(() => {
 
     <EmptySession v-if="isEmpty" @send="handleSend" />
     <template v-else>
-      <ChatMessageList :messages="store.activeMessages" />
+      <ChatMessageList :messages="store.activeMessages" @retry="handleRetry" />
       <ChatInput
         :loading="store.isSending"
         :knowledge-bases="kbStore.knowledgeBases"
