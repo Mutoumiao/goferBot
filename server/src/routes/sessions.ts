@@ -77,14 +77,22 @@ app.post('/:id/rename', async (c) => {
   if (!trimmed) {
     return c.json({ error: 'Title is required' }, 400)
   }
-  db.prepare('UPDATE sessions SET title = ? WHERE id = ?').run(trimmed, id)
+  const result = db
+    .prepare('UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?')
+    .run(trimmed, Date.now(), id)
+  if (result.changes === 0) {
+    return c.json({ error: 'Session not found' }, 404)
+  }
   return c.json({ success: true })
 })
 
 app.delete('/:id', (c) => {
   const id = c.req.param('id')
   db.prepare('DELETE FROM messages WHERE session_id = ?').run(id)
-  db.prepare('DELETE FROM sessions WHERE id = ?').run(id)
+  const result = db.prepare('DELETE FROM sessions WHERE id = ?').run(id)
+  if (result.changes === 0) {
+    return c.json({ error: 'Session not found' }, 404)
+  }
   return c.json({ success: true })
 })
 

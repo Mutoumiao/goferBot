@@ -108,6 +108,31 @@ describe('POST /sessions/:id/rename', () => {
     })
     expect(res.status).toBe(400)
   })
+
+  it('returns 404 for non-existent session', async () => {
+    const res = await app.request('/no-such-id/rename', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'New' }),
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('updates updated_at on rename', async () => {
+    db.prepare(
+      'INSERT INTO sessions (id, title, created_at, updated_at, message_count) VALUES (?, ?, ?, ?, ?)'
+    ).run('s1', 'Old', 1, 100, 0)
+
+    const res = await app.request('/s1/rename', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'New' }),
+    })
+    expect(res.status).toBe(200)
+
+    const row = db.prepare('SELECT updated_at FROM sessions WHERE id = ?').get('s1') as { updated_at: number }
+    expect(row.updated_at).toBeGreaterThan(100)
+  })
 })
 
 describe('DELETE /sessions/:id', () => {
@@ -126,5 +151,10 @@ describe('DELETE /sessions/:id', () => {
     expect(session).toBeUndefined()
     const message = db.prepare('SELECT * FROM messages WHERE session_id = ?').get('s1')
     expect(message).toBeUndefined()
+  })
+
+  it('returns 404 for non-existent session', async () => {
+    const res = await app.request('/no-such-id', { method: 'DELETE' })
+    expect(res.status).toBe(404)
   })
 })

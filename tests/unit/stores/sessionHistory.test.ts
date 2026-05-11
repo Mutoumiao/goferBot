@@ -24,6 +24,17 @@ describe('session store history methods', () => {
 
     expect(store.historySessions).toHaveLength(1)
     expect(store.historySessions[0].title).toBe('Hello')
+    expect(store.historyLoading).toBe(false)
+  })
+
+  it('loadHistory sets error on failure', async () => {
+    vi.mocked(sidecarFetch).mockResolvedValue({ ok: false } as Response)
+
+    const store = useSessionStore()
+    await store.loadHistory()
+
+    expect(store.historyError).toBe('加载历史记录失败')
+    expect(store.historyLoading).toBe(false)
   })
 
   it('restoreSession activates existing tab if already open', async () => {
@@ -43,8 +54,8 @@ describe('session store history methods', () => {
       json: async () => ({
         id: 's1',
         title: 'Restored',
-        provider: null,
-        model: null,
+        provider: 'openai',
+        model: 'gpt-4o',
         messages: [{ id: 'm1', session_id: 's1', role: 'user', content: 'hi', created_at: 1 }],
       }),
     } as Response)
@@ -56,6 +67,8 @@ describe('session store history methods', () => {
     const homeTab = store.tabs.find((t) => t.id === 'home')
     expect(homeTab?.sessionId).toBe('s1')
     expect(homeTab?.title).toBe('Restored')
+    expect(homeTab?.provider).toBe('openai')
+    expect(homeTab?.model).toBe('gpt-4o')
     expect(store.messages.get('s1')).toHaveLength(1)
   })
 
@@ -65,8 +78,8 @@ describe('session store history methods', () => {
       json: async () => ({
         id: 's1',
         title: 'Restored',
-        provider: null,
-        model: null,
+        provider: 'openai',
+        model: 'gpt-4o',
         messages: [],
       }),
     } as Response)
@@ -77,6 +90,8 @@ describe('session store history methods', () => {
 
     expect(store.tabs).toHaveLength(2)
     expect(store.tabs[1].sessionId).toBe('s1')
+    expect(store.tabs[1].provider).toBe('openai')
+    expect(store.tabs[1].model).toBe('gpt-4o')
   })
 
   it('deleteSession closes tab, clears messages and refreshes history', async () => {

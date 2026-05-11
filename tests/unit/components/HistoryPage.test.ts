@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import HistoryPage from '@/components/HistoryPage.vue'
@@ -14,6 +14,8 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
         activeTabId: 'home',
         messages: new Map(),
         historySessions: [],
+        historyLoading: false,
+        historyError: null,
         ...storeOverrides,
       },
     },
@@ -33,6 +35,18 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
 describe('HistoryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal('confirm', vi.fn(() => true))
+  })
+
+  it('shows loading state', () => {
+    const wrapper = mountPage({ historyLoading: true })
+    expect(wrapper.text()).toContain('加载中')
+  })
+
+  it('shows error state with retry', () => {
+    const wrapper = mountPage({ historyError: '加载失败' })
+    expect(wrapper.text()).toContain('加载失败')
+    expect(wrapper.text()).toContain('重试')
   })
 
   it('shows empty state when no history', () => {
@@ -63,7 +77,7 @@ describe('HistoryPage', () => {
     expect(store.restoreSession).toHaveBeenCalledWith('s1')
   })
 
-  it('calls deleteSession when delete button clicked', async () => {
+  it('calls deleteSession after confirm when delete button clicked', async () => {
     const wrapper = mountPage({
       historySessions: [
         { id: 's1', title: 'Chat', updated_at: Date.now(), summary: '', message_count: 1 },
@@ -73,6 +87,21 @@ describe('HistoryPage', () => {
 
     const deleteBtn = wrapper.find('[title="删除"]')
     await deleteBtn.trigger('click')
+    expect(confirm).toHaveBeenCalledWith('确定删除该会话？')
     expect(store.deleteSession).toHaveBeenCalledWith('s1')
+  })
+
+  it('does not delete when confirm cancelled', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => false))
+    const wrapper = mountPage({
+      historySessions: [
+        { id: 's1', title: 'Chat', updated_at: Date.now(), summary: '', message_count: 1 },
+      ],
+    })
+    const store = useSessionStore()
+
+    const deleteBtn = wrapper.find('[title="删除"]')
+    await deleteBtn.trigger('click')
+    expect(store.deleteSession).not.toHaveBeenCalled()
   })
 })

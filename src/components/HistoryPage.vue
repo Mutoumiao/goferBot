@@ -7,6 +7,7 @@ const store = useSessionStore()
 const editingId = ref<string | null>(null)
 const editValue = ref('')
 const editInputRef = ref<HTMLInputElement | null>(null)
+const isSubmittingRename = ref(false)
 
 onMounted(() => {
   store.loadHistory()
@@ -25,6 +26,7 @@ function formatTime(ts: number): string {
 function startRename(id: string, title: string) {
   editingId.value = id
   editValue.value = title
+  isSubmittingRename.value = false
   nextTick(() => {
     editInputRef.value?.focus()
     editInputRef.value?.select()
@@ -32,6 +34,8 @@ function startRename(id: string, title: string) {
 }
 
 function confirmRename(id: string) {
+  if (isSubmittingRename.value) return
+  isSubmittingRename.value = true
   if (editValue.value.trim()) {
     store.renameSession(id, editValue.value)
   }
@@ -40,6 +44,12 @@ function confirmRename(id: string) {
 
 function cancelRename() {
   editingId.value = null
+}
+
+function handleDelete(sessionId: string) {
+  if (confirm('确定删除该会话？')) {
+    store.deleteSession(sessionId)
+  }
 }
 </script>
 
@@ -55,9 +65,33 @@ function cancelRename() {
         </button>
       </div>
 
+      <!-- Loading -->
+      <div
+        v-if="store.historyLoading"
+        class="flex flex-col items-center justify-center py-20"
+      >
+        <span class="i-mdi-loading animate-spin text-3xl text-text-tertiary" />
+        <p class="mt-4 text-sm text-text-secondary">加载中...</p>
+      </div>
+
+      <!-- Error -->
+      <div
+        v-else-if="store.historyError"
+        class="flex flex-col items-center justify-center py-20"
+      >
+        <span class="i-mdi-alert-circle text-3xl text-danger-400" />
+        <p class="mt-4 text-sm text-text-secondary">{{ store.historyError }}</p>
+        <button
+          class="mt-3 rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-400"
+          @click="store.loadHistory()"
+        >
+          重试
+        </button>
+      </div>
+
       <!-- Empty state -->
       <div
-        v-if="store.historySessions.length === 0"
+        v-else-if="store.historySessions.length === 0"
         class="flex flex-col items-center justify-center py-20"
       >
         <span class="i-mdi-history text-4xl text-text-tertiary" />
@@ -118,7 +152,7 @@ function cancelRename() {
             <button
               class="rounded p-1.5 text-text-tertiary transition-colors hover:bg-danger-500/10 hover:text-danger-400"
               title="删除"
-              @click.stop="store.deleteSession(session.id)"
+              @click.stop="handleDelete(session.id)"
             >
               <span class="i-mdi-delete text-sm" />
             </button>

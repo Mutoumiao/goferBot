@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: closed
 Category: enhancement
 
 ## What to build

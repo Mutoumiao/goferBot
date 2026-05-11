@@ -25,6 +25,8 @@ export const useSessionStore = defineStore('session', () => {
       message_count: number
     }>
   >([])
+  const historyError = ref<string | null>(null)
+  const historyLoading = ref(false)
 
   const activeTab = computed(() => tabs.value.find((t) => t.id === activeTabId.value))
   const activeMessages = computed(() => {
@@ -78,9 +80,19 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function loadHistory() {
-    const res = await sidecarFetch('/sessions')
-    if (res.ok) {
-      historySessions.value = await res.json()
+    historyLoading.value = true
+    historyError.value = null
+    try {
+      const res = await sidecarFetch('/sessions')
+      if (res.ok) {
+        historySessions.value = await res.json()
+      } else {
+        historyError.value = '加载历史记录失败'
+      }
+    } catch {
+      historyError.value = '加载历史记录失败'
+    } finally {
+      historyLoading.value = false
     }
   }
 
@@ -107,6 +119,8 @@ export const useSessionStore = defineStore('session', () => {
     if (homeTab) {
       homeTab.sessionId = sessionId
       homeTab.title = data.title
+      homeTab.provider = data.provider ?? undefined
+      homeTab.model = data.model ?? undefined
       activeTabId.value = homeTab.id
     } else {
       addTab({
@@ -115,6 +129,8 @@ export const useSessionStore = defineStore('session', () => {
         title: data.title,
         sessionId,
         closable: true,
+        provider: data.provider ?? undefined,
+        model: data.model ?? undefined,
       })
     }
   }
@@ -275,6 +291,8 @@ export const useSessionStore = defineStore('session', () => {
     isSending,
     sendError,
     historySessions,
+    historyError,
+    historyLoading,
     activeTab,
     activeMessages,
     addTab,
