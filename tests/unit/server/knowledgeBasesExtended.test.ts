@@ -32,7 +32,7 @@ beforeAll(() => {
 })
 
 afterAll(() => {
-  db.close()
+  // db.close() // 注释掉：全局 db 连接不应在单个测试文件中关闭
   try { fs.rmSync(testDir, { recursive: true, force: true }) } catch { /* ignore */ }
 })
 
