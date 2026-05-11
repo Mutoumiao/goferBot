@@ -20,7 +20,7 @@
 | 配置系统 | #05 多提供商设置 | closed | 设置页、多 LLM 配置、Embedding 配置、温度参数、每会话模型切换 |
 
 | 历史管理 | #06 对话历史 | closed | 历史列表、恢复会话、删除、重命名 |
-| 本地模型 | #07 Ollama 与错误处理 | ready-for-agent | Ollama 本地模型、全局错误处理、Loading/空状态 |
+| 本地模型 | #07 Ollama 与错误处理 | closed | Ollama 本地模型、全局错误处理、Loading/空状态 |
 | 质量保障 | #08 测试覆盖 | in-progress | 38 个测试文件、254 条用例全部通过，持续补充中 |
 | 质量保障 | #09 端到端测试 | in-progress | 阶1 前端 E2E 已搭建（6 条 Playwright 用例通过），阶2/阶3 待搭建 |
 
@@ -160,7 +160,7 @@
 - **依赖**：#01 ~ #07
 - **优先级**：低
 - **内容**：补全所有前端组件测试、Store 测试、Sidecar API 集成测试、工具函数测试，覆盖率达标（lines >= 10%, branches >= 10%）
-- **进度**：当前 **41 个测试文件，271 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown、SettingsPage、ModelSelector、HistoryPage 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema、settings、sessions。
+- **进度**：当前 **41 个测试文件，278 条用例全部通过**。已覆盖组件：FileExplorer、EditKbDialog、RecycleBinPage、ChatMessage、TabBar、SideBar、EmptySession、SplashScreen、KnowledgeBasePage、ChatInput、KbMentionDropdown、SettingsPage、ModelSelector、HistoryPage 等；已覆盖 Store：settings、session、useKnowledgeBaseStore；已覆盖 Server：embedding、indexer、rag、chatRag、dbSchema、settings、sessions。
 
 #### #09 端到端测试
 
@@ -192,4 +192,4 @@
 
 ---
 
-*最后更新：2026-05-11（#06 对话历史完成）*
+*最后更新：2026-05-11（#07 Ollama 与错误处理完成）*
