@@ -91,8 +91,16 @@ app.post('/', async (c) => {
         sessionId
       )
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Stream error'
-      await stream.writeSSE({ event: 'error', data: JSON.stringify({ error: message }) })
+      let errorType = 'unknown'
+      let message = err instanceof Error ? err.message : 'Stream error'
+
+      if (message.includes('ECONNREFUSED') || message.includes('fetch failed') || message.includes('Sidecar port not available')) {
+        errorType = 'network_error'
+      } else if (message.includes('LLM API error')) {
+        errorType = 'api_error'
+      }
+
+      await stream.writeSSE({ event: 'error', data: JSON.stringify({ type: errorType, message }) })
     } finally {
       await stream.close()
     }
