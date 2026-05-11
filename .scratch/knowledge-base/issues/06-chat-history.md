@@ -9,13 +9,13 @@ Category: enhancement
 
 ## Acceptance criteria
 
-- [ ] 前端对话历史页：Tabs + 历史列表
-- [ ] 列表项：总结标题、最后消息时间、内容摘要（前 100 字）
-- [ ] Sidecar API：`GET /sessions`（列表，含时间、标题、摘要）、`POST /sessions/:id/rename`、`DELETE /sessions/:id`
-- [ ] 点击恢复：未打开则复用首页占位符或新建标签；已打开则激活已有标签（1:1 关系）
-- [ ] 删除历史：删除 SQLite `sessions` 和关联 `messages`，若该 session 有打开的标签则关闭
-- [ ] 重命名：修改 `sessions.title`，对应标签标题同步更新
-- [ ] 空状态：无历史时显示引导提示
+- [x] 前端对话历史页：Tabs + 历史列表
+- [x] 列表项：总结标题、最后消息时间、内容摘要（前 100 字）
+- [x] Sidecar API：`GET /sessions`（列表，含时间、标题、摘要）、`POST /sessions/:id/rename`、`DELETE /sessions/:id`
+- [x] 点击恢复：未打开则复用首页占位符或新建标签；已打开则激活已有标签（1:1 关系）
+- [x] 删除历史：删除 SQLite `sessions` 和关联 `messages`，若该 session 有打开的标签则关闭
+- [x] 重命名：修改 `sessions.title`，对应标签标题同步更新
+- [x] 空状态：无历史时显示引导提示
 
 ## Blocked by
 
@@ -44,13 +44,13 @@ Category: enhancement
 - `useTabStore` — 需支持：恢复 session 时复用首页占位符或新建标签；若已打开则激活已有标签
 
 **Acceptance criteria:**
-- [ ] 前端对话历史页：Tabs + 历史列表
-- [ ] 列表项：总结标题、最后消息时间、内容摘要（前 100 字）
-- [ ] Sidecar API：`GET /sessions`（列表，含时间、标题、摘要）、`POST /sessions/:id/rename`、`DELETE /sessions/:id`
-- [ ] 点击恢复：未打开则复用首页占位符或新建标签；已打开则激活已有标签（1:1 关系）
-- [ ] 删除历史：删除 SQLite `sessions` 和关联 `messages`，若该 session 有打开的标签则关闭
-- [ ] 重命名：修改 `sessions.title`，对应标签标题同步更新
-- [ ] 空状态：无历史时显示引导提示
+- [x] 前端对话历史页：Tabs + 历史列表
+- [x] 列表项：总结标题、最后消息时间、内容摘要（前 100 字）
+- [x] Sidecar API：`GET /sessions`（列表，含时间、标题、摘要）、`POST /sessions/:id/rename`、`DELETE /sessions/:id`
+- [x] 点击恢复：未打开则复用首页占位符或新建标签；已打开则激活已有标签（1:1 关系）
+- [x] 删除历史：删除 SQLite `sessions` 和关联 `messages`，若该 session 有打开的标签则关闭
+- [x] 重命名：修改 `sessions.title`，对应标签标题同步更新
+- [x] 空状态：无历史时显示引导提示
 
 **Out of scope:**
 - 首页占位符的创建和升格逻辑（由 #02 负责，本 issue 只需与之协作）

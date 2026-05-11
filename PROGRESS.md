@@ -2,7 +2,7 @@
 
 本文档记录 Knowledge Base 应用所有 Issue 的执行进度与后续开发计划。
 
-> **更新日期**：2026-05-09  
+> **更新日期**：2026-05-11  
 > **对应 Issue 目录**：`.scratch/knowledge-base/issues/`
 
 ---
