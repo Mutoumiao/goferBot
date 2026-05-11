@@ -52,3 +52,7 @@ export async function healthCheck(): Promise<boolean> {
     return false
   }
 }
+
+export async function isSidecarReady(): Promise<boolean> {
+  return healthCheck()
+}
