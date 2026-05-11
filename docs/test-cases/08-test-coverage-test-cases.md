@@ -1,8 +1,8 @@
 # Issue #08 — 测试覆盖补全 测试用例
 
 > **对应 Issue**: `.scratch/knowledge-base/issues/08-test-coverage.md`
-> **状态**: in-progress
-> **更新日期**: 2026-05-08
+> **状态**: closed
+> **更新日期**: 2026-05-11
 
 ---
 

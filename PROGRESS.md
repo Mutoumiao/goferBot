@@ -21,7 +21,7 @@
 
 | 历史管理 | #06 对话历史 | closed | 历史列表、恢复会话、删除、重命名 |
 | 本地模型 | #07 Ollama 与错误处理 | closed | Ollama 本地模型、全局错误处理、Loading/空状态 |
-| 质量保障 | #08 测试覆盖 | closed | 45 个测试文件、296 条用例全部通过，覆盖率阈值 lines≥70 branches≥55 functions≥60 statements≥70 |
+| 质量保障 | #08 测试覆盖 | closed | 45 个测试文件、297 条用例全部通过，覆盖率阈值 lines≥70 branches≥55 functions≥60 statements≥70 |
 | 质量保障 | #09 端到端测试 | in-progress | 阶1 前端 E2E 已搭建（6 条 Playwright 用例通过），阶2/阶3 待搭建 |
 
 ---
