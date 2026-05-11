@@ -304,10 +304,7 @@ export const useSessionStore = defineStore('session', () => {
                 created_at: Date.now(),
               })
               messages.value.set(sessionId, list)
-              currentEvent = ''
-              continue
-            }
-            if (parsed.content) {
+            } else if (parsed.content) {
               assistantContent += parsed.content
               const list = messages.value.get(sessionId) ?? []
               const last = list[list.length - 1]
@@ -317,6 +314,8 @@ export const useSessionStore = defineStore('session', () => {
             }
           } catch {
             // ignore parse errors
+          } finally {
+            currentEvent = ''
           }
         }
       }

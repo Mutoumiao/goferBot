@@ -39,7 +39,10 @@ function handleRetry() {
     store.sendError = '未配置可用的 LLM 提供商，请前往设置'
     return
   }
-  store.sendMessage(lastUserMsg.content, cfg)
+  const kbIds: string[] | undefined = lastUserMsg.knowledge_base_ids
+    ? JSON.parse(lastUserMsg.knowledge_base_ids)
+    : undefined
+  store.sendMessage(lastUserMsg.content, cfg, kbIds)
 }
 
 function handleModelChange(provider: string, model: string) {

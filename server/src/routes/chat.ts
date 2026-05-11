@@ -94,7 +94,7 @@ app.post('/', async (c) => {
       let errorType = 'unknown'
       let message = err instanceof Error ? err.message : 'Stream error'
 
-      if (message.includes('ECONNREFUSED') || message.includes('fetch failed') || message.includes('Sidecar port not available')) {
+      if (message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
         errorType = 'network_error'
       } else if (message.includes('LLM API error')) {
         errorType = 'api_error'
