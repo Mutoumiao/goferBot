@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
@@ -63,6 +63,22 @@ onMounted(() => {
     kbStore.loadKnowledgeBases()
   }
 })
+
+// Auto-dismiss toast after 5s
+const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+watch(() => store.sendError, (err) => {
+  if (err) {
+    if (toastTimer.value) clearTimeout(toastTimer.value)
+    toastTimer.value = setTimeout(() => {
+      store.sendError = null
+    }, 5000)
+  }
+})
+
+function dismissToast() {
+  if (toastTimer.value) clearTimeout(toastTimer.value)
+  store.sendError = null
+}
 </script>
 
 <template>
@@ -111,6 +127,9 @@ onMounted(() => {
       >
         <span class="i-mdi-alert-circle text-base" />
         <span>{{ store.sendError }}</span>
+        <button class="ml-1 text-text-tertiary hover:text-text-primary" @click="dismissToast">
+          <span class="i-mdi-close text-xs" />
+        </button>
       </div>
     </Transition>
   </div>
