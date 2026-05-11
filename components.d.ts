@@ -11,7 +11,9 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ChatErrorCard: typeof import('./src/components/ChatErrorCard.vue')['default']
     ChatInput: typeof import('./src/components/ChatInput.vue')['default']
+    ChatLoading: typeof import('./src/components/ChatLoading.vue')['default']
     ChatMessage: typeof import('./src/components/ChatMessage.vue')['default']
     ChatMessageList: typeof import('./src/components/ChatMessageList.vue')['default']
     ChatPage: typeof import('./src/components/ChatPage.vue')['default']
@@ -19,7 +21,6 @@ declare module 'vue' {
     EditKbDialog: typeof import('./src/components/EditKbDialog.vue')['default']
     EmptySession: typeof import('./src/components/EmptySession.vue')['default']
     FileExplorer: typeof import('./src/components/FileExplorer.vue')['default']
-    GreetComponent: typeof import('./src/components/GreetComponent.vue')['default']
     HistoryPage: typeof import('./src/components/HistoryPage.vue')['default']
     InlineRename: typeof import('./src/components/InlineRename.vue')['default']
     KbMentionDropdown: typeof import('./src/components/KbMentionDropdown.vue')['default']
