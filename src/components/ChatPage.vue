@@ -86,7 +86,7 @@ onMounted(() => {
 
     <EmptySession v-if="isEmpty" @send="handleSend" />
     <template v-else>
-      <ChatMessageList :messages="store.activeMessages" @retry="handleRetry" />
+      <ChatMessageList :messages="store.activeMessages" :is-sending="store.isSending" @retry="handleRetry" />
       <ChatInput
         :loading="store.isSending"
         :knowledge-bases="kbStore.knowledgeBases"

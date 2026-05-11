@@ -3,9 +3,11 @@ import { ref, watch, nextTick } from 'vue'
 import type { Message } from '@/types'
 import ChatMessage from './ChatMessage.vue'
 import ChatErrorCard from './ChatErrorCard.vue'
+import ChatLoading from './ChatLoading.vue'
 
 const props = defineProps<{
   messages: Message[]
+  isSending?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -50,5 +52,9 @@ watch(
         :style="{ animationDelay: `${index * 30}ms` }"
       />
     </template>
+
+    <ChatLoading
+      v-if="isSending && messages.length > 0 && messages[messages.length - 1].role === 'user'"
+    />
   </div>
 </template>
