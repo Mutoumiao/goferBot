@@ -1,4 +1,4 @@
-Status: in-progress
+Status: closed
 Category: enhancement
 
 ## What to build
@@ -9,29 +9,29 @@ Category: enhancement
 
 ## Acceptance criteria
 
-- [ ] 前端组件测试：
+- [x] 前端组件测试：
   - 空会话态渲染和快捷胶囊点击
   - 消息输入和发送
   - 标签栏新建/切换/关闭
   - 首页占位符升格逻辑
   - Markdown + 代码高亮渲染
   - `@提及` 下拉选择和 pill/tag 渲染
-- [ ] Pinia store 测试：
+- [x] Pinia store 测试：
   - `useSessionStore`：创建会话、发送消息、切换模型
   - `useKnowledgeBaseStore`：创建知识库、导入文件、浏览目录
   - `useTabStore`：新建标签、关闭标签、切换标签
-- [ ] Sidecar API 集成测试：
+- [x] Sidecar API 集成测试：
   - `POST /chat`（SSE 流式响应）
   - `GET /sessions`, `GET /sessions/:id`
   - 知识库 CRUD API
   - 文件列表 API
   - 设置读写 API
-- [ ] 工具函数测试：
+- [x] 工具函数测试：
   - `sidecarClient`（端口变更处理、重试逻辑）
   - Markdown 解析和渲染辅助函数
   - 文件路径处理、面包屑导航逻辑
-- [ ] 覆盖率达标：lines ≥ 10%, branches ≥ 10%, statements ≥ 10%, functions ≥ 0%
-- [ ] 测试配置：`tests/setup/testglobals.ts` 已适配项目需求
+- [x] 覆盖率达标：lines ≥ 10%, branches ≥ 10%, statements ≥ 10%, functions ≥ 0%
+- [x] 测试配置：`tests/setup/testglobals.ts` 已适配项目需求
 
 ## Blocked by
 
@@ -66,29 +66,29 @@ Category: enhancement
 - 工具函数 — Markdown 解析、文件路径处理、面包屑导航逻辑测试
 
 **Acceptance criteria:**
-- [ ] 前端组件测试：
+- [x] 前端组件测试：
   - 空会话态渲染和快捷胶囊点击
   - 消息输入和发送
   - 标签栏新建/切换/关闭
   - 首页占位符升格逻辑
   - Markdown + 代码高亮渲染
   - `@提及` 下拉选择和 pill/tag 渲染
-- [ ] Pinia store 测试：
+- [x] Pinia store 测试：
   - `useSessionStore`：创建会话、发送消息、切换模型
   - `useKnowledgeBaseStore`：创建知识库、导入文件、浏览目录
   - `useTabStore`：新建标签、关闭标签、切换标签
-- [ ] Sidecar API 集成测试：
+- [x] Sidecar API 集成测试：
   - `POST /chat`（SSE 流式响应）
   - `GET /sessions`, `GET /sessions/:id`
   - 知识库 CRUD API
   - 文件列表 API
   - 设置读写 API
-- [ ] 工具函数测试：
+- [x] 工具函数测试：
   - `sidecarClient`（端口变更处理、重试逻辑）
   - Markdown 解析和渲染辅助函数
   - 文件路径处理、面包屑导航逻辑
-- [ ] 覆盖率达标：lines ≥ 10%, branches ≥ 10%, statements ≥ 10%, functions ≥ 0%
-- [ ] 测试配置：`tests/setup/testglobals.ts` 已适配项目需求
+- [x] 覆盖率达标：lines ≥ 10%, branches ≥ 10%, statements ≥ 10%, functions ≥ 0%
+- [x] 测试配置：`tests/setup/testglobals.ts` 已适配项目需求
 
 **Out of scope:**
 - 端到端 E2E 测试（如 Playwright、Cypress）
