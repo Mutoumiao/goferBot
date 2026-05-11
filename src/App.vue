@@ -7,6 +7,7 @@ import ChatPage from './components/ChatPage.vue'
 import KnowledgeBasePage from './components/KnowledgeBasePage.vue'
 import RecycleBinPage from './components/RecycleBinPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
+import HistoryPage from './components/HistoryPage.vue'
 import { initSidecar, sidecarStatus } from './composables/useSidecar'
 import { useSessionStore } from './stores/session'
 import { useSettingsStore } from './stores/settings'
@@ -99,12 +100,7 @@ function openRecycleBin() {
       <main class="relative flex-1 overflow-hidden bg-surface-0">
         <ChatPage v-if="sessionStore.activeTab?.type === 'chat'" />
         <KnowledgeBasePage v-else-if="sessionStore.activeTab?.type === 'knowledgeBase'" />
-        <div
-          v-else-if="sessionStore.activeTab?.type === 'history'"
-          class="flex h-full items-center justify-center text-text-secondary"
-        >
-          对话历史（由 #06 实现）
-        </div>
+        <HistoryPage v-else-if="sessionStore.activeTab?.type === 'history'" />
         <SettingsPage v-else-if="sessionStore.activeTab?.type === 'settings'" />
         <RecycleBinPage v-else-if="sessionStore.activeTab?.type === 'recycleBin'" />
       </main>

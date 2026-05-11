@@ -20,6 +20,7 @@ declare module 'vue' {
     EmptySession: typeof import('./src/components/EmptySession.vue')['default']
     FileExplorer: typeof import('./src/components/FileExplorer.vue')['default']
     GreetComponent: typeof import('./src/components/GreetComponent.vue')['default']
+    HistoryPage: typeof import('./src/components/HistoryPage.vue')['default']
     InlineRename: typeof import('./src/components/InlineRename.vue')['default']
     KbMentionDropdown: typeof import('./src/components/KbMentionDropdown.vue')['default']
     KbMentionPill: typeof import('./src/components/KbMentionPill.vue')['default']

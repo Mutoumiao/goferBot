@@ -16,6 +16,16 @@ export const useSessionStore = defineStore('session', () => {
   const isSending = ref(false)
   const sendError = ref<string | null>(null)
 
+  const historySessions = ref<
+    Array<{
+      id: string
+      title: string
+      updated_at: number
+      summary: string
+      message_count: number
+    }>
+  >([])
+
   const activeTab = computed(() => tabs.value.find((t) => t.id === activeTabId.value))
   const activeMessages = computed(() => {
     const sessionId = activeTab.value?.sessionId
@@ -65,6 +75,79 @@ export const useSessionStore = defineStore('session', () => {
     const res = await sidecarFetch(`/sessions/${sessionId}`)
     const data = (await res.json()) as { messages: Message[] }
     messages.value.set(sessionId, data.messages ?? [])
+  }
+
+  async function loadHistory() {
+    const res = await sidecarFetch('/sessions')
+    if (res.ok) {
+      historySessions.value = await res.json()
+    }
+  }
+
+  async function restoreSession(sessionId: string) {
+    const existingTab = tabs.value.find((t) => t.sessionId === sessionId)
+    if (existingTab) {
+      activeTabId.value = existingTab.id
+      return
+    }
+
+    const res = await sidecarFetch(`/sessions/${sessionId}`)
+    if (!res.ok) return
+    const data = (await res.json()) as {
+      id: string
+      title: string
+      provider: string | null
+      model: string | null
+      messages: Message[]
+    }
+
+    messages.value.set(sessionId, data.messages ?? [])
+
+    const homeTab = tabs.value.find((t) => t.type === 'chat' && !t.sessionId)
+    if (homeTab) {
+      homeTab.sessionId = sessionId
+      homeTab.title = data.title
+      activeTabId.value = homeTab.id
+    } else {
+      addTab({
+        id: `chat-${Date.now()}`,
+        type: 'chat',
+        title: data.title,
+        sessionId,
+        closable: true,
+      })
+    }
+  }
+
+  async function deleteSession(sessionId: string) {
+    const tab = tabs.value.find((t) => t.sessionId === sessionId)
+    if (tab) {
+      closeTab(tab.id)
+    }
+    messages.value.delete(sessionId)
+    await sidecarFetch(`/sessions/${sessionId}`, { method: 'DELETE' })
+    await loadHistory()
+  }
+
+  async function renameSession(sessionId: string, newTitle: string) {
+    const trimmed = newTitle.trim()
+    if (!trimmed) return
+
+    await sidecarFetch(`/sessions/${sessionId}/rename`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: trimmed }),
+    })
+
+    const tab = tabs.value.find((t) => t.sessionId === sessionId)
+    if (tab) {
+      tab.title = trimmed
+    }
+
+    const entry = historySessions.value.find((h) => h.id === sessionId)
+    if (entry) {
+      entry.title = trimmed
+    }
   }
 
   async function sendMessage(content: string, config: LLMConfig, knowledgeBaseIds?: string[]) {
@@ -191,6 +274,7 @@ export const useSessionStore = defineStore('session', () => {
     messages,
     isSending,
     sendError,
+    historySessions,
     activeTab,
     activeMessages,
     addTab,
@@ -198,5 +282,9 @@ export const useSessionStore = defineStore('session', () => {
     switchTab,
     loadSession,
     sendMessage,
+    loadHistory,
+    restoreSession,
+    deleteSession,
+    renameSession,
   }
 })
