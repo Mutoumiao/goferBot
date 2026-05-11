@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, watch, ref } from 'vue'
+import { computed, onMounted, onUnmounted, watch, ref } from 'vue'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
+import { isSidecarReady } from '@/utils/sidecarClient'
 import EmptySession from './EmptySession.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatInput from './ChatInput.vue'
@@ -16,6 +17,14 @@ const isEmpty = computed(() => !store.activeTab?.sessionId && store.activeMessag
 
 const currentProvider = computed(() => store.activeTab?.provider)
 const currentModel = computed(() => store.activeTab?.model)
+
+const sidecarReady = ref(false)
+const inputDisabled = computed(() => !sidecarReady.value || !settings.getLLMConfig())
+const inputDisabledHint = computed(() => {
+  if (!sidecarReady.value) return 'Sidecar 服务未就绪'
+  if (!settings.getLLMConfig()) return '未配置 LLM 模型，请前往设置'
+  return ''
+})
 
 function handleSend(content: string, knowledgeBaseIds?: string[]) {
   const cfg = store.activeTab?.provider
@@ -61,10 +70,22 @@ function handleTitleBlur(e: FocusEvent) {
   }
 }
 
+let sidecarTimer: ReturnType<typeof setInterval> | null = null
+
 onMounted(() => {
   if (kbStore.knowledgeBases.length === 0) {
     kbStore.loadKnowledgeBases()
   }
+  isSidecarReady().then((ready) => {
+    sidecarReady.value = ready
+  })
+  sidecarTimer = setInterval(async () => {
+    sidecarReady.value = await isSidecarReady()
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (sidecarTimer) clearInterval(sidecarTimer)
 })
 
 // Auto-dismiss toast after 5s
@@ -108,8 +129,8 @@ function dismissToast() {
       <ChatMessageList :messages="store.activeMessages" :is-sending="store.isSending" @retry="handleRetry" />
       <ChatInput
         :loading="store.isSending"
-        :disabled="!settings.getLLMConfig()"
-        disabled-hint="未配置 LLM 模型，请前往设置"
+        :disabled="inputDisabled"
+        :disabled-hint="inputDisabledHint"
         :knowledge-bases="kbStore.knowledgeBases"
         @send="handleSend"
       />
