@@ -194,6 +194,7 @@ function onCreateFolderClick() {
       <div v-else-if="displayItems.length === 0" class="flex h-full flex-col items-center justify-center gap-2 text-text-tertiary">
         <span class="i-mdi-folder-open-outline text-4xl" />
         <span class="text-sm">暂无文件</span>
+        <span class="text-xs">点击上方工具栏的"添加文件"导入文档</span>
       </div>
 
       <div v-else class="grid grid-cols-[1fr_auto_auto] gap-1">
