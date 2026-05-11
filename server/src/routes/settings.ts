@@ -37,8 +37,6 @@ function loadConfig(): AppConfig {
   }
 }
 
-// TODO(#05b): API keys are stored in plaintext. Replace with OS keychain
-// integration (e.g., keytar or safeStorage) before releasing to users.
 function saveConfig(config: AppConfig): void {
   const configPath = getConfigPath()
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
