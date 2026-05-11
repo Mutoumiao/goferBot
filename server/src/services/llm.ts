@@ -6,6 +6,8 @@ function getDefaultBaseUrl(provider: string): string {
       return 'https://api.openai.com'
     case 'deepseek':
       return 'https://api.deepseek.com'
+    case 'ollama':
+      return 'http://localhost:11434'
     default:
       return ''
   }
@@ -28,12 +30,16 @@ export async function streamChatCompletion(
   }
   apiMessages.push(...messages)
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (config.provider !== 'ollama') {
+    headers['Authorization'] = `Bearer ${config.apiKey}`
+  }
+
   const response = await fetch(`${url}/v1/chat/completions`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
+    headers,
     body: JSON.stringify({
       model: config.model,
       messages: apiMessages,
