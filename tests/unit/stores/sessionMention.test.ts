@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSessionStore } from '@/stores/session'
-import { sidecarFetch } from '@/utils/sidecarClient'
+import { sidecarFetch, isSidecarReady } from '@/utils/sidecarClient'
 
 vi.mock('@/utils/sidecarClient')
 
@@ -19,6 +19,7 @@ describe('useSessionStore sendMessage with knowledgeBaseIds', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.mocked(sidecarFetch).mockReset()
+    vi.mocked(isSidecarReady).mockResolvedValue(true)
   })
 
   it('sends knowledgeBaseIds in request body', async () => {

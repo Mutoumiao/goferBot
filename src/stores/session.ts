@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { sidecarFetch } from '@/utils/sidecarClient'
+import { sidecarFetch, isSidecarReady } from '@/utils/sidecarClient'
 import { useSettingsStore } from './settings'
-import type { Message, Tab, LLMConfig } from '@/types'
+import type { Message, Tab, LLMConfig, ChatErrorType } from '@/types'
 
 export const useSessionStore = defineStore('session', () => {
   // Tabs
@@ -15,6 +15,7 @@ export const useSessionStore = defineStore('session', () => {
   const messages = ref<Map<string, Message[]>>(new Map())
   const isSending = ref(false)
   const sendError = ref<string | null>(null)
+  const sendErrorType = ref<ChatErrorType | null>(null)
 
   const historySessions = ref<
     Array<{
@@ -168,7 +169,25 @@ export const useSessionStore = defineStore('session', () => {
 
   async function sendMessage(content: string, config: LLMConfig, knowledgeBaseIds?: string[]) {
     sendError.value = null
+    sendErrorType.value = null
     isSending.value = true
+
+    // Pre-check: sidecar ready
+    const ready = await isSidecarReady()
+    if (!ready) {
+      sendError.value = 'Sidecar 服务未就绪，请检查服务状态'
+      sendErrorType.value = 'sidecar_error'
+      isSending.value = false
+      return
+    }
+
+    // Pre-check: valid LLM config
+    if (!config.provider || !config.model) {
+      sendError.value = '未配置 LLM 模型，请前往设置页配置'
+      sendErrorType.value = 'unknown'
+      isSending.value = false
+      return
+    }
 
     try {
       let sessionId = activeTab.value?.sessionId
@@ -204,6 +223,7 @@ export const useSessionStore = defineStore('session', () => {
 
       if (!response.ok) {
         const errText = await response.text().catch(() => '请求失败')
+        sendErrorType.value = 'api_error'
         throw new Error(errText)
       }
 
@@ -249,6 +269,8 @@ export const useSessionStore = defineStore('session', () => {
       })
       messages.value.set(sessionId, currentList)
 
+      let currentEvent = ''
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -258,12 +280,33 @@ export const useSessionStore = defineStore('session', () => {
         buffer = lines.pop() || ''
 
         for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim()
+            continue
+          }
           if (!line.startsWith('data: ')) continue
           const data = line.slice(6)
           if (data === '[DONE]') continue
 
           try {
             const parsed = JSON.parse(data)
+            if (currentEvent === 'error') {
+              sendErrorType.value = parsed.type || 'unknown'
+              sendError.value = parsed.message || '请求失败'
+              // Add error message to stream
+              const list = messages.value.get(sessionId) ?? []
+              list.push({
+                id: `temp-error-${Date.now()}`,
+                session_id: sessionId,
+                role: 'error',
+                content: parsed.message || '请求失败',
+                errorType: parsed.type || 'unknown',
+                created_at: Date.now(),
+              })
+              messages.value.set(sessionId, list)
+              currentEvent = ''
+              continue
+            }
             if (parsed.content) {
               assistantContent += parsed.content
               const list = messages.value.get(sessionId) ?? []
@@ -273,12 +316,15 @@ export const useSessionStore = defineStore('session', () => {
               }
             }
           } catch {
-            // ignore
+            // ignore parse errors
           }
         }
       }
     } catch (e) {
       sendError.value = e instanceof Error ? e.message : String(e)
+      if (!sendErrorType.value) {
+        sendErrorType.value = 'network_error'
+      }
     } finally {
       isSending.value = false
     }
@@ -290,6 +336,7 @@ export const useSessionStore = defineStore('session', () => {
     messages,
     isSending,
     sendError,
+    sendErrorType,
     historySessions,
     historyError,
     historyLoading,
