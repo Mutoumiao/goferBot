@@ -8,13 +8,16 @@ export interface Session {
   message_count: number
 }
 
+export type ChatErrorType = 'api_error' | 'network_error' | 'sidecar_error' | 'unknown'
+
 export interface Message {
   id: string
   session_id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'error'
   content: string
   knowledge_base_ids?: string | null
   created_at: number
+  errorType?: ChatErrorType
 }
 
 export interface LLMConfig {
