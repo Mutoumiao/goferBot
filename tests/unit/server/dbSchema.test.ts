@@ -29,6 +29,7 @@ beforeAll(async () => {
         chunk_id,
         content,
         file_path,
+        chunk_id,
         tokenize='unicode61'
       );
     `)

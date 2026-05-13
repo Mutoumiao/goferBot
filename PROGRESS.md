@@ -22,7 +22,7 @@
 | 历史管理 | #06 对话历史 | closed | 历史列表、恢复会话、删除、重命名 |
 | 本地模型 | #07 Ollama 与错误处理 | closed | Ollama 本地模型、全局错误处理、Loading/空状态 |
 | 质量保障 | #08 测试覆盖 | closed | 45 个测试文件、297 条用例全部通过，覆盖率阈值 lines≥70 branches≥55 functions≥60 statements≥70 |
-| 质量保障 | #09 端到端测试 | in-progress | 阶1 前端 E2E 已搭建（6 条 Playwright 用例通过），阶2/阶3 待搭建 |
+| 质量保障 | #09 端到端测试 | closed | 三阶测试体系全部搭建完成：阶1 E2E 28条、阶2 集成34条、阶3 验收3条。40+手动场景全部自动化 |
 
 ---
 
@@ -164,15 +164,16 @@
 
 #### #09 端到端测试
 
-- **状态**：`in-progress`
+- **状态**：`closed`
 - **依赖**：#01 / #03b / #04 / #04b / #05 / #06
 - **优先级**：中
 - **内容**：三阶端到端测试体系：阶1 Playwright 前端 E2E（mock IPC）、阶2 Vitest + 真实 Sidecar 集成、阶3 Playwright + WebView2 CDP 全链路验收
 - **进度**：
-  - 阶1 已搭建：Playwright 配置、`tauri-ipc.ts` mock、`fixtures/knowledge-bases.ts`、Page Objects（ChatPage / KnowledgeBasePage）、`kb-context-menu.spec.ts`（3 条通过）、`chat-mention.spec.ts`（3 条通过）。`pnpm test:e2e` 稳定通过 6 条用例。
-  - 待补充阶1：settings.spec.ts（#05）、chat-history.spec.ts（#06）、kb-context-menu 剩余 9 个场景、http-routes.ts 统一拦截层、HistoryPage / SettingsPage Page Objects。
-  - 阶2 未开始：需创建 `tests/integration/`、`vitest.integration.config.ts`、mock Embedding/LLM server、sidecar 生命周期管理。
-  - 阶3 未开始：需创建 `tests/e2e-full/`、CDP 配置、Tauri 调试端口暴露。
+  - 阶1 完成（28 条用例）：`kb-context-menu.spec.ts`（15 条）、`chat-mention.spec.ts`（3 条）、`settings.spec.ts`（4 条）、`chat-history.spec.ts`（6 条）。统一 `http-routes.ts` mock 拦截层。Page Objects 完整（ChatPage / KnowledgeBasePage / HistoryPage / SettingsPage）。
+  - 阶2 完成（34 条用例）：`sidecar-lifecycle.spec.ts`（4 条）、`rag-flow.spec.ts`（5 条）、`index-sync.spec.ts`（20 条）、`sessions.spec.ts`（5 条）、`settings-api.spec.ts`（5 条）。含 mock Embedding/LLM server、sidecar 进程生命周期管理（`pool: 'forks'` 隔离）。
+  - 阶3 完成（3 条用例）：`tests/e2e-full/smoke.spec.ts` 覆盖核心用户旅程（CDP 连接 Tauri WebView2）。
+  - 生产 Bug 修复：Server 环境变量读取、FTS5 `chunk_id` schema、缺失 `POST /sessions`、Settings save 返回值。
+  - CI：`.github/workflows/e2e.yml` 自动运行阶1+阶2。
 
 ---
 
@@ -192,4 +193,4 @@
 
 ---
 
-*最后更新：2026-05-11（#08 测试覆盖完成）*
+*最后更新：2026-05-13（#09 端到端测试完成）*

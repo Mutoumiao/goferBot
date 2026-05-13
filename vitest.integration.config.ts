@@ -2,10 +2,10 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    globals: true,
-    environment: 'node',
-    testTimeout: 60000,
-    hookTimeout: 60000,
     include: ['tests/integration/**/*.spec.ts'],
+    pool: 'forks',
+    testTimeout: 60000,
+    hookTimeout: 30000,
+    teardownTimeout: 30000,
   },
 })

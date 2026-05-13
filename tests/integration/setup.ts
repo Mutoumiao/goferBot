@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let sidecarProcess: ChildProcess | null = null
-let dataDir: string | null = null
+let currentDataDir: string | null = null
 
 function waitForPortFile(dir: string, timeout = 30000): Promise<number> {
   const portFile = join(dir, '.sidecar-port')
@@ -29,32 +29,63 @@ function waitForPortFile(dir: string, timeout = 30000): Promise<number> {
   })
 }
 
+
+async function waitForHealth(port: number, timeout = 30000): Promise<void> {
+  const start = Date.now()
+  while (Date.now() - start < timeout) {
+    try {
+      const res = await fetch('http://127.0.0.1:' + port + '/health')
+      if (res.status === 200) return
+    } catch {
+      // not ready yet
+    }
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  throw new Error('Timeout waiting for sidecar health check')
+}
 export async function startSidecar(): Promise<{ port: number; dataDir: string }> {
-  dataDir = mkdtempSync(join(tmpdir(), 'kb-e2e-'))
+  currentDataDir = mkdtempSync(join(tmpdir(), 'kb-e2e-'))
   sidecarProcess = spawn('node', ['server/dist/index.js'], {
     env: {
       ...process.env,
-      KB_DATA_DIR: dataDir,
+      KB_DATA_DIR: currentDataDir,
       KB_PORT: '0',
     },
     stdio: 'pipe',
   })
 
-  sidecarProcess.stdout?.on('data', (d) => console.log('[sidecar]', d.toString().trim()))
-  sidecarProcess.stderr?.on('data', (d) => console.error('[sidecar]', d.toString().trim()))
+  sidecarProcess.stdout?.on('data', (data: Buffer) => {
+    console.log(`[sidecar stdout] ${data.toString().trim()}`)
+  })
 
-  const port = await waitForPortFile(dataDir)
-  return { port, dataDir }
+  sidecarProcess.stderr?.on('data', (data: Buffer) => {
+    console.error(`[sidecar stderr] ${data.toString().trim()}`)
+  })
+
+  const port = await waitForPortFile(currentDataDir)
+  return { port, dataDir: currentDataDir }
 }
 
 export async function stopSidecar(): Promise<void> {
   if (sidecarProcess) {
-    sidecarProcess.kill()
-    await new Promise((resolve) => sidecarProcess!.once('exit', resolve))
+    const proc = sidecarProcess
+    if (proc.exitCode === null && proc.signalCode === null) {
+      const exited = new Promise<void>((resolve) => {
+        proc.on('exit', () => resolve())
+        proc.on('close', () => resolve())
+      })
+      proc.kill('SIGTERM')
+      await exited
+    }
     sidecarProcess = null
   }
-  if (dataDir) {
-    rmSync(dataDir, { recursive: true, force: true })
-    dataDir = null
+
+  if (currentDataDir) {
+    rmSync(currentDataDir, { recursive: true, force: true })
+    currentDataDir = null
   }
+}
+
+export function getSidecarProcess(): ChildProcess | null {
+  return sidecarProcess
 }

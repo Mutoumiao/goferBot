@@ -36,7 +36,9 @@ function findAvailablePort(startPort: number): Promise<number> {
         }
       })
       server.once('listening', () => {
-        server.close(() => resolve(port))
+        const address = server.address()
+        const actualPort = typeof address === 'object' && address !== null ? address.port : port
+        server.close(() => resolve(actualPort))
       })
       server.listen(port, '127.0.0.1')
     }
@@ -45,8 +47,9 @@ function findAvailablePort(startPort: number): Promise<number> {
 }
 
 async function main(): Promise<void> {
-  const requestedPort = process.env.KB_PORT ? parseInt(process.env.KB_PORT, 10) : DEFAULT_PORT
-  const port = requestedPort === 0 ? await findAvailablePort(DEFAULT_PORT) : requestedPort
+  const envPort = process.env.KB_PORT ? parseInt(process.env.KB_PORT, 10) : undefined
+  const startPort = envPort !== undefined && !isNaN(envPort) ? envPort : DEFAULT_PORT
+  const port = await findAvailablePort(startPort)
   writePortFile(port)
 
   syncKnowledgeBasesFromDisk()
@@ -68,9 +71,9 @@ async function main(): Promise<void> {
   try {
     db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
-        chunk_id,
         content,
         file_path,
+        chunk_id,
         tokenize='unicode61'
       );
     `)

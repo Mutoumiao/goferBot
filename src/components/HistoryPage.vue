@@ -54,23 +54,17 @@ function handleDelete(sessionId: string) {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-surface-1 px-[34px] py-14">
+  <div class="h-full overflow-y-auto px-14 py-12">
     <div class="mx-auto max-w-[880px]">
-      <!-- 设计稿「Session history header」 -->
-      <div class="mb-[18px] flex flex-wrap items-end justify-between gap-4">
-        <div class="min-w-0 space-y-1.5">
-          <h1 class="text-[28px] font-medium leading-[1.18] tracking-tight text-text-primary">
-            会话历史
-          </h1>
-          <p class="max-w-xl text-sm leading-relaxed text-text-secondary">
-            点击任意记录即可恢复到对应会话，继续追问、整理或查看引用来源。
-          </p>
+      <!-- Header -->
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-[28px] font-medium text-text-primary">会话历史</h1>
+          <p class="mt-1.5 text-sm text-text-secondary">点击任意记录即可恢复到对应会话，继续追问、整理或查看引用来源。</p>
         </div>
-        <div
-          class="flex shrink-0 items-center gap-2 rounded-[14px] border border-border-default bg-white/60 px-3 py-2"
-        >
+        <div class="flex items-center gap-2 rounded-[14px] border border-border-default bg-white/60 px-3 py-2">
           <span class="i-mdi-clock-outline text-sm text-text-tertiary" />
-          <span class="text-[13px] text-text-secondary">全部会话</span>
+          <span class="text-sm text-text-secondary">全部会话</span>
           <span class="i-mdi-chevron-down text-sm text-text-tertiary" />
         </div>
       </div>
@@ -115,7 +109,7 @@ function handleDelete(sessionId: string) {
           v-for="session in store.historySessions"
           :key="session.id"
           data-testid="history-item"
-          class="group relative flex min-h-[76px] cursor-pointer items-center gap-3.5 rounded-[18px] border border-border-default bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.03)] transition-all hover:border-border-default hover:bg-white"
+          class="group flex cursor-pointer items-center gap-3.5 rounded-[18px] border border-border-default bg-white p-4 transition-all hover:border-accent-500/20 hover:shadow-xs"
           @click="store.restoreSession(session.id)"
         >
           <div class="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-2xl bg-accent-soft">

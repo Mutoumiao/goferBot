@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './specs',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 1,
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: [
     ['list'],
@@ -17,7 +17,7 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'tauri-webview2',
+      name: 'tauri-desktop',
       use: { ...devices['Desktop Chrome'] },
     },
   ],

@@ -1,7 +1,22 @@
 import { Hono } from 'hono'
+import { nanoid } from 'nanoid'
 import db from '../db.js'
 
 const app = new Hono()
+
+app.post('/', async (c) => {
+  const { title } = await c.req.json<{ title: string }>()
+  const trimmed = title?.trim()
+  if (!trimmed) {
+    return c.json({ error: 'Title is required' }, 400)
+  }
+  const id = nanoid()
+  const now = Date.now()
+  db.prepare(
+    'INSERT INTO sessions (id, title, provider, model, created_at, updated_at, message_count) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(id, trimmed, null, null, now, now, 0)
+  return c.json({ id, title: trimmed, created_at: now, updated_at: now, message_count: 0 })
+})
 
 app.get('/', (c) => {
   const rows = db
