@@ -56,10 +56,13 @@ const defaultProviderOptions = computed(() =>
     <div class="mx-auto max-w-3xl space-y-6">
       <!-- Header -->
       <div class="flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-text-primary">设置</h1>
+        <div>
+          <h1 class="text-[28px] font-medium text-text-primary">设置</h1>
+          <p class="mt-1.5 text-sm text-text-secondary">让 AI 工作流保持安静、专注，并贴合你的资料整理习惯。</p>
+        </div>
         <button
           :disabled="!hasChanges"
-          class="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
+          class="rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
           @click="handleSave"
         >
           保存
@@ -67,7 +70,7 @@ const defaultProviderOptions = computed(() =>
       </div>
 
       <!-- LLM Providers Card -->
-      <div class="rounded-xl border border-border-default bg-surface-1 p-5">
+      <div class="rounded-3xl border border-border-default bg-white/80 p-5 shadow-sm">
         <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
           LLM 提供商配置
         </h2>
@@ -80,7 +83,7 @@ const defaultProviderOptions = computed(() =>
             :class="[
               'rounded-t-lg px-3 py-1.5 text-sm transition-all',
               activeLlmTab === key
-                ? 'font-medium text-accent-400'
+                ? 'font-medium text-accent-500'
                 : 'text-text-tertiary hover:text-text-secondary',
             ]"
             @click="activeLlmTab = key"
@@ -119,7 +122,7 @@ const defaultProviderOptions = computed(() =>
             <input
               v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].apiKey"
               type="password"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入 API Key"
               @input="markChanged"
             />
@@ -131,7 +134,7 @@ const defaultProviderOptions = computed(() =>
             <input
               v-model="localConfig.providers[activeLlmTab].model"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入模型名称"
               @input="markChanged"
             />
@@ -143,7 +146,7 @@ const defaultProviderOptions = computed(() =>
             <input
               v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].baseUrl"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="留空使用默认地址"
               @input="markChanged"
             />
@@ -155,7 +158,7 @@ const defaultProviderOptions = computed(() =>
             <input
               v-model="localConfig.providers.ollama.url"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="http://localhost:11434"
               @input="markChanged"
             />
@@ -167,7 +170,7 @@ const defaultProviderOptions = computed(() =>
           <label class="mb-1 block text-sm text-text-secondary">默认对话提供商</label>
           <select
             v-model="localConfig.defaultChatProvider"
-            class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+            class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
             @change="markChanged"
           >
             <option
@@ -182,7 +185,7 @@ const defaultProviderOptions = computed(() =>
       </div>
 
       <!-- Embedding Card -->
-      <div class="rounded-xl border border-border-default bg-surface-1 p-5">
+      <div class="rounded-3xl border border-border-default bg-white/80 p-5 shadow-sm">
         <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
           Embedding API
         </h2>
@@ -191,7 +194,7 @@ const defaultProviderOptions = computed(() =>
             <label class="mb-1 block text-sm text-text-secondary">提供商</label>
             <select
               v-model="localConfig.embeddingProvider.provider"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               @change="markChanged"
             >
               <option
@@ -208,7 +211,7 @@ const defaultProviderOptions = computed(() =>
             <input
               v-model="localConfig.embeddingProvider.apiKey"
               type="password"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入 API Key"
               @input="markChanged"
             />
@@ -218,7 +221,7 @@ const defaultProviderOptions = computed(() =>
             <input
               v-model="localConfig.embeddingProvider.model"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入模型名称"
               @input="markChanged"
             />
@@ -228,7 +231,7 @@ const defaultProviderOptions = computed(() =>
             <input
               v-model="localConfig.embeddingProvider.baseUrl"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="留空使用默认地址"
               @input="markChanged"
             />
@@ -237,7 +240,7 @@ const defaultProviderOptions = computed(() =>
       </div>
 
       <!-- General Card -->
-      <div class="rounded-xl border border-border-default bg-surface-1 p-5">
+      <div class="rounded-3xl border border-border-default bg-white/80 p-5 shadow-sm">
         <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
           通用设置
         </h2>

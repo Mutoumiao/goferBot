@@ -44,7 +44,7 @@ function selectProvider(key: string) {
 <template>
   <div class="relative">
     <button
-      class="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-text-secondary transition-all hover:bg-surface-2 hover:text-text-primary"
+      class="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs text-text-secondary transition-all hover:bg-surface-2 hover:text-text-primary"
       @click="open = !open"
     >
       <span class="i-mdi-brain text-sm" />
@@ -67,15 +67,15 @@ function selectProvider(key: string) {
     >
       <div
         v-if="open"
-        class="absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border border-border-default bg-surface-2 py-1 shadow-xl"
+        class="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-border-default bg-white py-1 shadow-xl"
         @click.stop
       >
         <button
           v-for="p in store.configuredProviders"
           :key="p.key"
           :class="[
-            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-3',
-            p.key === props.provider ? 'text-accent-400' : 'text-text-primary',
+            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2',
+            p.key === props.provider ? 'text-accent-500' : 'text-text-primary',
           ]"
           @click="selectProvider(p.key)"
         >

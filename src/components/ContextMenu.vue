@@ -42,7 +42,7 @@ onUnmounted(() => {
       v-if="visible"
       data-context-menu
       data-testid="context-menu"
-      class="fixed z-50 min-w-[160px] rounded-lg border border-surface-3 bg-surface-1 py-1 shadow-xl"
+      class="fixed z-50 min-w-[160px] rounded-lg border border-border-default bg-white py-1 shadow-xl"
       :style="{ left: `${x}px`, top: `${y}px` }"
       @click.stop
     >
