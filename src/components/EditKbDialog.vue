@@ -59,10 +59,10 @@ function onSave() {
     <Transition name="fade">
       <div
         v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
         @click.self="emit('close')"
       >
-        <div class="w-96 rounded-lg border border-surface-3 bg-surface-1 p-5 shadow-xl">
+        <div class="w-96 rounded-2xl border border-border-default bg-white p-5 shadow-xl">
           <h3 class="mb-3 text-base font-medium text-text-primary">修改资料</h3>
 
           <div class="mb-4">
@@ -70,10 +70,10 @@ function onSave() {
             <input
               v-model="name"
               type="text"
-              class="w-full rounded-md border border-surface-3 bg-surface-0 px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-accent-500"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-accent-500"
               @keyup.enter="onSave"
             />
-            <p v-if="error" class="mt-1 text-xs text-red-400">{{ error }}</p>
+            <p v-if="error" class="mt-1 text-xs text-danger-500">{{ error }}</p>
           </div>
 
           <div class="mb-4">
@@ -82,8 +82,8 @@ function onSave() {
               <button
                 v-for="opt in iconOptions"
                 :key="opt"
-                class="flex h-10 items-center justify-center rounded-md border transition-colors"
-                :class="icon === opt ? 'border-accent-500 bg-accent-500/10 text-accent-400' : 'border-surface-3 text-text-tertiary hover:bg-surface-2'"
+                class="flex h-10 items-center justify-center rounded-xl border transition-colors"
+                :class="icon === opt ? 'border-accent-500 bg-accent-soft text-accent-500' : 'border-border-default text-text-tertiary hover:bg-surface-2'"
                 @click="icon = opt"
               >
                 <span :class="`i-${opt} text-lg`" />
@@ -93,13 +93,13 @@ function onSave() {
 
           <div class="flex justify-end gap-2">
             <button
-              class="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+              class="rounded-lg px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
               @click="emit('close')"
             >
               取消
             </button>
             <button
-              class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500"
+              class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600"
               @click="onSave"
             >
               保存

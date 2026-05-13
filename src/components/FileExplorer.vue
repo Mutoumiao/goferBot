@@ -148,9 +148,9 @@ function onCreateFolderClick() {
 </script>
 
 <template>
-  <div data-testid="file-explorer" class="flex h-full flex-col bg-surface-0" @contextmenu="onContextMenu($event)">
+  <div data-testid="file-explorer" class="flex h-full flex-col bg-surface-1" @contextmenu="onContextMenu($event)">
     <!-- Toolbar -->
-    <div class="flex items-center gap-3 border-b border-surface-3 px-4 py-3">
+    <div class="flex items-center gap-3 border-b border-border-default px-4 py-3">
       <div class="flex gap-1">
         <button class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="emit('goBack')">
           <span class="i-mdi-chevron-left text-lg" />
@@ -174,12 +174,12 @@ function onCreateFolderClick() {
           :value="searchQuery"
           type="text"
           placeholder="搜索文件..."
-          class="h-8 w-48 rounded-md border border-surface-3 bg-surface-1 pl-9 pr-3 text-sm text-text-primary placeholder-text-tertiary outline-none transition-colors focus:border-accent-500"
+          class="h-8 w-48 rounded-md border border-border-default bg-white pl-9 pr-3 text-sm text-text-primary placeholder-text-tertiary outline-none transition-colors focus:border-accent-500"
           @keyup.enter="emit('search', ($event.target as HTMLInputElement).value)"
         />
       </div>
 
-      <button class="flex items-center gap-1.5 rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500" @click="emit('importFiles')">
+      <button class="flex items-center gap-1.5 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600" @click="emit('importFiles')">
         <span class="i-mdi-plus text-sm" />
         添加文件
       </button>
@@ -207,7 +207,7 @@ function onCreateFolderClick() {
         <div
           v-for="item in displayItems"
           :key="item.name + ('relativePath' in item ? item.relativePath : '')"
-          class="col-span-3 grid cursor-pointer grid-cols-subgrid items-center rounded-md px-3 py-2 transition-colors hover:bg-surface-2"
+          class="col-span-3 grid cursor-pointer grid-cols-subgrid items-center rounded-md px-3 py-2 transition-colors hover:bg-white"
           @click="onItemClick(item)"
           @contextmenu.stop="onContextMenu($event, item.name)"
         >
@@ -254,8 +254,8 @@ function onCreateFolderClick() {
           <span class="i-mdi-content-copy text-sm" />
           <span>复制到...</span>
         </button>
-        <div class="my-1 border-t border-surface-3" />
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10" @click="onDeleteClick">
+        <div class="my-1 border-t border-border-default" />
+        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft" @click="onDeleteClick">
           <span class="i-mdi-delete-forever text-sm" />
           <span>永久删除</span>
         </button>

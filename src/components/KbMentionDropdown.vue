@@ -53,7 +53,7 @@ defineExpose({ handleKeydown })
   <div
     v-if="visible && filtered.length > 0"
     data-testid="kb-mention-dropdown"
-    class="absolute bottom-full left-0 mb-2 max-h-48 w-64 overflow-y-auto rounded-lg border border-border-default bg-surface-1 shadow-lg"
+    class="absolute bottom-full left-0 mb-2 max-h-48 w-64 overflow-y-auto rounded-xl border border-border-default bg-white shadow-xl"
   >
     <div
       v-for="(kb, i) in filtered"
@@ -61,7 +61,7 @@ defineExpose({ handleKeydown })
       data-testid="kb-mention-item"
       :class="[
         'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors',
-        i === selectedIndex ? 'bg-accent-500/10 text-accent-600' : 'text-text-primary hover:bg-surface-3',
+        i === selectedIndex ? 'bg-accent-soft text-accent-500' : 'text-text-primary hover:bg-surface-2',
       ]"
       @mousedown.prevent="$emit('select', kb)"
     >

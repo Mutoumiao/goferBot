@@ -197,10 +197,10 @@ function onCopyFile(fileName: string) {
 </script>
 
 <template>
-  <div class="flex h-full bg-surface-0">
+  <div class="flex h-full bg-surface-1">
     <!-- Left sidebar: knowledge base list -->
-    <div class="flex w-56 flex-col border-r border-surface-3">
-      <div class="flex items-center justify-between border-b border-surface-3 px-3 py-3">
+    <div class="flex w-[286px] flex-col border-r border-border-default bg-white">
+      <div class="flex items-center justify-between border-b border-border-default px-4 py-3">
         <span class="text-sm font-medium text-text-primary">知识库</span>
         <button
           data-testid="create-kb-btn"
@@ -211,54 +211,55 @@ function onCopyFile(fileName: string) {
         </button>
       </div>
 
+      <!-- Search -->
+      <div class="px-3 pt-3">
+        <div class="flex items-center gap-2.5 rounded-2xl border border-border-default bg-white px-3.5 py-2.5">
+          <span class="i-mdi-magnify text-base text-text-tertiary" />
+          <input
+            type="text"
+            placeholder="搜索知识库"
+            class="flex-1 bg-transparent text-sm text-text-primary placeholder-text-tertiary outline-none"
+            @keyup.enter="onSearch(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+      </div>
+
       <div data-testid="kb-list" class="flex-1 overflow-auto p-2">
         <div
           v-for="kb in store.knowledgeBases"
           :key="kb.id"
           data-testid="kb-item"
-          class="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 transition-colors"
-          :class="store.selectedKbId === kb.id ? 'bg-accent-600/15 text-accent-400' : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'"
+          class="flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all"
+          :class="store.selectedKbId === kb.id
+            ? 'bg-white shadow-xs border border-border-default text-text-primary'
+            : 'text-text-secondary hover:bg-surface-2/60 hover:text-text-primary'"
           @click="onSelectKb(kb.id)"
           @contextmenu="onKbContextMenu($event, kb.id)"
         >
-          <span :class="`i-${kb.icon || 'mdi-database'} text-lg`" />
-          <span class="truncate text-sm">{{ kb.name }}</span>
-        </div>
-
-        <div v-if="store.knowledgeBases.length === 0 && !store.isLoading" class="px-2 py-4 text-center text-xs text-text-tertiary">
-          暂无知识库，点击 + 创建
+          <div
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px]"
+            :class="store.selectedKbId === kb.id ? 'bg-accent-soft' : 'bg-surface-2'"
+          >
+            <span
+              class="text-base"
+              :class="[
+                `i-${kb.icon || 'mdi-database'}`,
+                store.selectedKbId === kb.id ? 'text-accent-500' : 'text-text-tertiary'
+              ]"
+            />
+          </div>
+          <div class="flex flex-col gap-0.5 min-w-0">
+            <span class="truncate text-sm font-medium">{{ kb.name }}</span>
+            <span class="text-xs text-text-tertiary">{{ kb.fileCount || 0 }} 个文件</span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Right: file explorer -->
-    <div class="flex-1 flex flex-col">
-      <!-- Index status bar -->
-      <div
-        v-if="store.selectedKbId && store.indexStatus.get(store.selectedKbId)"
-        class="flex items-center gap-2 border-b border-surface-3 bg-surface-1 px-4 py-1.5"
-      >
-        <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
-          <div
-            class="h-full rounded-full bg-accent-500 transition-all"
-            :style="{ width: indexProgress + '%' }"
-          />
-        </div>
-        <span class="shrink-0 text-[11px] text-text-tertiary">
-          {{ store.indexStatus.get(store.selectedKbId)?.indexedFiles }}/{{ store.indexStatus.get(store.selectedKbId)?.totalFiles }}
-        </span>
-        <span
-          v-if="store.indexStatus.get(store.selectedKbId)?.pendingFiles"
-          class="shrink-0 text-[11px] text-text-tertiary"
-        >
-          队列中 {{ store.indexStatus.get(store.selectedKbId)?.pendingFiles }} 个文件待处理
-        </span>
-      </div>
-
+    <div class="flex flex-1 flex-col overflow-hidden">
       <FileExplorer
-        v-if="store.selectedKb"
-        data-testid="file-explorer"
-        :files="store.files"
+        :files="store.currentFiles"
         :search-results="store.searchResults"
         :search-query="store.searchQuery"
         :breadcrumb="store.breadcrumb"
@@ -278,38 +279,87 @@ function onCopyFile(fileName: string) {
         @delete-file="onDeleteFile"
         @auto-rename-consumed="onAutoRenameConsumed"
       />
-      <div v-else class="flex h-full flex-col items-center justify-center gap-3 text-text-tertiary">
-        <span class="i-mdi-bookshelf text-5xl" />
-        <span class="text-sm">选择一个知识库或创建新库</span>
+
+      <!-- Index progress -->
+      <div
+        v-if="indexProgress > 0 && indexProgress < 100"
+        class="absolute bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border-default bg-white px-4 py-2 shadow-lg"
+      >
+        <span class="i-mdi-loading animate-spin text-sm text-accent-500" />
+        <span class="text-xs text-text-secondary">正在索引文件... {{ indexProgress }}%</span>
       </div>
     </div>
 
-    <!-- KB Context Menu -->
+    <!-- Context Menu -->
     <ContextMenu
-      data-testid="context-menu"
       :visible="contextMenuVisible"
       :x="contextMenuX"
       :y="contextMenuY"
       @close="closeContextMenu"
     >
-      <div class="py-1">
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onPinKb">
-          <span class="i-mdi-pin text-sm" />
-          <span>置顶</span>
-        </button>
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onEditKb">
-          <span class="i-mdi-pencil text-sm" />
-          <span>修改资料</span>
-        </button>
-        <div class="my-1 border-t border-surface-3" />
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10" @click="onDeleteKb">
-          <span class="i-mdi-delete text-sm" />
-          <span>移入回收站</span>
-        </button>
-      </div>
+      <button
+        class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+        @click="onPinKb"
+      >
+        <span class="i-mdi-pin text-sm" />
+        <span>置顶</span>
+      </button>
+      <button
+        class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+        @click="onEditKb"
+      >
+        <span class="i-mdi-pencil text-sm" />
+        <span>编辑</span>
+      </button>
+      <div class="my-1 border-t border-border-default" />
+      <button
+        class="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger-500 transition-colors hover:bg-danger-soft"
+        @click="onDeleteKb"
+      >
+        <span class="i-mdi-delete text-sm" />
+        <span>删除</span>
+      </button>
     </ContextMenu>
 
-    <!-- Edit KB Dialog -->
+    <!-- New KB Dialog -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="showNewKbDialog"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          @click.self="showNewKbDialog = false"
+        >
+          <div class="w-80 rounded-2xl border border-border-default bg-white p-5 shadow-xl">
+            <h3 class="mb-4 text-base font-medium text-text-primary">新建知识库</h3>
+            <input
+              v-model="newKbName"
+              type="text"
+              placeholder="输入知识库名称"
+              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2.5 text-sm text-text-primary placeholder-text-tertiary outline-none transition-colors focus:border-accent-500/50"
+              @keyup.enter="confirmCreateKb"
+            />
+            <p v-if="newKbError" class="mt-2 text-xs text-danger-500">{{ newKbError }}</p>
+            <div class="mt-4 flex justify-end gap-2">
+              <button
+                class="rounded-lg px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2"
+                @click="showNewKbDialog = false"
+              >
+                取消
+              </button>
+              <button
+                class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600"
+                :disabled="isCreatingKb"
+                @click="confirmCreateKb"
+              >
+                {{ isCreatingKb ? '创建中...' : '创建' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Edit Dialog -->
     <EditKbDialog
       :visible="showEditDialog"
       :initial-name="editKbName"
@@ -326,59 +376,5 @@ function onCopyFile(fileName: string) {
       :source-path="moveCopySourcePath"
       @close="moveCopyVisible = false"
     />
-
-    <!-- New KB Dialog -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showNewKbDialog"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          @click.self="showNewKbDialog = false"
-        >
-          <div class="w-80 rounded-lg border border-surface-3 bg-surface-1 p-5 shadow-xl">
-            <h3 class="mb-3 text-base font-medium text-text-primary">新建知识库</h3>
-            <input
-              v-model="newKbName"
-              data-testid="kb-name-input"
-              type="text"
-              placeholder="输入知识库名称"
-              class="w-full rounded-md border border-surface-3 bg-surface-0 px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none transition-colors focus:border-accent-500"
-              @keyup.enter="confirmCreateKb"
-            />
-            <p v-if="newKbError" class="mt-2 text-xs text-red-400">{{ newKbError }}</p>
-            <div class="mt-4 flex justify-end gap-2">
-              <button class="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="showNewKbDialog = false">取消</button>
-              <button
-              data-testid="kb-create-confirm"
-              class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500 disabled:opacity-50"
-              :disabled="isCreatingKb"
-              @click="confirmCreateKb"
-            >
-              {{ isCreatingKb ? '创建中...' : '创建' }}
-            </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
-
-    <!-- Error toast -->
-    <Transition name="fade">
-      <div
-        v-if="store.error"
-        class="absolute bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm text-red-400"
-      >
-        <span class="i-mdi-alert-circle-outline" />
-        {{ store.error }}
-        <button class="ml-1 text-red-400 hover:text-red-300" @click="store.error = null">
-          <span class="i-mdi-close" />
-        </button>
-      </div>
-    </Transition>
   </div>
 </template>
-
-<style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-</style>

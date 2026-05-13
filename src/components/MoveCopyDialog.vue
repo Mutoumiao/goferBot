@@ -95,11 +95,11 @@ async function onConfirm() {
     <Transition name="fade">
       <div
         v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
         @click.self="emit('close')"
       >
-        <div class="flex h-[480px] w-[640px] flex-col rounded-lg border border-surface-3 bg-surface-1 shadow-xl">
-          <div class="border-b border-surface-3 px-5 py-3">
+        <div class="flex h-[480px] w-[640px] flex-col rounded-2xl border border-border-default bg-white shadow-xl">
+          <div class="border-b border-border-default px-5 py-3">
             <h3 class="text-base font-medium text-text-primary">
               {{ mode === 'move' ? '移动到' : '复制到' }}
             </h3>
@@ -107,12 +107,12 @@ async function onConfirm() {
 
           <div class="flex flex-1 overflow-hidden">
             <!-- Left: KB list -->
-            <div class="w-48 border-r border-surface-3 overflow-auto p-2">
+            <div class="w-48 border-r border-border-default overflow-auto p-2">
               <div
                 v-for="kb in store.knowledgeBases"
                 :key="kb.id"
-                class="flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors"
-                :class="selectedTargetKbId === kb.id ? 'bg-accent-600/15 text-accent-400' : 'text-text-secondary hover:bg-surface-2'"
+                class="flex cursor-pointer items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors"
+                :class="selectedTargetKbId === kb.id ? 'bg-accent-soft text-accent-500' : 'text-text-secondary hover:bg-surface-2'"
                 @click="onSelectKb(kb)"
               >
                 <span :class="`i-${kb.icon || 'mdi-database'} text-lg`" />
@@ -122,7 +122,7 @@ async function onConfirm() {
 
             <!-- Right: folder list with breadcrumb -->
             <div class="flex flex-1 flex-col">
-              <div class="flex items-center gap-1 border-b border-surface-3 px-3 py-2">
+              <div class="flex items-center gap-1 border-b border-border-default px-3 py-2">
                 <button class="text-sm text-text-secondary hover:text-text-primary" @click="onBreadcrumbClick(-1)">根目录</button>
                 <template v-for="(seg, idx) in targetBreadcrumb" :key="idx">
                   <span class="i-mdi-chevron-right text-xs text-text-tertiary" />
@@ -141,7 +141,7 @@ async function onConfirm() {
                 <div
                   v-for="folder in targetFiles"
                   :key="folder.name"
-                  class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-surface-2"
+                  class="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 transition-colors hover:bg-surface-2"
                   @dblclick="onEnterFolder(folder.name)"
                 >
                   <span class="i-mdi-folder text-lg text-amber-400" />
@@ -151,9 +151,9 @@ async function onConfirm() {
             </div>
           </div>
 
-          <div class="flex justify-end gap-2 border-t border-surface-3 px-5 py-3">
-            <button class="rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2" @click="emit('close')">取消</button>
-            <button class="rounded-md bg-accent-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-500" @click="onConfirm">
+          <div class="flex justify-end gap-2 border-t border-border-default px-5 py-3">
+            <button class="rounded-lg px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2" @click="emit('close')">取消</button>
+            <button class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600" @click="onConfirm">
               {{ mode === 'move' ? '移动至此' : '复制至此' }}
             </button>
           </div>

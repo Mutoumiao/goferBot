@@ -52,7 +52,7 @@ function onBlur() {
     ref="inputRef"
     v-model="inputValue"
     type="text"
-    class="h-7 rounded border border-accent-500 bg-surface-0 px-2 text-sm text-text-primary outline-none"
+    class="h-7 rounded-lg border border-accent-500 bg-white px-2 text-sm text-text-primary outline-none"
     @keyup="onKeyup"
     @blur="onBlur"
   />
