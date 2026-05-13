@@ -78,5 +78,14 @@ export default defineConfig({
     emptyOutDir: true,
     chunkSizeWarningLimit: 1024,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('highlight.js') || id.includes('markdown-it') || id.includes('lowlight') || id.includes('entities')) {
+            return 'vendor-markdown'
+          }
+        },
+      },
+    },
   },
 })

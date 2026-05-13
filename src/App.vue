@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, defineAsyncComponent } from 'vue'
 import SplashScreen from './components/SplashScreen.vue'
 import SideBar from './components/SideBar.vue'
 import TabBar from './components/TabBar.vue'
 import ChatPage from './components/ChatPage.vue'
-import KnowledgeBasePage from './components/KnowledgeBasePage.vue'
-import RecycleBinPage from './components/RecycleBinPage.vue'
-import SettingsPage from './components/SettingsPage.vue'
-import HistoryPage from './components/HistoryPage.vue'
 import { initSidecar, sidecarStatus } from './composables/useSidecar'
+
+const KnowledgeBasePage = defineAsyncComponent(() => import('./components/KnowledgeBasePage.vue'))
+const HistoryPage = defineAsyncComponent(() => import('./components/HistoryPage.vue'))
+const SettingsPage = defineAsyncComponent(() => import('./components/SettingsPage.vue'))
+const RecycleBinPage = defineAsyncComponent(() => import('./components/RecycleBinPage.vue'))
 import { useSessionStore } from './stores/session'
 import { useSettingsStore } from './stores/settings'
 
