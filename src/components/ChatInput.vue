@@ -101,12 +101,12 @@ const displayInput = computed(() => input.value)
 </script>
 
 <template>
-  <div data-testid="chat-input" class="border-t border-border-default bg-surface-1 p-4">
+  <div data-testid="chat-input" class="border-t border-border-default bg-white p-4">
     <div
       :class="[
-        'relative flex items-end gap-2 rounded-xl border bg-surface-2 px-3 py-2.5 transition-all duration-200',
+        'relative flex items-end gap-2 rounded-2xl border bg-surface-1 px-4 py-3 transition-all duration-200',
         isFocused
-          ? 'border-accent-500/50 shadow-[0_0_0_3px_rgba(59,130,246,0.1)]'
+          ? 'border-accent-500/50 shadow-[0_0_0_3px_rgba(91,124,250,0.1)]'
           : 'border-border-default hover:border-border-default/80',
       ]"
     >
@@ -125,7 +125,7 @@ const displayInput = computed(() => input.value)
             v-model="input"
             rows="1"
             class="max-h-40 w-full resize-none bg-transparent text-sm leading-relaxed text-text-primary placeholder-text-tertiary outline-none disabled:cursor-not-allowed"
-            :placeholder="disabled ? (disabledHint || '发送不可用') : '输入问题，Shift + Enter 换行，Enter 发送，@提及知识库...'"
+            :placeholder="disabled ? (disabledHint || '发送不可用') : '继续追问，或让 AI 生成需求条目...'"
             :disabled="loading || disabled"
             @keydown="handleKeydown"
             @input="handleInput"
@@ -147,10 +147,10 @@ const displayInput = computed(() => input.value)
         data-testid="chat-send-btn"
         :disabled="!displayInput.trim() || loading || disabled"
         :class="[
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200',
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl transition-all duration-200',
           displayInput.trim() && !loading && !disabled
-            ? 'bg-accent-500 text-white shadow-lg shadow-accent-glow hover:bg-accent-400 active:scale-95'
-            : 'bg-surface-4 text-text-tertiary',
+            ? 'bg-accent-500 text-white shadow-lg shadow-accent-glow hover:opacity-90 active:scale-95'
+            : 'bg-surface-2 text-text-tertiary',
         ]"
         @click="handleSend"
       >

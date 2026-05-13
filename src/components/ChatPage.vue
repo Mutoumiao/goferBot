@@ -106,11 +106,11 @@ function dismissToast() {
 </script>
 
 <template>
-  <div class="flex h-full flex-col">
+  <div class="flex h-full flex-col bg-surface-1">
     <!-- Top bar -->
     <div
       v-if="!isEmpty"
-      class="flex h-12 shrink-0 items-center justify-between border-b border-border-default bg-surface-1 px-4"
+      class="flex h-12 shrink-0 items-center justify-between border-b border-border-default bg-white px-4"
     >
       <input
         :value="store.activeTab?.title ?? '首页'"
@@ -147,7 +147,7 @@ function dismissToast() {
     >
       <div
         v-if="store.sendError"
-        class="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-danger-500/20 bg-surface-2 px-4 py-2.5 text-sm text-danger-400 shadow-xl"
+        class="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-danger-500/20 bg-white px-4 py-2.5 text-sm text-danger-500 shadow-xl"
       >
         <span class="i-mdi-alert-circle text-base" />
         <span>{{ store.sendError }}</span>

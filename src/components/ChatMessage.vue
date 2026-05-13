@@ -19,17 +19,17 @@ defineProps<{
       <!-- AI Avatar -->
       <div
         v-if="message.role === 'assistant'"
-        class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-500/10"
+        class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft"
       >
-        <span class="i-mdi-robot text-sm text-accent-400" />
+        <span class="i-mdi-robot text-sm text-accent-500" />
       </div>
 
       <div
         :class="[
-          'relative overflow-hidden rounded-2xl px-4 py-3 shadow-sm',
+          'relative overflow-hidden rounded-2xl px-4 py-3 shadow-xs',
           message.role === 'user'
-            ? 'bg-accent-600 text-white'
-            : 'border border-border-subtle bg-surface-3 text-text-primary',
+            ? 'bg-accent-500 text-white'
+            : 'border border-border-default bg-white text-text-primary',
         ]"
       >
         <!-- AI message top accent line -->
@@ -47,7 +47,7 @@ defineProps<{
       <!-- User Avatar -->
       <div
         v-if="message.role === 'user'"
-        class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-4"
+        class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-2"
       >
         <span class="i-mdi-account text-sm text-text-secondary" />
       </div>
