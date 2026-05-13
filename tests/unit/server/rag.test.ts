@@ -26,6 +26,7 @@ beforeAll(async () => {
       CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
         content,
         file_path,
+        chunk_id,
         tokenize='unicode61'
       );
     `)
@@ -87,8 +88,8 @@ describe('hybridSearch', () => {
     db.prepare('INSERT INTO knowledge_bases (id, name, path, created_at) VALUES (?, ?, ?, ?)').run('kb1', 'KB1', '/tmp/kb1', Date.now())
     db.prepare('INSERT INTO document_chunks (id, knowledge_base_id, file_path, content, chunk_index, created_at) VALUES (?, ?, ?, ?, ?, ?)')
       .run('c1', 'kb1', 'a.md', 'hello world content', 0, Date.now())
-    db.prepare('INSERT INTO fts_document_chunks (content, file_path) VALUES (?, ?)')
-      .run('hello world content', 'a.md')
+    db.prepare('INSERT INTO fts_document_chunks (chunk_id, content, file_path) VALUES (?, ?, ?)')
+      .run('c1', 'hello world content', 'a.md')
 
     const { hybridSearch: hs } = await import('../../../../server/src/services/rag.js')
     const result = await hs('hello', ['kb1'], {
@@ -106,8 +107,8 @@ describe('hybridSearch', () => {
     db.prepare('INSERT INTO knowledge_bases (id, name, path, created_at) VALUES (?, ?, ?, ?)').run('kb1', 'KB1', '/tmp/kb1', Date.now())
     db.prepare('INSERT INTO document_chunks (id, knowledge_base_id, file_path, content, chunk_index, created_at) VALUES (?, ?, ?, ?, ?, ?)')
       .run('c2', 'kb1', 'b.md', 'say hello', 0, Date.now())
-    db.prepare('INSERT INTO fts_document_chunks (content, file_path) VALUES (?, ?)')
-      .run('say hello', 'b.md')
+    db.prepare('INSERT INTO fts_document_chunks (chunk_id, content, file_path) VALUES (?, ?, ?)')
+      .run('c2', 'say hello', 'b.md')
 
     const result = await hybridSearch('say "hello"', ['kb1'], {
       provider: 'openai',
