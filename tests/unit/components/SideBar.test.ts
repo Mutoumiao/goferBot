@@ -3,21 +3,23 @@ import { mount } from '@vue/test-utils'
 import SideBar from '@/components/SideBar.vue'
 
 describe('SideBar', () => {
-  it('renders navigation items', () => {
+  it('renders navigation items with icons', () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'chat' },
     })
-    expect(wrapper.text()).toContain('问答')
-    expect(wrapper.text()).toContain('知识库')
-    expect(wrapper.text()).toContain('历史')
-    expect(wrapper.text()).toContain('设置')
+    expect(wrapper.find('.i-mdi-message-text-outline').exists()).toBe(true)
+    expect(wrapper.find('.i-mdi-database-outline').exists()).toBe(true)
+    expect(wrapper.find('.i-mdi-history').exists()).toBe(true)
+    expect(wrapper.find('.i-mdi-cog-outline').exists()).toBe(true)
   })
 
   it('emits openChat when clicking chat nav', async () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'chat' },
     })
-    const chatBtn = wrapper.findAll('button').find((b) => b.text() === '问答')
+    const chatBtn = wrapper.findAll('button').find((b) =>
+      b.find('.i-mdi-message-text-outline').exists()
+    )
     await chatBtn!.trigger('click')
     expect(wrapper.emitted('openChat')).toHaveLength(1)
   })
@@ -26,7 +28,9 @@ describe('SideBar', () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'chat' },
     })
-    const kbBtn = wrapper.findAll('button').find((b) => b.text() === '知识库')
+    const kbBtn = wrapper.findAll('button').find((b) =>
+      b.find('.i-mdi-database-outline').exists()
+    )
     await kbBtn!.trigger('click')
     expect(wrapper.emitted('openKnowledgeBase')).toHaveLength(1)
   })
@@ -35,7 +39,9 @@ describe('SideBar', () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'chat' },
     })
-    const histBtn = wrapper.findAll('button').find((b) => b.text() === '历史')
+    const histBtn = wrapper.findAll('button').find((b) =>
+      b.find('.i-mdi-history').exists()
+    )
     await histBtn!.trigger('click')
     expect(wrapper.emitted('openHistory')).toHaveLength(1)
   })
@@ -44,7 +50,9 @@ describe('SideBar', () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'chat' },
     })
-    const setBtn = wrapper.findAll('button').find((b) => b.text() === '设置')
+    const setBtn = wrapper.findAll('button').find((b) =>
+      b.find('.i-mdi-cog-outline').exists()
+    )
     await setBtn!.trigger('click')
     expect(wrapper.emitted('openSettings')).toHaveLength(1)
   })
@@ -53,15 +61,19 @@ describe('SideBar', () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'knowledgeBase' },
     })
-    const kbBtn = wrapper.findAll('button').find((b) => b.text() === '知识库')
-    expect(kbBtn!.find('[class*="bg-accent-500"]').exists()).toBe(true)
+    const kbBtn = wrapper.findAll('button').find((b) =>
+      b.find('.i-mdi-database-outline').exists()
+    )
+    expect(kbBtn!.classes()).toContain('bg-surface-3')
   })
 
   it('does not show active indicator for inactive items', () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'chat' },
     })
-    const kbBtn = wrapper.findAll('button').find((b) => b.text() === '知识库')
-    expect(kbBtn!.find('[class*="bg-accent-500"]').exists()).toBe(false)
+    const kbBtn = wrapper.findAll('button').find((b) =>
+      b.find('.i-mdi-database-outline').exists()
+    )
+    expect(kbBtn!.classes()).not.toContain('bg-surface-3')
   })
 })

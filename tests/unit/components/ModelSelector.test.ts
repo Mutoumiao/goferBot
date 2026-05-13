@@ -26,7 +26,7 @@ describe('ModelSelector', () => {
     const wrapper = mount(ModelSelector)
     await wrapper.find('button').trigger('click')
 
-    const options = wrapper.findAll('[class*="hover:bg-surface-3"]')
+    const options = wrapper.findAll('[class*="hover:bg-surface-2"]')
     // At least one option should be present
     expect(options.length).toBeGreaterThan(0)
   })

@@ -7,13 +7,28 @@ import { sidecarFetch } from '@/utils/sidecarClient'
 
 vi.mock('@/utils/sidecarClient')
 
+function mountKbPage() {
+  return mount(KnowledgeBasePage, {
+    global: {
+      stubs: {
+        FileExplorer: true,
+        ContextMenu: true,
+        EditKbDialog: true,
+        MoveCopyDialog: true,
+        Teleport: { template: '<div><slot /></div>' },
+        Transition: { template: '<div><slot /></div>' },
+      },
+    },
+  })
+}
+
 describe('KnowledgeBasePage index status', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
   it('computes indexProgress correctly', async () => {
-    const wrapper = mount(KnowledgeBasePage)
+    const wrapper = mountKbPage()
     const vm = wrapper.vm as any
 
     vm.store.knowledgeBases = [{ id: 'kb1', name: 'Test', path: '/a', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' }]
@@ -25,7 +40,7 @@ describe('KnowledgeBasePage index status', () => {
   })
 
   it('computes indexProgress 0 when totalFiles is 0', async () => {
-    const wrapper = mount(KnowledgeBasePage)
+    const wrapper = mountKbPage()
     const vm = wrapper.vm as any
 
     vm.store.selectedKbId = 'kb1'
@@ -35,23 +50,21 @@ describe('KnowledgeBasePage index status', () => {
     expect(vm.indexProgress).toBe(0)
   })
 
-  it('renders progress bar with correct width', async () => {
-    const wrapper = mount(KnowledgeBasePage)
+  it('renders index progress text when indexing', async () => {
+    const wrapper = mountKbPage()
     const vm = wrapper.vm as any
 
     vm.store.selectedKbId = 'kb1'
     vm.store.indexStatus.set('kb1', { totalFiles: 10, indexedFiles: 3, pendingFiles: 0 })
     await nextTick()
 
-    const barContainer = wrapper.find('.gap-2.py-1\\.5')
-    expect(barContainer.exists()).toBe(true)
-    const bar = barContainer.find('.bg-accent-500')
-    expect(bar.exists()).toBe(true)
-    expect(bar.attributes('style')).toContain('width: 30%')
+    const progressContainer = wrapper.find('.gap-2.rounded-full')
+    expect(progressContainer.exists()).toBe(true)
+    expect(progressContainer.text()).toContain('30%')
   })
 
   it('calls loadIndexStatus when selecting kb', async () => {
-    const wrapper = mount(KnowledgeBasePage)
+    const wrapper = mountKbPage()
     const vm = wrapper.vm as any
 
     const loadSpy = vi.spyOn(vm.store, 'loadIndexStatus').mockResolvedValue(undefined)

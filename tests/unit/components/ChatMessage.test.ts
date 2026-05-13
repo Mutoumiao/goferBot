@@ -16,7 +16,7 @@ describe('ChatMessage', () => {
       },
     })
     expect(wrapper.classes()).toContain('justify-end')
-    expect(wrapper.find('.bg-accent-600').exists()).toBe(true)
+    expect(wrapper.find('.bg-accent-500').exists()).toBe(true)
     expect(wrapper.text()).toContain('hello')
   })
 
@@ -33,7 +33,7 @@ describe('ChatMessage', () => {
       },
     })
     expect(wrapper.classes()).toContain('justify-start')
-    expect(wrapper.find('.border-border-subtle').exists()).toBe(true)
+    expect(wrapper.find('.border-border-default').exists()).toBe(true)
   })
 
   it('shows user avatar for user messages', () => {

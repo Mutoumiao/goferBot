@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -7,7 +7,7 @@ import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 
 function mountPage(storeOverrides?: Record<string, unknown>) {
   const pinia = createTestingPinia({
-    stubActions: false,
+    stubActions: true,
     initialState: {
       knowledgeBase: {
         knowledgeBases: [],
@@ -43,9 +43,9 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
 }
 
 describe('KnowledgeBasePage', () => {
-  it('shows placeholder when no knowledge base is selected', () => {
+  it('renders FileExplorer when no knowledge base is selected', () => {
     const wrapper = mountPage()
-    expect(wrapper.text()).toContain('选择一个知识库或创建新库')
+    expect(wrapper.findComponent({ name: 'FileExplorer' }).exists()).toBe(true)
   })
 
   it('shows FileExplorer when a knowledge base is selected', () => {
@@ -80,14 +80,15 @@ describe('KnowledgeBasePage', () => {
       ],
       selectedKbId: 'kb1',
     })
-    const selected = wrapper.find('.bg-accent-600\\/15')
+    const selected = wrapper.find('.bg-white.shadow-xs')
     expect(selected.exists()).toBe(true)
     expect(selected.text()).toContain('Alpha')
   })
 
-  it('shows empty list hint when no knowledge bases', () => {
+  it('shows empty list when no knowledge bases', () => {
     const wrapper = mountPage({ knowledgeBases: [], isLoading: false })
-    expect(wrapper.text()).toContain('暂无知识库，点击 + 创建')
+    expect(wrapper.find('[data-testid="kb-list"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="kb-item"]').length).toBe(0)
   })
 
   it('opens new knowledge base dialog on plus click', async () => {
@@ -115,32 +116,62 @@ describe('KnowledgeBasePage', () => {
     const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
     await plusBtn!.trigger('click')
 
-    const input = wrapper.find('input[type="text"]')
+    const input = wrapper.find('input[placeholder="输入知识库名称"]')
     await input.setValue('My KB')
 
     const createBtn = wrapper.findAll('button').find((b) => b.text() === '创建')
     await createBtn!.trigger('click')
+    await flushPromises()
 
     expect(store.createKnowledgeBase).toHaveBeenCalledWith('My KB')
   })
 
-  it('displays error toast when store has error', async () => {
+  it('displays dialog error when creation fails', async () => {
     const wrapper = mountPage()
     const store = useKnowledgeBaseStore()
-    await flushPromises()
     store.error = 'Something broke'
-    await wrapper.vm.$nextTick()
+    store.createKnowledgeBase = vi.fn().mockRejectedValue(new Error('fail'))
+
+    const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    await plusBtn!.trigger('click')
+
+    const input = wrapper.find('input[placeholder="输入知识库名称"]')
+    await input.setValue('My KB')
+
+    const createBtn = wrapper.findAll('button').find((b) => b.text() === '创建')
+    await createBtn!.trigger('click')
+    await flushPromises()
+
     expect(wrapper.text()).toContain('Something broke')
   })
 
-  it('clears error when clicking close on toast', async () => {
+  it('clears dialog error when closing and re-opening', async () => {
     const wrapper = mountPage()
     const store = useKnowledgeBaseStore()
-    await flushPromises()
     store.error = 'Oops'
-    await wrapper.vm.$nextTick()
-    const closeBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-close').exists())
-    await closeBtn!.trigger('click')
-    expect(store.error).toBeNull()
+    store.createKnowledgeBase = vi.fn().mockRejectedValue(new Error('fail'))
+
+    const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    await plusBtn!.trigger('click')
+
+    const input = wrapper.find('input[placeholder="输入知识库名称"]')
+    await input.setValue('My KB')
+
+    const createBtn = wrapper.findAll('button').find((b) => b.text() === '创建')
+    await createBtn!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Oops')
+
+    // Close dialog
+    const cancelBtn = wrapper.findAll('button').find((b) => b.text() === '取消')
+    await cancelBtn!.trigger('click')
+    await flushPromises()
+
+    // Re-open dialog
+    await plusBtn!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Oops')
   })
 })

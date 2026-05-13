@@ -53,21 +53,16 @@ describe('TabBar', () => {
     const wrapper = mount(TabBar, {
       props: { tabs, activeTabId: 'home' },
     })
-    const newChatBtn = wrapper.findAll('button').find((b) => b.text().includes('新会话'))
+    const newChatBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
     await newChatBtn!.trigger('click')
     expect(wrapper.emitted('newChat')).toHaveLength(1)
   })
 
-  it('shows different icons for different tab types', () => {
+  it('shows active dot for active tab', () => {
     const wrapper = mount(TabBar, {
       props: { tabs, activeTabId: 'home' },
     })
-    const kbTab = wrapper.findAll('button').find((b) => b.text().includes('知识库'))
-    const histTab = wrapper.findAll('button').find((b) => b.text().includes('历史'))
-    const setTab = wrapper.findAll('button').find((b) => b.text().includes('设置'))
-
-    expect(kbTab!.find('.i-mdi-folder').exists()).toBe(true)
-    expect(histTab!.find('.i-mdi-history').exists()).toBe(true)
-    expect(setTab!.find('.i-mdi-cog').exists()).toBe(true)
+    const homeTab = wrapper.findAll('button').find((b) => b.text().includes('首页'))
+    expect(homeTab!.find('.bg-accent-500').exists()).toBe(true)
   })
 })

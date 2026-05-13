@@ -152,7 +152,7 @@ describe('FileExplorer', () => {
     const wrapper = mountExplorer({
       files: [{ name: 'doc.md', type: 'file', size: 100, updatedAt: 1700000000000 }],
     })
-    const container = wrapper.find('.flex-col.bg-surface-0')
+    const container = wrapper.find('[data-testid="file-explorer"]')
     await container.trigger('contextmenu')
     expect(wrapper.find('[data-testid="context-menu"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('新建文件夹')
@@ -259,7 +259,7 @@ describe('FileExplorer', () => {
 
   it('emits createFolder when clicking new folder in blank context menu', async () => {
     const wrapper = mountExplorer()
-    const container = wrapper.find('.flex-col.bg-surface-0')
+    const container = wrapper.find('[data-testid="file-explorer"]')
     await container.trigger('contextmenu')
 
     const newFolderBtn = wrapper.findAll('button').find((b) => b.text().includes('新建文件夹'))

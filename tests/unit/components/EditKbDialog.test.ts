@@ -80,7 +80,7 @@ describe('EditKbDialog', () => {
 
   it('emits close when clicking overlay', async () => {
     const wrapper = mountDialog()
-    await wrapper.find('[class*="bg-black/50"]').trigger('click.self')
+    await wrapper.find('[class*="bg-black/40"]').trigger('click.self')
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
