@@ -54,11 +54,15 @@ export async function startSidecar(): Promise<{ port: number; dataDir: string }>
 
 export async function stopSidecar(): Promise<void> {
   if (sidecarProcess) {
-    sidecarProcess.kill('SIGTERM')
-    await new Promise<void>((resolve) => {
-      sidecarProcess!.on('exit', () => resolve())
-      sidecarProcess!.on('close', () => resolve())
-    })
+    const proc = sidecarProcess
+    if (proc.exitCode === null && proc.signalCode === null) {
+      const exited = new Promise<void>((resolve) => {
+        proc.on('exit', () => resolve())
+        proc.on('close', () => resolve())
+      })
+      proc.kill('SIGTERM')
+      await exited
+    }
     sidecarProcess = null
   }
 
