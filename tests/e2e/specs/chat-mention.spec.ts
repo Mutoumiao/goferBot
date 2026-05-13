@@ -1,22 +1,32 @@
 import { test, expect } from '@playwright/test'
 import { injectMockTauri } from '../mocks/tauri-ipc'
+import { mockHttpRoutes } from '../mocks/http-routes'
 import { mockKnowledgeBases } from '../fixtures/knowledge-bases'
 import { ChatPage } from '../pages/ChatPage'
 
 test.describe('聊天 @提及 交互', () => {
   test.beforeEach(async ({ page }) => {
     await injectMockTauri(page)
+    await mockHttpRoutes(page)
+
+    // Provide valid LLM config so messages can be sent
+    await page.route('http://127.0.0.1:*/settings', (route) => {
+      route.fulfill({
+        json: {
+          providers: {
+            deepseek: { apiKey: 'mock-key', model: 'deepseek-chat', baseUrl: '' },
+          },
+          defaultChatProvider: 'deepseek',
+        },
+      })
+    })
 
     await page.route('http://127.0.0.1:*/knowledge-bases', (route) => {
       route.fulfill({ json: mockKnowledgeBases })
     })
 
-    await page.route('http://127.0.0.1:*/sessions', (route) => {
-      if (route.request().method() === 'POST') {
-        route.fulfill({ status: 201, json: { id: 'sess-new', title: '首页', created_at: new Date().toISOString() } })
-      } else {
-        route.fulfill({ json: [] })
-      }
+    await page.route('http://127.0.0.1:*/health', (route) => {
+      route.fulfill({ json: { status: 'ok' } })
     })
 
     await page.route('http://127.0.0.1:*/chat', (route) => {
@@ -31,18 +41,10 @@ test.describe('聊天 @提及 交互', () => {
       }
     })
 
-    // 导航到首页，加载知识库列表，再进入对话态
     await page.goto('/')
 
-    // 先切换到知识库页面，让知识库列表加载
-    await page.getByRole('button', { name: '知识库', exact: true }).click()
-    await page.waitForSelector('[data-testid="kb-item"]')
-
-    // 切回问答页面
-    await page.getByRole('button', { name: '问答', exact: true }).click()
-
-    // 点击快捷提问进入对话态
-    await page.getByText('什么是 RAG 检索增强生成？').click()
+    // Send a quick action message to transition from empty to conversation state
+    await page.getByText('总结文档').click()
     await page.waitForSelector('[data-testid="chat-input"]')
   })
 

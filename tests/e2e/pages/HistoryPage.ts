@@ -25,6 +25,8 @@ export class HistoryPage {
     await item.hover()
     await item.locator('[data-testid="history-rename-btn"]').click()
     const input = this.page.locator('[data-testid="history-item"] input')
+    await input.waitFor({ state: 'visible' })
+    await this.page.waitForTimeout(300)
     await input.fill(newTitle)
     await input.press('Enter')
   }

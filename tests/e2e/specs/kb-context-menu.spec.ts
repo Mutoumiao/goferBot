@@ -19,8 +19,8 @@ test.describe('知识库右键菜单', () => {
       route.fulfill({ json: { totalFiles: 10, indexedFiles: 7, pendingFiles: 0 } })
     })
 
-    // 导航到首页，然后切换到知识库标签页
     await page.goto('/')
+    await page.waitForTimeout(800)
     await page.locator('button:has(.i-mdi-database-outline)').first().click()
     await expect(page.locator('[data-testid="kb-list"]')).toBeVisible()
   })
@@ -353,7 +353,7 @@ test.describe('知识库右键菜单', () => {
     await expect(page.locator('text=已删除的知识库可以恢复')).toBeVisible()
 
     // Click restore
-    await page.locator('text=恢复').click()
+    await page.getByRole('button', { name: '恢复' }).click()
 
     // Switch back to knowledge base tab
     await page.locator('button:has(.i-mdi-database-outline)').first().click()
