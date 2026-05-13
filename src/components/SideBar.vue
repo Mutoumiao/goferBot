@@ -30,25 +30,26 @@ function isActive(type: TabType) {
 </script>
 
 <template>
-  <div class="flex w-16 shrink-0 flex-col items-center justify-between bg-surface-2 py-5 px-3">
+  <!-- 设计稿「Left nav」：宽 64、填充 #F2F4F7、内边距 [20,12]、主区 gap 12、次区 gap 10 -->
+  <div class="flex w-16 shrink-0 flex-col items-center justify-between bg-surface-nav py-5 px-3">
     <!-- Primary Navigation -->
     <div class="flex flex-col items-center gap-3">
-      <!-- Logo -->
+      <!-- Logo：36×36、圆角 16、白底、细描边、轻阴影 -->
       <div
-        class="flex h-9 w-9 items-center justify-center rounded-2xl border border-border-default bg-white shadow-xs"
+        class="flex h-9 w-9 items-center justify-center rounded-2xl border border-border-default bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       >
         <span class="i-mdi-sparkles text-lg text-accent-500" />
       </div>
 
-      <!-- Main nav items -->
+      <!-- Main nav items：40×40、圆角 16；激活 #E8EBF2 -->
       <button
         v-for="item in navItems"
         :key="item.type"
         :class="[
           'flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200',
           isActive(item.type)
-            ? 'bg-surface-3 text-text-primary'
-            : 'text-text-tertiary hover:bg-surface-3/60 hover:text-text-secondary',
+            ? 'bg-nav-active text-text-primary'
+            : 'text-text-tertiary hover:bg-surface-3/70 hover:text-text-secondary',
         ]"
         @click="item.action"
       >
@@ -64,8 +65,8 @@ function isActive(type: TabType) {
         :class="[
           'flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200',
           isActive(item.type)
-            ? 'bg-surface-3 text-text-primary'
-            : 'text-text-tertiary hover:bg-surface-3/60 hover:text-text-secondary',
+            ? 'bg-nav-active text-text-primary'
+            : 'text-text-tertiary hover:bg-surface-3/70 hover:text-text-secondary',
         ]"
         @click="item.action"
       >

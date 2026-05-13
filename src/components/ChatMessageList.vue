@@ -29,32 +29,40 @@ watch(
 </script>
 
 <template>
-  <div ref="containerRef" data-testid="chat-message-list" class="flex-1 overflow-y-auto space-y-5 p-5">
-    <!-- Empty state hint -->
-    <div
-      v-if="messages.length === 0"
-      class="flex h-full flex-col items-center justify-center text-text-tertiary"
-    >
-      <span class="i-mdi-chat-outline mb-3 text-4xl opacity-30" />
-      <p class="text-sm">开始你的第一次对话</p>
+  <div
+    ref="containerRef"
+    data-testid="chat-message-list"
+    class="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6"
+  >
+    <div class="mx-auto w-full max-w-[760px] space-y-7">
+      <!-- Empty state hint -->
+      <div
+        v-if="messages.length === 0"
+        class="flex min-h-[min(360px,50vh)] flex-col items-center justify-center py-16 text-text-tertiary"
+      >
+        <span class="i-mdi-chat-outline mb-3 text-4xl opacity-30" />
+        <p class="text-sm">开始你的第一次对话</p>
+      </div>
+
+      <template v-else>
+        <template v-for="(msg, index) in messages" :key="msg.id">
+          <ChatErrorCard
+            v-if="msg.role === 'error'"
+            :message="msg.content"
+            :error-type="msg.errorType || 'unknown'"
+            @retry="emit('retry')"
+          />
+          <ChatMessage
+            v-else
+            :message="msg"
+            :style="{ animationDelay: `${index * 30}ms` }"
+          />
+        </template>
+      </template>
+
+      <ChatLoading
+        v-if="isSending && messages.length > 0 && messages[messages.length - 1].role === 'user'"
+      />
     </div>
-
-    <template v-for="(msg, index) in messages" :key="msg.id">
-      <ChatErrorCard
-        v-if="msg.role === 'error'"
-        :message="msg.content"
-        :error-type="msg.errorType || 'unknown'"
-        @retry="emit('retry')"
-      />
-      <ChatMessage
-        v-else
-        :message="msg"
-        :style="{ animationDelay: `${index * 30}ms` }"
-      />
-    </template>
-
-    <ChatLoading
-      v-if="isSending && messages.length > 0 && messages[messages.length - 1].role === 'user'"
-    />
   </div>
 </template>

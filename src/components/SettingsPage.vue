@@ -52,26 +52,31 @@ const defaultProviderOptions = computed(() =>
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto p-6">
-    <div class="mx-auto max-w-3xl space-y-6">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-[28px] font-medium text-text-primary">设置</h1>
-          <p class="mt-1.5 text-sm text-text-secondary">让 AI 工作流保持安静、专注，并贴合你的资料整理习惯。</p>
+  <div class="h-full overflow-y-auto bg-surface-1">
+    <div class="mx-auto max-w-[760px] space-y-[18px] px-6 py-14">
+      <!-- 设计稿「Settings header」：标题 28px / 500、副文案 14px -->
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0 space-y-1.5">
+          <h1 class="text-[28px] font-medium leading-[1.2] tracking-tight text-text-primary">
+            设置
+          </h1>
+          <p class="text-sm leading-relaxed text-text-secondary">
+            让 AI 工作流保持安静、专注，并贴合你的资料整理习惯。
+          </p>
         </div>
         <button
+          type="button"
           :disabled="!hasChanges"
-          class="rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
+          class="shrink-0 rounded-2xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
           @click="handleSave"
         >
           保存
         </button>
       </div>
 
-      <!-- LLM Providers Card -->
-      <div class="rounded-3xl border border-border-default bg-white/80 p-5 shadow-sm">
-        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
+      <!-- 设计稿卡片：圆角 24、描边、半透明白底、轻阴影 -->
+      <div class="rounded-3xl border border-border-default bg-white/80 p-6 shadow-[0_6px_22px_rgba(0,0,0,0.04)] backdrop-blur-sm">
+        <h2 class="mb-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           LLM 提供商配置
         </h2>
 
@@ -185,8 +190,8 @@ const defaultProviderOptions = computed(() =>
       </div>
 
       <!-- Embedding Card -->
-      <div class="rounded-3xl border border-border-default bg-white/80 p-5 shadow-sm">
-        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
+      <div class="rounded-3xl border border-border-default bg-white/80 p-6 shadow-[0_6px_22px_rgba(0,0,0,0.04)] backdrop-blur-sm">
+        <h2 class="mb-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Embedding API
         </h2>
         <div class="space-y-4">
@@ -240,8 +245,8 @@ const defaultProviderOptions = computed(() =>
       </div>
 
       <!-- General Card -->
-      <div class="rounded-3xl border border-border-default bg-white/80 p-5 shadow-sm">
-        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">
+      <div class="rounded-3xl border border-border-default bg-white/80 p-6 shadow-[0_6px_22px_rgba(0,0,0,0.04)] backdrop-blur-sm">
+        <h2 class="mb-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">
           通用设置
         </h2>
         <div>

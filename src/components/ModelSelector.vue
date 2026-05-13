@@ -2,10 +2,15 @@
 import { ref, computed } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 
-const props = defineProps<{
-  provider?: string
-  model?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    provider?: string
+    model?: string
+    /** toolbar：对话页底栏样式（对齐 Pencil「model2」芯片） */
+    variant?: 'default' | 'toolbar'
+  }>(),
+  { variant: 'default' },
+)
 
 const emit = defineEmits<{
   change: [provider: string, model: string]
@@ -44,14 +49,25 @@ function selectProvider(key: string) {
 <template>
   <div class="relative">
     <button
-      class="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs text-text-secondary transition-all hover:bg-surface-2 hover:text-text-primary"
+      :class="[
+        'flex items-center text-text-secondary transition-all hover:text-text-primary',
+        variant === 'toolbar'
+          ? 'h-[34px] gap-1.5 rounded-[14px] bg-surface-2 px-3 text-[13px] hover:bg-surface-3'
+          : 'gap-1.5 rounded-xl px-3 py-1.5 text-xs hover:bg-surface-2',
+      ]"
       @click="open = !open"
     >
-      <span class="i-mdi-brain text-sm" />
-      <span class="max-w-[180px] truncate">{{ currentLabel }}</span>
       <span
         :class="[
-          'i-mdi-chevron-down text-xs transition-transform',
+          'i-mdi-brain shrink-0 text-text-secondary',
+          variant === 'toolbar' ? 'text-sm' : 'text-sm',
+        ]"
+      />
+      <span :class="['truncate', variant === 'toolbar' ? 'max-w-[200px]' : 'max-w-[180px]']">{{ currentLabel }}</span>
+      <span
+        :class="[
+          'i-mdi-chevron-down shrink-0 text-text-tertiary transition-transform',
+          variant === 'toolbar' ? 'text-xs' : 'text-xs',
           open && 'rotate-180',
         ]"
       />

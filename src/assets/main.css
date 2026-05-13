@@ -3,43 +3,50 @@
 @plugin '@egoist/tailwindcss-icons';
 
 @theme {
+  /* ── Fonts ── */
   --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Ubuntu, Cantarell, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'Geist Mono', 'Cascadia Code', Consolas, Menlo, 'Ubuntu Mono', 'DejaVu Sans Mono', 'Courier New', monospace;
 
-  /* Semantic Surface Colors - light theme from Pencil design */
+  /* ── Surface Colors (from Pencil design tokens) ── */
   --color-surface-0: #ffffff;
   --color-surface-1: #f7f8fa;
   --color-surface-2: #f1f3f6;
   --color-surface-3: #eceff3;
   --color-surface-4: #e7eaf0;
+  /** Left rail (Pencil $surface 变体 — 设计稿「Left nav」填充 #F2F4F7) */
+  --color-surface-nav: #f2f4f7;
+  /** 侧栏/标签激活态背景（设计稿 Nav active #E8EBF2） */
+  --color-nav-active: #e8ebf2;
+  /** 未选中标签背景（设计稿 tabGhost #F0F2F5） */
+  --color-tab-ghost: #f0f2f5;
 
-  /* Semantic Text Colors */
+  /* ── Text Colors (from Pencil design tokens) ── */
   --color-text-primary: #1f2328;
   --color-text-secondary: #5e6673;
   --color-text-tertiary: #9aa3af;
 
-  /* Semantic Border Colors */
+  /* ── Border Colors (from Pencil design tokens) ── */
   --color-border-subtle: rgba(231, 234, 240, 0.6);
   --color-border-default: #e7eaf0;
 
-  /* Accent Colors - brand blue */
+  /* ── Accent Colors — Brand Blue (from Pencil $brand-blue) ── */
   --color-accent-500: #5b7cfa;
   --color-accent-400: #7b96fb;
   --color-accent-600: #4a6be8;
   --color-accent-glow: rgba(91, 124, 250, 0.2);
   --color-accent-soft: #eef2ff;
 
-  /* Status Colors */
+  /* ── Status Colors — Danger (from Pencil $danger-*) ── */
   --color-danger-500: #b4534a;
   --color-danger-400: #c7736b;
   --color-danger-glow: rgba(180, 83, 74, 0.15);
   --color-danger-soft: #fbefee;
 
-  /* Success Colors */
+  /* ── Success Colors ── */
   --color-success-500: #4c8f6a;
   --color-success-soft: #eef8f3;
 
-  /* Purple Accent (for AI settings) */
+  /* ── Purple Accent (for AI settings) ── */
   --color-purple-500: #7c6ee6;
   --color-purple-soft: #f6f1ff;
 }
@@ -97,37 +104,4 @@ input, textarea {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
-}
-
-/* Loading shimmer */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.shimmer {
-  background: linear-gradient(90deg, var(--color-surface-3) 25%, var(--color-surface-4) 50%, var(--color-surface-3) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* Spinner */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Fade transition utilities */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }

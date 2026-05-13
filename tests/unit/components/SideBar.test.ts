@@ -64,7 +64,7 @@ describe('SideBar', () => {
     const kbBtn = wrapper.findAll('button').find((b) =>
       b.find('.i-mdi-database-outline').exists()
     )
-    expect(kbBtn!.classes()).toContain('bg-surface-3')
+    expect(kbBtn!.classes()).toContain('bg-nav-active')
   })
 
   it('does not show active indicator for inactive items', () => {
@@ -74,6 +74,6 @@ describe('SideBar', () => {
     const kbBtn = wrapper.findAll('button').find((b) =>
       b.find('.i-mdi-database-outline').exists()
     )
-    expect(kbBtn!.classes()).not.toContain('bg-surface-3')
+    expect(kbBtn!.classes()).not.toContain('bg-nav-active')
   })
 })

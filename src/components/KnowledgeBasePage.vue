@@ -197,42 +197,43 @@ function onCopyFile(fileName: string) {
 </script>
 
 <template>
-  <div class="flex h-full bg-surface-1">
-    <!-- Left sidebar: knowledge base list -->
-    <div class="flex w-[286px] flex-col border-r border-border-default bg-white">
-      <div class="flex items-center justify-between border-b border-border-default px-4 py-3">
-        <span class="text-sm font-medium text-text-primary">知识库</span>
+  <!-- 设计稿「03 知识库」：工作区内边距 [30,40]、双栏间距 28、左侧列表宽 286 -->
+  <div class="flex h-full min-h-0 gap-7 bg-surface-1 px-10 py-[30px]">
+    <aside class="flex h-full min-h-0 w-[286px] shrink-0 flex-col gap-[18px]">
+      <div class="flex items-center justify-between">
+        <span class="text-[22px] font-medium leading-tight text-text-primary">知识库</span>
         <button
           data-testid="create-kb-btn"
-          class="flex h-7 w-7 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+          type="button"
+          class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[14px] border border-border-default bg-white text-text-secondary shadow-[0_1px_4px_rgba(0,0,0,0.03)] transition-colors hover:bg-surface-2 hover:text-text-primary"
+          title="新建知识库"
           @click="openNewKbDialog"
         >
           <span class="i-mdi-plus text-lg" />
         </button>
       </div>
 
-      <!-- Search -->
-      <div class="px-3 pt-3">
-        <div class="flex items-center gap-2.5 rounded-2xl border border-border-default bg-white px-3.5 py-2.5">
-          <span class="i-mdi-magnify text-base text-text-tertiary" />
-          <input
-            type="text"
-            placeholder="搜索知识库"
-            class="flex-1 bg-transparent text-sm text-text-primary placeholder-text-tertiary outline-none"
-            @keyup.enter="onSearch(($event.target as HTMLInputElement).value)"
-          />
-        </div>
+      <div
+        class="flex h-11 items-center gap-2.5 rounded-2xl border border-border-default bg-white px-3.5 py-2.5"
+      >
+        <span class="i-mdi-magnify shrink-0 text-base text-text-tertiary" />
+        <input
+          type="text"
+          placeholder="搜索知识库"
+          class="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary placeholder-text-tertiary outline-none"
+          @keyup.enter="onSearch(($event.target as HTMLInputElement).value)"
+        />
       </div>
 
-      <div data-testid="kb-list" class="flex-1 overflow-auto p-2">
+      <div data-testid="kb-list" class="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pr-0.5">
         <div
           v-for="kb in store.knowledgeBases"
           :key="kb.id"
           data-testid="kb-item"
-          class="flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all"
+          class="flex min-h-[86px] cursor-pointer items-center gap-3 rounded-[20px] border px-4 py-4 transition-all"
           :class="store.selectedKbId === kb.id
-            ? 'bg-white shadow-xs border border-border-default text-text-primary'
-            : 'text-text-secondary hover:bg-surface-2/60 hover:text-text-primary'"
+            ? 'border-border-default bg-white text-text-primary shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
+            : 'border-transparent bg-white/55 hover:border-border-default/80 hover:bg-white/90'"
           @click="onSelectKb(kb.id)"
           @contextmenu="onKbContextMenu($event, kb.id)"
         >
@@ -248,18 +249,17 @@ function onCopyFile(fileName: string) {
               ]"
             />
           </div>
-          <div class="flex flex-col gap-0.5 min-w-0">
+          <div class="flex min-w-0 flex-col gap-0.5">
             <span class="truncate text-sm font-medium">{{ kb.name }}</span>
-            <span class="text-xs text-text-tertiary">{{ kb.fileCount || 0 }} 个文件</span>
+            <span class="text-xs text-text-tertiary">{{ (kb as any).fileCount || 0 }} 个文件</span>
           </div>
         </div>
       </div>
-    </div>
+    </aside>
 
-    <!-- Right: file explorer -->
-    <div class="flex flex-1 flex-col overflow-hidden">
+    <div class="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-surface-1">
       <FileExplorer
-        :files="store.currentFiles"
+        :files="store.files"
         :search-results="store.searchResults"
         :search-query="store.searchQuery"
         :breadcrumb="store.breadcrumb"
@@ -329,7 +329,7 @@ function onCopyFile(fileName: string) {
           class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
           @click.self="showNewKbDialog = false"
         >
-          <div class="w-80 rounded-2xl border border-border-default bg-white p-5 shadow-xl">
+          <div class="w-80 rounded-3xl border border-border-default bg-white p-5 shadow-xl">
             <h3 class="mb-4 text-base font-medium text-text-primary">新建知识库</h3>
             <input
               v-model="newKbName"
@@ -341,13 +341,13 @@ function onCopyFile(fileName: string) {
             <p v-if="newKbError" class="mt-2 text-xs text-danger-500">{{ newKbError }}</p>
             <div class="mt-4 flex justify-end gap-2">
               <button
-                class="rounded-lg px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2"
+                class="rounded-xl px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2"
                 @click="showNewKbDialog = false"
               >
                 取消
               </button>
               <button
-                class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600"
+                class="rounded-xl bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600"
                 :disabled="isCreatingKb"
                 @click="confirmCreateKb"
               >

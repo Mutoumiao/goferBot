@@ -80,9 +80,10 @@ describe('KnowledgeBasePage', () => {
       ],
       selectedKbId: 'kb1',
     })
-    const selected = wrapper.find('.bg-white.shadow-xs')
+    const selected = wrapper.find('[data-testid="kb-item"]')
     expect(selected.exists()).toBe(true)
     expect(selected.text()).toContain('Alpha')
+    expect(selected.classes()).toContain('bg-white')
   })
 
   it('shows empty list when no knowledge bases', () => {

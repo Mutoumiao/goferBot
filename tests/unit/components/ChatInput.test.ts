@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import ChatInput from '@/components/ChatInput.vue'
 
 describe('ChatInput', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('renders a textarea element', () => {
     const wrapper = mount(ChatInput)
     expect(wrapper.find('textarea').exists()).toBe(true)
@@ -12,7 +17,7 @@ describe('ChatInput', () => {
     const wrapper = mount(ChatInput)
     const textarea = wrapper.find('textarea')
     await textarea.setValue('hello')
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="chat-send-btn"]').trigger('click')
     expect(wrapper.emitted('send')).toHaveLength(1)
     expect(wrapper.emitted('send')![0]).toEqual(['hello', []])
   })
@@ -36,7 +41,7 @@ describe('ChatInput', () => {
 
   it('does not emit send when empty', async () => {
     const wrapper = mount(ChatInput)
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="chat-send-btn"]').trigger('click')
     expect(wrapper.emitted('send')).toBeUndefined()
   })
 
@@ -44,7 +49,7 @@ describe('ChatInput', () => {
     const wrapper = mount(ChatInput)
     const textarea = wrapper.find('textarea')
     await textarea.setValue('test')
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="chat-send-btn"]').trigger('click')
     expect((textarea.element as HTMLTextAreaElement).value).toBe('')
   })
 
@@ -52,7 +57,7 @@ describe('ChatInput', () => {
     const wrapper = mount(ChatInput, { props: { loading: true } })
     const textarea = wrapper.find('textarea')
     await textarea.setValue('test')
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="chat-send-btn"]').trigger('click')
     expect(wrapper.emitted('send')).toBeUndefined()
   })
 })

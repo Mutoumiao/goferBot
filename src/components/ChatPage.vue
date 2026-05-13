@@ -7,7 +7,6 @@ import { isSidecarReady } from '@/utils/sidecarClient'
 import EmptySession from './EmptySession.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatInput from './ChatInput.vue'
-import ModelSelector from './ModelSelector.vue'
 
 const store = useSessionStore()
 const settings = useSettingsStore()
@@ -62,14 +61,6 @@ function handleModelChange(provider: string, model: string) {
   }
 }
 
-function handleTitleBlur(e: FocusEvent) {
-  const target = e.target as HTMLInputElement
-  const idx = store.tabs.findIndex((t) => t.id === store.activeTabId)
-  if (idx !== -1) {
-    store.tabs[idx].title = target.value.trim() || store.tabs[idx].title
-  }
-}
-
 let sidecarTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
@@ -107,23 +98,6 @@ function dismissToast() {
 
 <template>
   <div class="flex h-full flex-col bg-surface-1">
-    <!-- Top bar -->
-    <div
-      v-if="!isEmpty"
-      class="flex h-12 shrink-0 items-center justify-between border-b border-border-default bg-white px-4"
-    >
-      <input
-        :value="store.activeTab?.title ?? '首页'"
-        class="bg-transparent text-sm font-medium text-text-primary outline-none"
-        @blur="handleTitleBlur"
-      />
-      <ModelSelector
-        :provider="currentProvider"
-        :model="currentModel"
-        @change="handleModelChange"
-      />
-    </div>
-
     <EmptySession v-if="isEmpty" @send="handleSend" />
     <template v-else>
       <ChatMessageList :messages="store.activeMessages" :is-sending="store.isSending" @retry="handleRetry" />
@@ -132,7 +106,10 @@ function dismissToast() {
         :disabled="inputDisabled"
         :disabled-hint="inputDisabledHint"
         :knowledge-bases="kbStore.knowledgeBases"
+        :provider="currentProvider"
+        :model="currentModel"
         @send="handleSend"
+        @model-change="handleModelChange"
       />
     </template>
 
@@ -147,7 +124,7 @@ function dismissToast() {
     >
       <div
         v-if="store.sendError"
-        class="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-danger-500/20 bg-white px-4 py-2.5 text-sm text-danger-500 shadow-xl"
+        class="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-500/20 bg-white px-4 py-2.5 text-sm text-danger-500 shadow-xl"
       >
         <span class="i-mdi-alert-circle text-base" />
         <span>{{ store.sendError }}</span>

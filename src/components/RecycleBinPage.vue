@@ -29,24 +29,28 @@ function formatDate(ts: number): string {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto px-14 py-12">
-    <div class="mx-auto max-w-[820px]">
-      <!-- Header -->
-      <div class="mb-6 flex items-center justify-between">
-        <div>
-          <h1 class="text-[28px] font-medium text-text-primary">回收站</h1>
-          <p class="mt-1.5 text-sm text-text-secondary">删除的对话和知识文件会暂时保留，过期后自动清理。</p>
+  <div class="h-full overflow-y-auto bg-surface-1 px-6 py-14">
+    <div class="mx-auto max-w-[820px] space-y-6">
+      <!-- 设计稿「Trash page header」 -->
+      <div class="flex flex-wrap items-start justify-between gap-4 px-1.5">
+        <div class="min-w-0 space-y-2">
+          <h1 class="text-[28px] font-medium leading-[1.18] tracking-tight text-text-primary">
+            回收站
+          </h1>
+          <p class="text-sm leading-relaxed text-text-secondary">
+            删除的对话和知识文件会暂时保留，过期后自动清理。
+          </p>
         </div>
-        <div class="flex items-center gap-2 rounded-[14px] bg-danger-soft px-3 py-2">
-          <span class="h-1.5 w-1.5 rounded-full bg-danger-500" />
-          <span class="text-xs text-danger-500">自动清理开启</span>
+        <div class="flex shrink-0 items-center gap-2 rounded-[14px] bg-danger-soft px-3 py-2">
+          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-danger-500" />
+          <span class="text-xs font-normal text-danger-500">自动清理开启</span>
         </div>
       </div>
 
-      <!-- Main Panel -->
-      <div class="rounded-[28px] border border-border-default bg-white p-6 shadow-lg">
+      <!-- 设计稿「Trash quiet panel」：圆角 28、内边距 22、阴影 -->
+      <div class="rounded-[28px] border border-border-default bg-white p-[22px] shadow-[0_16px_34px_rgba(0,0,0,0.06)]">
         <!-- Summary -->
-        <div class="mb-5 flex items-center gap-4">
+        <div class="mb-[18px] flex flex-wrap items-center gap-4">
           <div class="flex h-[46px] w-[46px] items-center justify-center rounded-[18px] bg-surface-2">
             <span class="i-mdi-delete text-xl text-text-secondary" />
           </div>
@@ -80,7 +84,7 @@ function formatDate(ts: number): string {
           <div
             v-for="kb in store.deletedKnowledgeBases"
             :key="kb.id"
-            class="flex items-center gap-3.5 rounded-[20px] border border-border-default bg-surface-1/60 p-4 transition-all hover:bg-surface-1"
+            class="flex min-h-[76px] items-center gap-3.5 rounded-[20px] border border-border-default bg-[#fafbfc] p-4 transition-colors hover:bg-surface-1"
           >
             <div class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[14px] bg-surface-2">
               <span :class="`i-${kb.icon || 'mdi-database'} text-base text-text-secondary`" />
@@ -107,10 +111,12 @@ function formatDate(ts: number): string {
         </div>
       </div>
 
-      <!-- Note -->
-      <div class="mt-6 flex items-center gap-3 rounded-[20px] border border-border-default bg-white/50 px-4 py-3.5">
+      <!-- 设计稿「Trash quiet note」 -->
+      <div
+        class="flex items-start gap-2.5 rounded-[20px] border border-border-default bg-white/50 px-4 py-3.5"
+      >
         <span class="i-mdi-information-outline text-base text-text-tertiary" />
-        <p class="text-sm text-text-tertiary">永久删除前，恢复会保留原对话上下文、引用来源和知识库归属。</p>
+        <p class="text-[13px] leading-snug text-text-tertiary">永久删除前，恢复会保留原对话上下文、引用来源和知识库归属。</p>
       </div>
     </div>
   </div>

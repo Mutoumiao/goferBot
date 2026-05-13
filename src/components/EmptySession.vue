@@ -53,9 +53,9 @@ function sendQuick(content: string) {
 <template>
   <div class="flex h-full flex-col items-center justify-center bg-surface-1">
     <div class="flex w-[760px] flex-col items-center gap-[34px]">
-      <!-- Hero Logo -->
+      <!-- Hero Logo：58×58、圆角 22、设计稿阴影 offset y=8 blur=24 -->
       <div
-        class="flex h-[58px] w-[58px] items-center justify-center rounded-[22px] border border-border-default bg-white shadow-sm"
+        class="flex h-[58px] w-[58px] items-center justify-center rounded-[22px] border border-border-default bg-white shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
       >
         <span class="i-mdi-sparkles text-[26px] text-accent-500" />
       </div>
@@ -67,9 +67,9 @@ function sendQuick(content: string) {
         今天想从知识库里理解什么？
       </h2>
 
-      <!-- Prompt Input -->
+      <!-- Prompt input：宽 760、圆角 24、内边距 [18,20]、子项间距 18、设计稿大阴影 blur=42 y=18 -->
       <div
-        class="flex w-full flex-col gap-[18px] rounded-3xl border border-border-default bg-white p-5 shadow-lg"
+        class="flex min-h-[150px] w-full flex-col gap-[18px] rounded-3xl border border-border-default bg-white px-5 py-[18px] shadow-[0_18px_42px_rgba(0,0,0,0.07)]"
       >
         <textarea
           v-model="input"
@@ -109,7 +109,7 @@ function sendQuick(content: string) {
         <button
           v-for="action in quickActions"
           :key="action.title"
-          class="group flex flex-1 items-center gap-3 rounded-[18px] border border-border-default bg-white/75 p-[18px] text-left transition-all duration-200 hover:border-accent-500/30 hover:bg-white hover:shadow-xs"
+          class="group flex flex-1 items-center gap-3 rounded-[18px] border border-border-default bg-white/75 p-[18px] text-left transition-all duration-200 hover:border-accent-500/30 hover:bg-white hover:shadow-sm"
           @click="sendQuick(action.title)"
         >
           <div
