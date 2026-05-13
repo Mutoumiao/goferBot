@@ -41,6 +41,6 @@ export async function launchTauriApp(): Promise<{ app: ChildProcess; browser: Br
 
 export async function closeTauriApp(app: ChildProcess, browser: Browser) {
   await browser.close()
-  app.kill('SIGTERM')
+  app.kill()
   await new Promise((resolve) => app.once('exit', resolve))
 }
