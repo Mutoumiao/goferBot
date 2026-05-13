@@ -31,7 +31,6 @@ function waitForPortFile(dir: string, timeout = 30000): Promise<number> {
 
 export async function startSidecar(): Promise<{ port: number; dataDir: string }> {
   dataDir = mkdtempSync(join(tmpdir(), 'kb-e2e-'))
-  console.log('[setup] dataDir:', dataDir)
   sidecarProcess = spawn('node', ['server/dist/index.js'], {
     env: {
       ...process.env,
@@ -44,9 +43,7 @@ export async function startSidecar(): Promise<{ port: number; dataDir: string }>
   sidecarProcess.stdout?.on('data', (d) => console.log('[sidecar]', d.toString().trim()))
   sidecarProcess.stderr?.on('data', (d) => console.error('[sidecar]', d.toString().trim()))
 
-  console.log('[setup] waiting for port file...')
   const port = await waitForPortFile(dataDir)
-  console.log('[setup] got port:', port)
   return { port, dataDir }
 }
 

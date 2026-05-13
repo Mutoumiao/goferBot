@@ -45,7 +45,8 @@ function findAvailablePort(startPort: number): Promise<number> {
 }
 
 async function main(): Promise<void> {
-  const port = await findAvailablePort(DEFAULT_PORT)
+  const requestedPort = process.env.KB_PORT ? parseInt(process.env.KB_PORT, 10) : DEFAULT_PORT
+  const port = requestedPort === 0 ? await findAvailablePort(DEFAULT_PORT) : requestedPort
   writePortFile(port)
 
   syncKnowledgeBasesFromDisk()
