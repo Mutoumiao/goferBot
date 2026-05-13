@@ -38,6 +38,11 @@ export async function initSidecar(): Promise<void> {
     // sidecar not ready yet, wait for events
   }
 
+  let settleWait: (() => void) | null = null
+  const waitPromise = new Promise<void>((resolve) => {
+    settleWait = resolve
+  })
+
   try {
     if (!readyUnlisten) {
       readyUnlisten = await listen<{ port: number }>('sidecar-ready', (event) => {
@@ -45,6 +50,8 @@ export async function initSidecar(): Promise<void> {
         sidecarPort.value = event.payload.port
         sidecarStatus.value = 'ready'
         clearTimeoutIfAny()
+        settleWait?.()
+        settleWait = null
       })
     }
 
@@ -54,12 +61,16 @@ export async function initSidecar(): Promise<void> {
         sidecarPort.value = event.payload.port
         sidecarStatus.value = 'ready'
         clearTimeoutIfAny()
+        settleWait?.()
+        settleWait = null
       })
     }
   } catch (e) {
     console.error('[sidecar] Failed to listen for events:', e)
     sidecarStatus.value = 'error'
     sidecarError.value = '无法监听服务状态，请检查权限配置'
+    settleWait?.()
+    settleWait = null
     return
   }
 
@@ -68,7 +79,11 @@ export async function initSidecar(): Promise<void> {
       sidecarStatus.value = 'error'
       sidecarError.value = '服务启动超时，请检查日志或重启应用'
     }
+    settleWait?.()
+    settleWait = null
   }, 30000)
+
+  await waitPromise
 }
 
 export async function retrySidecar(): Promise<void> {

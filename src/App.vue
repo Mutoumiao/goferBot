@@ -16,9 +16,11 @@ import { useSettingsStore } from './stores/settings'
 const sessionStore = useSessionStore()
 const settingsStore = useSettingsStore()
 
-onMounted(() => {
-  initSidecar()
-  settingsStore.loadConfig()
+onMounted(async () => {
+  await initSidecar()
+  if (sidecarStatus.value === 'ready') {
+    settingsStore.loadConfig()
+  }
 })
 
 function ensureHomeTab() {

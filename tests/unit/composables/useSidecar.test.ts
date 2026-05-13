@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import {
   sidecarStatus,
   sidecarPort,
@@ -52,32 +53,44 @@ describe('useSidecar', () => {
 
   it('should remain loading until event fires', async () => {
     vi.mocked(tauriApi.invoke).mockRejectedValue(new Error('not ready'))
-    await initSidecar()
+    const done = initSidecar()
+    await flushPromises()
     expect(sidecarStatus.value).toBe('loading')
+    readyCallback?.({ port: 11499 })
+    await done
+    expect(sidecarStatus.value).toBe('ready')
+    expect(sidecarPort.value).toBe(11499)
   })
 
   it('should set error after 30s timeout', async () => {
     vi.mocked(tauriApi.invoke).mockRejectedValue(new Error('not ready'))
-    await initSidecar()
+    const done = initSidecar()
+    await flushPromises()
     expect(sidecarStatus.value).toBe('loading')
     await vi.advanceTimersByTimeAsync(30000)
+    await done
     expect(sidecarStatus.value).toBe('error')
     expect(sidecarError.value).toContain('超时')
   })
 
   it('should update to ready on sidecar-ready event', async () => {
     vi.mocked(tauriApi.invoke).mockRejectedValue(new Error('not ready'))
-    await initSidecar()
+    const done = initSidecar()
+    await flushPromises()
     readyCallback?.({ port: 11452 })
+    await done
     expect(sidecarStatus.value).toBe('ready')
     expect(sidecarPort.value).toBe(11452)
   })
 
   it('should update port on sidecar-restarted event', async () => {
     vi.mocked(tauriApi.invoke).mockRejectedValue(new Error('not ready'))
-    await initSidecar()
+    const done = initSidecar()
+    await flushPromises()
     expect(sidecarStatus.value).toBe('loading')
     readyCallback?.({ port: 11451 })
+    await done
+    expect(sidecarStatus.value).toBe('ready')
     expect(sidecarPort.value).toBe(11451)
     restartedCallback?.({ port: 11453 })
     expect(sidecarStatus.value).toBe('ready')
@@ -86,9 +99,11 @@ describe('useSidecar', () => {
 
   it('should clear timeout when event arrives before 30s', async () => {
     vi.mocked(tauriApi.invoke).mockRejectedValue(new Error('not ready'))
-    await initSidecar()
+    const done = initSidecar()
+    await flushPromises()
     await vi.advanceTimersByTimeAsync(15000)
     readyCallback?.({ port: 11452 })
+    await done
     expect(sidecarStatus.value).toBe('ready')
     await vi.advanceTimersByTimeAsync(20000)
     expect(sidecarStatus.value).toBe('ready')
