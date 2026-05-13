@@ -35,23 +35,23 @@ function handleClick(e: MouseEvent) {
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0.5rem 0;
-  color: #1f2328;
+  color: var(--color-text-primary);
 }
 .markdown-body :deep(h2) {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0.5rem 0;
-  color: #1f2328;
+  color: var(--color-text-primary);
 }
 .markdown-body :deep(h3) {
   font-size: 1rem;
   font-weight: 600;
   margin: 0.5rem 0;
-  color: #1f2328;
+  color: var(--color-text-primary);
 }
 .markdown-body :deep(p) {
   margin: 0.5rem 0;
-  color: #1f2328;
+  color: var(--color-text-primary);
 }
 .markdown-body :deep(ul) {
   list-style-type: disc;
@@ -65,15 +65,15 @@ function handleClick(e: MouseEvent) {
 }
 .markdown-body :deep(li) {
   margin: 0.125rem 0;
-  color: #1f2328;
+  color: var(--color-text-primary);
 }
 .markdown-body :deep(pre) {
-  background: #f1f3f6;
+  background: var(--color-surface-2);
   padding: 0.875rem;
   border-radius: 0.75rem;
   overflow-x: auto;
   margin: 0.75rem 0;
-  border: 1px solid #e7eaf0;
+  border: 1px solid var(--color-surface-4);
 }
 .markdown-body :deep(code) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -84,23 +84,23 @@ function handleClick(e: MouseEvent) {
   padding: 0;
 }
 .markdown-body :deep(:not(pre) > code) {
-  background: #eceff3;
+  background: var(--color-surface-3);
   padding: 0.15rem 0.35rem;
   border-radius: 0.25rem;
-  color: #5b7cfa;
+  color: var(--color-accent-500);
 }
 .markdown-body :deep(a) {
-  color: #5b7cfa;
+  color: var(--color-accent-500);
   text-decoration: none;
 }
 .markdown-body :deep(a:hover) {
   text-decoration: underline;
 }
 .markdown-body :deep(blockquote) {
-  border-left: 3px solid #5b7cfa;
+  border-left: 3px solid var(--color-accent-500);
   padding-left: 0.875rem;
   margin: 0.75rem 0;
-  color: #5e6673;
+  color: var(--color-text-secondary);
 }
 .markdown-body :deep(table) {
   width: 100%;
@@ -109,21 +109,21 @@ function handleClick(e: MouseEvent) {
 }
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
-  border: 1px solid #e7eaf0;
+  border: 1px solid var(--color-surface-4);
   padding: 0.5rem 0.625rem;
   text-align: left;
 }
 .markdown-body :deep(th) {
-  background: #f1f3f6;
+  background: var(--color-surface-2);
   font-weight: 600;
-  color: #1f2328;
+  color: var(--color-text-primary);
 }
 .markdown-body :deep(td) {
-  color: #1f2328;
+  color: var(--color-text-primary);
 }
 .markdown-body :deep(hr) {
   border: none;
-  border-top: 1px solid #e7eaf0;
+  border-top: 1px solid var(--color-surface-4);
   margin: 1rem 0;
 }
 .markdown-body :deep(.copy-btn) {
@@ -131,16 +131,16 @@ function handleClick(e: MouseEvent) {
   margin: -0.25rem -0.25rem 0 0;
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
-  color: #9aa3af;
+  color: var(--color-text-tertiary);
   background: transparent;
-  border: 1px solid #e7eaf0;
+  border: 1px solid var(--color-surface-4);
   border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 .markdown-body :deep(.copy-btn:hover) {
-  color: #1f2328;
-  background: #eceff3;
-  border-color: #e7eaf0;
+  color: var(--color-text-primary);
+  background: var(--color-surface-3);
+  border-color: var(--color-surface-4);
 }
 </style>
