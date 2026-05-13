@@ -7,11 +7,28 @@ const emit = defineEmits<{
 
 const input = ref('')
 
-const quickQuestions = [
-  '什么是 RAG 检索增强生成？',
-  '如何导入 Markdown 文档？',
-  '本地知识库的工作原理是什么？',
-  '支持哪些大语言模型？',
+const quickActions = [
+  {
+    icon: 'i-mdi-file-document-outline',
+    iconColor: 'text-[#5B7CFA]',
+    iconBg: 'bg-[#EEF2FF]',
+    title: '总结文档',
+    caption: '提炼重点与行动项',
+  },
+  {
+    icon: 'i-mdi-folder-search-outline',
+    iconColor: 'text-[#4C8F6A]',
+    iconBg: 'bg-[#EEF8F3]',
+    title: '查找资料',
+    caption: '跨知识库引用来源',
+  },
+  {
+    icon: 'i-mdi-wand-magic-sparkles',
+    iconColor: 'text-[#7C6EE6]',
+    iconBg: 'bg-[#F6F1FF]',
+    title: '生成笔记',
+    caption: '把零散信息变成结构',
+  },
 ]
 
 function handleSend() {
@@ -34,59 +51,78 @@ function sendQuick(content: string) {
 </script>
 
 <template>
-  <div class="flex h-full flex-col items-center justify-center p-8">
-    <div class="w-full max-w-2xl space-y-10">
-      <!-- Brand mark + Title -->
-      <div class="space-y-4 text-center">
-        <div
-          class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-500/10 shadow-lg shadow-accent-glow"
-        >
-          <span class="i-mdi-brain text-3xl text-accent-400" />
-        </div>
-        <h2
-          class="text-3xl font-semibold tracking-tight"
-          style="background: linear-gradient(135deg, #e8eaf0 0%, #60a5fa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"
-        >
-          有什么可以帮你的？
-        </h2>
-        <p class="text-sm text-text-secondary">
-          基于本地知识库的智能问答助手
-        </p>
+  <div class="flex h-full flex-col items-center justify-center bg-[#F7F8FA]">
+    <div class="flex w-[760px] flex-col items-center gap-[34px]">
+      <!-- Hero Logo -->
+      <div
+        class="flex h-[58px] w-[58px] items-center justify-center rounded-[22px] border border-[#E7EAF0] bg-white shadow-[0_8px_24px_#0000000D]"
+      >
+        <span class="i-mdi-sparkles text-[26px] text-[#5B7CFA]" />
       </div>
 
-      <!-- Input -->
-      <div class="relative">
+      <!-- Headline -->
+      <h2
+        class="w-[720px] text-center text-[34px] font-medium leading-[1.18] tracking-tight text-[#1F2328]"
+      >
+        今天想从知识库里理解什么？
+      </h2>
+
+      <!-- Prompt Input -->
+      <div
+        class="flex w-full flex-col gap-[18px] rounded-3xl border border-[#E7EAF0] bg-white p-5 shadow-[0_18px_42px_#00000012]"
+      >
         <textarea
           v-model="input"
-          rows="3"
-          class="w-full resize-none rounded-2xl border border-border-default bg-surface-2 p-4 pr-14 text-text-primary placeholder-text-tertiary outline-none transition-all duration-200 focus:border-accent-500/50 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)]"
-          placeholder="输入你的问题..."
+          rows="2"
+          class="w-full resize-none bg-transparent text-base leading-relaxed text-[#1F2328] placeholder-[#9AA3AF] outline-none"
+          placeholder="询问、总结或让 AI 帮你整理桌面资料..."
           @keydown="handleKeydown"
         />
-        <button
-          class="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-xl bg-accent-500 text-white shadow-lg shadow-accent-glow transition-all duration-200 hover:bg-accent-400 active:scale-95 disabled:opacity-40 disabled:shadow-none"
-          :disabled="!input.trim()"
-          @click="handleSend"
-        >
-          <span class="i-mdi-arrow-up text-base" />
-        </button>
-      </div>
-
-      <!-- Quick Questions -->
-      <div class="space-y-3">
-        <p class="text-center text-xs font-medium uppercase tracking-wider text-text-tertiary">
-          快捷提问
-        </p>
-        <div class="flex flex-wrap justify-center gap-2">
+        <div class="flex items-end justify-between">
+          <div class="flex items-center gap-2.5">
+            <button
+              class="flex h-[34px] w-[34px] items-center justify-center rounded-[14px] bg-[#F1F3F6] text-[#5E6673] transition-colors hover:bg-[#ECEFF3]"
+              title="附件"
+            >
+              <span class="i-mdi-paperclip text-sm" />
+            </button>
+            <button
+              class="flex h-[34px] items-center gap-1.5 rounded-[14px] bg-[#F1F3F6] px-3 text-sm text-[#5E6673] transition-colors hover:bg-[#ECEFF3]"
+              title="知识库"
+            >
+              <span class="i-mdi-database text-sm" />
+              <span>知识库</span>
+            </button>
+          </div>
           <button
-            v-for="q in quickQuestions"
-            :key="q"
-            class="rounded-lg border border-border-subtle bg-surface-2 px-4 py-2 text-sm text-text-secondary transition-all duration-200 hover:border-accent-500/30 hover:bg-surface-3 hover:text-accent-400"
-            @click="sendQuick(q)"
+            class="flex h-[38px] w-[38px] items-center justify-center rounded-2xl bg-[#5B7CFA] text-white transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-40"
+            :disabled="!input.trim()"
+            @click="handleSend"
           >
-            {{ q }}
+            <span class="i-mdi-send text-[17px]" />
           </button>
         </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="flex w-full gap-[18px]">
+        <button
+          v-for="action in quickActions"
+          :key="action.title"
+          class="group flex flex-1 items-center gap-3 rounded-[18px] border border-[#E7EAF0] bg-[#FFFFFFB8] p-[18px] text-left transition-all duration-200 hover:border-[#5B7CFA]/30 hover:bg-white hover:shadow-sm"
+          @click="sendQuick(action.title)"
+        >
+          <div
+            class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[13px]"
+            :class="action.iconBg"
+          >
+            <span class="text-base" :class="[action.icon, action.iconColor]" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm font-normal text-[#1F2328]">{{ action.title }}</span>
+            <span class="text-xs text-[#9AA3AF]">{{ action.caption }}</span>
+          </div>
+        </button>
       </div>
     </div>
   </div>

@@ -14,14 +14,14 @@ const emit = defineEmits<{
 }>()
 
 const navItems = [
-  { type: 'chat' as TabType, icon: 'i-mdi-message-text', label: '问答', action: () => emit('openChat') },
-  { type: 'knowledgeBase' as TabType, icon: 'i-mdi-folder', label: '知识库', action: () => emit('openKnowledgeBase') },
+  { type: 'chat' as TabType, icon: 'i-mdi-message-text-outline', action: () => emit('openChat') },
+  { type: 'knowledgeBase' as TabType, icon: 'i-mdi-database-outline', action: () => emit('openKnowledgeBase') },
 ]
 
 const bottomItems = [
-  { type: 'recycleBin' as TabType, icon: 'i-mdi-delete', label: '回收站', action: () => emit('openRecycleBin') },
-  { type: 'history' as TabType, icon: 'i-mdi-history', label: '历史', action: () => emit('openHistory') },
-  { type: 'settings' as TabType, icon: 'i-mdi-cog', label: '设置', action: () => emit('openSettings') },
+  { type: 'history' as TabType, icon: 'i-mdi-history', action: () => emit('openHistory') },
+  { type: 'recycleBin' as TabType, icon: 'i-mdi-trash-can-outline', action: () => emit('openRecycleBin') },
+  { type: 'settings' as TabType, icon: 'i-mdi-cog-outline', action: () => emit('openSettings') },
 ]
 
 function isActive(type: TabType) {
@@ -30,67 +30,47 @@ function isActive(type: TabType) {
 </script>
 
 <template>
-  <div class="flex w-[72px] shrink-0 flex-col items-center border-r border-border-default bg-surface-1 py-3">
-    <!-- App Logo / Brand -->
-    <div class="mb-6 flex h-10 w-10 items-center justify-center rounded-xl bg-accent-500/10">
-      <span class="i-mdi-brain text-xl text-accent-400" />
-    </div>
+  <div class="flex w-16 shrink-0 flex-col items-center justify-between bg-[#F2F4F7] py-5 px-3">
+    <!-- Primary Navigation -->
+    <div class="flex flex-col items-center gap-3">
+      <!-- Logo -->
+      <div
+        class="flex h-9 w-9 items-center justify-center rounded-2xl border border-[#E7EAF0] bg-white shadow-[0_1px_3px_#0000000A]"
+      >
+        <span class="i-mdi-sparkles text-lg text-[#5B7CFA]" />
+      </div>
 
-    <!-- Main Navigation -->
-    <nav class="flex flex-1 flex-col gap-1">
+      <!-- Main nav items -->
       <button
         v-for="item in navItems"
         :key="item.type"
         :class="[
-          'group relative flex flex-col items-center gap-1 rounded-lg px-2 py-2.5 transition-all duration-200',
+          'flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200',
           isActive(item.type)
-            ? 'text-accent-400'
-            : 'text-text-tertiary hover:text-text-secondary',
+            ? 'bg-[#E8EBF2] text-[#1F2328]'
+            : 'text-[#9AA3AF] hover:bg-[#E8EBF2]/60 hover:text-[#5E6673]',
         ]"
         @click="item.action"
       >
-        <!-- Active indicator -->
-        <div
-          v-if="isActive(item.type)"
-          class="absolute -left-[1px] top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-accent-500 transition-all"
-        />
-        <span
-          :class="[
-            item.icon,
-            'text-[22px] transition-transform duration-200',
-            isActive(item.type) ? 'scale-110' : 'group-hover:scale-105',
-          ]"
-        />
-        <span class="text-[10px] font-medium leading-none">{{ item.label }}</span>
+        <span :class="[item.icon, 'text-lg']" />
       </button>
-    </nav>
+    </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="flex flex-col gap-1">
+    <!-- Secondary Navigation -->
+    <div class="flex flex-col items-center gap-2.5">
       <button
         v-for="item in bottomItems"
         :key="item.type"
         :class="[
-          'group relative flex flex-col items-center gap-1 rounded-lg px-2 py-2.5 transition-all duration-200',
+          'flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200',
           isActive(item.type)
-            ? 'text-accent-400'
-            : 'text-text-tertiary hover:text-text-secondary',
+            ? 'bg-[#E8EBF2] text-[#1F2328]'
+            : 'text-[#9AA3AF] hover:bg-[#E8EBF2]/60 hover:text-[#5E6673]',
         ]"
         @click="item.action"
       >
-        <div
-          v-if="isActive(item.type)"
-          class="absolute -left-[1px] top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-accent-500 transition-all"
-        />
-        <span
-          :class="[
-            item.icon,
-            'text-[22px] transition-transform duration-200',
-            isActive(item.type) ? 'scale-110' : 'group-hover:scale-105',
-          ]"
-        />
-        <span class="text-[10px] font-medium leading-none">{{ item.label }}</span>
+        <span :class="[item.icon, 'text-lg']" />
       </button>
-    </nav>
+    </div>
   </div>
 </template>
