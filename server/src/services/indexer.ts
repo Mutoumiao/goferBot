@@ -100,7 +100,7 @@ async function indexFile(task: IndexTask): Promise<void> {
   )
 
   const insertFts = db.prepare(
-    `INSERT INTO fts_document_chunks (rowid, content, file_path) VALUES (?, ?, ?)`
+    `INSERT INTO fts_document_chunks (chunk_id, content, file_path) VALUES (?, ?, ?)`
   )
 
   const now = Date.now()
@@ -133,7 +133,7 @@ export function deleteFileChunks(knowledgeBaseId: string, relativePath: string):
   for (const row of rows) {
     db.prepare('DELETE FROM document_chunks WHERE id = ?').run(row.id)
     try { db.prepare('DELETE FROM vec_document_chunks WHERE chunk_id = ?').run(row.id) } catch { /* ignore */ }
-    try { db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?').run(row.id) } catch { /* ignore */ }
+    try { db.prepare('DELETE FROM fts_document_chunks WHERE chunk_id = ?').run(row.id) } catch { /* ignore */ }
   }
 }
 
@@ -160,9 +160,9 @@ export function syncFtsFilePaths(
     )
     .all(knowledgeBaseId, oldPath) as Array<{ id: string; content: string; file_path: string }>
 
-  const deleteFts = db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?')
+  const deleteFts = db.prepare('DELETE FROM fts_document_chunks WHERE chunk_id = ?')
   const insertFts = db.prepare(
-    `INSERT INTO fts_document_chunks (rowid, content, file_path) VALUES (?, ?, ?)`
+    `INSERT INTO fts_document_chunks (chunk_id, content, file_path) VALUES (?, ?, ?)`
   )
 
   for (const row of rows) {

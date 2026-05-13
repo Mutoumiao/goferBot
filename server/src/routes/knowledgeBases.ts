@@ -568,7 +568,7 @@ app.post('/:id/index', async (c) => {
   for (const row of rows) {
     db.prepare('DELETE FROM document_chunks WHERE id = ?').run(row.id)
     db.prepare('DELETE FROM vec_document_chunks WHERE chunk_id = ?').run(row.id)
-    db.prepare('DELETE FROM fts_document_chunks WHERE rowid = ?').run(row.id)
+    db.prepare('DELETE FROM fts_document_chunks WHERE chunk_id = ?').run(row.id)
   }
 
   // 重新加入队列

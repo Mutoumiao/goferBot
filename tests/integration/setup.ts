@@ -29,6 +29,20 @@ function waitForPortFile(dir: string, timeout = 30000): Promise<number> {
   })
 }
 
+
+async function waitForHealth(port: number, timeout = 30000): Promise<void> {
+  const start = Date.now()
+  while (Date.now() - start < timeout) {
+    try {
+      const res = await fetch('http://127.0.0.1:' + port + '/health')
+      if (res.status === 200) return
+    } catch {
+      // not ready yet
+    }
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  throw new Error('Timeout waiting for sidecar health check')
+}
 export async function startSidecar(): Promise<{ port: number; dataDir: string }> {
   currentDataDir = mkdtempSync(join(tmpdir(), 'kb-e2e-'))
   sidecarProcess = spawn('node', ['server/dist/index.js'], {
