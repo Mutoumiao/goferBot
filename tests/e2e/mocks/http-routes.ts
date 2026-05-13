@@ -36,15 +36,15 @@ const mockSessionDetail = {
 }
 
 export async function mockHttpRoutes(page: any) {
-  await page.route('http://127.0.0.1:*/settings', (route: any) => {
+  await page.route('**/settings', (route: any) => {
     route.fulfill({ json: {} })
   })
 
-  await page.route('http://127.0.0.1:*/knowledge-bases', (route: any) => {
+  await page.route('**/knowledge-bases', (route: any) => {
     route.fulfill({ json: [] })
   })
 
-  await page.route('http://127.0.0.1:*/sessions', (route: any) => {
+  await page.route('**/sessions', (route: any) => {
     if (route.request().method() === 'GET') {
       route.fulfill({ json: mockSessions })
     } else if (route.request().method() === 'POST') {
@@ -54,7 +54,7 @@ export async function mockHttpRoutes(page: any) {
     }
   })
 
-  await page.route('http://127.0.0.1:*/sessions/*', (route: any) => {
+  await page.route('**/sessions/**', (route: any) => {
     const url = route.request().url()
     const method = route.request().method()
 
