@@ -23,6 +23,7 @@ beforeAll(() => {
   try {
     db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
+        chunk_id,
         content,
         file_path,
         tokenize='unicode61'
@@ -50,7 +51,7 @@ function insertFakeChunk(kbId: string, filePath: string, content: string): strin
      VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).run(id, kbId, filePath, content, null, 0, Date.now())
   try {
-    db.prepare(`INSERT INTO fts_document_chunks (rowid, content, file_path) VALUES (?, ?, ?)`)
+    db.prepare(`INSERT INTO fts_document_chunks (chunk_id, content, file_path) VALUES (?, ?, ?)`)
       .run(id, content, filePath)
   } catch { /* ignore */ }
   return id

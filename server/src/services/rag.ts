@@ -86,9 +86,9 @@ function ftsSearch(
     for (const kbId of knowledgeBaseIds) {
       const rows = db
         .prepare(
-          `SELECT f.rowid as chunk_id, rank, d.content, d.file_path
+          `SELECT f.chunk_id as chunk_id, rank, d.content, d.file_path
            FROM fts_document_chunks f
-           JOIN document_chunks d ON f.rowid = d.id
+           JOIN document_chunks d ON f.chunk_id = d.id
            WHERE d.knowledge_base_id = ? AND fts_document_chunks MATCH ?
            ORDER BY rank
            LIMIT ?`

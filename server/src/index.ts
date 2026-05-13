@@ -68,6 +68,7 @@ async function main(): Promise<void> {
   try {
     db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
+        chunk_id,
         content,
         file_path,
         tokenize='unicode61'
