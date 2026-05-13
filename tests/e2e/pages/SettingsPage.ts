@@ -28,6 +28,7 @@ export class SettingsPage {
   }
 
   async save() {
+    await expect(this.saveBtn).toBeEnabled()
     await this.saveBtn.click()
   }
 

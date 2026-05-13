@@ -31,7 +31,7 @@ test('tab singleton: switching tabs preserves state', async ({ page }) => {
 test('form save triggers API call', async ({ page }) => {
   const settings = new SettingsPage(page)
   let saved = false
-  await page.route('**/settings', (route) => {
+  await page.route('http://127.0.0.1:*/settings', (route) => {
     if (route.request().method() === 'POST') {
       saved = true
       return route.fulfill({ json: { success: true } })
@@ -46,7 +46,7 @@ test('form save triggers API call', async ({ page }) => {
 
 test('error hint displayed on save failure', async ({ page }) => {
   const settings = new SettingsPage(page)
-  await page.route('**/settings', (route) => {
+  await page.route('http://127.0.0.1:*/settings', (route) => {
     if (route.request().method() === 'POST') {
       return route.fulfill({ status: 400, json: { error: 'Invalid provider' } })
     }
