@@ -3,40 +3,39 @@ import type { Page, Locator } from '@playwright/test'
 export class HistoryPage {
   readonly page: Page
   readonly historyList: Locator
-  readonly newChatBtn: Locator
-  readonly emptyState: Locator
+  readonly historyItems: Locator
 
   constructor(page: Page) {
     this.page = page
     this.historyList = page.locator('[data-testid="history-list"]')
-    this.newChatBtn = page.locator('[data-testid="new-chat-btn"]')
-    this.emptyState = page.locator('[data-testid="history-empty"]')
+    this.historyItems = page.locator('[data-testid="history-item"]')
   }
 
   async goto() {
-    await this.page.goto('/history')
+    await this.page.goto('/')
+    await this.page.locator('button:has(.i-mdi-history)').click()
   }
 
-  async getSessionItems(): Promise<Locator[]> {
-    return this.historyList.locator('[data-testid="history-item"]').all()
+  getHistoryItemByTitle(title: string): Locator {
+    return this.historyItems.filter({ hasText: title })
   }
 
-  async clickSession(name: string) {
-    await this.historyList.locator('[data-testid="history-item"]').filter({ hasText: name }).click()
+  async renameSession(oldTitle: string, newTitle: string) {
+    const item = this.getHistoryItemByTitle(oldTitle)
+    await item.hover()
+    await item.locator('[data-testid="history-rename-btn"]').click()
+    const input = this.page.locator('[data-testid="history-item"] input')
+    await input.fill(newTitle)
+    await input.press('Enter')
   }
 
-  async deleteSession(name: string) {
-    const item = this.historyList.locator('[data-testid="history-item"]').filter({ hasText: name })
+  async deleteSession(title: string) {
+    const item = this.getHistoryItemByTitle(title)
     await item.hover()
     await item.locator('[data-testid="history-delete-btn"]').click()
   }
 
-  async renameSession(name: string, newName: string) {
-    const item = this.historyList.locator('[data-testid="history-item"]').filter({ hasText: name })
-    await item.hover()
-    await item.locator('[data-testid="history-rename-btn"]').click()
-    const input = item.locator('[data-testid="history-rename-input"]')
-    await input.fill(newName)
-    await input.press('Enter')
+  async clickSession(title: string) {
+    await this.getHistoryItemByTitle(title).click()
   }
 }
