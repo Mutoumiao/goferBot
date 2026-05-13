@@ -1,4 +1,4 @@
-import type { Page, Locator } from '@playwright/test'
+import { expect, type Page, type Locator } from '@playwright/test'
 
 export class SettingsPage {
   readonly page: Page
@@ -14,7 +14,9 @@ export class SettingsPage {
   }
 
   async goto() {
-    await this.page.goto('/settings')
+    await this.page.goto('/')
+    await this.page.locator('button:has(.i-mdi-cog-outline)').first().click()
+    await expect(this.navTabs).toBeVisible()
   }
 
   async clickTab(label: string) {

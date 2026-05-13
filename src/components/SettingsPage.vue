@@ -24,6 +24,7 @@ const embeddingProviders = [
 ]
 
 const hasChanges = ref(false)
+const saveError = ref('')
 
 const localConfig = reactive<AppConfig>(JSON.parse(JSON.stringify(store.config)))
 
@@ -40,8 +41,17 @@ function markChanged() {
 }
 
 async function handleSave() {
-  await store.saveConfig(JSON.parse(JSON.stringify(localConfig)))
-  hasChanges.value = false
+  saveError.value = ''
+  try {
+    const ok = await store.saveConfig(JSON.parse(JSON.stringify(localConfig)))
+    if (ok) {
+      hasChanges.value = false
+    } else {
+      saveError.value = '保存失败，请检查配置'
+    }
+  } catch (e) {
+    saveError.value = '保存失败，请检查配置'
+  }
 }
 
 const defaultProviderOptions = computed(() =>
@@ -53,17 +63,19 @@ const defaultProviderOptions = computed(() =>
 
 <template>
   <div class="h-full overflow-y-auto p-6">
-    <div class="mx-auto max-w-3xl space-y-6">
+    <div class="mx-auto max-w-3xl space-y-6" data-testid="settings-form">
       <!-- Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold text-text-primary">设置</h1>
         <button
           :disabled="!hasChanges"
+          data-testid="settings-save-btn"
           class="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
           @click="handleSave"
         >
           保存
         </button>
+        <p v-if="saveError" data-testid="settings-error" class="mt-2 text-sm text-danger-400">{{ saveError }}</p>
       </div>
 
       <!-- LLM Providers Card -->
@@ -73,7 +85,7 @@ const defaultProviderOptions = computed(() =>
         </h2>
 
         <!-- Provider Tabs -->
-        <div class="mb-4 flex gap-1 border-b border-border-default pb-1">
+        <div class="mb-4 flex gap-1 border-b border-border-default pb-1" data-testid="settings-nav-tabs">
           <button
             v-for="key in llmProviderKeys"
             :key="key"
@@ -118,6 +130,7 @@ const defaultProviderOptions = computed(() =>
             <label class="mb-1 block text-sm text-text-secondary">API Key</label>
             <input
               v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].apiKey"
+              name="apiKey"
               type="password"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入 API Key"
@@ -130,6 +143,7 @@ const defaultProviderOptions = computed(() =>
             <label class="mb-1 block text-sm text-text-secondary">模型</label>
             <input
               v-model="localConfig.providers[activeLlmTab].model"
+              name="model"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="输入模型名称"
@@ -142,6 +156,7 @@ const defaultProviderOptions = computed(() =>
             <label class="mb-1 block text-sm text-text-secondary">Base URL</label>
             <input
               v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].baseUrl"
+              name="baseUrl"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="留空使用默认地址"
@@ -154,6 +169,7 @@ const defaultProviderOptions = computed(() =>
             <label class="mb-1 block text-sm text-text-secondary">服务地址</label>
             <input
               v-model="localConfig.providers.ollama.url"
+              name="ollamaUrl"
               type="text"
               class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
               placeholder="http://localhost:11434"

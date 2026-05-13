@@ -33,7 +33,7 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  async function saveConfig(updates: Partial<AppConfig>) {
+  async function saveConfig(updates: Partial<AppConfig>): Promise<boolean> {
     const newConfig = {
       ...config.value,
       ...updates,
@@ -49,7 +49,9 @@ export const useSettingsStore = defineStore('settings', () => {
     })
     if (res.ok) {
       config.value = newConfig
+      return true
     }
+    return false
   }
 
   function getLLMConfig(providerKey?: string): LLMConfig | null {
