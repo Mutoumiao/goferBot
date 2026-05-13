@@ -79,7 +79,7 @@ function openRecycleBin() {
   <SplashScreen />
   <div
     v-if="sidecarStatus === 'ready'"
-    class="flex h-screen bg-[#F7F8FA] text-[#1F2328]"
+    class="flex h-screen bg-surface-1 text-text-primary"
   >
     <SideBar
       :active-type="sessionStore.activeTab?.type ?? 'chat'"
@@ -97,7 +97,7 @@ function openRecycleBin() {
         @close="sessionStore.closeTab"
         @new-chat="ensureHomeTab"
       />
-      <main class="relative flex-1 overflow-hidden bg-[#F7F8FA]">
+      <main class="relative flex-1 overflow-hidden bg-surface-1">
         <ChatPage v-if="sessionStore.activeTab?.type === 'chat'" />
         <KnowledgeBasePage v-else-if="sessionStore.activeTab?.type === 'knowledgeBase'" />
         <HistoryPage v-else-if="sessionStore.activeTab?.type === 'history'" />
