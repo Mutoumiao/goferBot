@@ -5,7 +5,7 @@ import type { FileItem, SearchResultItem } from '@/types'
 import ContextMenu from './ContextMenu.vue'
 import InlineRename from './InlineRename.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   files: FileItem[]
   searchResults: SearchResultItem[]
   searchQuery: string
@@ -13,7 +13,10 @@ const props = defineProps<{
   isSearchMode: boolean
   isLoading: boolean
   autoRenameItem?: string
-}>()
+}>(), {
+  files: () => [],
+  searchResults: () => [],
+})
 
 const emit = defineEmits<{
   openDirectory: [path: string]
