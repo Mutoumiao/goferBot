@@ -156,9 +156,28 @@ pnpm test:integration
 # 运行 E2E 测试
 pnpm test:e2e
 
-# TypeScript 类型检查
+# 运行全部测试（单元 + 集成 + E2E）
+pnpm test:all
+
+# TypeScript 类型检查（所有 workspace 包）
 pnpm type-check
 ```
+
+### 常用脚本说明
+
+| 脚本 | 作用 |
+|------|------|
+| `pnpm dev` | 启动 webui 开发模式（Vite dev server + Vue Devtools） |
+| `pnpm build` | 构建 webui 生产版本 |
+| `pnpm preview` | 预览 webui 生产构建 |
+| `pnpm -r build` | 构建所有 workspace 包（server、shell-adapters、backend-adapters、rag-sdk、webui） |
+| `pnpm test` | 运行根目录单元测试（Vitest，含组件、store、composable 测试） |
+| `pnpm test:integration` | 运行集成测试（启动真实 Sidecar 进程，测试 API 端点） |
+| `pnpm test:e2e` | 运行 E2E 测试（Playwright，浏览器级交互测试） |
+| `pnpm test:all` | 顺序运行单元 + 集成 + E2E 全部测试 |
+| `pnpm type-check` | 对所有 workspace 包运行 TypeScript 类型检查 |
+| `pnpm check` | 运行 `cargo check` 检查 Rust 代码 |
+| `pnpm tauri <cmd>` | 运行 Tauri CLI 命令（如 `pnpm tauri dev`、`pnpm tauri build`） |
 
 ***
 
