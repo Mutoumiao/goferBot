@@ -123,7 +123,7 @@ function onRenameCancel() {
 
 async function onDeleteClick() {
   if (contextMenuFile.value) {
-    if (await confirmDialog(`确认永久删除文件「${contextMenuFile.value}」？此操作不可撤销。`)) {
+    if (await confirmDialog(`确认永久删除文件「${contextMenuFile.value}」？此操作不可撤销。`, { title: '提示', kind: 'danger' })) {
       emit('deleteFile', contextMenuFile.value)
     }
   }

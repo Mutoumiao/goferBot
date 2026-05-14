@@ -17,6 +17,7 @@ declare module 'vue' {
     ChatMessage: typeof import('./src/components/ChatMessage.vue')['default']
     ChatMessageList: typeof import('./src/components/ChatMessageList.vue')['default']
     ChatPage: typeof import('./src/components/ChatPage.vue')['default']
+    ConfirmDialog: typeof import('./src/components/ConfirmDialog.vue')['default']
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
     EditKbDialog: typeof import('./src/components/EditKbDialog.vue')['default']
     EmptySession: typeof import('./src/components/EmptySession.vue')['default']

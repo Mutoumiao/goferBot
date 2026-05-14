@@ -116,7 +116,7 @@ function onEditKb() {
 async function onDeleteKb() {
   if (contextMenuTargetKbId.value) {
     const kb = store.knowledgeBases.find((k) => k.id === contextMenuTargetKbId.value)
-    if (kb && (await confirmDialog(`确认将知识库「${kb.name}」移入回收站？`))) {
+    if (kb && (await confirmDialog(`确认将知识库「${kb.name}」移入回收站？`, { title: '提示', kind: 'warning' }))) {
       await store.deleteKnowledgeBase(contextMenuTargetKbId.value)
     }
   }

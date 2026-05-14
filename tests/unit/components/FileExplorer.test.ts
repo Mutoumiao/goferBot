@@ -208,7 +208,10 @@ describe('FileExplorer', () => {
     await deleteBtn!.trigger('click')
     await flushPromises()
 
-    expect(confirmDialog).toHaveBeenCalled()
+    expect(confirmDialog).toHaveBeenCalledWith(
+      '确认永久删除文件「del.md」？此操作不可撤销。',
+      { title: '提示', kind: 'danger' },
+    )
     expect(wrapper.emitted('deleteFile')).toHaveLength(1)
     expect(wrapper.emitted('deleteFile')![0]).toEqual(['del.md'])
   })
@@ -225,7 +228,10 @@ describe('FileExplorer', () => {
     await deleteBtn!.trigger('click')
     await flushPromises()
 
-    expect(confirmDialog).toHaveBeenCalled()
+    expect(confirmDialog).toHaveBeenCalledWith(
+      '确认永久删除文件「del.md」？此操作不可撤销。',
+      { title: '提示', kind: 'danger' },
+    )
     expect(wrapper.emitted('deleteFile')).toBeUndefined()
   })
 

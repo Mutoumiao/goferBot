@@ -11,14 +11,14 @@ onMounted(() => {
 
 async function onRestore(id: string) {
   const kb = store.deletedKnowledgeBases.find((k) => k.id === id)
-  if (kb && (await confirmDialog(`确认恢复知识库「${kb.name}」？`))) {
+  if (kb && (await confirmDialog(`确认恢复知识库「${kb.name}」？`, { title: '提示', kind: 'info' }))) {
     store.restoreKnowledgeBase(id)
   }
 }
 
 async function onPermanentDelete(id: string) {
   const kb = store.deletedKnowledgeBases.find((k) => k.id === id)
-  if (kb && (await confirmDialog(`确认彻底删除知识库「${kb.name}」？此操作不可撤销。`))) {
+  if (kb && (await confirmDialog(`确认彻底删除知识库「${kb.name}」？此操作不可撤销。`, { title: '提示', kind: 'danger' }))) {
     store.permanentlyDeleteKnowledgeBase(id)
   }
 }

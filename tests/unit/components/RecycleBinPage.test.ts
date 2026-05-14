@@ -65,7 +65,10 @@ describe('RecycleBinPage', () => {
     const restoreBtn = wrapper.findAll('button').find((b) => b.text().includes('恢复'))
     await restoreBtn!.trigger('click')
     await flushPromises()
-    expect(confirmDialog).toHaveBeenCalled()
+    expect(confirmDialog).toHaveBeenCalledWith(
+      '确认恢复知识库「Old KB」？',
+      { title: '提示', kind: 'info' },
+    )
     expect(store.restoreKnowledgeBase).toHaveBeenCalledWith('kb1')
   })
 
@@ -79,7 +82,10 @@ describe('RecycleBinPage', () => {
     const store = useKnowledgeBaseStore()
     await wrapper.find('button').trigger('click')
     await flushPromises()
-    expect(confirmDialog).toHaveBeenCalled()
+    expect(confirmDialog).toHaveBeenCalledWith(
+      '确认恢复知识库「Old KB」？',
+      { title: '提示', kind: 'info' },
+    )
     expect(store.restoreKnowledgeBase).not.toHaveBeenCalled()
   })
 })
