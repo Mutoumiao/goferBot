@@ -2,7 +2,7 @@
 
 本文档记录 Knowledge Base 应用所有 Issue 的执行进度与后续开发计划。
 
-> **更新日期**：2026-05-11  
+> **更新日期**：2026-05-14  
 > **对应 Issue 目录**：`.scratch/knowledge-base/issues/`
 
 ---
@@ -23,6 +23,8 @@
 | 本地模型 | #07 Ollama 与错误处理 | closed | Ollama 本地模型、全局错误处理、Loading/空状态 |
 | 质量保障 | #08 测试覆盖 | closed | 45 个测试文件、297 条用例全部通过，覆盖率阈值 lines≥70 branches≥55 functions≥60 statements≥70 |
 | 质量保障 | #09 端到端测试 | closed | 三阶测试体系全部搭建完成：阶1 E2E 28条、阶2 集成34条、阶3 验收3条。40+手动场景全部自动化 |
+| 架构重构 | #10 Shell 抽象与浏览器模式 | open | 提取 Shell 模块解耦前端与 Tauri，使 Web 可在浏览器独立运行 |
+| 架构重构 | #11 BackendTransport 统一 | open | 统一 HTTP 通信模块，将 sidecarClient 浅模块深化为高 leverage 接口 |
 
 ---
 
@@ -147,10 +149,19 @@
 
 #### #07 Ollama 本地模型与错误处理
 
-- **状态**：`ready-for-agent`
-- **依赖**：#02（closed）、#05
+- **状态**：`closed`
+- **依赖**：#02（closed）、#05（closed）
 - **优先级**：中
 - **内容**：Ollama 本地模型支持（OpenAI 兼容格式）、全局错误处理（API/网络/sidecar 不可达）、Loading 指示器、空状态引导、输入框禁用状态
+- **关键交付**：
+  - `streamChatCompletion` 支持 Ollama 无 API Key 调用与 SSE 流式返回
+  - `POST /chat` 错误分类：api_error / network_error / sidecar_error / unknown，通过 SSE `error` 事件输出
+  - `sessionStore.sendMessage`：发送前重置错误、sidecar 未就绪/LLM 未配置时阻止发送并设置 `sendErrorType`
+  - `ChatErrorCard.vue`：按错误类型渲染标签（API 错误/网络错误/未知错误），支持重试
+  - `ChatLoading.vue`：AI 思考时显示 "思考中..." + 闪烁光标
+  - `ChatInput.vue`：LLM 未配置/发送中/空内容时禁用输入和发送按钮
+  - `GlobalToast.vue`：`sendError` 变化时自动显示，5 秒后消失，支持手动关闭
+  - 空状态引导：`KnowledgeBasePage`（暂无知识库）、`HistoryPage`（暂无对话历史）、`EmptySession`（快捷提问胶囊）
 
 ### 第四波：质量保障（持续进行）
 
@@ -193,4 +204,33 @@
 
 ---
 
-*最后更新：2026-05-13（#09 端到端测试完成）*
+### #10 Shell 抽象与浏览器模式
+
+- **状态**：`open`
+- **文件**：`.scratch/knowledge-base/issues/10-shell-abstraction-and-browser-mode.md`
+- **依赖**：#09（closed）
+- **优先级**：高
+- **内容**：提取 Shell 模块将前端与 Tauri 解耦，使 Web 应用可在浏览器独立运行
+- **计划文档**：`docs/superpowers/plans/2026-05-14-shell-abstraction.md`（待创建）
+- **关键交付**：
+  - `Shell` 接口 + `TauriShell` / `BrowserShell` / `MemoryShell` 适配器
+  - 浏览器模式：`pnpm dev` 无需 Tauri 即可运行
+  - 测试改善：单元测试注入 `MemoryShell`，E2E 移除 `tauri-ipc.ts` mock
+
+### #11 BackendTransport 统一
+
+- **状态**：`open`
+- **文件**：`.scratch/knowledge-base/issues/11-backend-transport-unification.md`
+- **依赖**：#10（open）
+- **优先级**：高
+- **内容**：统一 HTTP 通信模块，将 `sidecarClient.ts` 浅模块深化为高 leverage 的 `BackendTransport` 接口
+- **计划文档**：待创建
+- **关键交付**：
+  - `BackendTransport` 接口 + `HttpBackendTransport` / `FakeBackendTransport` 实现
+  - 所有 `sidecarFetch` 调用替换为 `backendTransport.request`
+  - SSE 聊天流统一为 `backendTransport.subscribe`
+  - Store 测试注入 `FakeBackendTransport`，完全脱离网络
+
+---
+
+*最后更新：2026-05-14（#10 Shell 抽象、#11 BackendTransport 统一创建，待实施）*
