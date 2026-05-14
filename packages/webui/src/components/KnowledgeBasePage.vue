@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
 import FileExplorer from './FileExplorer.vue'
 import ContextMenu from './ContextMenu.vue'
 import EditKbDialog from './EditKbDialog.vue'
@@ -332,7 +333,7 @@ function onCopyFile(fileName: string) {
         <PencilIcon class="size-4" />
         <span>编辑</span>
       </Button>
-      <div class="my-1 border-t border-border-default" />
+      <Separator class="my-1" />
       <Button
         variant="ghost"
         size="sm"

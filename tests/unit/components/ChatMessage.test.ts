@@ -48,8 +48,8 @@ describe('ChatMessage', () => {
         },
       },
     })
-    expect(wrapper.find('.i-mdi-account').exists()).toBe(true)
-    expect(wrapper.find('.i-mdi-robot').exists()).toBe(false)
+    expect(wrapper.find('svg.lucide-user').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-bot').exists()).toBe(false)
   })
 
   it('shows AI avatar and accent line for assistant messages', () => {
@@ -64,7 +64,7 @@ describe('ChatMessage', () => {
         },
       },
     })
-    expect(wrapper.find('.i-mdi-robot').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-bot').exists()).toBe(true)
     expect(wrapper.find('[class*="bg-accent-500/40"]').exists()).toBe(true)
   })
 

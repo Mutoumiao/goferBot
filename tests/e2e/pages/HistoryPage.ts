@@ -13,7 +13,7 @@ export class HistoryPage {
 
   async goto() {
     await this.page.goto('/')
-    await this.page.locator('button:has(.i-mdi-history)').click()
+    await this.page.locator('button:has(.lucide-history)').click()
   }
 
   getHistoryItemByTitle(title: string): Locator {

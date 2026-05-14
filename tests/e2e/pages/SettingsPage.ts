@@ -15,7 +15,7 @@ export class SettingsPage {
 
   async goto() {
     await this.page.goto('/')
-    await this.page.locator('button:has(.i-mdi-cog-outline)').first().click()
+    await this.page.locator('button:has(.lucide-settings)').first().click()
     await expect(this.navTabs).toBeVisible()
   }
 

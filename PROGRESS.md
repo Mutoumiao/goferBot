@@ -23,6 +23,7 @@
 | 架构重构 | [#10 Shell 抽象与浏览器模式](.scratch/knowledge-base/issues/10-shell-abstraction-and-browser-mode.md) | closed | 提取 Shell 模块解耦前端与 Tauri，Web 可独立运行 |
 | 架构重构 | [#11 BackendTransport 统一](.scratch/knowledge-base/issues/11-backend-transport-unification.md) | closed | 统一 HTTP 通信模块，sidecarClient 浅模块深化 |
 | 架构重构 | [#12 Monorepo 结构迁移](.scratch/knowledge-base/issues/12-monorepo-migration.md) | closed | pnpm workspace 五包拆分，构建测试全通过 |
+| UI 系统 | [#13 shadcn-vue 集成](.scratch/knowledge-base/issues/13-shadcn-vue-integration.md) | closed | 引入 shadcn-vue 基础组件库，替换全部原生 HTML 控件，图标迁移至 lucide-vue-next |
 
 ---
 
@@ -32,4 +33,4 @@
 
 ---
 
-*最后更新：2026-05-14（#12 Monorepo 迁移完成）*
+*最后更新：2026-05-14（#13 shadcn-vue 集成完成）*

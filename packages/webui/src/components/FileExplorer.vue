@@ -3,6 +3,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { confirmDialog } from '@/utils/confirm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import type { FileItem, SearchResultItem } from '@/types'
 import ContextMenu from './ContextMenu.vue'
 import InlineRename from './InlineRename.vue'
@@ -215,7 +216,7 @@ function onCreateFolderClick() {
       <div class="relative">
         <SearchIcon class="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-text-tertiary" />
         <Input
-          :value="searchQuery"
+          :model-value="searchQuery"
           type="text"
           placeholder="搜索文件..."
           class="h-8 w-48 rounded-md border-border-default bg-white pl-9 pr-3 text-sm text-text-primary placeholder-text-tertiary"
@@ -324,7 +325,7 @@ function onCreateFolderClick() {
           <CopyIcon class="size-4" />
           <span>复制到...</span>
         </Button>
-        <div class="my-1 border-t border-border-default" />
+        <Separator class="my-1" />
         <Button
           variant="ghost"
           size="sm"

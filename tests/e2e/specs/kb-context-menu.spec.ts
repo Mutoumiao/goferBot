@@ -21,7 +21,7 @@ test.describe('知识库右键菜单', () => {
 
     await page.goto('/')
     await page.waitForTimeout(800)
-    await page.locator('button:has(.i-mdi-database-outline)').first().click()
+    await page.locator('button:has(.lucide-database)').first().click()
     await expect(page.locator('[data-testid="kb-list"]')).toBeVisible()
   })
 
@@ -102,7 +102,7 @@ test.describe('知识库右键菜单', () => {
 
     // Verify edit dialog appears with title and current name
     await expect(page.locator('text=修改资料').first()).toBeVisible()
-    await expect(page.locator('h3:has-text("修改资料") + div input[type="text"]')).toHaveValue('技术文档')
+    await expect(page.locator('[data-testid="edit-kb-name-input"]')).toHaveValue('技术文档')
   })
 
   test('E2E-03: 右键移入回收站', async ({ page }) => {
@@ -304,7 +304,7 @@ test.describe('知识库右键菜单', () => {
 
   test('E2E-11: 回收站入口可见', async ({ page }) => {
     // The recycle bin button is in the sidebar with trash can icon
-    await expect(page.locator('.i-mdi-trash-can-outline').first()).toBeVisible()
+    await expect(page.locator('.lucide-trash-2').first()).toBeVisible()
   })
 
   test('E2E-12: 回收站恢复同名重命名', async ({ page }) => {
@@ -346,7 +346,7 @@ test.describe('知识库右键菜单', () => {
     })
 
     // Navigate to recycle bin via sidebar trash icon
-    await page.locator('.i-mdi-trash-can-outline').first().click()
+    await page.locator('.lucide-trash-2').first().click()
 
     // Verify recycle bin page is shown
     await expect(page.locator('text=回收站').first()).toBeVisible()
@@ -359,7 +359,7 @@ test.describe('知识库右键菜单', () => {
     await page.locator('button:has-text("确定")').click()
 
     // Switch back to knowledge base tab
-    await page.locator('button:has(.i-mdi-database-outline)').first().click()
+    await page.locator('button:has(.lucide-database)').first().click()
     await expect(page.locator('[data-testid="kb-list"]')).toBeVisible()
 
     // Verify restored KB appears with the renamed name

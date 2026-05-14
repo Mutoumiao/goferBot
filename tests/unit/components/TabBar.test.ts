@@ -35,7 +35,7 @@ describe('TabBar', () => {
     })
     // Close button is a span inside the tab button, use findAll to get tabs, then find close icon
     const tabButtons = wrapper.findAll('button').filter((b) => b.text().includes('会话1'))
-    const closeIcon = tabButtons[0].find('.i-mdi-close')
+    const closeIcon = tabButtons[0].find('svg.lucide-x')
     await closeIcon.trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
     expect(wrapper.emitted('close')![0]).toEqual(['t1'])
@@ -46,14 +46,14 @@ describe('TabBar', () => {
       props: { tabs, activeTabId: 'home' },
     })
     const homeTab = wrapper.findAll('button').find((b) => b.text().includes('首页'))
-    expect(homeTab!.find('.i-mdi-close').exists()).toBe(false)
+    expect(homeTab!.find('svg.lucide-x').exists()).toBe(false)
   })
 
   it('emits newChat when clicking new chat button', async () => {
     const wrapper = mount(TabBar, {
       props: { tabs, activeTabId: 'home' },
     })
-    const newChatBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    const newChatBtn = wrapper.findAll('button').find((b) => b.find('svg.lucide-plus').exists())
     await newChatBtn!.trigger('click')
     expect(wrapper.emitted('newChat')).toHaveLength(1)
   })

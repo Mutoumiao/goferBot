@@ -50,7 +50,7 @@ test.describe('历史记录页面交互', () => {
 
   test('rename session updates display', async ({ page }) => {
     const historyPage = new HistoryPage(page)
-    await page.locator('button:has(.i-mdi-history)').click()
+    await page.locator('button:has(.lucide-history)').click()
     await page.waitForSelector('[data-testid="history-list"]')
     await historyPage.renameSession('RAG 使用讨论', 'RAG 讨论重命名')
     await page.waitForTimeout(1000)

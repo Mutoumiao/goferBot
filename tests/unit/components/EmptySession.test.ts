@@ -49,7 +49,7 @@ describe('EmptySession', () => {
     await textarea.setValue('test message')
 
     const btn = wrapper.findAll('button').find((b) =>
-      b.find('.i-mdi-send').exists()
+      b.find('svg.lucide-send').exists()
     )
     await btn!.trigger('click')
 

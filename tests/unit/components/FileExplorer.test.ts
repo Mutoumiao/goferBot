@@ -34,7 +34,7 @@ function mountExplorer(props?: Record<string, unknown>) {
 describe('FileExplorer', () => {
   it('renders loading state', () => {
     const wrapper = mountExplorer({ isLoading: true })
-    expect(wrapper.find('.i-mdi-loading').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-loader').exists()).toBe(true)
   })
 
   it('renders empty state when no files', () => {
@@ -115,18 +115,20 @@ describe('FileExplorer', () => {
 
   it('emits search on Enter in search input', async () => {
     const wrapper = mountExplorer()
-    const input = wrapper.find('input[type="text"]')
-    await input.setValue('query')
-    await input.trigger('keyup.enter')
+    const inputs = wrapper.findAll('input')
+    const searchInput = inputs.find((i) => i.attributes('placeholder') === '搜索文件...')
+    await searchInput!.setValue('query')
+    await searchInput!.trigger('keyup.enter')
     expect(wrapper.emitted('search')).toHaveLength(1)
     expect(wrapper.emitted('search')![0]).toEqual(['query'])
   })
 
   it('emits empty search when input is cleared', async () => {
     const wrapper = mountExplorer()
-    const input = wrapper.find('input[type="text"]')
-    await input.setValue('')
-    await input.trigger('keyup.enter')
+    const inputs = wrapper.findAll('input')
+    const searchInput = inputs.find((i) => i.attributes('placeholder') === '搜索文件...')
+    await searchInput!.setValue('')
+    await searchInput!.trigger('keyup.enter')
     expect(wrapper.emitted('search')).toHaveLength(1)
     expect(wrapper.emitted('search')![0]).toEqual([''])
   })

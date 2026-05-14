@@ -94,14 +94,14 @@ describe('KnowledgeBasePage', () => {
 
   it('opens new knowledge base dialog on plus click', async () => {
     const wrapper = mountPage()
-    const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    const plusBtn = wrapper.findAll('button').find((b) => b.find('svg.lucide-plus').exists())
     await plusBtn!.trigger('click')
     expect(wrapper.text()).toContain('新建知识库')
   })
 
   it('shows validation error for empty kb name', async () => {
     const wrapper = mountPage()
-    const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    const plusBtn = wrapper.findAll('button').find((b) => b.find('svg.lucide-plus').exists())
     await plusBtn!.trigger('click')
 
     const createBtn = wrapper.findAll('button').find((b) => b.text() === '创建')
@@ -114,7 +114,7 @@ describe('KnowledgeBasePage', () => {
     const wrapper = mountPage()
     const store = useKnowledgeBaseStore()
 
-    const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    const plusBtn = wrapper.findAll('button').find((b) => b.find('svg.lucide-plus').exists())
     await plusBtn!.trigger('click')
 
     const input = wrapper.find('input[placeholder="输入知识库名称"]')
@@ -133,7 +133,7 @@ describe('KnowledgeBasePage', () => {
     store.error = 'Something broke'
     store.createKnowledgeBase = vi.fn().mockRejectedValue(new Error('fail'))
 
-    const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    const plusBtn = wrapper.findAll('button').find((b) => b.find('svg.lucide-plus').exists())
     await plusBtn!.trigger('click')
 
     const input = wrapper.find('input[placeholder="输入知识库名称"]')
@@ -152,7 +152,7 @@ describe('KnowledgeBasePage', () => {
     store.error = 'Oops'
     store.createKnowledgeBase = vi.fn().mockRejectedValue(new Error('fail'))
 
-    const plusBtn = wrapper.findAll('button').find((b) => b.find('.i-mdi-plus').exists())
+    const plusBtn = wrapper.findAll('button').find((b) => b.find('svg.lucide-plus').exists())
     await plusBtn!.trigger('click')
 
     const input = wrapper.find('input[placeholder="输入知识库名称"]')

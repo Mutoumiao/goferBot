@@ -7,10 +7,10 @@ describe('SideBar', () => {
     const wrapper = mount(SideBar, {
       props: { activeType: 'chat' },
     })
-    expect(wrapper.find('.i-mdi-message-text-outline').exists()).toBe(true)
-    expect(wrapper.find('.i-mdi-database-outline').exists()).toBe(true)
-    expect(wrapper.find('.i-mdi-history').exists()).toBe(true)
-    expect(wrapper.find('.i-mdi-cog-outline').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-message-square-text').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-database').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-history').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-settings').exists()).toBe(true)
   })
 
   it('emits openChat when clicking chat nav', async () => {
@@ -18,7 +18,7 @@ describe('SideBar', () => {
       props: { activeType: 'chat' },
     })
     const chatBtn = wrapper.findAll('button').find((b) =>
-      b.find('.i-mdi-message-text-outline').exists()
+      b.find('svg.lucide-message-square-text').exists()
     )
     await chatBtn!.trigger('click')
     expect(wrapper.emitted('openChat')).toHaveLength(1)
@@ -29,7 +29,7 @@ describe('SideBar', () => {
       props: { activeType: 'chat' },
     })
     const kbBtn = wrapper.findAll('button').find((b) =>
-      b.find('.i-mdi-database-outline').exists()
+      b.find('svg.lucide-database').exists()
     )
     await kbBtn!.trigger('click')
     expect(wrapper.emitted('openKnowledgeBase')).toHaveLength(1)
@@ -40,7 +40,7 @@ describe('SideBar', () => {
       props: { activeType: 'chat' },
     })
     const histBtn = wrapper.findAll('button').find((b) =>
-      b.find('.i-mdi-history').exists()
+      b.find('svg.lucide-history').exists()
     )
     await histBtn!.trigger('click')
     expect(wrapper.emitted('openHistory')).toHaveLength(1)
@@ -51,7 +51,7 @@ describe('SideBar', () => {
       props: { activeType: 'chat' },
     })
     const setBtn = wrapper.findAll('button').find((b) =>
-      b.find('.i-mdi-cog-outline').exists()
+      b.find('svg.lucide-settings').exists()
     )
     await setBtn!.trigger('click')
     expect(wrapper.emitted('openSettings')).toHaveLength(1)
@@ -62,7 +62,7 @@ describe('SideBar', () => {
       props: { activeType: 'knowledgeBase' },
     })
     const kbBtn = wrapper.findAll('button').find((b) =>
-      b.find('.i-mdi-database-outline').exists()
+      b.find('svg.lucide-database').exists()
     )
     expect(kbBtn!.classes()).toContain('bg-nav-active')
   })
@@ -72,7 +72,7 @@ describe('SideBar', () => {
       props: { activeType: 'chat' },
     })
     const kbBtn = wrapper.findAll('button').find((b) =>
-      b.find('.i-mdi-database-outline').exists()
+      b.find('svg.lucide-database').exists()
     )
     expect(kbBtn!.classes()).not.toContain('bg-nav-active')
   })

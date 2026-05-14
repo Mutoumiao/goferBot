@@ -83,6 +83,7 @@ function onSave() {
           <Input
             v-model="name"
             type="text"
+            data-testid="edit-kb-name-input"
             class="rounded-xl border-border-default bg-surface-1 px-3 py-2 text-sm focus:border-accent-500"
             @keyup.enter="onSave"
           />

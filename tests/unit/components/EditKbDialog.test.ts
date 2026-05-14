@@ -36,7 +36,7 @@ describe('EditKbDialog', () => {
     const selectedBtn = wrapper.findAll('button').find((b) =>
       b.classes().some((c) => c.includes('border-accent-500'))
     )
-    expect(selectedBtn?.find('span').classes()).toContain('i-mdi-books')
+    expect(selectedBtn?.find('svg').classes()).toContain('lucide-book')
   })
 
   it('preserves initial name when saving without editing', async () => {
@@ -63,7 +63,7 @@ describe('EditKbDialog', () => {
 
     // Select a different icon
     const booksBtn = wrapper.findAll('button').find((b) =>
-      b.find('span').classes().includes('i-mdi-books')
+      b.find('svg').classes().includes('lucide-book')
     )
     await booksBtn!.trigger('click')
 
@@ -79,9 +79,9 @@ describe('EditKbDialog', () => {
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
-  it('emits close when clicking overlay', async () => {
+  it('emits close when clicking cancel', async () => {
     const wrapper = mountDialog()
-    await wrapper.find('[class*="bg-black/40"]').trigger('click.self')
+    await wrapper.findAll('button').find((b) => b.text().includes('取消'))!.trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 

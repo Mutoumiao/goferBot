@@ -35,7 +35,7 @@ describe('RecycleBinPage', () => {
 
   it('shows loading spinner', () => {
     const wrapper = mountPage({ isLoading: true })
-    expect(wrapper.find('.i-mdi-loading').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-loader').exists()).toBe(true)
   })
 
   it('shows empty state when no deleted knowledge bases', () => {

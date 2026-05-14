@@ -10,15 +10,15 @@ describe('KbMentionPill', () => {
     expect(wrapper.text()).toContain('Docs')
   })
 
-  it('renders custom icon', () => {
+  it('renders database icon', () => {
     const wrapper = mount(KbMentionPill, { props: { kb } })
-    expect(wrapper.find('span.mdi-books').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-database').exists()).toBe(true)
   })
 
   it('renders default database icon when no icon', () => {
     const kbNoIcon = { ...kb, icon: '' }
     const wrapper = mount(KbMentionPill, { props: { kb: kbNoIcon } })
-    expect(wrapper.find('span.i-mdi-database').exists()).toBe(true)
+    expect(wrapper.find('svg.lucide-database').exists()).toBe(true)
   })
 
   it('emits remove on close button click', async () => {

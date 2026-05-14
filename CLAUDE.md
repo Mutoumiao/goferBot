@@ -54,7 +54,7 @@
 - **CSS 框架**：Tailwind CSS v4
 - **测试框架**：Vitest + @vue/test-utils
 - **包管理器**：pnpm
-- **图标方案**：@egoist/tailwindcss-icons + Material Design Icons
+- **图标方案**：lucide-vue-next（已替换 Material Design Icons）
 
 ## 本地数据目录
 
@@ -109,6 +109,39 @@ pnpm test && pnpm test:integration && pnpm type-check
 ### Shell 环境偏好
 
 Agent **必须**使用 Bash/POSIX 语法，禁止 PowerShell 特有语法（`$env:VAR`、`Select-Object`、`Where-Object` 等）。例外情况需先说明原因并获许可。
+
+## UI 组件规范
+
+### 基础组件
+
+项目使用 [shadcn-vue](https://www.shadcn-vue.com/) 作为基础 UI 组件库，位于 `packages/webui/src/components/ui/`。
+
+**引入新组件**：
+```bash
+cd packages/webui
+npx shadcn-vue@latest add <component>
+```
+
+**定制规则**：
+- 最多定制到层级 2（加插槽、调整布局）
+- 不魔改 shadcn 源码实现复杂业务逻辑
+- 颜色使用 Pencil tokens（`bg-surface-1`, `text-text-primary` 等）
+- 保持 focus ring、键盘导航、ARIA 属性
+
+### Class 管理
+
+全项目统一使用 `cn()` + `class-variance-authority`：
+
+```typescript
+import { cn } from '@/lib/utils'
+import { cva } from 'class-variance-authority'
+
+const variants = cva('base-classes', {
+  variants: { size: { sm: 'h-8', default: 'h-10' } }
+})
+
+<div :class="cn(variants({ size }), props.class)" />
+```
 
 ## 编码准则
 
