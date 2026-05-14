@@ -77,11 +77,11 @@ export class FakeBackendTransport implements BackendTransport {
     const resolveCompleted = () => completedResolve?.()
 
     if (events) {
-      // 异步触发所有事件，完成后 resolve
-      setTimeout(() => {
+      // 异步触发所有事件，完成后 resolve（使用 queueMicrotask 模拟真实 SSE 时序）
+      queueMicrotask(() => {
         events.forEach((e) => handler(e.data, e.eventType || undefined))
         resolveCompleted()
-      }, 0)
+      })
     } else {
       resolveCompleted()
     }

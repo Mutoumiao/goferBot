@@ -1,10 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import SettingsPage from '@/components/SettingsPage.vue'
 import { useSettingsStore } from '@/stores/settings'
-
-vi.mock('@/utils/sidecarClient')
 
 describe('SettingsPage', () => {
   beforeEach(() => {

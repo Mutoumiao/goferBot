@@ -10,24 +10,17 @@ export class HttpBackendTransport implements BackendTransport {
   private restartedUnlisten: (() => void) | null = null
 
   constructor(private shell: Shell) {
-    // 立即尝试获取端口
-    this.syncPort()
-    // 监听端口变更
-    this.setupPortListeners()
+    // 启动端口监听（fire-and-forget，错误已捕获）
+    this.startPortSync().catch(() => {})
   }
 
-  private async syncPort(): Promise<void> {
+  private async startPortSync(): Promise<void> {
     try {
       const port = await this.shell.getSidecarPort()
-      if (port !== null) {
-        this.currentPort = port
-      }
+      if (port !== null) this.currentPort = port
     } catch {
       // ignore
     }
-  }
-
-  private async setupPortListeners(): Promise<void> {
     try {
       this.readyUnlisten = await this.shell.onSidecarReady((event) => {
         this.currentPort = event.port
@@ -40,12 +33,14 @@ export class HttpBackendTransport implements BackendTransport {
     }
   }
 
-  private getUrl(path: string): string {
-    const port = this.currentPort
-    if (!port) {
-      throw new Error('Sidecar port not available')
+  private async resolvePort(): Promise<number> {
+    if (this.currentPort !== null) return this.currentPort
+    const port = await this.shell.getSidecarPort()
+    if (port !== null) {
+      this.currentPort = port
+      return port
     }
-    return `http://127.0.0.1:${port}${path}`
+    throw new Error('Sidecar port not available')
   }
 
   async request(
@@ -54,7 +49,8 @@ export class HttpBackendTransport implements BackendTransport {
     body?: object,
     options: RequestInit = {},
   ): Promise<Response> {
-    const url = this.getUrl(path)
+    const port = await this.resolvePort()
+    const url = `http://127.0.0.1:${port}${path}`
     const init: RequestInit = {
       ...options,
       method,
@@ -80,8 +76,8 @@ export class HttpBackendTransport implements BackendTransport {
       }
     }
 
-    // fallback: 最后一次尝试
-    return fetch(url, init)
+    // 不可达：循环已覆盖所有重试情况
+    throw new Error('Unexpected: retry loop exhausted without returning')
   }
 
   subscribe(
@@ -89,7 +85,6 @@ export class HttpBackendTransport implements BackendTransport {
     body: object,
     handler: (data: string, eventType?: string) => void,
   ): Subscription {
-    const url = this.getUrl(path)
     const abortController = new AbortController()
     let completedResolve: (() => void) | null = null
     const completedPromise = new Promise<void>((resolve) => {
@@ -98,6 +93,8 @@ export class HttpBackendTransport implements BackendTransport {
 
     const run = async () => {
       try {
+        const port = await this.resolvePort()
+        const url = `http://127.0.0.1:${port}${path}`
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -155,9 +152,9 @@ export class HttpBackendTransport implements BackendTransport {
   }
 
   async isReady(): Promise<boolean> {
-    if (!this.currentPort) return false
     try {
-      const res = await fetch(`http://127.0.0.1:${this.currentPort}/health`, {
+      const port = await this.resolvePort()
+      const res = await fetch(`http://127.0.0.1:${port}/health`, {
         signal: AbortSignal.timeout(2000),
       })
       return res.ok

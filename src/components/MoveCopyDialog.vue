@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { sidecarPort } from '@/composables/useSidecarStatus'
+import { getBackend } from '@/backend'
 import type { KnowledgeBase } from '@/types'
 
 const props = defineProps<{
@@ -43,9 +43,10 @@ async function loadTargetFiles() {
   if (!selectedTargetKbId.value) return
   isLoading.value = true
   try {
-    const port = sidecarPort.value || 11451
-    const res = await fetch(
-      `http://127.0.0.1:${port}/knowledge-bases/${selectedTargetKbId.value}/files?path=${encodeURIComponent(targetPath.value)}`
+    const backend = getBackend()
+    const res = await backend.request(
+      'GET',
+      `/knowledge-bases/${selectedTargetKbId.value}/files?path=${encodeURIComponent(targetPath.value)}`
     )
     const data = await res.json()
     targetFiles.value = (data.items || []).filter((item: { type: string }) => item.type === 'directory')
