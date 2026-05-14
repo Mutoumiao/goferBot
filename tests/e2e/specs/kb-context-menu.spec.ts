@@ -106,8 +106,6 @@ test.describe('知识库右键菜单', () => {
   })
 
   test('E2E-03: 右键移入回收站', async ({ page }) => {
-    page.on('dialog', (dialog) => dialog.accept())
-
     await page.route(/127\.0\.0\.1:\d+\/knowledge-bases\/[^/]+$/, (route) => {
       if (route.request().method() === 'DELETE') {
         route.fulfill({ status: 204 })
@@ -120,25 +118,28 @@ test.describe('知识库右键菜单', () => {
     await kbPage.openKbContextMenu('会议记录')
     await kbPage.clickContextMenuItem('删除')
 
+    // Confirm the custom dialog
+    await page.locator('button:has-text("确定")').click()
+
     // Verify the KB disappears from the list
     await expect(page.locator('[data-testid="kb-item"]').filter({ hasText: '会议记录' })).not.toBeVisible()
   })
 
   test('E2E-04: 弹窗文案验证', async ({ page }) => {
-    let dialogMessage = ''
-    page.on('dialog', (dialog) => {
-      dialogMessage = dialog.message()
-      dialog.dismiss()
-    })
-
     const kbPage = new KnowledgeBasePage(page)
     await kbPage.openKbContextMenu('技术文档')
     await kbPage.clickContextMenuItem('删除')
 
-    // Wait for the dialog to fire
-    await page.waitForTimeout(200)
-    expect(dialogMessage).toContain('技术文档')
-    expect(dialogMessage).toContain('回收站')
+    // Verify custom confirm dialog content
+    await expect(page.locator('.fixed.inset-0.z-50')).toBeVisible()
+    await expect(page.locator('h3:has-text("提示")')).toBeVisible()
+    const message = page.locator('.fixed.inset-0.z-50 p')
+    await expect(message).toContainText('技术文档')
+    await expect(message).toContainText('回收站')
+
+    // Dismiss dialog
+    await page.locator('button:has-text("取消")').click()
+    await expect(page.locator('.fixed.inset-0.z-50')).not.toBeVisible()
   })
 
   test('E2E-05: 文件区域右键新建文件夹', async ({ page }) => {
@@ -263,8 +264,6 @@ test.describe('知识库右键菜单', () => {
   })
 
   test('E2E-10: 文件永久删除', async ({ page }) => {
-    page.on('dialog', (dialog) => dialog.accept())
-
     let fileDeleted = false
 
     // Handle DELETE requests to file paths (regex with path segment after /files/)
@@ -296,6 +295,9 @@ test.describe('知识库右键菜单', () => {
     const contextMenu = page.locator('[data-testid="context-menu"]')
     await contextMenu.locator('text=永久删除').click()
 
+    // Confirm the custom dialog
+    await page.locator('button:has-text("确定")').click()
+
     // Verify file disappears
     await expect(fileExplorer.locator('text=intro.md')).not.toBeVisible()
   })
@@ -306,8 +308,6 @@ test.describe('知识库右键菜单', () => {
   })
 
   test('E2E-12: 回收站恢复同名重命名', async ({ page }) => {
-    page.on('dialog', (dialog) => dialog.accept())
-
     const deletedKb = {
       id: 'kb-deleted',
       name: '技术文档',
@@ -354,6 +354,9 @@ test.describe('知识库右键菜单', () => {
 
     // Click restore
     await page.getByRole('button', { name: '恢复' }).click()
+
+    // Confirm the custom dialog
+    await page.locator('button:has-text("确定")').click()
 
     // Switch back to knowledge base tab
     await page.locator('button:has(.i-mdi-database-outline)').first().click()

@@ -35,14 +35,17 @@ test.describe('历史记录页面交互', () => {
     const historyPage = new HistoryPage(page)
     await historyPage.goto()
 
-    let dialogMessage = ''
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message()
-      await dialog.accept()
-    })
-
     await historyPage.deleteSession('RAG 使用讨论')
-    await expect.poll(() => dialogMessage).toContain('删除')
+
+    // Verify custom confirm dialog appears
+    await expect(page.locator('.fixed.inset-0.z-50')).toBeVisible()
+    await expect(page.locator('h3:has-text("提示")')).toBeVisible()
+    const message = page.locator('.fixed.inset-0.z-50 p')
+    await expect(message).toContainText('删除')
+
+    // Confirm the dialog
+    await page.locator('button:has-text("确定")').click()
+    await expect(page.locator('.fixed.inset-0.z-50')).not.toBeVisible()
   })
 
   test('rename session updates display', async ({ page }) => {
