@@ -7,6 +7,7 @@ import { FakeBackendTransport } from '@goferbot/backend-adapters'
 import { setBackend } from '@goferbot/backend-adapters'
 import { setShell } from '@goferbot/shell-adapters'
 import { MemoryShell } from '@goferbot/shell-adapters'
+import { TeleportStub, TransitionStub } from '../stubs'
 
 function mountKbPage() {
   return mount(KnowledgeBasePage, {
@@ -16,8 +17,8 @@ function mountKbPage() {
         ContextMenu: true,
         EditKbDialog: true,
         MoveCopyDialog: true,
-        Teleport: { template: '<div><slot /></div>' },
-        Transition: { template: '<div><slot /></div>' },
+        Teleport: TeleportStub,
+        Transition: TransitionStub,
       },
     },
   })

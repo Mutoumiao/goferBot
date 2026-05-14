@@ -5,6 +5,7 @@ import { setActivePinia } from 'pinia'
 import MoveCopyDialog from '@/components/MoveCopyDialog.vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import { setBackend, resetBackend, FakeBackendTransport } from '@goferbot/backend-adapters'
+import { TeleportStub, DialogPortalStub } from '../stubs'
 
 describe('MoveCopyDialog', () => {
   let fakeBackend: FakeBackendTransport
@@ -37,10 +38,8 @@ describe('MoveCopyDialog', () => {
       global: {
         plugins: [pinia],
         stubs: {
-          Teleport: true,
-          DialogPortal: {
-            template: '<div><slot /></div>',
-          },
+          Teleport: TeleportStub,
+          DialogPortal: DialogPortalStub,
         },
       },
     })

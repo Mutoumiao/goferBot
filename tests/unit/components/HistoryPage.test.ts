@@ -5,6 +5,7 @@ import { setActivePinia } from 'pinia'
 import HistoryPage from '@/components/HistoryPage.vue'
 import { useSessionStore } from '@/stores/session'
 import { confirmDialog } from '@/utils/confirm'
+import { TransitionStub } from '../stubs'
 
 vi.mock('@/utils/confirm')
 
@@ -29,7 +30,7 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
     global: {
       plugins: [pinia],
       stubs: {
-        Transition: { template: '<div><slot /></div>' },
+        Transition: TransitionStub,
       },
     },
   })

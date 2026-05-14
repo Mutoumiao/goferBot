@@ -2,14 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { nextTick } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import EditKbDialog from '@/components/EditKbDialog.vue'
+import { TeleportStub, TransitionStub, DialogPortalStub } from '../stubs'
 
 const stubs = {
-  Teleport: {
-    template: '<div><slot /></div>',
-  },
-  Transition: {
-    template: '<div><slot /></div>',
-  },
+  Teleport: TeleportStub,
+  Transition: TransitionStub,
+  DialogPortal: DialogPortalStub,
 }
 
 function mountDialog(props?: Record<string, unknown>) {
@@ -71,12 +69,6 @@ describe('EditKbDialog', () => {
 
     expect(wrapper.emitted('save')).toHaveLength(1)
     expect(wrapper.emitted('save')![0]).toEqual(['New Name', 'mdi-books'])
-  })
-
-  it('emits close when clicking cancel', async () => {
-    const wrapper = mountDialog()
-    await wrapper.findAll('button').find((b) => b.text().includes('取消'))!.trigger('click')
-    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
   it('emits close when clicking cancel', async () => {
