@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useKnowledgeBaseStore } from './knowledgeBase'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 const sidecarFetch = vi.hoisted(() => vi.fn())
-const invoke = vi.hoisted(() => vi.fn())
 
 vi.mock('@/utils/sidecarClient', () => ({
   sidecarFetch,
@@ -12,14 +13,10 @@ vi.mock('@/utils/sidecarClient', () => ({
   clearSidecarPort: vi.fn(),
 }))
 
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke,
-}))
-
 beforeEach(() => {
   setActivePinia(createPinia())
   sidecarFetch.mockClear()
-  invoke.mockClear()
+  setShell(new MemoryShell({ initialPort: 11451 }))
 })
 
 describe('initial state', () => {
@@ -237,8 +234,9 @@ describe('history truncation', () => {
 })
 
 describe('importFiles', () => {
-  it('should invoke the Rust IPC command', async () => {
-    invoke.mockResolvedValueOnce(1)
+  it('should call shell.importFiles', async () => {
+    const shell = new MemoryShell({ initialPort: 11451 })
+    setShell(shell)
 
     sidecarFetch.mockResolvedValueOnce({
       json: async () => ({ items: [] }),
@@ -249,7 +247,7 @@ describe('importFiles', () => {
 
     await store.importFiles()
 
-    expect(invoke).toHaveBeenCalledWith('import_files', {
+    expect(shell.getImportCalls()).toContainEqual({
       knowledgeBaseId: 'kb1',
       targetPath: '',
     })

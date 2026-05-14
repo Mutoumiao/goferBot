@@ -4,16 +4,15 @@ import SplashScreen from '@/components/SplashScreen.vue'
 import {
   sidecarStatus,
   sidecarError,
-  retrySidecar,
-  _resetSidecarStateForTest,
-} from '@/composables/useSidecar'
-
-vi.mock('@tauri-apps/api/core')
-vi.mock('@tauri-apps/api/event')
+  _resetSidecarStatusForTest,
+} from '@/composables/useSidecarStatus'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 describe('SplashScreen', () => {
   beforeEach(() => {
-    _resetSidecarStateForTest()
+    _resetSidecarStatusForTest()
+    setShell(new MemoryShell({ initialPort: 11451 }))
   })
 
   it('shows loading state when sidecar is loading', () => {
