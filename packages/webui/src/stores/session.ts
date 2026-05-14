@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getBackend } from '@/backend'
+import { getBackend } from '@goferbot/backend-adapters'
 import { useSettingsStore } from './settings'
 import type { Message, Tab, LLMConfig, ChatErrorType } from '@/types'
 

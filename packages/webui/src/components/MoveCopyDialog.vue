@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { getBackend } from '@/backend'
+import { getBackend } from '@goferbot/backend-adapters'
 import type { KnowledgeBase } from '@/types'
 
 const props = defineProps<{

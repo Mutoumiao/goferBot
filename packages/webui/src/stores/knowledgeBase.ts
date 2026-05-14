@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getBackend } from '@/backend'
-import { getShell } from '@/shell'
+import { getBackend } from '@goferbot/backend-adapters'
+import { getShell } from '@goferbot/shell-adapters'
 import type { KnowledgeBase, FileItem, SearchResultItem, HistoryEntry } from '@/types'
 
 export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {

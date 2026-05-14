@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, defineAsyncComponent } from 'vue'
-import { createShell, provideShell } from '@/shell'
+import { createShell, provideShell } from '@goferbot/shell-adapters'
 import SplashScreen from './components/SplashScreen.vue'
 import SideBar from './components/SideBar.vue'
 import TabBar from './components/TabBar.vue'

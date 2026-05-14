@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { getShell } from '@/shell'
+import { getShell } from '@goferbot/shell-adapters'
 
 export type SidecarStatus = 'loading' | 'ready' | 'error'
 

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getBackend } from '@/backend'
+import { getBackend } from '@goferbot/backend-adapters'
 import type { AppConfig, LLMConfig, ChatProviderConfig, OllamaConfig } from '@/types'
 
 const DEFAULT_CONFIG: AppConfig = {
