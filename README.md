@@ -23,15 +23,17 @@
 
 ### 2. 分层架构与职责边界
 
-采用经典的三层分层架构，各层职责单一、接口清晰：
+采用 Monorepo 组织的多层架构，UI、适配层、服务层各自独立：
 
-| 层                | 职责                                               | 技术选型                            |
-| ---------------- | ------------------------------------------------ | ------------------------------- |
-| **Tauri Rust**   | 桌面壳：窗口管理、Sidecar 生命周期监控、高性能文件 I/O 中转             | Rust                            |
-| **Hono Sidecar** | 全部业务逻辑：LLM 问答、RAG、LangChain、SQLite、Embedding API | TypeScript + Hono               |
-| **Vue 3 前端**     | UI 渲染、状态管理、HTTP 调用 Sidecar                       | Vue 3 + Pinia + Tailwind CSS v4 |
+| 层 | 职责 | 技术选型 | 路径 |
+| -- | ---- | -------- | ---- |
+| **Tauri Rust** | 桌面壳：窗口管理、Sidecar 生命周期监控、高性能文件 I/O 中转 | Rust | `src-tauri/` |
+| **Hono Sidecar** | 全部业务逻辑：LLM 问答、RAG、LangChain、SQLite、Embedding API | TypeScript + Hono | `packages/server/` |
+| **Vue 3 前端** | UI 渲染、状态管理 | Vue 3 + Pinia + Tailwind CSS v4 | `packages/webui/` |
+| **Shell 适配层** | 前端与宿主环境解耦（Tauri / Browser / Memory）| TypeScript | `packages/shellAdapters/` |
+| **Backend 适配层** | 前端与 Sidecar 通信统一（HTTP 请求、SSE、重试）| TypeScript | `packages/webui/src/backend/` |
 
-**文件导入链路设计**：前端调用 Rust IPC → Rust 打开系统对话框并读取文件 → Rust HTTP POST 到 Sidecar → Sidecar 保存到目标知识库 → 自动加入索引队列后台处理。该设计解决了 Tauri v2 中前端临时文件权限与 Sidecar 独立进程之间的访问隔离问题。
+**文件导入链路设计**：前端通过 `Shell.importFiles()` → Tauri 模式下 Rust 打开对话框并读取文件 → HTTP POST 到 Sidecar；浏览器模式下使用标准 HTML 文件选择 → 批量 POST 到 Sidecar。该设计解决了 Tauri v2 中前端临时文件权限与 Sidecar 独立进程之间的访问隔离问题，同时支持浏览器模式独立运行。
 
 ### 3. 多 LLM 提供商与每会话模型切换
 

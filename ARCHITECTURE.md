@@ -31,10 +31,13 @@
 |-----------|------|
 | `main.ts` | Vue 应用入口。创建应用实例、挂载 Pinia、连接 Vue Devtools（开发模式） |
 | `App.vue` | 根组件。编排全局布局：`SplashScreen`、`SideBar`、`TabBar`、`ChatPage`；应用挂载时触发 `initSidecar()` |
-| `stores/session.ts` | **会话状态中心**。管理标签页（tabs）、消息（messages）、发送状态；直接调用 Sidecar HTTP API |
-| `stores/settings.ts` | 用户设置状态。管理 LLM 配置（provider、model、baseUrl、apiKey） |
-| `composables/useSidecar.ts` | **Sidecar 生命周期管理**。通过 IPC 查询端口、监听 Rust 事件、管理超时、暴露重试能力 |
-| `utils/sidecarClient.ts` | HTTP 客户端封装。Sidecar 端口管理、请求重试（3 次）、健康检查 |
+| `stores/session.ts` | **会话状态中心**。管理标签页（tabs）、消息（messages）、发送状态；通过 `BackendTransport` 调用 Sidecar API |
+| `stores/settings.ts` | 用户设置状态。管理 LLM 配置（provider、model、baseUrl、apiKey）；通过 `BackendTransport` 读写配置 |
+| `stores/knowledgeBase.ts` | 知识库状态。管理知识库 CRUD、文件操作；通过 `BackendTransport` 调用 API，通过 `Shell.importFiles` 导入文件 |
+| `composables/useSidecarStatus.ts` | **Sidecar 生命周期管理**。通过 `Shell` 接口查询端口、监听就绪事件、管理超时、暴露重试能力 |
+| `backend/index.ts` | **后端通信统一入口**。导出 `getBackend()` / `setBackend()`，全局访问 `BackendTransport` 实例 |
+| `backend/http-transport.ts` | `HttpBackendTransport` 实现。管理端口、URL 构建、请求重试（3 次）、SSE 订阅、健康检查 |
+| `backend/fake-transport.ts` | `FakeBackendTransport` 实现（测试专用）。可编程链式预设响应，记录请求历史，模拟 SSE 流 |
 | `utils/markdown.ts` | Markdown 解析与渲染工具 |
 | `types/index.ts` | 全局类型定义：`Session`、`Message`、`LLMConfig`、`Tab`、`ChatRequest` |
 | `components/ChatPage.vue` | 聊天页容器。根据当前 tab 状态切换 `EmptySession`、`ChatMessageList`、`ChatInput` |
@@ -113,10 +116,44 @@
 └── config.json        # 用户配置
 ```
 
+## 适配层架构（#10 Shell + #11 BackendTransport）
+
+### Shell 接口（`@goferbot/shell-adapters`）
+
+前端与宿主环境的唯一 seam，消除对 Tauri API 的直接依赖：
+
+| 方法 | 职责 | 适配器行为 |
+|------|------|-----------|
+| `getSidecarPort()` | 获取 Sidecar HTTP 端口 | TauriShell: IPC invoke；BrowserShell: 固定端口；MemoryShell: 返回预设值 |
+| `onSidecarReady(handler)` | 监听 sidecar-ready 事件 | TauriShell: Tauri event listen；BrowserShell: 空实现；MemoryShell: 手动触发 |
+| `onSidecarRestarted(handler)` | 监听 sidecar-restarted 事件 | 同上 |
+| `restartSidecar()` | 请求重启 Sidecar | TauriShell: IPC invoke；BrowserShell: 空实现 |
+| `importFiles(kbId, targetPath)` | 打开文件对话框并导入 | TauriShell: IPC invoke → Rust 读取 → HTTP POST；BrowserShell: HTML `<input type="file">` → 批量 POST |
+
+**运行时检测**：`typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window`
+- 检测到 Tauri → `TauriShell`
+- 否则 → `BrowserShell`（浏览器模式，用于 `pnpm dev` 独立开发和 E2E 测试）
+
+### BackendTransport 接口（`packages/webui/src/backend/`）
+
+前端与 Sidecar 业务后端的唯一 seam，消除 `sidecarFetch` 浅模块：
+
+| 方法 | 职责 |
+|------|------|
+| `request(method, path, body?, options?)` | 统一 HTTP 请求。内部管理端口、URL 构建、3 次重试 + 退避。返回原生 `Response`，业务错误由调用方处理 |
+| `subscribe(path, body, handler)` | SSE 订阅（用于 `/chat` 流式响应）。handler 接收 `(data, eventType)`。自动处理端口变更时的连接重建 |
+| `isReady()` | 健康检查 |
+| `dispose()` | 清理监听器和未完成请求 |
+
+**实现**：
+- `HttpBackendTransport`：真实实现，持有 `Shell` 实例，监听 `onSidecarReady` / `onSidecarRestarted` 自动更新端口
+- `FakeBackendTransport`：测试适配器，支持链式预设响应和 SSE 模拟
+
 ## 依赖关系
 
-- **前端 ↔ 主进程**：通过 `@tauri-apps/api/core` 的 `invoke` 调用命令；通过 `@tauri-apps/api/event` 的 `listen` 接收 Sidecar 状态事件
-- **前端 ↔ Sidecar**：通过 `sidecarFetch()` 直接发起 HTTP 请求（`fetch`）
+- **前端 ↔ 主进程**：通过 `Shell` 接口间接调用。Tauri 模式下使用 `@tauri-apps/api/core` 的 `invoke`；浏览器模式下使用标准 Web API
+- **前端 ↔ Sidecar**：通过 `BackendTransport.request()` / `BackendTransport.subscribe()` 发起 HTTP 请求，Store 代码不再出现 `fetch`、`sidecarFetch`、`http://127.0.0.1:` 等网络细节
+- **BackendTransport ↔ Shell**：`HttpBackendTransport` 持有 `Shell` 实例获取端口和监听端口变更事件
 - **主进程 → Sidecar**：通过 `tokio::process::Command` 启动 Node 子进程，通过 `.sidecar-port` 文件同步端口
 - **Sidecar → 本地文件系统**：直接读写 SQLite 和端口文件
 - **Sidecar → 外部 API**：通过 `fetch` 调用 OpenAI / DeepSeek 等 LLM 服务
@@ -130,7 +167,7 @@ ChatPage.vue 调用 sessionStore.sendMessage(content, settings.llmConfig)
     ↓
 stores/session.ts
     ├─ 乐观更新：插入 user 消息到 messages Map
-    ├─ sidecarFetch('/chat') → HTTP POST { message, sessionId, config }
+    ├─ backend.subscribe('/chat', body, handler) → SSE 流式请求 { message, sessionId, config }
     ↓
 Sidecar (routes/chat.ts)
     ├─ 若新会话：INSERT INTO sessions
@@ -153,4 +190,6 @@ ChatMessageList.vue / MarkdownRender.vue 响应式渲染
 - **Tab（标签页）**：纯 UI 概念，有 `type: 'chat' | 'knowledgeBase' | 'history' | 'settings'`。`chat` 类型在首次发消息后被赋予 `sessionId`，完成"首页 → 正式会话"的晋升。
 - **Session（会话）**：持久化在 SQLite 中，包含 `title`、`provider`、`model`、`message_count`。
 - **Message（消息）**：与 Session 外键关联，支持 `user` / `assistant` 两种角色。
-- **Sidecar 状态机**：`loading` → `ready` / `error`，由 Rust 监控线程驱动，前端通过 Tauri 事件监听。
+- **Sidecar 状态机**：`loading` → `ready` / `error`，由 Rust 监控线程驱动，前端通过 `Shell.onSidecarReady()` / `Shell.onSidecarRestarted()` 监听，与具体 Tauri event 解耦。
+- **Shell 状态**：运行时自动检测环境（Tauri / Browser / Memory），Store 和组件不感知具体适配器。
+- **Backend 状态**：`HttpBackendTransport` 内部维护当前端口，端口变更时自动重建 SSE 连接，调用方无感知。
