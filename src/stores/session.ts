@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { sidecarFetch, isSidecarReady } from '@/utils/sidecarClient'
+import { getBackend } from '@/backend'
 import { useSettingsStore } from './settings'
 import type { Message, Tab, LLMConfig, ChatErrorType } from '@/types'
 
@@ -75,7 +75,8 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function loadSession(sessionId: string) {
-    const res = await sidecarFetch(`/sessions/${sessionId}`)
+    const backend = getBackend()
+    const res = await backend.request('GET', `/sessions/${sessionId}`)
     const data = (await res.json()) as { messages: Message[] }
     messages.value.set(sessionId, data.messages ?? [])
   }
@@ -84,7 +85,8 @@ export const useSessionStore = defineStore('session', () => {
     historyLoading.value = true
     historyError.value = null
     try {
-      const res = await sidecarFetch('/sessions')
+      const backend = getBackend()
+      const res = await backend.request('GET', '/sessions')
       if (res.ok) {
         historySessions.value = await res.json()
       } else {
@@ -104,7 +106,8 @@ export const useSessionStore = defineStore('session', () => {
       return
     }
 
-    const res = await sidecarFetch(`/sessions/${sessionId}`)
+    const backend = getBackend()
+    const res = await backend.request('GET', `/sessions/${sessionId}`)
     if (!res.ok) return
     const data = (await res.json()) as {
       id: string
@@ -142,7 +145,8 @@ export const useSessionStore = defineStore('session', () => {
       closeTab(tab.id)
     }
     messages.value.delete(sessionId)
-    await sidecarFetch(`/sessions/${sessionId}`, { method: 'DELETE' })
+    const backend = getBackend()
+    await backend.request('DELETE', `/sessions/${sessionId}`)
     await loadHistory()
   }
 
@@ -150,11 +154,8 @@ export const useSessionStore = defineStore('session', () => {
     const trimmed = newTitle.trim()
     if (!trimmed) return
 
-    await sidecarFetch(`/sessions/${sessionId}/rename`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: trimmed }),
-    })
+    const backend = getBackend()
+    await backend.request('POST', `/sessions/${sessionId}/rename`, { title: trimmed })
 
     const tab = tabs.value.find((t) => t.sessionId === sessionId)
     if (tab) {
@@ -173,7 +174,8 @@ export const useSessionStore = defineStore('session', () => {
     isSending.value = true
 
     // Pre-check: sidecar ready
-    const ready = await isSidecarReady()
+    const backend = getBackend()
+    const ready = await backend.isReady()
     if (!ready) {
       sendError.value = 'Sidecar 服务未就绪，请检查服务状态'
       sendErrorType.value = 'sidecar_error'
@@ -215,18 +217,6 @@ export const useSessionStore = defineStore('session', () => {
         messages.value.set(sessionId, list)
       }
 
-      const response = await sidecarFetch('/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, sessionId, knowledgeBaseIds, config }),
-      })
-
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '请求失败')
-        sendErrorType.value = 'api_error'
-        throw new Error(errText)
-      }
-
       // Promote home tab after first successful request
       if (isNewSession) {
         const activeIdx = tabs.value.findIndex((t) => t.id === activeTabId.value)
@@ -250,12 +240,6 @@ export const useSessionStore = defineStore('session', () => {
         })
       }
 
-      // Read SSE stream
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
-
-      const decoder = new TextDecoder()
-      let buffer = ''
       let assistantContent = ''
       const assistantId = `temp-assistant-${Date.now()}`
 
@@ -269,56 +253,49 @@ export const useSessionStore = defineStore('session', () => {
       })
       messages.value.set(sessionId, currentList)
 
-      let currentEvent = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7).trim()
-            continue
-          }
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6)
-          if (data === '[DONE]') continue
-
+      const { completed } = backend.subscribe('/chat', {
+        message: content,
+        sessionId,
+        knowledgeBaseIds,
+        config,
+      }, (data, eventType) => {
+        if (eventType === 'error') {
           try {
             const parsed = JSON.parse(data)
-            if (currentEvent === 'error') {
-              sendErrorType.value = parsed.type || 'unknown'
-              sendError.value = parsed.message || '请求失败'
-              // Add error message to stream
-              const list = messages.value.get(sessionId) ?? []
-              list.push({
-                id: `temp-error-${Date.now()}`,
-                session_id: sessionId,
-                role: 'error',
-                content: parsed.message || '请求失败',
-                errorType: parsed.type || 'unknown',
-                created_at: Date.now(),
-              })
-              messages.value.set(sessionId, list)
-            } else if (parsed.content) {
-              assistantContent += parsed.content
-              const list = messages.value.get(sessionId) ?? []
-              const last = list[list.length - 1]
-              if (last && last.role === 'assistant' && last.id === assistantId) {
-                last.content = assistantContent
-              }
-            }
+            sendErrorType.value = parsed.type || 'unknown'
+            sendError.value = parsed.message || '请求失败'
+            const list = messages.value.get(sessionId!) ?? []
+            list.push({
+              id: `temp-error-${Date.now()}`,
+              session_id: sessionId!,
+              role: 'error',
+              content: parsed.message || '请求失败',
+              errorType: parsed.type || 'unknown',
+              created_at: Date.now(),
+            })
+            messages.value.set(sessionId!, list)
           } catch {
-            // ignore parse errors
-          } finally {
-            currentEvent = ''
+            // ignore parse error
           }
+          return
         }
-      }
+
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.content) {
+            assistantContent += parsed.content
+            const list = messages.value.get(sessionId!) ?? []
+            const lastMsg = list[list.length - 1]
+            if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === assistantId) {
+              lastMsg.content = assistantContent
+            }
+          }
+        } catch {
+          // ignore parse error
+        }
+      })
+
+      await completed
     } catch (e) {
       sendError.value = e instanceof Error ? e.message : String(e)
       if (!sendErrorType.value) {
