@@ -23,7 +23,6 @@ beforeAll(() => {
   try {
     db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS fts_document_chunks USING fts5(
-        chunk_id,
         content,
         file_path,
         chunk_id,
@@ -34,7 +33,7 @@ beforeAll(() => {
 })
 
 afterAll(() => {
-  db.close()
+  // db.close() // 全局 db 连接不应在单个测试文件中关闭
   try { fs.rmSync(testDir, { recursive: true, force: true }) } catch { /* ignore */ }
 })
 
