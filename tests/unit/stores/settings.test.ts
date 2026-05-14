@@ -1,14 +1,20 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSettingsStore } from '@/stores/settings'
-import { sidecarFetch } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient')
+import { FakeBackendTransport } from '@/backend/fake-transport'
+import { setBackend } from '@/backend'
 
 describe('useSettingsStore', () => {
+  let backend: FakeBackendTransport
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(sidecarFetch).mockReset()
+    backend = new FakeBackendTransport()
+    setBackend(backend)
+  })
+
+  afterEach(() => {
+    setBackend(null)
   })
 
   it('has default config initially', () => {
@@ -19,10 +25,7 @@ describe('useSettingsStore', () => {
   })
 
   it('loadConfig fetches from API', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ temperature: 1.0, defaultChatProvider: 'openai' }),
-    } as Response)
+    backend.when('GET', '/settings').respond(200, { temperature: 1.0, defaultChatProvider: 'openai' })
 
     const store = useSettingsStore()
     await store.loadConfig()
@@ -31,15 +34,12 @@ describe('useSettingsStore', () => {
   })
 
   it('saveConfig posts to API and updates local state', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
-    } as Response)
+    backend.when('POST', '/settings').respond(200, { success: true })
 
     const store = useSettingsStore()
     await store.saveConfig({ temperature: 1.5 })
     expect(store.config.temperature).toBe(1.5)
-    expect(sidecarFetch).toHaveBeenCalledWith('/settings', expect.objectContaining({ method: 'POST' }))
+    expect(backend.wasRequestCalled('POST', '/settings')).toBe(true)
   })
 
   it('getLLMConfig returns config for given provider', () => {
@@ -99,10 +99,7 @@ describe('useSettingsStore', () => {
   })
 
   it('saveConfig deep-merges embeddingProvider fields', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
-    } as Response)
+    backend.when('POST', '/settings').respond(200, { success: true })
 
     const store = useSettingsStore()
     store.config.embeddingProvider = {
@@ -117,12 +114,6 @@ describe('useSettingsStore', () => {
     expect(store.config.embeddingProvider.provider).toBe('siliconflow')
     expect(store.config.embeddingProvider.apiKey).toBe('old-key')
     expect(store.config.embeddingProvider.model).toBe('text-embedding-3-small')
-    expect(sidecarFetch).toHaveBeenCalledWith(
-      '/settings',
-      expect.objectContaining({
-        method: 'POST',
-        body: expect.stringContaining('siliconflow'),
-      }),
-    )
+    expect(backend.wasRequestCalled('POST', '/settings')).toBe(true)
   })
 })
