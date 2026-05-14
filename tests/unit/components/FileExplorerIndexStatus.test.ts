@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import KnowledgeBasePage from '@/components/KnowledgeBasePage.vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { sidecarFetch } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient')
+import { FakeBackendTransport } from '@/backend/fake-transport'
+import { setBackend } from '@/backend'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 function mountKbPage() {
   return mount(KnowledgeBasePage, {
@@ -76,16 +77,26 @@ describe('KnowledgeBasePage index status', () => {
 })
 
 describe('useKnowledgeBaseStore loadIndexStatus', () => {
+  let backend: FakeBackendTransport
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(sidecarFetch).mockReset()
+    backend = new FakeBackendTransport()
+    setBackend(backend)
+    setShell(new MemoryShell({ initialPort: 11451 }))
+  })
+
+  afterEach(() => {
+    setBackend(null)
+    setShell(null)
   })
 
   it('updates indexStatus Map on success', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ totalFiles: 10, indexedFiles: 5, pendingFiles: 0 }),
-    } as Response)
+    backend.when('GET', '/knowledge-bases/kb1/index-status').respond(200, {
+      totalFiles: 10,
+      indexedFiles: 5,
+      pendingFiles: 0,
+    })
 
     const { useKnowledgeBaseStore } = await import('@/stores/knowledgeBase')
     const store = useKnowledgeBaseStore()

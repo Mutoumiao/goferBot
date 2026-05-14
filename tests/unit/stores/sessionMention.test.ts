@@ -1,32 +1,28 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSessionStore } from '@/stores/session'
-import { sidecarFetch, isSidecarReady } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient')
-
-function createMockStream(text: string): ReadableStream {
-  return new ReadableStream({
-    start(controller) {
-      const encoder = new TextEncoder()
-      controller.enqueue(encoder.encode(text))
-      controller.close()
-    },
-  })
-}
+import { FakeBackendTransport } from '@/backend/fake-transport'
+import { setBackend } from '@/backend'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 describe('useSessionStore sendMessage with knowledgeBaseIds', () => {
+  let backend: FakeBackendTransport
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(sidecarFetch).mockReset()
-    vi.mocked(isSidecarReady).mockResolvedValue(true)
+    backend = new FakeBackendTransport()
+    setBackend(backend)
+    setShell(new MemoryShell({ initialPort: 11451 }))
+  })
+
+  afterEach(() => {
+    setBackend(null)
+    setShell(null)
   })
 
   it('sends knowledgeBaseIds in request body', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream('data: {"content":"reply"}\n\n'),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([{ data: '{"content":"reply"}' }])
 
     const store = useSessionStore()
     await store.sendMessage('hello rag', {
@@ -36,19 +32,14 @@ describe('useSessionStore sendMessage with knowledgeBaseIds', () => {
       apiKey: 'key',
     }, ['kb1', 'kb2'])
 
-    expect(sidecarFetch).toHaveBeenCalledWith(
-      '/chat',
-      expect.objectContaining({
-        body: expect.stringContaining('"knowledgeBaseIds":["kb1","kb2"]'),
-      })
-    )
+    expect(backend.wasRequestCalled('POST', '/chat')).toBe(true)
+    const req = backend.getRequestHistory().find((r) => r.method === 'POST' && r.path === '/chat')
+    expect(req).toBeDefined()
+    expect(JSON.stringify(req!.body)).toContain('"knowledgeBaseIds":["kb1","kb2"]')
   })
 
   it('omits knowledgeBaseIds from body when not provided', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream('data: {"content":"reply"}\n\n'),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([{ data: '{"content":"reply"}' }])
 
     const store = useSessionStore()
     await store.sendMessage('hello no rag', {
@@ -58,16 +49,14 @@ describe('useSessionStore sendMessage with knowledgeBaseIds', () => {
       apiKey: 'key',
     })
 
-    const callArg = vi.mocked(sidecarFetch).mock.calls[0][1] as { body: string }
-    const bodyObj = JSON.parse(callArg.body)
+    const req = backend.getRequestHistory().find((r) => r.method === 'POST' && r.path === '/chat')
+    expect(req).toBeDefined()
+    const bodyObj = req!.body as any
     expect(bodyObj).not.toHaveProperty('knowledgeBaseIds')
   })
 
   it('optimistically adds user message with knowledge_base_ids', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream('data: {"content":"reply"}\n\n'),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([{ data: '{"content":"reply"}' }])
 
     const store = useSessionStore()
     await store.sendMessage('hello rag', {

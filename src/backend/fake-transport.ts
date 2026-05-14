@@ -22,7 +22,7 @@ export class FakeBackendTransport implements BackendTransport {
   private sseResponses = new Map<string, SSERecord[]>()
   private requestHistory: RequestRecord[] = []
 
-  when(method: string, path: string) {
+  when(method: string, path: string): { respond: (status: number, body: unknown) => FakeBackendTransport; respondSSE: (events: Array<{ data: string; event?: string }>) => FakeBackendTransport } {
     const key = `${method} ${path}`
     return {
       respond: (status: number, body: unknown) => {
@@ -74,15 +74,16 @@ export class FakeBackendTransport implements BackendTransport {
     const completedPromise = new Promise<void>((resolve) => {
       completedResolve = resolve
     })
+    const resolveCompleted = () => completedResolve?.()
 
     if (events) {
       // 异步触发所有事件，完成后 resolve
       setTimeout(() => {
         events.forEach((e) => handler(e.data, e.eventType || undefined))
-        completedResolve?.()
+        resolveCompleted()
       }, 0)
     } else {
-      completedResolve?.()
+      resolveCompleted()
     }
 
     return {

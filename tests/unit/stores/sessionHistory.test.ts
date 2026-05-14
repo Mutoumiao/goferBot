@@ -1,23 +1,30 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSessionStore } from '@/stores/session'
-import { sidecarFetch } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient')
+import { FakeBackendTransport } from '@/backend/fake-transport'
+import { setBackend } from '@/backend'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 describe('session store history methods', () => {
+  let backend: FakeBackendTransport
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(sidecarFetch).mockReset()
+    backend = new FakeBackendTransport()
+    setBackend(backend)
+    setShell(new MemoryShell({ initialPort: 11451 }))
+  })
+
+  afterEach(() => {
+    setBackend(null)
+    setShell(null)
   })
 
   it('loadHistory fetches sessions from API', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => [
-        { id: 's1', title: 'Hello', updated_at: 1, summary: 'summary', message_count: 2 },
-      ],
-    } as Response)
+    backend.when('GET', '/sessions').respond(200, [
+      { id: 's1', title: 'Hello', updated_at: 1, summary: 'summary', message_count: 2 },
+    ])
 
     const store = useSessionStore()
     await store.loadHistory()
@@ -28,7 +35,7 @@ describe('session store history methods', () => {
   })
 
   it('loadHistory sets error on failure', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({ ok: false } as Response)
+    backend.when('GET', '/sessions').respond(500, { error: 'fail' })
 
     const store = useSessionStore()
     await store.loadHistory()
@@ -45,20 +52,17 @@ describe('session store history methods', () => {
 
     await store.restoreSession('s1')
     expect(store.activeTabId).toBe('t1')
-    expect(sidecarFetch).not.toHaveBeenCalled()
+    expect(backend.wasRequestCalled('GET', '/sessions/s1')).toBe(false)
   })
 
   it('restoreSession reuses home tab when empty', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        id: 's1',
-        title: 'Restored',
-        provider: 'openai',
-        model: 'gpt-4o',
-        messages: [{ id: 'm1', session_id: 's1', role: 'user', content: 'hi', created_at: 1 }],
-      }),
-    } as Response)
+    backend.when('GET', '/sessions/s1').respond(200, {
+      id: 's1',
+      title: 'Restored',
+      provider: 'openai',
+      model: 'gpt-4o',
+      messages: [{ id: 'm1', session_id: 's1', role: 'user', content: 'hi', created_at: 1 }],
+    })
 
     const store = useSessionStore()
     // home tab exists by default
@@ -73,16 +77,13 @@ describe('session store history methods', () => {
   })
 
   it('restoreSession creates new tab when no home tab available', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        id: 's1',
-        title: 'Restored',
-        provider: 'openai',
-        model: 'gpt-4o',
-        messages: [],
-      }),
-    } as Response)
+    backend.when('GET', '/sessions/s1').respond(200, {
+      id: 's1',
+      title: 'Restored',
+      provider: 'openai',
+      model: 'gpt-4o',
+      messages: [],
+    })
 
     const store = useSessionStore()
     store.tabs[0].sessionId = 'existing'
@@ -95,9 +96,9 @@ describe('session store history methods', () => {
   })
 
   it('deleteSession closes tab, clears messages and refreshes history', async () => {
-    vi.mocked(sidecarFetch)
-      .mockResolvedValueOnce({ ok: true } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => [] } as Response)
+    backend
+      .when('DELETE', '/sessions/s1').respond(200, {})
+      .when('GET', '/sessions').respond(200, [])
 
     const store = useSessionStore()
     store.addTab({ id: 't1', type: 'chat', title: 'ToDelete', closable: true, sessionId: 's1' })
@@ -108,11 +109,11 @@ describe('session store history methods', () => {
 
     expect(store.tabs.find((t) => t.sessionId === 's1')).toBeUndefined()
     expect(store.messages.has('s1')).toBe(false)
-    expect(sidecarFetch).toHaveBeenCalledWith('/sessions/s1', { method: 'DELETE' })
+    expect(backend.wasRequestCalled('DELETE', '/sessions/s1')).toBe(true)
   })
 
   it('renameSession updates tab title and history entry', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({ ok: true } as Response)
+    backend.when('POST', '/sessions/s1/rename').respond(200, {})
 
     const store = useSessionStore()
     store.addTab({ id: 't1', type: 'chat', title: 'Old', closable: true, sessionId: 's1' })
@@ -123,12 +124,9 @@ describe('session store history methods', () => {
     const tab = store.tabs.find((t) => t.sessionId === 's1')
     expect(tab?.title).toBe('New Title')
     expect(store.historySessions[0].title).toBe('New Title')
-    expect(sidecarFetch).toHaveBeenCalledWith(
-      '/sessions/s1/rename',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ title: 'New Title' }),
-      })
-    )
+    expect(backend.wasRequestCalled('POST', '/sessions/s1/rename')).toBe(true)
+    const req = backend.getRequestHistory().find((r) => r.method === 'POST' && r.path === '/sessions/s1/rename')
+    expect(req).toBeDefined()
+    expect(req!.body).toEqual({ title: 'New Title' })
   })
 })

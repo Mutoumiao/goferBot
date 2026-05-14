@@ -253,12 +253,16 @@ export const useSessionStore = defineStore('session', () => {
       })
       messages.value.set(sessionId, currentList)
 
-      const { completed } = backend.subscribe('/chat', {
+      const subscribeBody: Record<string, unknown> = {
         message: content,
         sessionId,
-        knowledgeBaseIds,
         config,
-      }, (data, eventType) => {
+      }
+      if (knowledgeBaseIds) {
+        subscribeBody.knowledgeBaseIds = knowledgeBaseIds
+      }
+
+      const { completed } = backend.subscribe('/chat', subscribeBody, (data, eventType) => {
         if (eventType === 'error') {
           try {
             const parsed = JSON.parse(data)

@@ -1,16 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MoveCopyDialog from '@/components/MoveCopyDialog.vue'
-import { getSidecarPort } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient', () => ({
-  getSidecarPort: vi.fn(),
-}))
+import { sidecarPort } from '@/composables/useSidecarStatus'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 describe('MoveCopyDialog', () => {
   beforeEach(() => {
-    vi.mocked(getSidecarPort).mockReturnValue(11451)
+    sidecarPort.value = 11451
+    setShell(new MemoryShell({ initialPort: 11451 }))
     global.fetch = vi.fn()
+  })
+
+  afterEach(() => {
+    setShell(null)
   })
 
   function mountDialog(props: { visible: boolean; mode: 'move' | 'copy'; sourceKbId: string; sourcePath: string }) {

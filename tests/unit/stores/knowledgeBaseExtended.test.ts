@@ -1,21 +1,28 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { sidecarFetch } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient')
+import { FakeBackendTransport } from '@/backend/fake-transport'
+import { setBackend } from '@/backend'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 describe('useKnowledgeBaseStore extended', () => {
+  let backend: FakeBackendTransport
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(sidecarFetch).mockReset()
+    backend = new FakeBackendTransport()
+    setBackend(backend)
+    setShell(new MemoryShell({ initialPort: 11451 }))
+  })
+
+  afterEach(() => {
+    setBackend(null)
+    setShell(null)
   })
 
   it('togglePin sorts pinned items to top', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: '1', is_pinned: 1, sort_order: 100 }),
-    } as Response)
+    backend.when('PATCH', '/knowledge-bases/1').respond(200, { id: '1', is_pinned: 1, sort_order: 100 })
 
     const store = useKnowledgeBaseStore()
     store.knowledgeBases = [
@@ -28,26 +35,20 @@ describe('useKnowledgeBaseStore extended', () => {
   })
 
   it('renameFile calls PATCH and refreshes files', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ name: 'new.md' }),
-    } as Response)
+    backend.when('PATCH', '/knowledge-bases/kb1/files/old.md').respond(200, { name: 'new.md' })
 
     const store = useKnowledgeBaseStore()
     store.selectedKbId = 'kb1'
     await store.renameFile('old.md', 'new')
-    expect(sidecarFetch).toHaveBeenCalledWith('/knowledge-bases/kb1/files/old.md', expect.any(Object))
+    expect(backend.wasRequestCalled('PATCH', '/knowledge-bases/kb1/files/old.md')).toBe(true)
   })
 
   it('createFolder calls POST folders', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ name: 'newfolder' }),
-    } as Response)
+    backend.when('POST', '/knowledge-bases/kb1/folders').respond(200, { name: 'newfolder' })
 
     const store = useKnowledgeBaseStore()
     store.selectedKbId = 'kb1'
     await store.createFolder('newfolder')
-    expect(sidecarFetch).toHaveBeenCalledWith('/knowledge-bases/kb1/folders', expect.any(Object))
+    expect(backend.wasRequestCalled('POST', '/knowledge-bases/kb1/folders')).toBe(true)
   })
 })

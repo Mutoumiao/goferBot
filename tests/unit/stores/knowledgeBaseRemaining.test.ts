@@ -1,21 +1,28 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { sidecarFetch } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient')
+import { FakeBackendTransport } from '@/backend/fake-transport'
+import { setBackend } from '@/backend'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 describe('useKnowledgeBaseStore remaining actions', () => {
+  let backend: FakeBackendTransport
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(sidecarFetch).mockReset()
+    backend = new FakeBackendTransport()
+    setBackend(backend)
+    setShell(new MemoryShell({ initialPort: 11451 }))
+  })
+
+  afterEach(() => {
+    setBackend(null)
+    setShell(null)
   })
 
   it('deleteKnowledgeBase removes kb from list and clears selection', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    } as Response)
+    backend.when('DELETE', '/knowledge-bases/1').respond(200, {})
 
     const store = useKnowledgeBaseStore()
     store.knowledgeBases = [
@@ -31,10 +38,9 @@ describe('useKnowledgeBaseStore remaining actions', () => {
   })
 
   it('restoreKnowledgeBase adds kb back to list', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: '1', name: 'Restored', path: '/r', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' }),
-    } as Response)
+    backend.when('POST', '/knowledge-bases/1/restore').respond(200, {
+      id: '1', name: 'Restored', path: '/r', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database',
+    })
 
     const store = useKnowledgeBaseStore()
     await store.restoreKnowledgeBase('1')
@@ -42,10 +48,9 @@ describe('useKnowledgeBaseStore remaining actions', () => {
   })
 
   it('loadDeletedKnowledgeBases populates deleted list', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => [{ id: '1', name: 'Deleted', path: '/d', created_at: 1, deleted_at: 1, is_pinned: 0, sort_order: 0, icon: 'mdi-database' }],
-    } as Response)
+    backend.when('GET', '/knowledge-bases/deleted').respond(200, [
+      { id: '1', name: 'Deleted', path: '/d', created_at: 1, deleted_at: 1, is_pinned: 0, sort_order: 0, icon: 'mdi-database' },
+    ])
 
     const store = useKnowledgeBaseStore()
     await store.loadDeletedKnowledgeBases()
@@ -54,10 +59,7 @@ describe('useKnowledgeBaseStore remaining actions', () => {
   })
 
   it('moveFile calls POST /move and refreshes files', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    } as Response)
+    backend.when('POST', '/knowledge-bases/move').respond(200, {})
 
     const store = useKnowledgeBaseStore()
     store.selectedKbId = 'kb1'
@@ -65,14 +67,11 @@ describe('useKnowledgeBaseStore remaining actions', () => {
     store.historyIndex = 0
 
     await store.moveFile('kb1', 'file.md', 'kb2', '')
-    expect(sidecarFetch).toHaveBeenCalledWith('/knowledge-bases/move', expect.any(Object))
+    expect(backend.wasRequestCalled('POST', '/knowledge-bases/move')).toBe(true)
   })
 
   it('copyFile calls POST /copy and refreshes files if target is selected', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    } as Response)
+    backend.when('POST', '/knowledge-bases/copy').respond(200, {})
 
     const store = useKnowledgeBaseStore()
     store.selectedKbId = 'kb2'
@@ -80,14 +79,13 @@ describe('useKnowledgeBaseStore remaining actions', () => {
     store.historyIndex = 0
 
     await store.copyFile('kb1', 'file.md', 'kb2', '')
-    expect(sidecarFetch).toHaveBeenCalledWith('/knowledge-bases/copy', expect.any(Object))
+    expect(backend.wasRequestCalled('POST', '/knowledge-bases/copy')).toBe(true)
   })
 
   it('renameKnowledgeBase updates local list', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: '1', name: 'Renamed', path: '/r', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' }),
-    } as Response)
+    backend.when('PATCH', '/knowledge-bases/1').respond(200, {
+      id: '1', name: 'Renamed', path: '/r', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database',
+    })
 
     const store = useKnowledgeBaseStore()
     store.knowledgeBases = [
@@ -98,10 +96,9 @@ describe('useKnowledgeBaseStore remaining actions', () => {
   })
 
   it('updateKbIcon updates local list', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: '1', name: 'KB', path: '/k', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-books' }),
-    } as Response)
+    backend.when('PATCH', '/knowledge-bases/1').respond(200, {
+      id: '1', name: 'KB', path: '/k', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-books',
+    })
 
     const store = useKnowledgeBaseStore()
     store.knowledgeBases = [
@@ -112,10 +109,7 @@ describe('useKnowledgeBaseStore remaining actions', () => {
   })
 
   it('deleteFile calls DELETE and refreshes files', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    } as Response)
+    backend.when('DELETE', '/knowledge-bases/kb1/files/old.md').respond(200, {})
 
     const store = useKnowledgeBaseStore()
     store.selectedKbId = 'kb1'
@@ -123,6 +117,6 @@ describe('useKnowledgeBaseStore remaining actions', () => {
     store.historyIndex = 0
 
     await store.deleteFile('old.md')
-    expect(sidecarFetch).toHaveBeenCalledWith('/knowledge-bases/kb1/files/old.md', { method: 'DELETE' })
+    expect(backend.wasRequestCalled('DELETE', '/knowledge-bases/kb1/files/old.md')).toBe(true)
   })
 })
