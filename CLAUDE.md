@@ -69,13 +69,16 @@
 
 根目录脚本通过 pnpm workspace 聚合各包操作：
 
-- `pnpm dev` —— 启动 webui 开发模式（Vite dev server + Vue Devtools）
+- `pnpm dev` —— **同时启动前后端**（Sidecar + Vite dev server）
+- `pnpm dev:web` —— 只启动前端（Vite dev server）
+- `pnpm dev:server` —— 只启动后端 Sidecar（tsx 直接运行 TS 源码）
+- `pnpm dev:tauri` —— Tauri 开发模式（Vite + 独立 Vue Devtools 进程）
 - `pnpm build` —— 构建 webui 生产版本
 - `pnpm preview` —— 预览 webui 生产构建
 - `pnpm test` —— 运行根目录单元测试（Vitest）
 - `pnpm test:integration` —— 运行集成测试
 - `pnpm test:e2e` —— 运行 E2E 测试（Playwright）
-- `pnpm type-check` —— 运行 webui TypeScript 类型检查
+- `pnpm type-check` —— 对所有 workspace 包运行 TypeScript 类型检查
 - `pnpm check` —— 检查 Rust 代码（`cargo check`）
 - `pnpm tauri <cmd>` —— 运行 Tauri CLI 命令（如 `pnpm tauri dev`、`pnpm tauri build`）
 - `pnpm -r build` —— 构建所有 workspace 包
