@@ -1,25 +1,24 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSessionStore } from '@/stores/session'
-import { sidecarFetch, isSidecarReady } from '@/utils/sidecarClient'
-
-vi.mock('@/utils/sidecarClient')
-
-function createMockStream(text: string): ReadableStream {
-  return new ReadableStream({
-    start(controller) {
-      const encoder = new TextEncoder()
-      controller.enqueue(encoder.encode(text))
-      controller.close()
-    },
-  })
-}
+import { FakeBackendTransport } from '@/backend/fake-transport'
+import { setBackend } from '@/backend'
+import { setShell } from '@/shell'
+import { MemoryShell } from '@/shell/memory'
 
 describe('useSessionStore', () => {
+  let backend: FakeBackendTransport
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.mocked(sidecarFetch).mockReset()
-    vi.mocked(isSidecarReady).mockResolvedValue(true)
+    setShell(new MemoryShell({ initialPort: 11451 }))
+    backend = new FakeBackendTransport()
+    setBackend(backend)
+  })
+
+  afterEach(() => {
+    setBackend(null)
+    setShell(null)
   })
 
   it('has home tab by default', () => {
@@ -52,10 +51,9 @@ describe('useSessionStore', () => {
   })
 
   it('promotes home tab on first message and creates new home', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream('data: {"content":"你好"}\n\n'),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([
+      { data: '{"content":"你好"}', event: '' },
+    ])
 
     const store = useSessionStore()
     await store.sendMessage('你好', {
@@ -74,10 +72,9 @@ describe('useSessionStore', () => {
   })
 
   it('promotes home tab with provider and model on first message', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream('data: {"content":"你好"}\n\n'),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([
+      { data: '{"content":"你好"}', event: '' },
+    ])
 
     const store = useSessionStore()
     await store.sendMessage('你好', {
@@ -92,10 +89,9 @@ describe('useSessionStore', () => {
   })
 
   it('appends messages to existing session', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream('data: {"content":"reply"}\n\n'),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([
+      { data: '{"content":"reply"}', event: '' },
+    ])
 
     const store = useSessionStore()
     store.addTab({ id: 't1', type: 'chat', title: '已有会话', closable: true, sessionId: 'sess-1' })
@@ -114,11 +110,10 @@ describe('useSessionStore', () => {
     expect(store.messages.get('sess-1')).toHaveLength(3)
   })
 
-  it('sets sendError on failed request', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: false,
-      text: async () => 'Bad Request',
-    } as Response)
+  it('sets sendError on SSE error event', async () => {
+    backend.when('POST', '/chat').respondSSE([
+      { data: '{"type":"api_error","message":"Bad Request"}', event: 'error' },
+    ])
 
     const store = useSessionStore()
     await store.sendMessage('fail', {
@@ -129,14 +124,14 @@ describe('useSessionStore', () => {
     })
 
     expect(store.sendError).toContain('Bad Request')
+    expect(store.sendErrorType).toBe('api_error')
     expect(store.isSending).toBe(false)
   })
 
   it('sets isSending to true during message send and false after', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream('data: {"content":"reply"}\n\n'),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([
+      { data: '{"content":"reply"}', event: '' },
+    ])
 
     const store = useSessionStore()
     const promise = store.sendMessage('hello', {
@@ -152,12 +147,11 @@ describe('useSessionStore', () => {
   })
 
   it('appends streaming content to assistant message chunk by chunk', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
-      ok: true,
-      body: createMockStream(
-        'data: {"content":"Hello "}\n\ndata: {"content":"world"}\n\ndata: {"content":"!"}\n\n'
-      ),
-    } as Response)
+    backend.when('POST', '/chat').respondSSE([
+      { data: '{"content":"Hello "}', event: '' },
+      { data: '{"content":"world"}', event: '' },
+      { data: '{"content":"!"}', event: '' },
+    ])
 
     const store = useSessionStore()
     store.addTab({ id: 't1', type: 'chat', title: 'Stream', closable: true, sessionId: 'sess-1' })
