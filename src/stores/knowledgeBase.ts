@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { sidecarFetch } from '@/utils/sidecarClient'
+import { getBackend } from '@/backend'
 import { getShell } from '@/shell'
 import type { KnowledgeBase, FileItem, SearchResultItem, HistoryEntry } from '@/types'
 
@@ -45,7 +45,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await sidecarFetch('/knowledge-bases')
+      const res = await getBackend().request('GET', '/knowledge-bases')
       knowledgeBases.value = (await res.json()) as KnowledgeBase[]
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -57,11 +57,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function createKnowledgeBase(name: string) {
     error.value = null
     try {
-      const res = await sidecarFetch('/knowledge-bases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      })
+      const res = await getBackend().request('POST', '/knowledge-bases', { name })
       if (!res.ok) {
         const err = (await res.json().catch(() => ({ error: '创建失败' }))) as { error: string }
         throw new Error(err.error)
@@ -79,7 +75,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function deleteKnowledgeBase(id: string) {
     error.value = null
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${id}`, { method: 'DELETE' })
+      const res = await getBackend().request('DELETE', `/knowledge-bases/${id}`)
       if (!res.ok) throw new Error('删除失败')
       knowledgeBases.value = knowledgeBases.value.filter((kb) => kb.id !== id)
       if (selectedKbId.value === id) {
@@ -94,7 +90,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function restoreKnowledgeBase(id: string) {
     error.value = null
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${id}/restore`, { method: 'POST' })
+      const res = await getBackend().request('POST', `/knowledge-bases/${id}/restore`)
       if (!res.ok) throw new Error('恢复失败')
       const kb = (await res.json()) as KnowledgeBase
       knowledgeBases.value = knowledgeBases.value.filter((k) => k.id !== id)
@@ -108,7 +104,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function permanentlyDeleteKnowledgeBase(id: string) {
     error.value = null
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${id}/permanent`, { method: 'DELETE' })
+      const res = await getBackend().request('DELETE', `/knowledge-bases/${id}/permanent`)
       if (!res.ok) throw new Error('彻底删除失败')
       deletedKnowledgeBases.value = deletedKnowledgeBases.value.filter((k) => k.id !== id)
     } catch (e) {
@@ -120,7 +116,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await sidecarFetch('/knowledge-bases/deleted')
+      const res = await getBackend().request('GET', '/knowledge-bases/deleted')
       deletedKnowledgeBases.value = (await res.json()) as KnowledgeBase[]
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -142,7 +138,8 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     if (!selectedKbId.value) return
     isLoading.value = true
     try {
-      const res = await sidecarFetch(
+      const res = await getBackend().request(
+        'GET',
         `/knowledge-bases/${selectedKbId.value}/files?path=${encodeURIComponent(path)}`
       )
       const data = (await res.json()) as { items: FileItem[] }
@@ -177,7 +174,8 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     searchQuery.value = query
     isLoading.value = true
     try {
-      const res = await sidecarFetch(
+      const res = await getBackend().request(
+        'GET',
         `/knowledge-bases/${selectedKbId.value}/search?q=${encodeURIComponent(query)}`
       )
       const data = (await res.json()) as { results: SearchResultItem[] }
@@ -226,11 +224,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function moveFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
     error.value = null
     try {
-      const res = await sidecarFetch('/knowledge-bases/move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceKbId, sourcePath, targetKbId, targetPath }),
-      })
+      const res = await getBackend().request('POST', '/knowledge-bases/move', { sourceKbId, sourcePath, targetKbId, targetPath })
       if (!res.ok) throw new Error('移动失败')
       if (selectedKbId.value === sourceKbId || selectedKbId.value === targetKbId) {
         await loadFiles(currentPath.value)
@@ -243,11 +237,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function copyFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
     error.value = null
     try {
-      const res = await sidecarFetch('/knowledge-bases/copy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceKbId, sourcePath, targetKbId, targetPath }),
-      })
+      const res = await getBackend().request('POST', '/knowledge-bases/copy', { sourceKbId, sourcePath, targetKbId, targetPath })
       if (!res.ok) throw new Error('复制失败')
       if (selectedKbId.value === targetKbId) {
         await loadFiles(currentPath.value)
@@ -260,11 +250,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function renameKnowledgeBase(id: string, name: string) {
     error.value = null
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      })
+      const res = await getBackend().request('PATCH', `/knowledge-bases/${id}`, { name })
       if (!res.ok) throw new Error('重命名失败')
       const updated = (await res.json()) as KnowledgeBase
       const idx = knowledgeBases.value.findIndex((kb) => kb.id === id)
@@ -277,11 +263,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function updateKbIcon(id: string, icon: string) {
     error.value = null
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ icon }),
-      })
+      const res = await getBackend().request('PATCH', `/knowledge-bases/${id}`, { icon })
       if (!res.ok) throw new Error('更新图标失败')
       const updated = (await res.json()) as KnowledgeBase
       const idx = knowledgeBases.value.findIndex((kb) => kb.id === id)
@@ -296,11 +278,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     if (!kb) return
     error.value = null
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sort_order: Date.now() }),
-      })
+      const res = await getBackend().request('PATCH', `/knowledge-bases/${id}`, { sort_order: Date.now() })
       if (!res.ok) throw new Error('置顶失败')
       const updated = (await res.json()) as KnowledgeBase
       const idx = knowledgeBases.value.findIndex((k) => k.id === id)
@@ -317,11 +295,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     if (!selectedKbId.value) return
     error.value = null
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${selectedKbId.value}/folders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, path: currentPath.value }),
-      })
+      const res = await getBackend().request('POST', `/knowledge-bases/${selectedKbId.value}/folders`, { name, path: currentPath.value })
       if (!res.ok) throw new Error('创建文件夹失败')
       const data = (await res.json()) as { name: string }
       await loadFiles(currentPath.value)
@@ -336,11 +310,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     error.value = null
     try {
       const relativePath = currentPath.value ? `${currentPath.value}/${oldName}` : oldName
-      const res = await sidecarFetch(`/knowledge-bases/${selectedKbId.value}/files/${relativePath}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newName }),
-      })
+      const res = await getBackend().request('PATCH', `/knowledge-bases/${selectedKbId.value}/files/${relativePath}`, { newName })
       if (!res.ok) {
         const err = (await res.json().catch(() => ({ error: '重命名失败' }))) as { error: string }
         throw new Error(err.error)
@@ -356,9 +326,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     error.value = null
     try {
       const relativePath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName
-      const res = await sidecarFetch(`/knowledge-bases/${selectedKbId.value}/files/${relativePath}`, {
-        method: 'DELETE',
-      })
+      const res = await getBackend().request('DELETE', `/knowledge-bases/${selectedKbId.value}/files/${relativePath}`)
       if (!res.ok) throw new Error('删除失败')
       await loadFiles(currentPath.value)
     } catch (e) {
@@ -368,7 +336,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
 
   async function loadIndexStatus(kbId: string) {
     try {
-      const res = await sidecarFetch(`/knowledge-bases/${kbId}/index-status`)
+      const res = await getBackend().request('GET', `/knowledge-bases/${kbId}/index-status`)
       if (res.ok) {
         const data = (await res.json()) as { totalFiles: number; indexedFiles: number; pendingFiles: number }
         indexStatus.value.set(kbId, data)
