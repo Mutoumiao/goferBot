@@ -1,4 +1,4 @@
-# Knowledge Base（知识库）
+# GoferBot
 
 <p align="center">
   <img src="https://img.shields.io/badge/Tauri-v2-24C8D8?logo=tauri" alt="Tauri v2">
@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
 </p>
 
-基于 **Tauri v2 + Vue 3 + Node.js Hono Sidecar** 的本地知识库桌面应用。支持导入 Markdown、TXT 等文档进行管理，通过多 LLM 提供商进行智能问答，并基于 **RAG 检索增强**（向量搜索 + 全文搜索混合排序）提供上下文感知的精准回答。所有数据存储在本地，无需联网即可使用。
+**GoferBot** 是一款基于 **Tauri v2 + Vue 3 + Node.js Hono Sidecar** 的本地知识库桌面应用。支持导入 Markdown、TXT 等文档进行管理，通过多 LLM 提供商进行智能问答，并基于 **RAG 检索增强**（向量搜索 + 全文搜索混合排序）提供上下文感知的精准回答。所有数据存储在本地，无需联网即可使用。
 
 > **本项目是个人代表项目，从零到一完整实践 Harness Engineering 开发方法论。** 基于 `mu-*` 系列 Skills（`mu-grill-docs`、`mu-prd`、`mu-issues`、`mu-plan`、`mu-dev`、`mu-verify`）驱动全流程交付，涵盖领域建模、架构决策、任务拆分、子代理并行实现与交付验证。
 
