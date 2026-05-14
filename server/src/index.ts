@@ -49,8 +49,6 @@ function findAvailablePort(startPort: number): Promise<number> {
 async function main(): Promise<void> {
   const envPort = process.env.KB_PORT ? parseInt(process.env.KB_PORT, 10) : undefined
   const startPort = envPort !== undefined && !isNaN(envPort) ? envPort : DEFAULT_PORT
-  const port = await findAvailablePort(startPort)
-  writePortFile(port)
 
   syncKnowledgeBasesFromDisk()
 
@@ -107,13 +105,26 @@ async function main(): Promise<void> {
   app.route('/knowledge-bases', knowledgeBaseRoutes)
   app.route('/settings', settingsRoutes)
 
-  serve({
-    fetch: app.fetch,
-    port,
-    hostname: '127.0.0.1',
-  })
+  const onListening = (info: { port: number }) => {
+    writePortFile(info.port)
+    console.log(`Sidecar running on http://127.0.0.1:${info.port}`)
+  }
 
-  console.log(`Sidecar running on http://127.0.0.1:${port}`)
+  if (startPort === 0) {
+    // OS assigns a random port directly — avoids TOCTOU race in findAvailablePort
+    serve({
+      fetch: app.fetch,
+      port: 0,
+      hostname: '127.0.0.1',
+    }, onListening)
+  } else {
+    const port = await findAvailablePort(startPort)
+    serve({
+      fetch: app.fetch,
+      port,
+      hostname: '127.0.0.1',
+    }, onListening)
+  }
 }
 
 main().catch((err) => {

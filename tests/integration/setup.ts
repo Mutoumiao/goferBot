@@ -63,6 +63,7 @@ export async function startSidecar(): Promise<{ port: number; dataDir: string }>
   })
 
   const port = await waitForPortFile(currentDataDir)
+  await waitForHealth(port)
   return { port, dataDir: currentDataDir }
 }
 

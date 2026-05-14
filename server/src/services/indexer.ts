@@ -166,8 +166,12 @@ export function syncFtsFilePaths(
   )
 
   for (const row of rows) {
-    try { deleteFts.run(row.id) } catch { /* ignore */ }
-    try { insertFts.run(row.id, row.content, newPath) } catch { /* ignore */ }
+    try { deleteFts.run(row.id) } catch (err) {
+      console.warn('[indexer] FTS delete failed for chunk', row.id, err)
+    }
+    try { insertFts.run(row.id, row.content, newPath) } catch (err) {
+      console.warn('[indexer] FTS insert failed for chunk', row.id, err)
+    }
   }
 }
 
