@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { sidecarFetch } from '@/utils/sidecarClient'
-import { invoke } from '@tauri-apps/api/core'
+import { getShell } from '@/shell'
 import type { KnowledgeBase, FileItem, SearchResultItem, HistoryEntry } from '@/types'
 
 export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
@@ -214,10 +214,8 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function importFiles() {
     if (!selectedKbId.value) return
     try {
-      await invoke('import_files', {
-        knowledgeBaseId: selectedKbId.value,
-        targetPath: currentPath.value,
-      })
+      const shell = getShell()
+      await shell.importFiles(selectedKbId.value, currentPath.value)
       // 刷新当前目录
       await loadFiles(currentPath.value)
     } catch (e) {
