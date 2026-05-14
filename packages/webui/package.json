@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"pnpm vite:dev\" \"pnpm devtools\"",
-    "vite:dev": "cross-env DEBUG=0 vite",
+    "dev": "cross-env DEBUG=0 vite",
+    "dev:tauri": "concurrently \"pnpm dev\" \"pnpm devtools\"",
     "devtools": "vue-devtools",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",

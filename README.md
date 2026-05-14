@@ -167,9 +167,10 @@ pnpm type-check
 
 | 脚本 | 作用 |
 |------|------|
-| `pnpm dev` | **同时启动前后端**（Sidecar + Vite dev server + Vue Devtools） |
-| `pnpm dev:web` | 只启动前端（Vite dev server + Vue Devtools） |
+| `pnpm dev` | **同时启动前后端**（Sidecar + Vite dev server） |
+| `pnpm dev:web` | 只启动前端（Vite dev server，浏览器模式下使用浏览器扩展调试 Vue） |
 | `pnpm dev:server` | 只启动后端 Sidecar（tsx watch 模式，直接运行 TS 源码） |
+| `pnpm dev:tauri` | Tauri 开发模式（启动 Vite + 独立 Vue Devtools 进程，用于桌面端调试） |
 | `pnpm build` | 构建 webui 生产版本 |
 | `pnpm preview` | 预览 webui 生产构建 |
 | `pnpm -r build` | 构建所有 workspace 包（server、shell-adapters、backend-adapters、rag-sdk、webui） |
