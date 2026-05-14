@@ -22,6 +22,7 @@
 | 质量保障 | [#09 端到端测试](.scratch/knowledge-base/issues/09-end-to-end-testing.md) | closed | 阶1 E2E 28 条、阶2 集成 34 条、阶3 验收 3 条 |
 | 架构重构 | [#10 Shell 抽象与浏览器模式](.scratch/knowledge-base/issues/10-shell-abstraction-and-browser-mode.md) | closed | 提取 Shell 模块解耦前端与 Tauri，Web 可独立运行 |
 | 架构重构 | [#11 BackendTransport 统一](.scratch/knowledge-base/issues/11-backend-transport-unification.md) | closed | 统一 HTTP 通信模块，sidecarClient 浅模块深化 |
+| 架构重构 | [#12 Monorepo 结构迁移](.scratch/knowledge-base/issues/12-monorepo-migration.md) | closed | pnpm workspace 五包拆分，构建测试全通过 |
 
 ---
 
@@ -31,4 +32,4 @@
 
 ---
 
-*最后更新：2026-05-14（#10、#11 已完成）*
+*最后更新：2026-05-14（#12 Monorepo 迁移完成）*
