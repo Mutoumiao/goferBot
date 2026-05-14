@@ -4,6 +4,9 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import HistoryPage from '@/components/HistoryPage.vue'
 import { useSessionStore } from '@/stores/session'
+import { confirmDialog } from '@/utils/confirm'
+
+vi.mock('@/utils/confirm')
 
 function mountPage(storeOverrides?: Record<string, unknown>) {
   const pinia = createTestingPinia({
@@ -35,7 +38,7 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
 describe('HistoryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubGlobal('confirm', vi.fn(() => true))
+    vi.mocked(confirmDialog).mockResolvedValue(true)
   })
 
   it('shows loading state', () => {
@@ -73,11 +76,11 @@ describe('HistoryPage', () => {
     })
     const store = useSessionStore()
 
-    await wrapper.find('.group').trigger('click')
+    await wrapper.find('[data-testid="history-item"]').trigger('click')
     expect(store.restoreSession).toHaveBeenCalledWith('s1')
   })
 
-  it('calls deleteSession after confirm when delete button clicked', async () => {
+  it('calls deleteSession after confirm when delete chosen from menu', async () => {
     const wrapper = mountPage({
       historySessions: [
         { id: 's1', title: 'Chat', updated_at: Date.now(), summary: '', message_count: 1 },
@@ -85,14 +88,14 @@ describe('HistoryPage', () => {
     })
     const store = useSessionStore()
 
-    const deleteBtn = wrapper.find('[title="删除"]')
-    await deleteBtn.trigger('click')
-    expect(confirm).toHaveBeenCalledWith('确定删除该会话？')
+    await wrapper.find('[data-testid="history-menu-btn"]').trigger('click')
+    await wrapper.find('[data-testid="history-delete-btn"]').trigger('click')
+    expect(confirmDialog).toHaveBeenCalledWith('确定删除该会话？', { title: '提示', kind: 'warning' })
     expect(store.deleteSession).toHaveBeenCalledWith('s1')
   })
 
   it('does not delete when confirm cancelled', async () => {
-    vi.stubGlobal('confirm', vi.fn(() => false))
+    vi.mocked(confirmDialog).mockResolvedValue(false)
     const wrapper = mountPage({
       historySessions: [
         { id: 's1', title: 'Chat', updated_at: Date.now(), summary: '', message_count: 1 },
@@ -100,8 +103,22 @@ describe('HistoryPage', () => {
     })
     const store = useSessionStore()
 
-    const deleteBtn = wrapper.find('[title="删除"]')
-    await deleteBtn.trigger('click')
+    await wrapper.find('[data-testid="history-menu-btn"]').trigger('click')
+    await wrapper.find('[data-testid="history-delete-btn"]').trigger('click')
+    await vi.waitFor(() => expect(confirmDialog).toHaveBeenCalled())
     expect(store.deleteSession).not.toHaveBeenCalled()
+  })
+
+  it('shows pagination when more than one page of sessions', () => {
+    const sessions = Array.from({ length: 7 }, (_, i) => ({
+      id: `s${i}`,
+      title: `Chat ${i}`,
+      updated_at: Date.now(),
+      summary: 'x',
+      message_count: 1,
+    }))
+    const wrapper = mountPage({ historySessions: sessions })
+    expect(wrapper.text()).toContain('上一页')
+    expect(wrapper.text()).toContain('下一页')
   })
 })

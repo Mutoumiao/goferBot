@@ -22,9 +22,9 @@ export class HistoryPage {
 
   async renameSession(oldTitle: string, newTitle: string) {
     const item = this.getHistoryItemByTitle(oldTitle)
-    await item.hover()
+    await item.locator('[data-testid="history-menu-btn"]').click()
     await item.locator('[data-testid="history-rename-btn"]').click()
-    const input = this.page.locator('[data-testid="history-item"] input')
+    const input = this.page.locator('[data-testid="history-rename-input"]')
     await input.waitFor({ state: 'visible' })
     await this.page.waitForTimeout(300)
     await input.fill(newTitle)
@@ -33,7 +33,7 @@ export class HistoryPage {
 
   async deleteSession(title: string) {
     const item = this.getHistoryItemByTitle(title)
-    await item.hover()
+    await item.locator('[data-testid="history-menu-btn"]').click()
     await item.locator('[data-testid="history-delete-btn"]').click()
   }
 
