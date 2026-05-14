@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { FakeBackendTransport } from '@/backend/fake-transport'
+import { FakeBackendTransport } from '@goferbot/backend-adapters'
 
 describe('FakeBackendTransport', () => {
   it('returns configured response', async () => {

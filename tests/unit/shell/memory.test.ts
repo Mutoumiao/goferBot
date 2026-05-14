@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { MemoryShell } from '@/shell/memory'
+import { MemoryShell } from '@goferbot/shell-adapters'
 
 describe('MemoryShell', () => {
   it('returns initial port', async () => {

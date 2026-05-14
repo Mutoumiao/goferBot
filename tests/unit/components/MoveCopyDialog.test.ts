@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MoveCopyDialog from '@/components/MoveCopyDialog.vue'
 import { sidecarPort } from '@/composables/useSidecarStatus'
-import { setShell } from '@/shell'
-import { MemoryShell } from '@/shell/memory'
+import { setShell } from '@goferbot/shell-adapters'
+import { MemoryShell } from '@goferbot/shell-adapters'
 
 describe('MoveCopyDialog', () => {
   beforeEach(() => {

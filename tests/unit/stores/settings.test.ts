@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSettingsStore } from '@/stores/settings'
-import { FakeBackendTransport } from '@/backend/fake-transport'
-import { setBackend } from '@/backend'
+import { FakeBackendTransport } from '@goferbot/backend-adapters'
+import { setBackend } from '@goferbot/backend-adapters'
 
 describe('useSettingsStore', () => {
   let backend: FakeBackendTransport

@@ -3,10 +3,10 @@ import { mount } from '@vue/test-utils'
 import KnowledgeBasePage from '@/components/KnowledgeBasePage.vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { FakeBackendTransport } from '@/backend/fake-transport'
-import { setBackend } from '@/backend'
-import { setShell } from '@/shell'
-import { MemoryShell } from '@/shell/memory'
+import { FakeBackendTransport } from '@goferbot/backend-adapters'
+import { setBackend } from '@goferbot/backend-adapters'
+import { setShell } from '@goferbot/shell-adapters'
+import { MemoryShell } from '@goferbot/shell-adapters'
 
 function mountKbPage() {
   return mount(KnowledgeBasePage, {

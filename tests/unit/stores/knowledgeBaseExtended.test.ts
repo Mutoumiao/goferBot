@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { FakeBackendTransport } from '@/backend/fake-transport'
-import { setBackend } from '@/backend'
-import { setShell } from '@/shell'
-import { MemoryShell } from '@/shell/memory'
+import { FakeBackendTransport } from '@goferbot/backend-adapters'
+import { setBackend } from '@goferbot/backend-adapters'
+import { setShell } from '@goferbot/shell-adapters'
+import { MemoryShell } from '@goferbot/shell-adapters'
 
 describe('useKnowledgeBaseStore extended', () => {
   let backend: FakeBackendTransport

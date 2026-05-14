@@ -8,8 +8,8 @@ import {
   retrySidecarStatus,
   _resetSidecarStatusForTest,
 } from '@/composables/useSidecarStatus'
-import { setShell } from '@/shell'
-import { MemoryShell } from '@/shell/memory'
+import { setShell } from '@goferbot/shell-adapters'
+import { MemoryShell } from '@goferbot/shell-adapters'
 
 describe('useSidecarStatus', () => {
   beforeEach(() => {
