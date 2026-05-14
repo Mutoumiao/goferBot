@@ -18,5 +18,17 @@ export default defineConfig({
     exclude: ['tests/e2e/**', 'tests/e2e-full/**', 'tests/integration/**', 'packages/**'],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'json-summary'],
+      include: ['packages/webui/src/**/*.ts', 'packages/webui/src/**/*.vue'],
+      exclude: ['packages/webui/src/main.ts'],
+      thresholds: {
+        lines: 70,
+        functions: 60,
+        branches: 55,
+        statements: 70,
+      },
+    },
   },
 })

@@ -22,8 +22,10 @@
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
-    "@tauri-apps/plugin-shell": "^2.3.5",
-    "vue": "^3.5.27"
+    "@tauri-apps/plugin-shell": "^2.3.5"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0"
