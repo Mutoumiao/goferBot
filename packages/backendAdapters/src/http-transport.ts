@@ -1,4 +1,4 @@
-import type { Shell } from '@/shell/types'
+import type { Shell } from '@goferbot/shell-adapters'
 import type { BackendTransport, Subscription } from './types'
 
 const DEFAULT_RETRIES = 3

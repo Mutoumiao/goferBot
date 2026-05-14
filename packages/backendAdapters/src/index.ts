@@ -1,4 +1,4 @@
-import { getShell } from '@/shell'
+import { getShell } from '@goferbot/shell-adapters'
 import { HttpBackendTransport } from './http-transport'
 import type { BackendTransport } from './types'
 
