@@ -14,8 +14,7 @@
     "preview": "pnpm --filter @goferbot/webui preview",
     "tauri": "pnpm --filter @goferbot/webui tauri",
     "check": "cargo check --manifest-path src-tauri/Cargo.toml",
-    "bump": "node bump-version.cjs",
-    "issue:sync": "node scripts/issue-sync.mjs"
+    "bump": "node bump-version.cjs"
   },
   "devDependencies": {
     "@pinia/testing": "^1.0.3",
