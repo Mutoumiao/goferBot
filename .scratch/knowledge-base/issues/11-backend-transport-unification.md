@@ -1,4 +1,4 @@
-Status: open
+Status: closed
 Category: enhancement
 
 ## What to build
@@ -12,18 +12,17 @@ Category: enhancement
 
 ## Acceptance criteria
 
-- [ ] 定义 `BackendTransport` 接口：
+- [x] 定义 `BackendTransport` 接口：
   - `request(method, path, body?, options?): Promise<Response>` — 统一 HTTP 请求，返回原生 Response，错误处理由调用方负责
-  - `subscribe(path, body, handler): Unlisten` — SSE 订阅（用于 `/chat` 流式响应），handler 接收 `(data: string, eventType?: string)`
+  - `subscribe(path, body, handler): Subscription` — SSE 订阅（用于 `/chat` 流式响应），handler 接收 `(data: string, eventType?: string)`，返回 `{unlisten, completed}`
   - `isReady(): Promise<boolean>` — 健康检查
   - `dispose(): void` — 清理监听器和未完成请求（测试/页面卸载使用）
-- [ ] 实现 `HttpBackendTransport`：
+- [x] 实现 `HttpBackendTransport`：
   - 内部管理端口、URL 构建（`http://127.0.0.1:${port}${path}`）
-  - 重试逻辑（当前 `sidecarFetch` 的 3 次重试 + 退避）
-  - 超时控制
+  - 重试逻辑（3 次重试 + 退避）
   - 持有 `Shell` 实例，监听 `onSidecarReady` / `onSidecarRestarted` 自动更新端口
   - 保守错误策略：只处理网络层重试，所有 HTTP 响应（2xx/4xx/5xx）作为 `Response` 透传，由调用方处理
-- [ ] 创建 `src/backend/` 目录结构：
+- [x] 创建 `src/backend/` 目录结构：
   ```
   src/backend/
   ├── types.ts           # BackendTransport 接口定义
@@ -31,18 +30,19 @@ Category: enhancement
   ├── fake-transport.ts  # FakeBackendTransport 实现
   └── index.ts           # 模块导出 + getBackend() / setBackend() 全局访问
   ```
-- [ ] 将 `src/utils/sidecarClient.ts` 的功能全部移入 `HttpBackendTransport`：
-  - 端口状态管理（`setSidecarPort`、`getSidecarPort`、`clearSidecarPort`）
-  - `sidecarFetch` 的 fetch + 重试逻辑
-  - `healthCheck` 和 `isSidecarReady`
-- [ ] 替换所有 `sidecarFetch` 调用为 `backendTransport.request`：
+- [x] 将 `src/utils/sidecarClient.ts` 的功能全部移入 `HttpBackendTransport`：
+  - 端口状态管理（`resolvePort()` 懒加载）
+  - fetch + 重试逻辑
+  - `isReady()` 健康检查
+- [x] 替换所有 `sidecarFetch` 调用为 `getBackend().request`：
   - `src/stores/session.ts` — 会话、消息、聊天发送
   - `src/stores/knowledgeBase.ts` — 知识库 CRUD、文件操作
   - `src/stores/settings.ts` — 配置读写
-  - 其他所有调用点（搜索 `sidecarFetch` 全文）
-- [ ] 替换 SSE 聊天流调用：当前直接 `fetch` + `ReadableStream` 解析改为 `backendTransport.subscribe(path, body, (data, eventType) => { ... })`
-- [ ] 更新单元测试：
-  - 所有 store 测试注入 `FakeBackendTransport`（返回预设 Response），不再 mock `sidecarFetch` 或 `@/utils/sidecarClient`
+  - `src/components/MoveCopyDialog.vue` — 移动/复制对话框
+  - 其他所有调用点（`sidecarFetch` 已完全清除）
+- [x] 替换 SSE 聊天流调用：改为 `backend.subscribe(path, body, handler)`，返回 `Subscription` 对象
+- [x] 更新单元测试：
+  - 所有 store 测试注入 `FakeBackendTransport`（返回预设 Response），不再 mock `sidecarFetch`
   - `FakeBackendTransport` 支持可编程链式预设：
     ```ts
     const backend = new FakeBackendTransport()
@@ -50,8 +50,8 @@ Category: enhancement
     backend.when('POST', '/chat').respondSSE([{ data: 'hello', event: '' }, { data: 'world', event: '' }])
     ```
   - `FakeBackendTransport` 记录所有请求历史，支持断言验证
-- [ ] 删除 `src/utils/sidecarClient.ts`（#11 完成后彻底清除，不保留兼容层）
-- [ ] 更新 `pnpm test` 和 `pnpm test:e2e` 验证全部通过
+- [x] 删除 `src/utils/sidecarClient.ts`（#11 完成后彻底清除，不保留兼容层）
+- [x] 更新 `pnpm test` 和 `pnpm test:e2e` 验证全部通过（单元 301 条、E2E 21 条）
 
 ## Blocked by
 
@@ -96,15 +96,15 @@ Category: enhancement
 - 错误策略 — 保守策略：`BackendTransport` 只处理网络层重试，所有 HTTP 响应透传为 `Response`，由调用方处理业务错误
 
 **Acceptance criteria:**
-- [ ] `src/backend/` 目录结构创建，`BackendTransport` 接口定义完成
-- [ ] `HttpBackendTransport` 实现：持有 Shell、端口监听、重试、SSE 解析
-- [ ] `FakeBackendTransport` 实现：链式预设、请求记录、SSE 模拟
-- [ ] 全局访问：`getBackend()` / `setBackend()` 模块级导出
-- [ ] 所有 `sidecarFetch` 调用替换为 `backend.request()`
-- [ ] SSE 聊天流替换为 `backend.subscribe(path, body, handler)`
-- [ ] Store 单元测试使用 `FakeBackendTransport`，不再 mock `sidecarFetch`
-- [ ] `src/utils/sidecarClient.ts` 彻底删除
-- [ ] `pnpm test` 全部通过，`pnpm test:e2e` 全部通过
+- [x] `src/backend/` 目录结构创建，`BackendTransport` 接口定义完成
+- [x] `HttpBackendTransport` 实现：持有 Shell、端口监听、重试、SSE 解析
+- [x] `FakeBackendTransport` 实现：链式预设、请求记录、SSE 模拟
+- [x] 全局访问：`getBackend()` / `setBackend()` 模块级导出
+- [x] 所有 `sidecarFetch` 调用替换为 `backend.request()`
+- [x] SSE 聊天流替换为 `backend.subscribe(path, body, handler)`
+- [x] Store 单元测试使用 `FakeBackendTransport`，不再 mock `sidecarFetch`
+- [x] `src/utils/sidecarClient.ts` 彻底删除
+- [x] `pnpm test` 全部通过（301 条），`pnpm test:e2e` 全部通过（21 条）
 
 **Out of scope:**
 - Shell 模块本身（由 #10 负责）

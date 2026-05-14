@@ -23,8 +23,8 @@
 | 本地模型 | #07 Ollama 与错误处理 | closed | Ollama 本地模型、全局错误处理、Loading/空状态 |
 | 质量保障 | #08 测试覆盖 | closed | 45 个测试文件、297 条用例全部通过，覆盖率阈值 lines≥70 branches≥55 functions≥60 statements≥70 |
 | 质量保障 | #09 端到端测试 | closed | 三阶测试体系全部搭建完成：阶1 E2E 28条、阶2 集成34条、阶3 验收3条。40+手动场景全部自动化 |
-| 架构重构 | #10 Shell 抽象与浏览器模式 | open | 提取 Shell 模块解耦前端与 Tauri，使 Web 可在浏览器独立运行 |
-| 架构重构 | #11 BackendTransport 统一 | open | 统一 HTTP 通信模块，将 sidecarClient 浅模块深化为高 leverage 接口 |
+| 架构重构 | #10 Shell 抽象与浏览器模式 | closed | 提取 Shell 模块解耦前端与 Tauri，使 Web 可在浏览器独立运行 |
+| 架构重构 | #11 BackendTransport 统一 | closed | 统一 HTTP 通信模块，将 sidecarClient 浅模块深化为高 leverage 接口 |
 
 ---
 
@@ -206,7 +206,7 @@
 
 ### #10 Shell 抽象与浏览器模式
 
-- **状态**：`open`
+- **状态**：`closed`
 - **文件**：`.scratch/knowledge-base/issues/10-shell-abstraction-and-browser-mode.md`
 - **依赖**：#09（closed）
 - **优先级**：高
@@ -219,7 +219,7 @@
 
 ### #11 BackendTransport 统一
 
-- **状态**：`open`
+- **状态**：`closed`
 - **文件**：`.scratch/knowledge-base/issues/11-backend-transport-unification.md`
 - **依赖**：#10（open）
 - **优先级**：高
