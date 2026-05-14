@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { injectMockTauri } from '../mocks/tauri-ipc'
+import { injectMockShell } from '../mocks/shell-memory'
 import { mockHttpRoutes } from '../mocks/http-routes'
 import { HistoryPage } from '../pages/HistoryPage'
 
@@ -7,7 +7,7 @@ test.describe.configure({ mode: 'serial' })
 
 test.describe('历史记录页面交互', () => {
   test.beforeEach(async ({ page }) => {
-    await injectMockTauri(page)
+    await injectMockShell(page)
     await mockHttpRoutes(page)
     await page.goto('/')
   })

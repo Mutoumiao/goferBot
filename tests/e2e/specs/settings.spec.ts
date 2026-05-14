@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { SettingsPage } from '../pages/SettingsPage'
-import { injectMockTauri } from '../mocks/tauri-ipc'
+import { injectMockShell } from '../mocks/shell-memory'
 import { mockHttpRoutes } from '../mocks/http-routes'
 
 test.beforeEach(async ({ page }) => {
-  await injectMockTauri(page)
+  await injectMockShell(page)
   await mockHttpRoutes(page)
 })
 

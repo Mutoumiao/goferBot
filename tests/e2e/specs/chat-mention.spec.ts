@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { injectMockTauri } from '../mocks/tauri-ipc'
+import { injectMockShell } from '../mocks/shell-memory'
 import { mockHttpRoutes } from '../mocks/http-routes'
 import { mockKnowledgeBases } from '../fixtures/knowledge-bases'
 import { ChatPage } from '../pages/ChatPage'
 
 test.describe('聊天 @提及 交互', () => {
   test.beforeEach(async ({ page }) => {
-    await injectMockTauri(page)
+    await injectMockShell(page)
     await mockHttpRoutes(page)
 
     // Provide valid LLM config so messages can be sent

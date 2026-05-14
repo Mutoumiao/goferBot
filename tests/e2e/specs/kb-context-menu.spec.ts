@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { injectMockTauri } from '../mocks/tauri-ipc'
+import { injectMockShell } from '../mocks/shell-memory'
 import { mockKnowledgeBases, mockFiles } from '../fixtures/knowledge-bases'
 import { KnowledgeBasePage } from '../pages/KnowledgeBasePage'
 
 test.describe('知识库右键菜单', () => {
   test.beforeEach(async ({ page }) => {
-    await injectMockTauri(page)
+    await injectMockShell(page)
 
     await page.route('http://127.0.0.1:*/knowledge-bases', (route) => {
       route.fulfill({ json: mockKnowledgeBases })
