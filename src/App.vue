@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, defineAsyncComponent } from 'vue'
+import { createShell, provideShell } from '@/shell'
 import SplashScreen from './components/SplashScreen.vue'
 import SideBar from './components/SideBar.vue'
 import TabBar from './components/TabBar.vue'
 import ChatPage from './components/ChatPage.vue'
-import { initSidecar, sidecarStatus } from './composables/useSidecar'
+import { initSidecarStatus, sidecarStatus } from './composables/useSidecarStatus'
 
 const KnowledgeBasePage = defineAsyncComponent(() => import('./components/KnowledgeBasePage.vue'))
 const HistoryPage = defineAsyncComponent(() => import('./components/HistoryPage.vue'))
@@ -16,8 +17,11 @@ import { useSettingsStore } from './stores/settings'
 const sessionStore = useSessionStore()
 const settingsStore = useSettingsStore()
 
+// Provide shell instance for the entire app
+provideShell(createShell())
+
 onMounted(async () => {
-  await initSidecar()
+  await initSidecarStatus()
   if (sidecarStatus.value === 'ready') {
     settingsStore.loadConfig()
   }
