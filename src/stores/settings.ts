@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { sidecarFetch } from '@/utils/sidecarClient'
+import { getBackend } from '@/backend'
 import type { AppConfig, LLMConfig, ChatProviderConfig, OllamaConfig } from '@/types'
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -23,7 +23,8 @@ export const useSettingsStore = defineStore('settings', () => {
   async function loadConfig() {
     isLoading.value = true
     try {
-      const res = await sidecarFetch('/settings')
+      const backend = getBackend()
+      const res = await backend.request('GET', '/settings')
       if (res.ok) {
         const data = await res.json()
         config.value = { ...DEFAULT_CONFIG, ...data, providers: { ...DEFAULT_CONFIG.providers, ...data.providers } }
@@ -42,11 +43,8 @@ export const useSettingsStore = defineStore('settings', () => {
         ? { ...config.value.embeddingProvider, ...updates.embeddingProvider }
         : config.value.embeddingProvider,
     } as AppConfig
-    const res = await sidecarFetch('/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newConfig),
-    })
+    const backend = getBackend()
+    const res = await backend.request('POST', '/settings', newConfig)
     if (res.ok) {
       config.value = newConfig
       return true
