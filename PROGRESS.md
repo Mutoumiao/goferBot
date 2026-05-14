@@ -221,7 +221,7 @@
 
 - **状态**：`closed`
 - **文件**：`.scratch/knowledge-base/issues/11-backend-transport-unification.md`
-- **依赖**：#10（open）
+- **依赖**：#10（closed）
 - **优先级**：高
 - **内容**：统一 HTTP 通信模块，将 `sidecarClient.ts` 浅模块深化为高 leverage 的 `BackendTransport` 接口
 - **计划文档**：待创建
@@ -233,4 +233,4 @@
 
 ---
 
-*最后更新：2026-05-14（#10 Shell 抽象、#11 BackendTransport 统一创建，待实施）*
+*最后更新：2026-05-14（#10 Shell 抽象、#11 BackendTransport 统一已完成）*
