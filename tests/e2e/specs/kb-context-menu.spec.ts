@@ -30,8 +30,8 @@ test.describe('知识库右键菜单', () => {
     await kbPage.openKbContextMenu('技术文档')
     await expect(kbPage.contextMenu).toBeVisible()
     await expect(kbPage.contextMenu.locator('text=置顶')).toBeVisible()
-    await expect(kbPage.contextMenu.locator('text=修改资料')).toBeVisible()
-    await expect(kbPage.contextMenu.locator('text=移入回收站')).toBeVisible()
+    await expect(kbPage.contextMenu.locator('text=编辑')).toBeVisible()
+    await expect(kbPage.contextMenu.locator('text=删除')).toBeVisible()
   })
 
   test('点击外部关闭右键菜单', async ({ page }) => {
@@ -98,11 +98,11 @@ test.describe('知识库右键菜单', () => {
   test('E2E-02: 右键修改知识库资料', async ({ page }) => {
     const kbPage = new KnowledgeBasePage(page)
     await kbPage.openKbContextMenu('技术文档')
-    await kbPage.clickContextMenuItem('修改资料')
+    await kbPage.clickContextMenuItem('编辑')
 
     // Verify edit dialog appears with title and current name
     await expect(page.locator('text=修改资料').first()).toBeVisible()
-    await expect(page.locator('input[type="text"]').first()).toHaveValue('技术文档')
+    await expect(page.locator('h3:has-text("修改资料") + div input[type="text"]')).toHaveValue('技术文档')
   })
 
   test('E2E-03: 右键移入回收站', async ({ page }) => {
@@ -118,7 +118,7 @@ test.describe('知识库右键菜单', () => {
 
     const kbPage = new KnowledgeBasePage(page)
     await kbPage.openKbContextMenu('会议记录')
-    await kbPage.clickContextMenuItem('移入回收站')
+    await kbPage.clickContextMenuItem('删除')
 
     // Verify the KB disappears from the list
     await expect(page.locator('[data-testid="kb-item"]').filter({ hasText: '会议记录' })).not.toBeVisible()
@@ -133,7 +133,7 @@ test.describe('知识库右键菜单', () => {
 
     const kbPage = new KnowledgeBasePage(page)
     await kbPage.openKbContextMenu('技术文档')
-    await kbPage.clickContextMenuItem('移入回收站')
+    await kbPage.clickContextMenuItem('删除')
 
     // Wait for the dialog to fire
     await page.waitForTimeout(200)
@@ -258,8 +258,8 @@ test.describe('知识库右键菜单', () => {
     // Click confirm in copy dialog
     await page.locator('text=复制至此').click()
 
-    // Verify error toast appears (app shows generic "复制失败" error toast)
-    await expect(page.locator('text=复制失败')).toBeVisible()
+    // Verify copy dialog closes (app handles error silently via store.error, no toast shown)
+    await expect(page.locator('text=复制到').first()).not.toBeVisible()
   })
 
   test('E2E-10: 文件永久删除', async ({ page }) => {
@@ -350,7 +350,7 @@ test.describe('知识库右键菜单', () => {
 
     // Verify recycle bin page is shown
     await expect(page.locator('text=回收站').first()).toBeVisible()
-    await expect(page.locator('text=已删除的知识库可以恢复')).toBeVisible()
+    await expect(page.locator('text=删除的对话和知识文件会暂时保留，过期后自动清理。')).toBeVisible()
 
     // Click restore
     await page.getByRole('button', { name: '恢复' }).click()

@@ -32,8 +32,8 @@ export class KnowledgeBasePage {
 
   async createKnowledgeBase(name: string) {
     await this.createBtn.click()
-    await this.page.locator('[data-testid="kb-name-input"]').fill(name)
-    await this.page.locator('[data-testid="kb-create-confirm"]').click()
+    await this.page.locator('input[placeholder="输入知识库名称"]').fill(name)
+    await this.page.locator('button:has-text("创建")').click()
   }
 
   async getKbItem(name: string): Promise<Locator> {
