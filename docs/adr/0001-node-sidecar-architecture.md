@@ -60,7 +60,7 @@ Tauri 提供了两种主要方式来连接前端与后端能力：
 
 ## 后果
 
-1. 项目需要维护 `server/` 目录（Hono 服务代码）和 `src-tauri/` 目录（Rust 进程管理代码）。
+1. 项目需要维护 `packages/server/` 目录（Hono 服务代码）和 `src-tauri/` 目录（Rust 进程管理代码）。
 2. 前端与 sidecar 的通信契约需要明确定义（OpenAPI / TypeScript 共享类型）。
 3. 需要建立 sidecar 健康检查、崩溃重启、端口发现的完整机制（详见启动时序设计）。
 4. 第一版 sidecar 为本地单用户服务，不做认证和请求限流。

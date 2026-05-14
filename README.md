@@ -96,7 +96,7 @@
 | CSS 框架     | Tailwind CSS v4                                   | 原子化样式、自定义主题                        |
 | 图标方案       | @egoist/tailwindcss-icons + Material Design Icons | 统一图标体系                             |
 | 测试框架       | Vitest + @vue/test-utils                          | 组件测试、Store 测试、工具函数测试               |
-| 包管理器       | pnpm                                              | workspace 支持、依赖隔离                  |
+| 包管理器       | pnpm workspace                                    | Monorepo 依赖管理、跨包引用               |
 
 ***
 
@@ -114,10 +114,16 @@
 pnpm install
 ```
 
+### 构建所有包
+
+```bash
+pnpm -r build
+```
+
 ### 启动开发模式
 
 ```bash
-# 同时启动 Vite dev server 和 Vue Devtools
+# 启动 webui Vite dev server 和 Vue Devtools
 pnpm dev
 ```
 
@@ -141,6 +147,12 @@ pnpm check
 
 # 运行单元测试
 pnpm test
+
+# 运行集成测试
+pnpm test:integration
+
+# 运行 E2E 测试
+pnpm test:e2e
 
 # TypeScript 类型检查
 pnpm type-check

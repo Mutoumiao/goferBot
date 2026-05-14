@@ -266,7 +266,7 @@ CREATE VIRTUAL TABLE fts_document_chunks USING fts5(
 ## 8. 实现顺序
 
 ### Phase 1：基础框架
-1. 创建 `server/` 目录，搭建 Hono 服务
+1. 创建 `packages/server/` 目录，搭建 Hono 服务
 2. Tauri Rust 配置 sidecar 启动与监控
 3. 前端布局：左侧边栏 + 顶部标签栏 + 内部区域
 4. 标签栏：新建、切换、关闭、首页固定

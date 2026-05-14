@@ -5,46 +5,45 @@
 ## 项目结构
 
 ```
-├── src/                          # Vue 3 前端源码
-│   ├── components/               # Vue 组件
-│   ├── stores/                   # Pinia 状态管理（session、settings、knowledgeBase）
-│   ├── composables/              # 组合式函数（useSidecar 等）
-│   ├── utils/                    # 工具函数（sidecarClient、markdown 等）
-│   ├── types/                    # TypeScript 类型定义
-│   ├── assets/                   # 静态资源
-│   ├── App.vue                   # 根组件
-│   └── main.ts                   # 入口文件
+├── packages/
+│   ├── webui/                    # Vue 3 前端（@goferbot/webui）
+│   │   ├── src/                  # Vue 组件、stores、composables
+│   │   ├── dist/                 # Vite 构建产物
+│   │   └── package.json          # 前端依赖
+│   ├── server/                   # Node.js Sidecar（@goferbot/server）
+│   │   ├── src/                  # Hono 路由、SQLite、LLM 适配器
+│   │   ├── dist/                 # tsc 编译产物
+│   │   └── package.json          # Sidecar 依赖
+│   ├── shellAdapters/            # 平台适配层（@goferbot/shell-adapters）
+│   ├── backendAdapters/          # 后端通信适配层（@goferbot/backend-adapters）
+│   └── rag-sdk/                  # RAG 工具库（@goferbot/rag-sdk）
 ├── src-tauri/                    # Tauri Rust 后端
 │   ├── src/                      # Rust 源码（lib.rs、sidecar.rs、main.rs）
-│   ├── capabilities/             # Tauri v2 能力配置（窗口权限分配）
-│   ├── permissions/              # Tauri v2 权限定义（自定义命令 ACL）
-│   ├── gen/                      # tauri-build 自动生成文件（schema、类型）
+│   ├── capabilities/             # Tauri v2 能力配置
+│   ├── permissions/              # Tauri v2 权限定义
+│   ├── gen/                      # tauri-build 自动生成文件
 │   ├── Cargo.toml                # Rust 依赖
 │   └── tauri.conf.json           # Tauri 配置
-├── server/                       # Node.js Sidecar（独立 HTTP 服务）
-│   ├── src/                      # Sidecar 源码（Hono 路由、SQLite、LLM 适配器）
-│   ├── dist/                     # 编译产物（tsc 输出，Tauri 运行此目录）
-│   ├── package.json              # Sidecar 依赖
-│   └── tsconfig.json             # Sidecar TypeScript 配置
-├── tests/                        # 测试
+├── tests/                        # 根目录测试（跨包集成测试、E2E 测试）
 │   ├── setup/                    # 测试配置（testglobals.ts）
-│   └── unit/                     # 单元测试
+│   ├── unit/                     # 单元测试
+│   ├── integration/              # 集成测试
+│   └── e2e/                      # E2E 测试（Playwright）
 ├── docs/                         # 文档
-│   ├── agents/                   # Agent 技能配置（issue-tracker、triage-labels、domain）
-│   ├── adr/                      # 架构决策记录（Architecture Decision Records）
-│   ├── superpowers/plans/        # 功能执行计划（按日期组织的实现方案）
+│   ├── agents/                   # Agent 技能配置
+│   ├── adr/                      # 架构决策记录（ADR）
+│   ├── superpowers/plans/        # 功能执行计划
 │   ├── design-discussions/       # 设计讨论记录
-│   ├── test-cases/               # 测试用例（按 Issue 编号独立文件，如 01-*.md、03b-*.md）
+│   ├── test-cases/               # 测试用例（按 Issue 编号）
 │   └── prd-v1.md                 # 产品需求文档
-├── .scratch/                     # 临时工作区（不纳入版本控制核心）
+├── .scratch/                     # 临时工作区
 │   └── knowledge-base/
 │       ├── PRD.md                # 产品需求总纲
-│       └── issues/               # Issue 跟踪（01-sidecar-startup ~ 08-test-coverage）
-├── public/                       # 公共资源
-├── PROGRESS.md                   # 项目进度追踪（Issue 执行状态与后续计划）
-├── vite.config.ts                # Vite 配置
-├── vitest.config.ts              # Vitest 配置
-└── package.json                  # 前端依赖
+│       └── issues/               # Issue 跟踪
+├── pnpm-workspace.yaml           # pnpm workspace 配置
+├── PROGRESS.md                   # 项目进度追踪
+├── vitest.config.ts              # Vitest 配置（根目录）
+└── package.json                  # 根包配置（workspace 聚合脚本）
 ```
 
 ## 技术栈
@@ -68,32 +67,41 @@
 
 ## 启动命令
 
-- `pnpm dev` —— 启动开发模式（同时运行 Vite dev server 和 Vue Devtools）
-- `pnpm build` —— 构建生产版本（TypeScript 类型检查 + Vite 构建）
-- `pnpm preview` —— 预览生产构建
-- `pnpm type-check` —— 仅运行 TypeScript 类型检查
+根目录脚本通过 pnpm workspace 聚合各包操作：
+
+- `pnpm dev` —— 启动 webui 开发模式（Vite dev server + Vue Devtools）
+- `pnpm build` —— 构建 webui 生产版本
+- `pnpm preview` —— 预览 webui 生产构建
+- `pnpm test` —— 运行根目录单元测试（Vitest）
+- `pnpm test:integration` —— 运行集成测试
+- `pnpm test:e2e` —— 运行 E2E 测试（Playwright）
+- `pnpm type-check` —— 运行 webui TypeScript 类型检查
 - `pnpm check` —— 检查 Rust 代码（`cargo check`）
 - `pnpm tauri <cmd>` —— 运行 Tauri CLI 命令（如 `pnpm tauri dev`、`pnpm tauri build`）
+- `pnpm -r build` —— 构建所有 workspace 包
+- `pnpm --filter @goferbot/server build` —— 单独构建 server 包
 
 ## 测试验证
 
-- **框架**：Vitest，测试文件 `tests/unit/**/*.test.ts`、`src/**/*.spec.ts`
-- **运行**：`pnpm test`
+- **框架**：Vitest（单元测试）、Playwright（E2E 测试）
+- **单元测试**：`tests/unit/**/*.test.ts`
+- **集成测试**：`tests/integration/**/*.spec.ts`
+- **E2E 测试**：`tests/e2e/specs/**/*.spec.ts`
+- **运行**：`pnpm test`（单元）、`pnpm test:integration`（集成）、`pnpm test:e2e`（E2E）
 
 ## 注意事项
 
-### Worktree 开发规范
+### Monorepo 开发规范
 
-每次 worktree 合并回 `master` 后，在主仓库执行：
+本项目采用 pnpm workspace 管理多包依赖。每次切换分支或合并后，在主仓库执行：
 
 ```bash
 pnpm install
-pnpm --dir server install
-cd server && npx prebuild-install --download
-pnpm test && pnpm type-check && cd server && pnpm build
+pnpm -r build
+pnpm test && pnpm test:integration && pnpm type-check
 ```
 
-（pnpm v10 默认忽略构建脚本，better-sqlite3 需手动下载原生绑定。）
+（pnpm v10 默认忽略构建脚本，better-sqlite3 需手动下载原生绑定：`cd node_modules/better-sqlite3 && npx prebuild-install --download`）
 
 ### Shell 环境偏好
 

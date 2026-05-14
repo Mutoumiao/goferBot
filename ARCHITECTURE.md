@@ -8,7 +8,7 @@
 ┌─────────────────────────────────────────┐
 │           渲染进程（Renderer）            │
 │      Vue 3 + Pinia + Tailwind CSS       │
-│              src/                       │
+│         packages/webui/src/             │
 ├─────────────────────────────────────────┤
 │      IPC（invoke / event listen）        │
 ├─────────────────────────────────────────┤
@@ -17,7 +17,7 @@
 │           src-tauri/src/                │
 ├─────────────────────────────────────────┤
 │      Sidecar 进程（Node.js HTTP）         │
-│           server/                       │
+│         packages/server/                │
 └─────────────────────────────────────────┘
 ```
 
@@ -25,7 +25,7 @@
 - **主进程**：负责本地文件系统访问、Sidecar 子进程的生命周期管理（启动、监控、自动重启）。
 - **Sidecar**：独立的 Node.js HTTP 服务，承载业务逻辑与数据持久化（SQLite），避免阻塞 Rust 主线程。
 
-## 前端（`src/`）
+## 前端（`packages/webui/src/`）
 
 | 文件/目录 | 职责 |
 |-----------|------|
@@ -73,7 +73,7 @@
 - `sidecar-ready`：首次启动成功，携带 `{ port }`
 - `sidecar-restarted`：崩溃后自动重启成功，携带 `{ port }`
 
-## Sidecar（`server/`）
+## Sidecar（`packages/server/`）
 
 | 文件/目录 | 职责 |
 |-----------|------|
