@@ -427,9 +427,13 @@ git mv tsconfig.json packages/webui/tsconfig.json
 git mv tsconfig.app.json packages/webui/tsconfig.app.json
 git mv tsconfig.node.json packages/webui/tsconfig.node.json
 
-# 其他前端相关文件（如有）
-# git mv postcss.config.js packages/webui/postcss.config.js
-# git mv tailwind.config.js packages/webui/tailwind.config.js
+# 静态资源目录
+git mv public packages/webui/public
+
+# 根目录生成的类型声明文件（如存在则移动）
+git mv auto-imports.d.ts packages/webui/auto-imports.d.ts 2>/dev/null || true
+git mv components.d.ts packages/webui/components.d.ts 2>/dev/null || true
+git mv env.d.ts packages/webui/env.d.ts 2>/dev/null || true
 ```
 
 - [ ] **Step 2: 创建 webui package.json**
@@ -572,21 +576,53 @@ git commit -m "chore(monorepo): migrate webui to packages/webui"
 
 ---
 
-### Task 6: 迁移测试文件
+### Task 6: 测试配置迁移（混合方案）
 
 **Files:**
-- Create: `packages/webui/tests/` (move from root `tests/`)
-- Modify: `packages/webui/vitest.config.ts`
+- Modify: `vitest.config.ts`（根目录保留）
+- Modify: `tests/e2e/playwright.config.ts`
+- Move: `tests/unit/server/` → `tests/integration/`
 
-- [ ] **Step 1: 移动测试目录**
+**策略**：
+- `tests/` 根目录保留，重新组织为 `unit/`、`integration/`、`e2e/`（含 `e2e-full/`）
+- 各 `packages/xxx/tests/` 仅存放该包**纯单元测试**（未来新增）
+- `vitest.config.ts` 保留根目录，配置 `include: ['tests/**/*.test.ts', 'packages/*/tests/**/*.test.ts']`
+
+- [ ] **Step 1: 重命名 server 测试目录**
 
 ```bash
-git mv tests packages/webui/tests
+mkdir -p tests/integration
+git mv tests/unit/server/* tests/integration/
+rmdir tests/unit/server/
 ```
 
-- [ ] **Step 2: 更新测试文件中的导入路径**
+- [ ] **Step 2: 更新根目录 `vitest.config.ts`**
 
-修改 `packages/webui/tests/unit/shell/memory.test.ts`：
+```typescript
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
+
+export default defineConfig({
+  plugins: [vue()],
+  test: {
+    environment: 'jsdom',
+    include: ['tests/**/*.test.ts', 'packages/*/tests/**/*.test.ts'],
+    globals: true,
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './packages/webui/src'),
+      '@goferbot/shell-adapters': resolve(__dirname, './packages/shellAdapters/src'),
+      '@goferbot/backend-adapters': resolve(__dirname, './packages/backendAdapters/src'),
+    },
+  },
+})
+```
+
+- [ ] **Step 3: 更新测试文件中的导入路径**
+
+修改 `tests/unit/shell/memory.test.ts`：
 
 ```typescript
 // 原
@@ -595,7 +631,7 @@ import { MemoryShell } from '@/shell/memory'
 import { MemoryShell } from '@goferbot/shell-adapters'
 ```
 
-修改 `packages/webui/tests/unit/backend/fake-transport.test.ts`：
+修改 `tests/unit/backend/fake-transport.test.ts`：
 
 ```typescript
 // 原
@@ -604,7 +640,7 @@ import { FakeBackendTransport } from '@/backend/fake-transport'
 import { FakeBackendTransport } from '@goferbot/backend-adapters'
 ```
 
-修改 `packages/webui/tests/unit/composables/useSidecarStatus.test.ts`：
+修改 `tests/unit/composables/useSidecarStatus.test.ts`：
 
 ```typescript
 // 原
@@ -614,7 +650,7 @@ import { MemoryShell } from '@/shell/memory'
 import { setShell, MemoryShell } from '@goferbot/shell-adapters'
 ```
 
-修改 `packages/webui/tests/unit/stores/session.test.ts`：
+修改 `tests/unit/stores/session.test.ts`、`settings.test.ts`、`knowledgeBase*.test.ts`：
 
 ```typescript
 // 原
@@ -624,37 +660,44 @@ import { setBackend } from '@/backend'
 import { FakeBackendTransport, setBackend } from '@goferbot/backend-adapters'
 ```
 
-修改 `packages/webui/tests/unit/stores/settings.test.ts`：
+修改 `tests/integration/*.test.ts`：
 
 ```typescript
 // 原
-import { FakeBackendTransport } from '@/backend/fake-transport'
-import { setBackend } from '@/backend'
-// 新
-import { FakeBackendTransport, setBackend } from '@goferbot/backend-adapters'
+import { createTestDb } from '@/utils/db'
+// 新（如需要）
+import { createTestDb } from '@goferbot/server/utils/db'
 ```
 
-- [ ] **Step 3: 更新 E2E 测试路径**
+- [ ] **Step 4: 更新 E2E 测试路径**
 
-修改 `packages/webui/tests/e2e/mocks/shell-memory.ts`（如存在）：
+修改 `tests/e2e/playwright.config.ts`：
 
 ```typescript
-// 如有对 shell 的引用，更新为 workspace 包
+export default defineConfig({
+  testDir: './specs',
+  // ...
+  webServer: {
+    command: 'pnpm --filter @goferbot/webui vite:dev',
+    url: 'http://localhost:1420',
+    // ...
+  },
+})
 ```
 
-- [ ] **Step 4: 运行 webui 测试**
+- [ ] **Step 5: 运行全部测试**
 
 ```bash
-pnpm --filter @goferbot/webui test
+pnpm test
 ```
 
-Expected: 全部通过
+Expected: 全部 301 个单元测试 + 21 个 E2E 测试通过
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add packages/webui/tests/
-git commit -m "chore(monorepo): migrate tests to packages/webui/tests"
+git add tests/ vitest.config.ts
+git commit -m "chore(monorepo): migrate tests with hybrid strategy"
 ```
 
 ---
@@ -760,7 +803,7 @@ git commit -m "chore(monorepo): create rag-sdk placeholder package"
 - Delete: `index.html` (已移动)
 - Modify: `package.json` (root)
 
-- [ ] **Step 1: 确认旧目录已清空并删除**
+- [ ] **Step 1: 清理根目录残留文件**
 
 ```bash
 # 确认 src/ 和 server/ 已空
@@ -769,6 +812,15 @@ ls server/ 2>/dev/null || echo "server/ is empty or removed"
 
 # 删除空目录
 rmdir src/ server/ 2>/dev/null || true
+
+# 删除旧的 pnpm-lock.yaml（server 子目录的，workspace 统一用根目录 lockfile）
+rm -f server/pnpm-lock.yaml
+
+# 删除旧的 dist/（webui 的 dist 现在在 packages/webui/dist/）
+rm -rf dist/
+
+# 确认根目录不再包含前端源码文件
+ls *.d.ts 2>/dev/null && echo "WARNING: .d.ts files still in root" || echo "Root .d.ts cleaned"
 ```
 
 - [ ] **Step 2: 更新根目录 scripts**

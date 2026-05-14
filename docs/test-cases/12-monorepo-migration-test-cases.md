@@ -117,7 +117,7 @@ TC-12-001 ~ TC-12-015
 
 ---
 
-## 四、测试迁移验证
+## 四、测试迁移验证（混合方案）
 
 ### TC-12-010: 单元测试运行
 
@@ -125,8 +125,8 @@ TC-12-001 ~ TC-12-015
 |------|------|
 | TC-ID | TC-12-010 |
 | 测试项 | 所有单元测试在 monorepo 结构下通过 |
-| 前置条件 | `packages/webui/tests/` 已迁移，vitest 配置已更新 |
-| 测试步骤 | 1. 运行 `pnpm --filter @goferbot/webui test --run` |
+| 前置条件 | `tests/unit/` 保留根目录，`vitest.config.ts` 已更新 |
+| 测试步骤 | 1. 运行 `pnpm test`（根目录 vitest） |
 | 预期结果 | 301 个测试全部通过，无失败 |
 | 优先级 | P0 |
 
@@ -136,9 +136,20 @@ TC-12-001 ~ TC-12-015
 |------|------|
 | TC-ID | TC-12-011 |
 | 测试项 | E2E 测试在 monorepo 结构下通过 |
-| 前置条件 | `packages/webui/tests/e2e/` 已迁移，playwright 配置已更新 |
-| 测试步骤 | 1. 运行 `pnpm --filter @goferbot/webui test:e2e` |
+| 前置条件 | `tests/e2e/` 保留根目录，playwright 配置已更新 |
+| 测试步骤 | 1. 运行 `pnpm test:e2e` |
 | 预期结果 | 21 个 E2E 测试全部通过 |
+| 优先级 | P0 |
+
+### TC-12-011b: 集成测试运行
+
+| 字段 | 内容 |
+|------|------|
+| TC-ID | TC-12-011b |
+| 测试项 | 集成测试在 monorepo 结构下通过 |
+| 前置条件 | `tests/integration/` 已创建（原 `tests/unit/server/`），vitest 配置已更新 |
+| 测试步骤 | 1. 运行 `pnpm test:integration` |
+| 预期结果 | 34 个集成测试全部通过 |
 | 优先级 | P0 |
 
 ---
@@ -199,8 +210,9 @@ TC-12-001 ~ TC-12-015
 
 | 测试类型 | 文件路径 | 覆盖 TC-ID |
 |----------|----------|-----------|
-| 单元测试 | `packages/webui/tests/unit/**/*.test.ts` | TC-12-010 |
-| E2E 测试 | `packages/webui/tests/e2e/specs/*.spec.ts` | TC-12-011 |
+| 单元测试 | `tests/unit/**/*.test.ts` | TC-12-010 |
+| 集成测试 | `tests/integration/**/*.test.ts` | TC-12-011b |
+| E2E 测试 | `tests/e2e/specs/*.spec.ts` | TC-12-011 |
 | 构建验证 | 命令 `pnpm -r build` | TC-12-003 ~ TC-12-006, TC-12-014 |
 | 类型检查 | 命令 `pnpm -r type-check` | TC-12-015 |
 | Tauri 验证 | 命令 `pnpm tauri dev` / `pnpm tauri build` | TC-12-012 ~ TC-12-013 |

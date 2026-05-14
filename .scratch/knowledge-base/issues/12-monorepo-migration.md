@@ -31,22 +31,23 @@ knowledge-base/
 ├── packages/
 │   ├── webui/                 # Vue 3 前端应用（原 src/）
 │   │   ├── src/
-│   │   ├── tests/
 │   │   ├── index.html
 │   │   ├── vite.config.ts
-│   │   ├── vitest.config.ts
 │   │   └── package.json       # name: @goferbot/webui
 │   ├── shellAdapters/         # 平台适配层（原 src/shell/）
 │   │   ├── src/
+│   │   ├── tests/             # 纯单元测试（未来新增）
 │   │   ├── package.json       # name: @goferbot/shell-adapters
 │   │   └── tsconfig.json
 │   ├── backendAdapters/       # 后端通信适配层（原 src/backend/）
 │   │   ├── src/
+│   │   ├── tests/             # 纯单元测试（未来新增）
 │   │   ├── package.json       # name: @goferbot/backend-adapters
 │   │   └── tsconfig.json
 │   ├── server/                # Node.js Sidecar（原 server/）
 │   │   ├── src/
 │   │   ├── dist/
+│   │   ├── tests/             # 纯单元测试（未来新增）
 │   │   └── package.json       # name: @goferbot/server
 │   └── rag-sdk/               # RAG 工具库（未来扩展，当前为空骨架）
 │       ├── src/
@@ -55,11 +56,18 @@ knowledge-base/
 │   ├── src/
 │   ├── capabilities/
 │   └── tauri.conf.json        # 需更新 frontendDist 路径
+├── tests/                     # 根目录测试（保留）
+│   ├── unit/                  # 前端单元测试
+│   ├── integration/           # 集成测试（原 tests/unit/server/）
+│   ├── e2e/                   # Playwright 前端 E2E
+│   ├── e2e-full/              # 全链路验收测试
+│   └── setup/                 # 测试配置
 ├── docs/
 │   ├── adr/0006-monorepo-migration.md
 │   └── ...（其他文档最后统一更新）
 ├── pnpm-workspace.yaml
 ├── package.json               # 根 workspace 配置
+├── vitest.config.ts           # 根目录统一测试配置
 └── ...
 ```
 
@@ -124,10 +132,14 @@ knowledge-base/
 - [ ] 验证 `pnpm tauri dev` 正常启动
 - [ ] 验证 `pnpm tauri build` 能正确打包
 
-### Phase 5: 测试迁移
+### Phase 5: 测试配置迁移（混合方案）
 
-- [ ] 将 `tests/unit/` 迁移到 `packages/webui/tests/`
-- [ ] 更新各测试文件中的导入路径（mock 路径、模块引用）
+**测试目录策略**：
+- `tests/` 根目录保留，重新组织为三层：`unit/`、`integration/`、`e2e/`（含 `e2e-full/`）
+- 各 `packages/xxx/tests/` 仅存放该包**纯单元测试**（未来新增）
+- `vitest.config.ts` 保留根目录，配置 `include: ['tests/**/*.test.ts', 'packages/*/tests/**/*.test.ts']`
+
+- [ ] 将 `tests/unit/server/` 移至 `tests/integration/`（这些实际是 API 集成测试）
 - [ ] 更新 `vitest.config.ts` 的 `include` 和 `alias`
 - [ ] 确保 Playwright E2E 配置路径正确
 - [ ] 运行 `pnpm -r test`，修复所有失败用例
