@@ -43,3 +43,16 @@ playwright/.cache/
 coverage/
 # design file
 *.pen
+
+# Monorepo package build artifacts
+packages/*/dist/
+packages/*/*.js
+packages/*/*.d.ts
+packages/*/*.d.ts.map
+packages/*/*.js.map
+packages/*/.tsbuildinfo
+packages/*/.tmp/
+packages/webui/src/**/*.js
+packages/webui/src/**/*.d.ts
+packages/webui/src/**/*.d.ts.map
+packages/webui/src/**/*.js.map

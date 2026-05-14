@@ -1,5 +1,8 @@
 import { inject, provide } from 'vue'
 import type { Shell } from './types'
+export type { Shell, Unlisten } from './types'
+export { MemoryShell } from './memory'
+export type { MemoryShellOptions } from './memory'
 import { TauriShell } from './tauri'
 import { BrowserShell } from './browser'
 

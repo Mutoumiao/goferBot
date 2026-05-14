@@ -1,4 +1,3 @@
-import { getBackend } from '@/backend'
 import type { Shell, Unlisten } from './types'
 
 function getBrowserPort(): number {
@@ -7,7 +6,7 @@ function getBrowserPort(): number {
     const parsed = parseInt(stored, 10)
     if (!isNaN(parsed) && parsed > 0) return parsed
   }
-  const envPort = import.meta.env.VITE_SIDECAR_PORT
+  const envPort = (import.meta as any).env?.VITE_SIDECAR_PORT
   if (envPort) {
     const parsed = parseInt(envPort, 10)
     if (!isNaN(parsed) && parsed > 0) return parsed
@@ -59,8 +58,11 @@ export class BrowserShell implements Shell {
         }
 
         try {
-          const backend = getBackend()
-          const res = await backend.request('POST', `/knowledge-bases/${knowledgeBaseId}/files`, { path: targetPath, files: fileList })
+          const res = await fetch(`http://127.0.0.1:${this.port}/knowledge-bases/${knowledgeBaseId}/files`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: targetPath, files: fileList }),
+          })
           if (!res.ok) {
             const err = await res.json().catch(() => ({ error: '导入失败' }))
             reject(new Error(err.error || '导入失败'))

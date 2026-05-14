@@ -18,7 +18,16 @@
     "issue:sync": "node scripts/issue-sync.mjs"
   },
   "devDependencies": {
+    "@pinia/testing": "^1.0.3",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "@vue/test-utils": "^2.4.6",
     "concurrently": "^9.2.1",
-    "cross-env": "^10.1.0"
+    "cross-env": "^10.1.0",
+    "happy-dom": "^20.9.0",
+    "lodash-es": "^4.17.23",
+    "pinia": "^3.0.4",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0",
+    "vue": "^3.5.27"
   }
 }

@@ -45,7 +45,7 @@ async function waitForHealth(port: number, timeout = 30000): Promise<void> {
 }
 export async function startSidecar(): Promise<{ port: number; dataDir: string }> {
   currentDataDir = mkdtempSync(join(tmpdir(), 'kb-e2e-'))
-  sidecarProcess = spawn('node', ['server/dist/index.js'], {
+  sidecarProcess = spawn('node', ['packages/server/dist/index.js'], {
     env: {
       ...process.env,
       KB_DATA_DIR: currentDataDir,
