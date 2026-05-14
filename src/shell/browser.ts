@@ -1,4 +1,4 @@
-import { sidecarFetch } from '@/utils/sidecarClient'
+import { getBackend } from '@/backend'
 import type { Shell, Unlisten } from './types'
 
 function getBrowserPort(): number {
@@ -59,11 +59,8 @@ export class BrowserShell implements Shell {
         }
 
         try {
-          const res = await sidecarFetch(`/knowledge-bases/${knowledgeBaseId}/files`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ path: targetPath, files: fileList }),
-          })
+          const backend = getBackend()
+          const res = await backend.request('POST', `/knowledge-bases/${knowledgeBaseId}/files`, { path: targetPath, files: fileList })
           if (!res.ok) {
             const err = await res.json().catch(() => ({ error: '导入失败' }))
             reject(new Error(err.error || '导入失败'))

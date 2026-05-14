@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, watch, ref } from 'vue'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { isSidecarReady } from '@/utils/sidecarClient'
+import { getBackend } from '@/backend'
 import EmptySession from './EmptySession.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatInput from './ChatInput.vue'
@@ -67,11 +67,12 @@ onMounted(() => {
   if (kbStore.knowledgeBases.length === 0) {
     kbStore.loadKnowledgeBases()
   }
-  isSidecarReady().then((ready) => {
+  const backend = getBackend()
+  backend.isReady().then((ready) => {
     sidecarReady.value = ready
   })
   sidecarTimer = setInterval(async () => {
-    sidecarReady.value = await isSidecarReady()
+    sidecarReady.value = await backend.isReady()
   }, 5000)
 })
 
