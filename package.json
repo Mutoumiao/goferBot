@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @goferbot/webui dev",
+    "dev": "concurrently \"pnpm dev:server\" \"pnpm dev:web\" --names server,web --prefix-colors cyan,green",
+    "dev:web": "pnpm --filter @goferbot/webui dev",
+    "dev:server": "pnpm --filter @goferbot/server dev",
     "build": "pnpm -r build",
     "test": "vitest",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
