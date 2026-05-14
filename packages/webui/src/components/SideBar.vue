@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { TabType } from '@/types'
+import { Button } from '@/components/ui/button'
+import { SparklesIcon, MessageSquareTextIcon, DatabaseIcon, HistoryIcon, Trash2Icon, SettingsIcon } from 'lucide-vue-next'
 
 const props = defineProps<{
   activeType?: TabType
@@ -14,14 +16,14 @@ const emit = defineEmits<{
 }>()
 
 const navItems = [
-  { type: 'chat' as TabType, icon: 'i-mdi-message-text-outline', action: () => emit('openChat') },
-  { type: 'knowledgeBase' as TabType, icon: 'i-mdi-database-outline', action: () => emit('openKnowledgeBase') },
+  { type: 'chat' as TabType, icon: MessageSquareTextIcon, action: () => emit('openChat') },
+  { type: 'knowledgeBase' as TabType, icon: DatabaseIcon, action: () => emit('openKnowledgeBase') },
 ]
 
 const bottomItems = [
-  { type: 'history' as TabType, icon: 'i-mdi-history', action: () => emit('openHistory') },
-  { type: 'recycleBin' as TabType, icon: 'i-mdi-trash-can-outline', action: () => emit('openRecycleBin') },
-  { type: 'settings' as TabType, icon: 'i-mdi-cog-outline', action: () => emit('openSettings') },
+  { type: 'history' as TabType, icon: HistoryIcon, action: () => emit('openHistory') },
+  { type: 'recycleBin' as TabType, icon: Trash2Icon, action: () => emit('openRecycleBin') },
+  { type: 'settings' as TabType, icon: SettingsIcon, action: () => emit('openSettings') },
 ]
 
 function isActive(type: TabType) {
@@ -38,40 +40,44 @@ function isActive(type: TabType) {
       <div
         class="flex h-9 w-9 items-center justify-center rounded-2xl border border-border-default bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       >
-        <span class="i-mdi-sparkles text-lg text-accent-500" />
+        <SparklesIcon class="size-5 text-accent-500" />
       </div>
 
       <!-- Main nav items：40×40、圆角 16；激活 #E8EBF2 -->
-      <button
+      <Button
         v-for="item in navItems"
         :key="item.type"
+        variant="ghost"
+        size="icon"
         :class="[
-          'flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200',
+          'h-10 w-10 rounded-2xl transition-all duration-200',
           isActive(item.type)
-            ? 'bg-nav-active text-text-primary'
+            ? 'bg-nav-active text-text-primary hover:bg-nav-active'
             : 'text-text-tertiary hover:bg-surface-3/70 hover:text-text-secondary',
         ]"
         @click="item.action"
       >
-        <span :class="[item.icon, 'text-lg']" />
-      </button>
+        <Component :is="item.icon" class="size-5" />
+      </Button>
     </div>
 
     <!-- Secondary Navigation -->
     <div class="flex flex-col items-center gap-2.5">
-      <button
+      <Button
         v-for="item in bottomItems"
         :key="item.type"
+        variant="ghost"
+        size="icon"
         :class="[
-          'flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200',
+          'h-10 w-10 rounded-2xl transition-all duration-200',
           isActive(item.type)
-            ? 'bg-nav-active text-text-primary'
+            ? 'bg-nav-active text-text-primary hover:bg-nav-active'
             : 'text-text-tertiary hover:bg-surface-3/70 hover:text-text-secondary',
         ]"
         @click="item.action"
       >
-        <span :class="[item.icon, 'text-lg']" />
-      </button>
+        <Component :is="item.icon" class="size-5" />
+      </Button>
     </div>
   </div>
 </template>

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { AlertCircleIcon } from 'lucide-vue-next'
+
 const props = defineProps<{
   visible: boolean
   title: string
@@ -36,8 +39,8 @@ const btnClasses = {
       >
         <div class="w-80 rounded-2xl border border-border-default bg-white p-5 shadow-xl">
           <div class="mb-4 flex items-start gap-3">
-            <span
-              class="i-mdi-alert-circle text-2xl shrink-0"
+            <AlertCircleIcon
+              class="size-8 shrink-0"
               :class="kindClasses[kind || 'info']"
             />
             <div>
@@ -47,21 +50,20 @@ const btnClasses = {
           </div>
 
           <div class="flex justify-end gap-2">
-            <button
-              type="button"
-              class="rounded-lg px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+            <Button
+              variant="ghost"
+              class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
               @click="emit('cancel')"
             >
               {{ cancelText || '取消' }}
-            </button>
-            <button
-              type="button"
-              class="rounded-lg px-3 py-1.5 text-sm text-white transition-colors"
+            </Button>
+            <Button
+              class="rounded-lg px-3 py-1.5 text-sm text-white"
               :class="btnClasses[kind || 'info']"
               @click="emit('confirm')"
             >
               {{ confirmText || '确定' }}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

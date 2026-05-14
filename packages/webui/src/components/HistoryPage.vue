@@ -2,6 +2,22 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useSessionStore } from '@/stores/session'
 import { confirmDialog } from '@/utils/confirm'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  ClockIcon,
+  ChevronDownIcon,
+  LoaderIcon,
+  AlertCircleIcon,
+  HistoryIcon,
+  MessageSquareIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  TrashIcon,
+  ArrowRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from 'lucide-vue-next'
 
 /** 设计稿「Session history long list」单屏条数（画板示例为 6 条 + 分页） */
 const PAGE_SIZE = 6
@@ -161,14 +177,16 @@ function onResumeClick(e: Event, sessionId: string) {
             点击任意记录即可恢复到对应会话，继续追问、整理或查看引用来源。
           </p>
         </div>
-        <button
+        <Button
           type="button"
-          class="flex h-[34px] shrink-0 items-center gap-2 rounded-[14px] border border-border-default bg-white/[0.6] px-3 py-2 text-[13px] text-text-secondary transition-colors hover:bg-white/80"
+          variant="outline"
+          size="sm"
+          class="h-[34px] shrink-0 gap-2 rounded-[14px] border-border-default bg-white/[0.6] px-3 py-2 text-[13px] text-text-secondary hover:bg-white/80"
         >
-          <span class="i-mdi-clock-outline text-[15px] text-text-tertiary" />
+          <ClockIcon data-icon="inline-start" class="size-[15px] text-text-tertiary" />
           <span>全部会话</span>
-          <span class="i-mdi-chevron-down text-sm text-text-tertiary" />
-        </button>
+          <ChevronDownIcon data-icon="inline-end" class="size-4 text-text-tertiary" />
+        </Button>
       </div>
 
       <!-- Loading -->
@@ -176,7 +194,7 @@ function onResumeClick(e: Event, sessionId: string) {
         v-if="store.historyLoading"
         class="flex flex-col items-center justify-center gap-3 py-24 text-text-secondary"
       >
-        <span class="i-mdi-loading animate-spin text-3xl text-text-tertiary" />
+        <LoaderIcon class="size-8 animate-spin text-text-tertiary" />
         <p class="text-sm">加载中...</p>
       </div>
 
@@ -185,15 +203,15 @@ function onResumeClick(e: Event, sessionId: string) {
         v-else-if="store.historyError"
         class="flex flex-col items-center justify-center gap-3 py-24"
       >
-        <span class="i-mdi-alert-circle text-3xl text-danger-500" />
+        <AlertCircleIcon class="size-8 text-danger-500" />
         <p class="text-sm text-text-secondary">{{ store.historyError }}</p>
-        <button
+        <Button
           type="button"
-          class="rounded-2xl bg-accent-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-600"
+          class="rounded-2xl bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600"
           @click="store.loadHistory()"
         >
           重试
-        </button>
+        </Button>
       </div>
 
       <!-- Empty -->
@@ -201,7 +219,7 @@ function onResumeClick(e: Event, sessionId: string) {
         v-else-if="store.historySessions.length === 0"
         class="flex flex-col items-center justify-center gap-2 py-24 text-text-tertiary"
       >
-        <span class="i-mdi-history text-4xl opacity-80" />
+        <HistoryIcon class="size-10 opacity-80" />
         <p class="text-sm text-text-secondary">暂无对话历史</p>
         <p class="text-xs text-text-tertiary">开始一段新对话，历史将出现在这里</p>
       </div>
@@ -225,18 +243,18 @@ function onResumeClick(e: Event, sessionId: string) {
             <div
               class="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-2xl bg-accent-soft"
             >
-              <span class="i-mdi-message-outline text-[19px] text-accent-500" />
+              <MessageSquareIcon class="size-[19px] text-accent-500" />
             </div>
 
             <!-- 主文案：标题 15px/500 + 摘要 12px/#5E6673、垂直 gap 5 -->
             <div class="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-[5px]">
               <div class="min-w-0">
-                <input
+                <Input
                   v-if="editingId === session.id"
                   ref="editInputRef"
                   v-model="editValue"
                   data-testid="history-rename-input"
-                  class="h-8 w-full max-w-full rounded-lg border border-accent-500 bg-surface-1 px-2 text-[15px] font-medium text-text-primary outline-none"
+                  class="h-8 w-full max-w-full rounded-lg border-accent-500 bg-surface-1 px-2 text-[15px] font-medium text-text-primary"
                   @keyup.enter="confirmRename(session.id)"
                   @keyup.esc="cancelRename"
                   @blur="confirmRename(session.id)"
@@ -267,50 +285,56 @@ function onResumeClick(e: Event, sessionId: string) {
             <!-- 操作：恢复（始终可见）+ 更多菜单（设计稿 resume 34×34） -->
             <div class="flex shrink-0 items-center gap-1.5" @click.stop>
               <div class="relative">
-                <button
+                <Button
                   type="button"
                   data-testid="history-menu-btn"
                   title="更多"
-                  class="flex h-[34px] w-[34px] items-center justify-center rounded-[14px] text-text-tertiary transition-all hover:bg-surface-2 hover:text-text-secondary max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                  variant="ghost"
+                  size="icon-sm"
+                  class="h-[34px] w-[34px] rounded-[14px] text-text-tertiary hover:bg-surface-2 hover:text-text-secondary max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                   :class="openMenuId === session.id ? 'bg-surface-2 opacity-100' : ''"
                   @click="toggleMenu(session.id, $event)"
                 >
-                  <span class="i-mdi-dots-horizontal text-lg" />
-                </button>
+                  <MoreHorizontalIcon class="size-5" />
+                </Button>
                 <div
                   v-if="openMenuId === session.id"
                   class="absolute right-0 top-[calc(100%+4px)] z-20 min-w-[120px] rounded-xl border border-border-default bg-white py-1 shadow-lg"
                   @click.stop
                 >
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     data-testid="history-rename-btn"
-                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+                    class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
                     @click="startRename(session.id, session.title)"
                   >
-                    <span class="i-mdi-pencil text-sm" />
+                    <PencilIcon class="size-4" />
                     重命名
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     data-testid="history-delete-btn"
-                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger-500 transition-colors hover:bg-danger-soft"
+                    class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
                     @click="handleDelete(session.id)"
                   >
-                    <span class="i-mdi-delete text-sm" />
+                    <TrashIcon class="size-4" />
                     删除
-                  </button>
+                  </Button>
                 </div>
               </div>
 
-              <button
+              <Button
                 type="button"
                 title="恢复会话"
-                class="flex h-[34px] w-[34px] items-center justify-center rounded-[14px] bg-surface-2 text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+                variant="ghost"
+                size="icon-sm"
+                class="h-[34px] w-[34px] rounded-[14px] bg-surface-2 text-text-secondary hover:bg-surface-3 hover:text-text-primary"
                 @click="onResumeClick($event, session.id)"
               >
-                <span class="i-mdi-arrow-right text-[15px]" />
-              </button>
+                <ArrowRightIcon class="size-[15px]" />
+              </Button>
             </div>
           </div>
         </div>
@@ -323,25 +347,29 @@ function onResumeClick(e: Event, sessionId: string) {
           <div
             class="inline-flex items-center gap-1 rounded-full border border-border-default bg-white p-1 shadow-[0_1px_6px_rgba(31,35,40,0.04)]"
           >
-            <button
+            <Button
               type="button"
-              class="flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
+              variant="ghost"
+              size="sm"
+              class="flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-text-secondary hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
               :disabled="currentPage <= 1"
               @click="goPrevPage"
             >
-              <span class="i-mdi-chevron-left text-sm text-text-tertiary" />
+              <ChevronLeftIcon data-icon="inline-start" class="size-4 text-text-tertiary" />
               上一页
-            </button>
+            </Button>
 
             <template v-for="(item, idx) in paginationSegments" :key="`p-${idx}-${item.kind === 'page' ? item.n : 'e'}`">
               <span
                 v-if="item.kind === 'ellipsis'"
                 class="flex h-7 w-6 items-center justify-center text-xs font-medium text-text-tertiary"
               >...</span>
-              <button
+              <Button
                 v-else
                 type="button"
-                class="flex h-7 w-[30px] items-center justify-center rounded-full text-xs font-medium transition-colors"
+                variant="ghost"
+                size="sm"
+                class="flex h-7 w-[30px] items-center justify-center rounded-full text-xs font-medium"
                 :class="
                   item.n === currentPage
                     ? 'border border-[#dde5ff] bg-accent-soft text-accent-500'
@@ -350,18 +378,20 @@ function onResumeClick(e: Event, sessionId: string) {
                 @click="goPage(item.n)"
               >
                 {{ item.n }}
-              </button>
+              </Button>
             </template>
 
-            <button
+            <Button
               type="button"
-              class="flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
+              variant="ghost"
+              size="sm"
+              class="flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-text-secondary hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
               :disabled="currentPage >= totalPages"
               @click="goNextPage"
             >
               下一页
-              <span class="i-mdi-chevron-right text-sm text-text-tertiary" />
-            </button>
+              <ChevronRightIcon data-icon="inline-end" class="size-4 text-text-tertiary" />
+            </Button>
           </div>
         </div>
       </template>

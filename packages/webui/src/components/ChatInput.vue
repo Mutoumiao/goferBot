@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import type { KnowledgeBase } from '@/types'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { PaperclipIcon, SendIcon, LoaderIcon } from 'lucide-vue-next'
 import KbMentionDropdown from './KbMentionDropdown.vue'
 import KbMentionPill from './KbMentionPill.vue'
 import ModelSelector from './ModelSelector.vue'
@@ -21,7 +24,7 @@ const emit = defineEmits<{
 }>()
 
 const input = ref('')
-const textareaRef = ref<HTMLTextAreaElement>()
+const textareaRef = ref<InstanceType<typeof Textarea>>()
 const isFocused = ref(false)
 const selectedKbs = ref<KnowledgeBase[]>([])
 const mentionQuery = ref('')
@@ -29,7 +32,7 @@ const mentionVisible = ref(false)
 const mentionStart = ref(-1)
 
 function autoResize() {
-  const el = textareaRef.value
+  const el = textareaRef.value?.$el as HTMLTextAreaElement | undefined
   if (!el) return
   el.style.height = 'auto'
   el.style.height = Math.min(el.scrollHeight, 160) + 'px'
@@ -51,7 +54,8 @@ function handleKeydown(e: KeyboardEvent) {
     e.preventDefault()
     handleSend()
   } else if (e.key === '@' && props.knowledgeBases && props.knowledgeBases.length > 0) {
-    mentionStart.value = textareaRef.value?.selectionStart ?? input.value.length
+    const el = textareaRef.value?.$el as HTMLTextAreaElement | undefined
+    mentionStart.value = el?.selectionStart ?? input.value.length
     mentionQuery.value = ''
     mentionVisible.value = true
   }
@@ -59,7 +63,8 @@ function handleKeydown(e: KeyboardEvent) {
 
 function handleInput() {
   if (!mentionVisible.value) return
-  const cursor = textareaRef.value?.selectionStart ?? input.value.length
+  const el = textareaRef.value?.$el as HTMLTextAreaElement | undefined
+  const cursor = el?.selectionStart ?? input.value.length
   if (cursor < mentionStart.value) {
     mentionVisible.value = false
     return
@@ -71,15 +76,16 @@ function onSelectKb(kb: KnowledgeBase) {
   if (selectedKbs.value.find((k) => k.id === kb.id)) return
   selectedKbs.value.push(kb)
 
+  const el = textareaRef.value?.$el as HTMLTextAreaElement | undefined
   const before = input.value.slice(0, mentionStart.value)
-  const after = input.value.slice(textareaRef.value?.selectionStart ?? input.value.length)
+  const after = input.value.slice(el?.selectionStart ?? input.value.length)
   input.value = before + after
   mentionVisible.value = false
 
   requestAnimationFrame(() => {
-    if (textareaRef.value) {
+    if (el) {
       const pos = before.length
-      textareaRef.value.setSelectionRange(pos, pos)
+      el.setSelectionRange(pos, pos)
     }
     autoResize()
   })
@@ -95,8 +101,9 @@ function handleSend() {
   emit('send', content, selectedKbs.value.map((k) => k.id))
   input.value = ''
   selectedKbs.value = []
-  if (textareaRef.value) {
-    textareaRef.value.style.height = 'auto'
+  const el = textareaRef.value?.$el as HTMLTextAreaElement | undefined
+  if (el) {
+    el.style.height = 'auto'
   }
 }
 
@@ -127,11 +134,11 @@ const displayInput = computed(() => input.value)
             />
           </div>
           <div class="relative">
-            <textarea
+            <Textarea
               ref="textareaRef"
               v-model="input"
-              rows="1"
-              class="max-h-40 w-full resize-none bg-transparent text-[15px] leading-relaxed text-text-primary placeholder-text-tertiary outline-none disabled:cursor-not-allowed"
+              :rows="1"
+              class="max-h-40 resize-none border-0 bg-transparent text-[15px] leading-relaxed text-text-primary placeholder:text-text-tertiary shadow-none ring-0 focus-visible:ring-0 disabled:cursor-not-allowed"
               :placeholder="disabled ? (disabledHint || '发送不可用') : '继续追问，或让 AI 生成需求条目...'"
               :disabled="loading || disabled"
               @keydown="handleKeydown"
@@ -152,13 +159,14 @@ const displayInput = computed(() => input.value)
 
         <div class="flex items-end justify-between gap-3">
           <div class="flex min-w-0 flex-1 items-center gap-2.5">
-            <button
-              type="button"
-              class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[14px] bg-surface-2 text-text-secondary transition-colors hover:bg-surface-3"
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="h-[34px] w-[34px] rounded-[14px] bg-surface-2 hover:bg-surface-3"
               title="附件"
             >
-              <span class="i-mdi-paperclip text-sm" />
-            </button>
+              <PaperclipIcon class="size-4" />
+            </Button>
             <ModelSelector
               :provider="provider"
               :model="model"
@@ -167,25 +175,20 @@ const displayInput = computed(() => input.value)
             />
           </div>
 
-          <button
+          <Button
             data-testid="chat-send-btn"
-            type="button"
             :disabled="!displayInput.trim() || loading || disabled"
+            class="h-[38px] w-[38px] rounded-2xl transition-all duration-200"
             :class="[
-              'flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-2xl transition-all duration-200',
               displayInput.trim() && !loading && !disabled
                 ? 'bg-accent-500 text-white hover:opacity-90 active:scale-95'
                 : 'bg-surface-2 text-text-tertiary',
             ]"
             @click="handleSend"
           >
-            <span
-              :class="[
-                loading ? 'i-mdi-loading animate-spin' : 'i-mdi-send',
-                'text-[17px]',
-              ]"
-            />
-          </button>
+            <LoaderIcon v-if="loading" class="size-[17px] animate-spin" />
+            <SendIcon v-else class="size-[17px]" />
+          </Button>
         </div>
       </div>
 

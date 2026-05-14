@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Message } from '@/types'
+import { BotIcon, UserIcon } from 'lucide-vue-next'
 import MarkdownRender from './MarkdownRender.vue'
 
 defineProps<{
@@ -21,7 +22,7 @@ defineProps<{
         v-if="message.role === 'assistant'"
         class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft"
       >
-        <span class="i-mdi-robot text-sm text-accent-500" />
+        <BotIcon class="size-4 text-accent-500" />
       </div>
 
       <div
@@ -49,7 +50,7 @@ defineProps<{
         v-if="message.role === 'user'"
         class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-2"
       >
-        <span class="i-mdi-account text-sm text-text-secondary" />
+        <UserIcon class="size-4 text-text-secondary" />
       </div>
     </div>
   </div>

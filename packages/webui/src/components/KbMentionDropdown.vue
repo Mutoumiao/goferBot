@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { KnowledgeBase } from '@/types'
+import { DatabaseIcon } from 'lucide-vue-next'
 
 const props = defineProps<{
   knowledgeBases: KnowledgeBase[]
@@ -65,7 +66,7 @@ defineExpose({ handleKeydown })
       ]"
       @mousedown.prevent="$emit('select', kb)"
     >
-      <span :class="[kb.icon || 'i-mdi-database', 'text-base text-text-secondary']" />
+      <DatabaseIcon class="size-4 text-text-secondary" />
       <span class="truncate">{{ kb.name }}</span>
     </div>
   </div>

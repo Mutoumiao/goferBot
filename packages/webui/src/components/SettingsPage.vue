@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, reactive, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { AppConfig } from '@/types'
 
 const store = useSettingsStore()
@@ -67,14 +69,14 @@ const defaultProviderOptions = computed(() =>
       <!-- Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold text-text-primary">设置</h1>
-        <button
+        <Button
           :disabled="!hasChanges"
           data-testid="settings-save-btn"
-          class="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
+          class="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-40"
           @click="handleSave"
         >
           保存
-        </button>
+        </Button>
         <p v-if="saveError" data-testid="settings-error" class="mt-2 text-sm text-danger-400">{{ saveError }}</p>
       </div>
 
@@ -86,19 +88,21 @@ const defaultProviderOptions = computed(() =>
 
         <!-- Provider Tabs -->
         <div class="mb-4 flex gap-1 border-b border-border-default pb-1" data-testid="settings-nav-tabs">
-          <button
+          <Button
             v-for="key in llmProviderKeys"
             :key="key"
+            variant="ghost"
+            size="sm"
             :class="[
-              'rounded-t-lg px-3 py-1.5 text-sm transition-all',
+              'rounded-t-lg px-3 py-1.5 text-sm',
               activeLlmTab === key
-                ? 'font-medium text-accent-400'
+                ? 'font-medium text-accent-400 hover:text-accent-400'
                 : 'text-text-tertiary hover:text-text-secondary',
             ]"
             @click="activeLlmTab = key"
           >
             {{ llmProviderLabels[key] }}
-          </button>
+          </Button>
         </div>
 
         <!-- Provider Form -->
@@ -128,11 +132,11 @@ const defaultProviderOptions = computed(() =>
           <!-- API Key (not for ollama) -->
           <div v-if="activeLlmTab !== 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">API Key</label>
-            <input
+            <Input
               v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].apiKey"
               name="apiKey"
               type="password"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="rounded-lg border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="输入 API Key"
               @input="markChanged"
             />
@@ -141,11 +145,11 @@ const defaultProviderOptions = computed(() =>
           <!-- Model -->
           <div>
             <label class="mb-1 block text-sm text-text-secondary">模型</label>
-            <input
+            <Input
               v-model="localConfig.providers[activeLlmTab].model"
               name="model"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="rounded-lg border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="输入模型名称"
               @input="markChanged"
             />
@@ -154,11 +158,11 @@ const defaultProviderOptions = computed(() =>
           <!-- Base URL -->
           <div v-if="activeLlmTab !== 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">Base URL</label>
-            <input
+            <Input
               v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].baseUrl"
               name="baseUrl"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="rounded-lg border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="留空使用默认地址"
               @input="markChanged"
             />
@@ -167,11 +171,11 @@ const defaultProviderOptions = computed(() =>
           <!-- Ollama URL -->
           <div v-if="activeLlmTab === 'ollama'">
             <label class="mb-1 block text-sm text-text-secondary">服务地址</label>
-            <input
+            <Input
               v-model="localConfig.providers.ollama.url"
               name="ollamaUrl"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="rounded-lg border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="http://localhost:11434"
               @input="markChanged"
             />
@@ -221,30 +225,30 @@ const defaultProviderOptions = computed(() =>
           </div>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">API Key</label>
-            <input
+            <Input
               v-model="localConfig.embeddingProvider.apiKey"
               type="password"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="rounded-lg border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="输入 API Key"
               @input="markChanged"
             />
           </div>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">模型</label>
-            <input
+            <Input
               v-model="localConfig.embeddingProvider.model"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="rounded-lg border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="输入模型名称"
               @input="markChanged"
             />
           </div>
           <div>
             <label class="mb-1 block text-sm text-text-secondary">Base URL</label>
-            <input
+            <Input
               v-model="localConfig.embeddingProvider.baseUrl"
               type="text"
-              class="w-full rounded-lg border border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary outline-none transition-all focus:border-accent-500/50"
+              class="rounded-lg border-border-default bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="留空使用默认地址"
               @input="markChanged"
             />

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import type { Message } from '@/types'
+import { MessageSquareIcon } from 'lucide-vue-next'
 import ChatMessage from './ChatMessage.vue'
 import ChatErrorCard from './ChatErrorCard.vue'
 import ChatLoading from './ChatLoading.vue'
@@ -40,7 +41,7 @@ watch(
         v-if="messages.length === 0"
         class="flex min-h-[min(360px,50vh)] flex-col items-center justify-center py-16 text-text-tertiary"
       >
-        <span class="i-mdi-chat-outline mb-3 text-4xl opacity-30" />
+        <MessageSquareIcon class="mb-3 size-10 opacity-30" />
         <p class="text-sm">开始你的第一次对话</p>
       </div>
 

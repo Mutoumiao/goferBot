@@ -1,5 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  SparklesIcon,
+  FileTextIcon,
+  FolderSearchIcon,
+  Wand2Icon,
+  PaperclipIcon,
+  DatabaseIcon,
+  SendIcon,
+} from 'lucide-vue-next'
 
 const emit = defineEmits<{
   send: [content: string]
@@ -9,21 +20,21 @@ const input = ref('')
 
 const quickActions = [
   {
-    icon: 'i-mdi-file-document-outline',
+    icon: FileTextIcon,
     iconColor: 'text-accent-500',
     iconBg: 'bg-accent-soft',
     title: '总结文档',
     caption: '提炼重点与行动项',
   },
   {
-    icon: 'i-mdi-folder-search-outline',
+    icon: FolderSearchIcon,
     iconColor: 'text-success-500',
     iconBg: 'bg-success-soft',
     title: '查找资料',
     caption: '跨知识库引用来源',
   },
   {
-    icon: 'i-mdi-wand-magic-sparkles',
+    icon: Wand2Icon,
     iconColor: 'text-purple-500',
     iconBg: 'bg-purple-soft',
     title: '生成笔记',
@@ -57,7 +68,7 @@ function sendQuick(content: string) {
       <div
         class="flex h-[58px] w-[58px] items-center justify-center rounded-[22px] border border-border-default bg-white shadow-[0_8px_24px_rgba(0,0,0,0.05)]"
       >
-        <span class="i-mdi-sparkles text-[26px] text-accent-500" />
+        <SparklesIcon class="size-[26px] text-accent-500" />
       </div>
 
       <!-- Headline -->
@@ -71,44 +82,49 @@ function sendQuick(content: string) {
       <div
         class="flex min-h-[150px] w-full flex-col gap-[18px] rounded-3xl border border-border-default bg-white px-5 py-[18px] shadow-[0_18px_42px_rgba(0,0,0,0.07)]"
       >
-        <textarea
+        <Textarea
           v-model="input"
-          rows="2"
-          class="w-full resize-none bg-transparent text-base leading-relaxed text-text-primary placeholder-text-tertiary outline-none"
+          :rows="2"
+          class="resize-none border-0 bg-transparent text-base leading-relaxed text-text-primary placeholder:text-text-tertiary shadow-none ring-0 focus-visible:ring-0"
           placeholder="询问、总结或让 AI 帮你整理桌面资料..."
           @keydown="handleKeydown"
         />
         <div class="flex items-end justify-between">
           <div class="flex items-center gap-2.5">
-            <button
-              class="flex h-[34px] w-[34px] items-center justify-center rounded-[14px] bg-surface-2 text-text-secondary transition-colors hover:bg-surface-3"
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="h-[34px] w-[34px] rounded-[14px] bg-surface-2 hover:bg-surface-3"
               title="附件"
             >
-              <span class="i-mdi-paperclip text-sm" />
-            </button>
-            <button
-              class="flex h-[34px] items-center gap-1.5 rounded-[14px] bg-surface-2 px-3 text-sm text-text-secondary transition-colors hover:bg-surface-3"
+              <PaperclipIcon class="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-[34px] gap-1.5 rounded-[14px] bg-surface-2 px-3 text-sm text-text-secondary hover:bg-surface-3"
               title="知识库"
             >
-              <span class="i-mdi-database text-sm" />
+              <DatabaseIcon class="size-4" />
               <span>知识库</span>
-            </button>
+            </Button>
           </div>
-          <button
-            class="flex h-[38px] w-[38px] items-center justify-center rounded-2xl bg-accent-500 text-white transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-40"
+          <Button
+            class="h-[38px] w-[38px] rounded-2xl bg-accent-500 text-white transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-40"
             :disabled="!input.trim()"
             @click="handleSend"
           >
-            <span class="i-mdi-send text-[17px]" />
-          </button>
+            <SendIcon class="size-[17px]" />
+          </Button>
         </div>
       </div>
 
       <!-- Quick Actions -->
       <div class="flex w-full gap-[18px]">
-        <button
+        <Button
           v-for="action in quickActions"
           :key="action.title"
+          variant="ghost"
           class="group flex flex-1 items-center gap-3 rounded-[18px] border border-border-default bg-white/75 p-[18px] text-left transition-all duration-200 hover:border-accent-500/30 hover:bg-white hover:shadow-sm"
           @click="sendQuick(action.title)"
         >
@@ -116,13 +132,13 @@ function sendQuick(content: string) {
             class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[13px]"
             :class="action.iconBg"
           >
-            <span class="text-base" :class="[action.icon, action.iconColor]" />
+            <Component :is="action.icon" class="size-4" :class="action.iconColor" />
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-sm font-normal text-text-primary">{{ action.title }}</span>
             <span class="text-xs text-text-tertiary">{{ action.caption }}</span>
           </div>
-        </button>
+        </Button>
       </div>
     </div>
   </div>

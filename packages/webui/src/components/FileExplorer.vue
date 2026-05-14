@@ -1,9 +1,26 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
 import { confirmDialog } from '@/utils/confirm'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { FileItem, SearchResultItem } from '@/types'
 import ContextMenu from './ContextMenu.vue'
 import InlineRename from './InlineRename.vue'
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SearchIcon,
+  PlusIcon,
+  LoaderIcon,
+  FolderOpenIcon,
+  FolderIcon,
+  FileTextIcon,
+  FolderPlusIcon,
+  FolderInputIcon,
+  CopyIcon,
+  Trash2Icon,
+  PencilIcon,
+} from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{
   files: FileItem[]
@@ -155,47 +172,74 @@ function onCreateFolderClick() {
     <!-- Toolbar -->
     <div class="flex items-center gap-3 border-b border-border-default px-4 py-3">
       <div class="flex gap-1">
-        <button class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="emit('goBack')">
-          <span class="i-mdi-chevron-left text-lg" />
-        </button>
-        <button class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary" @click="emit('goForward')">
-          <span class="i-mdi-chevron-right text-lg" />
-        </button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+          @click="emit('goBack')"
+        >
+          <ChevronLeftIcon class="size-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+          @click="emit('goForward')"
+        >
+          <ChevronRightIcon class="size-5" />
+        </Button>
       </div>
 
       <div class="flex flex-1 items-center gap-1 overflow-hidden">
-        <button class="shrink-0 text-sm text-text-secondary hover:text-text-primary" @click="emit('navigateToBreadcrumb', -1)">根目录</button>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="shrink-0 text-sm text-text-secondary hover:text-text-primary"
+          @click="emit('navigateToBreadcrumb', -1)"
+        >
+          根目录
+        </Button>
         <template v-for="(segment, idx) in breadcrumb" :key="idx">
-          <span class="i-mdi-chevron-right text-xs text-text-tertiary" />
-          <button class="truncate text-sm text-text-secondary hover:text-text-primary" @click="emit('navigateToBreadcrumb', idx)">{{ segment }}</button>
+          <ChevronRightIcon class="size-3 shrink-0 text-text-tertiary" />
+          <Button
+            variant="ghost"
+            size="sm"
+            class="truncate text-sm text-text-secondary hover:text-text-primary"
+            @click="emit('navigateToBreadcrumb', idx)"
+          >
+            {{ segment }}
+          </Button>
         </template>
       </div>
 
       <div class="relative">
-        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary i-mdi-magnify" />
-        <input
+        <SearchIcon class="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-text-tertiary" />
+        <Input
           :value="searchQuery"
           type="text"
           placeholder="搜索文件..."
-          class="h-8 w-48 rounded-md border border-border-default bg-white pl-9 pr-3 text-sm text-text-primary placeholder-text-tertiary outline-none transition-colors focus:border-accent-500"
+          class="h-8 w-48 rounded-md border-border-default bg-white pl-9 pr-3 text-sm text-text-primary placeholder-text-tertiary"
           @keyup.enter="emit('search', ($event.target as HTMLInputElement).value)"
         />
       </div>
 
-      <button class="flex items-center gap-1.5 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600" @click="emit('importFiles')">
-        <span class="i-mdi-plus text-sm" />
+      <Button
+        class="flex items-center gap-1.5 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600"
+        @click="emit('importFiles')"
+      >
+        <PlusIcon data-icon="inline-start" class="size-4" />
         添加文件
-      </button>
+      </Button>
     </div>
 
     <!-- File list -->
     <div class="flex-1 overflow-auto p-2">
       <div v-if="isLoading" class="flex h-full items-center justify-center">
-        <span class="i-mdi-loading animate-spin text-2xl text-accent-500" />
+        <LoaderIcon class="size-8 animate-spin text-accent-500" />
       </div>
 
       <div v-else-if="displayItems.length === 0" class="flex h-full flex-col items-center justify-center gap-2 text-text-tertiary">
-        <span class="i-mdi-folder-open-outline text-4xl" />
+        <FolderOpenIcon class="size-10" />
         <span class="text-sm">暂无文件</span>
         <span class="text-xs">点击上方工具栏的"添加文件"导入文档</span>
       </div>
@@ -215,7 +259,10 @@ function onCreateFolderClick() {
           @contextmenu.stop="onContextMenu($event, item.name)"
         >
           <div class="flex items-center gap-2 overflow-hidden">
-            <span class="shrink-0 text-lg" :class="item.type === 'directory' ? 'i-mdi-folder text-amber-400' : 'i-mdi-file-document-outline text-text-secondary'" />
+            <span class="shrink-0 text-lg">
+              <FolderIcon v-if="item.type === 'directory'" class="size-5 text-amber-400" />
+              <FileTextIcon v-else class="size-5 text-text-secondary" />
+            </span>
             <div class="min-w-0">
               <InlineRename
                 v-if="renamingFile === item.name"
@@ -239,29 +286,54 @@ function onCreateFolderClick() {
     <!-- Context Menu -->
     <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @close="closeFileContextMenu">
       <div v-if="contextMenuIsBlank" class="py-1">
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onCreateFolderClick">
-          <span class="i-mdi-folder-plus text-sm" />
+        <Button
+          variant="ghost"
+          size="sm"
+          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+          @click="onCreateFolderClick"
+        >
+          <FolderPlusIcon class="size-4" />
           <span>新建文件夹</span>
-        </button>
+        </Button>
       </div>
       <div v-else class="py-1">
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onRenameClick">
-          <span class="i-mdi-pencil text-sm" />
+        <Button
+          variant="ghost"
+          size="sm"
+          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+          @click="onRenameClick"
+        >
+          <PencilIcon class="size-4" />
           <span>重命名</span>
-        </button>
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onMoveClick">
-          <span class="i-mdi-folder-move text-sm" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+          @click="onMoveClick"
+        >
+          <FolderInputIcon class="size-4" />
           <span>移动到...</span>
-        </button>
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="onCopyClick">
-          <span class="i-mdi-content-copy text-sm" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
+          @click="onCopyClick"
+        >
+          <CopyIcon class="size-4" />
           <span>复制到...</span>
-        </button>
+        </Button>
         <div class="my-1 border-t border-border-default" />
-        <button class="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft" @click="onDeleteClick">
-          <span class="i-mdi-delete-forever text-sm" />
+        <Button
+          variant="ghost"
+          size="sm"
+          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
+          @click="onDeleteClick"
+        >
+          <Trash2Icon class="size-4" />
           <span>永久删除</span>
-        </button>
+        </Button>
       </div>
     </ContextMenu>
   </div>

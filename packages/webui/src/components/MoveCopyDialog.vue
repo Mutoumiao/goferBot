@@ -2,6 +2,21 @@
 import { ref, computed, watch } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import { getBackend } from '@goferbot/backend-adapters'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  DatabaseIcon,
+  ChevronRightIcon,
+  LoaderIcon,
+  FolderOpenIcon,
+  FolderIcon,
+} from 'lucide-vue-next'
 import type { KnowledgeBase } from '@/types'
 
 const props = defineProps<{
@@ -92,79 +107,66 @@ async function onConfirm() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="fade">
-      <div
-        v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-        @click.self="emit('close')"
-      >
-        <div class="flex h-[480px] w-[640px] flex-col rounded-2xl border border-border-default bg-white shadow-xl">
-          <div class="border-b border-border-default px-5 py-3">
-            <h3 class="text-base font-medium text-text-primary">
-              {{ mode === 'move' ? '移动到' : '复制到' }}
-            </h3>
+  <Dialog :open="visible" @update:open="(v) => !v && emit('close')">
+    <DialogContent class="flex h-[480px] w-[640px] max-w-[640px] flex-col p-0">
+      <DialogHeader class="border-b border-border-default px-5 py-3">
+        <DialogTitle class="text-base font-medium text-text-primary">
+          {{ mode === 'move' ? '移动到' : '复制到' }}
+        </DialogTitle>
+      </DialogHeader>
+
+      <div class="flex flex-1 overflow-hidden">
+        <!-- Left: KB list -->
+        <div class="w-48 border-r border-border-default overflow-auto p-2">
+          <div
+            v-for="kb in store.knowledgeBases"
+            :key="kb.id"
+            class="flex cursor-pointer items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors"
+            :class="selectedTargetKbId === kb.id ? 'bg-accent-soft text-accent-500' : 'text-text-secondary hover:bg-surface-2'"
+            @click="onSelectKb(kb)"
+          >
+            <DatabaseIcon class="size-5 shrink-0" />
+            <span class="truncate">{{ kb.name }}</span>
+          </div>
+        </div>
+
+        <!-- Right: folder list with breadcrumb -->
+        <div class="flex flex-1 flex-col">
+          <div class="flex items-center gap-1 border-b border-border-default px-3 py-2">
+            <Button variant="ghost" size="sm" class="h-auto px-1 py-0 text-sm text-text-secondary hover:text-text-primary" @click="onBreadcrumbClick(-1)">根目录</Button>
+            <template v-for="(seg, idx) in targetBreadcrumb" :key="idx">
+              <ChevronRightIcon class="size-3 text-text-tertiary" />
+              <Button variant="ghost" size="sm" class="h-auto px-1 py-0 text-sm text-text-secondary hover:text-text-primary" @click="onBreadcrumbClick(idx)">{{ seg }}</Button>
+            </template>
           </div>
 
-          <div class="flex flex-1 overflow-hidden">
-            <!-- Left: KB list -->
-            <div class="w-48 border-r border-border-default overflow-auto p-2">
-              <div
-                v-for="kb in store.knowledgeBases"
-                :key="kb.id"
-                class="flex cursor-pointer items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors"
-                :class="selectedTargetKbId === kb.id ? 'bg-accent-soft text-accent-500' : 'text-text-secondary hover:bg-surface-2'"
-                @click="onSelectKb(kb)"
-              >
-                <span :class="`i-${kb.icon || 'mdi-database'} text-lg`" />
-                <span class="truncate">{{ kb.name }}</span>
-              </div>
+          <div class="flex-1 overflow-auto p-2">
+            <div v-if="isLoading" class="flex h-full items-center justify-center">
+              <LoaderIcon class="size-8 animate-spin text-accent-500" />
             </div>
-
-            <!-- Right: folder list with breadcrumb -->
-            <div class="flex flex-1 flex-col">
-              <div class="flex items-center gap-1 border-b border-border-default px-3 py-2">
-                <button class="text-sm text-text-secondary hover:text-text-primary" @click="onBreadcrumbClick(-1)">根目录</button>
-                <template v-for="(seg, idx) in targetBreadcrumb" :key="idx">
-                  <span class="i-mdi-chevron-right text-xs text-text-tertiary" />
-                  <button class="text-sm text-text-secondary hover:text-text-primary" @click="onBreadcrumbClick(idx)">{{ seg }}</button>
-                </template>
-              </div>
-
-              <div class="flex-1 overflow-auto p-2">
-                <div v-if="isLoading" class="flex h-full items-center justify-center">
-                  <span class="i-mdi-loading animate-spin text-2xl text-accent-500" />
-                </div>
-                <div v-else-if="targetFiles.length === 0" class="flex h-full flex-col items-center justify-center text-text-tertiary">
-                  <span class="i-mdi-folder-open-outline text-4xl" />
-                  <span class="text-sm mt-1">暂无子文件夹</span>
-                </div>
-                <div
-                  v-for="folder in targetFiles"
-                  :key="folder.name"
-                  class="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 transition-colors hover:bg-surface-2"
-                  @dblclick="onEnterFolder(folder.name)"
-                >
-                  <span class="i-mdi-folder text-lg text-amber-400" />
-                  <span class="text-sm text-text-primary">{{ folder.name }}</span>
-                </div>
-              </div>
+            <div v-else-if="targetFiles.length === 0" class="flex h-full flex-col items-center justify-center text-text-tertiary">
+              <FolderOpenIcon class="size-16" />
+              <span class="text-sm mt-1">暂无子文件夹</span>
             </div>
-          </div>
-
-          <div class="flex justify-end gap-2 border-t border-border-default px-5 py-3">
-            <button class="rounded-lg px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2" @click="emit('close')">取消</button>
-            <button class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600" @click="onConfirm">
-              {{ mode === 'move' ? '移动至此' : '复制至此' }}
-            </button>
+            <div
+              v-for="folder in targetFiles"
+              :key="folder.name"
+              class="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 transition-colors hover:bg-surface-2"
+              @dblclick="onEnterFolder(folder.name)"
+            >
+              <FolderIcon class="size-5 text-amber-400" />
+              <span class="text-sm text-text-primary">{{ folder.name }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
-</template>
 
-<style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-</style>
+      <DialogFooter class="border-t border-border-default px-5 py-3">
+        <Button variant="ghost" class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2" @click="emit('close')">取消</Button>
+        <Button class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600" @click="onConfirm">
+          {{ mode === 'move' ? '移动至此' : '复制至此' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+</template>

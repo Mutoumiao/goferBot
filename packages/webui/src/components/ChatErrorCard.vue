@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ChatErrorType } from '@/types'
+import { Button } from '@/components/ui/button'
+import { AlertCircleIcon } from 'lucide-vue-next'
 
 const props = defineProps<{
   message: string
@@ -20,17 +22,19 @@ const typeLabels: Record<ChatErrorType, string> = {
 
 <template>
   <div data-testid="chat-error-card" class="my-3 flex items-start gap-3 rounded-xl border border-danger-500/20 bg-danger-soft p-4">
-    <span class="i-mdi-alert-circle text-lg text-danger-500" />
+    <AlertCircleIcon class="size-5 text-danger-500" />
     <div class="flex-1">
       <p class="text-sm font-medium text-danger-500">{{ typeLabels[props.errorType] || '错误' }}</p>
       <p class="mt-1 text-sm text-text-secondary">{{ props.message }}</p>
-      <button
+      <Button
         data-testid="chat-error-retry"
-        class="mt-2 rounded-lg bg-danger-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-danger-400"
+        variant="destructive"
+        size="sm"
+        class="mt-2"
         @click="emit('retry')"
       >
         重试
-      </button>
+      </Button>
     </div>
   </div>
 </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import { Button } from '@/components/ui/button'
+import { BrainIcon, ChevronDownIcon, CheckIcon } from 'lucide-vue-next'
 
 const props = withDefaults(
   defineProps<{
@@ -48,30 +50,23 @@ function selectProvider(key: string) {
 
 <template>
   <div class="relative">
-    <button
+    <Button
+      variant="ghost"
       :class="[
-        'flex items-center text-text-secondary transition-all hover:text-text-primary',
+        'flex items-center text-text-secondary hover:text-text-primary',
         variant === 'toolbar'
           ? 'h-[34px] gap-1.5 rounded-[14px] bg-surface-2 px-3 text-[13px] hover:bg-surface-3'
           : 'gap-1.5 rounded-xl px-3 py-1.5 text-xs hover:bg-surface-2',
       ]"
       @click="open = !open"
     >
-      <span
-        :class="[
-          'i-mdi-brain shrink-0 text-text-secondary',
-          variant === 'toolbar' ? 'text-sm' : 'text-sm',
-        ]"
-      />
+      <BrainIcon class="size-4 shrink-0 text-text-secondary" />
       <span :class="['truncate', variant === 'toolbar' ? 'max-w-[200px]' : 'max-w-[180px]']">{{ currentLabel }}</span>
-      <span
-        :class="[
-          'i-mdi-chevron-down shrink-0 text-text-tertiary transition-transform',
-          variant === 'toolbar' ? 'text-xs' : 'text-xs',
-          open && 'rotate-180',
-        ]"
+      <ChevronDownIcon
+        class="size-3 shrink-0 text-text-tertiary transition-transform"
+        :class="open && 'rotate-180'"
       />
-    </button>
+    </Button>
 
     <Transition
       enter-active-class="transition-all duration-200 ease-out"
@@ -86,18 +81,20 @@ function selectProvider(key: string) {
         class="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-border-default bg-white py-1 shadow-xl"
         @click.stop
       >
-        <button
+        <Button
           v-for="p in store.configuredProviders"
           :key="p.key"
+          variant="ghost"
+          size="sm"
           :class="[
-            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2',
+            'flex w-full items-center justify-start gap-2 px-3 py-2 text-sm hover:bg-surface-2',
             p.key === props.provider ? 'text-accent-500' : 'text-text-primary',
           ]"
           @click="selectProvider(p.key)"
         >
-          <span class="i-mdi-check text-xs" :class="p.key === props.provider ? 'opacity-100' : 'opacity-0'" />
+          <CheckIcon class="size-3" :class="p.key === props.provider ? 'opacity-100' : 'opacity-0'" />
           <span>{{ p.name }} · {{ p.model }}</span>
-        </button>
+        </Button>
 
         <div v-if="store.configuredProviders.length === 0" class="px-3 py-2 text-xs text-text-tertiary">
           请先前往设置配置模型

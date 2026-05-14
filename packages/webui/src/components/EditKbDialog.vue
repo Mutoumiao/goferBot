@@ -1,5 +1,25 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  DatabaseIcon,
+  BookIcon,
+  LibraryIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  FileTextIcon,
+  BookOpenIcon,
+  GraduationCapIcon,
+  BrainIcon,
+} from 'lucide-vue-next'
 
 const props = defineProps<{
   visible: boolean
@@ -17,16 +37,16 @@ const icon = ref(props.initialIcon)
 const error = ref('')
 
 const iconOptions = [
-  'mdi-database',
-  'mdi-books',
-  'mdi-bookshelf',
-  'mdi-folder',
-  'mdi-folder-open',
-  'mdi-file-document',
-  'mdi-notebook',
-  'mdi-book-open-page-variant',
-  'mdi-school',
-  'mdi-brain',
+  { name: 'mdi-database', component: DatabaseIcon },
+  { name: 'mdi-books', component: BookIcon },
+  { name: 'mdi-bookshelf', component: LibraryIcon },
+  { name: 'mdi-folder', component: FolderIcon },
+  { name: 'mdi-folder-open', component: FolderOpenIcon },
+  { name: 'mdi-file-document', component: FileTextIcon },
+  { name: 'mdi-notebook', component: BookOpenIcon },
+  { name: 'mdi-book-open-page-variant', component: BookOpenIcon },
+  { name: 'mdi-school', component: GraduationCapIcon },
+  { name: 'mdi-brain', component: BrainIcon },
 ]
 
 watch(
@@ -51,73 +71,50 @@ function onSave() {
 </script>
 
 <template>
-  <!-- Safelist for tailwindcss-icons JIT scanner -->
-  <div class="hidden">
-    <span class="i-mdi-database i-mdi-books i-mdi-bookshelf i-mdi-folder i-mdi-folder-open i-mdi-file-document i-mdi-notebook i-mdi-book-open-page-variant i-mdi-school i-mdi-brain" />
-  </div>
-  <Teleport to="body">
-    <Transition name="fade">
-      <div
-        v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-        @click.self="emit('close')"
-      >
-        <div class="w-96 rounded-2xl border border-border-default bg-white p-5 shadow-xl">
-          <h3 class="mb-3 text-base font-medium text-text-primary">修改资料</h3>
+  <Dialog :open="visible" @update:open="(v) => !v && emit('close')">
+    <DialogContent class="w-96">
+      <DialogHeader>
+        <DialogTitle>修改资料</DialogTitle>
+      </DialogHeader>
 
-          <div class="mb-4">
-            <label class="mb-1 block text-xs text-text-secondary">名称</label>
-            <input
-              v-model="name"
-              type="text"
-              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-accent-500"
-              @keyup.enter="onSave"
-            />
-            <p v-if="error" class="mt-1 text-xs text-danger-500">{{ error }}</p>
-          </div>
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-xs text-text-secondary">名称</label>
+          <Input
+            v-model="name"
+            type="text"
+            class="rounded-xl border-border-default bg-surface-1 px-3 py-2 text-sm focus:border-accent-500"
+            @keyup.enter="onSave"
+          />
+          <p v-if="error" class="mt-1 text-xs text-danger-500">{{ error }}</p>
+        </div>
 
-          <div class="mb-4">
-            <label class="mb-2 block text-xs text-text-secondary">图标</label>
-            <div class="grid grid-cols-5 gap-2">
-              <button
-                v-for="opt in iconOptions"
-                :key="opt"
-                class="flex h-10 items-center justify-center rounded-xl border transition-colors"
-                :class="icon === opt ? 'border-accent-500 bg-accent-soft text-accent-500' : 'border-border-default text-text-tertiary hover:bg-surface-2'"
-                @click="icon = opt"
-              >
-                <span :class="`i-${opt} text-lg`" />
-              </button>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-2">
-            <button
-              class="rounded-lg px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
-              @click="emit('close')"
+        <div>
+          <label class="mb-2 block text-xs text-text-secondary">图标</label>
+          <div class="grid grid-cols-5 gap-2">
+            <Button
+              v-for="opt in iconOptions"
+              :key="opt.name"
+              variant="ghost"
+              size="icon-sm"
+              class="flex h-10 items-center justify-center rounded-xl border transition-colors"
+              :class="icon === opt.name ? 'border-accent-500 bg-accent-soft text-accent-500 hover:bg-accent-soft' : 'border-border-default text-text-tertiary hover:bg-surface-2'"
+              @click="icon = opt.name"
             >
-              取消
-            </button>
-            <button
-              class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600"
-              @click="onSave"
-            >
-              保存
-            </button>
+              <Component :is="opt.component" class="size-5" />
+            </Button>
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
-</template>
 
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
+      <DialogFooter>
+        <Button variant="ghost" class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary" @click="emit('close')">
+          取消
+        </Button>
+        <Button class="rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600" @click="onSave">
+          保存
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+</template>

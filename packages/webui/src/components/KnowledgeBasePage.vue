@@ -2,10 +2,28 @@
 import { ref, onMounted, computed } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import { confirmDialog } from '@/utils/confirm'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import FileExplorer from './FileExplorer.vue'
 import ContextMenu from './ContextMenu.vue'
 import EditKbDialog from './EditKbDialog.vue'
 import MoveCopyDialog from './MoveCopyDialog.vue'
+import {
+  PlusIcon,
+  SearchIcon,
+  PinIcon,
+  PencilIcon,
+  TrashIcon,
+  LoaderIcon,
+  DatabaseIcon,
+} from 'lucide-vue-next'
 
 const store = useKnowledgeBaseStore()
 const showNewKbDialog = ref(false)
@@ -202,25 +220,27 @@ function onCopyFile(fileName: string) {
     <aside class="flex h-full min-h-0 w-[286px] shrink-0 flex-col gap-[18px]">
       <div class="flex items-center justify-between">
         <span class="text-[22px] font-medium leading-tight text-text-primary">知识库</span>
-        <button
+        <Button
           data-testid="create-kb-btn"
           type="button"
-          class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[14px] border border-border-default bg-white text-text-secondary shadow-[0_1px_4px_rgba(0,0,0,0.03)] transition-colors hover:bg-surface-2 hover:text-text-primary"
+          variant="outline"
+          size="icon-sm"
+          class="h-[34px] w-[34px] shrink-0 rounded-[14px] border-border-default bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] text-text-secondary hover:bg-surface-2 hover:text-text-primary"
           title="新建知识库"
           @click="openNewKbDialog"
         >
-          <span class="i-mdi-plus text-lg" />
-        </button>
+          <PlusIcon class="size-5" />
+        </Button>
       </div>
 
       <div
         class="flex h-11 items-center gap-2.5 rounded-2xl border border-border-default bg-white px-3.5 py-2.5"
       >
-        <span class="i-mdi-magnify shrink-0 text-base text-text-tertiary" />
-        <input
+        <SearchIcon class="size-4 shrink-0 text-text-tertiary" />
+        <Input
           type="text"
           placeholder="搜索知识库"
-          class="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary placeholder-text-tertiary outline-none"
+          class="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-text-primary placeholder-text-tertiary shadow-none focus-visible:ring-0"
           @keyup.enter="onSearch(($event.target as HTMLInputElement).value)"
         />
       </div>
@@ -241,12 +261,9 @@ function onCopyFile(fileName: string) {
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px]"
             :class="store.selectedKbId === kb.id ? 'bg-accent-soft' : 'bg-surface-2'"
           >
-            <span
-              class="text-base"
-              :class="[
-                `i-${kb.icon || 'mdi-database'}`,
-                store.selectedKbId === kb.id ? 'text-accent-500' : 'text-text-tertiary'
-              ]"
+            <DatabaseIcon
+              class="size-4"
+              :class="store.selectedKbId === kb.id ? 'text-accent-500' : 'text-text-tertiary'"
             />
           </div>
           <div class="flex min-w-0 flex-col gap-0.5">
@@ -285,7 +302,7 @@ function onCopyFile(fileName: string) {
         v-if="indexProgress > 0 && indexProgress < 100"
         class="absolute bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border-default bg-white px-4 py-2 shadow-lg"
       >
-        <span class="i-mdi-loading animate-spin text-sm text-accent-500" />
+        <LoaderIcon class="size-4 animate-spin text-accent-500" />
         <span class="text-xs text-text-secondary">正在索引文件... {{ indexProgress }}%</span>
       </div>
     </div>
@@ -297,67 +314,62 @@ function onCopyFile(fileName: string) {
       :y="contextMenuY"
       @close="closeContextMenu"
     >
-      <button
-        class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+      <Button
+        variant="ghost"
+        size="sm"
+        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
         @click="onPinKb"
       >
-        <span class="i-mdi-pin text-sm" />
+        <PinIcon class="size-4" />
         <span>置顶</span>
-      </button>
-      <button
-        class="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary"
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
         @click="onEditKb"
       >
-        <span class="i-mdi-pencil text-sm" />
+        <PencilIcon class="size-4" />
         <span>编辑</span>
-      </button>
+      </Button>
       <div class="my-1 border-t border-border-default" />
-      <button
-        class="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger-500 transition-colors hover:bg-danger-soft"
+      <Button
+        variant="ghost"
+        size="sm"
+        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
         @click="onDeleteKb"
       >
-        <span class="i-mdi-delete text-sm" />
+        <TrashIcon class="size-4" />
         <span>删除</span>
-      </button>
+      </Button>
     </ContextMenu>
 
     <!-- New KB Dialog -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showNewKbDialog"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          @click.self="showNewKbDialog = false"
-        >
-          <div class="w-80 rounded-3xl border border-border-default bg-white p-5 shadow-xl">
-            <h3 class="mb-4 text-base font-medium text-text-primary">新建知识库</h3>
-            <input
-              v-model="newKbName"
-              type="text"
-              placeholder="输入知识库名称"
-              class="w-full rounded-xl border border-border-default bg-surface-1 px-3 py-2.5 text-sm text-text-primary placeholder-text-tertiary outline-none transition-colors focus:border-accent-500/50"
-              @keyup.enter="confirmCreateKb"
-            />
-            <p v-if="newKbError" class="mt-2 text-xs text-danger-500">{{ newKbError }}</p>
-            <div class="mt-4 flex justify-end gap-2">
-              <button
-                class="rounded-xl px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2"
-                @click="showNewKbDialog = false"
-              >
-                取消
-              </button>
-              <button
-                class="rounded-xl bg-accent-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-600"
-                :disabled="isCreatingKb"
-                @click="confirmCreateKb"
-              >
-                {{ isCreatingKb ? '创建中...' : '创建' }}
-              </button>
-            </div>
-          </div>
+    <Dialog :open="showNewKbDialog" @update:open="(v) => !v && (showNewKbDialog = false)">
+      <DialogContent class="w-80">
+        <DialogHeader>
+          <DialogTitle>新建知识库</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-4">
+          <Input
+            v-model="newKbName"
+            type="text"
+            placeholder="输入知识库名称"
+            class="rounded-xl border-border-default bg-surface-1 px-3 py-2.5 text-sm focus:border-accent-500/50"
+            @keyup.enter="confirmCreateKb"
+          />
+          <p v-if="newKbError" class="text-xs text-danger-500">{{ newKbError }}</p>
         </div>
-      </Transition>
-    </Teleport>
+        <DialogFooter>
+          <Button variant="ghost" class="rounded-xl px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2" @click="showNewKbDialog = false">
+            取消
+          </Button>
+          <Button class="rounded-xl bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600" :disabled="isCreatingKb" @click="confirmCreateKb">
+            {{ isCreatingKb ? '创建中...' : '创建' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Edit Dialog -->
     <EditKbDialog

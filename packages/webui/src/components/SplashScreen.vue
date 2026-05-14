@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { sidecarStatus, sidecarError, retrySidecarStatus } from '@/composables/useSidecarStatus'
+import { Button } from '@/components/ui/button'
+import { BrainIcon, AlertCircleIcon, RefreshCwIcon } from 'lucide-vue-next'
 
 async function handleRetry() {
   await retrySidecarStatus()
@@ -25,7 +27,7 @@ async function handleRetry() {
           <div
             class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500/10 shadow-lg shadow-accent-glow"
           >
-            <span class="i-mdi-brain text-3xl text-accent-400" />
+            <BrainIcon class="size-8 text-accent-400" />
           </div>
           <div
             class="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-[3px] border-surface-3 border-t-accent-400"
@@ -39,17 +41,17 @@ async function handleRetry() {
           <div
             class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-danger-500/10"
           >
-            <span class="i-mdi-alert-circle text-3xl text-danger-400" />
+            <AlertCircleIcon class="size-8 text-danger-400" />
           </div>
           <p class="mb-1 text-base font-medium text-text-primary">服务启动失败</p>
           <p class="mb-6 max-w-sm text-sm text-text-secondary">{{ sidecarError || '无法连接到本地服务，请检查环境配置后重试' }}</p>
-          <button
-            class="inline-flex items-center gap-2 rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent-glow transition-all duration-200 hover:bg-accent-400 active:scale-95"
+          <Button
+            class="inline-flex items-center gap-2 rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent-glow hover:bg-accent-400 active:scale-95"
             @click="handleRetry"
           >
-            <span class="i-mdi-refresh text-sm" />
+            <RefreshCwIcon class="size-4" />
             重试
-          </button>
+          </Button>
         </template>
       </div>
     </div>

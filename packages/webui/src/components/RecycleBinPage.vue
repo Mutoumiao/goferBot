@@ -2,6 +2,15 @@
 import { onMounted } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import { confirmDialog } from '@/utils/confirm'
+import { Button } from '@/components/ui/button'
+import {
+  TrashIcon,
+  Trash2Icon,
+  LoaderIcon,
+  RotateCcwIcon,
+  InfoIcon,
+  DatabaseIcon,
+} from 'lucide-vue-next'
 
 const store = useKnowledgeBaseStore()
 
@@ -52,30 +61,31 @@ function formatDate(ts: number): string {
         <!-- Summary -->
         <div class="mb-[18px] flex flex-wrap items-center gap-4">
           <div class="flex h-[46px] w-[46px] items-center justify-center rounded-[18px] bg-surface-2">
-            <span class="i-mdi-delete text-xl text-text-secondary" />
+            <TrashIcon class="size-5 text-text-secondary" />
           </div>
           <div class="flex-1">
             <div class="text-lg font-medium text-text-primary">{{ store.deletedKnowledgeBases.length }} 个项目等待处理</div>
             <div class="text-sm text-text-tertiary">最早的项目将在 30 天后永久删除。</div>
           </div>
-          <button
+          <Button
             v-if="store.deletedKnowledgeBases.length > 0"
-            class="flex items-center gap-2 rounded-[15px] border border-danger-500/20 bg-white px-3 py-2 text-sm text-danger-500 transition-colors hover:bg-danger-soft"
+            variant="outline"
+            class="flex items-center gap-2 rounded-[15px] border-danger-500/20 bg-white px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
             @click="store.deletedKnowledgeBases.forEach((kb) => onPermanentDelete(kb.id))"
           >
-            <span class="i-mdi-delete-forever text-sm" />
+            <Trash2Icon data-icon="inline-start" class="size-4" />
             清空
-          </button>
+          </Button>
         </div>
 
         <!-- Loading -->
         <div v-if="store.isLoading" class="flex items-center justify-center py-12">
-          <span class="i-mdi-loading animate-spin text-2xl text-accent-500" />
+          <LoaderIcon class="size-8 animate-spin text-accent-500" />
         </div>
 
         <!-- Empty -->
         <div v-else-if="store.deletedKnowledgeBases.length === 0" class="flex flex-col items-center justify-center py-12 text-text-tertiary">
-          <span class="i-mdi-delete-empty text-4xl" />
+          <Trash2Icon class="size-10" />
           <span class="mt-3 text-sm">回收站为空</span>
         </div>
 
@@ -87,26 +97,28 @@ function formatDate(ts: number): string {
             class="flex min-h-[76px] items-center gap-3.5 rounded-[20px] border border-border-default bg-[#fafbfc] p-4 transition-colors hover:bg-surface-1"
           >
             <div class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[14px] bg-surface-2">
-              <span :class="`i-${kb.icon || 'mdi-database'} text-base text-text-secondary`" />
+              <DatabaseIcon class="size-4 text-text-secondary" />
             </div>
             <div class="min-w-0 flex-1">
               <div class="truncate text-[15px] font-medium text-text-primary">{{ kb.name }}</div>
               <div class="text-xs text-text-tertiary">删除于 {{ formatDate(kb.deleted_at!) }}</div>
             </div>
-            <button
-              class="flex items-center gap-2 rounded-[14px] border border-border-default bg-white px-3 py-2 text-sm text-text-secondary transition-all hover:border-accent-500/30 hover:text-accent-500"
+            <Button
+              variant="outline"
+              class="flex items-center gap-2 rounded-[14px] border-border-default bg-white px-3 py-2 text-sm text-text-secondary hover:border-accent-500/30 hover:text-accent-500"
               @click="onRestore(kb.id)"
             >
-              <span class="i-mdi-restore text-sm" />
+              <RotateCcwIcon data-icon="inline-start" class="size-4" />
               恢复
-            </button>
-            <button
-              class="flex items-center gap-2 rounded-[14px] border border-danger-500/20 bg-white px-3 py-2 text-sm text-danger-500 transition-all hover:bg-danger-soft"
+            </Button>
+            <Button
+              variant="outline"
+              class="flex items-center gap-2 rounded-[14px] border-danger-500/20 bg-white px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
               @click="onPermanentDelete(kb.id)"
             >
-              <span class="i-mdi-delete-forever text-sm" />
+              <Trash2Icon data-icon="inline-start" class="size-4" />
               彻底删除
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -115,7 +127,7 @@ function formatDate(ts: number): string {
       <div
         class="flex items-start gap-2.5 rounded-[20px] border border-border-default bg-white/50 px-4 py-3.5"
       >
-        <span class="i-mdi-information-outline text-base text-text-tertiary" />
+        <InfoIcon class="size-4 shrink-0 text-text-tertiary" />
         <p class="text-[13px] leading-snug text-text-tertiary">永久删除前，恢复会保留原对话上下文、引用来源和知识库归属。</p>
       </div>
     </div>

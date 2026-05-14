@@ -4,6 +4,8 @@ import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import { getBackend } from '@goferbot/backend-adapters'
+import { Button } from '@/components/ui/button'
+import { XIcon, AlertCircleIcon } from 'lucide-vue-next'
 import EmptySession from './EmptySession.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatInput from './ChatInput.vue'
@@ -127,11 +129,11 @@ function dismissToast() {
         v-if="store.sendError"
         class="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-500/20 bg-white px-4 py-2.5 text-sm text-danger-500 shadow-xl"
       >
-        <span class="i-mdi-alert-circle text-base" />
+        <AlertCircleIcon class="size-4" />
         <span>{{ store.sendError }}</span>
-        <button class="ml-1 text-text-tertiary hover:text-text-primary" @click="dismissToast">
-          <span class="i-mdi-close text-xs" />
-        </button>
+        <Button variant="ghost" size="icon-xs" class="ml-1" @click="dismissToast">
+          <XIcon data-icon="inline-start" />
+        </Button>
       </div>
     </Transition>
   </div>
