@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { sidecarStatus, sidecarError, retrySidecar } from '@/composables/useSidecar'
+import { sidecarStatus, sidecarError, retrySidecarStatus } from '@/composables/useSidecarStatus'
 
 async function handleRetry() {
-  await retrySidecar()
+  await retrySidecarStatus()
 }
 </script>
 
