@@ -1,36 +1,84 @@
 # 项目进度追踪（Progress）
 
-> **更新日期**：2026-05-15  
-> **Issue 目录**：[`.scratch/knowledge-base/issues/`](.scratch/knowledge-base/issues/)
+> **更新日期**：2026-05-15
+> **当前阶段**：云原生架构重构（V2）
 
 ---
 
-## 进度概览
+## ⚠️ 重要声明
 
-| 阶段 | Issue | 状态 | 说明 |
-|------|-------|------|------|
-| 基础设施 | [#01 Sidecar 启动](.scratch/knowledge-base/issues/01-sidecar-startup.md) | closed | Tauri ↔ Node.js Sidecar 启动、发现、生命周期管理 |
-| 核心功能 | [#02 基础对话](.scratch/knowledge-base/issues/02-basic-chat.md) | closed | SSE 流式问答、会话标签管理、消息存储 |
-| 核心功能 | [#03 知识库管理](.scratch/knowledge-base/issues/03-knowledge-base-management.md) | closed | CRUD、文件导入、资源管理器、回收站 |
-| 增强功能 | [#03b 右键菜单与文件操作](.scratch/knowledge-base/issues/03b-kb-context-menus-and-file-operations.md) | closed | 置顶、修改资料、新建文件夹、重命名、移动/复制 |
-| 核心功能 | [#04 RAG 索引检索](.scratch/knowledge-base/issues/04-rag-indexing-retrieval.md) | closed | sqlite-vec + FTS5 混合搜索、索引队列、`@提及` 交互 |
-| 索引同步 | [#04b 文件操作后索引同步](.scratch/knowledge-base/issues/04b-index-sync-for-file-operations.md) | closed | 跨库移动/复制/重命名后的 document_chunks 同步 |
-| 配置系统 | [#05 多提供商设置](.scratch/knowledge-base/issues/05-settings-multi-provider.md) | closed | 设置页、多 LLM 配置、Embedding 配置、温度参数 |
-| 历史管理 | [#06 对话历史](.scratch/knowledge-base/issues/06-chat-history.md) | closed | 历史列表、恢复会话、删除、重命名 |
-| 本地模型 | [#07 Ollama 与错误处理](.scratch/knowledge-base/issues/07-ollama-error-handling.md) | closed | Ollama 本地模型、全局错误处理、Loading/空状态 |
-| 质量保障 | [#08 测试覆盖](.scratch/knowledge-base/issues/08-test-coverage.md) | closed | 46 个测试文件、301 条用例全部通过 |
-| 质量保障 | [#09 端到端测试](.scratch/knowledge-base/issues/09-end-to-end-testing.md) | closed | 阶1 E2E 28 条、阶2 集成 34 条、阶3 验收 3 条 |
-| 架构重构 | [#10 Shell 抽象与浏览器模式](.scratch/knowledge-base/issues/10-shell-abstraction-and-browser-mode.md) | closed | 提取 Shell 模块解耦前端与 Tauri，Web 可独立运行 |
-| 架构重构 | [#11 BackendTransport 统一](.scratch/knowledge-base/issues/11-backend-transport-unification.md) | closed | 统一 HTTP 通信模块，sidecarClient 浅模块深化 |
-| 架构重构 | [#12 Monorepo 结构迁移](.scratch/knowledge-base/issues/12-monorepo-migration.md) | closed | pnpm workspace 五包拆分，构建测试全通过 |
-| UI 系统 | [#13 shadcn-vue 集成](.scratch/knowledge-base/issues/13-shadcn-vue-integration.md) | closed | 引入 shadcn-vue 基础组件库，替换全部原生 HTML 控件，图标迁移至 lucide-vue-next |
+项目已从 V1 架构（Tauri + SQLite + 本地文件系统）全面重构为 V2 云原生架构。
+
+旧 Issue（#01~#13）、旧计划文件、旧 ADR（0001~0003, 0005~0006）已全部归档至 `docs/archived/`，**不再适用当前开发**。
+
+当前开发必须参考：
+- `docs/superpowers/specs/2026-05-15-cloud-native-rearchitecture.md`
+- `docs/adr/0004-cloud-native-rearchitecture.md`
+- `docs/interview-architecture-evolution.md`
 
 ---
 
-## 测试用例
+## V2 架构概览
 
-详细测试用例见 [`docs/test-cases/`](docs/test-cases/)。
+| 层级 | 技术 | 职责 |
+|------|------|------|
+| 对象存储 | MinIO (Docker) | 文件内容存储 |
+| 主数据库 | PostgreSQL (Docker) + Drizzle ORM | 元数据、用户、认证 |
+| 向量数据库 | Milvus (Docker) | 向量索引与 ANN 搜索 |
+| 缓存/队列 | Redis (Docker) + BullMQ | 异步任务流水线 |
+| 认证 | Better Auth | 会话与账号管理 |
+| 本地缓存 | SQLite | UI 状态、离线缓存、Agent Memory |
 
 ---
 
-*最后更新：2026-05-15（#13 shadcn-vue 集成完成）*
+## 实施阶段
+
+### Phase 1: 基础设施（P0）
+
+- [ ] Docker Compose 配置（PG + MinIO + Milvus + Redis）
+- [ ] Drizzle ORM 配置 + 数据库迁移
+- [ ] MinIO Client 封装
+- [ ] Milvus Client 封装
+- [ ] Redis + BullMQ 配置
+
+### Phase 2: 认证系统（P0）
+
+- [ ] Better Auth 集成
+- [ ] 登录/注册 API
+- [ ] 前端登录/注册页面
+- [ ] 路由守卫（未登录跳转）
+
+### Phase 3: 知识库与文件（P0）
+
+- [ ] 知识库 CRUD（PostgreSQL）
+- [ ] 虚拟文件夹 CRUD
+- [ ] 文件上传 → MinIO
+- [ ] 文件列表/删除/移动
+- [ ] 文档状态机（status 字段）
+- [ ] 异步流水线框架（BullMQ + Worker 占位）
+
+### Phase 4: 聊天功能（P0）
+
+- [ ] 会话 CRUD（PostgreSQL）
+- [ ] 消息存储
+- [ ] SSE 流式对话
+- [ ] 多知识库选择 UI
+- [ ] RAG 预留接口（先返回空）
+
+### Phase 5: RAG 集成（P1）
+
+- [ ] SDK 实现：解析 → 分块 → 向量化
+- [ ] Milvus 写入与检索
+- [ ] 混合检索（向量 + 关键词）
+- [ ] Rerank
+
+### Phase 6: 优化（P2）
+
+- [ ] Presigned URL 上传
+- [ ] 文件预览（PDF/图片/Markdown）
+- [ ] 本地 SQLite 缓存层
+- [ ] 离线模式支持
+
+---
+
+*最后更新：2026-05-15（云原生架构重构启动）*

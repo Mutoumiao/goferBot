@@ -150,11 +150,31 @@ const variants = cva('base-classes', {
 3. **精准修改** — 不碰无关代码；匹配现有风格；只删除**你的改动**导致的孤立代码。
 4. **目标驱动** — 将任务转化为可验证目标（如"修复 bug → 写复现测试并让其通过"）。多步骤任务给出简要计划与验证检查点。
 
+## ⚠️ 废弃文档声明 – 请勿使用
+
+以下目录包含项目早期的**过时内容**，已被**弃用**，不再适用于当前开发：
+
+- `docs/archived/plans/` — 旧功能执行计划
+- `docs/archived/adr/` — 旧架构决策记录（0001~0006，除 0004 外）
+- `docs/archived/issues/` — 旧 Issue 跟踪文件（#01~#13）
+
+**当前开发必须仅参考**：
+- 最新架构规格：`docs/superpowers/specs/2026-05-15-cloud-native-rearchitecture.md`
+- 最新 ADR：`docs/adr/0004-cloud-native-rearchitecture.md`
+- `PROGRESS.md`（项目进度与当前状态）
+- `docs/interview-architecture-evolution.md`（架构演进面试指南）
+
+**对 AI 代理的约束**：
+- 生成代码、编写测试或回答问题时，**必须忽略**废弃目录中的任何文件。
+- 所有实现必须基于当前架构 spec 编写，不得参考归档目录中的旧用例。
+
+---
+
 ## Agent skills
 
-- **Issue tracker**：`.scratch/` 目录下的 Markdown issue 文件。详见 `docs/agents/issue-tracker.md`。
+- **Issue tracker**：`.scratch/` 目录下的 Markdown issue 文件（当前已归档，见上方声明）。详见 `docs/agents/issue-tracker.md`。
 - **Triage labels**：标准标签词汇，详见 `docs/agents/triage-labels.md`。
 - **Domain docs**：单上下文仓库，`CONTEXT.md` 和 `docs/adr/` 位于根目录。详见 `docs/agents/domain.md`。
-- **ADR**：`docs/adr/` 目录下的编号决策记录（如 `0001-*.md`）。涉及架构变动前应先查阅。
-- **执行计划**：`docs/superpowers/plans/` 目录下按日期组织的实现方案（`YYYY-MM-DD-<feature>.md`）。执行前应先阅读。
+- **ADR**：`docs/adr/` 目录下的编号决策记录。涉及架构变动前应先查阅 **0004-cloud-native-rearchitecture.md**。
+- **执行计划**：`docs/superpowers/plans/` 目录下按日期组织的实现方案。执行前应先阅读。
 - **进度追踪**：`PROGRESS.md` 记录所有 Issue 的执行状态与后续计划，开发前应先查阅当前进度。
