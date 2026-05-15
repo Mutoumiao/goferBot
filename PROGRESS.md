@@ -1,6 +1,6 @@
 # 项目进度追踪（Progress）
 
-> **更新日期**：2026-05-14  
+> **更新日期**：2026-05-15  
 > **Issue 目录**：[`.scratch/knowledge-base/issues/`](.scratch/knowledge-base/issues/)
 
 ---
@@ -33,4 +33,4 @@
 
 ---
 
-*最后更新：2026-05-14（#13 shadcn-vue 集成完成）*
+*最后更新：2026-05-15（#13 shadcn-vue 集成完成）*

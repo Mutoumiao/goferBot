@@ -1,6 +1,6 @@
 # Issue #13: shadcn-vue UI 体系重构
 
-**状态**: 待执行  
+**状态**: closed  
 **依赖**: #12（Monorepo 结构迁移）已完成  
 **标签**: `refactor`, `ui`, `frontend`, `shadcn-vue`  
 
@@ -310,15 +310,15 @@ packages/webui/src/
 
 ## 验收标准
 
-- [ ] 所有 raw `<button>` 替换为 `<Button>`
-- [ ] 所有 raw `<input>` 替换为 `<Input>`
-- [ ] 所有 Dialog 使用 `ui/Dialog` primitive
-- [ ] 无 `:class="[` 条件数组（全部使用 `cn()` + CVA）
-- [ ] 键盘导航完整（Tab、Enter、Escape、Arrow keys）
-- [ ] Focus ring 在所有交互元素上可见
-- [ ] 构建产物大小增加 < 20%
-- [ ] 所有测试通过
-- [ ] 视觉无回归（关键页面截图对比通过）
+- [x] 所有 raw `<button>` 替换为 `<Button>`
+- [x] 所有 raw `<input>` 替换为 `<Input>`
+- [x] 所有 Dialog 使用 `ui/Dialog` primitive
+- [x] 无 `:class="[` 条件数组（全部使用 `cn()` + CVA）
+- [x] 键盘导航完整（Tab、Enter、Escape、Arrow keys）
+- [x] Focus ring 在所有交互元素上可见
+- [x] 构建产物大小增加 < 20%
+- [x] 所有测试通过
+- [x] 视觉无回归（关键页面截图对比通过）
 
 ---
 
