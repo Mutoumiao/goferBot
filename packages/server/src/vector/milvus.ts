@@ -169,6 +169,7 @@ export class MilvusVectorStore implements IVectorStore {
       if (res.status.error_code !== 'Success') {
         throw new VectorStoreError(`向量插入失败: ${res.status.reason}`);
       }
+      await this.client.flush({ collection_names: [this.collectionName] });
       console.log(`[Milvus] Inserted ${vectors.length} vectors into '${this.collectionName}'`);
     } catch (err: any) {
       if (err instanceof VectorStoreError) throw err;
@@ -242,6 +243,7 @@ export class MilvusVectorStore implements IVectorStore {
       if (res.status.error_code !== 'Success') {
         throw new VectorStoreError(`向量删除失败: ${res.status.reason}`);
       }
+      await this.client.flush({ collection_names: [this.collectionName] });
       console.log(`[Milvus] Deleted vectors from '${this.collectionName}', expr=${expr}`);
     } catch (err: any) {
       if (err instanceof VectorStoreError) throw err;
@@ -260,6 +262,7 @@ export class MilvusVectorStore implements IVectorStore {
       if (res.status.error_code !== 'Success') {
         throw new VectorStoreError(`向量删除失败: ${res.status.reason}`);
       }
+      await this.client.flush({ collection_names: [this.collectionName] });
       console.log(`[Milvus] Deleted vectors by file_id from '${this.collectionName}', expr=${expr}`);
     } catch (err: any) {
       if (err instanceof VectorStoreError) throw err;
@@ -278,6 +281,7 @@ export class MilvusVectorStore implements IVectorStore {
       if (res.status.error_code !== 'Success') {
         throw new VectorStoreError(`向量删除失败: ${res.status.reason}`);
       }
+      await this.client.flush({ collection_names: [this.collectionName] });
       console.log(`[Milvus] Deleted vectors by kb_id from '${this.collectionName}', expr=${expr}`);
     } catch (err: any) {
       if (err instanceof VectorStoreError) throw err;
