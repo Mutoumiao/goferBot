@@ -20,10 +20,10 @@
 | 层级 | 技术 | 职责 |
 |-----|------|------|
 | 对象存储 | MinIO (Docker) | 文件内容存储 |
-| 主数据库 | PostgreSQL (Docker) + Drizzle ORM | 元数据、用户、认证 |
+| 主数据库 | PostgreSQL (Docker) + Prisma | 元数据、用户、认证 |
 | 向量数据库 | Milvus (Docker) | 向量索引与 ANN 搜索 |
 | 缓存/队列 | Redis (Docker) + BullMQ | 异步任务流水线 |
-| 认证 | Better Auth | 会话与账号管理 |
+| 认证 | JWT + bcrypt | 身份认证与授权 |
 | 本地缓存 | SQLite | UI 状态、离线缓存、Agent Memory |
 
 核心原则：
@@ -54,6 +54,35 @@
 
 - 单用户（无 Workspace 概念）
 - 本地跑全套 Docker 基础设施
-- 认证：简单账号密码登录（Better Auth）
-- 文件上传先走 Hono（简化版），后续优化为 Presigned URL
+- 认证：JWT + bcrypt（基于 nest-template 的 AuthGuard 模式）
+- 后端框架：NestJS 10 + Fastify（替换 Hono，利用成熟的模块生态）
+- 文件上传先走 NestJS Controller，后续优化为 Presigned URL
 - RAG SDK 预留接口，先保证应用功能完整
+
+## 架构变更记录
+
+### 2026-05-16: Hono → NestJS 迁移
+
+**原因：**
+- 开发者对 NestJS 生态更熟悉，有成熟的 nest-template 可参考
+- Better Auth 与 Drizzle ORM 的集成遇到 schema 适配问题
+- NestJS 的模块化、依赖注入、拦截器、守卫模式更适合大型项目
+- Prisma + Zod + JWT 的认证流程在 nest-template 中已验证
+
+**变更内容：**
+| 组件 | 旧方案 | 新方案 |
+|------|--------|--------|
+| Web 框架 | Hono | NestJS 10 + Fastify |
+| ORM | Drizzle ORM | Prisma 5 |
+| 认证 | Better Auth (Session Cookie) | JWT + bcrypt (Access/Refresh Token) |
+| 验证 | Zod (手动) | Zod + nestjs-zod (管道) |
+| 响应格式 | 手动 | 统一拦截器 `{ data }` |
+| 异常处理 | 手动 | 全局异常过滤器 |
+| 速率限制 | hono-rate-limiter | @nestjs/throttler |
+
+**保留内容：**
+- Docker Compose 基础设施（PG + MinIO + Milvus + Redis）
+- 前端 Vue 3 + Pinia + API Client
+- MinIO / Milvus / Redis 客户端封装
+- BullMQ 队列框架
+- RAG SDK 接口合约

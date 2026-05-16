@@ -21,12 +21,12 @@
 | 层级 | 技术 | 职责 |
 |------|------|------|
 | 前端 | Vue 3 + vue-router + Pinia | Web UI |
-| 后端 | Hono (Node.js) | API Server |
+| 后端 | NestJS 10 + Fastify | API Server |
 | 对象存储 | MinIO (Docker) | 文件内容存储 |
-| 主数据库 | PostgreSQL (Docker) + Drizzle ORM | 元数据、用户、认证 |
+| 主数据库 | PostgreSQL (Docker) + Prisma | 元数据、用户、认证 |
 | 向量数据库 | Milvus (Docker) | 向量索引与 ANN 搜索 |
 | 缓存/队列 | Redis (Docker) + BullMQ | 异步任务流水线 |
-| 认证 | Better Auth | 会话与账号管理 |
+| 认证 | JWT + bcrypt | 身份认证与授权 |
 
 ---
 
@@ -71,27 +71,40 @@
 - [x] Server 去 Sidecar 化
 - [x] V1 代码清理（q-03 已完成）
 
-### Phase 1: 基础设施（P0）— 进行中
+### 架构变更（2026-05-16）
+
+**Hono → NestJS 迁移**：基于开发者熟悉的 nest-template，将后端框架从 Hono 迁移到 NestJS 10 + Fastify。
+- ORM：Drizzle ORM → Prisma 5
+- 认证：Better Auth → JWT + bcrypt
+- 验证：Zod 手动 → nestjs-zod 管道
+- 响应：手动 → 统一拦截器
+- 异常：手动 → 全局过滤器
+
+### Phase 1: 基础设施（P0）— 已完成
 
 | Issue | 状态 | Spec | Plan | 代码 | 说明 |
 |-------|------|------|------|------|------|
 | `i-00-core-interfaces` | ✅ | ✅ | ✅ | ✅ | 7 个接口文件，type-check 通过 |
 | `i-01-docker-compose-infra` | ✅ | ✅ | ✅ | ✅ | docker-compose.dev.yml、.env.example、infra 脚本 |
 | `q-03-v1-cleanup` | ✅ | ✅ | ✅ | ✅ | V1 代码清理，依赖移除，路由 501 |
-| `i-02-drizzle-orm-setup` | ✅ | ✅ | ⬜ | ⬜ | Spec 完成，待生成 Plan |
-| `i-07-api-client` | ✅ | ✅ | ⬜ | ⬜ | Spec 完成，待生成 Plan |
-| `i-03-minio-client` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
-| `i-04-milvus-client` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
-| `i-05-redis-bullmq-setup` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
+| `i-02-prisma-setup` | ✅ | ✅ | ✅ | ✅ | Prisma 5 + PostgreSQL，8 张表，type-check 通过 |
+| `i-08-nestjs-server-setup` | ✅ | ✅ | ✅ | ✅ | NestJS 10 + Fastify，健康检查，type-check 通过 |
+| `i-10-nestjs-security` | ✅ | ✅ | ✅ | ✅ | 响应拦截器、异常过滤器、Helmet、CORS、Throttler |
+| `i-11-minio-service` | ✅ | ✅ | ✅ | ✅ | StorageModule + StorageService，IStorageProvider |
+| `i-12-milvus-service` | ✅ | ✅ | ✅ | ✅ | VectorModule + VectorService，IVectorStore |
+| `i-13-bullmq-service` | ✅ | ✅ | ✅ | ✅ | QueueModule + QueueService + WorkerService |
+| `i-14-jwt-api-client` | ✅ | ✅ | ✅ | ✅ | 前端 JWT 客户端 + Auth Store + 自动刷新 |
+| `d-01-rag-sdk-contracts` | ✅ | ✅ | ✅ | ✅ | RAG SDK 接口合约完成 |
+| `f-03-sidebar-navigation` | ✅ | ✅ | ✅ | ✅ | 侧边栏导航完成 |
 
-### Phase 2: 认证系统（P0）
+### Phase 2: 认证系统（P0）— 已完成
 
 | Issue | 状态 | Spec | Plan | 代码 | 说明 |
 |-------|------|------|------|------|------|
-| `b-01-auth-api` | ✅ | ✅ | ⬜ | ⬜ | Spec 完成，待生成 Plan |
+| `i-09-nestjs-auth-system` | ✅ | ✅ | ✅ | ✅ | JWT + bcrypt + Passport，5 个端点 |
+| `i-14-jwt-api-client` | ✅ | ✅ | ✅ | ✅ | 前端 JWT 客户端 + Auth Store + 自动刷新 |
 | `f-01-auth-pages` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
 | `f-02-route-guard` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
-| `q-01-security-baseline` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
 
 ### Phase 3: 知识库与文件（P0）
 
@@ -132,4 +145,4 @@
 
 ---
 
-*最后更新：2026-05-16（Phase 1 基础设施编码中）*
+*最后更新：2026-05-16（Phase 1 基础设施全部完成，Phase 2 认证系统后端完成）*

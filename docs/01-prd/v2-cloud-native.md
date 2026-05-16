@@ -8,7 +8,7 @@
 
 ## 1. 项目概述
 
-基于 Tauri v2 + Vue 3 + Hono 的 AI Workspace 桌面应用。用户可导入文档进行管理，通过 LLM 进行问答，支持 RAG 检索增强。
+基于 Tauri v2 + Vue 3 + NestJS 的 AI Workspace 桌面应用。用户可导入文档进行管理，通过 LLM 进行问答，支持 RAG 检索增强。
 
 **定位**：带本地能力的 AI Workspace / Agent OS
 - 云端优先
@@ -25,7 +25,7 @@
 | 层 | 职责 | 技术 |
 |---|---|---|
 | Tauri Rust | 桌面壳：窗口管理、提供 appData 路径 | Rust |
-| Hono Gateway | API 路由、认证、业务编排 | TS + Hono |
+| NestJS API | API 路由、认证、业务编排、全局拦截器 | TS + NestJS 10 + Fastify |
 | PostgreSQL | 元数据：用户、知识库、文档、会话、消息 | PG 16 |
 | MinIO | 对象存储：文件内容 | MinIO |
 | Milvus | 向量索引与 ANN 搜索 | Milvus 2.4+ |
@@ -38,7 +38,7 @@
 ```
 用户上传文件
     ↓
-Hono 接收 → MinIO 存储
+NestJS Controller 接收 → MinIO 存储
     ↓
 PostgreSQL 创建文档记录（status = uploaded）
     ↓
@@ -67,7 +67,7 @@ services:
 ### 3.1 MVP 范围
 
 - 邮箱 + 密码注册/登录
-- Session Cookie 认证
+- JWT Token 认证（Access Token + Refresh Token）
 - 无 OAuth、无邮箱验证（后续扩展）
 
 ### 3.2 用户流程
@@ -83,10 +83,10 @@ services:
 ### 3.3 API
 
 ```
-POST /api/auth/sign-in/email     # 登录
-POST /api/auth/sign-up/email     # 注册
-POST /api/auth/sign-out          # 登出
-GET  /api/auth/session           # 获取当前会话
+POST /api/auth/login     # 登录（返回 JWT）
+POST /api/auth/register  # 注册
+POST /api/auth/refresh   # 刷新 Token
+GET  /api/auth/me        # 获取当前用户信息
 ```
 
 ---
@@ -199,15 +199,15 @@ GET  /api/auth/session           # 获取当前会话
 
 ---
 
-## 6. Hono API 设计
+## 6. NestJS API 设计
 
 ### 6.1 认证
 
 ```
-POST /api/auth/sign-in/email
-POST /api/auth/sign-up/email
-POST /api/auth/sign-out
-GET  /api/auth/session
+POST /api/auth/login       # 登录，返回 JWT
+POST /api/auth/register    # 注册
+POST /api/auth/refresh     # 刷新 Token
+GET  /api/auth/me          # 获取当前用户信息
 ```
 
 ### 6.2 健康检查
@@ -284,9 +284,28 @@ POST /settings     # 保存配置
 
 ---
 
-## 7. 数据模型
+## 7. 技术栈
 
-### 7.1 PostgreSQL Schema（Drizzle ORM）
+| 层级 | 技术 |
+|------|------|
+| 前端 | Vue 3 + TypeScript + Vite + Tailwind CSS v4 + Pinia |
+| 桌面 | Tauri v2 (Rust) |
+| 后端 | NestJS 10 + Fastify |
+| ORM | Prisma 5 |
+| 数据库 | PostgreSQL 16 |
+| 对象存储 | MinIO |
+| 向量数据库 | Milvus 2.4+ |
+| 缓存/队列 | Redis 7 + BullMQ |
+| 认证 | JWT + bcrypt |
+| 验证 | Zod + nestjs-zod |
+| 测试 | Vitest + Playwright |
+| 包管理 | pnpm |
+
+---
+
+## 8. 数据模型
+
+### 8.1 PostgreSQL Schema（Prisma）
 
 ```typescript
 // users
