@@ -16,7 +16,11 @@
     "preview": "pnpm --filter @goferbot/webui preview",
     "tauri": "pnpm --filter @goferbot/webui tauri",
     "check": "cargo check --manifest-path src-tauri/Cargo.toml",
-    "bump": "node bump-version.cjs"
+    "bump": "node bump-version.cjs",
+    "infra:up": "docker compose -f docker-compose.dev.yml up -d --wait",
+    "infra:down": "docker compose -f docker-compose.dev.yml down",
+    "infra:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "infra:reset": "docker compose -f docker-compose.dev.yml down -v && rm -rf .data"
   },
   "devDependencies": {
     "@pinia/testing": "^1.0.3",
