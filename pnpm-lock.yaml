@@ -76,6 +76,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.19.14(hono@4.12.18)
+      '@hono/zod-validator':
+        specifier: ^0.8.0
+        version: 0.8.0(hono@4.12.18)(zod@4.4.3)
       '@zilliz/milvus2-sdk-node':
         specifier: ^3.0.0
         version: 3.0.0
@@ -88,6 +91,9 @@ importers:
       hono:
         specifier: ^4.7.0
         version: 4.12.18
+      hono-rate-limiter:
+        specifier: ^0.5.3
+        version: 0.5.3(hono@4.12.18)
       ioredis:
         specifier: ^5.10.1
         version: 5.10.1
@@ -97,6 +103,9 @@ importers:
       pg:
         specifier: ^8.20.0
         version: 8.20.0
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -1233,6 +1242,12 @@ packages:
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
+
+  '@hono/zod-validator@0.8.0':
+    resolution: {integrity: sha512-5uS4S1/LKtZQYvD4BtpPUFkOv8d1wNxHHrChm26buMiEYc1FrHWvDUaKVBwkiVtvSExHSpLGDvcnpI2Copyj9w==}
+    peerDependencies:
+      hono: '>=4.10.0'
+      zod: ^3.25.0 || ^4.0.0
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -6541,6 +6556,11 @@ snapshots:
     dependencies:
       hono: 4.12.18
 
+  '@hono/zod-validator@0.8.0(hono@4.12.18)(zod@4.4.3)':
+    dependencies:
+      hono: 4.12.18
+      zod: 4.4.3
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -7259,7 +7279,7 @@ snapshots:
       fast-glob: 3.3.3
       is-glob: 4.0.3
       minimatch: 9.0.9
-      semver: 7.7.4
+      semver: 7.8.0
       ts-api-utils: 2.4.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
