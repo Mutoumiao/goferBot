@@ -1,6 +1,15 @@
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
-import { cors } from 'hono/cors'
+import { applyHelmet } from './middleware/helmet.js'
+import { applyCors } from './middleware/cors.js'
+import {
+  authRateLimit,
+  chatRateLimit,
+  uploadRateLimit,
+  generalRateLimit,
+} from './middleware/rate-limit.js'
+import { sanitizeError } from './utils/sanitize-error.js'
+import { auth } from './auth.js'
 import chatRoutes from './routes/chat.js'
 import sessionRoutes from './routes/sessions.js'
 import knowledgeBaseRoutes from './routes/knowledgeBases.js'
@@ -22,20 +31,34 @@ async function main() {
 
   const app = new Hono()
 
-  app.onError((err, c) => {
-    console.error('Hono error:', err)
-    return c.json({ error: 'Internal server error' }, 500)
-  })
+  // 1. 全局错误处理（脱敏）
+  app.onError(sanitizeError)
 
-  app.use('*', cors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type'],
-    credentials: true,
-  }))
+  // 2. Helmet 安全头
+  applyHelmet(app)
 
+  // 3. CORS 硬化
+  applyCors(app)
+
+  // 4. 通用限速（兜底）
+  app.use('*', generalRateLimit)
+
+  // 5. 认证路由独立限速（覆盖通用限速）
+  app.use('/api/auth/*', authRateLimit)
+
+  // 6. 聊天路由限速
+  app.use('/chat', chatRateLimit)
+
+  // 7. 上传路由限速
+  app.use('/knowledge-bases/:id/files', uploadRateLimit)
+
+  // 8. 健康检查（最小化信息）
   app.get('/health', (c) => c.json({ status: 'ok' }))
 
+  // 9. Better Auth handler 挂载
+  app.on(['POST', 'GET'], '/api/auth/**', (c) => auth.handler(c.req.raw))
+
+  // 10. 业务路由
   app.route('/chat', chatRoutes)
   app.route('/sessions', sessionRoutes)
   app.route('/knowledge-bases', knowledgeBaseRoutes)

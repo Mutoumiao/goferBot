@@ -153,23 +153,19 @@ export class MilvusVectorStore implements IVectorStore {
       }
     }
 
-    const fields_data: RowData[] = [
-      { field_name: 'id', type: DataType.VarChar, data: vectors.map((v) => v.id) },
-      { field_name: 'chunk_id', type: DataType.VarChar, data: vectors.map((v) => v.chunkId) },
-      { field_name: 'kb_id', type: DataType.VarChar, data: vectors.map((v) => v.kbId) },
-      { field_name: 'file_id', type: DataType.VarChar, data: vectors.map((v) => v.fileId) },
-      {
-        field_name: 'embedding',
-        type: DataType.FloatVector,
-        data: vectors.map((v) => v.embedding),
-      },
-    ];
+    const data = vectors.map((v) => ({
+      id: v.id,
+      chunk_id: v.chunkId,
+      kb_id: v.kbId,
+      file_id: v.fileId,
+      embedding: v.embedding,
+    }));
 
     try {
       const res = await this.client.insert({
         collection_name: this.collectionName,
-        fields_data,
-      });
+        data,
+      } as any);
       if (res.status.error_code !== 'Success') {
         throw new VectorStoreError(`向量插入失败: ${res.status.reason}`);
       }
@@ -204,7 +200,7 @@ export class MilvusVectorStore implements IVectorStore {
         vector: queryVector,
         filter: expr,
         limit: topK,
-        output_fields: ['chunk_id'],
+        output_fields: ['chunk_id', 'id'],
       });
 
       if (res.status.error_code !== 'Success') {

@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
-import type { ConflictError, ValidationError, AuthError } from './errors.js'
+import { ConflictError, ValidationError, AuthError } from './errors.js'
 
 /** 注册凭证 */
 export interface SignUpCredentials {

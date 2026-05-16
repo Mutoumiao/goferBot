@@ -1,4 +1,5 @@
 import type { LLMConfig } from '../types.js'
+import { validateBaseUrl, SSRFError } from '../utils/ssrf-guard.js'
 
 function getDefaultBaseUrl(provider: string): string {
   switch (provider) {
@@ -22,6 +23,15 @@ export async function streamChatCompletion(
   const url = config.baseUrl || getDefaultBaseUrl(config.provider)
   if (!url) {
     throw new Error(`Unknown provider: ${config.provider}`)
+  }
+
+  try {
+    validateBaseUrl(url)
+  } catch (err) {
+    if (err instanceof SSRFError) {
+      throw err
+    }
+    throw err
   }
 
   const apiMessages: Array<{ role: string; content: string }> = []
