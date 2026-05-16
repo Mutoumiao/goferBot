@@ -1,8 +1,10 @@
-// db 实例
-export { db } from './client.js';
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
+import * as schema from './schema.js'
 
-// Schema 表定义与类型
-export * from './schema.js';
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
 
-// Drizzle ORM 工具函数（常用查询构建器）
-export { eq, and, or, inArray, desc, asc } from 'drizzle-orm';
+export const db = drizzle(pool, { schema })
+export * from './schema.js'
