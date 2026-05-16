@@ -29,7 +29,6 @@ target/
 
 docs/design-discussions/*
 .claude/settings.local.json
-bugs/*
 
 # Playwright
 tests/e2e/report/
@@ -56,3 +55,7 @@ packages/webui/src/**/*.js
 packages/webui/src/**/*.d.ts
 packages/webui/src/**/*.d.ts.map
 packages/webui/src/**/*.js.map
+
+docs/agents/*
+docs/backups/*
+docs/bugs/*
