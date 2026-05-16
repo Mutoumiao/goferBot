@@ -29,7 +29,7 @@ model KnowledgeBase {
   name        String
   description String?
   isPinned    Boolean   @default(false) @map("is_pinned")
-  sortOrder   Int       @default(0) @map("sort_order")
+  sortOrder   Int       @default(autoincrement()) @map("sort_order")
   icon        String?
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")

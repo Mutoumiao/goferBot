@@ -76,11 +76,9 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     const kb = knowledgeBases.value.find((k) => k.id === id)
     if (!kb) return
     const nextPinned = !kb.isPinned
-    const nextOrder = nextPinned ? 0 : (kb.sortOrder ?? 0)
     try {
       const updated = await api.patch<KnowledgeBase>(`/knowledge-bases/${id}`, {
         isPinned: nextPinned,
-        sortOrder: nextOrder,
       })
       const idx = knowledgeBases.value.findIndex((k) => k.id === id)
       if (idx !== -1) {

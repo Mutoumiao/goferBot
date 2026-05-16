@@ -23,18 +23,12 @@ export class KnowledgeBaseService {
   }
 
   async create(userId: string, dto: CreateKbDto) {
-    const maxOrder = await this.prisma.knowledgeBase.aggregate({
-      where: { userId },
-      _max: { sortOrder: true },
-    })
-
     return this.prisma.knowledgeBase.create({
       data: {
         userId,
         name: dto.name,
         description: dto.description ?? null,
         icon: dto.icon ?? null,
-        sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
       },
     })
   }

@@ -151,7 +151,7 @@ export const useSessionStore = defineStore('session', () => {
         }
       }
 
-      // 模拟 AI 回复（b-04 SSE API 完成后替换）
+      // TODO(b-04): 替换为 SSE 流式响应
       const assistantMsg: Message = {
         id: `msg-assistant-${Date.now()}`,
         role: 'assistant',
