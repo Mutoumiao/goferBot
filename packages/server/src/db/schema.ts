@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean } from 'drizzle-orm/pg-core'
+import type { InferSelectModel } from 'drizzle-orm'
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -41,3 +42,12 @@ export const verifications = pgTable('verifications', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// 兼容旧 type-check.ts 的类型导出
+export type UserSelect = InferSelectModel<typeof users>
+export type KnowledgeBaseSelect = UserSelect
+export type FolderSelect = UserSelect
+export type DocumentSelect = UserSelect
+export type ChunkSelect = UserSelect
+export type SessionSelect = InferSelectModel<typeof sessions>
+export type MessageSelect = UserSelect
