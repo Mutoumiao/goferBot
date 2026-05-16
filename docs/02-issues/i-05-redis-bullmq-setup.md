@@ -9,7 +9,7 @@
 
 - 功能规格: docs/03-specs/features/redis-bullmq-setup/feature-spec.md
 - 行为规格: docs/03-specs/features/redis-bullmq-setup/behavior-spec.md
-- API 规格: 无（基础设施，无 API）
+- API 规格: docs/03-specs/features/redis-bullmq-setup/api-spec.md
 
 ## 验收标准
 
