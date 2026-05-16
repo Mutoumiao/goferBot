@@ -53,7 +53,8 @@ services:
       - "${MILVUS_PORT:-19530}:19530"
       - "${MILVUS_METRIC_PORT:-9091}:9091"
     environment:
-      ETCD_ENDPOINTS: etcd:2379
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
       MINIO_ADDRESS: minio:9000
     volumes:
       - ./.data/milvus:/var/lib/milvus
