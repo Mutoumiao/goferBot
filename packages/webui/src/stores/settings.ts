@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getBackend } from '@goferbot/backend-adapters'
+import { apiRequest } from '@/api/client'
 import type { AppConfig, LLMConfig, ChatProviderConfig, OllamaConfig } from '@/types'
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -23,8 +23,7 @@ export const useSettingsStore = defineStore('settings', () => {
   async function loadConfig() {
     isLoading.value = true
     try {
-      const backend = getBackend()
-      const res = await backend.request('GET', '/settings')
+      const res = await apiRequest('GET', '/settings')
       if (res.ok) {
         const data = await res.json()
         config.value = { ...DEFAULT_CONFIG, ...data, providers: { ...DEFAULT_CONFIG.providers, ...data.providers } }
@@ -43,8 +42,7 @@ export const useSettingsStore = defineStore('settings', () => {
         ? { ...config.value.embeddingProvider, ...updates.embeddingProvider }
         : config.value.embeddingProvider,
     } as AppConfig
-    const backend = getBackend()
-    const res = await backend.request('POST', '/settings', newConfig)
+    const res = await apiRequest('POST', '/settings', newConfig)
     if (res.ok) {
       config.value = newConfig
       return true

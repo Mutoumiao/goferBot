@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getBackend } from '@goferbot/backend-adapters'
+import { apiRequest, apiSubscribe } from '@/api/client'
 import { useSettingsStore } from './settings'
 import type { Message, Tab, LLMConfig, ChatErrorType } from '@/types'
 
@@ -75,8 +75,7 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function loadSession(sessionId: string) {
-    const backend = getBackend()
-    const res = await backend.request('GET', `/sessions/${sessionId}`)
+    const res = await apiRequest('GET', `/sessions/${sessionId}`)
     const data = (await res.json()) as { messages: Message[] }
     messages.value.set(sessionId, data.messages ?? [])
   }
@@ -85,8 +84,7 @@ export const useSessionStore = defineStore('session', () => {
     historyLoading.value = true
     historyError.value = null
     try {
-      const backend = getBackend()
-      const res = await backend.request('GET', '/sessions')
+      const res = await apiRequest('GET', '/sessions')
       if (res.ok) {
         historySessions.value = await res.json()
       } else {
@@ -106,8 +104,7 @@ export const useSessionStore = defineStore('session', () => {
       return
     }
 
-    const backend = getBackend()
-    const res = await backend.request('GET', `/sessions/${sessionId}`)
+    const res = await apiRequest('GET', `/sessions/${sessionId}`)
     if (!res.ok) return
     const data = (await res.json()) as {
       id: string
@@ -145,8 +142,7 @@ export const useSessionStore = defineStore('session', () => {
       closeTab(tab.id)
     }
     messages.value.delete(sessionId)
-    const backend = getBackend()
-    await backend.request('DELETE', `/sessions/${sessionId}`)
+    await apiRequest('DELETE', `/sessions/${sessionId}`)
     await loadHistory()
   }
 
@@ -154,8 +150,7 @@ export const useSessionStore = defineStore('session', () => {
     const trimmed = newTitle.trim()
     if (!trimmed) return
 
-    const backend = getBackend()
-    await backend.request('POST', `/sessions/${sessionId}/rename`, { title: trimmed })
+    await apiRequest('POST', `/sessions/${sessionId}/rename`, { title: trimmed })
 
     const tab = tabs.value.find((t) => t.sessionId === sessionId)
     if (tab) {
@@ -172,16 +167,6 @@ export const useSessionStore = defineStore('session', () => {
     sendError.value = null
     sendErrorType.value = null
     isSending.value = true
-
-    // Pre-check: sidecar ready
-    const backend = getBackend()
-    const ready = await backend.isReady()
-    if (!ready) {
-      sendError.value = 'Sidecar 服务未就绪，请检查服务状态'
-      sendErrorType.value = 'sidecar_error'
-      isSending.value = false
-      return
-    }
 
     // Pre-check: valid LLM config
     if (!config.provider || !config.model) {
@@ -262,7 +247,7 @@ export const useSessionStore = defineStore('session', () => {
         subscribeBody.knowledgeBaseIds = knowledgeBaseIds
       }
 
-      const { completed } = backend.subscribe('/chat', subscribeBody, (data, eventType) => {
+      const { completed } = apiSubscribe('/chat', subscribeBody, (data, eventType) => {
         if (eventType === 'error') {
           try {
             const parsed = JSON.parse(data)

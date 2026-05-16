@@ -1,116 +1,34 @@
 <script setup lang="ts">
-import { onMounted, defineAsyncComponent } from 'vue'
-import { createShell, provideShell } from '@goferbot/shell-adapters'
-import SplashScreen from './components/SplashScreen.vue'
+import { onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import SideBar from './components/SideBar.vue'
-import TabBar from './components/TabBar.vue'
-import ChatPage from './components/ChatPage.vue'
-import { initSidecarStatus, sidecarStatus } from './composables/useSidecarStatus'
-
-const KnowledgeBasePage = defineAsyncComponent(() => import('./components/KnowledgeBasePage.vue'))
-const HistoryPage = defineAsyncComponent(() => import('./components/HistoryPage.vue'))
-const SettingsPage = defineAsyncComponent(() => import('./components/SettingsPage.vue'))
-const RecycleBinPage = defineAsyncComponent(() => import('./components/RecycleBinPage.vue'))
-import { useSessionStore } from './stores/session'
 import { useSettingsStore } from './stores/settings'
 
-const sessionStore = useSessionStore()
+const route = useRoute()
+const router = useRouter()
 const settingsStore = useSettingsStore()
 
-// Provide shell instance for the entire app
-provideShell(createShell())
-
 onMounted(async () => {
-  await initSidecarStatus()
-  if (sidecarStatus.value === 'ready') {
-    settingsStore.loadConfig()
-  }
+  settingsStore.loadConfig()
 })
 
-function ensureHomeTab() {
-  const homeTab = sessionStore.tabs.find((t) => t.type === 'chat' && !t.sessionId)
-  if (homeTab) {
-    sessionStore.switchTab(homeTab.id)
-  } else {
-    const newHomeId = `home-${Date.now()}`
-    const defaultCfg = settingsStore.getLLMConfig()
-    sessionStore.addTab({
-      id: newHomeId,
-      type: 'chat',
-      title: '首页',
-      closable: true,
-      provider: defaultCfg?.provider,
-      model: defaultCfg?.model,
-    })
-  }
-}
-
-function openKnowledgeBase() {
-  const existing = sessionStore.tabs.find((t) => t.type === 'knowledgeBase')
-  if (existing) {
-    sessionStore.switchTab(existing.id)
-  } else {
-    sessionStore.addTab({ id: 'kb', type: 'knowledgeBase', title: '知识库', closable: true })
-  }
-}
-
-function openHistory() {
-  const existing = sessionStore.tabs.find((t) => t.type === 'history')
-  if (existing) {
-    sessionStore.switchTab(existing.id)
-  } else {
-    sessionStore.addTab({ id: 'history', type: 'history', title: '历史', closable: true })
-  }
-}
-
-function openSettings() {
-  const existing = sessionStore.tabs.find((t) => t.type === 'settings')
-  if (existing) {
-    sessionStore.switchTab(existing.id)
-  } else {
-    sessionStore.addTab({ id: 'settings', type: 'settings', title: '设置', closable: true })
-  }
-}
-
-function openRecycleBin() {
-  const existing = sessionStore.tabs.find((t) => t.type === 'recycleBin')
-  if (existing) {
-    sessionStore.switchTab(existing.id)
-  } else {
-    sessionStore.addTab({ id: 'recycleBin', type: 'recycleBin', title: '回收站', closable: true })
-  }
+function navigateTo(name: string) {
+  router.push({ name })
 }
 </script>
 
 <template>
-  <SplashScreen />
-  <div
-    v-if="sidecarStatus === 'ready'"
-    class="flex h-screen bg-surface-1 text-text-primary"
-  >
+  <div class="flex h-screen bg-surface-1 text-text-primary">
     <SideBar
-      :active-type="sessionStore.activeTab?.type ?? 'chat'"
-      @open-chat="ensureHomeTab"
-      @open-knowledge-base="openKnowledgeBase"
-      @open-history="openHistory"
-      @open-settings="openSettings"
-      @open-recycle-bin="openRecycleBin"
+      :active-type="(route.name as string) ?? 'chat'"
+      @open-chat="navigateTo('chat')"
+      @open-knowledge-base="navigateTo('knowledgeBase')"
+      @open-history="navigateTo('history')"
+      @open-settings="navigateTo('settings')"
+      @open-recycle-bin="navigateTo('recycleBin')"
     />
-    <div class="flex flex-1 flex-col overflow-hidden">
-      <TabBar
-        :tabs="sessionStore.tabs"
-        :active-tab-id="sessionStore.activeTabId"
-        @switch="sessionStore.switchTab"
-        @close="sessionStore.closeTab"
-        @new-chat="ensureHomeTab"
-      />
-      <main class="relative flex-1 overflow-hidden bg-surface-1">
-        <ChatPage v-if="sessionStore.activeTab?.type === 'chat'" />
-        <KnowledgeBasePage v-else-if="sessionStore.activeTab?.type === 'knowledgeBase'" />
-        <HistoryPage v-else-if="sessionStore.activeTab?.type === 'history'" />
-        <SettingsPage v-else-if="sessionStore.activeTab?.type === 'settings'" />
-        <RecycleBinPage v-else-if="sessionStore.activeTab?.type === 'recycleBin'" />
-      </main>
-    </div>
+    <main class="flex-1 overflow-hidden">
+      <RouterView />
+    </main>
   </div>
 </template>

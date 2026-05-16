@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { getBackend } from '@goferbot/backend-adapters'
+import { apiRequest } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -58,8 +58,7 @@ async function loadTargetFiles() {
   if (!selectedTargetKbId.value) return
   isLoading.value = true
   try {
-    const backend = getBackend()
-    const res = await backend.request(
+    const res = await apiRequest(
       'GET',
       `/knowledge-bases/${selectedTargetKbId.value}/files?path=${encodeURIComponent(targetPath.value)}`
     )

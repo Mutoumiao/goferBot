@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch, ref } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import { useSessionStore } from '@/stores/session'
 import { useSettingsStore } from '@/stores/settings'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { getBackend } from '@goferbot/backend-adapters'
 import { Button } from '@/components/ui/button'
 import { XIcon, AlertCircleIcon } from 'lucide-vue-next'
 import EmptySession from './EmptySession.vue'
@@ -19,10 +18,8 @@ const isEmpty = computed(() => !store.activeTab?.sessionId && store.activeMessag
 const currentProvider = computed(() => store.activeTab?.provider)
 const currentModel = computed(() => store.activeTab?.model)
 
-const sidecarReady = ref(false)
-const inputDisabled = computed(() => !sidecarReady.value || !settings.getLLMConfig())
+const inputDisabled = computed(() => !settings.getLLMConfig())
 const inputDisabledHint = computed(() => {
-  if (!sidecarReady.value) return 'Sidecar 服务未就绪'
   if (!settings.getLLMConfig()) return '未配置 LLM 模型，请前往设置'
   return ''
 })
@@ -63,23 +60,10 @@ function handleModelChange(provider: string, model: string) {
   }
 }
 
-let sidecarTimer: ReturnType<typeof setInterval> | null = null
-
 onMounted(() => {
   if (kbStore.knowledgeBases.length === 0) {
     kbStore.loadKnowledgeBases()
   }
-  const backend = getBackend()
-  backend.isReady().then((ready) => {
-    sidecarReady.value = ready
-  })
-  sidecarTimer = setInterval(async () => {
-    sidecarReady.value = await backend.isReady()
-  }, 5000)
-})
-
-onUnmounted(() => {
-  if (sidecarTimer) clearInterval(sidecarTimer)
 })
 
 // Auto-dismiss toast after 5s
