@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { apiRequest } from '@/api/client'
+import { api } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -58,12 +58,10 @@ async function loadTargetFiles() {
   if (!selectedTargetKbId.value) return
   isLoading.value = true
   try {
-    const res = await apiRequest(
-      'GET',
+    const data = await api.get<{ items: Array<{ name: string; type: string }> }>(
       `/knowledge-bases/${selectedTargetKbId.value}/files?path=${encodeURIComponent(targetPath.value)}`
     )
-    const data = await res.json()
-    targetFiles.value = (data.items || []).filter((item: { type: string }) => item.type === 'directory')
+    targetFiles.value = (data.items || []).filter((item) => item.type === 'directory')
   } catch {
     targetFiles.value = []
   } finally {
