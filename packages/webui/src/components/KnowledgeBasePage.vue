@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { confirmDialog } from '@/utils/confirm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -11,383 +10,335 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
-import FileExplorer from './FileExplorer.vue'
-import ContextMenu from './ContextMenu.vue'
-import EditKbDialog from './EditKbDialog.vue'
-import MoveCopyDialog from './MoveCopyDialog.vue'
 import {
   PlusIcon,
-  SearchIcon,
   PinIcon,
   PencilIcon,
   TrashIcon,
   LoaderIcon,
   DatabaseIcon,
+  AlertCircleIcon,
+  XIcon,
 } from 'lucide-vue-next'
 
 const store = useKnowledgeBaseStore()
-const showNewKbDialog = ref(false)
-const newKbName = ref('')
-const newKbError = ref('')
-const isCreatingKb = ref(false)
-
-// Context menu state
-const contextMenuVisible = ref(false)
-const contextMenuX = ref(0)
-const contextMenuY = ref(0)
-const contextMenuTargetKbId = ref<string | null>(null)
-
-// Edit dialog
-const showEditDialog = ref(false)
-const editKbId = ref('')
-const editKbName = ref('')
-const editKbIcon = ref('')
-
-// Auto rename after creating folder
-const autoRenameFile = ref<string>()
-
-// Move/Copy dialog
-const moveCopyMode = ref<'move' | 'copy'>('move')
-const moveCopyVisible = ref(false)
-const moveCopySourceKbId = ref('')
-const moveCopySourcePath = ref('')
 
 onMounted(() => {
   store.loadKnowledgeBases()
 })
 
-const isSearchMode = computed(() => {
-  const state = store.history[store.historyIndex]
-  return state?.type === 'search'
-})
+// Create dialog
+const showCreateDialog = ref(false)
+const createName = ref('')
+const createError = ref('')
+const isCreating = ref(false)
 
-const indexProgress = computed(() => {
-  const status = store.selectedKbId ? store.indexStatus.get(store.selectedKbId) : undefined
-  if (!status || status.totalFiles === 0) return 0
-  return Math.round((status.indexedFiles / status.totalFiles) * 100)
-})
-
-async function onSelectKb(id: string) {
-  await store.selectKb(id)
-  await store.loadIndexStatus(id)
+function openCreateDialog() {
+  createName.value = ''
+  createError.value = ''
+  showCreateDialog.value = true
 }
 
-function openNewKbDialog() {
-  newKbName.value = ''
-  newKbError.value = ''
-  showNewKbDialog.value = true
-}
-
-async function confirmCreateKb() {
-  if (isCreatingKb.value) return
-  const name = newKbName.value.trim()
+async function confirmCreate() {
+  if (isCreating.value) return
+  const name = createName.value.trim()
   if (!name) {
-    newKbError.value = '请输入知识库名称'
+    createError.value = '请输入知识库名称'
     return
   }
-  isCreatingKb.value = true
+  isCreating.value = true
   try {
     await store.createKnowledgeBase(name)
-    showNewKbDialog.value = false
-    newKbName.value = ''
-    newKbError.value = ''
+    showCreateDialog.value = false
+    createName.value = ''
+    createError.value = ''
   } catch {
-    newKbError.value = store.error || '创建失败'
+    createError.value = store.error || '创建失败'
     store.error = null
   } finally {
-    isCreatingKb.value = false
+    isCreating.value = false
   }
 }
 
-// KB list context menu
-function onKbContextMenu(event: MouseEvent, kbId: string) {
-  event.preventDefault()
-  contextMenuVisible.value = true
-  contextMenuX.value = event.clientX
-  contextMenuY.value = event.clientY
-  contextMenuTargetKbId.value = kbId
+// Rename dialog
+const showRenameDialog = ref(false)
+const renameId = ref('')
+const renameName = ref('')
+const renameError = ref('')
+const isRenaming = ref(false)
+
+function openRenameDialog(kb: { id: string; name: string }) {
+  renameId.value = kb.id
+  renameName.value = kb.name
+  renameError.value = ''
+  showRenameDialog.value = true
 }
 
-function closeContextMenu() {
-  contextMenuVisible.value = false
-  contextMenuTargetKbId.value = null
-}
-
-function onPinKb() {
-  if (contextMenuTargetKbId.value) {
-    store.togglePin(contextMenuTargetKbId.value)
-  }
-  closeContextMenu()
-}
-
-function onEditKb() {
-  const kb = store.knowledgeBases.find((k) => k.id === contextMenuTargetKbId.value)
-  if (kb) {
-    editKbId.value = kb.id
-    editKbName.value = kb.name
-    editKbIcon.value = kb.icon || 'mdi-database'
-    showEditDialog.value = true
-  }
-  closeContextMenu()
-}
-
-async function onDeleteKb() {
-  if (contextMenuTargetKbId.value) {
-    const kb = store.knowledgeBases.find((k) => k.id === contextMenuTargetKbId.value)
-    if (kb && (await confirmDialog(`确认将知识库「${kb.name}」移入回收站？`, { title: '提示', kind: 'warning' }))) {
-      await store.deleteKnowledgeBase(contextMenuTargetKbId.value)
-    }
-  }
-  closeContextMenu()
-}
-
-async function onSaveEditKb(name: string, icon: string) {
-  if (editKbId.value) {
-    if (name !== editKbName.value) {
-      await store.renameKnowledgeBase(editKbId.value, name)
-    }
-    if (icon !== editKbIcon.value) {
-      await store.updateKbIcon(editKbId.value, icon)
-    }
-  }
-  showEditDialog.value = false
-}
-
-function onOpenDirectory(path: string) {
-  store.navigateToPath(path)
-}
-
-function onNavigateToBreadcrumb(index: number) {
-  if (index === -1) {
-    store.navigateToPath('')
+async function confirmRename() {
+  if (isRenaming.value) return
+  const name = renameName.value.trim()
+  if (!name) {
+    renameError.value = '名称不能为空'
     return
   }
-  const path = store.breadcrumb.slice(0, index + 1).join('/')
-  store.navigateToPath(path)
-}
-
-function onSearch(query: string) {
-  if (!query.trim()) {
-    store.searchQuery = ''
-    store.navigateToPath('')
-    return
-  }
-  store.searchFiles(query)
-}
-
-function onImportFiles() {
-  store.importFiles()
-}
-
-async function onCreateFolder() {
-  const defaultName = `未命名文件夹_${Date.now().toString().slice(-4)}`
-  const createdName = await store.createFolder(defaultName)
-  if (createdName) {
-    autoRenameFile.value = createdName
+  isRenaming.value = true
+  try {
+    await store.renameKnowledgeBase(renameId.value, name)
+    showRenameDialog.value = false
+    renameName.value = ''
+    renameError.value = ''
+  } catch {
+    renameError.value = store.error || '重命名失败'
+    store.error = null
+  } finally {
+    isRenaming.value = false
   }
 }
 
-function onAutoRenameConsumed() {
-  autoRenameFile.value = undefined
+// Delete confirmation
+const showDeleteDialog = ref(false)
+const deleteTarget = ref<{ id: string; name: string } | null>(null)
+const isDeleting = ref(false)
+
+function openDeleteDialog(kb: { id: string; name: string }) {
+  deleteTarget.value = kb
+  showDeleteDialog.value = true
 }
 
-function onRenameFile(oldName: string, newName: string) {
-  store.renameFile(oldName, newName)
+async function confirmDelete() {
+  if (!deleteTarget.value || isDeleting.value) return
+  isDeleting.value = true
+  try {
+    await store.deleteKnowledgeBase(deleteTarget.value.id)
+    showDeleteDialog.value = false
+    deleteTarget.value = null
+  } catch {
+    // error is set in store
+  } finally {
+    isDeleting.value = false
+  }
 }
 
-function onDeleteFile(fileName: string) {
-  store.deleteFile(fileName)
+// Dismiss store error
+function dismissError() {
+  store.error = null
 }
 
-function onMoveFile(fileName: string) {
-  moveCopyMode.value = 'move'
-  moveCopySourceKbId.value = store.selectedKbId || ''
-  moveCopySourcePath.value = store.currentPath ? `${store.currentPath}/${fileName}` : fileName
-  moveCopyVisible.value = true
-}
-
-function onCopyFile(fileName: string) {
-  moveCopyMode.value = 'copy'
-  moveCopySourceKbId.value = store.selectedKbId || ''
-  moveCopySourcePath.value = store.currentPath ? `${store.currentPath}/${fileName}` : fileName
-  moveCopyVisible.value = true
-}
+const sortedKbs = computed(() => store.knowledgeBases)
 </script>
 
 <template>
-  <!-- 设计稿「03 知识库」：工作区内边距 [30,40]、双栏间距 28、左侧列表宽 286 -->
-  <div class="flex h-full min-h-0 gap-7 bg-surface-1 px-10 py-[30px]">
-    <aside class="flex h-full min-h-0 w-[286px] shrink-0 flex-col gap-[18px]">
-      <div class="flex items-center justify-between">
-        <span class="text-[22px] font-medium leading-tight text-text-primary">知识库</span>
-        <Button
-          data-testid="create-kb-btn"
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          class="h-[34px] w-[34px] shrink-0 rounded-[14px] border-border-default bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-          title="新建知识库"
-          @click="openNewKbDialog"
-        >
-          <PlusIcon class="size-5" />
-        </Button>
-      </div>
-
-      <div
-        class="flex h-11 items-center gap-2.5 rounded-2xl border border-border-default bg-white px-3.5 py-2.5"
+  <div class="flex h-full flex-col bg-surface-1 px-10 py-8">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-xl font-semibold text-text-primary">知识库</h1>
+      <Button
+        class="gap-1.5 rounded-xl bg-accent-500 px-4 py-2 text-sm text-white hover:bg-accent-600"
+        @click="openCreateDialog"
       >
-        <SearchIcon class="size-4 shrink-0 text-text-tertiary" />
-        <Input
-          type="text"
-          placeholder="搜索知识库"
-          class="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-text-primary placeholder-text-tertiary shadow-none focus-visible:ring-0"
-          @keyup.enter="onSearch(($event.target as HTMLInputElement).value)"
-        />
-      </div>
+        <PlusIcon class="size-4" />
+        新建知识库
+      </Button>
+    </div>
 
-      <div data-testid="kb-list" class="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pr-0.5">
-        <div
-          v-for="kb in store.knowledgeBases"
-          :key="kb.id"
-          data-testid="kb-item"
-          class="flex min-h-[86px] cursor-pointer items-center gap-3 rounded-[20px] border px-4 py-4 transition-all"
-          :class="store.selectedKbId === kb.id
-            ? 'border-border-default bg-white text-text-primary shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
-            : 'border-transparent bg-white/55 hover:border-border-default/80 hover:bg-white/90'"
-          @click="onSelectKb(kb.id)"
-          @contextmenu="onKbContextMenu($event, kb.id)"
-        >
+    <!-- Loading -->
+    <div v-if="store.isLoading && store.knowledgeBases.length === 0" class="flex flex-1 items-center justify-center">
+      <LoaderIcon class="size-6 animate-spin text-accent-500" />
+    </div>
+
+    <!-- Empty state -->
+    <div
+      v-else-if="store.knowledgeBases.length === 0"
+      class="flex flex-1 flex-col items-center justify-center gap-3 text-text-tertiary"
+    >
+      <DatabaseIcon class="size-12 opacity-40" />
+      <p class="text-sm">暂无知识库</p>
+      <Button variant="ghost" class="text-accent-500 hover:text-accent-600" @click="openCreateDialog">
+        创建一个
+      </Button>
+    </div>
+
+    <!-- KB Grid -->
+    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div
+        v-for="kb in sortedKbs"
+        :key="kb.id"
+        class="group relative flex flex-col gap-3 rounded-2xl border border-border-default bg-white p-5 transition-all hover:shadow-md"
+      >
+        <!-- Top row: icon + actions -->
+        <div class="flex items-start justify-between">
           <div
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px]"
-            :class="store.selectedKbId === kb.id ? 'bg-accent-soft' : 'bg-surface-2'"
+            class="flex h-10 w-10 items-center justify-center rounded-xl"
+            :class="kb.isPinned ? 'bg-accent-soft' : 'bg-surface-2'"
           >
             <DatabaseIcon
-              class="size-4"
-              :class="store.selectedKbId === kb.id ? 'text-accent-500' : 'text-text-tertiary'"
+              class="size-5"
+              :class="kb.isPinned ? 'text-accent-500' : 'text-text-tertiary'"
             />
           </div>
-          <div class="flex min-w-0 flex-col gap-0.5">
-            <span class="truncate text-sm font-medium">{{ kb.name }}</span>
-            <span class="text-xs text-text-tertiary">{{ (kb as any).fileCount || 0 }} 个文件</span>
+          <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              :class="kb.isPinned ? 'text-accent-500' : 'text-text-tertiary'"
+              :title="kb.isPinned ? '取消置顶' : '置顶'"
+              @click="store.togglePin(kb.id)"
+            >
+              <PinIcon class="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              class="text-text-tertiary"
+              title="重命名"
+              @click="openRenameDialog(kb)"
+            >
+              <PencilIcon class="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              class="text-text-tertiary hover:text-danger-500"
+              title="删除"
+              @click="openDeleteDialog(kb)"
+            >
+              <TrashIcon class="size-4" />
+            </Button>
           </div>
         </div>
-      </div>
-    </aside>
 
-    <div class="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-surface-1">
-      <FileExplorer
-        :files="store.files"
-        :search-results="store.searchResults"
-        :search-query="store.searchQuery"
-        :breadcrumb="store.breadcrumb"
-        :is-search-mode="isSearchMode"
-        :is-loading="store.isLoading"
-        :auto-rename-item="autoRenameFile"
-        @open-directory="onOpenDirectory"
-        @navigate-to-breadcrumb="onNavigateToBreadcrumb"
-        @search="onSearch"
-        @import-files="onImportFiles"
-        @go-back="store.goBack"
-        @go-forward="store.goForward"
-        @create-folder="onCreateFolder"
-        @rename-file="onRenameFile"
-        @move-file="onMoveFile"
-        @copy-file="onCopyFile"
-        @delete-file="onDeleteFile"
-        @auto-rename-consumed="onAutoRenameConsumed"
-      />
+        <!-- Info -->
+        <div class="min-w-0">
+          <h3 class="truncate text-sm font-medium text-text-primary">{{ kb.name }}</h3>
+          <p v-if="kb.description" class="mt-0.5 line-clamp-2 text-xs text-text-tertiary">
+            {{ kb.description }}
+          </p>
+        </div>
 
-      <!-- Index progress -->
-      <div
-        v-if="indexProgress > 0 && indexProgress < 100"
-        class="absolute bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border-default bg-white px-4 py-2 shadow-lg"
-      >
-        <LoaderIcon class="size-4 animate-spin text-accent-500" />
-        <span class="text-xs text-text-secondary">正在索引文件... {{ indexProgress }}%</span>
+        <!-- Meta -->
+        <div class="mt-auto pt-2 text-[11px] text-text-tertiary">
+          {{ new Date(kb.createdAt).toLocaleDateString('zh-CN') }}
+        </div>
       </div>
     </div>
 
-    <!-- Context Menu -->
-    <ContextMenu
-      :visible="contextMenuVisible"
-      :x="contextMenuX"
-      :y="contextMenuY"
-      @close="closeContextMenu"
-    >
-      <Button
-        variant="ghost"
-        size="sm"
-        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-        @click="onPinKb"
-      >
-        <PinIcon class="size-4" />
-        <span>置顶</span>
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-        @click="onEditKb"
-      >
-        <PencilIcon class="size-4" />
-        <span>编辑</span>
-      </Button>
-      <Separator class="my-1" />
-      <Button
-        variant="ghost"
-        size="sm"
-        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
-        @click="onDeleteKb"
-      >
-        <TrashIcon class="size-4" />
-        <span>删除</span>
-      </Button>
-    </ContextMenu>
-
-    <!-- New KB Dialog -->
-    <Dialog :open="showNewKbDialog" @update:open="(v) => !v && (showNewKbDialog = false)">
-      <DialogContent class="w-80">
+    <!-- Create Dialog -->
+    <Dialog :open="showCreateDialog" @update:open="(v) => !v && (showCreateDialog = false)">
+      <DialogContent class="w-96">
         <DialogHeader>
           <DialogTitle>新建知识库</DialogTitle>
         </DialogHeader>
         <div class="space-y-4">
           <Input
-            v-model="newKbName"
+            v-model="createName"
             type="text"
             placeholder="输入知识库名称"
             class="rounded-xl border-border-default bg-surface-1 px-3 py-2.5 text-sm focus:border-accent-500/50"
-            @keyup.enter="confirmCreateKb"
+            @keyup.enter="confirmCreate"
           />
-          <p v-if="newKbError" class="text-xs text-danger-500">{{ newKbError }}</p>
+          <p v-if="createError" class="text-xs text-danger-500">{{ createError }}</p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" class="rounded-xl px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2" @click="showNewKbDialog = false">
+          <Button
+            variant="ghost"
+            class="rounded-xl px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2"
+            @click="showCreateDialog = false"
+          >
             取消
           </Button>
-          <Button class="rounded-xl bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600" :disabled="isCreatingKb" @click="confirmCreateKb">
-            {{ isCreatingKb ? '创建中...' : '创建' }}
+          <Button
+            class="rounded-xl bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600"
+            :disabled="isCreating"
+            @click="confirmCreate"
+          >
+            {{ isCreating ? '创建中...' : '创建' }}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
-    <!-- Edit Dialog -->
-    <EditKbDialog
-      :visible="showEditDialog"
-      :initial-name="editKbName"
-      :initial-icon="editKbIcon"
-      @close="showEditDialog = false"
-      @save="onSaveEditKb"
-    />
+    <!-- Rename Dialog -->
+    <Dialog :open="showRenameDialog" @update:open="(v) => !v && (showRenameDialog = false)">
+      <DialogContent class="w-96">
+        <DialogHeader>
+          <DialogTitle>重命名知识库</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-4">
+          <Input
+            v-model="renameName"
+            type="text"
+            placeholder="输入新名称"
+            class="rounded-xl border-border-default bg-surface-1 px-3 py-2.5 text-sm focus:border-accent-500/50"
+            @keyup.enter="confirmRename"
+          />
+          <p v-if="renameError" class="text-xs text-danger-500">{{ renameError }}</p>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            class="rounded-xl px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2"
+            @click="showRenameDialog = false"
+          >
+            取消
+          </Button>
+          <Button
+            class="rounded-xl bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600"
+            :disabled="isRenaming"
+            @click="confirmRename"
+          >
+            {{ isRenaming ? '保存中...' : '保存' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
-    <!-- Move/Copy Dialog -->
-    <MoveCopyDialog
-      :visible="moveCopyVisible"
-      :mode="moveCopyMode"
-      :source-kb-id="moveCopySourceKbId"
-      :source-path="moveCopySourcePath"
-      @close="moveCopyVisible = false"
-    />
+    <!-- Delete Dialog -->
+    <Dialog :open="showDeleteDialog" @update:open="(v) => !v && (showDeleteDialog = false)">
+      <DialogContent class="w-96">
+        <DialogHeader>
+          <DialogTitle>删除知识库</DialogTitle>
+        </DialogHeader>
+        <p class="text-sm text-text-secondary">
+          确认删除知识库「<span class="font-medium text-text-primary">{{ deleteTarget?.name }}</span>」？此操作不可撤销。
+        </p>
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            class="rounded-xl px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-2"
+            @click="showDeleteDialog = false"
+          >
+            取消
+          </Button>
+          <Button
+            class="rounded-xl bg-danger-500 px-3 py-1.5 text-sm text-white hover:bg-danger-600"
+            :disabled="isDeleting"
+            @click="confirmDelete"
+          >
+            {{ isDeleting ? '删除中...' : '删除' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Error toast -->
+    <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-2"
+    >
+      <div
+        v-if="store.error"
+        class="absolute bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-500/20 bg-white px-4 py-2.5 text-sm text-danger-500 shadow-xl"
+      >
+        <AlertCircleIcon class="size-4" />
+        <span>{{ store.error }}</span>
+        <Button variant="ghost" size="icon-xs" class="ml-1" @click="dismissError">
+          <XIcon class="size-4" />
+        </Button>
+      </div>
+    </Transition>
   </div>
 </template>

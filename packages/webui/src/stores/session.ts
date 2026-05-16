@@ -1,314 +1,186 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/api/client'
-import { useSettingsStore } from './settings'
-import type { Message, Tab, LLMConfig, ChatErrorType } from '@/types'
-import type { ChatChunk } from '@/api/types'
+
+export interface Session {
+  id: string
+  title: string
+  provider: string | null
+  model: string | null
+  messageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
+}
 
 export const useSessionStore = defineStore('session', () => {
-  // Tabs
-  const tabs = ref<Tab[]>([
-    { id: 'home', type: 'chat', title: '首页', closable: true },
-  ])
-  const activeTabId = ref<string>('home')
-
-  // Messages keyed by sessionId
+  // State
+  const sessions = ref<Session[]>([])
+  const activeSessionId = ref<string | null>(null)
   const messages = ref<Map<string, Message[]>>(new Map())
-  const isSending = ref(false)
-  const sendError = ref<string | null>(null)
-  const sendErrorType = ref<ChatErrorType | null>(null)
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
 
-  const historySessions = ref<
-    Array<{
-      id: string
-      title: string
-      updated_at: number
-      summary: string
-      message_count: number
-    }>
-  >([])
-  const historyError = ref<string | null>(null)
-  const historyLoading = ref(false)
+  // Getters
+  const activeSession = computed(() =>
+    sessions.value.find((s) => s.id === activeSessionId.value) ?? null
+  )
 
-  const activeTab = computed(() => tabs.value.find((t) => t.id === activeTabId.value))
   const activeMessages = computed(() => {
-    const sessionId = activeTab.value?.sessionId
-    return sessionId ? (messages.value.get(sessionId) ?? []) : []
+    if (!activeSessionId.value) return []
+    return messages.value.get(activeSessionId.value) ?? []
   })
 
-  function addTab(tab: Tab) {
-    tabs.value.push(tab)
-    activeTabId.value = tab.id
-  }
-
-  function closeTab(tabId: string) {
-    const idx = tabs.value.findIndex((t) => t.id === tabId)
-    if (idx === -1) return
-
-    const tab = tabs.value[idx]
-    // 只剩一个空首页时不可删除
-    if (tabs.value.length === 1 && tab.type === 'chat' && !tab.sessionId) return
-
-    tabs.value.splice(idx, 1)
-    if (activeTabId.value === tabId) {
-      activeTabId.value = tabs.value[Math.min(idx, tabs.value.length - 1)]?.id ?? ''
-    }
-
-    // 删光后自动新建首页
-    if (tabs.value.length === 0) {
-      const settingsStore = useSettingsStore()
-      const defaultCfg = settingsStore.getLLMConfig()
-      const newHomeId = `home-${Date.now()}`
-      tabs.value.push({
-        id: newHomeId,
-        type: 'chat',
-        title: '首页',
-        closable: true,
-        provider: defaultCfg?.provider,
-        model: defaultCfg?.model,
-      })
-      activeTabId.value = newHomeId
-    }
-  }
-
-  function switchTab(tabId: string) {
-    activeTabId.value = tabId
-  }
-
-  async function loadSession(sessionId: string) {
-    const data = await api.get<{ messages: Message[] }>(`/sessions/${sessionId}`)
-    messages.value.set(sessionId, data.messages ?? [])
-  }
-
-  async function loadHistory() {
-    historyLoading.value = true
-    historyError.value = null
+  // Actions
+  async function loadSessions() {
+    isLoading.value = true
+    error.value = null
     try {
-      historySessions.value = await api.get<Array<{ id: string; title: string; updated_at: number; summary: string; message_count: number }>>('/sessions')
-    } catch {
-      historyError.value = '加载历史记录失败'
+      const data = await api.get<{ items: Session[] }>('/sessions')
+      sessions.value = data.items ?? []
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : '加载会话列表失败'
     } finally {
-      historyLoading.value = false
+      isLoading.value = false
     }
   }
 
-  async function restoreSession(sessionId: string) {
-    const existingTab = tabs.value.find((t) => t.sessionId === sessionId)
-    if (existingTab) {
-      activeTabId.value = existingTab.id
-      return
-    }
-
-    const data = await api.get<{
-      id: string
-      title: string
-      provider: string | null
-      model: string | null
-      messages: Message[]
-    }>(`/sessions/${sessionId}`)
-
-    messages.value.set(sessionId, data.messages ?? [])
-
-    const homeTab = tabs.value.find((t) => t.type === 'chat' && !t.sessionId)
-    if (homeTab) {
-      homeTab.sessionId = sessionId
-      homeTab.title = data.title
-      homeTab.provider = data.provider ?? undefined
-      homeTab.model = data.model ?? undefined
-      activeTabId.value = homeTab.id
-    } else {
-      addTab({
-        id: `chat-${Date.now()}`,
-        type: 'chat',
-        title: data.title,
-        sessionId,
-        closable: true,
-        provider: data.provider ?? undefined,
-        model: data.model ?? undefined,
-      })
+  async function createSession() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const data = await api.post<Session>('/sessions')
+      sessions.value.unshift(data)
+      activeSessionId.value = data.id
+      messages.value.set(data.id, [])
+      return data
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : '创建会话失败'
+      throw e
+    } finally {
+      isLoading.value = false
     }
   }
 
-  async function deleteSession(sessionId: string) {
-    const tab = tabs.value.find((t) => t.sessionId === sessionId)
-    if (tab) {
-      closeTab(tab.id)
+  async function loadSession(id: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const data = await api.get<{ session: Session; messages: Message[] }>(`/sessions/${id}`)
+      const session = data.session
+      const msgs = data.messages ?? []
+
+      const idx = sessions.value.findIndex((s) => s.id === id)
+      if (idx !== -1) {
+        sessions.value[idx] = session
+      } else {
+        sessions.value.unshift(session)
+      }
+
+      activeSessionId.value = id
+      messages.value.set(id, msgs)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : '加载会话失败'
+    } finally {
+      isLoading.value = false
     }
-    messages.value.delete(sessionId)
-    await api.delete(`/sessions/${sessionId}`)
-    await loadHistory()
   }
 
-  async function renameSession(sessionId: string, newTitle: string) {
-    const trimmed = newTitle.trim()
+  async function renameSession(id: string, title: string) {
+    const trimmed = title.trim()
     if (!trimmed) return
-
-    await api.post(`/sessions/${sessionId}/rename`, { title: trimmed })
-
-    const tab = tabs.value.find((t) => t.sessionId === sessionId)
-    if (tab) {
-      tab.title = trimmed
-    }
-
-    const entry = historySessions.value.find((h) => h.id === sessionId)
-    if (entry) {
-      entry.title = trimmed
+    try {
+      await api.patch(`/sessions/${id}`, { title: trimmed })
+      const idx = sessions.value.findIndex((s) => s.id === id)
+      if (idx !== -1) {
+        sessions.value[idx].title = trimmed
+      }
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : '重命名失败'
     }
   }
 
-  async function sendMessage(content: string, config: LLMConfig, knowledgeBaseIds?: string[]) {
-    sendError.value = null
-    sendErrorType.value = null
-    isSending.value = true
-
-    // Pre-check: valid LLM config
-    if (!config.provider || !config.model) {
-      sendError.value = '未配置 LLM 模型，请前往设置页配置'
-      sendErrorType.value = 'unknown'
-      isSending.value = false
-      return
+  async function deleteSession(id: string) {
+    try {
+      await api.delete(`/sessions/${id}`)
+      sessions.value = sessions.value.filter((s) => s.id !== id)
+      messages.value.delete(id)
+      if (activeSessionId.value === id) {
+        activeSessionId.value = null
+      }
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : '删除会话失败'
     }
+  }
+
+  async function sendMessage(content: string) {
+    error.value = null
+    isLoading.value = true
 
     try {
-      let sessionId = activeTab.value?.sessionId
-      const isNewSession = !sessionId
+      let sessionId = activeSessionId.value
+      let isNew = false
 
       if (!sessionId) {
-        sessionId = crypto.randomUUID()
+        const session = await createSession()
+        sessionId = session.id
+        isNew = true
       }
 
-      // Optimistically add user message
       const userMsg: Message = {
-        id: `temp-user-${Date.now()}`,
-        session_id: sessionId,
+        id: `msg-user-${Date.now()}`,
         role: 'user',
         content,
-        knowledge_base_ids: knowledgeBaseIds ? JSON.stringify(knowledgeBaseIds) : null,
-        created_at: Date.now(),
+        createdAt: new Date().toISOString(),
       }
 
-      if (isNewSession) {
-        messages.value.set(sessionId, [userMsg])
-      } else {
-        const list = messages.value.get(sessionId) ?? []
-        list.push(userMsg)
-        messages.value.set(sessionId, list)
-      }
+      const list = messages.value.get(sessionId!) ?? []
+      list.push(userMsg)
+      messages.value.set(sessionId!, list)
 
-      // Promote home tab after first successful request
-      if (isNewSession) {
-        const activeIdx = tabs.value.findIndex((t) => t.id === activeTabId.value)
-        if (activeIdx !== -1) {
-          tabs.value[activeIdx].sessionId = sessionId
-          tabs.value[activeIdx].title = content.slice(0, 20) + (content.length > 20 ? '...' : '')
-          tabs.value[activeIdx].provider = config.provider
-          tabs.value[activeIdx].model = config.model
+      if (isNew) {
+        const idx = sessions.value.findIndex((s) => s.id === sessionId)
+        if (idx !== -1) {
+          sessions.value[idx].title = content.slice(0, 20) + (content.length > 20 ? '...' : '')
         }
-
-        const settingsStore = useSettingsStore()
-        const defaultCfg = settingsStore.getLLMConfig()
-        const newHomeId = `home-${Date.now()}`
-        tabs.value.push({
-          id: newHomeId,
-          type: 'chat',
-          title: '首页',
-          closable: true,
-          provider: defaultCfg?.provider,
-          model: defaultCfg?.model,
-        })
       }
 
-      let assistantContent = ''
-      const assistantId = `temp-assistant-${Date.now()}`
-
-      const currentList = messages.value.get(sessionId) ?? []
-      currentList.push({
-        id: assistantId,
-        session_id: sessionId,
+      // 模拟 AI 回复（b-04 SSE API 完成后替换）
+      const assistantMsg: Message = {
+        id: `msg-assistant-${Date.now()}`,
         role: 'assistant',
-        content: '',
-        created_at: Date.now(),
-      })
-      messages.value.set(sessionId, currentList)
-
-      const subscribeBody: Record<string, unknown> = {
-        message: content,
-        sessionId,
-        config,
-      }
-      if (knowledgeBaseIds) {
-        subscribeBody.knowledgeBaseIds = knowledgeBaseIds
+        content: 'AI 回复功能将在 b-04 中实现',
+        createdAt: new Date().toISOString(),
       }
 
-      const controller = new AbortController()
-
-      await new Promise<void>((resolve, reject) => {
-        api.sse<ChatChunk>(
-          '/chat',
-          subscribeBody,
-          {
-            onChunk: (chunk) => {
-              if (chunk.chunk) {
-                assistantContent += chunk.chunk
-                const list = messages.value.get(sessionId!) ?? []
-                const lastMsg = list[list.length - 1]
-                if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === assistantId) {
-                  lastMsg.content = assistantContent
-                }
-              }
-            },
-            onError: (err) => {
-              sendErrorType.value = 'unknown'
-              sendError.value = err.message
-              const list = messages.value.get(sessionId!) ?? []
-              list.push({
-                id: `temp-error-${Date.now()}`,
-                session_id: sessionId!,
-                role: 'error',
-                content: err.message,
-                errorType: 'unknown',
-                created_at: Date.now(),
-              })
-              messages.value.set(sessionId!, list)
-              reject(err)
-            },
-            onDone: () => {
-              resolve()
-            },
-          },
-          { signal: controller.signal }
-        )
-      })
+      list.push(assistantMsg)
+      messages.value.set(sessionId!, [...list])
     } catch (e) {
-      sendError.value = e instanceof Error ? e.message : String(e)
-      if (!sendErrorType.value) {
-        sendErrorType.value = 'network_error'
-      }
+      error.value = e instanceof Error ? e.message : '发送消息失败'
     } finally {
-      isSending.value = false
+      isLoading.value = false
     }
   }
 
   return {
-    tabs,
-    activeTabId,
+    sessions,
+    activeSessionId,
     messages,
-    isSending,
-    sendError,
-    sendErrorType,
-    historySessions,
-    historyError,
-    historyLoading,
-    activeTab,
+    isLoading,
+    error,
+    activeSession,
     activeMessages,
-    addTab,
-    closeTab,
-    switchTab,
+    loadSessions,
+    createSession,
     loadSession,
-    sendMessage,
-    loadHistory,
-    restoreSession,
-    deleteSession,
     renameSession,
+    deleteSession,
+    sendMessage,
   }
 })

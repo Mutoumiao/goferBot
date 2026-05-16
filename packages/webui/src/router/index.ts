@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import ChatPage from '@/components/ChatPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -8,7 +7,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'chat',
-      component: ChatPage,
+      component: () => import('@/views/ChatView.vue'),
       meta: { requiresAuth: true },
     },
     {
