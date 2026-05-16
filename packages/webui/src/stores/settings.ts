@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiRequest } from '@/api/client'
+import { api } from '@/api/client'
 import type { AppConfig, LLMConfig, ChatProviderConfig, OllamaConfig } from '@/types'
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -23,11 +23,8 @@ export const useSettingsStore = defineStore('settings', () => {
   async function loadConfig() {
     isLoading.value = true
     try {
-      const res = await apiRequest('GET', '/settings')
-      if (res.ok) {
-        const data = await res.json()
-        config.value = { ...DEFAULT_CONFIG, ...data, providers: { ...DEFAULT_CONFIG.providers, ...data.providers } }
-      }
+      const data = await api.get<Record<string, unknown>>('/settings')
+      config.value = { ...DEFAULT_CONFIG, ...data, providers: { ...DEFAULT_CONFIG.providers, ...(data.providers as Record<string, unknown> || {}) } }
     } finally {
       isLoading.value = false
     }
@@ -42,12 +39,9 @@ export const useSettingsStore = defineStore('settings', () => {
         ? { ...config.value.embeddingProvider, ...updates.embeddingProvider }
         : config.value.embeddingProvider,
     } as AppConfig
-    const res = await apiRequest('POST', '/settings', newConfig)
-    if (res.ok) {
-      config.value = newConfig
-      return true
-    }
-    return false
+    await api.post('/settings', newConfig)
+    config.value = newConfig
+    return true
   }
 
   function getLLMConfig(providerKey?: string): LLMConfig | null {
