@@ -24,6 +24,9 @@
 - [ ] 错误处理：LLM 调用失败时返回错误事件流
 - [ ] 超时处理：LLM 响应超时时返回超时错误
 - [ ] 所有接口需要认证
+- [ ] SSE 并发连接数上限（默认 10）+ 超时设置（默认 5min），防连接耗尽
+- [ ] message content 后端长度校验（1-4000 字符）
+- [ ] `streamChatCompletion` 中 baseUrl 白名单校验：由 q-01-security-baseline 统一实现，本 issue 确保 LLM 调用链路遵循白名单
 
 ## 阻塞于
 

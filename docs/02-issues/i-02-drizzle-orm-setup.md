@@ -15,6 +15,7 @@
 
 - [ ] `packages/server/src/db/schema.ts` 包含所有表定义（users、knowledge_bases、folders、documents、chunks、sessions、messages）
 - [ ] 所有表定义与 PRD 数据模型一致（字段类型、约束、默认值、外键）
+- [ ] `chunks` 表的 `embedding` 维度从配置读取，不硬编码（支持 OpenAI 1536 / bge 1024 等）
 - [ ] `drizzle.config.ts` 配置正确，指向 PostgreSQL
 - [ ] `pnpm db:generate` 可生成迁移文件
 - [ ] `pnpm db:migrate` 可执行迁移
@@ -24,6 +25,7 @@
 
 ## 阻塞于
 
+- i-00-core-interfaces（需要实现 IRepository 接口）
 - i-01-docker-compose-infra（需要 PostgreSQL 服务运行）
 
 ## 范围外

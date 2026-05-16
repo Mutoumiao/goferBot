@@ -16,7 +16,7 @@
 - [ ] `packages/webui/src/views/SettingsView.vue` 实现设置页
 - [ ] **LLM 提供商配置卡片**：
   - [ ] 多提供商：OpenAI / Claude / DeepSeek / 自定义 / Ollama
-  - [ ] 每个提供商：API Key（密码框，可显示/隐藏）、模型输入、Base URL 输入
+  - [ ] 每个提供商：API Key（密码框，已保存时显示脱敏掩码 `sk-***`，可切换显示/隐藏完整值）、模型输入、Base URL 输入
   - [ ] Ollama 额外：启用开关、服务地址输入
   - [ ] 默认对话提供商选择（下拉）
 - [ ] **Embedding API 卡片**：

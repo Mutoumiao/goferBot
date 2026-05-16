@@ -16,7 +16,8 @@
 - [ ] `GET /api/settings` 返回当前用户配置（LLM 提供商、Embedding、通用）
 - [ ] `POST /api/settings` 保存配置（全量更新）
 - [ ] 配置结构符合 PRD 模型：providers、embeddingProvider、temperature、defaultChatProvider
-- [ ] 敏感字段（API Key）加密存储（AES 或环境变量方案）
+- [ ] 敏感字段（API Key）使用 AES-256-GCM 加密存储，密钥从 OS keychain 派生
+- [ ] `GET /api/settings` 返回时将 apiKey 替换为脱敏掩码（如 `sk-****`），不返回完整值
 - [ ] 配置按用户隔离（userId 关联）
 - [ ] 首次获取时返回默认配置（若用户无配置记录）
 - [ ] 配置验证：temperature 范围 0-2，provider 名称合法

@@ -21,10 +21,12 @@
 - [ ] Hono 路由正确挂载 auth handler：`app.on(['POST', 'GET'], '/api/auth/**', ...)`
 - [ ] 密码使用 bcrypt 哈希存储（Better Auth 默认）
 - [ ] 错误响应格式统一：`{ error: string }`
+- [ ] 验证 Better Auth 在 Tauri WebView 环境下的 Cookie/Session 兼容性（Tauri WebView 对 Cookie 管理有限制）
 - [ ] 提供 `packages/server/src/middleware/auth.ts` 认证中间件，供其他路由使用
 
 ## 阻塞于
 
+- i-00-core-interfaces（需要实现 IAuthProvider 接口）
 - i-02-drizzle-orm-setup（需要 users 表和 Drizzle Adapter）
 
 ## 范围外

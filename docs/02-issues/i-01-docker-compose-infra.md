@@ -49,6 +49,7 @@
 **验收标准：**
 - [ ] `docker-compose.dev.yml` 包含 postgres、minio、milvus-standalone、redis 四个服务
 - [ ] 每个服务配置正确的端口映射、环境变量、数据卷
+- [ ] Sidecar HTTP 端口统一使用 `port: 0`（OS 自动分配），杜绝 TOCTOU 竞态
 - [ ] `pnpm infra:up` 命令可一键启动所有服务
 - [ ] `pnpm infra:down` 命令可一键停止所有服务
 - [ ] 启动后各服务健康检查通过

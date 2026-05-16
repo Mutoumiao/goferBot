@@ -15,7 +15,7 @@
 
 - [ ] `packages/server/src/vector/milvus.ts` 封装 Milvus Client
 - [ ] 提供 `ensureCollection()` 方法，自动创建 `knowledge_chunks` Collection（不存在时）
-- [ ] Collection 字段与 PRD 一致：id、chunk_id、kb_id、file_id、embedding(FLOAT_VECTOR 1536)
+- [ ] Collection 字段与 PRD 一致：id、chunk_id、kb_id、file_id、embedding(FLOAT_VECTOR)（维度从配置读取，不硬编码）
 - [ ] 提供 `insertVectors(vectors)` 方法批量插入向量
 - [ ] 提供 `searchVectors(query, kbIds, topK)` 方法执行 ANN 搜索（带 kb_id filter）
 - [ ] 提供 `deleteByIds(ids)` 方法删除指定向量
@@ -25,6 +25,7 @@
 
 ## 阻塞于
 
+- i-00-core-interfaces（需要实现 IVectorStore 接口）
 - i-01-docker-compose-infra（需要 Milvus 服务运行）
 
 ## 范围外

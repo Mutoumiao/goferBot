@@ -25,6 +25,7 @@
 
 ## 阻塞于
 
+- i-00-core-interfaces（需要实现 IStorageProvider 接口）
 - i-01-docker-compose-infra（需要 MinIO 服务运行）
 
 ## 范围外
