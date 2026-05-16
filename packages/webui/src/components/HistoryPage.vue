@@ -29,6 +29,7 @@ const openMenuId = ref<string | null>(null)
 const searchQuery = ref('')
 const showDeleteDialog = ref(false)
 const deleteTargetId = ref('')
+const isDeleting = ref(false)
 
 onMounted(() => {
   if (store.sessions.length === 0) {
@@ -92,6 +93,16 @@ async function confirmRename(id: string) {
 
 function cancelRename() {
   editingId.value = null
+  isSubmittingRename.value = false
+}
+
+function handleRenameKeydown(e: KeyboardEvent, id: string) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    confirmRename(id)
+  } else if (e.key === 'Escape') {
+    cancelRename()
+  }
 }
 
 function openDeleteDialog(id: string) {
@@ -101,10 +112,15 @@ function openDeleteDialog(id: string) {
 }
 
 async function confirmDelete() {
-  if (!deleteTargetId.value) return
-  await store.deleteSession(deleteTargetId.value)
-  showDeleteDialog.value = false
-  deleteTargetId.value = ''
+  if (!deleteTargetId.value || isDeleting.value) return
+  isDeleting.value = true
+  try {
+    await store.deleteSession(deleteTargetId.value)
+    showDeleteDialog.value = false
+    deleteTargetId.value = ''
+  } finally {
+    isDeleting.value = false
+  }
 }
 
 function onRowClick(sessionId: string) {
@@ -188,8 +204,7 @@ function onRowClick(sessionId: string) {
               ref="editInputRef"
               v-model="editValue"
               class="h-8 w-full rounded-lg border-accent-500 bg-surface-1 px-2 text-[15px] font-medium text-text-primary"
-              @keyup.enter="confirmRename(session.id)"
-              @keyup.esc="cancelRename"
+              @keydown="handleRenameKeydown($event, session.id)"
               @blur="confirmRename(session.id)"
               @click.stop
             />
@@ -268,8 +283,12 @@ function onRowClick(sessionId: string) {
         <p class="mt-2 text-sm text-text-secondary">确认删除该会话？此操作不可撤销。</p>
         <div class="mt-4 flex justify-end gap-2">
           <Button variant="ghost" @click="showDeleteDialog = false">取消</Button>
-          <Button class="bg-danger-500 text-white hover:bg-danger-600" @click="confirmDelete">
-            删除
+          <Button
+            class="bg-danger-500 text-white hover:bg-danger-600"
+            :disabled="isDeleting"
+            @click="confirmDelete"
+          >
+            {{ isDeleting ? '删除中...' : '删除' }}
           </Button>
         </div>
       </div>

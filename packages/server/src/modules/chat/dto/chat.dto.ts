@@ -1,11 +1,20 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
-const ALLOWED_BASE_URLS = [
-  'https://api.openai.com',
-  'https://api.deepseek.com',
-  'https://api.anthropic.com',
+const ALLOWED_HOSTNAMES = [
+  'api.openai.com',
+  'api.deepseek.com',
+  'api.anthropic.com',
 ]
+
+function isAllowedHostname(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname
+    return ALLOWED_HOSTNAMES.includes(hostname)
+  } catch {
+    return false
+  }
+}
 
 export const chatSchema = z.object({
   message: z
@@ -20,12 +29,9 @@ export const chatSchema = z.object({
     baseUrl: z
       .string()
       .url('baseUrl 必须是合法 URL')
-      .refine(
-        (url) => ALLOWED_BASE_URLS.some((allowed) => url.startsWith(allowed)),
-        {
-          message: `baseUrl 不在白名单中，仅允许: ${ALLOWED_BASE_URLS.join(', ')}`,
-        },
-      ),
+      .refine(isAllowedHostname, {
+        message: `baseUrl 不在白名单中，仅允许: ${ALLOWED_HOSTNAMES.join(', ')}`,
+      }),
     apiKey: z.string().min(1, 'apiKey 不能为空'),
   }),
 })

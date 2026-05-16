@@ -15,7 +15,11 @@ interface ChatChunk {
 export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async *streamChat(userId: string, dto: ChatDto): AsyncGenerator<ChatChunk> {
+  async *streamChat(
+    userId: string,
+    dto: ChatDto,
+    onAbortController?: (ac: AbortController) => void,
+  ): AsyncGenerator<ChatChunk> {
     const { message, sessionId, config } = dto
 
     await this.ensureSessionOwnership(userId, sessionId)
@@ -33,10 +37,19 @@ export class ChatService {
       data: { updatedAt: new Date() },
     })
 
-    const llmMessages = [{ role: 'user', content: message }]
+    // 加载历史消息用于多轮对话上下文
+    const historyMessages = await this.prisma.message.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+      select: { role: true, content: true },
+    })
+
+    // TODO(phase-5): 接入 RAG 检索，将检索结果注入 system 消息
+    const llmMessages = historyMessages.map((m) => ({ role: m.role, content: m.content }))
 
     let fullReply = ''
     const abortController = new AbortController()
+    onAbortController?.(abortController)
     const timeout = setTimeout(() => {
       abortController.abort()
     }, 30000)

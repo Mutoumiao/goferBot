@@ -31,9 +31,20 @@ export class ChatController {
     reply.raw.setHeader('Cache-Control', 'no-cache')
     reply.raw.setHeader('Connection', 'keep-alive')
 
+    let abortController: AbortController | null = null
+
+    // 客户端断开时取消 LLM 请求
+    const onClose = () => {
+      abortController?.abort()
+    }
+    reply.raw.on('close', onClose)
+
     try {
-      const stream = this.chatService.streamChat(userId, dto)
+      const stream = this.chatService.streamChat(userId, dto, (ac) => {
+        abortController = ac
+      })
       for await (const chunk of stream) {
+        if (reply.raw.destroyed) break
         reply.raw.write(`data: ${JSON.stringify(chunk)}\n\n`)
       }
     } catch (err: unknown) {
@@ -42,6 +53,7 @@ export class ChatController {
         `data: ${JSON.stringify({ error: message, done: true })}\n\n`,
       )
     } finally {
+      reply.raw.removeListener('close', onClose)
       reply.raw.end()
     }
   }
