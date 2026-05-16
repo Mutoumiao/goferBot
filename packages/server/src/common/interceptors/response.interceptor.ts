@@ -33,8 +33,7 @@ export class ResponseInterceptor<T>
     return next.handle().pipe(
       map((data) => {
         if (typeof data === 'undefined') {
-          context.switchToHttp().getResponse().status(204)
-          return data as unknown as ApiResponse<T>
+          return { data: null } as ApiResponse<T>
         }
 
         if (Array.isArray(data)) {
