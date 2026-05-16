@@ -10,11 +10,15 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.7.0",
-    "nanoid": "^5.1.11"
+    "nanoid": "^5.1.11",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.0.0",
     "typescript": "^5.9.0"
   }
