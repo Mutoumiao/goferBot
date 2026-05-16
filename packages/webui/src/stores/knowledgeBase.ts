@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiRequest } from '@/api/client'
+import { api } from '@/api/client'
 import type { KnowledgeBase, FileItem, SearchResultItem, HistoryEntry } from '@/types'
 
 export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
@@ -44,8 +44,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await apiRequest('GET', '/knowledge-bases')
-      knowledgeBases.value = (await res.json()) as KnowledgeBase[]
+      knowledgeBases.value = await api.get<KnowledgeBase[]>('/knowledge-bases')
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     } finally {
@@ -56,12 +55,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function createKnowledgeBase(name: string) {
     error.value = null
     try {
-      const res = await apiRequest('POST', '/knowledge-bases', { name })
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: '创建失败' }))) as { error: string }
-        throw new Error(err.error)
-      }
-      const kb = (await res.json()) as KnowledgeBase
+      const kb = await api.post<KnowledgeBase>('/knowledge-bases', { name })
       knowledgeBases.value.unshift(kb)
       selectKb(kb.id)
       return kb
@@ -74,8 +68,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function deleteKnowledgeBase(id: string) {
     error.value = null
     try {
-      const res = await apiRequest('DELETE', `/knowledge-bases/${id}`)
-      if (!res.ok) throw new Error('删除失败')
+      await api.delete(`/knowledge-bases/${id}`)
       knowledgeBases.value = knowledgeBases.value.filter((kb) => kb.id !== id)
       if (selectedKbId.value === id) {
         selectedKbId.value = null
@@ -89,9 +82,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function restoreKnowledgeBase(id: string) {
     error.value = null
     try {
-      const res = await apiRequest('POST', `/knowledge-bases/${id}/restore`)
-      if (!res.ok) throw new Error('恢复失败')
-      const kb = (await res.json()) as KnowledgeBase
+      const kb = await api.post<KnowledgeBase>(`/knowledge-bases/${id}/restore`)
       knowledgeBases.value = knowledgeBases.value.filter((k) => k.id !== id)
       knowledgeBases.value.unshift(kb)
       deletedKnowledgeBases.value = deletedKnowledgeBases.value.filter((k) => k.id !== id)
@@ -103,8 +94,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function permanentlyDeleteKnowledgeBase(id: string) {
     error.value = null
     try {
-      const res = await apiRequest('DELETE', `/knowledge-bases/${id}/permanent`)
-      if (!res.ok) throw new Error('彻底删除失败')
+      await api.delete(`/knowledge-bases/${id}/permanent`)
       deletedKnowledgeBases.value = deletedKnowledgeBases.value.filter((k) => k.id !== id)
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -115,8 +105,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await apiRequest('GET', '/knowledge-bases/deleted')
-      deletedKnowledgeBases.value = (await res.json()) as KnowledgeBase[]
+      deletedKnowledgeBases.value = await api.get<KnowledgeBase[]>('/knowledge-bases/deleted')
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     } finally {
@@ -137,11 +126,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     if (!selectedKbId.value) return
     isLoading.value = true
     try {
-      const res = await apiRequest(
-        'GET',
-        `/knowledge-bases/${selectedKbId.value}/files?path=${encodeURIComponent(path)}`
-      )
-      const data = (await res.json()) as { items: FileItem[] }
+      const data = await api.get<{ items: FileItem[] }>(`/knowledge-bases/${selectedKbId.value}/files?path=${encodeURIComponent(path)}`)
       files.value = data.items
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -173,11 +158,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     searchQuery.value = query
     isLoading.value = true
     try {
-      const res = await apiRequest(
-        'GET',
-        `/knowledge-bases/${selectedKbId.value}/search?q=${encodeURIComponent(query)}`
-      )
-      const data = (await res.json()) as { results: SearchResultItem[] }
+      const data = await api.get<{ results: SearchResultItem[] }>(`/knowledge-bases/${selectedKbId.value}/search?q=${encodeURIComponent(query)}`)
       searchResults.value = data.results
       pushHistory({ type: 'search', query })
     } catch (e) {
@@ -236,8 +217,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function moveFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
     error.value = null
     try {
-      const res = await apiRequest('POST', '/knowledge-bases/move', { sourceKbId, sourcePath, targetKbId, targetPath })
-      if (!res.ok) throw new Error('移动失败')
+      await api.post('/knowledge-bases/move', { sourceKbId, sourcePath, targetKbId, targetPath })
       if (selectedKbId.value === sourceKbId || selectedKbId.value === targetKbId) {
         await loadFiles(currentPath.value)
       }
@@ -249,8 +229,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function copyFile(sourceKbId: string, sourcePath: string, targetKbId: string, targetPath: string) {
     error.value = null
     try {
-      const res = await apiRequest('POST', '/knowledge-bases/copy', { sourceKbId, sourcePath, targetKbId, targetPath })
-      if (!res.ok) throw new Error('复制失败')
+      await api.post('/knowledge-bases/copy', { sourceKbId, sourcePath, targetKbId, targetPath })
       if (selectedKbId.value === targetKbId) {
         await loadFiles(currentPath.value)
       }
@@ -262,9 +241,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function renameKnowledgeBase(id: string, name: string) {
     error.value = null
     try {
-      const res = await apiRequest('PATCH', `/knowledge-bases/${id}`, { name })
-      if (!res.ok) throw new Error('重命名失败')
-      const updated = (await res.json()) as KnowledgeBase
+      const updated = await api.patch<KnowledgeBase>(`/knowledge-bases/${id}`, { name })
       const idx = knowledgeBases.value.findIndex((kb) => kb.id === id)
       if (idx !== -1) knowledgeBases.value[idx] = updated
     } catch (e) {
@@ -275,9 +252,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function updateKbIcon(id: string, icon: string) {
     error.value = null
     try {
-      const res = await apiRequest('PATCH', `/knowledge-bases/${id}`, { icon })
-      if (!res.ok) throw new Error('更新图标失败')
-      const updated = (await res.json()) as KnowledgeBase
+      const updated = await api.patch<KnowledgeBase>(`/knowledge-bases/${id}`, { icon })
       const idx = knowledgeBases.value.findIndex((kb) => kb.id === id)
       if (idx !== -1) knowledgeBases.value[idx] = updated
     } catch (e) {
@@ -290,9 +265,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     if (!kb) return
     error.value = null
     try {
-      const res = await apiRequest('PATCH', `/knowledge-bases/${id}`, { sort_order: Date.now() })
-      if (!res.ok) throw new Error('置顶失败')
-      const updated = (await res.json()) as KnowledgeBase
+      const updated = await api.patch<KnowledgeBase>(`/knowledge-bases/${id}`, { sort_order: Date.now() })
       const idx = knowledgeBases.value.findIndex((k) => k.id === id)
       if (idx !== -1) knowledgeBases.value[idx] = updated
       knowledgeBases.value = [...knowledgeBases.value].sort(
@@ -307,11 +280,8 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     if (!selectedKbId.value) return
     error.value = null
     try {
-      const res = await apiRequest('POST', `/knowledge-bases/${selectedKbId.value}/folders`, { name, path: currentPath.value })
-      if (!res.ok) throw new Error('创建文件夹失败')
-      const data = (await res.json()) as { name: string }
+      await api.post<{ name: string }>(`/knowledge-bases/${selectedKbId.value}/folders`, { name, path: currentPath.value })
       await loadFiles(currentPath.value)
-      return data.name
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
     }
@@ -322,11 +292,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     error.value = null
     try {
       const relativePath = currentPath.value ? `${currentPath.value}/${oldName}` : oldName
-      const res = await apiRequest('PATCH', `/knowledge-bases/${selectedKbId.value}/files/${relativePath}`, { newName })
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: '重命名失败' }))) as { error: string }
-        throw new Error(err.error)
-      }
+      await api.patch(`/knowledge-bases/${selectedKbId.value}/files/${relativePath}`, { newName })
       await loadFiles(currentPath.value)
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -338,8 +304,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     error.value = null
     try {
       const relativePath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName
-      const res = await apiRequest('DELETE', `/knowledge-bases/${selectedKbId.value}/files/${relativePath}`)
-      if (!res.ok) throw new Error('删除失败')
+      await api.delete(`/knowledge-bases/${selectedKbId.value}/files/${relativePath}`)
       await loadFiles(currentPath.value)
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -348,11 +313,8 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
 
   async function loadIndexStatus(kbId: string) {
     try {
-      const res = await apiRequest('GET', `/knowledge-bases/${kbId}/index-status`)
-      if (res.ok) {
-        const data = (await res.json()) as { totalFiles: number; indexedFiles: number; pendingFiles: number }
-        indexStatus.value.set(kbId, data)
-      }
+      const data = await api.get<{ totalFiles: number; indexedFiles: number; pendingFiles: number }>(`/knowledge-bases/${kbId}/index-status`)
+      indexStatus.value.set(kbId, data)
     } catch (e) {
       console.error('Failed to load index status:', e)
     }
