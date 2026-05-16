@@ -106,26 +106,29 @@
 | `f-01-auth-pages` | ✅ | ✅ | ✅ | ✅ | 登录/注册页 + 路由守卫 |
 | `f-02-route-guard` | ✅ | ✅ | ✅ | ✅ | 已随 f-01 完成 |
 
-### Phase 3: 知识库与文件（P0）
+### Phase 3: 知识库与文件（P0）— 进行中
 
-- [x] `b-02-knowledge-base-crud-api` — 知识库 CRUD（PostgreSQL）— 8 端点 + Zod DTO + 用户隔离
-- [ ] `f-03-sidebar-navigation` — 侧边栏导航（部分完成）
-- [ ] `f-05-knowledge-base-list` — 知识库列表页
-- [ ] `f-06-knowledge-base-file-manager` — 文件管理器
-- [ ] `f-07-file-upload-component` — 文件上传组件
-- [ ] `f-08-folder-management` — 虚拟文件夹管理
+| Issue | 状态 | Spec | Plan | 代码 | 说明 |
+|-------|------|------|------|------|------|
+| `b-02-knowledge-base-crud-api` | ✅ | ✅ | ✅ | ✅ | 知识库 CRUD + 文件夹 CRUD，8 端点 |
+| `f-05-knowledge-base-list` | ✅ | ✅ | ✅ | ✅ | 卡片网格 + 创建/重命名/删除/置顶 |
+| `f-06-knowledge-base-file-manager` | ⬜ | ⬜ | ⬜ | ⬜ | 文件管理器 |
+| `f-07-file-upload-component` | ⬜ | ⬜ | ⬜ | ⬜ | 文件上传组件 |
+| `f-08-folder-management` | ⬜ | ⬜ | ⬜ | ⬜ | 虚拟文件夹管理 |
 
-### Phase 4: 聊天功能（P0）
+### Phase 4: 聊天功能（P0）— 进行中
 
-- [ ] `b-03-session-api` — 会话 CRUD
-- [ ] `b-04-chat-sse-api` — SSE 流式对话
-- [ ] `b-05-settings-api` — 设置 API
-- [ ] `f-04-tab-bar` — Chat 页面内标签栏
-- [ ] `f-09-chat-page` — 问答对话页
-- [ ] `f-10-message-renderer` — 消息渲染组件
-- [ ] `f-11-kb-selector` — 多知识库选择
-- [ ] `f-12-chat-history` — 对话历史页
-- [ ] `f-13-settings-page` — 设置页
+| Issue | 状态 | Spec | Plan | 代码 | 说明 |
+|-------|------|------|------|------|------|
+| `b-03-session-api` | ✅ | ✅ | ✅ | ✅ | 会话 CRUD，5 端点 |
+| `f-09-chat-page` | ✅ | ✅ | ✅ | ✅ | 问答对话页 + 消息列表 + 输入框 |
+| `b-04-chat-sse-api` | ⬜ | ⬜ | ⬜ | ⬜ | SSE 流式对话 |
+| `b-05-settings-api` | ⬜ | ⬜ | ⬜ | ⬜ | 设置 API |
+| `f-04-tab-bar` | ⬜ | ⬜ | ⬜ | ⬜ | Chat 页面内标签栏 |
+| `f-10-message-renderer` | ⬜ | ⬜ | ⬜ | ⬜ | 消息渲染组件 |
+| `f-11-kb-selector` | ⬜ | ⬜ | ⬜ | ⬜ | 多知识库选择 |
+| `f-12-chat-history` | ⬜ | ⬜ | ⬜ | ⬜ | 对话历史页 |
+| `f-13-settings-page` | ⬜ | ⬜ | ⬜ | ⬜ | 设置页 |
 
 ### Phase 5: RAG 集成（P1）
 
@@ -145,4 +148,4 @@
 
 ---
 
-*最后更新：2026-05-17（Phase 2 认证系统前后端完成，Phase 3 知识库 CRUD API 完成）*
+*最后更新：2026-05-17（f-05 知识库列表页、b-03 会话 CRUD API、f-09 聊天页面 已完成）*
