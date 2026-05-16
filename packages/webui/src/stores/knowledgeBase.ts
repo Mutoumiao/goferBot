@@ -199,12 +199,17 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
       formData.append('path', currentPath.value)
     }
     try {
+      const accessToken = localStorage.getItem('goferbot_access_token')
+      const headers: Record<string, string> = {}
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`
+      }
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/knowledge-bases/${selectedKbId.value}/files`,
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/knowledge-bases/${selectedKbId.value}/files`,
         {
           method: 'POST',
           body: formData,
-          credentials: 'include',
+          headers,
         }
       )
       if (!res.ok) throw new Error('上传失败')

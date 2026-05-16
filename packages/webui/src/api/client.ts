@@ -6,6 +6,7 @@ import type {
   RequestInterceptor,
   ResponseInterceptor,
   CreateApiClientOptions,
+  JwtTokens,
 } from './types'
 
 const DEFAULT_BASE_URL = 'http://localhost:3000'
@@ -66,6 +67,9 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
   const requestInterceptors: RequestInterceptor[] = []
   const responseInterceptors: ResponseInterceptor[] = []
 
+  let isRefreshing = false
+  let refreshPromise: Promise<JwtTokens> | null = null
+
   const client: ApiClient = {
     onUnauthorized: null,
 
@@ -111,7 +115,6 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
-        credentials: 'include',
         signal,
       })
         .then(async (res) => {
@@ -176,7 +179,7 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
     },
   }
 
-  async function request<T>(config: RequestConfig): Promise<T> {
+  async function request<T>(config: RequestConfig, isRetry = false): Promise<T> {
     let cfg = { ...config }
     cfg.headers = { ...defaultHeaders, ...cfg.headers }
     cfg.timeout = cfg.timeout ?? defaultTimeout
@@ -196,7 +199,6 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
         'Content-Type': 'application/json',
         ...cfg.headers,
       },
-      credentials: 'include',
     }
 
     if (cfg.body !== undefined && cfg.method !== 'GET') {
@@ -224,6 +226,19 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
       }
     }
 
+    // 401 自动刷新
+    if (res.status === 401 && !isRetry) {
+      const newTokens = await doRefresh()
+      if (newTokens) {
+        // 重试原请求
+        cfg.headers = {
+          ...cfg.headers,
+          Authorization: `Bearer ${newTokens.accessToken}`,
+        }
+        return request<T>(cfg, true)
+      }
+    }
+
     if (res.status === 401 && client.onUnauthorized) {
       const err = await parseApiError(res)
       client.onUnauthorized(err)
@@ -243,10 +258,57 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
     }
 
     try {
-      return (await res.json()) as T
+      const json = await res.json()
+      // 自动解包 NestJS { data: T } 格式
+      if (json && typeof json === 'object' && 'data' in json) {
+        return json.data as T
+      }
+      return json as T
     } catch {
       return undefined as T
     }
+  }
+
+  async function doRefresh(): Promise<JwtTokens | null> {
+    if (isRefreshing) {
+      return refreshPromise!
+    }
+
+    const savedRefresh = localStorage.getItem('goferbot_refresh_token')
+    if (!savedRefresh) {
+      return null
+    }
+
+    isRefreshing = true
+    refreshPromise = fetch(`${baseURL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: savedRefresh }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error('Refresh failed')
+        }
+        const json = await res.json()
+        const tokens = json.data ?? json
+        localStorage.setItem('goferbot_access_token', tokens.accessToken)
+        localStorage.setItem('goferbot_refresh_token', tokens.refreshToken)
+        return tokens as JwtTokens
+      })
+      .catch((e) => {
+        localStorage.removeItem('goferbot_access_token')
+        localStorage.removeItem('goferbot_refresh_token')
+        if (client.onUnauthorized) {
+          client.onUnauthorized(new ApiError({ status: 401, code: 'REFRESH_FAILED', message: String(e) }))
+        }
+        throw e
+      })
+      .finally(() => {
+        isRefreshing = false
+        refreshPromise = null
+      })
+
+    return refreshPromise
   }
 
   async function parseApiError(res: Response): Promise<ApiError> {
@@ -265,6 +327,12 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
         }
         if ('message' in body && typeof body.message === 'string') {
           message = body.message
+        }
+        // NestJS 统一错误格式 { error: { code, message } }
+        if ('error' in body && body.error && typeof body.error === 'object') {
+          const errObj = body.error as Record<string, unknown>
+          if (typeof errObj.code === 'string') code = errObj.code
+          if (typeof errObj.message === 'string') message = errObj.message
         }
       }
     } catch {

@@ -34,7 +34,32 @@ export interface CreateApiClientOptions {
   defaultTimeout?: number
 }
 
-// DTO 类型（与后端手动同步）
+// JWT 相关类型
+export interface JwtTokens {
+  accessToken: string
+  refreshToken: string
+}
+
+export interface ApiResponse<T> {
+  data: T
+}
+
+export interface UserDTO {
+  id: string
+  email: string
+  name: string | null
+  avatar?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface AuthResponse {
+  user: UserDTO
+  accessToken: string
+  refreshToken: string
+}
+
+// 向后兼容别名
 export interface SignInRequest {
   email: string
   password: string
