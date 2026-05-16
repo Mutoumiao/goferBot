@@ -13,8 +13,8 @@ GoferBot — 带本地能力的 AI Workspace / Agent OS。基于 Tauri v2 + Vue 
 ├── packages/
 │   ├── webui/                    # Vue 3 前端（@goferbot/webui）
 │   ├── server/                   # Node.js Sidecar（@goferbot/server）
-│   ├── shellAdapters/            # 平台适配层
-│   ├── backendAdapters/          # 后端通信适配层
+│   ├── shellAdapters/            # 平台适配层（预留）
+│   ├── backendAdapters/          # 后端通信适配层（预留）
 │   └── rag-sdk/                  # RAG 工具库
 ├── src-tauri/                    # Tauri Rust 后端
 ├── tests/                        # 测试（单元/集成/E2E）
