@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Message } from '@/types'
+import type { Message } from '@/stores/session'
 import { BotIcon, UserIcon } from 'lucide-vue-next'
 import MarkdownRender from './MarkdownRender.vue'
 
@@ -12,7 +12,7 @@ defineProps<{
   <div
     data-testid="chat-message"
     :class="[
-      'message-enter flex w-full',
+      'flex w-full',
       message.role === 'user' ? 'justify-end' : 'justify-start',
     ]"
   >
