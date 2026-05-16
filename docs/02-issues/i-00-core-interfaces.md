@@ -1,4 +1,4 @@
-状态: needs-triage
+状态: closed
 分类: enhancement
 
 ## 要构建的内容
@@ -12,13 +12,13 @@
 
 ## 验收标准
 
-- [ ] `packages/server/src/interfaces/IRepository.ts` — 泛型数据访问接口（findById / findAll / create / update / delete）
-- [ ] `packages/server/src/interfaces/IStorageProvider.ts` — 文件存储接口（upload / download / delete / getUrl）
-- [ ] `packages/server/src/interfaces/IVectorStore.ts` — 向量存储接口（insertVectors / searchVectors / deleteByIds / ensureCollection）
-- [ ] `packages/server/src/interfaces/IAuthProvider.ts` — 认证接口（signIn / signUp / signOut / getSession / middleware）
-- [ ] `packages/server/src/interfaces/index.ts` — 统一导出
-- [ ] 所有接口方法签名与 PRD 数据模型一致
-- [ ] V1 SQLite 实现和 V2 PG/MinIO/Milvus 实现必须实现相同接口
+- [x] `packages/server/src/interfaces/IRepository.ts` — 泛型数据访问接口（findById / findAll / create / update / delete）
+- [x] `packages/server/src/interfaces/IStorageProvider.ts` — 文件存储接口（upload / download / delete / getUrl）
+- [x] `packages/server/src/interfaces/IVectorStore.ts` — 向量存储接口（insertVectors / searchVectors / deleteByIds / ensureCollection）
+- [x] `packages/server/src/interfaces/IAuthProvider.ts` — 认证接口（signIn / signUp / signOut / getSession / middleware）
+- [x] `packages/server/src/interfaces/index.ts` — 统一导出
+- [x] 所有接口方法签名与 PRD 数据模型一致
+- [x] V1 SQLite 实现和 V2 PG/MinIO/Milvus 实现必须实现相同接口
 
 ## 阻塞于
 

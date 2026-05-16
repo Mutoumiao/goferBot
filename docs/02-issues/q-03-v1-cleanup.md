@@ -1,4 +1,4 @@
-状态: needs-triage
+状态: closed
 分类: enhancement
 
 ## 要构建的内容
@@ -37,10 +37,10 @@ ADR-0004 架构改革后，以下 V1 代码已废弃但仍在仓库中：
 - [ ] 更新 `docs/01-prd/v2-cloud-native.md` 中关于 Sidecar / Tauri 的描述（若与最新 ADR 冲突）
 
 ### 验证
-- [ ] `pnpm install` 后无 better-sqlite3 原生构建
-- [ ] `pnpm dev:server` 正常启动
-- [ ] `pnpm dev:web` 正常启动
-- [ ] `pnpm type-check` 通过
+- [x] `pnpm install` 后无 better-sqlite3 原生构建
+- [x] `pnpm dev:server` 正常启动
+- [x] `pnpm dev:web` 正常启动
+- [x] `pnpm type-check` 通过
 
 ## 阻塞于
 
@@ -69,13 +69,13 @@ V1 废弃代码清理完毕，Server 端仅剩 Hono 路由框架和 V2 所需依
 - `packages/server/package.json` — 移除依赖
 
 **验收标准：**
-- [ ] sync.ts 删除
-- [ ] sqlite-vec / better-sqlite3 依赖移除
-- [ ] db.ts 清理标记
-- [ ] utils.ts V1 函数删除
-- [ ] .sidecar-port 清理
-- [ ] 文档更新
-- [ ] dev:server / dev:web / type-check 通过
+- [x] sync.ts 删除
+- [x] sqlite-vec / better-sqlite3 依赖移除
+- [x] db.ts 清理标记
+- [x] utils.ts V1 函数删除
+- [x] .sidecar-port 清理
+- [x] 文档更新
+- [x] dev:server / dev:web / type-check 通过
 
 **范围外：**
 - llm.ts 清理
