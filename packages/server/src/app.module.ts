@@ -1,0 +1,70 @@
+import { Module } from '@nestjs/common'
+import {
+  APP_INTERCEPTOR,
+  APP_FILTER,
+  APP_GUARD,
+  APP_PIPE,
+} from '@nestjs/core'
+import { ConfigModule } from '@nestjs/config'
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
+import { HealthModule } from './modules/health/health.module.js'
+import { ResponseInterceptor } from './common/interceptors/response.interceptor.js'
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
+import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
+import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js'
+import { SpiderGuard } from './common/guards/spider.guard.js'
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../.env'],
+    }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 60,
+      },
+      {
+        name: 'auth',
+        ttl: 60000,
+        limit: 5,
+      },
+    ]),
+    HealthModule,
+  ],
+  providers: [
+    // 全局响应拦截器
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
+    },
+    // 全局日志拦截器（开发环境内部静默）
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    // 全局异常过滤器
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+    // 全局 Zod 验证管道
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
+    // 全局速率限制守卫
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    // 全局爬虫防护守卫
+    {
+      provide: APP_GUARD,
+      useClass: SpiderGuard,
+    },
+  ],
+})
+export class AppModule {}
