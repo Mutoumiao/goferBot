@@ -8,6 +8,11 @@ import {
 import { ConfigModule } from '@nestjs/config'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { HealthModule } from './modules/health/health.module.js'
+import { UserModule } from './modules/user/user.module.js'
+import { AuthModule } from './auth/auth.module.js'
+import { VectorModule } from './processors/vector/vector.module.js'
+import { QueueModule } from './processors/queue/queue.module.js'
+import { StorageModule } from './processors/storage/storage.module.js'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
@@ -33,6 +38,11 @@ import { SpiderGuard } from './common/guards/spider.guard.js'
       },
     ]),
     HealthModule,
+    UserModule,
+    AuthModule,
+    VectorModule,
+    QueueModule.forRoot(),
+    StorageModule,
   ],
   providers: [
     // 全局响应拦截器
