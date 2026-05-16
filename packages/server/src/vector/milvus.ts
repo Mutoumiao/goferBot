@@ -42,7 +42,11 @@ export class MilvusVectorStore implements IVectorStore {
         : parseInt(options.port, 10)
       : parseInt(process.env.MILVUS_PORT ?? '19530', 10)
     this.collectionName = options.collectionName ?? process.env.MILVUS_COLLECTION ?? 'knowledge_chunks'
-    this.vectorDim = options.vectorDim ?? parseInt(process.env.MILVUS_VECTOR_DIM ?? '1536', 10)
+    this.vectorDim = options.vectorDim
+      ? typeof options.vectorDim === 'number'
+        ? options.vectorDim
+        : parseInt(String(options.vectorDim), 10)
+      : parseInt(process.env.MILVUS_VECTOR_DIM ?? '1536', 10)
     this.metricType = options.metricType ?? 'COSINE'
 
     const address = `${this.host}:${this.port}`

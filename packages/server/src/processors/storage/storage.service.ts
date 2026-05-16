@@ -1,12 +1,13 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Inject } from '@nestjs/common'
 import { IStorageProvider } from '../../interfaces/IStorageProvider.js'
 import { MinIOStorageProvider } from '../../storage/minio.js'
+import { STORAGE_PROVIDER } from './storage.provider.js'
 
 @Injectable()
 export class StorageService implements IStorageProvider {
   private provider: MinIOStorageProvider
 
-  constructor(provider: MinIOStorageProvider) {
+  constructor(@Inject(STORAGE_PROVIDER) provider: MinIOStorageProvider) {
     this.provider = provider
   }
 
