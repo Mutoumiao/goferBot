@@ -36,12 +36,13 @@ async function handleSubmit() {
     })
     router.push('/')
   } catch (e) {
-    const err = e instanceof Error ? e.message : String(e)
-    if (err.includes('409') || err.includes('已注册') || err.includes('USER_EXISTS')) {
+    const status = (e as { status?: number }).status
+    const code = (e as { code?: string }).code
+    if (status === 409 || code === 'USER_EXISTS') {
       form.setGeneralError('该邮箱已被注册')
-    } else if (err.includes('400')) {
+    } else if (status === 400 || code === 'VALIDATION_ERROR') {
       form.setGeneralError('请求参数错误，请检查输入')
-    } else if (err.includes('NetworkError') || err.includes('fetch')) {
+    } else if ((e as Error).name === 'NetworkError' || !status) {
       form.setGeneralError('网络异常，请稍后重试')
     } else {
       form.setGeneralError('服务器繁忙，请稍后重试')
@@ -115,7 +116,7 @@ async function handleSubmit() {
         <Button
           class="w-full"
           :disabled="isLoading"
-          aria-busy="isLoading"
+          :aria-busy="isLoading"
           @click="handleSubmit"
         >
           <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />

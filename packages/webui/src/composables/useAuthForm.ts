@@ -5,11 +5,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 interface FieldState {
   value: string
   error: string | null
-  touched: boolean
 }
 
 function createField(initial = ''): FieldState {
-  return { value: initial, error: null, touched: false }
+  return { value: initial, error: null }
 }
 
 export function useAuthForm(options: { confirmPassword?: boolean } = {}) {
@@ -67,9 +66,7 @@ export function useAuthForm(options: { confirmPassword?: boolean } = {}) {
   }
 
   function clearFieldError(field: typeof email) {
-    if (field.value.error && field.value.value) {
-      field.value.error = null
-    }
+    field.value.error = null
   }
 
   function clearErrors() {
