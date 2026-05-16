@@ -1,9 +1,9 @@
 # GoferBot
 
-GoferBot — 带本地能力的 AI Workspace / Agent OS。基于 Tauri v2 + Vue 3 + Hono 的桌面应用，支持文档管理、LLM 问答、RAG 检索增强。
+GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的 Web 应用，支持文档管理、LLM 问答、RAG 检索增强。
 
 **架构定位**：云端优先、本地缓存、可扩展 SaaS、AI Native Infrastructure。
-**技术栈**：Tauri v2 (Rust) + Vue 3 + Hono + PostgreSQL + MinIO + Milvus + Redis + BullMQ。
+**技术栈**：Vue 3 + NestJS 10 + Fastify + PostgreSQL + MinIO + Milvus + Redis + BullMQ。
 
 用户可导入文档进行管理，通过 LLM 进行问答，支持 RAG 检索增强。
 
@@ -12,11 +12,9 @@ GoferBot — 带本地能力的 AI Workspace / Agent OS。基于 Tauri v2 + Vue 
 ```
 ├── packages/
 │   ├── webui/                    # Vue 3 前端（@goferbot/webui）
-│   ├── server/                   # Node.js Sidecar（@goferbot/server）
-│   ├── shellAdapters/            # 平台适配层（预留）
-│   ├── backendAdapters/          # 后端通信适配层（预留）
+│   ├── server/                   # NestJS API 服务端（@goferbot/server）
 │   └── rag-sdk/                  # RAG 工具库
-├── src-tauri/                    # Tauri Rust 后端
+├── src-tauri/                    # Tauri Rust 后端（冻结，Phase 6 扩展）
 ├── tests/                        # 测试（单元/集成/E2E）
 ├── docs/                         # 文档（新架构 00-meta ~ 08-test-cases）
 │   ├── 00-meta/                  # 流程规范、skills
@@ -37,7 +35,10 @@ GoferBot — 带本地能力的 AI Workspace / Agent OS。基于 Tauri v2 + Vue 
 ## 技术栈
 
 - **前端**：Vue 3 + TypeScript + Vite + Tailwind CSS v4 + Pinia
-- **桌面**：Tauri v2 (Rust)
+- **后端**：NestJS 10 + Fastify + Prisma 5 + JWT + bcrypt
+- **数据库**：PostgreSQL 16（元数据）+ Milvus 2.4+（向量检索）
+- **对象存储**：MinIO（文件内容）
+- **缓存/队列**：Redis 7 + BullMQ
 - **测试**：Vitest + Playwright
 - **包管理**：pnpm
 - **图标**：lucide-vue-next
@@ -45,8 +46,9 @@ GoferBot — 带本地能力的 AI Workspace / Agent OS。基于 Tauri v2 + Vue 
 ## 常用命令
 
 ```bash
-pnpm dev              # 同时启动前后端
-pnpm dev:tauri        # Tauri 开发模式
+pnpm dev              # 同时启动前后端（webui + server）
+pnpm dev:web          # 只启动前端 Vite dev server
+pnpm dev:server       # 只启动后端 NestJS（watch 模式）
 pnpm test             # 单元测试
 pnpm test:e2e         # E2E 测试
 pnpm type-check       # TypeScript 类型检查

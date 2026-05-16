@@ -1,13 +1,13 @@
 # GoferBot
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Tauri-v2-24C8D8?logo=tauri" alt="Tauri v2">
   <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs" alt="Vue 3">
-  <img src="https://img.shields.io/badge/Rust-1.7+-000000?logo=rust" alt="Rust">
+  <img src="https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs" alt="NestJS 10">
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
 </p>
 
-**GoferBot** 是一款基于 **Tauri v2 + Vue 3 + Node.js Hono Sidecar** 的本地知识库桌面应用。支持导入 Markdown、TXT 等文档进行管理，通过多 LLM 提供商进行智能问答，并基于 **RAG 检索增强**（向量搜索 + 全文搜索混合排序）提供上下文感知的精准回答。所有数据存储在本地，无需联网即可使用。
+**GoferBot** 是一款云端优先的 **AI Workspace / Agent OS** Web 应用。支持导入 Markdown、TXT 等文档进行管理，通过多 LLM 提供商进行智能问答，并基于 **RAG 检索增强**（向量搜索 + 全文搜索混合排序）提供上下文感知的精准回答。
 
 > **从零到一完整实践 Harness Engineering 开发方法论。**
 
@@ -17,23 +17,24 @@
 
 ### 1. 完整的 RAG 检索增强系统
 
-- **混合搜索策略**：`sqlite-vec` HNSW 向量索引（语义相似度）+ **FTS5 全文索引**（关键词匹配），通过 RRF 融合排序提升召回率
+- **混合搜索策略**：Milvus HNSW 向量索引（语义相似度）+ **全文索引**（关键词匹配），通过 RRF 融合排序提升召回率
 - **细粒度检索控制**：支持 `@知识库名称` 提及触发 RAG，每条消息独立选择检索范围，非全局开关
 - **后台索引队列**：批量导入文件时自动排队处理，前端实时显示索引进度，避免卡死 UI
 
 ### 2. 分层架构与职责边界
 
-采用 Monorepo 组织的多层架构，UI、适配层、服务层各自独立：
+采用 Monorepo 组织的多层架构，前后端分离，各层职责清晰：
 
 | 层 | 职责 | 技术选型 | 路径 |
 | -- | ---- | -------- | ---- |
-| **Tauri Rust** | 桌面壳：窗口管理、Sidecar 生命周期监控、高性能文件 I/O 中转 | Rust | `src-tauri/` |
-| **Hono Sidecar** | 全部业务逻辑：LLM 问答、RAG、LangChain、SQLite、Embedding API | TypeScript + Hono | `packages/server/` |
-| **Vue 3 前端** | UI 渲染、状态管理 | Vue 3 + Pinia + Tailwind CSS v4 | `packages/webui/` |
-| **Shell 适配层** | 前端与宿主环境解耦（Tauri / Browser / Memory）| TypeScript | `packages/shellAdapters/` |
-| **Backend 适配层** | 前端与 Sidecar 通信统一（HTTP 请求、SSE、重试）| TypeScript | `packages/webui/src/backend/` |
+| **Vue 3 前端** | UI 渲染、状态管理、HTTP API 调用 | Vue 3 + Pinia + Tailwind CSS v4 | `packages/webui/` |
+| **NestJS API** | API 路由、认证、业务编排、全局拦截器 | NestJS 10 + Fastify | `packages/server/` |
+| **PostgreSQL** | 元数据：用户、知识库、文档、会话、消息 | PG 16 + Prisma 5 | Docker |
+| **MinIO** | 对象存储：文件内容 | MinIO | Docker |
+| **Milvus** | 向量索引与 ANN 搜索 | Milvus 2.4+ | Docker |
+| **Redis + BullMQ** | 缓存、异步任务队列 | Redis 7 | Docker |
 
-**文件导入链路设计**：前端通过 `Shell.importFiles()` → Tauri 模式下 Rust 打开对话框并读取文件 → HTTP POST 到 Sidecar；浏览器模式下使用标准 HTML 文件选择 → 批量 POST 到 Sidecar。该设计解决了 Tauri v2 中前端临时文件权限与 Sidecar 独立进程之间的访问隔离问题，同时支持浏览器模式独立运行。
+**文件导入链路设计**：前端通过 HTTP POST 到 NestJS Controller → MinIO 存储 → PostgreSQL 创建记录 → BullMQ 添加解析任务 → Worker 异步处理（解析 → 分块 → 向量化 → Milvus）。该设计解耦了上传与处理，避免阻塞用户操作。
 
 ### 3. 多 LLM 提供商与每会话模型切换
 
@@ -43,10 +44,10 @@
 
 ### 4. 完整的知识库文件管理
 
-- 知识库 = 物理子目录（`docs/<知识库名>/`），用户可直接在文件系统查看
+- 知识库 = 虚拟文件夹树（数据库存储），支持远程同步与协作
 - 支持文件夹层级浏览、面包屑导航、文件名搜索
-- 右键菜单操作：置顶、修改资料（名称/图标）、删除（回收站恢复）
-- 文件操作：新建文件夹、行内重命名、跨库移动/复制、物理删除（差异化二次确认）
+- 右键菜单操作：置顶、修改资料（名称/图标）、删除
+- 文件操作：新建文件夹、行内重命名、跨库移动/复制、删除
 
 ***
 
@@ -70,7 +71,7 @@
 
 ## Harness Engineering 实践
 
-本项目完整实践了 Harness Engineering 开发方法论，使用 `mu-*` 系列 Skills 覆盖软件交付全生命周期：
+本项目完整实践了 Harness Engineering 开发方法论：
 
 ```
 需求澄清 → 规划拆分 → 依赖检查 → 并行实现 → 代码审查 → 验收验证 → 架构优化 → 分支收尾
@@ -81,9 +82,9 @@
 **工程纪律体现：**
 
 - **事务驱动**：所有功能以 Markdown Issue 形式跟踪，含明确的 `Acceptance criteria` 和 `Blocked by` 依赖声明
-- **设计先行的文档化**：每个功能开发前通过 `mu-grill-docs` 确认领域术语和架构决策，避免返工
-- **状态机管理**：Issue 遵循 7 状态生命周期（`needs-triage` → `ready-for-agent` → `in-progress` → `ready-for-review` → `verified` → `completed`）
-- **验证即完成**：禁止在未经验证的情况下声明完成，`mu-verify` 强制运行测试与类型检查
+- **设计先行的文档化**：每个功能开发前通过 spec 确认领域术语和架构决策，避免返工
+- **状态机管理**：Issue 遵循多状态生命周期（`needs-triage` → `ready-for-agent` → `in-progress` → `ready-for-review` → `verified` → `completed`）
+- **验证即完成**：禁止在未经验证的情况下声明完成，强制运行测试与类型检查
 
 ***
 
@@ -92,11 +93,12 @@
 | 层级         | 技术                                                | 说明                                 |
 | ---------- | ------------------------------------------------- | ---------------------------------- |
 | 前端框架       | Vue 3 + TypeScript + Vite                         | Composition API、响应式状态管理            |
-| 桌面框架       | Tauri v2 (Rust)                                   | 轻量桌面壳、高性能文件 I/O、Sidecar 生命周期管理     |
-| Sidecar 服务 | Node.js + Hono                                    | 全部业务逻辑、LLM API 调用、RAG 检索、SQLite 操作 |
+| 后端框架       | NestJS 10 + Fastify                               | 模块化架构、依赖注入、拦截器、守卫模式              |
+| ORM        | Prisma 5                                          | PostgreSQL 数据库访问层                    |
+| 认证         | JWT + bcrypt + Passport                           | Access/Refresh Token 双令牌机制            |
 | 状态管理       | Pinia                                             | 会话、知识库、标签页、设置等模块状态                 |
 | CSS 框架     | Tailwind CSS v4                                   | 原子化样式、自定义主题                        |
-| 图标方案       | @egoist/tailwindcss-icons + Material Design Icons | 统一图标体系                             |
+| 图标方案       | lucide-vue-next                                   | 统一图标体系                             |
 | 测试框架       | Vitest + @vue/test-utils                          | 组件测试、Store 测试、工具函数测试               |
 | 包管理器       | pnpm workspace                                    | Monorepo 依赖管理、跨包引用               |
 
@@ -107,8 +109,15 @@
 ### 环境要求
 
 - [Node.js](https://nodejs.org/)（建议 LTS 版本）
-- [Rust](https://rustup.rs/)
 - [pnpm](https://pnpm.io/)
+- [Docker](https://www.docker.com/)（运行 PostgreSQL + MinIO + Milvus + Redis）
+
+### 启动基础设施
+
+```bash
+# 启动 Docker 基础设施
+cd packages/server && docker compose -f docker-compose.dev.yml up -d
+```
 
 ### 安装依赖
 
@@ -125,39 +134,18 @@ pnpm -r build
 ### 启动开发模式
 
 ```bash
-# 启动 webui Vite dev server 和 Vue Devtools
+# 同时启动前后端（webui Vite + NestJS watch）
 pnpm dev
-```
-
-### Tauri 开发模式
-
-```bash
-pnpm tauri dev
-```
-
-### 构建生产版本
-
-```bash
-pnpm build
 ```
 
 ### 检查与测试
 
 ```bash
-# Rust 代码检查
-pnpm check
-
 # 运行单元测试
 pnpm test
 
-# 运行集成测试
-pnpm test:integration
-
 # 运行 E2E 测试
 pnpm test:e2e
-
-# 运行全部测试（单元 + 集成 + E2E）
-pnpm test:all
 
 # TypeScript 类型检查（所有 workspace 包）
 pnpm type-check
@@ -167,46 +155,58 @@ pnpm type-check
 
 | 脚本 | 作用 |
 |------|------|
-| `pnpm dev` | **同时启动前后端**（Sidecar + Vite dev server） |
-| `pnpm dev:web` | 只启动前端（Vite dev server，浏览器模式下使用浏览器扩展调试 Vue） |
-| `pnpm dev:server` | 只启动后端 Sidecar（tsx watch 模式，直接运行 TS 源码） |
-| `pnpm dev:tauri` | Tauri 开发模式（启动 Vite + 独立 Vue Devtools 进程，用于桌面端调试） |
+| `pnpm dev` | **同时启动前后端**（NestJS + Vite dev server） |
+| `pnpm dev:web` | 只启动前端（Vite dev server） |
+| `pnpm dev:server` | 只启动后端 NestJS（watch 模式） |
 | `pnpm build` | 构建 webui 生产版本 |
 | `pnpm preview` | 预览 webui 生产构建 |
-| `pnpm -r build` | 构建所有 workspace 包（server、shell-adapters、backend-adapters、rag-sdk、webui） |
+| `pnpm -r build` | 构建所有 workspace 包（server、rag-sdk、webui） |
 | `pnpm test` | 运行根目录单元测试（Vitest，含组件、store、composable 测试） |
-| `pnpm test:integration` | 运行集成测试（启动真实 Sidecar 进程，测试 API 端点） |
 | `pnpm test:e2e` | 运行 E2E 测试（Playwright，浏览器级交互测试） |
-| `pnpm test:all` | 顺序运行单元 + 集成 + E2E 全部测试 |
 | `pnpm type-check` | 对所有 workspace 包运行 TypeScript 类型检查 |
-| `pnpm check` | 运行 `cargo check` 检查 Rust 代码 |
-| `pnpm tauri <cmd>` | 运行 Tauri CLI 命令（如 `pnpm tauri dev`、`pnpm tauri build`） |
 
 ***
 
-## 数据目录结构
+## 数据架构
 
-应用启动时在系统用户目录下创建 `knowledge-base/` 子目录：
+### PostgreSQL 数据模型（Prisma）
 
 ```
-knowledge-base/
-  docs/                  # 用户导入的文档（按知识库分子目录）
-  .trash/                # 回收站（被删除的知识库物理移动至此）
-  sidecar.db             # SQLite（会话、消息、知识库、文档块、向量索引、全文索引）
-  config.json            # 用户配置（LLM provider、API Key、温度等）
-  .sidecar-port          # Sidecar 实际监听端口
+User          → 用户（邮箱、密码哈希、名称、头像）
+KnowledgeBase → 知识库（名称、描述、图标、所有者）
+Folder        → 虚拟文件夹（树结构，parentId 自关联）
+Document      → 文档（文件名、路径、MinIO key、状态、知识库关联）
+Chunk         → 文档分块（内容、向量 ID、文档关联）
+Session       → 会话（标题、模型、提供商、用户关联）
+Message       → 消息（角色、内容、引用来源、会话关联）
+Setting       → 用户设置（LLM 配置、Embedding 配置）
+```
+
+### 文件存储（MinIO）
+
+```
+buckets/
+  documents/     # 用户上传的原始文件
+```
+
+### 向量存储（Milvus）
+
+```
+Collection: chunks
+  - id (primary key)
+  - vector (embedding)
+  - document_id
+  - content (text)
 ```
 
 ***
 
 ## 开发规范
 
-本项目遵循严格的 Tauri v2 开发约束，详见 [`CONSTRAINTS.md`](./CONSTRAINTS.md)。核心规则：
-
-- 所有 Rust 命令必须注册到 `generate_handler!` 宏中
-- 异步命令参数禁止使用借用类型（`&str`）
-- 渲染进程禁止直接访问文件系统，所有 I/O 通过 IPC 委托给 Rust 后端
-- 所有插件功能使用前必须在 `capabilities/default.json` 中声明权限
+- 所有 API 响应统一为 `{ data: T }` 格式（由 ResponseInterceptor 处理）
+- 异常统一由全局 ExceptionFilter 捕获并标准化
+- 认证使用 `@UseGuards(JwtAuthGuard)` + `@CurrentUser()` 装饰器
+- Prisma 查询通过 `PrismaService` 注入，禁止直接实例化 `PrismaClient`
 
 ***
 
@@ -214,15 +214,12 @@ knowledge-base/
 
 | 文档                                                                     | 说明                                          |
 | ---------------------------------------------------------------------- | ------------------------------------------- |
-| [`CLAUDE.md`](./CLAUDE.md)                                             | 项目全局指南（编码规范、注意事项、Worktree 开发规范）             |
-| [`CONSTRAINTS.md`](./CONSTRAINTS.md)                                   | Tauri v2 不可协商规则                             |
-| [`CONTEXT.md`](./CONTEXT.md)                                           | 领域术语表与关键设计决策                                |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md)                                 | 架构说明与模块职责                                   |
-| [`docs/prd-v1.md`](./docs/prd-v1.md)                                   | 产品需求文档（PRD）v1                               |
-| [`docs/adr/`](./docs/adr/)                                             | 架构决策记录（ADR）                                 |
-| [`docs/test-cases/`](./docs/test-cases/)                               | 测试用例（按 Issue 编号独立文件，如 `01-*.md`、`03b-*.md`） |
-| [`.scratch/knowledge-base/issues/`](./.scratch/knowledge-base/issues/) | Issue 跟踪（含验收标准与依赖声明）                        |
+| [`CLAUDE.md`](./CLAUDE.md)                                             | 项目全局指南（编码规范、技能路由、开发流程）             |
 | [`PROGRESS.md`](./PROGRESS.md)                                         | 项目进度追踪（Issue 执行状态与后续开发计划）                   |
+| [`docs/01-prd/v2-cloud-native.md`](./docs/01-prd/v2-cloud-native.md)   | 产品需求文档（PRD）v2                               |
+| [`docs/05-adrs/`](./docs/05-adrs/)                                     | 架构决策记录（ADR）                                 |
+| [`docs/02-issues/`](./docs/02-issues/)                                 | 活跃 Issue 跟踪（含验收标准与依赖声明）                        |
+| [`docs/03-specs/`](./docs/03-specs/)                                   | 功能规格、行为规格、API 规格                          |
 
 ***
 
