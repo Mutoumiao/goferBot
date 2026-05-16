@@ -1,72 +1,44 @@
 import { Worker, Job } from 'bullmq'
-import { redis } from './redis.js'
-import { DocumentJobData, EmbeddingJobData } from './queues.js'
+import type { Redis } from 'ioredis'
+import {
+  DOCUMENT_PROCESSING_QUEUE,
+  EMBEDDING_QUEUE,
+  type DocumentJobData,
+  type EmbeddingJobData,
+} from './queues.js'
 
-const concurrency = Number(process.env.QUEUE_CONCURRENCY) || 2
+export type DocumentJobHandler = (job: Job<DocumentJobData>) => Promise<void>
+export type EmbeddingJobHandler = (job: Job<EmbeddingJobData>) => Promise<void>
 
-// 占位处理器：document-processing
-async function processDocumentJob(job: Job<DocumentJobData>): Promise<void> {
-  const { documentId, type } = job.data
-
-  if (type === 'parse') {
-    // parse 阶段
-    await job.updateProgress(10)
-    // Phase 5: update documents.status = 'parsing'
-    await new Promise((r) => setTimeout(r, 100))
-
-    // chunk 阶段
-    await job.updateProgress(40)
-    // Phase 5: update documents.status = 'chunking'
-    await new Promise((r) => setTimeout(r, 100))
-
-    // embed 阶段
-    await job.updateProgress(70)
-    // Phase 5: update documents.status = 'indexing'
-    await new Promise((r) => setTimeout(r, 100))
-
-    // 完成
-    await job.updateProgress(100)
-    // Phase 5: update documents.status = 'ready'
-    return
-  }
-
-  if (type === 'reindex') {
-    await job.updateProgress(100)
-    return
-  }
-
-  throw new Error(`Unknown job type: ${type}`)
+export interface WorkerRegistry {
+  documentHandler?: DocumentJobHandler
+  embeddingHandler?: EmbeddingJobHandler
 }
 
-// 占位处理器：embedding-generation
-async function processEmbeddingJob(job: Job<EmbeddingJobData>): Promise<void> {
-  const { chunkIds, kbId } = job.data
-  // Phase 5 前为占位实现
-  await job.updateProgress(100)
+export function createDocumentWorker(
+  connection: Redis,
+  handler: DocumentJobHandler,
+  concurrency = 2,
+): Worker<DocumentJobData> {
+  return new Worker<DocumentJobData>(
+    DOCUMENT_PROCESSING_QUEUE,
+    async (job) => {
+      await handler(job)
+    },
+    { connection, concurrency },
+  )
 }
 
-export const documentWorker = new Worker<DocumentJobData>(
-  'document-processing',
-  processDocumentJob,
-  { connection: redis, concurrency }
-)
-
-export const embeddingWorker = new Worker<EmbeddingJobData>(
-  'embedding-generation',
-  processEmbeddingJob,
-  { connection: redis, concurrency }
-)
-
-// 优雅关闭
-function gracefulShutdown(signal: string) {
-  console.log(`Received ${signal}, shutting down workers...`)
-  Promise.all([
-    documentWorker.close(),
-    embeddingWorker.close(),
-  ]).then(() => {
-    process.exit(0)
-  })
+export function createEmbeddingWorker(
+  connection: Redis,
+  handler: EmbeddingJobHandler,
+  concurrency = 2,
+): Worker<EmbeddingJobData> {
+  return new Worker<EmbeddingJobData>(
+    EMBEDDING_QUEUE,
+    async (job) => {
+      await handler(job)
+    },
+    { connection, concurrency },
+  )
 }
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
-process.on('SIGINT', () => gracefulShutdown('SIGINT'))

@@ -1,40 +1,44 @@
 import { Queue } from 'bullmq'
-import { redis } from './redis.js'
+import type { Redis } from 'ioredis'
+
+export const DOCUMENT_PROCESSING_QUEUE = 'document-processing'
+export const EMBEDDING_QUEUE = 'embedding'
 
 export interface DocumentJobData {
   documentId: string
-  type: 'parse' | 'reindex'
+  type: 'parse' | 'chunk' | 'embed'
 }
 
 export interface EmbeddingJobData {
   chunkIds: string[]
-  kbId: string
 }
 
-export const documentQueue = new Queue<DocumentJobData>('document-processing', {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
+export function createDocumentQueue(connection: Redis): Queue<DocumentJobData> {
+  return new Queue<DocumentJobData>(DOCUMENT_PROCESSING_QUEUE, {
+    connection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+      removeOnComplete: 100,
+      removeOnFail: 50,
     },
-    removeOnComplete: 100,
-    removeOnFail: 50,
-  },
-})
+  })
+}
 
-export const embeddingQueue = new Queue<EmbeddingJobData>('embedding-generation', {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
+export function createEmbeddingQueue(connection: Redis): Queue<EmbeddingJobData> {
+  return new Queue<EmbeddingJobData>(EMBEDDING_QUEUE, {
+    connection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+      removeOnComplete: 100,
+      removeOnFail: 50,
     },
-    removeOnComplete: 100,
-    removeOnFail: 50,
-  },
-})
-
-export type QueueName = 'document-processing' | 'embedding-generation'
+  })
+}

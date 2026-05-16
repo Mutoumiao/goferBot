@@ -1,16 +1,22 @@
 import { Redis } from 'ioredis'
+import type { Redis as RedisType } from 'ioredis'
 
-export const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: Number(process.env.REDIS_PORT) || 6379,
-  maxRetriesPerRequest: null, // BullMQ 要求必须设为 null
-})
+export function createRedisConnection(
+  host: string,
+  port: number,
+  password?: string,
+): RedisType {
+  const redis = new Redis({
+    host,
+    port,
+    password: password || undefined,
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  })
 
-export async function checkRedisConnection(): Promise<void> {
-  try {
-    await redis.ping()
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    throw new Error(`Redis connection failed: ${message}`)
-  }
+  redis.on('error', (err: Error) => {
+    console.error('Redis connection error:', err.message)
+  })
+
+  return redis
 }
