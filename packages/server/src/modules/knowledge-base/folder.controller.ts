@@ -16,7 +16,7 @@ import { KnowledgeBaseService } from './knowledge-base.service.js'
 import { CreateFolderDto, createFolderSchema } from './dto/create-folder.dto.js'
 import { UpdateFolderDto, updateFolderSchema } from './dto/update-folder.dto.js'
 
-@Controller('api/knowledge-bases/:kbId/folders')
+@Controller('knowledge-bases/:kbId/folders')
 @UseGuards(JwtAuthGuard)
 export class FolderController {
   constructor(private readonly kbService: KnowledgeBaseService) {}
