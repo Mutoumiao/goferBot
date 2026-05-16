@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiRequest, apiSubscribe } from '@/api/client'
+import { api } from '@/api/client'
 import { useSettingsStore } from './settings'
 import type { Message, Tab, LLMConfig, ChatErrorType } from '@/types'
+import type { ChatChunk } from '@/api/types'
 
 export const useSessionStore = defineStore('session', () => {
   // Tabs
@@ -75,8 +76,7 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function loadSession(sessionId: string) {
-    const res = await apiRequest('GET', `/sessions/${sessionId}`)
-    const data = (await res.json()) as { messages: Message[] }
+    const data = await api.get<{ messages: Message[] }>(`/sessions/${sessionId}`)
     messages.value.set(sessionId, data.messages ?? [])
   }
 
@@ -84,12 +84,7 @@ export const useSessionStore = defineStore('session', () => {
     historyLoading.value = true
     historyError.value = null
     try {
-      const res = await apiRequest('GET', '/sessions')
-      if (res.ok) {
-        historySessions.value = await res.json()
-      } else {
-        historyError.value = '加载历史记录失败'
-      }
+      historySessions.value = await api.get<Array<{ id: string; title: string; updated_at: number; summary: string; message_count: number }>>('/sessions')
     } catch {
       historyError.value = '加载历史记录失败'
     } finally {
@@ -104,15 +99,13 @@ export const useSessionStore = defineStore('session', () => {
       return
     }
 
-    const res = await apiRequest('GET', `/sessions/${sessionId}`)
-    if (!res.ok) return
-    const data = (await res.json()) as {
+    const data = await api.get<{
       id: string
       title: string
       provider: string | null
       model: string | null
       messages: Message[]
-    }
+    }>(`/sessions/${sessionId}`)
 
     messages.value.set(sessionId, data.messages ?? [])
 
@@ -142,7 +135,7 @@ export const useSessionStore = defineStore('session', () => {
       closeTab(tab.id)
     }
     messages.value.delete(sessionId)
-    await apiRequest('DELETE', `/sessions/${sessionId}`)
+    await api.delete(`/sessions/${sessionId}`)
     await loadHistory()
   }
 
@@ -150,7 +143,7 @@ export const useSessionStore = defineStore('session', () => {
     const trimmed = newTitle.trim()
     if (!trimmed) return
 
-    await apiRequest('POST', `/sessions/${sessionId}/rename`, { title: trimmed })
+    await api.post(`/sessions/${sessionId}/rename`, { title: trimmed })
 
     const tab = tabs.value.find((t) => t.sessionId === sessionId)
     if (tab) {
@@ -247,44 +240,45 @@ export const useSessionStore = defineStore('session', () => {
         subscribeBody.knowledgeBaseIds = knowledgeBaseIds
       }
 
-      const { completed } = apiSubscribe('/chat', subscribeBody, (data, eventType) => {
-        if (eventType === 'error') {
-          try {
-            const parsed = JSON.parse(data)
-            sendErrorType.value = parsed.type || 'unknown'
-            sendError.value = parsed.message || '请求失败'
-            const list = messages.value.get(sessionId!) ?? []
-            list.push({
-              id: `temp-error-${Date.now()}`,
-              session_id: sessionId!,
-              role: 'error',
-              content: parsed.message || '请求失败',
-              errorType: parsed.type || 'unknown',
-              created_at: Date.now(),
-            })
-            messages.value.set(sessionId!, list)
-          } catch {
-            // ignore parse error
-          }
-          return
-        }
+      const controller = new AbortController()
 
-        try {
-          const parsed = JSON.parse(data)
-          if (parsed.content) {
-            assistantContent += parsed.content
-            const list = messages.value.get(sessionId!) ?? []
-            const lastMsg = list[list.length - 1]
-            if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === assistantId) {
-              lastMsg.content = assistantContent
-            }
-          }
-        } catch {
-          // ignore parse error
-        }
+      await new Promise<void>((resolve, reject) => {
+        api.sse<ChatChunk>(
+          '/chat',
+          subscribeBody,
+          {
+            onChunk: (chunk) => {
+              if (chunk.chunk) {
+                assistantContent += chunk.chunk
+                const list = messages.value.get(sessionId!) ?? []
+                const lastMsg = list[list.length - 1]
+                if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === assistantId) {
+                  lastMsg.content = assistantContent
+                }
+              }
+            },
+            onError: (err) => {
+              sendErrorType.value = 'unknown'
+              sendError.value = err.message
+              const list = messages.value.get(sessionId!) ?? []
+              list.push({
+                id: `temp-error-${Date.now()}`,
+                session_id: sessionId!,
+                role: 'error',
+                content: err.message,
+                errorType: 'unknown',
+                created_at: Date.now(),
+              })
+              messages.value.set(sessionId!, list)
+              reject(err)
+            },
+            onDone: () => {
+              resolve()
+            },
+          },
+          { signal: controller.signal }
+        )
       })
-
-      await completed
     } catch (e) {
       sendError.value = e instanceof Error ? e.message : String(e)
       if (!sendErrorType.value) {
