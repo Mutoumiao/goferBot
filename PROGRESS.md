@@ -1,7 +1,7 @@
 # 项目进度追踪（Progress）
 
-> **更新日期**：2026-05-16
-> **当前阶段**：云原生架构重构（V2）— Phase 1 基础设施编码中
+> **更新日期**：2026-05-17
+> **当前阶段**：云原生架构重构（V2）— Phase 2-3 认证 + 知识库编码中
 
 ---
 
@@ -103,12 +103,12 @@
 |-------|------|------|------|------|------|
 | `i-09-nestjs-auth-system` | ✅ | ✅ | ✅ | ✅ | JWT + bcrypt + Passport，5 个端点 |
 | `i-14-jwt-api-client` | ✅ | ✅ | ✅ | ✅ | 前端 JWT 客户端 + Auth Store + 自动刷新 |
-| `f-01-auth-pages` | ⬜ | ✅ | ✅ | ⬜ | Spec/Plan 就绪，待开发 |
-| `f-02-route-guard` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
+| `f-01-auth-pages` | ✅ | ✅ | ✅ | ✅ | 登录/注册页 + 路由守卫 |
+| `f-02-route-guard` | ✅ | ✅ | ✅ | ✅ | 已随 f-01 完成 |
 
 ### Phase 3: 知识库与文件（P0）
 
-- [x] `b-02-knowledge-base-crud-api` — 知识库 CRUD（PostgreSQL）— Spec/Plan 就绪，待开发
+- [x] `b-02-knowledge-base-crud-api` — 知识库 CRUD（PostgreSQL）— 8 端点 + Zod DTO + 用户隔离
 - [ ] `f-03-sidebar-navigation` — 侧边栏导航（部分完成）
 - [ ] `f-05-knowledge-base-list` — 知识库列表页
 - [ ] `f-06-knowledge-base-file-manager` — 文件管理器
@@ -145,4 +145,4 @@
 
 ---
 
-*最后更新：2026-05-16（Phase 1 基础设施全部完成，Phase 2 认证系统后端完成）*
+*最后更新：2026-05-17（Phase 2 认证系统前后端完成，Phase 3 知识库 CRUD API 完成）*
