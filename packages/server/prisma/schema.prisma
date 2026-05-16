@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String?
+  avatar        String?
+  password      String
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  knowledgeBases KnowledgeBase[]
+  sessions       Session[]
+  settings       Setting[]
+
+  @@map("users")
+}
+
+model KnowledgeBase {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  name        String
+  description String?
+  isPinned    Boolean   @default(false) @map("is_pinned")
+  sortOrder   Int       @default(0) @map("sort_order")
+  icon        String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folders   Folder[]
+  documents Document[]
+  chunks    Chunk[]
+
+  @@map("knowledge_bases")
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  kbId      String   @map("kb_id")
+  parentId  String?  @map("parent_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
+  parent        Folder?       @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children      Folder[]      @relation("FolderTree")
+  documents     Document[]
+
+  @@map("folders")
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  kbId         String   @map("kb_id")
+  folderId     String?  @map("folder_id")
+  name         String
+  ext          String?
+  mimeType     String?  @map("mime_type")
+  size         BigInt?
+  storageKey   String   @map("storage_key")
+  hash         String?
+  status       String   @default("uploaded")
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
+  folder        Folder?       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  chunks        Chunk[]
+
+  @@map("documents")
+}
+
+model Chunk {
+  id         String   @id @default(uuid())
+  documentId String   @map("document_id")
+  kbId       String   @map("kb_id")
+  content    String
+  tokenCount Int?     @map("token_count")
+  chunkIndex Int      @map("chunk_index")
+  milvusId   String?  @map("milvus_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
+
+  @@map("chunks")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String   @default("新对话")
+  provider  String?
+  model     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("sessions")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  role      String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  key       String
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("settings")
+}
