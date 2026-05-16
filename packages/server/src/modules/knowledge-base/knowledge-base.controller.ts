@@ -15,7 +15,7 @@ import { KnowledgeBaseService } from './knowledge-base.service.js'
 import { CreateKbDto, createKbSchema } from './dto/create-kb.dto.js'
 import { UpdateKbDto, updateKbSchema } from './dto/update-kb.dto.js'
 
-@Controller('api/knowledge-bases')
+@Controller('knowledge-bases')
 @UseGuards(JwtAuthGuard)
 export class KnowledgeBaseController {
   constructor(private readonly kbService: KnowledgeBaseService) {}
