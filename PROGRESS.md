@@ -103,12 +103,12 @@
 |-------|------|------|------|------|------|
 | `i-09-nestjs-auth-system` | ✅ | ✅ | ✅ | ✅ | JWT + bcrypt + Passport，5 个端点 |
 | `i-14-jwt-api-client` | ✅ | ✅ | ✅ | ✅ | 前端 JWT 客户端 + Auth Store + 自动刷新 |
-| `f-01-auth-pages` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
+| `f-01-auth-pages` | ⬜ | ✅ | ✅ | ⬜ | Spec/Plan 就绪，待开发 |
 | `f-02-route-guard` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
 
 ### Phase 3: 知识库与文件（P0）
 
-- [ ] `b-02-knowledge-base-crud-api` — 知识库 CRUD（PostgreSQL）
+- [x] `b-02-knowledge-base-crud-api` — 知识库 CRUD（PostgreSQL）— Spec/Plan 就绪，待开发
 - [ ] `f-03-sidebar-navigation` — 侧边栏导航（部分完成）
 - [ ] `f-05-knowledge-base-list` — 知识库列表页
 - [ ] `f-06-knowledge-base-file-manager` — 文件管理器
