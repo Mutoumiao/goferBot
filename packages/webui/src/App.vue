@@ -1,33 +1,39 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import SideBar from './components/SideBar.vue'
+import AppSidebar from './components/layout/AppSidebar.vue'
 import { useSettingsStore } from './stores/settings'
 
 const route = useRoute()
 const router = useRouter()
 const settingsStore = useSettingsStore()
 
+const hideSidebar = computed(() => {
+  return route.meta.hideSidebar === true
+})
+
 onMounted(async () => {
   settingsStore.loadConfig()
 })
 
-function navigateTo(name: string) {
+function handleNavigate(name: string) {
   router.push({ name })
 }
 </script>
 
 <template>
   <div class="flex h-screen bg-surface-1 text-text-primary">
-    <SideBar
+    <AppSidebar
+      v-if="!hideSidebar"
       :active-type="(route.name as string) ?? 'chat'"
-      @open-chat="navigateTo('chat')"
-      @open-knowledge-base="navigateTo('knowledgeBase')"
-      @open-history="navigateTo('history')"
-      @open-settings="navigateTo('settings')"
-      @open-recycle-bin="navigateTo('recycleBin')"
+      @navigate="handleNavigate"
     />
-    <main class="flex-1 overflow-hidden">
+    <main
+      :class="[
+        'flex-1 overflow-hidden',
+        !hideSidebar ? 'pb-12 md:pb-0' : '',
+      ]"
+    >
       <RouterView />
     </main>
   </div>
