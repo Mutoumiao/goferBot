@@ -1,7 +1,7 @@
 # 项目进度追踪（Progress）
 
 > **更新日期**：2026-05-16
-> **当前阶段**：云原生架构重构（V2）— 架构改革执行中
+> **当前阶段**：云原生架构重构（V2）— Phase 1 基础设施编码中
 
 ---
 
@@ -69,25 +69,29 @@
 - [x] Adapter 包移除
 - [x] vue-router 引入
 - [x] Server 去 Sidecar 化
-- [x] V1 代码清理（q-03 待执行）
+- [x] V1 代码清理（q-03 已完成）
 
-### Phase 1: 基础设施（P0）
+### Phase 1: 基础设施（P0）— 进行中
 
-- [ ] `i-00-core-interfaces` — 核心接口抽象层（IRepository / IStorageProvider / IVectorStore / IAuthProvider）
-- [ ] `i-01-docker-compose-infra` — Docker Compose 配置（PG + MinIO + Milvus + Redis）
-- [ ] `i-02-drizzle-orm-setup` — Drizzle ORM 配置 + 数据库迁移
-- [ ] `i-03-minio-client` — MinIO Client 封装
-- [ ] `i-04-milvus-client` — Milvus Client 封装
-- [ ] `i-05-redis-bullmq-setup` — Redis + BullMQ 配置
-- [ ] `i-07-api-client` — 前端 API 客户端标准化
-- [ ] `q-03-v1-cleanup` — V1 废弃代码清理
+| Issue | 状态 | Spec | Plan | 代码 | 说明 |
+|-------|------|------|------|------|------|
+| `i-00-core-interfaces` | ✅ | ✅ | ✅ | ✅ | 7 个接口文件，type-check 通过 |
+| `i-01-docker-compose-infra` | ✅ | ✅ | ✅ | ✅ | docker-compose.dev.yml、.env.example、infra 脚本 |
+| `q-03-v1-cleanup` | ✅ | ✅ | ✅ | ✅ | V1 代码清理，依赖移除，路由 501 |
+| `i-02-drizzle-orm-setup` | ✅ | ✅ | ⬜ | ⬜ | Spec 完成，待生成 Plan |
+| `i-07-api-client` | ✅ | ✅ | ⬜ | ⬜ | Spec 完成，待生成 Plan |
+| `i-03-minio-client` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
+| `i-04-milvus-client` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
+| `i-05-redis-bullmq-setup` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
 
 ### Phase 2: 认证系统（P0）
 
-- [ ] `b-01-auth-api` — Better Auth 集成
-- [ ] `f-01-auth-pages` — 前端登录/注册页面
-- [ ] `f-02-route-guard` — 路由守卫（未登录跳转）
-- [ ] `q-01-security-baseline` — 安全基线（CORS、速率限制、SSRF、输入校验）
+| Issue | 状态 | Spec | Plan | 代码 | 说明 |
+|-------|------|------|------|------|------|
+| `b-01-auth-api` | ✅ | ✅ | ⬜ | ⬜ | Spec 完成，待生成 Plan |
+| `f-01-auth-pages` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
+| `f-02-route-guard` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
+| `q-01-security-baseline` | ⬜ | ⬜ | ⬜ | ⬜ | 待生成 Spec |
 
 ### Phase 3: 知识库与文件（P0）
 
@@ -128,4 +132,4 @@
 
 ---
 
-*最后更新：2026-05-16（架构改革执行完成）*
+*最后更新：2026-05-16（Phase 1 基础设施编码中）*
