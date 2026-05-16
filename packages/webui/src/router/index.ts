@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import ChatPage from '@/components/ChatPage.vue'
 
 const router = createRouter({
@@ -47,6 +48,23 @@ const router = createRouter({
       meta: { hideSidebar: true, requiresAuth: false },
     },
   ],
+})
+
+router.beforeEach((to, _from, next) => {
+  const authStore = useAuthStore()
+  const isAuthenticated = authStore.isAuthenticated
+
+  if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
+    next('/')
+    return
+  }
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login')
+    return
+  }
+
+  next()
 })
 
 export default router
