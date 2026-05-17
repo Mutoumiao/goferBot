@@ -21,13 +21,13 @@ export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 
   @Get()
-  async list(@CurrentUser('id' as never) userId: string) {
+  async list(@CurrentUser('id') userId: string) {
     return this.sessionService.list(userId)
   }
 
   @Get(':id')
   async findOne(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
   ) {
     return this.sessionService.findOne(userId, id)
@@ -35,24 +35,24 @@ export class SessionController {
 
   @Post()
   async create(
-    @CurrentUser('id' as never) userId: string,
-    @Body(new ZodValidationPipe(createSessionSchema)) dto: CreateSessionDto,
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateSessionDto,
   ) {
     return this.sessionService.create(userId, dto)
   }
 
   @Patch(':id')
   async update(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(updateSessionSchema)) dto: UpdateSessionDto,
+    @Body() dto: UpdateSessionDto,
   ) {
     return this.sessionService.update(userId, id, dto)
   }
 
   @Delete(':id')
   async remove(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
   ) {
     return this.sessionService.remove(userId, id)

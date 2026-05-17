@@ -214,7 +214,7 @@ onBeforeRouteLeave((_to, _from, next) => {
               <label class="mb-1 block text-sm text-text-secondary">API Key</label>
               <div class="relative">
                 <Input
-                  v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].apiKey"
+                  v-model="localConfig.providers[activeLlmTab].apiKey"
                   :type="showPassword[activeLlmTab] ? 'text' : 'password'"
                   class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
                   placeholder="输入 API Key"
@@ -247,7 +247,7 @@ onBeforeRouteLeave((_to, _from, next) => {
             <div v-if="activeLlmTab !== 'ollama'">
               <label class="mb-1 block text-sm text-text-secondary">Base URL（可选）</label>
               <Input
-                v-model="localConfig.providers[activeLlmTab as 'openai' | 'claude' | 'deepseek' | 'custom'].baseUrl"
+                v-model="localConfig.providers[activeLlmTab].baseUrl"
                 type="text"
                 class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
                 placeholder="留空使用默认地址"

@@ -7,9 +7,32 @@ const ALLOWED_HOSTNAMES = [
   'api.anthropic.com',
 ]
 
+const BLOCKED_HOSTNAMES = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '[::]']
+const BLOCKED_IP_PREFIXES = ['10.', '172.', '192.168.', '169.254.', '127.', '0.', 'fc', 'fd', 'fe80:']
+
 function isAllowedHostname(url: string): boolean {
   try {
-    const hostname = new URL(url).hostname
+    const parsed = new URL(url)
+    const hostname = parsed.hostname.toLowerCase()
+
+    // 强制 https 协议（生产环境）
+    if (parsed.protocol !== 'https:') {
+      return false
+    }
+
+    // 拒绝本地地址
+    if (BLOCKED_HOSTNAMES.includes(hostname)) {
+      return false
+    }
+
+    // 拒绝内网 IP 前缀
+    for (const prefix of BLOCKED_IP_PREFIXES) {
+      if (hostname.startsWith(prefix)) {
+        return false
+      }
+    }
+
+    // 白名单校验
     return ALLOWED_HOSTNAMES.includes(hostname)
   } catch {
     return false

@@ -45,7 +45,7 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       const payload = this.jwtService.verify<JwtRefreshPayload>(refreshToken, {
-        secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
       })
 
       if (payload.type !== 'refresh') {

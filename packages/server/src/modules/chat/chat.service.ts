@@ -24,18 +24,19 @@ export class ChatService {
 
     await this.ensureSessionOwnership(userId, sessionId)
 
-    await this.prisma.message.create({
-      data: {
-        sessionId,
-        role: 'user',
-        content: message,
-      },
-    })
-
-    await this.prisma.session.update({
-      where: { id: sessionId },
-      data: { updatedAt: new Date() },
-    })
+    await this.prisma.$transaction([
+      this.prisma.message.create({
+        data: {
+          sessionId,
+          role: 'user',
+          content: message,
+        },
+      }),
+      this.prisma.session.update({
+        where: { id: sessionId },
+        data: { updatedAt: new Date() },
+      }),
+    ])
 
     // 加载历史消息用于多轮对话上下文
     const historyMessages = await this.prisma.message.findMany({
@@ -143,18 +144,19 @@ export class ChatService {
       clearTimeout(timeout)
     }
 
-    await this.prisma.message.create({
-      data: {
-        sessionId,
-        role: 'assistant',
-        content: fullReply,
-      },
-    })
-
-    await this.prisma.session.update({
-      where: { id: sessionId },
-      data: { updatedAt: new Date() },
-    })
+    await this.prisma.$transaction([
+      this.prisma.message.create({
+        data: {
+          sessionId,
+          role: 'assistant',
+          content: fullReply,
+        },
+      }),
+      this.prisma.session.update({
+        where: { id: sessionId },
+        data: { updatedAt: new Date() },
+      }),
+    ])
 
     yield { chunk: '', done: true }
   }

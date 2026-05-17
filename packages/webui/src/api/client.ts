@@ -269,7 +269,12 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
     }
   }
 
+  let refreshFailed = false
+
   async function doRefresh(): Promise<JwtTokens | null> {
+    if (refreshFailed) {
+      return null
+    }
     if (isRefreshing) {
       return refreshPromise!
     }
@@ -296,6 +301,7 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
         return tokens as JwtTokens
       })
       .catch((e) => {
+        refreshFailed = true
         localStorage.removeItem('goferbot_access_token')
         localStorage.removeItem('goferbot_refresh_token')
         if (client.onUnauthorized) {

@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/api/client'
-import { useChatTabsStore } from './chatTabs'
-import { useSettingsStore } from './settings'
+import type { LLMConfig } from '@/types'
 
 export interface Session {
   id: string
@@ -122,7 +121,11 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
-  async function sendMessage(content: string, knowledgeBaseIds: string[] = []) {
+  async function sendMessage(
+    content: string,
+    knowledgeBaseIds: string[] = [],
+    options?: { llmConfig?: LLMConfig | null; onNewSession?: (sessionId: string, title: string) => void }
+  ) {
     error.value = null
     isLoading.value = true
 
@@ -137,14 +140,13 @@ export const useSessionStore = defineStore('session', () => {
       }
 
       const userMsg: Message = {
-        id: `msg-user-${Date.now()}`,
+        id: `msg-user-${crypto.randomUUID()}`,
         role: 'user',
         content,
         createdAt: new Date().toISOString(),
       }
 
-      const list = messages.value.get(sessionId!) ?? []
-      list.push(userMsg)
+      const list = [...(messages.value.get(sessionId!) ?? []), userMsg]
       messages.value.set(sessionId!, list)
 
       if (isNew) {
@@ -153,23 +155,21 @@ export const useSessionStore = defineStore('session', () => {
         if (idx !== -1) {
           sessions.value[idx].title = summary
         }
-        const chatTabsStore = useChatTabsStore()
-        chatTabsStore.updateHomeTabSession(sessionId!, summary)
+        options?.onNewSession?.(sessionId!, summary)
       }
 
       const assistantMsg: Message = {
-        id: `msg-assistant-${Date.now()}`,
+        id: `msg-assistant-${crypto.randomUUID()}`,
         role: 'assistant',
         content: '',
         createdAt: new Date().toISOString(),
       }
-      list.push(assistantMsg)
-      messages.value.set(sessionId!, [...list])
+      const listWithAssistant = [...list, assistantMsg]
+      messages.value.set(sessionId!, listWithAssistant)
 
       isStreaming.value = true
 
-      const settingsStore = useSettingsStore()
-      const llmConfig = settingsStore.getLLMConfig()
+      const llmConfig = options?.llmConfig
       if (!llmConfig) {
         error.value = '未配置 LLM 提供商，请前往设置页配置'
         isLoading.value = false
@@ -187,7 +187,7 @@ export const useSessionStore = defineStore('session', () => {
         {
           onChunk: (chunk: { chunk: string; done: boolean }) => {
             assistantMsg.content += chunk.chunk
-            messages.value.set(sessionId!, [...list])
+            messages.value.set(sessionId!, [...listWithAssistant])
           },
           onError: (err) => {
             error.value = err.message

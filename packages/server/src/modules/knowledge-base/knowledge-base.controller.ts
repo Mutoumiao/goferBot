@@ -21,30 +21,30 @@ export class KnowledgeBaseController {
   constructor(private readonly kbService: KnowledgeBaseService) {}
 
   @Get()
-  async list(@CurrentUser('id' as never) userId: string) {
+  async list(@CurrentUser('id') userId: string) {
     return this.kbService.list(userId)
   }
 
   @Post()
   async create(
-    @CurrentUser('id' as never) userId: string,
-    @Body(new ZodValidationPipe(createKbSchema)) dto: CreateKbDto,
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateKbDto,
   ) {
     return this.kbService.create(userId, dto)
   }
 
   @Patch(':id')
   async update(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(updateKbSchema)) dto: UpdateKbDto,
+    @Body() dto: UpdateKbDto,
   ) {
     return this.kbService.update(userId, id, dto)
   }
 
   @Delete(':id')
   async remove(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
   ) {
     return this.kbService.remove(userId, id)

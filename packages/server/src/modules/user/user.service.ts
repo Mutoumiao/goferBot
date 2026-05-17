@@ -1,5 +1,5 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common'
-import { hashSync, compareSync } from 'bcrypt'
+import { hash, compare } from 'bcrypt'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 
 @Injectable()
@@ -38,7 +38,7 @@ export class UserService {
     return this.prisma.user.create({
       data: {
         email,
-        password: hashSync(password, 12),
+        password: await hash(password, 12),
         name: name || null,
       },
       select: {
@@ -64,7 +64,7 @@ export class UserService {
       })
     }
 
-    const isValid = compareSync(password, user.password)
+    const isValid = await compare(password, user.password)
     if (!isValid) {
       throw new NotFoundException({
         code: 'AUTH_FAIL',

@@ -3,6 +3,7 @@ import { computed, watch, ref, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/session'
 import { useChatTabsStore } from '@/stores/chatTabs'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
+import { useSettingsStore } from '@/stores/settings'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { SendIcon, LoaderIcon, AlertCircleIcon, XIcon } from 'lucide-vue-next'
@@ -14,11 +15,18 @@ import ChatInput from '@/components/ChatInput.vue'
 const sessionStore = useSessionStore()
 const chatTabsStore = useChatTabsStore()
 const kbStore = useKnowledgeBaseStore()
+const settingsStore = useSettingsStore()
 
 const isEmpty = computed(() => !sessionStore.activeSessionId && sessionStore.activeMessages.length === 0)
 
 function handleSend(content: string, knowledgeBaseIds: string[]) {
-  sessionStore.sendMessage(content, knowledgeBaseIds)
+  const llmConfig = settingsStore.getLLMConfig()
+  sessionStore.sendMessage(content, knowledgeBaseIds, {
+    llmConfig,
+    onNewSession(sessionId, title) {
+      chatTabsStore.updateHomeTabSession(sessionId, title)
+    },
+  })
 }
 
 onMounted(() => {

@@ -22,8 +22,8 @@ export class ChatController {
   @Post()
   @BypassResponse()
   async chat(
-    @CurrentUser('id' as never) userId: string,
-    @Body(new ZodValidationPipe(chatSchema)) dto: ChatDto,
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChatDto,
     @Res() reply: FastifyReply,
   ) {
     reply.raw.statusCode = HttpStatus.OK

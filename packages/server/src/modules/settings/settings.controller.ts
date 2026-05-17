@@ -11,14 +11,14 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get()
-  async getSettings(@CurrentUser('id' as never) userId: string) {
+  async getSettings(@CurrentUser('id') userId: string) {
     return this.settingsService.getSettings(userId)
   }
 
   @Post()
   async saveSettings(
-    @CurrentUser('id' as never) userId: string,
-    @Body(new ZodValidationPipe(settingsSchema)) dto: SettingsDto,
+    @CurrentUser('id') userId: string,
+    @Body() dto: SettingsDto,
   ) {
     return this.settingsService.saveSettings(userId, dto)
   }

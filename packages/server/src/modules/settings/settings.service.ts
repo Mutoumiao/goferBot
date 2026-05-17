@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { SettingsDto } from './dto/settings.dto.js'
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto'
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 
 const CONFIG_KEY = 'app_config'
 
@@ -36,12 +36,8 @@ export class SettingsService {
   ) {}
 
   private getEncryptionKey(): Buffer {
-    const envKey = this.configService.get<string>('SETTINGS_ENCRYPTION_KEY')
-    if (envKey) {
-      return Buffer.from(envKey, 'base64')
-    }
-    const jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET')
-    return scryptSync(jwtSecret, 'goferbot-salt', 32)
+    const envKey = this.configService.getOrThrow<string>('SETTINGS_ENCRYPTION_KEY')
+    return Buffer.from(envKey, 'base64')
   }
 
   private encrypt(text: string): string {

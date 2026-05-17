@@ -23,7 +23,7 @@ export class FolderController {
 
   @Get()
   async list(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('kbId') kbId: string,
     @Query('parentId') parentId?: string,
   ) {
@@ -32,26 +32,26 @@ export class FolderController {
 
   @Post()
   async create(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('kbId') kbId: string,
-    @Body(new ZodValidationPipe(createFolderSchema)) dto: CreateFolderDto,
+    @Body() dto: CreateFolderDto,
   ) {
     return this.kbService.createFolder(userId, kbId, dto)
   }
 
   @Patch(':folderId')
   async update(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('kbId') kbId: string,
     @Param('folderId') folderId: string,
-    @Body(new ZodValidationPipe(updateFolderSchema)) dto: UpdateFolderDto,
+    @Body() dto: UpdateFolderDto,
   ) {
     return this.kbService.updateFolder(userId, kbId, folderId, dto)
   }
 
   @Delete(':folderId')
   async remove(
-    @CurrentUser('id' as never) userId: string,
+    @CurrentUser('id') userId: string,
     @Param('kbId') kbId: string,
     @Param('folderId') folderId: string,
   ) {
