@@ -1,4 +1,4 @@
-状态: ready-for-agent
+状态: closed
 分类: enhancement
 
 ## 要构建的内容

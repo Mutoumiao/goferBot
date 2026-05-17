@@ -124,9 +124,9 @@
 | `f-09-chat-page` | ✅ | ✅ | ✅ | ✅ | 问答对话页 + 消息列表 + 输入框 |
 | `b-04-chat-sse-api` | ✅ | ✅ | ✅ | ✅ | SSE 流式对话，OpenAI 兼容格式 |
 | `b-05-settings-api` | ✅ | ✅ | ✅ | ✅ | 设置 API，AES-256-GCM 加密存储 |
-| `f-04-tab-bar` | ✅ | ✅ | ✅ | ⬜ | Chat 页面内标签栏 |
+| `f-04-tab-bar` | ✅ | ✅ | ✅ | ✅ | Chat 页面内标签栏 |
 | `f-10-message-renderer` | ✅ | ✅ | ✅ | ✅ | Markdown 渲染 + 代码高亮 + 复制 |
-| `f-11-kb-selector` | ✅ | ✅ | ✅ | ⬜ | 多知识库选择 |
+| `f-11-kb-selector` | ✅ | ✅ | ✅ | ✅ | 多知识库选择 |
 | `f-12-chat-history` | ✅ | ✅ | ✅ | ✅ | 搜索/重命名/删除/恢复会话 |
 | `f-13-settings-page` | ✅ | ✅ | ✅ | ✅ | 设置页（LLM/Embedding/通用配置） |
 
@@ -148,4 +148,4 @@
 
 ---
 
-*最后更新：2026-05-17（b-05 设置 API、f-13 设置页、f-04 标签栏 spec/plan、 f-11 知识库选择器 spec/plan 已完成）*
+*最后更新：2026-05-17（f-04 标签栏、f-11 知识库选择器 已完成）*
