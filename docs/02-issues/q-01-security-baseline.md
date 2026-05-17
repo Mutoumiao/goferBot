@@ -1,7 +1,7 @@
 ---
 id: q-01-security-baseline
 type: issue
-status: needs-triage
+status: closed
 track: quality
 priority: p1
 summary: 为所有 API 建立安全基线：CORS 硬化、速率限制、输入校验、SSRF 防护。安全基线就位，所有 API 端点受速率限制和输入校验保护。

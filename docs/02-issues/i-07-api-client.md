@@ -1,11 +1,11 @@
 ---
 id: i-07-api-client
 type: issue
-status: needs-triage
+status: closed
 track: infra
 priority: p1
 summary: 将当前临时实现的 API 客户端升级为标准化、类型安全的 API 客户端，统一前后端通信契约。提供类型安全、统一错误处理、SSE 支持。
-blocked_by: [b-01-auth-api, b-04-chat-sse-api]
+blocked_by: [i-09-nestjs-auth-system, b-04-chat-sse-api]
 blocks: []
 spec: docs/03-specs/i-07-api-client/
 plan: docs/04-plans/i-07-api-client/v1.md
