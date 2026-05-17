@@ -52,6 +52,8 @@ export class ChatController {
       reply.raw.write(
         `data: ${JSON.stringify({ error: message, done: true })}\n\n`,
       )
+      reply.raw.end()
+      return
     } finally {
       reply.raw.removeListener('close', onClose)
       reply.raw.end()

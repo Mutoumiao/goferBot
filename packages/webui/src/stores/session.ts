@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/api/client'
 import { useChatTabsStore } from './chatTabs'
+import { useSettingsStore } from './settings'
 
 export interface Session {
   id: string
@@ -167,18 +168,21 @@ export const useSessionStore = defineStore('session', () => {
 
       isStreaming.value = true
 
+      const settingsStore = useSettingsStore()
+      const llmConfig = settingsStore.getLLMConfig()
+      if (!llmConfig) {
+        error.value = '未配置 LLM 提供商，请前往设置页配置'
+        isLoading.value = false
+        return
+      }
+
       api.sse(
         '/chat',
         {
           message: content,
           sessionId,
           knowledgeBaseIds,
-          config: {
-            provider: 'deepseek',
-            model: 'deepseek-chat',
-            baseUrl: 'https://api.deepseek.com',
-            apiKey: '',
-          },
+          config: llmConfig,
         },
         {
           onChunk: (chunk: { chunk: string; done: boolean }) => {

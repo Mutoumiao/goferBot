@@ -121,6 +121,6 @@ needs-triage → triaged → in-progress → in-review → closed
 - `needs-triage`: 刚创建，待分类
 - `triaged`: 已分配轨道和优先级
 - `in-progress`: 正在实现
-- `in-review`: 代码/设计审查中
+- `in-review`: 代码/spec 对齐审查中（使用 `/kb-review`）
 - `blocked`: 被其他 Issue 阻塞
-- `closed`: 已完成并验证
+- `closed`: 已完成并验证（通过 `/kb-review` 验收）

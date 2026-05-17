@@ -101,14 +101,14 @@
 **使用 skill**：`/dev-orchestrator`
 
 **前端 Agent**：
-- 读行为规格 → 生成计划 → 编码 → `/design-review`
+- 读行为规格 → 生成计划 → 编码 → `/kb-review`
 - 若后端 API 未完成，先用 Mock 数据，标记 `TODO: 联调`
-- 编码前可用 gstack `/plan-design-review` 审查设计
-- 编码后可用 gstack `/design-review` 做视觉审计
+- 编码后可用 `/kb-review` 做代码审查与 spec 对齐
+- 页面可访问后可用 `/gstack-design-review` 做视觉审计
 
 **后端 Agent**：
-- 读 API 规格 → 生成计划 → 编码 → `/review`
-- 编码后可用 gstack `/review` 做代码审查
+- 读 API 规格 → 生成计划 → 编码 → `/kb-review`
+- 编码后可用 `/kb-review` 做代码审查与安全检查
 
 **测试**：
 - 使用 gstack `/tdd` 遵循 red-green-refactor 循环
@@ -117,16 +117,21 @@
 
 ---
 
-## 阶段 5: 联调整合
+## 阶段 5: 联调整合与审查
 
 **输入**：前后端代码  
 **输出**：通过端到端测试的完整功能
 
+**使用 skill**：`/kb-review`
+
 **操作**：
 1. 前端移除 Mock，对接真实 API
 2. 运行端到端测试（Playwright）
-3. 验证交互状态是否按 behavior-spec 实现
-4. 验证 API 是否按 api-spec 返回正确错误码
+3. 使用 `/kb-review` 执行 Spec 对齐审查：
+   - 验证交互状态是否按 behavior-spec 实现
+   - 验证 API 是否按 api-spec 返回正确错误码
+   - 验证安全基线是否满足
+4. 审查记录归档到 `docs/07-reviews/`
 
 **问题处理**：
 - 前端问题 → 回到阶段 4 修复 f-XX
@@ -140,13 +145,17 @@
 **输入**：已验证的代码  
 **输出**：关闭的 issue + 更新的进度
 
-**使用 skill**：`/issue-lifecycle`
+**使用 skill**：`/issue-lifecycle` + `/kb-review`
 
 **操作**：
-1. 更新 issue 状态为 `closed`
-2. 勾选验收标准 `[x]`
-3. 更新 `PROGRESS.md` 进度
-4. 可选：归档到 `docs/99-archived/`
+1. 使用 `/kb-review` 执行关闭前验收：
+   - 确认所有 Critical/Major 问题已修复
+   - 确认测试通过、类型检查通过
+   - 确认审查记录已归档到 `docs/07-reviews/`
+2. 更新 issue 状态为 `closed`
+3. 勾选验收标准 `[x]`
+4. 更新 `PROGRESS.md` 进度
+5. 可选：归档到 `docs/99-archived/`
 
 **然后**：回到阶段 1，启动下一批功能。
 
@@ -181,6 +190,9 @@
 | plan 里写 "TODO" | 工程师不知道怎么做 | 每个步骤给具体代码和命令 |
 | 前后端不联调直接关闭 | 接口不匹配 | 必须联调验证后再关闭 |
 | 发现 spec 错了硬改代码 | 代码和文档脱节 | 回溯更新 spec，再改代码 |
+| 审查后不保存记录 | 重复犯同样错误 | 必须归档到 `docs/07-reviews/` |
+| 安全问题不分级 | 阻塞与非阻塞问题混淆 | 使用 `/kb-review` 四级分类 |
+| 混淆设计审查与代码审查 | 视觉问题被代码审查遗漏 | 视觉审计用 `/gstack-design-review`，代码审查用 `/kb-review` |
 
 ---
 

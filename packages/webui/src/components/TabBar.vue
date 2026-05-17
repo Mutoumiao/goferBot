@@ -35,10 +35,12 @@ function confirmRename(tabId: string) {
     emit('rename', tabId, trimmed)
   }
   editingTabId.value = null
+  editingTitle.value = ''
 }
 
 function cancelRename() {
   editingTabId.value = null
+  editingTitle.value = ''
 }
 
 function handleKeydown(e: KeyboardEvent, tabId: string) {

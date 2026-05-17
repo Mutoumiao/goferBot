@@ -12,11 +12,18 @@ const props = defineProps<{
 const containerRef = ref<HTMLDivElement>()
 const shouldAutoScroll = ref(true)
 
+let scrollTicking = false
 function handleScroll() {
-  const el = containerRef.value
-  if (!el) return
-  const threshold = 50
-  shouldAutoScroll.value = el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+  if (scrollTicking) return
+  scrollTicking = true
+  requestAnimationFrame(() => {
+    const el = containerRef.value
+    if (el) {
+      const threshold = 50
+      shouldAutoScroll.value = el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+    }
+    scrollTicking = false
+  })
 }
 
 watch(

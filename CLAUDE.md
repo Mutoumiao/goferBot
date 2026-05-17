@@ -89,6 +89,7 @@ pnpm -r build         # 构建所有包
 | `/spec-validator` | 写 behavior/api spec |
 | `/plan-generator` | 生成执行计划 |
 | `/dev-orchestrator` | 开发前检查 + 引导编码 |
+| `/kb-review` | 代码审查 / spec 对齐 / 安全审查 / 验收 |
 | `/issue-lifecycle` | 关闭 issue + 同步进度 |
 
 ## Skill routing
@@ -101,16 +102,17 @@ pnpm -r build         # 构建所有包
 - 审查 spec/写 behavior spec/写 API spec → `/spec-validator`
 - 写计划/生成实现方案 → `/plan-generator`
 - 开始开发 issue/开发 f-XX/b-XX → `/dev-orchestrator`
+- 代码审查 / spec 对齐 / 安全审查 / 验收 → `/kb-review`
 - 更新 issue 状态/标记完成 → `/issue-lifecycle`
 
 ### 质量保障（gstack）
-- 代码审查/diff 检查 → `/gstack-review`
-- 安全审计/漏洞检查/OWASP → `/gstack-cso`
+- 代码审查 / diff 检查 / spec 对齐 / 关闭前验收 → `/kb-review`
+- 安全审计/漏洞检查/OWASP → `/kb-review`
 - Bug/错误/异常行为/为什么不工作 → `/gstack-investigate`
 
 ### 设计审查（gstack）
-- 架构方案审查 → `/gstack-plan-eng-review`
-- UI 视觉问题/设计审计 → `/gstack-design-review`
+- 架构方案审查 → `/kb-review`（方案合理性）或 `/gstack-plan-eng-review`（架构深度）
+- UI 视觉问题/设计审计 → `/gstack-design-review`（截图分析 + 自动修复）
 
 ### 发布（gstack）
 - 发布/PR/部署 → `/gstack-ship`
