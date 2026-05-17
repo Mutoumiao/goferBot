@@ -82,9 +82,25 @@ export const useFileStore = defineStore('file', () => {
     documents.value = documents.value.filter((d) => d.id !== docId)
   }
 
+  async function createFolder(kbId: string, name: string, parentId?: string | null) {
+    return api.post<Folder>(`/knowledge-bases/${kbId}/folders`, {
+      name,
+      parentId: parentId ?? null,
+    })
+  }
+
+  async function renameFolder(kbId: string, folderId: string, name: string) {
+    return api.patch<Folder>(`/knowledge-bases/${kbId}/folders/${folderId}`, { name })
+  }
+
+  async function deleteFolder(kbId: string, folderId: string) {
+    await api.delete(`/knowledge-bases/${kbId}/folders/${folderId}`)
+  }
+
   return {
     folders, documents, isLoading, error,
     currentKbId, currentFolderId, breadcrumb,
     loadItems, deleteDocument, renameDocument, moveDocument,
+    createFolder, renameFolder, deleteFolder,
   }
 })
