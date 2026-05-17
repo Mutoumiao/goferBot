@@ -9,15 +9,17 @@
 ## 审查摘要
 
 - **总体结论**：有条件通过 — Critical、Major、Minor 问题已修复，剩余 Info 待后续迭代
-- **问题统计**：Critical 7 (已修复 7) | Major 13 (已修复 13) | Minor 17 (已修复 17) | Info 10 (未修复)
+- **问题统计**：Critical 7 (已修复 7) | Major 13 (已修复 13) | Minor 17 (已修复 17) | Info 10 (已修复 8, 未修复 2)
 
 | 维度 | Critical | Major | Minor | Info |
 |------|----------|-------|-------|------|
-| 后端 | 4 (已修复 4) | 7 (已修复 7) | 9 | 5 |
-| 前端 | 3 (已修复 3) | 6 (已修复 6) | 8 | 5 |
+| 后端 | 4 (已修复 4) | 7 (已修复 7) | 9 (已修复 9) | 5 (已修复 3) |
+| 前端 | 3 (已修复 3) | 6 (已修复 6) | 8 (已修复 8) | 5 (已修复 5) |
 | Spec 对齐 | - | - | - | - |
 
-**修复提交**：`dd0323b fix(review): 修复 Critical 和 Major 级别问题`
+**修复提交**：
+- `dd0323b` fix(review): 修复 Critical 和 Major 级别问题
+- `f06b708` fix(review): 修复 Info 级别审查问题
 
 ---
 
@@ -153,25 +155,25 @@
 ## 🟡 Minor（轻微，可选修复）
 
 ### 后端
-1. **密码最大长度 100 未做熵检查** — 建议增加基础强度校验
-2. **登录密码最小长度为 1** — 与注册 min(6) 不一致
-3. **AuthController.refresh 未对 refreshToken 做非空校验** — 建议增加 RefreshDto
-4. **JwtAuthGuard.handleRequest 返回 any** — 建议定义 RequestUser 接口
-5. **SessionService.list 中 _count 类型未声明** — 显式声明返回类型
-6. **VectorService 配置项缺少 getOrThrow** — 必填项应使用 getOrThrow
-7. **QueueService 构造函数中同步创建 Redis 连接** — 建议延迟到 onModuleInit
-8. **settingsSchema 中 apiKey 允许空字符串** — 改为 min(1) 或 optional
-9. **AllExceptionsFilter 非生产环境暴露 stack** — 增加更细粒度环境判断
+1. ~~密码最大长度 100 未做熵检查~~ — 建议增加基础强度校验
+2. ~~登录密码最小长度为 1~~ — 与注册 min(6) 不一致
+3. ~~AuthController.refresh 未对 refreshToken 做非空校验~~ — 建议增加 RefreshDto
+4. ~~JwtAuthGuard.handleRequest 返回 any~~ — 建议定义 RequestUser 接口
+5. ~~SessionService.list 中 _count 类型未声明~~ — 显式声明返回类型
+6. ~~VectorService 配置项缺少 getOrThrow~~ — 必填项应使用 getOrThrow
+7. ~~QueueService 构造函数中同步创建 Redis 连接~~ — 建议延迟到 onModuleInit
+8. ~~settingsSchema 中 apiKey 允许空字符串~~ — 改为 min(1) 或 optional
+9. ~~AllExceptionsFilter 非生产环境暴露 stack~~ — 增加更细粒度环境判断
 
 ### 前端
-1. **cn() 工具未在组件中使用** — 复杂 class 条件改用 cn()
-2. **displayInput 计算属性无意义** — 可直接使用 input.value
-3. **ChatMessageList 双 watch 可合并** — 减少 watcher 数量
-4. **SettingsPage 中 localConfig 深拷贝性能开销** — 使用 structuredClone
-5. **LoginView/RegisterView 错误类型断言不一致** — 封装统一类型守卫
-6. **HistoryPage 全局 click 事件未过滤目标** — 改用 onClickOutside
-7. **KnowledgeBasePage 日期格式化无统一工具** — 抽取 useDateFormat
-8. **TabBar 重命名 blur 与 Enter 可能重复提交** — 增加早退保护
+1. ~~cn() 工具未在组件中使用~~ — 复杂 class 条件改用 cn()
+2. ~~displayInput 计算属性无意义~~ — 可直接使用 input.value
+3. ~~ChatMessageList 双 watch 可合并~~ — 减少 watcher 数量
+4. ~~SettingsPage 中 localConfig 深拷贝性能开销~~ — 使用 structuredClone
+5. ~~LoginView/RegisterView 错误类型断言不一致~~ — 封装统一类型守卫
+6. ~~HistoryPage 全局 click 事件未过滤目标~~ — 改用 onClickOutside
+7. ~~KnowledgeBasePage 日期格式化无统一工具~~ — 抽取 useDateFormat
+8. ~~TabBar 重命名 blur 与 Enter 可能重复提交~~ — 增加早退保护
 
 ---
 
@@ -180,16 +182,16 @@
 ### 后端
 1. logout 为无状态实现 — 后续需引入 Redis 黑名单
 2. chat.service.ts 中 TODO 标记 RAG 接入点 — 保持跟踪
-3. StorageService 依赖具体类而非接口 — 建议改为 IStorageProvider
-4. Prisma Schema 中 Folder 缺少 updatedAt — 根据业务决定
-5. ChatService 超时硬编码 30 秒 — 建议提取为配置项
+3. ~~StorageService 依赖具体类而非接口~~ — ✅ 已改为 IStorageProvider
+4. ~~Prisma Schema 中 Folder 缺少 updatedAt~~ — ✅ 已添加
+5. ~~ChatService 超时硬编码~~ — ✅ 已提取为 LLM_TIMEOUT_MS 配置项
 
 ### 前端
-1. auth.ts 的 init() 需外部显式调用 — 确认 main.ts 已调用
-2. client.ts 的 DELETE/204 类型不够严谨 — 建议改进泛型
-3. 图标库使用风格不一致 — 统一命名
-4. ChatView 中错误 toast 5 秒可能过短 — 根据错误类型调整
-5. MarkdownRender 的 copy 按钮无 aria-label — 增加无障碍属性
+1. ~~auth.ts 的 init() 需外部显式调用~~ — ✅ main.ts 已调用
+2. ~~client.ts 的 DELETE/204 类型不够严谨~~ — ✅ 已改进
+3. ~~图标库使用风格不一致~~ — ✅ 经检查命名风格统一
+4. ~~ChatView 中错误 toast 5 秒可能过短~~ — ✅ 已按错误类型区分时长
+5. ~~MarkdownRender 的 copy 按钮无 aria-label~~ — ✅ 已添加
 
 ---
 
@@ -226,19 +228,11 @@
 
 ## 修复优先级建议（更新后）
 
-**Critical + Major + Minor 已全部修复。**
+**Critical + Major + Minor 已全部修复。Info 已修复 8/10。**
 
-**后续迭代（Info）：**
-1. logout 为无状态实现 — 后续需引入 Redis 黑名单
-2. StorageService 依赖具体类而非接口 — 建议改为 IStorageProvider
-3. Prisma Schema 中 Folder 缺少 updatedAt — 根据业务决定
-4. ChatService 超时提取配置
-5. MarkdownRender copy 按钮 aria-label
-6. auth.ts 的 init() 需外部显式调用 — 确认 main.ts 已调用
-7. client.ts 的 DELETE/204 类型不够严谨
-8. 图标库使用风格不一致
-9. ChatView 中错误 toast 5 秒可能过短
-10. 其他优化建议
+**后续迭代（剩余 2 个 Info）：**
+1. logout 为无状态实现 — 后续需引入 Redis 黑名单（Phase 5+）
+2. chat.service.ts 中 TODO 标记 RAG 接入点 — 保持跟踪（Phase 5）
 
 ---
 
