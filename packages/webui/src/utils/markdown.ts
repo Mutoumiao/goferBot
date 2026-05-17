@@ -14,6 +14,17 @@ const md = new MarkdownIt({
   linkify: true,
 })
 
+// 自定义代码块渲染，添加复制按钮和 aria-label
+md.renderer.rules.fence = (tokens, idx) => {
+  const token = tokens[idx]
+  const code = token.content
+  const lang = token.info || 'plaintext'
+  const highlighted = md.options.highlight?.(code, lang) || code
+  const encodedCode = encodeURIComponent(code)
+
+  return `<pre class="hljs"><div class="code-header"><span class="lang-label">${lang}</span><button class="copy-btn" aria-label="复制代码" data-code="${encodedCode}">复制</button></div><code class="hljs">${highlighted}</code></pre>`
+}
+
 export function renderMarkdown(content: string): string {
   const raw = md.render(content)
   return DOMPurify.sanitize(raw, {

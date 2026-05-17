@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ServiceUnavailableException,
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { ChatDto } from './dto/chat.dto.js'
 
@@ -13,7 +14,14 @@ interface ChatChunk {
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly llmTimeoutMs: number
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {
+    this.llmTimeoutMs = this.configService.get<number>('LLM_TIMEOUT_MS') ?? 300000
+  }
 
   async *streamChat(
     userId: string,
@@ -53,7 +61,7 @@ export class ChatService {
     onAbortController?.(abortController)
     const timeout = setTimeout(() => {
       abortController.abort()
-    }, 300000)
+    }, this.llmTimeoutMs)
 
     try {
       const response = await fetch(`${config.baseUrl}/v1/chat/completions`, {

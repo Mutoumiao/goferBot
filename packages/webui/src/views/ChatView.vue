@@ -33,14 +33,16 @@ onMounted(() => {
   kbStore.loadKnowledgeBases()
 })
 
-// Auto-dismiss toast after 5s
+// Auto-dismiss toast: network/LLM errors need more time to read
 const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 watch(() => sessionStore.error, (err) => {
   if (err) {
     if (toastTimer.value) clearTimeout(toastTimer.value)
+    const isNetworkError = err.includes('超时') || err.includes('失败') || err.includes('网络')
+    const duration = isNetworkError ? 8000 : 5000
     toastTimer.value = setTimeout(() => {
       sessionStore.error = null
-    }, 5000)
+    }, duration)
   }
 })
 

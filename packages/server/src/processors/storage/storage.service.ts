@@ -5,9 +5,9 @@ import { STORAGE_PROVIDER } from './storage.provider.js'
 
 @Injectable()
 export class StorageService implements IStorageProvider {
-  private provider: MinIOStorageProvider
+  private provider: IStorageProvider
 
-  constructor(@Inject(STORAGE_PROVIDER) provider: MinIOStorageProvider) {
+  constructor(@Inject(STORAGE_PROVIDER) provider: IStorageProvider) {
     this.provider = provider
   }
 

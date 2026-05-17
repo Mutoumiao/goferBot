@@ -254,12 +254,8 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
       throw await parseApiError(res)
     }
 
-    if (cfg.method === 'DELETE') {
-      return undefined as T
-    }
-
-    if (res.status === 204) {
-      return undefined as T
+    if (cfg.method === 'DELETE' || res.status === 204) {
+      return undefined as unknown as T
     }
 
     try {
