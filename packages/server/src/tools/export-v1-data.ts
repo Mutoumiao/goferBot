@@ -48,7 +48,6 @@ function openDb(dbPath: string): ReturnType<typeof Database> {
 
   try {
     const db = new Database(dbPath, { readonly: true })
-    db.pragma('journal_mode = WAL')
     return db
   } catch (err) {
     console.error('错误: 无法打开数据库文件:', err instanceof Error ? err.message : String(err))
@@ -203,7 +202,7 @@ function exportKnowledgeBases(
       name: row.name,
       description: null,
       isPinned: row.is_pinned === 1,
-      sortOrder: row.sort_order || index,
+      sortOrder: row.sort_order ?? index,
       icon: row.icon || null,
       createdAt: timestampToISO(row.created_at),
       updatedAt: timestampToISO(row.created_at),
