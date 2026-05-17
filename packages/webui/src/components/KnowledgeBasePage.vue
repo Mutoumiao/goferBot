@@ -144,10 +144,10 @@ const sortedKbs = computed(() => store.knowledgeBases)
 <template>
   <div class="flex h-full bg-surface-1">
     <!-- Left sidebar: KB List -->
-    <div class="flex w-72 flex-col border-r border-border-default bg-white">
+    <div data-testid="kb-list" class="flex w-72 flex-col border-r border-border-default bg-white">
       <div class="flex items-center justify-between px-4 py-3">
         <h2 class="text-sm font-semibold text-text-primary">知识库</h2>
-        <Button variant="ghost" size="icon-xs" @click="openCreateDialog">
+        <Button data-testid="create-kb-btn" variant="ghost" size="icon-xs" @click="openCreateDialog">
           <PlusIcon class="size-4" />
         </Button>
       </div>
@@ -174,6 +174,7 @@ const sortedKbs = computed(() => store.knowledgeBases)
         <div
           v-for="kb in sortedKbs"
           :key="kb.id"
+          data-testid="kb-item"
           class="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 transition-colors"
           :class="
             selectedKbId === kb.id

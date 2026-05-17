@@ -257,6 +257,7 @@ function handleDrop(e: DragEvent) {
 
 <template>
   <div
+    data-testid="file-explorer"
     class="flex h-full flex-col bg-surface-1"
     @dragover="handleDragOver"
     @dragleave="handleDragLeave"

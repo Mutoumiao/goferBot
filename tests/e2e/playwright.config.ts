@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
+delete process.env.NO_COLOR
+
 export default defineConfig({
   testDir: './specs',
   fullyParallel: false,
@@ -21,6 +23,10 @@ export default defineConfig({
     url: 'http://localhost:1420',
     reuseExistingServer: true,
     timeout: 60000,
+    env: {
+      ...process.env,
+      NO_COLOR: '',
+    },
   },
   projects: [
     {
