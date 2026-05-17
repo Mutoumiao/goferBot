@@ -16,16 +16,16 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
   },
+  webServer: {
+    command: 'pnpm dev:web',
+    url: 'http://localhost:1420',
+    reuseExistingServer: true,
+    timeout: 60000,
+  },
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'pnpm --filter @goferbot/webui vite:dev',
-    url: 'http://localhost:1420',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
 })

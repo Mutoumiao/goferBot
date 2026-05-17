@@ -27,16 +27,20 @@ export class KnowledgeBasePage {
   }
 
   async clickContextMenuItem(label: string) {
-    await this.contextMenu.locator('text=' + label).click()
+    await this.contextMenu.locator(`text=${label}`).click()
   }
 
   async createKnowledgeBase(name: string) {
     await this.createBtn.click()
-    await this.page.locator('input[placeholder="输入知识库名称"]').fill(name)
-    await this.page.locator('button:has-text("创建")').click()
+    await this.page.locator('[data-testid="kb-name-input"]').fill(name)
+    await this.page.locator('[data-testid="kb-create-confirm"]').click()
   }
 
   async getKbItem(name: string): Promise<Locator> {
     return this.page.locator('[data-testid="kb-item"]').filter({ hasText: name })
+  }
+
+  async selectKb(name: string) {
+    await this.page.locator('[data-testid="kb-item"]').filter({ hasText: name }).click()
   }
 }

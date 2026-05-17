@@ -9,7 +9,7 @@ export class ChatPage {
 
   constructor(page: Page) {
     this.page = page
-    this.input = page.locator('[data-testid="chat-input"] textarea, [data-testid="chat-input"] input')
+    this.input = page.locator('[data-testid="chat-input"]')
     this.sendBtn = page.locator('[data-testid="chat-send-btn"]')
     this.messageList = page.locator('[data-testid="chat-message-list"]')
     this.mentionDropdown = page.locator('[data-testid="kb-mention-dropdown"]')
@@ -26,10 +26,8 @@ export class ChatPage {
 
   async triggerMention() {
     await this.input.click()
-    // 绕过键盘布局差异，直接派发 key 为 '@' 的 keydown 事件
-    await this.input.evaluate((el: HTMLElement) => {
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: '@', bubbles: true }))
-    })
+    await this.input.type('@')
+    await this.page.waitForTimeout(300)
   }
 
   async selectMentionItem(index: number = 0) {
@@ -38,5 +36,9 @@ export class ChatPage {
 
   async getMessages(): Promise<Locator[]> {
     return this.messageList.locator('[data-testid="chat-message"]').all()
+  }
+
+  async waitForMessageAppear(content: string, timeout: number = 5000) {
+    await this.messageList.locator(`text=${content}`).waitFor({ timeout })
   }
 }

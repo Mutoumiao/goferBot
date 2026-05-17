@@ -1,38 +1,35 @@
-import { expect, type Page, type Locator } from '@playwright/test'
+import type { Page, Locator } from '@playwright/test'
 
 export class SettingsPage {
   readonly page: Page
   readonly navTabs: Locator
   readonly saveBtn: Locator
-  readonly formInputs: Locator
+  readonly errorMessage: Locator
 
   constructor(page: Page) {
     this.page = page
     this.navTabs = page.locator('[data-testid="settings-nav-tabs"]')
     this.saveBtn = page.locator('[data-testid="settings-save-btn"]')
-    this.formInputs = page.locator('[data-testid="settings-form"] input, [data-testid="settings-form"] select')
+    this.errorMessage = page.locator('[data-testid="settings-error"]')
   }
 
   async goto() {
-    await this.page.goto('/')
-    await this.page.locator('button:has(.lucide-settings)').first().click()
-    await expect(this.navTabs).toBeVisible()
+    await this.page.goto('/settings')
   }
 
-  async clickTab(label: string) {
-    await this.navTabs.locator('text=' + label).click()
+  async clickTab(name: string) {
+    await this.navTabs.locator(`text=${name}`).click()
   }
 
   async fillInput(name: string, value: string) {
-    await this.page.locator(`[data-testid="settings-form"] [name="${name}"]`).fill(value)
+    await this.page.locator(`[name="${name}"]`).fill(value)
   }
 
   async save() {
-    await expect(this.saveBtn).toBeEnabled()
     await this.saveBtn.click()
   }
 
   async getErrorMessages(): Promise<string[]> {
-    return this.page.locator('[data-testid="settings-error"]').allTextContents()
+    return this.errorMessage.allTextContents()
   }
 }
