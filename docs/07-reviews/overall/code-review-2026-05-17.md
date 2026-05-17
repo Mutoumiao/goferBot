@@ -8,8 +8,8 @@
 
 ## 审查摘要
 
-- **总体结论**：有条件通过 — Critical 和 Major 问题已修复，剩余 Minor/Info 待后续迭代
-- **问题统计**：Critical 7 (已修复 7) | Major 13 (已修复 13) | Minor 17 (未修复) | Info 10 (未修复)
+- **总体结论**：有条件通过 — Critical、Major、Minor 问题已修复，剩余 Info 待后续迭代
+- **问题统计**：Critical 7 (已修复 7) | Major 13 (已修复 13) | Minor 17 (已修复 17) | Info 10 (未修复)
 
 | 维度 | Critical | Major | Minor | Info |
 |------|----------|-------|-------|------|
@@ -218,25 +218,27 @@
 
 **Major（13/13 全部已修复）**
 
-**Minor（17）：** 全部未修复，见上文列表
+**Minor（17/17 全部已修复）**
 
-**Info（10）：** 全部未修复，见上文列表
+**Info（10）：** 未修复，见上文列表
 
 ---
 
 ## 修复优先级建议（更新后）
 
-**Critical + Major 已全部修复。**
+**Critical + Major + Minor 已全部修复。**
 
-**后续迭代（Minor + Info）：**
-1. 密码强度校验（Minor #1, #2）
-2. DTO 非空校验（Minor #3, #9）
-3. 类型声明完善（Minor #4, #5, #6）
-4. 前端 class 管理统一使用 `cn()`（Minor #10）
-5. 深拷贝改用 `structuredClone`（Minor #13）
-6. 日期格式化统一工具（Minor #16）
-7. ChatService 超时提取配置（Info #5）
-8. MarkdownRender copy 按钮 aria-label（Info #5）
+**后续迭代（Info）：**
+1. logout 为无状态实现 — 后续需引入 Redis 黑名单
+2. StorageService 依赖具体类而非接口 — 建议改为 IStorageProvider
+3. Prisma Schema 中 Folder 缺少 updatedAt — 根据业务决定
+4. ChatService 超时提取配置
+5. MarkdownRender copy 按钮 aria-label
+6. auth.ts 的 init() 需外部显式调用 — 确认 main.ts 已调用
+7. client.ts 的 DELETE/204 类型不够严谨
+8. 图标库使用风格不一致
+9. ChatView 中错误 toast 5 秒可能过短
+10. 其他优化建议
 
 ---
 

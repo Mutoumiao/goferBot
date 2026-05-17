@@ -13,15 +13,17 @@ import { WorkerService } from './worker.service.js'
 
 @Injectable()
 export class QueueService implements OnModuleInit, OnModuleDestroy {
-  private readonly redis: Redis
-  private readonly documentQueue: Queue<DocumentJobData>
-  private readonly embeddingQueue: Queue<EmbeddingJobData>
+  private redis!: Redis
+  private documentQueue!: Queue<DocumentJobData>
+  private embeddingQueue!: Queue<EmbeddingJobData>
 
   constructor(
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => WorkerService))
     private readonly workerService: WorkerService,
-  ) {
+  ) {}
+
+  async onModuleInit() {
     const host = this.configService.get<string>('REDIS_HOST', 'localhost')
     const port = this.configService.get<number>('REDIS_PORT', 6379)
     const password = this.configService.get<string>('REDIS_PASSWORD')
@@ -29,9 +31,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     this.redis = createRedisConnection(host, port, password)
     this.documentQueue = createDocumentQueue(this.redis)
     this.embeddingQueue = createEmbeddingQueue(this.redis)
-  }
 
-  async onModuleInit() {
     await this.redis.ping()
     console.log('QueueService: Redis connection established')
     this.workerService.startWorkers(this.redis)

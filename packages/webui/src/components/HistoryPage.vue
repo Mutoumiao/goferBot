@@ -31,16 +31,25 @@ const showDeleteDialog = ref(false)
 const deleteTargetId = ref('')
 const isDeleting = ref(false)
 
+const menuRef = ref<HTMLDivElement | null>(null)
+
 onMounted(() => {
   if (store.sessions.length === 0) {
     store.loadSessions()
   }
-  document.addEventListener('click', closeMenu)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeMenu)
+  document.removeEventListener('click', handleClickOutside)
 })
+
+function handleClickOutside(e: MouseEvent) {
+  const target = e.target as Node
+  if (menuRef.value && !menuRef.value.contains(target)) {
+    openMenuId.value = null
+  }
+}
 
 function closeMenu() {
   openMenuId.value = null
@@ -224,7 +233,7 @@ function onRowClick(sessionId: string) {
 
         <!-- Actions -->
         <div class="flex shrink-0 items-center gap-1.5" @click.stop>
-          <div class="relative">
+          <div ref="menuRef" class="relative">
             <Button
               variant="ghost"
               size="icon-sm"

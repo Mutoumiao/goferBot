@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import type { Message } from '@/stores/session'
 import { MessageSquareIcon } from 'lucide-vue-next'
 import ChatMessage from './ChatMessage.vue'
@@ -26,20 +26,10 @@ function handleScroll() {
   })
 }
 
-watch(
-  () => props.messages.length,
-  async () => {
-    if (!shouldAutoScroll.value) return
-    await nextTick()
-    containerRef.value?.scrollTo({
-      top: containerRef.value.scrollHeight,
-      behavior: 'smooth',
-    })
-  },
-)
+const lastMessage = computed(() => props.messages[props.messages.length - 1])
 
 watch(
-  () => props.messages[props.messages.length - 1]?.content,
+  () => [props.messages.length, lastMessage.value?.content],
   async () => {
     if (!shouldAutoScroll.value) return
     await nextTick()
@@ -48,6 +38,7 @@ watch(
       behavior: 'smooth',
     })
   },
+  { flush: 'post' },
 )
 </script>
 

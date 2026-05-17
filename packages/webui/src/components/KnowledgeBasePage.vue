@@ -27,6 +27,10 @@ onMounted(() => {
   store.loadKnowledgeBases()
 })
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('zh-CN')
+}
+
 // Create dialog
 const showCreateDialog = ref(false)
 const createName = ref('')
@@ -217,7 +221,7 @@ const sortedKbs = computed(() => store.knowledgeBases)
 
         <!-- Meta -->
         <div class="mt-auto pt-2 text-[11px] text-text-tertiary">
-          {{ new Date(kb.createdAt).toLocaleDateString('zh-CN') }}
+          {{ formatDate(kb.createdAt) }}
         </div>
       </div>
     </div>

@@ -11,7 +11,18 @@ import type { UpdateSessionDto } from './dto/update-session.dto.js'
 export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(userId: string) {
+  async list(userId: string): Promise<
+    Array<{
+      id: string
+      userId: string
+      title: string
+      provider: string | null
+      model: string | null
+      createdAt: Date
+      updatedAt: Date
+      messageCount: number
+    }>
+  > {
     const sessions = await this.prisma.session.findMany({
       where: { userId },
       orderBy: { updatedAt: 'desc' },

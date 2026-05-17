@@ -55,7 +55,11 @@ const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const showPassword = ref<Record<string, boolean>>({})
 
-const localConfig = reactive<AppConfig>(JSON.parse(JSON.stringify(store.config)))
+function cloneConfig<T>(obj: T): T {
+  return structuredClone(obj)
+}
+
+const localConfig = reactive<AppConfig>(cloneConfig(store.config))
 
 onMounted(() => {
   store.loadConfig()
@@ -64,7 +68,7 @@ onMounted(() => {
 watch(
   () => store.config,
   (newVal) => {
-    Object.assign(localConfig, JSON.parse(JSON.stringify(newVal)))
+    Object.assign(localConfig, cloneConfig(newVal))
     hasChanges.value = false
   },
   { deep: true },
@@ -125,7 +129,7 @@ async function handleSave() {
   }
 
   try {
-    const ok = await store.saveConfig(JSON.parse(JSON.stringify(localConfig)))
+    const ok = await store.saveConfig(cloneConfig(localConfig))
     if (ok) {
       hasChanges.value = false
       saveSuccess.value = true

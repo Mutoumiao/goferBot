@@ -2,8 +2,8 @@ import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 const providerSchema = z.object({
-  apiKey: z.string(),
-  model: z.string(),
+  apiKey: z.string().min(1, 'apiKey 不能为空'),
+  model: z.string().min(1, 'model 不能为空'),
   baseUrl: z.string().refine(
     (v) => v === '' || z.string().url().safeParse(v).success,
     { message: 'baseUrl 必须是合法 URL 或空字符串' },
@@ -18,7 +18,7 @@ const ollamaSchema = z.object({
 
 const embeddingProviderSchema = z.object({
   provider: z.string().min(1, 'provider 不能为空'),
-  apiKey: z.string(),
+  apiKey: z.string().min(1, 'apiKey 不能为空'),
   model: z.string().min(1, 'model 不能为空'),
   baseUrl: z.string().refine(
     (v) => v === '' || z.string().url().safeParse(v).success,

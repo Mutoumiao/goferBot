@@ -14,10 +14,10 @@ export class VectorService implements IVectorStore, OnModuleInit {
 
   constructor(private readonly config: ConfigService) {
     this.store = new MilvusVectorStore({
-      host: this.config.get<string>('MILVUS_HOST'),
-      port: this.config.get<string>('MILVUS_PORT'),
-      collectionName: this.config.get<string>('MILVUS_COLLECTION'),
-      vectorDim: this.config.get<number>('MILVUS_VECTOR_DIM'),
+      host: this.config.getOrThrow<string>('MILVUS_HOST'),
+      port: this.config.getOrThrow<string>('MILVUS_PORT'),
+      collectionName: this.config.getOrThrow<string>('MILVUS_COLLECTION'),
+      vectorDim: this.config.getOrThrow<number>('MILVUS_VECTOR_DIM'),
     })
   }
 

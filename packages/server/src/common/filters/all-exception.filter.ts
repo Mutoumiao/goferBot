@@ -36,7 +36,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR
 
-    const isProduction = process.env.NODE_ENV === 'production'
+    const isDevelopment = process.env.NODE_ENV === 'development'
 
     let code = 'INTERNAL_ERROR'
     let message = '服务器内部错误'
@@ -63,7 +63,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       },
     }
 
-    if (!isProduction) {
+    if (isDevelopment) {
       if (details) {
         errorResponse.error.details = details
       }

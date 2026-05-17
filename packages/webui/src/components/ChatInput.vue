@@ -112,7 +112,6 @@ function handleSend() {
 
 const dropdownRef = ref<InstanceType<typeof KbSelector>>()
 
-const displayInput = computed(() => input.value)
 </script>
 
 <template>
@@ -181,10 +180,10 @@ const displayInput = computed(() => input.value)
 
           <Button
             data-testid="chat-send-btn"
-            :disabled="!displayInput.trim() || loading || disabled"
+            :disabled="!input.trim() || loading || disabled"
             class="h-[38px] w-[38px] rounded-2xl transition-all duration-200"
             :class="[
-              displayInput.trim() && !loading && !disabled
+              input.trim() && !loading && !disabled
                 ? 'bg-accent-500 text-white hover:opacity-90 active:scale-95'
                 : 'bg-surface-2 text-text-tertiary',
             ]"
@@ -201,7 +200,7 @@ const displayInput = computed(() => input.value)
           AI 生成内容仅供参考
         </p>
         <p class="text-[11px] text-text-tertiary">
-          {{ displayInput.length }} 字
+          {{ input.length }} 字
         </p>
       </div>
     </div>

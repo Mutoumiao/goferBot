@@ -54,7 +54,9 @@ function handleKeydown(e: KeyboardEvent, tabId: string) {
 }
 
 function handleBlur(tabId: string) {
-  confirmRename(tabId)
+  if (editingTabId.value === tabId) {
+    confirmRename(tabId)
+  }
 }
 </script>
 
