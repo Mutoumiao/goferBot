@@ -1,7 +1,7 @@
 ---
 id: i-06-data-migration
 type: issue
-status: pending
+status: closed
 track: infra
 priority: p1
 summary: 为 V1 用户提供数据导出工具，将 SQLite 中的会话、消息、知识库信息导出为标准 NDJSON 格式，可导入 V2 的 PostgreSQL。
