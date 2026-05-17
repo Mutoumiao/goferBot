@@ -25,6 +25,7 @@ export const useSessionStore = defineStore('session', () => {
   const activeSessionId = ref<string | null>(null)
   const messages = ref<Map<string, Message[]>>(new Map())
   const isLoading = ref(false)
+  const isStreaming = ref(false)
   const error = ref<string | null>(null)
 
   // Getters
@@ -151,19 +152,48 @@ export const useSessionStore = defineStore('session', () => {
         }
       }
 
-      // TODO(b-04): 替换为 SSE 流式响应
       const assistantMsg: Message = {
         id: `msg-assistant-${Date.now()}`,
         role: 'assistant',
-        content: 'AI 回复功能将在 b-04 中实现',
+        content: '',
         createdAt: new Date().toISOString(),
       }
-
       list.push(assistantMsg)
       messages.value.set(sessionId!, [...list])
+
+      isStreaming.value = true
+
+      api.sse(
+        '/chat',
+        {
+          message: content,
+          sessionId,
+          knowledgeBaseIds: [],
+          config: {
+            provider: 'deepseek',
+            model: 'deepseek-chat',
+            baseUrl: 'https://api.deepseek.com',
+            apiKey: '',
+          },
+        },
+        {
+          onChunk: (chunk: { chunk: string; done: boolean }) => {
+            assistantMsg.content += chunk.chunk
+            messages.value.set(sessionId!, [...list])
+          },
+          onError: (err) => {
+            error.value = err.message
+            isStreaming.value = false
+            isLoading.value = false
+          },
+          onDone: () => {
+            isStreaming.value = false
+            isLoading.value = false
+          },
+        }
+      )
     } catch (e) {
       error.value = e instanceof Error ? e.message : '发送消息失败'
-    } finally {
       isLoading.value = false
     }
   }
@@ -173,6 +203,7 @@ export const useSessionStore = defineStore('session', () => {
     activeSessionId,
     messages,
     isLoading,
+    isStreaming,
     error,
     activeSession,
     activeMessages,

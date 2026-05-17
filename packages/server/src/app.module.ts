@@ -16,6 +16,7 @@ import { StorageModule } from './processors/storage/storage.module.js'
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module.js'
 import { SessionModule } from './modules/session/session.module.js'
 import { ChatModule } from './modules/chat/chat.module.js'
+import { SettingsModule } from './modules/settings/settings.module.js'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
@@ -49,6 +50,7 @@ import { SpiderGuard } from './common/guards/spider.guard.js'
     KnowledgeBaseModule,
     SessionModule,
     ChatModule,
+    SettingsModule,
   ],
   providers: [
     // 全局响应拦截器
