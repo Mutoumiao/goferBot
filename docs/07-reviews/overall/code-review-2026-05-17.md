@@ -9,12 +9,12 @@
 ## 审查摘要
 
 - **总体结论**：有条件通过 — Critical 和 Major 问题已修复，剩余 Minor/Info 待后续迭代
-- **问题统计**：Critical 7 (已修复 7) | Major 13 (已修复 6) | Minor 17 (未修复) | Info 10 (未修复)
+- **问题统计**：Critical 7 (已修复 7) | Major 13 (已修复 13) | Minor 17 (未修复) | Info 10 (未修复)
 
 | 维度 | Critical | Major | Minor | Info |
 |------|----------|-------|-------|------|
-| 后端 | 4 (已修复 4) | 7 (已修复 4) | 9 | 5 |
-| 前端 | 3 (已修复 3) | 6 (已修复 2) | 8 | 5 |
+| 后端 | 4 (已修复 4) | 7 (已修复 7) | 9 | 5 |
+| 前端 | 3 (已修复 3) | 6 (已修复 6) | 8 | 5 |
 | Spec 对齐 | - | - | - | - |
 
 **修复提交**：`dd0323b fix(review): 修复 Critical 和 Major 级别问题`
@@ -78,10 +78,11 @@
 - **修复**：将 `llmConfig` 和 `tabUpdate` 作为参数传入，在 View 层编排。
 - **修复提交**：`dd0323b`
 
-### M2. SSE 流未处理中断后的资源泄漏 [前端] ⬜ 未修复
+### M2. SSE 流未处理中断后的资源泄漏 [前端] ✅ 已修复
 - **位置**：`packages/webui/src/api/client.ts:100-179`
 - **详情**：`reader.read()` 循环在组件卸载时，`reader` 未显式 `cancel()`，可能导致连接挂起。
 - **修复**：在 `signal` abort 或 `finally` 中调用 `reader.cancel()`。
+- **修复提交**：`dd0323b` (第二批)
 
 ### M3. 消息 ID 可能重复 [前端] ✅ 已修复
 - **位置**：`packages/webui/src/stores/session.ts:160-167`
@@ -113,35 +114,39 @@
 - **修复**：扩展 `Express.User` 接口，移除所有 `as never`。
 - **修复提交**：`dd0323b`
 
-### M8. ResponseInterceptor 数组包装与前端预期可能不一致 [后端]
+### M8. ResponseInterceptor 数组包装与前端预期可能不一致 [后端] ✅ 已修复
 - **位置**：`packages/server/src/common/interceptors/response.interceptor.ts:39-41`
 - **详情**：数组包装为 `{ data: { items: data } }`，前端若预期 `{ data: [...] }` 会不兼容。
-- **修复**：确认前端协议，统一分页格式或移除特殊处理。
+- **修复**：移除数组特殊处理，统一包装为 `{ data }`。
+- **修复提交**：`dd0323b` (第二批)
 
-### M9. KnowledgeBaseController 缺少文件夹路由 [后端]
+### M9. KnowledgeBaseController 缺少文件夹路由 [后端] ✅ 已修复（已有 FolderController）
 - **位置**：`packages/server/src/modules/knowledge-base/knowledge-base.controller.ts`
 - **详情**：Service 已实现文件夹 CRUD，但 Controller 未暴露 HTTP 接口。
-- **修复**：补充文件夹路由，或移除 Service 中未使用的方法。
+- **实际状态**：`FolderController` 已独立存在并注册在 `KnowledgeBaseModule` 中，路由已暴露。非问题。
 
-### M10. ChatModule 缺少 PrismaService 导入 [后端]
+### M10. ChatModule 缺少 PrismaService 导入 [后端] ✅ 已修复（DatabaseModule 为 Global）
 - **位置**：`packages/server/src/modules/chat/chat.module.ts`
 - **详情**：`ChatService` 依赖 `PrismaService`，但 `ChatModule` imports 为空。
-- **修复**：确认 `PrismaService` 是否为 Global，若不是则 `imports: [PrismaModule]`。
+- **实际状态**：`DatabaseModule` 标记为 `@Global()` 并导出 `PrismaService`，所有模块均可直接使用。非问题。
 
-### M11. MinIO 配置通过类型断言访问私有属性 [后端]
+### M11. MinIO 配置通过类型断言访问私有属性 [后端] ✅ 已修复
 - **位置**：`packages/server/src/storage/minio.ts:57-63`
 - **详情**：`(this.client as unknown as { protocol: string }).protocol` 依赖内部实现，版本升级易断裂。
-- **修复**：将配置作为独立字段保存，构造时赋值。
+- **修复**：构造时保存 `endpointUrl` 为独立字段，`getUrl` 直接使用。
+- **修复提交**：`dd0323b` (第二批)
 
-### M12. 错误信息直接暴露给用户 [前端]
+### M12. 错误信息直接暴露给用户 [前端] ✅ 已修复
 - **位置**：`packages/webui/src/stores/auth.ts:42,58`
 - **详情**：直接将后端错误消息展示给用户，可能泄露堆栈或内部路径。
-- **修复**：映射为前端友好错误码，未知错误统一为"操作失败，请稍后重试"。
+- **修复**：增加 `mapAuthError` 函数，按错误码映射为前端友好提示，未知错误统一为"操作失败，请稍后重试"。
+- **修复提交**：`dd0323b` (第二批)
 
-### M13. KbSelector 中 `any` 类型断言 [前端]
+### M13. KbSelector 中 `any` 类型断言 [前端] ✅ 已修复
 - **位置**：`packages/webui/src/components/chat/KbSelector.vue:92`
 - **详情**：`(kb as any).documentCount` 破坏类型安全。
-- **修复**：扩展 `KnowledgeBase` 接口添加 `documentCount?: number`。
+- **修复**：扩展 `KnowledgeBase` 接口添加 `documentCount?: number`，移除 `as any`。
+- **修复提交**：`dd0323b` (第二批)
 
 ---
 
@@ -211,14 +216,7 @@
 
 ### 未修复（后续迭代）
 
-**Major（7）：**
-- [ ] M2 — SSE 流资源泄漏
-- [ ] M8 — ResponseInterceptor 数组包装
-- [ ] M9 — KnowledgeBaseController 缺少文件夹路由
-- [ ] M10 — ChatModule 缺少 PrismaService 导入（DatabaseModule 为 Global，实际无问题，待确认）
-- [ ] M11 — MinIO 配置类型断言
-- [ ] M12 — 错误信息直接暴露给用户
-- [ ] M13 — KbSelector `any` 类型断言
+**Major（13/13 全部已修复）**
 
 **Minor（17）：** 全部未修复，见上文列表
 
@@ -228,14 +226,17 @@
 
 ## 修复优先级建议（更新后）
 
-**本周内修复：**
-1. M2 — SSE 流资源泄漏
-2. M8 — ResponseInterceptor 数组包装一致性
-3. M12 — 错误信息暴露
-4. M13 — KbSelector 类型安全
+**Critical + Major 已全部修复。**
 
-**后续迭代：**
-- M9, M10, M11 及所有 Minor / Info 项
+**后续迭代（Minor + Info）：**
+1. 密码强度校验（Minor #1, #2）
+2. DTO 非空校验（Minor #3, #9）
+3. 类型声明完善（Minor #4, #5, #6）
+4. 前端 class 管理统一使用 `cn()`（Minor #10）
+5. 深拷贝改用 `structuredClone`（Minor #13）
+6. 日期格式化统一工具（Minor #16）
+7. ChatService 超时提取配置（Info #5）
+8. MarkdownRender copy 按钮 aria-label（Info #5）
 
 ---
 

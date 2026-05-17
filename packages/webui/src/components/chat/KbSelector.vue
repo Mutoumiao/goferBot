@@ -89,7 +89,7 @@ defineExpose({ handleKeydown })
       />
       <DatabaseIcon class="size-4 text-text-secondary" />
       <span class="truncate">{{ kb.name }}</span>
-      <span class="ml-auto text-xs text-text-tertiary">{{ (kb as any).documentCount || 0 }} 文档</span>
+      <span class="ml-auto text-xs text-text-tertiary">{{ kb.documentCount || 0 }} 文档</span>
     </div>
   </div>
 </template>

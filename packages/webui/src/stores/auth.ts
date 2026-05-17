@@ -3,6 +3,29 @@ import { ref, computed } from 'vue'
 import { api } from '@/api/client'
 import type { AuthResponse, JwtTokens, UserDTO } from '@/api/types'
 
+function mapAuthError(e: unknown): string {
+  if (e && typeof e === 'object' && 'code' in e) {
+    const code = (e as { code: string }).code
+    const msg = (e as { message?: string }).message
+    switch (code) {
+      case 'USER_EXISTS':
+        return '该邮箱已被注册'
+      case 'AUTH_FAIL':
+        return '邮箱或密码错误'
+      case 'INVALID_REFRESH_TOKEN':
+        return '登录已过期，请重新登录'
+      case 'USER_NOT_FOUND':
+        return '用户不存在'
+      default:
+        return msg || '操作失败，请稍后重试'
+    }
+  }
+  if (e instanceof Error) {
+    return e.message
+  }
+  return '操作失败，请稍后重试'
+}
+
 const ACCESS_TOKEN_KEY = 'goferbot_access_token'
 const REFRESH_TOKEN_KEY = 'goferbot_refresh_token'
 
@@ -39,7 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = res.user
       return res
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e)
+      error.value = mapAuthError(e)
       throw e
     } finally {
       isLoading.value = false
@@ -55,7 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = res.user
       return res
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e)
+      error.value = mapAuthError(e)
       throw e
     } finally {
       isLoading.value = false

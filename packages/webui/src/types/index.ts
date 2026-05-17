@@ -45,6 +45,7 @@ export interface KnowledgeBase {
   is_pinned: number
   sort_order: number
   icon: string
+  documentCount?: number
 }
 
 export interface FileItem {

@@ -13,6 +13,7 @@ export interface MinIOConfig {
 export class MinIOStorageProvider {
   private client: Minio.Client
   private bucket: string
+  private endpointUrl: string
 
   constructor(config: MinIOConfig) {
     this.client = new Minio.Client({
@@ -24,6 +25,8 @@ export class MinIOStorageProvider {
       region: config.region || 'us-east-1',
     })
     this.bucket = config.bucket
+    const protocol = config.useSSL ? 'https:' : 'http:'
+    this.endpointUrl = `${protocol}//${config.endPoint}:${config.port}`
   }
 
   async initialize(): Promise<void> {
@@ -55,12 +58,7 @@ export class MinIOStorageProvider {
   }
 
   getUrl(key: string): string {
-    // 返回 MinIO 直链（开发环境）
-    // 使用内部状态避免访问 protected 属性
-    const protocol = (this.client as unknown as { protocol: string }).protocol
-    const host = (this.client as unknown as { host: string }).host
-    const port = (this.client as unknown as { port: number }).port
-    return `${protocol}//${host}:${port}/${this.bucket}/${key}`
+    return `${this.endpointUrl}/${this.bucket}/${key}`
   }
 
   async getPresignedUploadUrl(key: string, expiry: number = 3600): Promise<string> {

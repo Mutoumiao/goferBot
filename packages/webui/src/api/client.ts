@@ -135,6 +135,7 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
           try {
             while (true) {
               if (signal?.aborted) {
+                await reader.cancel()
                 callbacks.onError(new NetworkError('Aborted'))
                 return
               }
@@ -166,6 +167,10 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
             }
           } catch (e) {
             callbacks.onError(new NetworkError('SSE read error', e))
+          } finally {
+            await reader.cancel().catch(() => {
+              // ignore cancel errors
+            })
           }
         })
         .catch((e) => {

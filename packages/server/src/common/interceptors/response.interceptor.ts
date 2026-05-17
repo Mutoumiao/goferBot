@@ -36,10 +36,6 @@ export class ResponseInterceptor<T>
           return { data: null } as ApiResponse<T>
         }
 
-        if (Array.isArray(data)) {
-          return { data: { items: data } } as ApiResponse<T>
-        }
-
         return { data } as ApiResponse<T>
       }),
     )
