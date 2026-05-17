@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { Tab } from '@/types'
+import type { ChatTab } from '@/stores/chatTabs'
 import { Button } from '@/components/ui/button'
 import { PlusIcon, XIcon } from 'lucide-vue-next'
+import { ref, nextTick } from 'vue'
 
 defineProps<{
-  tabs: Tab[]
+  tabs: ChatTab[]
   activeTabId: string
 }>()
 
@@ -12,18 +13,58 @@ const emit = defineEmits<{
   switch: [tabId: string]
   close: [tabId: string]
   newChat: []
+  rename: [tabId: string, title: string]
 }>()
+
+const editingTabId = ref<string | null>(null)
+const editingTitle = ref('')
+const inputRef = ref<HTMLInputElement | null>(null)
+
+function startRename(tab: ChatTab) {
+  editingTabId.value = tab.id
+  editingTitle.value = tab.title
+  nextTick(() => {
+    inputRef.value?.focus()
+    inputRef.value?.select()
+  })
+}
+
+function confirmRename(tabId: string) {
+  const trimmed = editingTitle.value.trim()
+  if (trimmed) {
+    emit('rename', tabId, trimmed)
+  }
+  editingTabId.value = null
+}
+
+function cancelRename() {
+  editingTabId.value = null
+}
+
+function handleKeydown(e: KeyboardEvent, tabId: string) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    confirmRename(tabId)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    cancelRename()
+  }
+}
+
+function handleBlur(tabId: string) {
+  confirmRename(tabId)
+}
 </script>
 
 <template>
-  <div class="flex h-[52px] shrink-0 items-center gap-2 bg-surface-1 px-3.5">
+  <div class="flex h-[38px] shrink-0 items-center gap-2 bg-surface-1 px-3.5">
     <div class="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
       <Button
         v-for="tab in tabs"
         :key="tab.id"
         variant="ghost"
         :class="[
-          'group relative flex shrink-0 items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] transition-all duration-200',
+          'group relative flex shrink-0 items-center gap-2 rounded-[10px] px-3 py-1.5 text-[13px] transition-all duration-200',
           activeTabId === tab.id
             ? 'bg-white text-text-primary shadow-xs border border-border-default hover:bg-white'
             : 'bg-surface-2 text-text-secondary hover:bg-surface-3 hover:text-text-primary',
@@ -36,7 +77,25 @@ const emit = defineEmits<{
           class="h-[7px] w-[7px] rounded-full bg-accent-500"
         />
 
-        <span class="max-w-[140px] truncate">{{ tab.title }}</span>
+        <!-- Editing state -->
+        <input
+          v-if="editingTabId === tab.id"
+          ref="inputRef"
+          v-model="editingTitle"
+          class="max-w-[120px] bg-transparent text-[13px] text-text-primary outline-none"
+          @keydown="handleKeydown($event, tab.id)"
+          @blur="handleBlur(tab.id)"
+          @click.stop
+        />
+
+        <!-- Normal state -->
+        <span
+          v-else
+          class="max-w-[140px] truncate"
+          @dblclick.stop="startRename(tab)"
+        >
+          {{ tab.title }}
+        </span>
 
         <!-- Close button -->
         <XIcon

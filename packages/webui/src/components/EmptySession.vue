@@ -13,7 +13,7 @@ import {
 } from 'lucide-vue-next'
 
 const emit = defineEmits<{
-  send: [content: string]
+  send: [content: string, knowledgeBaseIds?: string[]]
 }>()
 
 const input = ref('')
@@ -45,7 +45,7 @@ const quickActions = [
 function handleSend() {
   const content = input.value.trim()
   if (!content) return
-  emit('send', content)
+  emit('send', content, [])
   input.value = ''
 }
 
@@ -57,7 +57,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function sendQuick(content: string) {
-  emit('send', content)
+  emit('send', content, [])
 }
 </script>
 

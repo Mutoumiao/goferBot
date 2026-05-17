@@ -4,7 +4,7 @@ import type { KnowledgeBase } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { PaperclipIcon, SendIcon, LoaderIcon } from 'lucide-vue-next'
-import KbMentionDropdown from './KbMentionDropdown.vue'
+import KbSelector from './chat/KbSelector.vue'
 import KbMentionPill from './KbMentionPill.vue'
 import ModelSelector from './ModelSelector.vue'
 
@@ -80,7 +80,6 @@ function onSelectKb(kb: KnowledgeBase) {
   const before = input.value.slice(0, mentionStart.value)
   const after = input.value.slice(el?.selectionStart ?? input.value.length)
   input.value = before + after
-  mentionVisible.value = false
 
   requestAnimationFrame(() => {
     if (el) {
@@ -89,6 +88,10 @@ function onSelectKb(kb: KnowledgeBase) {
     }
     autoResize()
   })
+}
+
+function onUnselectKb(kbId: string) {
+  selectedKbs.value = selectedKbs.value.filter((k) => k.id !== kbId)
 }
 
 function onCloseDropdown() {
@@ -107,7 +110,7 @@ function handleSend() {
   }
 }
 
-const dropdownRef = ref<InstanceType<typeof KbMentionDropdown>>()
+const dropdownRef = ref<InstanceType<typeof KbSelector>>()
 
 const displayInput = computed(() => input.value)
 </script>
@@ -146,12 +149,13 @@ const displayInput = computed(() => input.value)
               @focus="isFocused = true"
               @blur="isFocused = false"
             />
-            <KbMentionDropdown
+            <KbSelector
               ref="dropdownRef"
               :knowledge-bases="knowledgeBases ?? []"
-              :query="mentionQuery"
+              :selected-ids="selectedKbs.map((k) => k.id)"
               :visible="mentionVisible"
               @select="onSelectKb"
+              @unselect="onUnselectKb"
               @close="onCloseDropdown"
             />
           </div>

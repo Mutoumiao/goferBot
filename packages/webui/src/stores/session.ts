@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/api/client'
+import { useChatTabsStore } from './chatTabs'
 
 export interface Session {
   id: string
@@ -120,7 +121,7 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
-  async function sendMessage(content: string) {
+  async function sendMessage(content: string, knowledgeBaseIds: string[] = []) {
     error.value = null
     isLoading.value = true
 
@@ -147,9 +148,12 @@ export const useSessionStore = defineStore('session', () => {
 
       if (isNew) {
         const idx = sessions.value.findIndex((s) => s.id === sessionId)
+        const summary = content.slice(0, 20) + (content.length > 20 ? '...' : '')
         if (idx !== -1) {
-          sessions.value[idx].title = content.slice(0, 20) + (content.length > 20 ? '...' : '')
+          sessions.value[idx].title = summary
         }
+        const chatTabsStore = useChatTabsStore()
+        chatTabsStore.updateHomeTabSession(sessionId!, summary)
       }
 
       const assistantMsg: Message = {
@@ -168,7 +172,7 @@ export const useSessionStore = defineStore('session', () => {
         {
           message: content,
           sessionId,
-          knowledgeBaseIds: [],
+          knowledgeBaseIds,
           config: {
             provider: 'deepseek',
             model: 'deepseek-chat',
