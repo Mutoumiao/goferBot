@@ -1,3 +1,15 @@
+---
+id: q-02-auth-hardening
+type: issue
+status: closed
+track: quality
+priority: p1
+summary: Sidecar 共享令牌机制 — 已归档作废。原设计基于 V1 架构的 Tauri Sidecar 共享令牌，ADR-0004 后不再适用。
+blocked_by: []
+blocks: []
+archived_reason: ADR-0004 架构重构，Sidecar 模式废除，认证改为 NestJS JWT + Passport（i-09-nestjs-auth-system）
+---
+
 状态: archived
 分类: security
 

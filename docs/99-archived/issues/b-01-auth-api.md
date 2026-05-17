@@ -1,12 +1,13 @@
 ---
 id: b-01-auth-api
 type: issue
-status: needs-triage
+status: closed
 track: backend
 priority: p1
 summary: 集成 Better Auth，实现邮箱+密码注册/登录/登出/会话查询 API。用户可通过邮箱+密码注册和登录，Session Cookie 维持登录态。
 blocked_by: [i-00-core-interfaces, i-02-drizzle-orm-setup]
 blocks: []
+archived_reason: 被 i-09-nestjs-auth-system 替代（ADR-0004 后从 Better Auth + Hono 切换为 NestJS + JWT + Passport）
 spec: docs/03-specs/b-01-auth-api/
 plan: docs/04-plans/b-01-auth-api/v1.md
 tests: docs/08-test-cases/b-01-auth-api/

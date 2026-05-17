@@ -1,12 +1,13 @@
 ---
 id: i-05-redis-bullmq-setup
 type: issue
-status: needs-triage
+status: closed
 track: infra
 priority: p1
 summary: 配置 Redis 连接和 BullMQ 队列系统，建立异步任务处理框架。异步任务框架就绪，文档上传后可加入处理队列。
 blocked_by: [i-01-docker-compose-infra, i-02-drizzle-orm-setup]
 blocks: []
+archived_reason: 被 i-13-bullmq-service 替代（NestJS 服务封装，功能更完整）
 spec: docs/03-specs/i-05-redis-bullmq-setup/
 plan: docs/04-plans/i-05-redis-bullmq-setup/v1.md
 tests: docs/08-test-cases/i-05-redis-bullmq-setup/

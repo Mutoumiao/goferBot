@@ -1,12 +1,13 @@
 ---
 id: i-03-minio-client
 type: issue
-status: needs-triage
+status: closed
 track: infra
 priority: p1
 summary: 封装 MinIO Client，提供文件上传、下载、删除、获取 Presigned URL 等操作。后端可通过统一接口操作 MinIO，支持上传、下载、删除文件。
 blocked_by: [i-00-core-interfaces, i-01-docker-compose-infra]
 blocks: []
+archived_reason: 被 i-11-minio-service 替代（NestJS 服务封装，功能更完整）
 spec: docs/03-specs/i-03-minio-client/
 plan: docs/04-plans/i-03-minio-client/v1.md
 tests: docs/08-test-cases/i-03-minio-client/
