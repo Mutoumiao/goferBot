@@ -20,6 +20,7 @@ import {
   AlertCircleIcon,
   XIcon,
 } from 'lucide-vue-next'
+import FileManager from './knowledge-base/FileManager.vue'
 
 const store = useKnowledgeBaseStore()
 
@@ -128,102 +129,97 @@ function dismissError() {
   store.error = null
 }
 
+const selectedKbId = ref<string | null>(null)
+const selectedKb = computed(() =>
+  store.knowledgeBases.find((kb) => kb.id === selectedKbId.value),
+)
+
+function selectKb(kb: { id: string; name: string }) {
+  selectedKbId.value = kb.id
+}
+
 const sortedKbs = computed(() => store.knowledgeBases)
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-1 px-10 py-8">
-    <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-xl font-semibold text-text-primary">知识库</h1>
-      <Button
-        class="gap-1.5 rounded-xl bg-accent-500 px-4 py-2 text-sm text-white hover:bg-accent-600"
-        @click="openCreateDialog"
-      >
-        <PlusIcon class="size-4" />
-        新建知识库
-      </Button>
-    </div>
+  <div class="flex h-full bg-surface-1">
+    <!-- Left sidebar: KB List -->
+    <div class="flex w-72 flex-col border-r border-border-default bg-white">
+      <div class="flex items-center justify-between px-4 py-3">
+        <h2 class="text-sm font-semibold text-text-primary">知识库</h2>
+        <Button variant="ghost" size="icon-xs" @click="openCreateDialog">
+          <PlusIcon class="size-4" />
+        </Button>
+      </div>
 
-    <!-- Loading -->
-    <div v-if="store.isLoading && store.knowledgeBases.length === 0" class="flex flex-1 items-center justify-center">
-      <LoaderIcon class="size-6 animate-spin text-accent-500" />
-    </div>
-
-    <!-- Empty state -->
-    <div
-      v-else-if="store.knowledgeBases.length === 0"
-      class="flex flex-1 flex-col items-center justify-center gap-3 text-text-tertiary"
-    >
-      <DatabaseIcon class="size-12 opacity-40" />
-      <p class="text-sm">暂无知识库</p>
-      <Button variant="ghost" class="text-accent-500 hover:text-accent-600" @click="openCreateDialog">
-        创建一个
-      </Button>
-    </div>
-
-    <!-- KB Grid -->
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <!-- Loading -->
       <div
-        v-for="kb in sortedKbs"
-        :key="kb.id"
-        class="group relative flex flex-col gap-3 rounded-2xl border border-border-default bg-white p-5 transition-all hover:shadow-md"
+        v-if="store.isLoading && store.knowledgeBases.length === 0"
+        class="flex flex-1 items-center justify-center"
       >
-        <!-- Top row: icon + actions -->
-        <div class="flex items-start justify-between">
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-xl"
-            :class="kb.isPinned ? 'bg-accent-soft' : 'bg-surface-2'"
-          >
-            <DatabaseIcon
-              class="size-5"
-              :class="kb.isPinned ? 'text-accent-500' : 'text-text-tertiary'"
-            />
-          </div>
-          <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <LoaderIcon class="size-6 animate-spin text-accent-500" />
+      </div>
+
+      <!-- Empty -->
+      <div
+        v-else-if="store.knowledgeBases.length === 0"
+        class="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-text-tertiary"
+      >
+        <DatabaseIcon class="size-8 opacity-40" />
+        <p class="text-xs">暂无知识库</p>
+      </div>
+
+      <!-- List -->
+      <div v-else class="flex-1 overflow-auto px-2">
+        <div
+          v-for="kb in sortedKbs"
+          :key="kb.id"
+          class="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 transition-colors"
+          :class="
+            selectedKbId === kb.id
+              ? 'bg-accent-500/10 text-accent-600'
+              : 'hover:bg-surface-2'
+          "
+          @click="selectKb(kb)"
+        >
+          <DatabaseIcon
+            class="size-4"
+            :class="kb.isPinned ? 'text-accent-500' : 'text-text-tertiary'"
+          />
+          <span class="flex-1 truncate text-sm">{{ kb.name }}</span>
+          <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
             <Button
               variant="ghost"
               size="icon-xs"
               :class="kb.isPinned ? 'text-accent-500' : 'text-text-tertiary'"
-              :title="kb.isPinned ? '取消置顶' : '置顶'"
-              @click="store.togglePin(kb.id)"
+              @click.stop="store.togglePin(kb.id)"
             >
-              <PinIcon class="size-4" />
+              <PinIcon class="size-3" />
             </Button>
             <Button
               variant="ghost"
               size="icon-xs"
               class="text-text-tertiary"
-              title="重命名"
-              @click="openRenameDialog(kb)"
+              @click.stop="openRenameDialog(kb)"
             >
-              <PencilIcon class="size-4" />
+              <PencilIcon class="size-3" />
             </Button>
             <Button
               variant="ghost"
               size="icon-xs"
               class="text-text-tertiary hover:text-danger-500"
-              title="删除"
-              @click="openDeleteDialog(kb)"
+              @click.stop="openDeleteDialog(kb)"
             >
-              <TrashIcon class="size-4" />
+              <TrashIcon class="size-3" />
             </Button>
           </div>
         </div>
-
-        <!-- Info -->
-        <div class="min-w-0">
-          <h3 class="truncate text-sm font-medium text-text-primary">{{ kb.name }}</h3>
-          <p v-if="kb.description" class="mt-0.5 line-clamp-2 text-xs text-text-tertiary">
-            {{ kb.description }}
-          </p>
-        </div>
-
-        <!-- Meta -->
-        <div class="mt-auto pt-2 text-[11px] text-text-tertiary">
-          {{ formatDate(kb.createdAt) }}
-        </div>
       </div>
+    </div>
+
+    <!-- Right: File Manager -->
+    <div class="flex-1">
+      <FileManager :kb-id="selectedKbId" @upload="console.log('upload')" />
     </div>
 
     <!-- Create Dialog -->
