@@ -40,5 +40,8 @@
     "@types/pg": "^8.20.0",
     "better-auth": "^1.6.11",
     "hono-rate-limiter": "^0.5.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "bcrypt"]
   }
 }
