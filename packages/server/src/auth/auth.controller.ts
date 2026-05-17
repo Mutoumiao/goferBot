@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { AuthService } from './auth.service.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
 import { CurrentUser } from './decorators/current-user.decorator.js'
@@ -11,18 +12,21 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto.email, dto.password, dto.name)
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password)
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   async refresh(@Body() dto: { refreshToken: string }) {
     return this.authService.refresh(dto.refreshToken)
   }

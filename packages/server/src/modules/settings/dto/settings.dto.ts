@@ -1,18 +1,22 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
+import { validateBaseUrl, getAllowedHostnames } from '../../../common/utils/ssrf-guard.js'
 
 const providerSchema = z.object({
   apiKey: z.string().min(1, 'apiKey 不能为空'),
   model: z.string().min(1, 'model 不能为空'),
   baseUrl: z.string().refine(
-    (v) => v === '' || z.string().url().safeParse(v).success,
-    { message: 'baseUrl 必须是合法 URL 或空字符串' },
+    (v) => v === '' || (z.string().url().safeParse(v).success && validateBaseUrl(v)),
+    { message: `baseUrl 必须是合法 URL 或空字符串，仅允许: ${getAllowedHostnames().join(', ')}` },
   ),
 })
 
 const ollamaSchema = z.object({
   enabled: z.boolean(),
-  url: z.string().url('ollama url 必须是合法 URL'),
+  url: z.string().url('ollama url 必须是合法 URL').refine(
+    (v) => validateBaseUrl(v, { allowLocalhost: true, requireHttps: false }),
+    { message: 'ollama url 不允许指向内网地址（localhost 除外）' },
+  ),
   model: z.string(),
 })
 
@@ -21,8 +25,8 @@ const embeddingProviderSchema = z.object({
   apiKey: z.string().min(1, 'apiKey 不能为空'),
   model: z.string().min(1, 'model 不能为空'),
   baseUrl: z.string().refine(
-    (v) => v === '' || z.string().url().safeParse(v).success,
-    { message: 'baseUrl 必须是合法 URL 或空字符串' },
+    (v) => v === '' || (z.string().url().safeParse(v).success && validateBaseUrl(v)),
+    { message: `baseUrl 必须是合法 URL 或空字符串，仅允许: ${getAllowedHostnames().join(', ')}` },
   ),
 })
 

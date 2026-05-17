@@ -6,7 +6,7 @@ import { bootstrap } from './bootstrap.js'
 async function main() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    new FastifyAdapter({ bodyLimit: 1048576 }), // 1MB JSON body limit
   )
 
   await bootstrap(app)
