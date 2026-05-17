@@ -87,18 +87,21 @@ export class DocumentController {
       }
     }
 
+    const MAX_SIZE = 50 * 1024 * 1024
     const chunks: Buffer[] = []
+    let totalSize = 0
     for await (const chunk of data.file) {
-      chunks.push(chunk)
+      const buf = chunk as Buffer
+      totalSize += buf.length
+      if (totalSize > MAX_SIZE) {
+        throw new PayloadTooLargeException({
+          code: 'PAYLOAD_TOO_LARGE',
+          message: '文件超过 50MB 限制',
+        })
+      }
+      chunks.push(buf)
     }
     const buffer = Buffer.concat(chunks)
-
-    if (buffer.length > 50 * 1024 * 1024) {
-      throw new PayloadTooLargeException({
-        code: 'PAYLOAD_TOO_LARGE',
-        message: '文件超过 50MB 限制',
-      })
-    }
 
     const folderField = data.fields?.folderId
     const folderId = folderField && !Array.isArray(folderField) && 'value' in folderField

@@ -48,6 +48,12 @@ export interface ApiClient {
     path: string,
     options?: Pick<RequestConfig, 'headers' | 'timeout' | 'signal'>
   ): Promise<void>
+  uploadFile(
+    path: string,
+    formData: FormData,
+    onProgress?: (percent: number) => void,
+    options?: Pick<RequestConfig, 'headers' | 'timeout' | 'signal'>
+  ): Promise<unknown>
   sse<T = unknown>(
     path: string,
     body: unknown,
@@ -95,6 +101,63 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
 
     async delete(path, options = {}) {
       return request<void>({ method: 'DELETE', path, ...options })
+    },
+
+    async uploadFile(path, formData, onProgress, options = {}) {
+      const url = `${baseURL}${path}`
+      const token = localStorage.getItem('goferbot_access_token')
+      const headers: Record<string, string> = {
+        ...defaultHeaders,
+        ...options.headers,
+      }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
+      return new Promise<unknown>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable && onProgress) {
+            onProgress(Math.round((e.loaded / e.total) * 100))
+          }
+        })
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const json = JSON.parse(xhr.responseText)
+              resolve(json && typeof json === 'object' && 'data' in json ? json.data : json)
+            } catch {
+              resolve(undefined)
+            }
+          } else {
+            let message = '上传失败'
+            let code = `HTTP_${xhr.status}`
+            try {
+              const res = JSON.parse(xhr.responseText)
+              if (res && typeof res === 'object') {
+                if (typeof res.message === 'string') message = res.message
+                if (typeof res.error?.message === 'string') message = res.error.message
+                if (typeof res.code === 'string') code = res.code
+                if (typeof res.error?.code === 'string') code = res.error.code
+              }
+            } catch {
+              message = xhr.statusText || message
+            }
+            reject(new ApiError({ status: xhr.status, code, message, raw: xhr.responseText }))
+          }
+        })
+
+        xhr.addEventListener('error', () => reject(new NetworkError('网络错误')))
+        xhr.addEventListener('abort', () => reject(new NetworkError('已取消')))
+
+        xhr.open('POST', url)
+        for (const [key, value] of Object.entries(headers)) {
+          xhr.setRequestHeader(key, value)
+        }
+        xhr.send(formData)
+      })
     },
 
     sse<T>(path, body, callbacks, options = {}) {

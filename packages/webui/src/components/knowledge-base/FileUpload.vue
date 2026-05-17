@@ -119,8 +119,11 @@ async function startUpload() {
     }
 
     try {
-      // 使用 XMLHttpRequest 获取进度
-      await uploadWithProgress(item, formData)
+      await api.uploadFile(
+        `/knowledge-bases/${props.kbId}/documents/upload`,
+        formData,
+        (percent) => { item.progress = percent },
+      )
       item.status = 'success'
       item.progress = 100
     } catch (e) {
@@ -138,43 +141,6 @@ async function startUpload() {
       files.value = []
     }, 600)
   }
-}
-
-function uploadWithProgress(item: UploadFile, formData: FormData): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        item.progress = Math.round((e.loaded / e.total) * 100)
-      }
-    })
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve()
-      } else {
-        let message = '上传失败'
-        try {
-          const res = JSON.parse(xhr.responseText)
-          message = res.error?.message || res.message || message
-        } catch {
-          message = xhr.statusText || message
-        }
-        reject(new Error(message))
-      }
-    })
-
-    xhr.addEventListener('error', () => reject(new Error('网络错误')))
-    xhr.addEventListener('abort', () => reject(new Error('已取消')))
-
-    xhr.open('POST', `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/knowledge-bases/${props.kbId}/documents/upload`)
-    const token = localStorage.getItem('goferbot_access_token')
-    if (token) {
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-    }
-    xhr.send(formData)
-  })
 }
 
 function handleDrop(e: DragEvent) {
