@@ -53,7 +53,7 @@ export class ChatService {
     onAbortController?.(abortController)
     const timeout = setTimeout(() => {
       abortController.abort()
-    }, 30000)
+    }, 300000)
 
     try {
       const response = await fetch(`${config.baseUrl}/v1/chat/completions`, {
@@ -136,7 +136,7 @@ export class ChatService {
       if (err instanceof Error && err.name === 'AbortError') {
         throw new ServiceUnavailableException({
           code: 'LLM_TIMEOUT',
-          message: 'LLM 请求超时（30 秒）',
+          message: 'LLM 请求超时（5 分钟）',
         })
       }
       throw err

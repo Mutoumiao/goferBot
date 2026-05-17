@@ -41,7 +41,7 @@ export class SessionController {
     return this.sessionService.create(userId, dto)
   }
 
-  @Patch(':id')
+  @Post(':id/rename')
   async update(
     @CurrentUser('id') userId: string,
     @Param('id') id: string,
