@@ -140,7 +140,7 @@ function onRowClick(sessionId: string) {
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-1 px-10 py-8">
+  <div class="flex h-full flex-col bg-surface-1 px-10 py-8" data-testid="history-page">
     <!-- Header -->
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-xl font-semibold text-text-primary">对话历史</h1>
@@ -150,6 +150,7 @@ function onRowClick(sessionId: string) {
         <SearchIcon class="size-4 shrink-0 text-text-tertiary" />
         <Input
           v-model="searchQuery"
+          data-testid="search-input"
           type="text"
           placeholder="搜索会话"
           class="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-text-primary placeholder:text-text-tertiary shadow-none focus-visible:ring-0"
@@ -193,10 +194,11 @@ function onRowClick(sessionId: string) {
     </div>
 
     <!-- List -->
-    <div v-else class="flex flex-col gap-2.5">
+    <div v-else class="flex flex-col gap-2.5" data-testid="session-list">
       <div
         v-for="session in filteredSessions"
         :key="session.id"
+        data-testid="session-item"
         class="group relative flex cursor-pointer items-center gap-3.5 rounded-[18px] border border-border-default bg-white px-4 py-3.5 transition-all hover:bg-surface-1"
         @click="onRowClick(session.id)"
       >
@@ -212,23 +214,24 @@ function onRowClick(sessionId: string) {
               v-if="editingId === session.id"
               ref="editInputRef"
               v-model="editValue"
+              data-testid="rename-input"
               class="h-8 w-full rounded-lg border-accent-500 bg-surface-1 px-2 text-[15px] font-medium text-text-primary"
               @keydown="handleRenameKeydown($event, session.id)"
               @blur="confirmRename(session.id)"
               @click.stop
             />
-            <h3 v-else class="truncate text-[15px] font-medium text-text-primary">
+            <h3 v-else class="truncate text-[15px] font-medium text-text-primary" data-testid="session-title">
               {{ session.title }}
             </h3>
           </div>
-          <p class="text-xs text-text-secondary">
+          <p class="text-xs text-text-secondary" data-testid="session-meta">
             {{ session.messageCount }} 条消息
           </p>
         </div>
 
         <!-- Meta -->
         <div class="hidden w-[170px] shrink-0 flex-col items-end justify-center gap-[5px] text-xs text-text-tertiary sm:flex">
-          <span>{{ formatTime(session.updatedAt) }}</span>
+          <span data-testid="session-time">{{ formatTime(session.updatedAt) }}</span>
         </div>
 
         <!-- Actions -->
@@ -237,6 +240,7 @@ function onRowClick(sessionId: string) {
             <Button
               variant="ghost"
               size="icon-sm"
+              data-testid="session-menu-btn"
               class="h-[34px] w-[34px] rounded-[14px] text-text-tertiary hover:bg-surface-2 hover:text-text-secondary sm:opacity-0 sm:group-hover:opacity-100"
               :class="openMenuId === session.id ? 'bg-surface-2 opacity-100' : ''"
               @click="toggleMenu(session.id, $event)"
@@ -245,12 +249,14 @@ function onRowClick(sessionId: string) {
             </Button>
             <div
               v-if="openMenuId === session.id"
+              data-testid="session-menu"
               class="absolute right-0 top-[calc(100%+4px)] z-20 min-w-[120px] rounded-xl border border-border-default bg-white py-1 shadow-lg"
               @click.stop
             >
               <Button
                 variant="ghost"
                 size="sm"
+                data-testid="session-rename-btn"
                 class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2"
                 @click="startRename(session.id, session.title)"
               >
@@ -260,6 +266,7 @@ function onRowClick(sessionId: string) {
               <Button
                 variant="ghost"
                 size="sm"
+                data-testid="session-delete-btn"
                 class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
                 @click="openDeleteDialog(session.id)"
               >
@@ -272,6 +279,7 @@ function onRowClick(sessionId: string) {
           <Button
             variant="ghost"
             size="icon-sm"
+            data-testid="session-open-btn"
             class="h-[34px] w-[34px] rounded-[14px] bg-surface-2 text-text-secondary hover:bg-surface-3"
             @click="onRowClick(session.id)"
           >
@@ -284,6 +292,7 @@ function onRowClick(sessionId: string) {
     <!-- Delete Dialog -->
     <div
       v-if="showDeleteDialog"
+      data-testid="delete-dialog"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       @click="showDeleteDialog = false"
     >
@@ -291,8 +300,9 @@ function onRowClick(sessionId: string) {
         <h3 class="text-lg font-medium text-text-primary">删除会话</h3>
         <p class="mt-2 text-sm text-text-secondary">确认删除该会话？此操作不可撤销。</p>
         <div class="mt-4 flex justify-end gap-2">
-          <Button variant="ghost" @click="showDeleteDialog = false">取消</Button>
+          <Button variant="ghost" data-testid="delete-cancel-btn" @click="showDeleteDialog = false">取消</Button>
           <Button
+            data-testid="delete-confirm-btn"
             class="bg-danger-500 text-white hover:bg-danger-600"
             :disabled="isDeleting"
             @click="confirmDelete"

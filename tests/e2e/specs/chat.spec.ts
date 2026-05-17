@@ -27,9 +27,9 @@ test.describe('聊天功能', () => {
 
   test('输入框支持多行文本', async ({ page }) => {
     const chatPage = new ChatPage(page)
-    await page.locator('[data-testid="chat-input"] textarea').fill('第一行\n第二行\n第三行')
-    await expect(page.locator('[data-testid="chat-input"] textarea')).toContainText('第一行')
-    await expect(page.locator('[data-testid="chat-input"] textarea')).toContainText('第二行')
-    await expect(page.locator('[data-testid="chat-input"] textarea')).toContainText('第三行')
+    await page.locator('[data-testid="chat-input"]').fill('第一行\n第二行\n第三行')
+    await expect(page.locator('[data-testid="chat-input"]')).toContainText('第一行')
+    await expect(page.locator('[data-testid="chat-input"]')).toContainText('第二行')
+    await expect(page.locator('[data-testid="chat-input"]')).toContainText('第三行')
   })
 })

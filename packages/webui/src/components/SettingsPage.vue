@@ -185,6 +185,7 @@ onBeforeRouteLeave((_to, _from, next) => {
               :key="key"
               variant="ghost"
               size="sm"
+              :data-testid="`tab-${key}`"
               :class="[
                 'rounded-t-lg px-3 py-1.5 text-sm',
                 activeLlmTab === key
@@ -219,6 +220,7 @@ onBeforeRouteLeave((_to, _from, next) => {
               <div class="relative">
                 <Input
                   v-model="localConfig.providers[activeLlmTab].apiKey"
+                  data-testid="api-key-input"
                   :type="showPassword[activeLlmTab] ? 'text' : 'password'"
                   class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
                   placeholder="输入 API Key"
@@ -301,7 +303,7 @@ onBeforeRouteLeave((_to, _from, next) => {
       </Card>
 
       <!-- Embedding Card -->
-      <Card class="rounded-2xl border border-border-default bg-white shadow-sm">
+      <Card class="rounded-2xl border border-border-default bg-white shadow-sm" data-testid="embedding-card">
         <CardHeader class="pb-4">
           <CardTitle class="text-lg font-medium text-text-primary">
             Embedding API
@@ -312,6 +314,7 @@ onBeforeRouteLeave((_to, _from, next) => {
             <label class="mb-1 block text-sm text-text-secondary">提供商</label>
             <Select
               v-model="localConfig.embeddingProvider.provider"
+              data-testid="embedding-provider-select"
               @update:model-value="markChanged"
             >
               <SelectTrigger class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
@@ -335,6 +338,7 @@ onBeforeRouteLeave((_to, _from, next) => {
             <div class="relative">
               <Input
                 v-model="localConfig.embeddingProvider.apiKey"
+                data-testid="embedding-api-key-input"
                 :type="showPassword['embedding'] ? 'text' : 'password'"
                 class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
                 placeholder="输入 API Key"
@@ -354,6 +358,7 @@ onBeforeRouteLeave((_to, _from, next) => {
             <label class="mb-1 block text-sm text-text-secondary">模型</label>
             <Input
               v-model="localConfig.embeddingProvider.model"
+              data-testid="embedding-model-input"
               type="text"
               class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="输入模型名称"
@@ -364,6 +369,7 @@ onBeforeRouteLeave((_to, _from, next) => {
             <label class="mb-1 block text-sm text-text-secondary">Base URL（可选）</label>
             <Input
               v-model="localConfig.embeddingProvider.baseUrl"
+              data-testid="embedding-baseurl-input"
               type="text"
               class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
               placeholder="留空使用默认地址"
@@ -381,12 +387,13 @@ onBeforeRouteLeave((_to, _from, next) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div>
+          <div data-testid="temperature-container">
             <div class="mb-2 flex items-center justify-between">
               <label class="text-sm text-text-secondary">温度参数</label>
-              <span class="text-sm font-medium text-text-primary">{{ localConfig.temperature.toFixed(1) }}</span>
+              <span data-testid="temperature-value" class="text-sm font-medium text-text-primary">{{ localConfig.temperature.toFixed(1) }}</span>
             </div>
             <input
+              data-testid="temperature-slider"
               v-model.number="localConfig.temperature"
               type="range"
               min="0"

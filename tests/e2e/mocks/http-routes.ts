@@ -6,7 +6,27 @@ export async function mockApiRoutes(page: Page) {
     route.fulfill({ json: { status: 'ok' } })
   })
 
-  // Auth endpoints (handled separately in auth fixture)
+  // Auth endpoints
+  await page.route('**/auth/me', (route) => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({
+        json: { data: { id: 'user-1', email: 'test@example.com', name: 'Test User' } },
+      })
+    }
+  })
+
+  await page.route('**/auth/refresh', (route) => {
+    if (route.request().method() === 'POST') {
+      route.fulfill({
+        json: {
+          data: {
+            accessToken: 'mock-access-token-refreshed',
+            refreshToken: 'mock-refresh-token-refreshed',
+          },
+        },
+      })
+    }
+  })
 
   // Chat endpoints
   await page.route('**/chat', (route) => {
@@ -71,6 +91,28 @@ export async function mockApiRoutes(page: Page) {
           { id: 'doc-2', title: '架构图', size: 2048, createdAt: new Date().toISOString() },
         ],
       })
+    }
+  })
+
+  // Settings endpoints
+  await page.route('**/settings', (route) => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({
+        json: {
+          providers: {
+            openai: { apiKey: '', model: 'gpt-4o', baseUrl: '' },
+            claude: { apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
+            deepseek: { apiKey: '', model: 'deepseek-chat', baseUrl: '' },
+            custom: { apiKey: '', model: '', baseUrl: '' },
+            ollama: { enabled: false, url: 'http://localhost:11434', model: '' },
+          },
+          embeddingProvider: { provider: 'openai', apiKey: '', model: 'text-embedding-3-small', baseUrl: '' },
+          temperature: 0.7,
+          defaultChatProvider: 'deepseek',
+        },
+      })
+    } else if (route.request().method() === 'POST') {
+      route.fulfill({ json: { success: true } })
     }
   })
 }

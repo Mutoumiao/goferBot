@@ -21,6 +21,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 <template>
   <input
+    v-bind="$attrs"
     v-model="modelValue"
     data-slot="input"
     :class="cn(
