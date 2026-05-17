@@ -10,19 +10,19 @@
 ```
 docs/08-test-cases/
 └── {issue-id}/
-    └── {scope}.md
+    └── {kind}.md
 ```
 
 | 元素 | 规则 |
 |------|------|
 | `issue-id` | 与 issue 编号完全一致 |
-| `scope` | 测试范围：behavior / api / e2e / unit |
+| `kind` | 测试类别：behavior / api / e2e / unit |
 
 ---
 
-## Scope 枚举
+## Kind 枚举
 
-| Scope | 含义 | 适用场景 |
+| Kind | 含义 | 适用场景 |
 |-------|------|----------|
 | `behavior` | 行为测试用例 | 前端交互、UI 状态、用户操作流程 |
 | `api` | API 测试用例 | 后端接口、请求/响应、错误码 |
@@ -44,7 +44,16 @@ docs/08-test-cases/
 ## 模板
 
 ```markdown
-# {issue-id} {scope} 测试用例
+---
+issue_id: {issue-id}
+type: test-case
+kind: {behavior / api / e2e / unit}
+tc_count: {N}
+status: {drafted / reviewed / automated}
+summary: {测试覆盖范围、核心场景、自动化状态，2-3 句话}
+---
+
+# {issue-id} {kind} 测试用例
 
 > 对应 issue: `docs/02-issues/{issue-id}-{slug}.md`
 > 规格引用:

@@ -20,8 +20,8 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 │   ├── 00-meta/                  # 流程规范、skills
 │   ├── 01-prd/                   # 产品需求
 │   ├── 02-issues/                # 活跃 issue（双轨前缀 f-/b-/d-/i-/q-）
-│   ├── 03-specs/                 # 契约层（Feature/Behavior/API）
-│   ├── 04-plans/                 # 执行计划（issue-slug/YYYY-MM-DD.md）
+│   ├── 03-specs/                 # 契约层（按 issue-id 组织）
+│   ├── 04-plans/                 # 执行计划（issue-id/v{N}.md）
 │   ├── 05-adrs/                  # 架构决策记录
 │   ├── 06-design/                # 设计系统
 │   ├── 07-reviews/               # 审查记录
@@ -78,7 +78,18 @@ pnpm -r build         # 构建所有包
 | 了解流程 | `docs/00-meta/workflow.md` |
 | 了解产品 | `docs/01-prd/v2-cloud-native.md` |
 | 领取任务 | `docs/02-issues/` |
-| 编码前 | `docs/03-specs/features/{feature-slug}/` |
+| 编码前 | `docs/03-specs/{issue-id}/` |
+
+### 文档读取协议
+
+Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 token：
+
+1. **先读索引** — 查 `PROGRESS.md` 的 Phase 表格定位目标 issue
+2. **再读 frontmatter** — 读目标文档的 YAML 头部获取 `status`/`summary`/`blocked_by`/`token_estimate`
+3. **按需深入正文** — 仅当 frontmatter 确认文档与当前任务相关，且状态非 closed/deprecated 时，才读正文
+4. **尽量避免全文扫读** — 不得在未读 frontmatter 前直接读取完整文档
+
+> 各文档类型的 frontmatter 规范参见 `docs/00-meta/` 下对应的 `writing-*.md`。
 
 ## Agent Skills
 

@@ -1,6 +1,13 @@
 # 功能规格模板
 
 ```markdown
+---
+issue_id: {issue-id}
+type: feature-spec
+status: draft
+summary: {功能边界、核心用户故事、关键决策，2-3 句话}
+---
+
 # 功能规格：{功能名称}
 
 ## 用户故事
@@ -31,7 +38,16 @@
 
 ---
 
-## 填写说明
+## Frontmatter 字段说明
+
+| 字段 | 说明 | 必填 |
+|------|------|------|
+| `issue_id` | 对应 issue 编号 | ✅ |
+| `type` | 固定值：`feature-spec` | ✅ |
+| `status` | draft → review → approved → deprecated | ✅ |
+| `summary` | 清晰描述功能边界与核心内容，Agent 据此判断是否需深入阅读 | ✅ |
+
+## 正文填写说明
 
 | 字段 | 说明 |
 |------|------|

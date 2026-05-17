@@ -33,6 +33,15 @@ docs/04-plans/
 ## 模板
 
 ```markdown
+---
+issue_id: {issue-id}
+type: plan
+version: {N}
+status: {draft / ready / executing / done}
+task_count: {N}
+summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
+---
+
 # {功能名称} 实现计划
 
 > **目标：** {一句话描述要做什么}

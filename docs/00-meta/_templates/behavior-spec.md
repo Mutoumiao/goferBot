@@ -1,6 +1,13 @@
 # 行为规格模板（前端）
 
 ```markdown
+---
+issue_id: {issue-id}
+type: behavior-spec
+status: draft
+summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话}
+---
+
 # 行为规格：{功能名称}
 
 ## 入口
@@ -57,6 +64,15 @@
 ```
 
 ---
+
+## Frontmatter 字段说明
+
+| 字段 | 说明 | 必填 |
+|------|------|------|
+| `issue_id` | 对应 issue 编号 | ✅ |
+| `type` | 固定值：`behavior-spec` | ✅ |
+| `status` | draft → review → approved → deprecated | ✅ |
+| `summary` | 清晰描述交互范围与关键行为，Agent 据此判断是否需深入阅读 | ✅ |
 
 ## 关键规则
 

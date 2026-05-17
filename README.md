@@ -219,7 +219,7 @@ Collection: chunks
 | [`docs/01-prd/v2-cloud-native.md`](./docs/01-prd/v2-cloud-native.md)   | 产品需求文档（PRD）v2                               |
 | [`docs/05-adrs/`](./docs/05-adrs/)                                     | 架构决策记录（ADR）                                 |
 | [`docs/02-issues/`](./docs/02-issues/)                                 | 活跃 Issue 跟踪（含验收标准与依赖声明）                        |
-| [`docs/03-specs/`](./docs/03-specs/)                                   | 功能规格、行为规格、API 规格                          |
+| [`docs/03-specs/`](./docs/03-specs/)                                   | 功能规格、行为规格、API 规格（按 issue-id 组织）        |
 
 ***
 

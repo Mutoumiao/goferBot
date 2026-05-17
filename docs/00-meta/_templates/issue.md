@@ -1,6 +1,21 @@
 # Issue 模板
 
 ```markdown
+---
+id: {prefix}-{NN}
+type: issue
+status: needs-triage
+track: {frontend / backend / design / infra / quality}
+priority: {p0 / p1 / p2}
+summary: {简洁描述功能目标与范围，2-3 句话，足够让 Agent 判断相关性}
+blocked_by: []
+blocks: []
+spec: docs/03-specs/{issue-id}/
+plan: docs/04-plans/{issue-id}/v1.md
+tests: docs/08-test-cases/{issue-id}/
+token_estimate: {预估全文 token}
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -53,11 +68,28 @@
 
 ---
 
-## 填写说明
+## Frontmatter 字段说明
+
+| 字段 | 说明 | 必填 |
+|------|------|------|
+| `id` | Issue 编号，如 `f-06` | ✅ |
+| `type` | 固定值：`issue` | ✅ |
+| `status` | 状态机：needs-triage → triaged → in-progress → in-review → blocked → closed | ✅ |
+| `track` | 轨道：frontend / backend / design / infra / quality | ✅ |
+| `priority` | 优先级：p0（阻塞）/ p1（重要）/ p2（可选） | ✅ |
+| `summary` | 清晰描述功能目标与范围，Agent 据此判断是否需深入阅读全文（200 字内均可） | ✅ |
+| `blocked_by` | 阻塞此 issue 的其他 issue ID 列表 | 可选 |
+| `blocks` | 被此 issue 阻塞的其他 issue ID 列表 | 可选 |
+| `spec` | 对应 spec 目录路径 | 可选（初始留空） |
+| `plan` | 对应 plan 文件路径 | 可选（初始留空） |
+| `tests` | 对应测试用例目录路径 | 可选（初始留空） |
+| `token_estimate` | 预估全文 token 数，Agent 判断是否深入读取 | 可选 |
+
+## 正文字段说明
 
 | 字段 | 说明 |
 |------|------|
-| `状态` | 固定值：`needs-triage`，由 `/issue-lifecycle` 管理流转 |
+| `状态` | 与 frontmatter `status` 保持同步，由 `/issue-lifecycle` 管理流转 |
 | `分类` | `enhancement` / `bug` / `refactor` |
 | `规格引用` | 生成 issue 时先留空，spec 编写后回填 |
 | `验收标准` | 可验证的完成条件，每条必须能回答"怎么验证" |

@@ -1,6 +1,15 @@
 # Plan 模板
 
 ```markdown
+---
+issue_id: {issue-id}
+type: plan
+version: {N}
+status: {draft / ready / executing / done}
+task_count: {N}
+summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
+---
+
 # {功能名称} 实现计划
 
 > **目标：** {一句话描述要做什么}
@@ -80,7 +89,18 @@
 
 ---
 
-## 填写说明
+## Frontmatter 字段说明
+
+| 字段 | 说明 | 必填 |
+|------|------|------|
+| `issue_id` | 对应 issue 编号 | ✅ |
+| `type` | 固定值：`plan` | ✅ |
+| `version` | 版本号 N（v{N}.md 中的 N） | ✅ |
+| `status` | draft → ready → executing → done | ✅ |
+| `task_count` | 任务总数 | 可选 |
+| `summary` | 清晰描述技术方案与任务结构，Agent 据此判断是否需深入阅读 | ✅ |
+
+## 正文填写说明
 
 | 字段 | 说明 |
 |------|------|

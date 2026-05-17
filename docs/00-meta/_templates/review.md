@@ -7,6 +7,7 @@ type: {code / spec / security / acceptance}
 date: {YYYY-MM-DD}
 issues: [{issue-id}, {issue-id}]
 status: {completed / partial / failed}
+summary: {审查发现的核心问题与总体结论，2-3 句话}
 ---
 
 # {Scope} {Type} 审查报告
@@ -96,12 +97,20 @@ status: {completed / partial / failed}
 
 ---
 
-## 填写说明
+## Frontmatter 字段说明
+
+| 字段 | 说明 | 必填 |
+|------|------|------|
+| `scope` | 审查范围的语义化标识 | ✅ |
+| `type` | 审查类型：code / spec / security / acceptance | ✅ |
+| `date` | 审查日期（ISO 8601） | ✅ |
+| `issues` | 覆盖的 issue 编号列表 | ✅ |
+| `status` | completed / partial / failed | ✅ |
+| `summary` | 清晰描述审查发现与结论，Agent 据此判断是否需深入阅读 | ✅ |
+
+## 正文填写说明
 
 | 字段 | 说明 |
 |------|------|
-| `scope` | 审查范围的语义化标识 |
-| `type` | 审查类型 |
-| `issues` | 本次审查覆盖的所有 issue 编号 |
-| `status` | 总体结论状态 |
 | `C/M/m/I` | Critical/Major/Minor/Info 四级分类 |
+| `Spec 对齐检查` | 逐条对照验收标准，附证据路径 |

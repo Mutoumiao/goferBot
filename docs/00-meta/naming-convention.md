@@ -198,6 +198,7 @@ status: completed
 | `date` | 审查日期（ISO 8601） |
 | `issues` | 覆盖的 issue 编号列表 |
 | `status` | `completed` / `partial` / `failed` |
+| `summary` | 审查发现的核心问题与总体结论 |
 
 ---
 

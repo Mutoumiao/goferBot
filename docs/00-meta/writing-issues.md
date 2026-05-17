@@ -42,6 +42,21 @@ docs/02-issues/
 ## Issue 模板
 
 ```markdown
+---
+id: {prefix}-{NN}
+type: issue
+status: needs-triage
+track: {frontend / backend / design / infra / quality}
+priority: {p0 / p1 / p2}
+summary: {一句话描述}
+blocked_by: []
+blocks: []
+spec: docs/03-specs/{issue-id}/
+plan: docs/04-plans/{issue-id}/v1.md
+tests: docs/08-test-cases/{issue-id}/
+token_estimate: {预估全文 token}
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -51,9 +66,9 @@ docs/02-issues/
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/{feature-slug}/feature-spec.md
-- 行为规格: docs/03-specs/features/{feature-slug}/behavior-spec.md
-- API 规格: docs/03-specs/features/{feature-slug}/api-spec.md
+- 功能规格: docs/03-specs/{issue-id}/feature-spec.md
+- 行为规格: docs/03-specs/{issue-id}/behavior-spec.md
+- API 规格: docs/03-specs/{issue-id}/api-spec.md
 
 ## 验收标准
 

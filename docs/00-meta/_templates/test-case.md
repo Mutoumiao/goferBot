@@ -1,7 +1,16 @@
 # Test Case 模板
 
 ```markdown
-# {issue-id} {scope} 测试用例
+---
+issue_id: {issue-id}
+type: test-case
+kind: {behavior / api / e2e / unit}
+tc_count: {N}
+status: {drafted / reviewed / automated}
+summary: {测试覆盖范围、核心场景、自动化状态，2-3 句话}
+---
+
+# {issue-id} {kind} 测试用例
 
 > 对应 issue: `docs/02-issues/{issue-id}-{slug}.md`
 > 规格引用:
@@ -52,7 +61,18 @@
 
 ---
 
-## 填写说明
+## Frontmatter 字段说明
+
+| 字段 | 说明 | 必填 |
+|------|------|------|
+| `issue_id` | 对应 issue 编号 | ✅ |
+| `type` | 固定值：`test-case` | ✅ |
+| `kind` | 测试类别：behavior / api / e2e / unit | ✅ |
+| `tc_count` | 测试用例总数 | 可选 |
+| `status` | drafted → reviewed → automated | ✅ |
+| `summary` | 清晰描述测试覆盖范围与核心场景，Agent 据此判断是否需深入阅读 | ✅ |
+
+## 正文填写说明
 
 | 字段 | 说明 |
 |------|------|

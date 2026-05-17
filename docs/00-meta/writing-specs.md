@@ -8,26 +8,28 @@
 
 ```
 docs/03-specs/
-├── _templates/              # 模板文件
-│   ├── feature-spec.md
-│   ├── behavior-spec.md
-│   └── api-spec.md
-├── architecture/
-│   └── v2-cloud-native.md   # 架构总纲
-├── features/
-│   └── {feature-slug}/
-│       ├── feature-spec.md
-│       ├── behavior-spec.md
-│       └── api-spec.md
-└── data-model/
-    └── v2-schema.ts         # Drizzle Schema 单一事实源
+└── {issue-id}/
+    ├── feature-spec.md      # 功能规格（必须）
+    ├── behavior-spec.md     # 行为规格（前端必须）
+    └── api-spec.md          # API 规格（后端必须）
 ```
+
+- 目录名 = issue 编号（如 `f-06`、`b-02`）
+- 一个 issue 对应一个 spec 目录
+- 禁止用 feature-slug 命名目录
 
 ---
 
 ## 功能规格模板
 
 ```markdown
+---
+issue_id: {issue-id}
+type: feature-spec
+status: draft
+summary: {功能边界与用户故事概要}
+---
+
 # 功能规格：{功能名称}
 
 ## 用户故事
@@ -56,6 +58,13 @@ docs/03-specs/
 ## 行为规格模板（前端）
 
 ```markdown
+---
+issue_id: {issue-id}
+type: behavior-spec
+status: draft
+summary: {交互状态与错误场景概要}
+---
+
 # 行为规格：{功能名称}
 
 ## 入口
@@ -114,6 +123,13 @@ docs/03-specs/
 ## API 规格模板（后端）
 
 ```markdown
+---
+issue_id: {issue-id}
+type: api-spec
+status: draft
+summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
+---
+
 # API 规格：{功能名称}
 
 ## 端点

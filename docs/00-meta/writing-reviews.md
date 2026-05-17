@@ -70,6 +70,7 @@ type: code
 date: 2026-05-17
 issues: [f-06, f-07, f-08, b-02]
 status: completed
+summary: {审查发现的核心问题与总体结论，2-3 句话}
 ---
 
 # {Scope} {Type} 审查报告
@@ -210,5 +211,5 @@ status: completed
 | 用日期命名文件 | `code-2026-05-17.md` | `code-v1.md` |
 | 用模糊 scope | `overall/`、`all/` | `project/`、`phase-3/` |
 | 追加修改旧报告 | 在 `code-v1.md` 追加新问题 | 新建 `code-v2.md` |
-| 缺少 frontmatter | 文件头部无 YAML | 必须包含 scope/type/date/issues/status |
+| 缺少 frontmatter | 文件头部无 YAML | 必须包含 scope/type/date/issues/status/summary |
 | 无覆盖 issue 列表 | 报告内不说明审查了哪些 issue | 必须列出 issues 字段 |
