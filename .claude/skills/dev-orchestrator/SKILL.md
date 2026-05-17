@@ -16,6 +16,18 @@ description: >
 
 ---
 
+## 读取协议
+
+**每步读取必须遵守分层读取，避免全文加载浪费 token：**
+
+1. **先读索引** — 查 `PROGRESS.md` 快速索引表定位目标 issue
+2. **再读 frontmatter** — 读目标 issue 的 YAML 头部获取 `status`/`summary`/`blocked_by`/`blocked`/`spec`/`plan`/`tests`
+3. **按需深入正文** — 仅当 frontmatter 确认 status 非 closed，且与当前任务相关时，才继续读正文
+4. **读 spec/plan 同理** — 先读其 frontmatter 获取 `status`/`summary`，确认后再深入
+5. **尽量避免全文扫读** — 不得在未读 frontmatter 前直接读取完整文档
+
+---
+
 ## 路径约定
 
 | 文档类型 | 路径 | 验证规则 |
@@ -71,11 +83,11 @@ description: >
 
 在 `docs/02-issues/` 查找匹配文件。
 
-- 唯一匹配：直接读取
+- 唯一匹配：**先读 frontmatter**（`---` 之间），提取 `status`/`summary`/`blocked_by`/`blocks`/`spec`/`plan`/`tests`
 - 多个匹配：列出请用户确认
 - 未找到：报错并列出所有 issue
 
-提取：状态、构建内容、验收标准、阻塞于、规格引用。
+**仅当 frontmatter `status` 非 closed 时继续**。`status: closed` → 告知已完成，询问是否重新打开。
 
 ### 3. 读取对应 Spec
 

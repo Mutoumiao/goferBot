@@ -1,3 +1,18 @@
+---
+id: f-04-tab-bar
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现聊天页面内部的顶部标签栏，浏览器式多标签管理，支持问答会话多开。用户可在 Chat 页面内同时打开多个问答会话，在标签间快速切换。
+blocked_by: [f-09-chat-page, b-03-session-api]
+blocks: []
+spec: docs/03-specs/f-04-tab-bar/
+plan: docs/04-plans/f-04-tab-bar/v1.md
+tests: docs/08-test-cases/f-04-tab-bar/
+token_estimate: 1100
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,8 +22,8 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/tab-bar/feature-spec.md
-- 行为规格: docs/03-specs/features/tab-bar/behavior-spec.md
+- 功能规格: docs/03-specs/f-04-tab-bar/feature-spec.md
+- 行为规格: docs/03-specs/f-04-tab-bar/behavior-spec.md
 - API 规格: 无（纯 UI）
 
 ## 背景说明

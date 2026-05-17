@@ -24,7 +24,7 @@ docs/
 │       └── {type}-v{N}.md
 └── 08-test-cases/
     └── {issue-id}/
-        └── {scope}.md
+        └── {kind}.md
 ```
 
 ---
@@ -264,7 +264,7 @@ status: completed
 
 | 禁止 | 错误示例 | 正确示例 |
 |------|----------|----------|
-| 时间戳命名 plan | `04-plans/f-06/2026-05-17.md` | `04-plans/f-06/v1.md` |
+| 时间戳命名 plan | `04-plans/f-06/v1.md` | `04-plans/f-06/v1.md` |
 | 用 feature-slug 命名 spec 目录 | `03-specs/knowledge-base-file-manager/` | `03-specs/f-06/` |
 | 用 phase 名命名 plan 目录 | `04-plans/phase-3/v1.md` | `04-plans/f-06/v1.md` |
 | Review 用日期命名 | `07-reviews/phase-3/code-2026-05-17.md` | `07-reviews/phase-3/code-v1.md` |

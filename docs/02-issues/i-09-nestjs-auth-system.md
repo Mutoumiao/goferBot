@@ -1,3 +1,18 @@
+---
+id: i-09-nestjs-auth-system
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 基于 NestJS + JWT + bcrypt 的认证系统，替换 Better Auth。完整的 JWT 认证流程（登录/注册/刷新/守卫），基于 bcrypt 密码哈希。
+blocked_by: [i-08-nestjs-server-setup, i-02-prisma-setup]
+blocks: []
+spec: docs/03-specs/i-09-nestjs-auth-system/
+plan: docs/04-plans/i-09-nestjs-auth-system/v1.md
+tests: docs/08-test-cases/i-09-nestjs-auth-system/
+token_estimate: 1100
+---
+
 状态: completed
 分类: enhancement
 

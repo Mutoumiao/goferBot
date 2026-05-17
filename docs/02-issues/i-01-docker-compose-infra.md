@@ -1,3 +1,18 @@
+---
+id: i-01-docker-compose-infra
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 搭建 Docker Compose 开发环境，包含 PostgreSQL、MinIO、Milvus、Redis 四个核心服务。运行 pnpm infra:up 后四个核心服务全部就绪。
+blocked_by: []
+blocks: []
+spec: docs/03-specs/i-01-docker-compose-infra/
+plan: docs/04-plans/i-01-docker-compose-infra/v1.md
+tests: docs/08-test-cases/i-01-docker-compose-infra/
+token_estimate: 900
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,8 +22,8 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/docker-compose-infra/feature-spec.md
-- 行为规格: docs/03-specs/features/docker-compose-infra/behavior-spec.md
+- 功能规格: docs/03-specs/i-01-docker-compose-infra/feature-spec.md
+- 行为规格: docs/03-specs/i-01-docker-compose-infra/behavior-spec.md
 - API 规格: 无（基础设施，无 API）
 
 ## 验收标准

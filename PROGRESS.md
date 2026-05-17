@@ -1,7 +1,7 @@
 # 项目进度追踪（Progress）
 
 > **更新日期**：2026-05-17
-> **当前阶段**：云原生架构重构（V2）— Phase 3 知识库与文件已完成，进入 Phase 4 聊天功能收尾
+> **当前阶段**：Phase 1-4 全部完成，Phase 5 RAG 集成待启动
 
 ---
 
@@ -16,7 +16,66 @@
 
 ---
 
-## V2 架构概览
+## 快速索引
+
+> Agent 优先读此节定位目标 issue，再读对应 frontmatter 深入。状态列 ✅ = closed。
+
+### Phase 1: 基础设施（全部 ✅）
+
+| id | track | status | summary | blocked_by |
+|----|-------|--------|---------|------------|
+| `i-00-core-interfaces` | infra | ✅ | 7 个核心接口文件定义 | — |
+| `i-01-docker-compose-infra` | infra | ✅ | Docker Compose 开发基础设施 | — |
+| `q-03-v1-cleanup` | quality | ✅ | V1 废弃代码与依赖清理 | — |
+| `i-02-prisma-setup` | infra | ✅ | Prisma 5 + PostgreSQL 数据模型 | i-00 |
+| `i-08-nestjs-server-setup` | infra | ✅ | NestJS 10 + Fastify 服务框架 | i-01 |
+| `i-10-nestjs-security` | infra | ✅ | 响应拦截器、异常过滤器、CORS | i-08 |
+| `i-11-minio-service` | infra | ✅ | MinIO 对象存储服务封装 | i-00, i-01 |
+| `i-12-milvus-service` | infra | ✅ | Milvus 向量数据库服务封装 | i-00, i-01 |
+| `i-13-bullmq-service` | infra | ✅ | Redis + BullMQ 异步任务队列 | i-00, i-01 |
+| `i-14-jwt-api-client` | infra | ✅ | 前端 JWT 客户端 + Auth Store | — |
+| `d-01-rag-sdk-contracts` | design | ✅ | RAG SDK 接口合约定义 | — |
+| `f-03-sidebar-navigation` | frontend | ✅ | 侧边栏导航组件 | — |
+
+### Phase 2: 认证系统（全部 ✅）
+
+| id | track | status | summary | blocked_by |
+|----|-------|--------|---------|------------|
+| `i-09-nestjs-auth-system` | infra | ✅ | JWT + bcrypt + Passport 认证 | i-02, i-08 |
+| `f-01-auth-pages` | frontend | ✅ | 登录/注册页面 | b-01 |
+| `f-02-route-guard` | frontend | ✅ | 前端路由守卫 | f-01 |
+
+### Phase 3: 知识库与文件（全部 ✅）
+
+| id | track | status | summary | blocked_by |
+|----|-------|--------|---------|------------|
+| `b-02-knowledge-base-crud-api` | backend | ✅ | 知识库 CRUD + 文件夹 CRUD API | i-02 |
+| `f-05-knowledge-base-list` | frontend | ✅ | 知识库卡片网格列表 | b-02 |
+| `f-06-knowledge-base-file-manager` | frontend | ✅ | 文件管理器（面包屑+网格+搜索） | b-02 |
+| `f-07-file-upload-component` | frontend | ✅ | 文件上传（多选+拖拽+进度条） | b-02, i-11 |
+| `f-08-folder-management` | frontend | ✅ | 文件夹管理（创建/重命名/删除） | b-02 |
+
+### Phase 4: 聊天功能（全部 ✅）
+
+| id | track | status | summary | blocked_by |
+|----|-------|--------|---------|------------|
+| `b-03-session-api` | backend | ✅ | 会话 CRUD API | i-09 |
+| `f-09-chat-page` | frontend | ✅ | 问答对话页 | b-03, b-04 |
+| `b-04-chat-sse-api` | backend | ✅ | SSE 流式对话 API | b-03 |
+| `b-05-settings-api` | backend | ✅ | 设置 API（加密存储） | i-09 |
+| `f-04-tab-bar` | frontend | ✅ | Chat 页面内标签栏 | f-09 |
+| `f-10-message-renderer` | frontend | ✅ | Markdown 渲染 + 代码高亮 | — |
+| `f-11-kb-selector` | frontend | ✅ | 多知识库选择器 | — |
+| `f-12-chat-history` | frontend | ✅ | 会话历史搜索/重命名/删除 | b-03 |
+| `f-13-settings-page` | frontend | ✅ | 设置页（LLM/Embedding 配置） | b-05 |
+
+### Phase 5~6: 待启动
+
+| id | track | status | summary | blocked_by |
+|----|-------|--------|---------|------------|
+| `i-06-data-migration` | infra | pending | V1→V2 数据导出工具 | — |
+
+---
 
 | 层级 | 技术 | 职责 |
 |------|------|------|
@@ -61,78 +120,8 @@
 
 ---
 
-## 实施阶段
-
-### Phase 0: 架构改革（已完成）
-
-- [x] Tauri 冻结文档化
-- [x] Adapter 包移除
-- [x] vue-router 引入
-- [x] Server 去 Sidecar 化
-- [x] V1 代码清理（q-03 已完成）
-
-### 架构变更（2026-05-16）
-
-**Hono → NestJS 迁移**：基于开发者熟悉的 nest-template，将后端框架从 Hono 迁移到 NestJS 10 + Fastify。
-- ORM：Drizzle ORM → Prisma 5
-- 认证：Better Auth → JWT + bcrypt
-- 验证：Zod 手动 → nestjs-zod 管道
-- 响应：手动 → 统一拦截器
-- 异常：手动 → 全局过滤器
-
-### Phase 1: 基础设施（P0）— 已完成
-
-| Issue | 状态 | Spec | Plan | 代码 | 说明 |
-|-------|------|------|------|------|------|
-| `i-00-core-interfaces` | ✅ | ✅ | ✅ | ✅ | 7 个接口文件，type-check 通过 |
-| `i-01-docker-compose-infra` | ✅ | ✅ | ✅ | ✅ | docker-compose.dev.yml、.env.example、infra 脚本 |
-| `q-03-v1-cleanup` | ✅ | ✅ | ✅ | ✅ | V1 代码清理，依赖移除，路由 501 |
-| `i-02-prisma-setup` | ✅ | ✅ | ✅ | ✅ | Prisma 5 + PostgreSQL，8 张表，type-check 通过 |
-| `i-08-nestjs-server-setup` | ✅ | ✅ | ✅ | ✅ | NestJS 10 + Fastify，健康检查，type-check 通过 |
-| `i-10-nestjs-security` | ✅ | ✅ | ✅ | ✅ | 响应拦截器、异常过滤器、Helmet、CORS、Throttler |
-| `i-11-minio-service` | ✅ | ✅ | ✅ | ✅ | StorageModule + StorageService，IStorageProvider |
-| `i-12-milvus-service` | ✅ | ✅ | ✅ | ✅ | VectorModule + VectorService，IVectorStore |
-| `i-13-bullmq-service` | ✅ | ✅ | ✅ | ✅ | QueueModule + QueueService + WorkerService |
-| `i-14-jwt-api-client` | ✅ | ✅ | ✅ | ✅ | 前端 JWT 客户端 + Auth Store + 自动刷新 |
-| `d-01-rag-sdk-contracts` | ✅ | ✅ | ✅ | ✅ | RAG SDK 接口合约完成 |
-| `f-03-sidebar-navigation` | ✅ | ✅ | ✅ | ✅ | 侧边栏导航完成 |
-
-### Phase 2: 认证系统（P0）— 已完成
-
-| Issue | 状态 | Spec | Plan | 代码 | 说明 |
-|-------|------|------|------|------|------|
-| `i-09-nestjs-auth-system` | ✅ | ✅ | ✅ | ✅ | JWT + bcrypt + Passport，5 个端点 |
-| `i-14-jwt-api-client` | ✅ | ✅ | ✅ | ✅ | 前端 JWT 客户端 + Auth Store + 自动刷新 |
-| `f-01-auth-pages` | ✅ | ✅ | ✅ | ✅ | 登录/注册页 + 路由守卫 |
-| `f-02-route-guard` | ✅ | ✅ | ✅ | ✅ | 已随 f-01 完成 |
-
-### Phase 3: 知识库与文件（P0）— 已完成
-
-| Issue | 状态 | Spec | Plan | 代码 | 说明 |
-|-------|------|------|------|------|------|
-| `b-02-knowledge-base-crud-api` | ✅ | ✅ | ✅ | ✅ | 知识库 CRUD + 文件夹 CRUD，8 端点 |
-| `f-05-knowledge-base-list` | ✅ | ✅ | ✅ | ✅ | 卡片网格 + 创建/重命名/删除/置顶 |
-| `f-06-knowledge-base-file-manager` | ✅ | ✅ | ✅ | ✅ | 文件管理器（面包屑 + 网格 + 搜索 + 排序） |
-| `f-07-file-upload-component` | ✅ | ✅ | ✅ | ✅ | 文件上传（多选 + 拖拽 + 进度条 + MinIO） |
-| `f-08-folder-management` | ✅ | ✅ | ✅ | ✅ | 文件夹管理（创建/重命名/删除 + 右键菜单） |
-
-### Phase 4: 聊天功能（P0）— 进行中
-
-| Issue | 状态 | Spec | Plan | 代码 | 说明 |
-|-------|------|------|------|------|------|
-| `b-03-session-api` | ✅ | ✅ | ✅ | ✅ | 会话 CRUD，5 端点 |
-| `f-09-chat-page` | ✅ | ✅ | ✅ | ✅ | 问答对话页 + 消息列表 + 输入框 |
-| `b-04-chat-sse-api` | ✅ | ✅ | ✅ | ✅ | SSE 流式对话，OpenAI 兼容格式 |
-| `b-05-settings-api` | ✅ | ✅ | ✅ | ✅ | 设置 API，AES-256-GCM 加密存储 |
-| `f-04-tab-bar` | ✅ | ✅ | ✅ | ✅ | Chat 页面内标签栏 |
-| `f-10-message-renderer` | ✅ | ✅ | ✅ | ✅ | Markdown 渲染 + 代码高亮 + 复制 |
-| `f-11-kb-selector` | ✅ | ✅ | ✅ | ✅ | 多知识库选择 |
-| `f-12-chat-history` | ✅ | ✅ | ✅ | ✅ | 搜索/重命名/删除/恢复会话 |
-| `f-13-settings-page` | ✅ | ✅ | ✅ | ✅ | 设置页（LLM/Embedding/通用配置） |
-
 ### Phase 5: RAG 集成（P1）
 
-- [ ] `d-01-rag-sdk-contracts` — RAG SDK 接口合约
 - [ ] SDK 实现：解析 → 分块 → 向量化
 - [ ] Milvus 写入与检索
 - [ ] 混合检索（向量 + 关键词）
@@ -148,4 +137,4 @@
 
 ---
 
-*最后更新：2026-05-17（Phase 3 完成：f-06/f-07/f-08 全部编码并提交）*
+*最后更新：2026-05-17（文档体系重构完成：frontmatter 标准化 + 分层读取协议 + 旧文档迁移）*

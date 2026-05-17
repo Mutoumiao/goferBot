@@ -1,3 +1,18 @@
+---
+id: d-01-rag-sdk-contracts
+type: issue
+status: closed
+track: design
+priority: p0
+summary: 为 RAG SDK 定义接口合约（IChunker/IEmbedder/IRetriever/IIndexer），结束当前空壳状态。Phase 5 实现时只需遵循接口。
+blocked_by: []
+blocks: []
+spec: docs/03-specs/d-01-rag-sdk-contracts/
+plan: docs/04-plans/d-01-rag-sdk-contracts/v1.md
+tests: docs/08-test-cases/d-01-rag-sdk-contracts/
+token_estimate: 800
+---
+
 状态: needs-triage
 分类: enhancement
 

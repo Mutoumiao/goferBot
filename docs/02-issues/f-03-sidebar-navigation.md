@@ -1,3 +1,18 @@
+---
+id: f-03-sidebar-navigation
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现全局左侧边栏导航，64px 固定宽度，包含上下两个区域，点击切换主功能页面。完整的全局边栏导航，所有交互细节到位。
+blocked_by: [f-01-auth-pages, f-02-route-guard]
+blocks: []
+spec: docs/03-specs/f-03-sidebar-navigation/
+plan: docs/04-plans/f-03-sidebar-navigation/v1.md
+tests: docs/08-test-cases/f-03-sidebar-navigation/
+token_estimate: 1200
+---
+
 状态: in-progress
 分类: enhancement
 
@@ -14,8 +29,8 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/sidebar-navigation/feature-spec.md
-- 行为规格: docs/03-specs/features/sidebar-navigation/behavior-spec.md
+- 功能规格: docs/03-specs/f-03-sidebar-navigation/feature-spec.md
+- 行为规格: docs/03-specs/f-03-sidebar-navigation/behavior-spec.md
 - API 规格: 无（纯 UI）
 
 ## 已完成

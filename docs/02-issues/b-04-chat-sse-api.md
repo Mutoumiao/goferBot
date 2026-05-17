@@ -1,3 +1,18 @@
+---
+id: b-04-chat-sse-api
+type: issue
+status: closed
+track: backend
+priority: p0
+summary: 实现 LLM 问答 SSE 流式 API，支持多知识库 RAG 检索（预留）。前端可通过 SSE 流实时接收 AI 回复，支持多知识库选择和不同 LLM 提供商。
+blocked_by: [b-03-session-api, i-05-redis-bullmq-setup]
+blocks: []
+spec: docs/03-specs/b-04-chat-sse-api/
+plan: docs/04-plans/b-04-chat-sse-api/v1.md
+tests: docs/08-test-cases/b-04-chat-sse-api/
+token_estimate: 1100
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/chat-sse/feature-spec.md
-- 行为规格: docs/03-specs/features/chat-sse/behavior-spec.md
-- API 规格: docs/03-specs/features/chat-sse/api-spec.md
+- 功能规格: docs/03-specs/b-04-chat-sse-api/feature-spec.md
+- 行为规格: docs/03-specs/b-04-chat-sse-api/behavior-spec.md
+- API 规格: docs/03-specs/b-04-chat-sse-api/api-spec.md
 
 ## 验收标准
 

@@ -1,3 +1,18 @@
+---
+id: i-12-milvus-service
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 将现有 Milvus 客户端封装为 NestJS Injectable Service，支持依赖注入。VectorModule 和 VectorService 就绪，实现 IVectorStore 接口。
+blocked_by: [i-08-nestjs-server-setup]
+blocks: []
+spec: docs/03-specs/i-12-milvus-service/
+plan: docs/04-plans/i-12-milvus-service/v1.md
+tests: docs/08-test-cases/i-12-milvus-service/
+token_estimate: 800
+---
+
 状态: completed
 分类: enhancement
 

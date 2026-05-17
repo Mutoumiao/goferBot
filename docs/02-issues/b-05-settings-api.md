@@ -1,3 +1,18 @@
+---
+id: b-05-settings-api
+type: issue
+status: closed
+track: backend
+priority: p0
+summary: 实现设置 API，支持获取和保存 LLM 提供商、Embedding 提供商、通用配置。用户配置持久化到数据库，API Key 使用 AES-256-GCM 加密存储。
+blocked_by: [i-02-drizzle-orm-setup, b-01-auth-api]
+blocks: []
+spec: docs/03-specs/b-05-settings-api/
+plan: docs/04-plans/b-05-settings-api/v1.md
+tests: docs/08-test-cases/b-05-settings-api/
+token_estimate: 1000
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/settings/feature-spec.md
-- 行为规格: docs/03-specs/features/settings/behavior-spec.md
-- API 规格: docs/03-specs/features/settings/api-spec.md
+- 功能规格: docs/03-specs/b-05-settings-api/feature-spec.md
+- 行为规格: docs/03-specs/b-05-settings-api/behavior-spec.md
+- API 规格: docs/03-specs/b-05-settings-api/api-spec.md
 
 ## 验收标准
 

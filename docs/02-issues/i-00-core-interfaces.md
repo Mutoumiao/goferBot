@@ -1,3 +1,18 @@
+---
+id: i-00-core-interfaces
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 在 Phase 1 编码前定义核心接口抽象层（IRepository/IStorageProvider/IVectorStore/IAuthProvider），避免 V1 中数据访问紧耦合的问题在 V2 重演。
+blocked_by: []
+blocks: []
+spec: docs/03-specs/i-00-core-interfaces/
+plan: docs/04-plans/i-00-core-interfaces/v1.md
+tests: docs/08-test-cases/i-00-core-interfaces/
+token_estimate: 900
+---
+
 状态: closed
 分类: enhancement
 

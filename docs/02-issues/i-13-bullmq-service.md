@@ -1,3 +1,18 @@
+---
+id: i-13-bullmq-service
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 将现有 BullMQ 队列封装为 NestJS 模块，支持依赖注入和处理器注册。QueueModule、QueueService、WorkerService 就绪。
+blocked_by: [i-08-nestjs-server-setup]
+blocks: []
+spec: docs/03-specs/i-13-bullmq-service/
+plan: docs/04-plans/i-13-bullmq-service/v1.md
+tests: docs/08-test-cases/i-13-bullmq-service/
+token_estimate: 800
+---
+
 状态: completed
 分类: enhancement
 

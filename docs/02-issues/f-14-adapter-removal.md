@@ -1,3 +1,18 @@
+---
+id: f-14-adapter-removal
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 记录架构改革中 shellAdapters 和 backendAdapters 包的移除过程，作为历史归档供后续参考。前端通过 api/client.ts 直接与 Server 通信。
+blocked_by: []
+blocks: []
+spec: docs/03-specs/f-14-adapter-removal/
+plan: docs/04-plans/f-14-adapter-removal/v1.md
+tests: docs/08-test-cases/f-14-adapter-removal/
+token_estimate: 1100
+---
+
 状态: closed
 分类: enhancement
 

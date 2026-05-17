@@ -1,3 +1,18 @@
+---
+id: b-01-auth-api
+type: issue
+status: needs-triage
+track: backend
+priority: p1
+summary: 集成 Better Auth，实现邮箱+密码注册/登录/登出/会话查询 API。用户可通过邮箱+密码注册和登录，Session Cookie 维持登录态。
+blocked_by: [i-00-core-interfaces, i-02-drizzle-orm-setup]
+blocks: []
+spec: docs/03-specs/b-01-auth-api/
+plan: docs/04-plans/b-01-auth-api/v1.md
+tests: docs/08-test-cases/b-01-auth-api/
+token_estimate: 1100
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/auth-system/feature-spec.md
-- 行为规格: docs/03-specs/features/auth-system/behavior-spec.md
-- API 规格: docs/03-specs/features/auth-system/api-spec.md
+- 功能规格: docs/03-specs/b-01-auth-api/feature-spec.md
+- 行为规格: docs/03-specs/b-01-auth-api/behavior-spec.md
+- API 规格: docs/03-specs/b-01-auth-api/api-spec.md
 
 ## 验收标准
 

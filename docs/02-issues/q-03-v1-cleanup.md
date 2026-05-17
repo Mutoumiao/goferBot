@@ -1,3 +1,18 @@
+---
+id: q-03-v1-cleanup
+type: issue
+status: closed
+track: quality
+priority: p0
+summary: 清理 V1 架构遗留的废弃代码（SQLite、sync、sidecar 相关），减少技术债务。避免后续开发者误用旧机制。
+blocked_by: []
+blocks: []
+spec: docs/03-specs/q-03-v1-cleanup/
+plan: docs/04-plans/q-03-v1-cleanup/v1.md
+tests: docs/08-test-cases/q-03-v1-cleanup/
+token_estimate: 1300
+---
+
 状态: closed
 分类: enhancement
 

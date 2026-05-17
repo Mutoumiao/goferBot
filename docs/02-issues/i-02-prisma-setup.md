@@ -1,3 +1,18 @@
+---
+id: i-02-prisma-setup
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 配置 Prisma ORM，定义数据库 schema（8 张表），替换 Drizzle ORM。Prisma schema 定义完成，客户端生成成功，数据库迁移完成。
+blocked_by: [i-08-nestjs-server-setup]
+blocks: []
+spec: docs/03-specs/i-02-prisma-setup/
+plan: docs/04-plans/i-02-prisma-setup/v1.md
+tests: docs/08-test-cases/i-02-prisma-setup/
+token_estimate: 1000
+---
+
 状态: completed
 分类: enhancement
 
@@ -7,8 +22,8 @@
 
 ## 规格引用
 
-- 功能规格: `docs/03-specs/features/prisma-setup/feature-spec.md`
-- API 规格: `docs/03-specs/features/prisma-setup/api-spec.md`
+- 功能规格: `docs/03-specs/i-02-prisma-setup/feature-spec.md`
+- API 规格: `docs/03-specs/i-02-prisma-setup/api-spec.md`
 
 ## 背景
 

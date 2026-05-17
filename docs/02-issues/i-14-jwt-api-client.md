@@ -1,3 +1,18 @@
+---
+id: i-14-jwt-api-client
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 升级前端 API 客户端，从 Session Cookie 改为 JWT Token 认证。API 客户端使用 JWT Token，支持自动刷新，Auth Store 管理 token。
+blocked_by: [i-09-nestjs-auth-system]
+blocks: []
+spec: docs/03-specs/i-14-jwt-api-client/
+plan: docs/04-plans/i-14-jwt-api-client/v1.md
+tests: docs/08-test-cases/i-14-jwt-api-client/
+token_estimate: 900
+---
+
 状态: completed
 分类: enhancement
 

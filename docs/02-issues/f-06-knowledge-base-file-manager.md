@@ -1,3 +1,18 @@
+---
+id: f-06-knowledge-base-file-manager
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现知识库管理页右侧文件管理器视图，资源管理器式图标视图。支持面包屑导航、搜索、排序，用户可浏览知识库内的文件和文件夹。
+blocked_by: [b-02-knowledge-base-crud-api, f-05-knowledge-base-list]
+blocks: []
+spec: docs/03-specs/f-06-knowledge-base-file-manager/
+plan: docs/04-plans/f-06-knowledge-base-file-manager/v1.md
+tests: docs/08-test-cases/f-06-knowledge-base-file-manager/
+token_estimate: 1100
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/knowledge-base-file-manager/feature-spec.md
-- 行为规格: docs/03-specs/features/knowledge-base-file-manager/behavior-spec.md
-- API 规格: docs/03-specs/features/knowledge-base-crud/api-spec.md
+- 功能规格: docs/03-specs/f-06-knowledge-base-file-manager/feature-spec.md
+- 行为规格: docs/03-specs/f-06-knowledge-base-file-manager/behavior-spec.md
+- API 规格: docs/03-specs/b-02-knowledge-base-crud-api/api-spec.md
 
 ## 验收标准
 

@@ -1,3 +1,18 @@
+---
+id: f-05-knowledge-base-list
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现知识库管理页左侧知识库列表，支持新建、置顶、排序。用户可查看、创建、管理知识库，置顶和排序个性化配置。
+blocked_by: [b-02-knowledge-base-crud-api, f-03-sidebar-navigation]
+blocks: []
+spec: docs/03-specs/f-05-knowledge-base-list/
+plan: docs/04-plans/f-05-knowledge-base-list/v1.md
+tests: docs/08-test-cases/f-05-knowledge-base-list/
+token_estimate: 1100
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/knowledge-base-list/feature-spec.md
-- 行为规格: docs/03-specs/features/knowledge-base-list/behavior-spec.md
-- API 规格: docs/03-specs/features/knowledge-base-crud/api-spec.md
+- 功能规格: docs/03-specs/f-05-knowledge-base-list/feature-spec.md
+- 行为规格: docs/03-specs/f-05-knowledge-base-list/behavior-spec.md
+- API 规格: docs/03-specs/b-02-knowledge-base-crud-api/api-spec.md
 
 ## 验收标准
 

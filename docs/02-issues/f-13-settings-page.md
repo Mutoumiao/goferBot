@@ -1,5 +1,19 @@
+---
+id: f-13-settings-page
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现设置页，分三个卡片区域：LLM 提供商、Embedding API、通用配置。用户可配置多个 LLM 提供商、Embedding 服务和通用参数。
+blocked_by: [b-05-settings-api, f-03-sidebar-navigation]
+blocks: []
+spec: docs/03-specs/f-13-settings-page/
+plan: docs/04-plans/f-13-settings-page/v1.md
+tests: docs/08-test-cases/f-13-settings-page/
+token_estimate: 1200
+---
+
 状态: closed
-分类: enhancement
 分类: enhancement
 
 ## 要构建的内容
@@ -8,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/settings/feature-spec.md
-- 行为规格: docs/03-specs/features/settings/behavior-spec.md
-- API 规格: docs/03-specs/features/settings/api-spec.md
+- 功能规格: docs/03-specs/b-05-settings-api/feature-spec.md
+- 行为规格: docs/03-specs/b-05-settings-api/behavior-spec.md
+- API 规格: docs/03-specs/b-05-settings-api/api-spec.md
 
 ## 验收标准
 

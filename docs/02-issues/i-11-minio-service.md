@@ -1,3 +1,18 @@
+---
+id: i-11-minio-service
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 将现有 MinIO 客户端封装为 NestJS Injectable Service，支持依赖注入。StorageModule 和 StorageService 就绪，实现 IStorageProvider 接口。
+blocked_by: [i-08-nestjs-server-setup]
+blocks: []
+spec: docs/03-specs/i-11-minio-service/
+plan: docs/04-plans/i-11-minio-service/v1.md
+tests: docs/08-test-cases/i-11-minio-service/
+token_estimate: 800
+---
+
 状态: completed
 分类: enhancement
 
@@ -11,8 +26,8 @@ i-03-minio-client 已完成 MinIO 客户端实现，需在 NestJS 中封装为 S
 
 ## 规格引用
 
-- 功能规格: `docs/03-specs/features/minio-service/feature-spec.md`
-- API 规格: `docs/03-specs/features/minio-service/api-spec.md`
+- 功能规格: `docs/03-specs/i-11-minio-service/feature-spec.md`
+- API 规格: `docs/03-specs/i-11-minio-service/api-spec.md`
 
 ## 验收标准
 

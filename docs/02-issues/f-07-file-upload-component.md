@@ -1,3 +1,18 @@
+---
+id: f-07-file-upload-component
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现文件上传组件，支持选择文件、上传到 MinIO、显示上传进度和文档状态。用户可选择文件上传到知识库，实时查看上传进度和文档处理状态。
+blocked_by: [b-02-knowledge-base-crud-api, i-03-minio-client, f-06-knowledge-base-file-manager]
+blocks: []
+spec: docs/03-specs/f-07-file-upload-component/
+plan: docs/04-plans/f-07-file-upload-component/v1.md
+tests: docs/08-test-cases/f-07-file-upload-component/
+token_estimate: 1100
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/file-upload/feature-spec.md
-- 行为规格: docs/03-specs/features/file-upload/behavior-spec.md
-- API 规格: docs/03-specs/features/file-upload/api-spec.md
+- 功能规格: docs/03-specs/f-07-file-upload-component/feature-spec.md
+- 行为规格: docs/03-specs/f-07-file-upload-component/behavior-spec.md
+- API 规格: docs/03-specs/f-07-file-upload-component/api-spec.md
 
 ## 验收标准
 

@@ -1,3 +1,18 @@
+---
+id: i-10-nestjs-security
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: NestJS 安全基线：全局安全中间件、异常处理、响应格式化。统一响应拦截器、异常过滤器、Helmet、CORS、速率限制就绪。
+blocked_by: [i-08-nestjs-server-setup]
+blocks: []
+spec: docs/03-specs/i-10-nestjs-security/
+plan: docs/04-plans/i-10-nestjs-security/v1.md
+tests: docs/08-test-cases/i-10-nestjs-security/
+token_estimate: 1000
+---
+
 状态: completed
 分类: security
 

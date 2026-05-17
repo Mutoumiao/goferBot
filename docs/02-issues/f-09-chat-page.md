@@ -1,3 +1,18 @@
+---
+id: f-09-chat-page
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现问答对话页，包含空会话态和对话态两种状态。支持快捷提问胶囊、知识库提及、流式回复，用户可在对话页与 AI 交流。
+blocked_by: [b-04-chat-sse-api, f-04-tab-bar]
+blocks: []
+spec: docs/03-specs/f-09-chat-page/
+plan: docs/04-plans/f-09-chat-page/v1.md
+tests: docs/08-test-cases/f-09-chat-page/
+token_estimate: 1100
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/chat-page/feature-spec.md
-- 行为规格: docs/03-specs/features/chat-page/behavior-spec.md
-- API 规格: docs/03-specs/features/chat-sse/api-spec.md
+- 功能规格: docs/03-specs/f-09-chat-page/feature-spec.md
+- 行为规格: docs/03-specs/f-09-chat-page/behavior-spec.md
+- API 规格: docs/03-specs/b-04-chat-sse-api/api-spec.md
 
 ## 验收标准
 

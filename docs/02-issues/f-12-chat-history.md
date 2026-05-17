@@ -1,3 +1,18 @@
+---
+id: f-12-chat-history
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现对话历史页，支持查看、恢复、删除、重命名历史会话。用户可查看历史对话列表，点击恢复继续对话，支持搜索过滤。
+blocked_by: [b-03-session-api, f-03-sidebar-navigation]
+blocks: []
+spec: docs/03-specs/f-12-chat-history/
+plan: docs/04-plans/f-12-chat-history/v1.md
+tests: docs/08-test-cases/f-12-chat-history/
+token_estimate: 1000
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/chat-history/feature-spec.md
-- 行为规格: docs/03-specs/features/chat-history/behavior-spec.md
-- API 规格: docs/03-specs/features/session-management/api-spec.md
+- 功能规格: docs/03-specs/f-12-chat-history/feature-spec.md
+- 行为规格: docs/03-specs/f-12-chat-history/behavior-spec.md
+- API 规格: docs/03-specs/b-03-session-api/api-spec.md
 
 ## 验收标准
 

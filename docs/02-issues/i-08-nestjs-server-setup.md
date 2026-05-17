@@ -1,3 +1,18 @@
+---
+id: i-08-nestjs-server-setup
+type: issue
+status: closed
+track: infra
+priority: p0
+summary: 初始化 NestJS 10 + Fastify 后端服务器，建立模块化架构基础。NestJS 服务器正常启动，模块体系就绪，可接入业务模块。
+blocked_by: []
+blocks: []
+spec: docs/03-specs/i-08-nestjs-server-setup/
+plan: docs/04-plans/i-08-nestjs-server-setup/v1.md
+tests: docs/08-test-cases/i-08-nestjs-server-setup/
+token_estimate: 900
+---
+
 状态: completed
 分类: enhancement
 

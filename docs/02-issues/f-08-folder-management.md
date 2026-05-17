@@ -1,3 +1,18 @@
+---
+id: f-08-folder-management
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现虚拟文件夹管理功能，支持创建、重命名、删除、移动文件夹和文件。用户可创建虚拟文件夹组织文档，支持拖拽移动和层级调整。
+blocked_by: [b-02-knowledge-base-crud-api, f-06-knowledge-base-file-manager]
+blocks: []
+spec: docs/03-specs/f-08-folder-management/
+plan: docs/04-plans/f-08-folder-management/v1.md
+tests: docs/08-test-cases/f-08-folder-management/
+token_estimate: 1000
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/folder-management/feature-spec.md
-- 行为规格: docs/03-specs/features/folder-management/behavior-spec.md
-- API 规格: docs/03-specs/features/knowledge-base-crud/api-spec.md
+- 功能规格: docs/03-specs/f-08-folder-management/feature-spec.md
+- 行为规格: docs/03-specs/f-08-folder-management/behavior-spec.md
+- API 规格: docs/03-specs/b-02-knowledge-base-crud-api/api-spec.md
 
 ## 验收标准
 

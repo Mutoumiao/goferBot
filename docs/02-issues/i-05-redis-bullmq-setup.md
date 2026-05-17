@@ -1,3 +1,18 @@
+---
+id: i-05-redis-bullmq-setup
+type: issue
+status: needs-triage
+track: infra
+priority: p1
+summary: 配置 Redis 连接和 BullMQ 队列系统，建立异步任务处理框架。异步任务框架就绪，文档上传后可加入处理队列。
+blocked_by: [i-01-docker-compose-infra, i-02-drizzle-orm-setup]
+blocks: []
+spec: docs/03-specs/i-05-redis-bullmq-setup/
+plan: docs/04-plans/i-05-redis-bullmq-setup/v1.md
+tests: docs/08-test-cases/i-05-redis-bullmq-setup/
+token_estimate: 1100
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/redis-bullmq-setup/feature-spec.md
-- 行为规格: docs/03-specs/features/redis-bullmq-setup/behavior-spec.md
-- API 规格: docs/03-specs/features/redis-bullmq-setup/api-spec.md
+- 功能规格: docs/03-specs/i-05-redis-bullmq-setup/feature-spec.md
+- 行为规格: docs/03-specs/i-05-redis-bullmq-setup/behavior-spec.md
+- API 规格: docs/03-specs/i-05-redis-bullmq-setup/api-spec.md
 
 ## 验收标准
 

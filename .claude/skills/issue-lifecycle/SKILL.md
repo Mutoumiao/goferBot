@@ -12,6 +12,18 @@ description: >
 
 ---
 
+## 读取协议
+
+**每步读取必须遵守分层读取，避免全文加载：**
+
+1. **先读索引** — 查 `PROGRESS.md` 快速索引表确认 issue 当前状态
+2. **再读 frontmatter** — 读目标 issue 的 YAML 头部获取 `status`/`summary`/`blocked_by`/`blocks`/`spec`/`plan`/`tests`
+3. **按需深入正文** — 仅当需要更新验收标准或正文内容时才深入读全文
+4. **更新同步** — 修改正文状态/验收标准时，必须同步更新 frontmatter 的 `status` 字段
+5. **尽量避免全文扫读** — 定位 issue 文件和提取状态时，不得读全文，先读 frontmatter
+
+---
+
 ## 路径约定
 
 | 文档类型 | 路径 | 验证规则 |
@@ -48,11 +60,13 @@ description: >
 
 ### 3. 读取并分析 Issue
 
-提取：
-- `Status` 字段（第一行）
-- `Acceptance criteria` 验收标准列表
-- `Spec reference` 规格引用路径
-- `Blocked by` / `Comments` 等其他区域
+**先读 frontmatter**（`---` 之间），提取：
+- `status` — 当前状态
+- `summary` — 功能描述
+- `blocked_by` — 阻塞依赖
+- `spec` / `plan` / `tests` — 关联文档路径
+
+**仅当需要更新正文内容时**，才深入读取完整文档。
 
 ### 4. 检查测试覆盖
 

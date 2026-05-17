@@ -1,3 +1,18 @@
+---
+id: f-10-message-renderer
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现消息流渲染组件，支持 Markdown 渲染、代码块语法高亮和复制按钮。对话消息正确渲染 Markdown 和代码块，流式显示 AI 回复。
+blocked_by: [f-09-chat-page]
+blocks: []
+spec: docs/03-specs/f-10-message-renderer/
+plan: docs/04-plans/f-10-message-renderer/v1.md
+tests: docs/08-test-cases/f-10-message-renderer/
+token_estimate: 1000
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,8 +22,8 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/message-renderer/feature-spec.md
-- 行为规格: docs/03-specs/features/message-renderer/behavior-spec.md
+- 功能规格: docs/03-specs/f-10-message-renderer/feature-spec.md
+- 行为规格: docs/03-specs/f-10-message-renderer/behavior-spec.md
 - API 规格: 无（纯 UI）
 
 ## 验收标准

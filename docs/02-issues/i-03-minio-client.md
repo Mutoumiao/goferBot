@@ -1,3 +1,18 @@
+---
+id: i-03-minio-client
+type: issue
+status: needs-triage
+track: infra
+priority: p1
+summary: 封装 MinIO Client，提供文件上传、下载、删除、获取 Presigned URL 等操作。后端可通过统一接口操作 MinIO，支持上传、下载、删除文件。
+blocked_by: [i-00-core-interfaces, i-01-docker-compose-infra]
+blocks: []
+spec: docs/03-specs/i-03-minio-client/
+plan: docs/04-plans/i-03-minio-client/v1.md
+tests: docs/08-test-cases/i-03-minio-client/
+token_estimate: 1000
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,8 +22,8 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/minio-client/feature-spec.md
-- 行为规格: docs/03-specs/features/minio-client/behavior-spec.md
+- 功能规格: docs/03-specs/i-03-minio-client/feature-spec.md
+- 行为规格: docs/03-specs/i-03-minio-client/behavior-spec.md
 - API 规格: 无（基础设施，无 API）
 
 ## 验收标准

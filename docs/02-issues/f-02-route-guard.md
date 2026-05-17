@@ -1,3 +1,18 @@
+---
+id: f-02-route-guard
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现路由守卫：未登录用户自动跳转到登录页，已登录用户访问登录页自动跳转到主界面。认证状态与路由联动，启动时检查登录态。
+blocked_by: [f-01-auth-pages]
+blocks: []
+spec: docs/03-specs/f-02-route-guard/
+plan: docs/04-plans/f-02-route-guard/v1.md
+tests: docs/08-test-cases/f-02-route-guard/
+token_estimate: 900
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/auth-system/feature-spec.md
-- 行为规格: docs/03-specs/features/auth-system/behavior-spec.md
-- API 规格: docs/03-specs/features/auth-system/api-spec.md
+- 功能规格: docs/03-specs/b-01-auth-api/feature-spec.md
+- 行为规格: docs/03-specs/b-01-auth-api/behavior-spec.md
+- API 规格: docs/03-specs/b-01-auth-api/api-spec.md
 
 ## 验收标准
 

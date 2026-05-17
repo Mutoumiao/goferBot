@@ -1,3 +1,18 @@
+---
+id: b-03-session-api
+type: issue
+status: closed
+track: backend
+priority: p0
+summary: 实现会话 CRUD API，支持创建、查询、重命名、删除会话。前端可通过 API 管理问答会话，数据持久化到 PostgreSQL。
+blocked_by: [i-02-drizzle-orm-setup, b-01-auth-api]
+blocks: []
+spec: docs/03-specs/b-03-session-api/
+plan: docs/04-plans/b-03-session-api/v1.md
+tests: docs/08-test-cases/b-03-session-api/
+token_estimate: 1000
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/session-management/feature-spec.md
-- 行为规格: docs/03-specs/features/session-management/behavior-spec.md
-- API 规格: docs/03-specs/features/session-management/api-spec.md
+- 功能规格: docs/03-specs/b-03-session-api/feature-spec.md
+- 行为规格: docs/03-specs/b-03-session-api/behavior-spec.md
+- API 规格: docs/03-specs/b-03-session-api/api-spec.md
 
 ## 验收标准
 

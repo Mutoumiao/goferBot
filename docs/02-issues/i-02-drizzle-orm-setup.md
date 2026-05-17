@@ -1,3 +1,18 @@
+---
+id: i-02-drizzle-orm-setup
+type: issue
+status: needs-triage
+track: infra
+priority: p1
+summary: 配置 Drizzle ORM，定义全部数据库 Schema，建立迁移流程，提供类型安全的数据库访问层。类型安全的数据库访问层就绪，可通过 Drizzle Studio 查看和管理数据。
+blocked_by: [i-00-core-interfaces, i-01-docker-compose-infra]
+blocks: []
+spec: docs/03-specs/i-02-drizzle-orm-setup/
+plan: docs/04-plans/i-02-drizzle-orm-setup/v1.md
+tests: docs/08-test-cases/i-02-drizzle-orm-setup/
+token_estimate: 1000
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,8 +22,8 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/drizzle-orm-setup/feature-spec.md
-- 行为规格: docs/03-specs/features/drizzle-orm-setup/behavior-spec.md
+- 功能规格: docs/03-specs/i-02-drizzle-orm-setup/feature-spec.md
+- 行为规格: docs/03-specs/i-02-drizzle-orm-setup/behavior-spec.md
 - API 规格: 无（基础设施，无 API）
 
 ## 验收标准

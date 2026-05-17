@@ -1,3 +1,18 @@
+---
+id: b-02-knowledge-base-crud-api
+type: issue
+status: closed
+track: backend
+priority: p0
+summary: 实现知识库 CRUD API，包含知识库和虚拟文件夹的增删改查。前端可通过 API 管理知识库和文件夹，数据持久化到 PostgreSQL。
+blocked_by: [i-02-drizzle-orm-setup, b-01-auth-api]
+blocks: []
+spec: docs/03-specs/b-02-knowledge-base-crud-api/
+plan: docs/04-plans/b-02-knowledge-base-crud-api/v1.md
+tests: docs/08-test-cases/b-02-knowledge-base-crud-api/
+token_estimate: 1100
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/knowledge-base-crud/feature-spec.md
-- 行为规格: docs/03-specs/features/knowledge-base-crud/behavior-spec.md
-- API 规格: docs/03-specs/features/knowledge-base-crud/api-spec.md
+- 功能规格: docs/03-specs/b-02-knowledge-base-crud-api/feature-spec.md
+- 行为规格: docs/03-specs/b-02-knowledge-base-crud-api/behavior-spec.md
+- API 规格: docs/03-specs/b-02-knowledge-base-crud-api/api-spec.md
 
 ## 验收标准
 

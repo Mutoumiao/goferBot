@@ -1,3 +1,18 @@
+---
+id: f-01-auth-pages
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现前端登录页和注册页，包含表单验证、错误提示、登录态持久化。用户可在登录页和注册页完成认证流程，登录态通过 Pinia Store 管理。
+blocked_by: [b-01-auth-api]
+blocks: []
+spec: docs/03-specs/f-01-auth-pages/
+plan: docs/04-plans/f-01-auth-pages/v1.md
+tests: docs/08-test-cases/f-01-auth-pages/
+token_estimate: 1100
+---
+
 状态: needs-triage
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/auth-system/feature-spec.md
-- 行为规格: docs/03-specs/features/auth-system/behavior-spec.md
-- API 规格: docs/03-specs/features/auth-system/api-spec.md
+- 功能规格: docs/03-specs/b-01-auth-api/feature-spec.md
+- 行为规格: docs/03-specs/b-01-auth-api/behavior-spec.md
+- API 规格: docs/03-specs/b-01-auth-api/api-spec.md
 
 ## 验收标准
 

@@ -1,3 +1,18 @@
+---
+id: i-06-data-migration
+type: issue
+status: pending
+track: infra
+priority: p1
+summary: 为 V1 用户提供数据导出工具，将 SQLite 中的会话、消息、知识库信息导出为标准 NDJSON 格式，可导入 V2 的 PostgreSQL。
+blocked_by: [b-02-knowledge-base-crud-api, b-05-settings-api, f-13-settings-page]
+blocks: []
+spec: docs/03-specs/i-06-data-migration/
+plan: docs/04-plans/i-06-data-migration/v1.md
+tests: docs/08-test-cases/i-06-data-migration/
+token_estimate: 1000
+---
+
 状态: needs-triage
 分类: enhancement
 

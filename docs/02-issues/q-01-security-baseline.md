@@ -1,3 +1,18 @@
+---
+id: q-01-security-baseline
+type: issue
+status: needs-triage
+track: quality
+priority: p1
+summary: 为所有 API 建立安全基线：CORS 硬化、速率限制、输入校验、SSRF 防护。安全基线就位，所有 API 端点受速率限制和输入校验保护。
+blocked_by: [i-00-core-interfaces]
+blocks: []
+spec: docs/03-specs/q-01-security-baseline/
+plan: docs/04-plans/q-01-security-baseline/v1.md
+tests: docs/08-test-cases/q-01-security-baseline/
+token_estimate: 1100
+---
+
 状态: needs-triage
 分类: security
 

@@ -1,3 +1,18 @@
+---
+id: f-11-kb-selector
+type: issue
+status: closed
+track: frontend
+priority: p0
+summary: 实现多知识库选择 UI，支持在对话时通过 @ 提及选择多个知识库触发 RAG。支持键盘导航、多选、已选标签显示。
+blocked_by: [b-02-knowledge-base-crud-api, f-09-chat-page]
+blocks: []
+spec: docs/03-specs/f-11-kb-selector/
+plan: docs/04-plans/f-11-kb-selector/v1.md
+tests: docs/08-test-cases/f-11-kb-selector/
+token_estimate: 1000
+---
+
 状态: closed
 分类: enhancement
 
@@ -7,9 +22,9 @@
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/features/kb-selector/feature-spec.md
-- 行为规格: docs/03-specs/features/kb-selector/behavior-spec.md
-- API 规格: docs/03-specs/features/chat-sse/api-spec.md
+- 功能规格: docs/03-specs/f-11-kb-selector/feature-spec.md
+- 行为规格: docs/03-specs/f-11-kb-selector/behavior-spec.md
+- API 规格: docs/03-specs/b-04-chat-sse-api/api-spec.md
 
 ## 验收标准
 
