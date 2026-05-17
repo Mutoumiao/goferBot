@@ -1,6 +1,7 @@
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { ConfigService } from '@nestjs/config'
 import helmet from '@fastify/helmet'
+import multipart from '@fastify/multipart'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 import { SpiderGuard } from './common/guards/spider.guard.js'
 
@@ -11,6 +12,14 @@ export async function bootstrap(app: NestFastifyApplication) {
   await app.register(helmet, {
     contentSecurityPolicy: false, // API 不需要 CSP
     hsts: process.env.NODE_ENV === 'production',
+  })
+
+  // 1.5 Multipart 文件上传
+  await app.register(multipart, {
+    limits: {
+      fileSize: 50 * 1024 * 1024, // 50MB
+      files: 10,
+    },
   })
 
   // 2. CORS（白名单 origin）

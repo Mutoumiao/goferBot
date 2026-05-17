@@ -1,17 +1,50 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import { StorageService } from '../../processors/storage/storage.service.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
 
+export interface UploadFilePayload {
+  filename: string
+  ext: string
+  mimeType: string
+  size: number
+  buffer: Buffer
+  folderId: string | null
+}
+
 @Injectable()
 export class DocumentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async list(userId: string, kbId: string, folderId?: string | null) {
     await this.ensureOwnership(userId, kbId)
     return this.prisma.document.findMany({
       where: { kbId, folderId: folderId ?? null },
       orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  async upload(userId: string, kbId: string, payload: UploadFilePayload) {
+    await this.ensureOwnership(userId, kbId)
+
+    const storageKey = `${kbId}/${Date.now()}-${payload.filename}`
+    await this.storage.uploadFile(payload.buffer, storageKey, payload.mimeType)
+
+    return this.prisma.document.create({
+      data: {
+        kbId,
+        folderId: payload.folderId,
+        name: payload.filename,
+        ext: payload.ext,
+        mimeType: payload.mimeType,
+        size: BigInt(payload.size),
+        storageKey,
+        status: 'uploaded',
+      },
     })
   }
 

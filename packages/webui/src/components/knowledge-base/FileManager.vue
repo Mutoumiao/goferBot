@@ -10,22 +10,22 @@ import {
   AlertCircleIcon,
   PlusIcon,
   FolderIcon,
+  UploadIcon,
 } from 'lucide-vue-next'
 import BreadcrumbNav from './BreadcrumbNav.vue'
 import FileGridItem from './FileGridItem.vue'
+import FileUpload from './FileUpload.vue'
 
 const props = defineProps<{
   kbId: string | null
-}>()
-
-const emit = defineEmits<{
-  upload: []
 }>()
 
 const fileStore = useFileStore()
 const searchQuery = ref('')
 const sortBy = ref<'name' | 'date' | 'type'>('date')
 const selectedIds = ref<Set<string>>(new Set())
+const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null)
+const isDragOver = ref(false)
 
 watch(
   () => props.kbId,
@@ -93,10 +93,37 @@ function handleContextMenu(e: MouseEvent, item: DocumentItem | Folder) {
   // TODO: f-08 实现右键菜单
   console.log('context menu', item, e)
 }
+
+function onUploaded() {
+  if (props.kbId) {
+    fileStore.loadItems(props.kbId, fileStore.currentFolderId)
+  }
+}
+
+function handleDragOver(e: DragEvent) {
+  e.preventDefault()
+  isDragOver.value = true
+}
+
+function handleDragLeave(e: DragEvent) {
+  e.preventDefault()
+  isDragOver.value = false
+}
+
+function handleDrop(e: DragEvent) {
+  e.preventDefault()
+  isDragOver.value = false
+  fileUploadRef.value?.handleDrop(e)
+}
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-1">
+  <div
+    class="flex h-full flex-col bg-surface-1"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
+  >
     <!-- Toolbar -->
     <div
       class="flex items-center gap-3 border-b border-border-default px-4 py-3"
@@ -121,13 +148,31 @@ function handleContextMenu(e: MouseEvent, item: DocumentItem | Folder) {
         >
           <ArrowUpDownIcon class="size-4" />
         </Button>
-        <Button
-          class="gap-1 rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600"
-          @click="emit('upload')"
+        <FileUpload
+          ref="fileUploadRef"
+          :kb-id="kbId"
+          :folder-id="fileStore.currentFolderId"
+          @uploaded="onUploaded"
         >
-          <PlusIcon class="size-4" />
-          添加文件
-        </Button>
+          <Button
+            class="gap-1 rounded-lg bg-accent-500 px-3 py-1.5 text-sm text-white hover:bg-accent-600"
+            @click="fileUploadRef?.open()"
+          >
+            <PlusIcon class="size-4" />
+            添加文件
+          </Button>
+        </FileUpload>
+      </div>
+    </div>
+
+    <!-- Drag overlay -->
+    <div
+      v-if="isDragOver"
+      class="absolute inset-0 z-40 flex items-center justify-center bg-accent-500/10"
+    >
+      <div class="rounded-2xl border-2 border-dashed border-accent-500 bg-white px-8 py-6 text-center shadow-lg">
+        <UploadIcon class="mx-auto size-10 text-accent-500" />
+        <p class="mt-2 text-sm font-medium text-text-primary">释放文件以上传</p>
       </div>
     </div>
 
@@ -165,14 +210,21 @@ function handleContextMenu(e: MouseEvent, item: DocumentItem | Folder) {
       <p class="text-sm">
         {{ searchQuery ? '未找到匹配的文件' : '点击添加文件导入文档' }}
       </p>
-      <Button
+      <FileUpload
         v-if="!searchQuery"
-        variant="ghost"
-        class="text-accent-500"
-        @click="emit('upload')"
+        ref="fileUploadRef"
+        :kb-id="kbId"
+        :folder-id="fileStore.currentFolderId"
+        @uploaded="onUploaded"
       >
-        添加文件
-      </Button>
+        <Button
+          variant="ghost"
+          class="text-accent-500"
+          @click="fileUploadRef?.open()"
+        >
+          添加文件
+        </Button>
+      </FileUpload>
     </div>
 
     <!-- Grid -->

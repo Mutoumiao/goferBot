@@ -219,7 +219,7 @@ const sortedKbs = computed(() => store.knowledgeBases)
 
     <!-- Right: File Manager -->
     <div class="flex-1">
-      <FileManager :kb-id="selectedKbId" @upload="console.log('upload')" />
+      <FileManager :kb-id="selectedKbId" />
     </div>
 
     <!-- Create Dialog -->
