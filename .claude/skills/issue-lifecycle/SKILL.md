@@ -14,11 +14,11 @@ description: >
 
 ## 路径约定
 
-| 文档类型 | 路径 |
-|----------|------|
-| Issue | `docs/02-issues/{prefix}-{NN}-{slug}.md` |
-| 测试用例 | `docs/08-test-cases/{issue-prefix}/` |
-| 审查记录 | `docs/07-reviews/{issue-slug}/` |
+| 文档类型 | 路径 | 验证规则 |
+|----------|------|----------|
+| Issue | `docs/02-issues/{prefix}-{NN}-{slug}.md` | 文件名必须符合格式 |
+| 测试用例 | `docs/08-test-cases/{issue-id}/` | 目录名必须与 issue 编号一致 |
+| 审查记录 | `docs/07-reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举 |
 | 进度文档 | `PROGRESS.md`（根目录） |
 
 **双轨前缀：**
@@ -60,8 +60,12 @@ description: >
 
 **定位测试用例：**
 
-在 `docs/08-test-cases/{issue-prefix}/` 查找 `*-test-cases.md`。
-- 例如 `f-05` → `docs/08-test-cases/f-05/behavior-test-cases.md`
+在 `docs/08-test-cases/{issue-id}/` 查找 `{kind}.md`。
+- 例如 `f-05` → `docs/08-test-cases/f-05/behavior.md`
+
+**路径验证：**
+- 目录名必须与 issue 编号一致
+- 文件名使用 kind：`behavior.md`、`api.md`、`e2e.md`、`unit.md`
 
 **统计与验证：**
 
@@ -89,6 +93,11 @@ description: >
 
 - 状态已是 `closed`：询问是否仍需同步
 - 状态不是 `closed`：先执行测试检查，通过后询问是否完成
+
+**关闭前路径验证：**
+- [ ] 审查记录已归档到 `docs/07-reviews/{scope}/{type}-v{N}.md`
+- [ ] 测试用例已归档到 `docs/08-test-cases/{issue-id}/`
+- [ ] 以上路径存在对应文件，否则提示用户补全
 
 ### 5. 更新 Issue 文件
 
@@ -122,8 +131,8 @@ Completed at: 2026-05-20
 用户要求归档已关闭 issue 时：
 
 1. issue 文件：`docs/02-issues/` → `docs/99-archived/v2-issues/`
-2. plan 文件：`docs/04-plans/{issue-slug}/` → `docs/99-archived/v2-plans/{issue-slug}/`
-3. review 记录：`docs/07-reviews/{issue-slug}/` → `docs/99-archived/v2-reviews/{issue-slug}/`
+2. plan 文件：`docs/04-plans/{issue-id}/` → `docs/99-archived/v2-plans/{issue-id}/`
+3. review 记录：`docs/07-reviews/{scope}/` → `docs/99-archived/v2-reviews/{scope}/`
 4. 测试用例保留在 `docs/08-test-cases/`（历史参考）
 
 ### 8. 提交变更（可选）
@@ -154,8 +163,8 @@ Completed at: 2026-05-20
 ## 文件路径约定
 
 - Issue 目录：`docs/02-issues/`
-- 测试用例目录：`docs/08-test-cases/{issue-prefix}/`
-- 审查记录目录：`docs/07-reviews/{issue-slug}/`
+- 测试用例目录：`docs/08-test-cases/{issue-id}/`
+- 审查记录目录：`docs/07-reviews/{scope}/`
 - 归档目录：`docs/99-archived/`
 - 进度文档：`PROGRESS.md`
 

@@ -3,7 +3,7 @@ name: plan-generator
 description: >
   基于 issue 和 spec 生成可执行实现计划。
   当用户说"写计划"、"生成实现方案"、"怎么开发这个"时触发。
-  保存路径：docs/04-plans/{issue-slug}/YYYY-MM-DD.md
+  保存路径：docs/04-plans/{issue-id}/v{N}.md
 ---
 
 # 计划生成器
@@ -12,7 +12,13 @@ description: >
 
 **开始时声明：** "正在使用 plan-generator skill 创建实现计划。"
 
-**保存到：** `docs/04-plans/{issue-slug}/YYYY-MM-DD.md`
+**保存到：** `docs/04-plans/{issue-id}/v{N}.md`
+
+**路径验证（强制执行）：**
+- 目录名必须与 issue 编号一致（如 `f-06`）
+- 文件名必须为 `v{N}.md`（如 `v1.md`），禁止用时间戳
+- 每次重新生成计划时，版本号自动递增
+- 保留历史版本（`v1.md`、`v2.md`...）
 
 ---
 
@@ -21,14 +27,14 @@ description: >
 1. **Issue 文件**: `docs/02-issues/{prefix}-{NN}-{slug}.md`
    - 提取：状态、构建内容、验收标准、阻塞于
 
-2. **Spec 文件**: `docs/03-specs/features/{feature-slug}/`
+2. **Spec 文件**: `docs/03-specs/{issue-id}/`
    - `feature-spec.md` — 用户故事、边界、涉及页面
    - `behavior-spec.md` — 前端：交互状态表、错误场景、动画
    - `api-spec.md` — 后端：路由、DTO、错误码、异步行为
 
-3. **现有计划**（如有）: `docs/04-plans/{issue-slug}/`
+3. **现有计划**（如有）: `docs/04-plans/{issue-id}/`
 
-4. **审查记录**（如有）: `docs/07-reviews/{issue-slug}/`
+4. **审查记录**（如有）: `docs/07-reviews/{issue-id}/`
 
 ---
 
@@ -46,8 +52,8 @@ description: >
 **技术栈：** [关键技术/库]
 
 **Issue 引用：** [链接到 docs/02-issues/{prefix}-{NN}-{slug}.md]
-**Spec 引用：** [链接到 docs/03-specs/features/{feature-slug}/]
-**测试用例：** [链接到 docs/08-test-cases/{issue-prefix}/]
+**Spec 引用：** [链接到 docs/03-specs/{issue-id}/]
+**测试用例：** [链接到 docs/08-test-cases/{issue-id}/]
 
 ---
 ```
@@ -155,7 +161,7 @@ git commit -m "feat: add specific feature"
 
 保存计划后，提供选择：
 
-**"计划已保存到 `docs/04-plans/{issue-slug}/YYYY-MM-DD.md`。两种执行方式：**
+**"计划已保存到 `docs/04-plans/{issue-id}/v{N}.md`。两种执行方式：**
 
 1. **子代理驱动（推荐）** — 每个任务新子代理，任务间审查
 2. **内联执行** — 当前会话中顺序执行，带检查点

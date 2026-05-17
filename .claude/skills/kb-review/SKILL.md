@@ -50,12 +50,12 @@ description: |
 
 **代码审查：**
 - `docs/02-issues/{issue}.md` — 了解验收标准
-- `docs/03-specs/features/{slug}/` — 功能/行为/API 规格
-- `docs/04-plans/{issue-slug}/` — 执行计划（了解预期改动范围）
+- `docs/03-specs/{issue-id}/` — 功能/行为/API 规格（目录名 = issue 编号）
+- `docs/04-plans/{issue-id}/` — 执行计划（了解预期改动范围）
 - 实际代码 diff（`git diff` 或指定文件）
 
 **设计/架构审查：**
-- `docs/03-specs/features/{slug}/feature-spec.md` — 功能边界
+- `docs/03-specs/{issue-id}/feature-spec.md` — 功能边界
 - `docs/05-adrs/` — 相关架构决策
 - 设计稿 / 架构图（如有）
 
@@ -65,7 +65,7 @@ description: |
 - 新增的外部依赖（检查已知漏洞）
 
 **Plan 审查：**
-- `docs/03-specs/features/{slug}/` — 三层规格
+- `docs/03-specs/{issue-id}/` — 三层规格
 - `docs/02-issues/{issue}.md` — 验收标准
 - `docs/00-meta/workflow.md` — 流程规范
 
@@ -138,14 +138,29 @@ description: |
 审查完成后，将审查记录保存到 `docs/07-reviews/`：
 
 ```
-docs/07-reviews/{issue-slug}/
-├── code-review-YYYY-MM-DD.md      # 代码审查
-├── design-review-YYYY-MM-DD.md    # 设计审查
-├── security-review-YYYY-MM-DD.md  # 安全审查
-└── acceptance-YYYY-MM-DD.md       # 验收记录
+docs/07-reviews/{scope}/
+├── code-v{N}.md      # 代码审查
+├── spec-v{N}.md      # 规格对齐审查
+├── security-v{N}.md  # 安全审查
+└── acceptance-v{N}.md # 验收审查
 ```
 
-**命名规范**：`{type}-review-YYYY-MM-DD.md`
+**路径验证（强制执行）：**
+- Scope 使用语义化名称：`phase-3`、`f-06`、`project`、`security-baseline`
+- **禁止**用 `overall`、`all`、`temp` 等模糊 scope
+- Type 限定：`code` / `spec` / `security` / `acceptance`
+- 文件名：`{type}-v{N}.md`，每次审查新建文件，禁止追加
+- 文件头部必须包含 frontmatter：
+
+```yaml
+---
+scope: phase-3
+type: code
+date: 2026-05-17
+issues: [f-06, f-07, f-08, b-02]
+status: completed
+---
+```
 
 ---
 
@@ -272,7 +287,7 @@ docs/07-reviews/{issue-slug}/
 
 ### 检查方法
 
-1. 读取 `docs/03-specs/features/{slug}/` 下的三层规格
+1. 读取 `docs/03-specs/{issue-id}/` 下的三层规格（目录名 = issue 编号）
 2. 逐条检查验收标准
 3. 输出对齐表格
 
@@ -383,7 +398,7 @@ docs/07-reviews/{issue-slug}/
 
 ### 9.2 审查记录归档
 
-将审查记录保存到 `docs/07-reviews/{issue-slug}/{type}-review-YYYY-MM-DD.md`。
+将审查记录保存到 `docs/07-reviews/{scope}/{type}-v{N}.md`。
 
 **记录内容：**
 - 审查类型和对象

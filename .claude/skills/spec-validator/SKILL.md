@@ -3,7 +3,7 @@ name: spec-validator
 description: >
   对 spec 进行 relentless 质询，挑战其与领域模型的兼容性，精炼术语。
   当用户说"审查 spec"、"spec 对吗"、"帮我写 behavior spec"时触发。
-  输出路径：docs/03-specs/features/{feature-slug}/
+  输出路径：docs/03-specs/{issue-id}/
 ---
 
 # Spec 验证器
@@ -16,9 +16,10 @@ description: >
 
 1. **PRD**: `docs/01-prd/v2-cloud-native.md`
 2. **架构规格**: `docs/03-specs/architecture/v2-cloud-native.md`
-3. **相关 Specs**: `docs/03-specs/features/{related-feature}/`
+3. **相关 Specs**: `docs/03-specs/{related-issue-id}/`
 4. **ADRs**: `docs/05-adrs/`
 5. **设计系统**: `docs/06-design/system/DESIGN.md`
+6. **命名规范**: `docs/00-meta/naming-convention.md`
 
 ---
 
@@ -48,9 +49,17 @@ description: >
 
 ## Spec 输出模板
 
+### 路径验证（强制执行）
+
+生成 spec 前必须确认：
+- 对应 issue 存在于 `docs/02-issues/{issue-id}-{slug}.md`
+- spec 目录名必须与 issue 编号一致（如 `f-06`）
+- **禁止**用 feature-slug（如 `knowledge-base-file-manager`）作为目录名
+- 目录路径：`docs/03-specs/{issue-id}/`
+
 ### 功能规格
 
-保存到：`docs/03-specs/features/{feature-slug}/feature-spec.md`
+保存到：`docs/03-specs/{issue-id}/feature-spec.md`
 
 ```markdown
 # 功能规格：{功能名称}
@@ -78,7 +87,7 @@ description: >
 
 ### 行为规格（前端）
 
-保存到：`docs/03-specs/features/{feature-slug}/behavior-spec.md`
+保存到：`docs/03-specs/{issue-id}/behavior-spec.md`
 
 ```markdown
 # 行为规格：{功能名称}
@@ -131,7 +140,7 @@ description: >
 
 ### API 规格（后端）
 
-保存到：`docs/03-specs/features/{feature-slug}/api-spec.md`
+保存到：`docs/03-specs/{issue-id}/api-spec.md`
 
 ```markdown
 # API 规格：{功能名称}
@@ -196,4 +205,6 @@ description: >
 - [ ] API 规格有所有错误码及场景
 - [ ] 无模糊术语残留（"appropriate"、"reasonable"、"etc."）
 - [ ] 所有决策都有理由记录
-- [ ] Spec 文件保存到正确路径
+- [ ] Spec 目录名与 issue 编号一致（如 `f-06`）
+- [ ] 禁止用 feature-slug 作为目录名
+- [ ] 三个 spec 文件至少存在一个（按 issue 类型）

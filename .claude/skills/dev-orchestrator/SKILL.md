@@ -18,13 +18,13 @@ description: >
 
 ## 路径约定
 
-| 文档类型 | 路径 |
-|----------|------|
-| Issue | `docs/02-issues/{prefix}-{NN}-{slug}.md` |
-| Spec | `docs/03-specs/features/{feature-slug}/` |
-| Plan | `docs/04-plans/{issue-slug}/YYYY-MM-DD.md` |
-| 测试用例 | `docs/08-test-cases/{issue-prefix}/` |
-| 审查记录 | `docs/07-reviews/{issue-slug}/` |
+| 文档类型 | 路径 | 验证规则 |
+|----------|------|----------|
+| Issue | `docs/02-issues/{prefix}-{NN}-{slug}.md` | 文件名必须符合格式 |
+| Spec | `docs/03-specs/{issue-id}/` | 目录名必须与 issue 编号一致 |
+| Plan | `docs/04-plans/{issue-id}/v{N}.md` | 目录名 = issue-id，文件名 = v{N}.md |
+| 测试用例 | `docs/08-test-cases/{issue-id}/` | 目录名必须与 issue 编号一致 |
+| 审查记录 | `docs/07-reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举 |
 
 **双轨前缀：**
 - `f-XX`: 前端功能
@@ -79,14 +79,18 @@ description: >
 
 ### 3. 读取对应 Spec
 
-根据 issue 中的规格引用查找：
+根据 issue 编号查找：
 
 ```
-docs/03-specs/features/{feature-slug}/
+docs/03-specs/{issue-id}/
 ├── feature-spec.md       # 必须存在
 ├── behavior-spec.md      # 前端 issue 必须存在
 └── api-spec.md           # 后端 issue 必须存在
 ```
+
+**路径验证：**
+- 目录名必须与 issue 编号一致（如 `f-06`）
+- **禁止**用 feature-slug 作为目录名
 
 **若 spec 不存在：**
 1. 告知用户未找到行为契约
@@ -100,7 +104,12 @@ docs/03-specs/features/{feature-slug}/
 
 ### 4. 检查执行计划
 
-在 `docs/04-plans/{issue-slug}/` 查找计划文件。
+在 `docs/04-plans/{issue-id}/` 查找计划文件。
+
+**路径验证：**
+- 目录名必须与 issue 编号一致
+- 文件名必须为 `v{N}.md`（如 `v1.md`）
+- 禁止用时间戳命名
 
 **若不存在：**
 1. 告知用户未找到执行计划
@@ -108,7 +117,7 @@ docs/03-specs/features/{feature-slug}/
 3. 计划完成后进入步骤 5
 
 **若已存在：**
-1. 读取最新日期的 plan
+1. 读取最新版本（最大 N 的 `v{N}.md`）
 2. 确认是否完整（任务分解、文件结构、验证步骤）
 3. 展示计划概要，进入步骤 5
 
@@ -118,13 +127,17 @@ docs/03-specs/features/{feature-slug}/
 
 ### 5. 检查测试用例
 
-在 `docs/08-test-cases/{issue-prefix}/` 查找测试用例。
+在 `docs/08-test-cases/{issue-id}/` 查找测试用例。
+
+**路径验证：**
+- 目录名必须与 issue 编号一致
+- 文件名使用 kind：`behavior.md`、`api.md`、`e2e.md`、`unit.md`
 
 **若不存在：**
 1. 告知用户未找到测试用例
 2. 读取 issue 的验收标准和 spec 的边界条件
 3. 转化为测试用例表格
-4. 创建文件 `docs/08-test-cases/{prefix}-{NN}/behavior-test-cases.md`
+4. 创建文件 `docs/08-test-cases/{issue-id}/behavior.md`
 5. 进入步骤 6
 
 **若已存在：**
@@ -143,9 +156,9 @@ spec、plan 和测试用例都就绪后，汇报状态：
 f-05 文件上传组件 — 开发准备就绪
 
 - Issue 状态: ready-for-agent
-- 行为契约: docs/03-specs/features/file-upload/behavior-spec.md
-- 执行计划: docs/04-plans/f-05-file-upload/2026-05-20.md (X 个任务)
-- 测试用例: docs/08-test-cases/f-05/behavior-test-cases.md (Y 条 TC-ID)
+- 行为契约: docs/03-specs/f-05/behavior-spec.md
+- 执行计划: docs/04-plans/f-05/v1.md (X 个任务)
+- 测试用例: docs/08-test-cases/f-05/behavior.md (Y 条 TC-ID)
 
 请选择开发执行方式：
 1. /subagent-driven-development — 子代理并行开发（推荐）
