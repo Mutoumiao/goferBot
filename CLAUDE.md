@@ -7,6 +7,34 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 
 用户可导入文档进行管理，通过 LLM 进行问答，支持 RAG 检索增强。
 
+## Agent 规则（核心行为约束）
+
+核心倾向：谨慎优先；遇不确定先提问，存在歧义列出路径；更简方案须果断提出。
+
+1. **先思后码**：声明假设，不确定就问。规则冲突时优先“简单至上”。
+2. **简单至上**：最少代码，杜绝“以防万一”。资深工程师不会觉得过复杂。
+3. **外科手术式修改**：只改必要处。不顺手优化相邻代码，除非确定性错误/安全漏洞（标`#adjacent-fix`）。
+4. **目标驱动**：明确成功标准，迭代至验证通过。
+5. **模型仅用于判断**（分类/起草/摘要/提取）。路由/重试由代码处理。
+6. **Token预算**：单任务≤8k，会话≤30k。超80%暂停并压缩；超95%终止。
+7. **显式冲突**：矛盾时明确择一，另一处标记待清理，不调和。
+8. **落笔先阅读**：通读导出接口、调用方、公共工具。不理解先提问。
+9. **测试验证意图**：测试体现行为*为何重要*。业务逻辑变更时测试应失败。
+10. **检查点**：每关键步骤后输出 `[CHECKPOINT] ✅已完成|🔍已验证|⏳待办|🚨阻塞`。
+11. **遵从规范**：一致性 > 个人偏好。不暗中另起范式。
+12. **显式失败**：不静默跳过。置信度<90%输出 `[UNCERTAIN]` 并征求指令。
+
+**禁止行为**：不修改PROGRESS.md里程碑 / 不在08-test-cases外写用例 / 不提交console.log / 不全文加载文档 / 不并行未声明优先级的skill
+
+## 必读文档（开发前按顺序查阅）
+
+| 阶段     | 文档                             |
+|----------|----------------------------------|
+| 了解流程 | `docs/00-meta/workflow.md`       |
+| 了解产品 | `docs/01-prd/v2-cloud-native.md` |
+| 领取任务 | `docs/02-issues/`                |
+| 编码前   | `docs/03-specs/{issue-id}/`      |
+
 ## 项目结构
 
 ```
@@ -58,27 +86,11 @@ pnpm -r build         # 构建所有包
 ## 开发规范
 
 ### UI 组件
+
 - 使用 [shadcn-vue](https://www.shadcn-vue.com/)，位于 `packages/webui/src/components/ui/`
 - 引入：`cd packages/webui && npx shadcn-vue@latest add <component>`
 - 颜色使用 Pencil tokens（`bg-surface-1`, `text-text-primary`）
 - Class 管理统一使用 `cn()` + `class-variance-authority`
-
-### 编码准则
-1. **编码前思考** — 不明确时提问；反对过度复杂的方案
-2. **简洁优先** — 最小代码量解决问题；不为不可能的情况加错误处理
-3. **精准修改** — 不碰无关代码；只删除你的改动导致的孤立代码
-4. **目标驱动** — 将任务转化为可验证目标
-
-## 文档架构
-
-开发前必须阅读对应文档：
-
-| 阶段 | 必读文档 |
-|------|----------|
-| 了解流程 | `docs/00-meta/workflow.md` |
-| 了解产品 | `docs/01-prd/v2-cloud-native.md` |
-| 领取任务 | `docs/02-issues/` |
-| 编码前 | `docs/03-specs/{issue-id}/` |
 
 ### 文档读取协议
 
@@ -91,44 +103,17 @@ Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 t
 
 > 各文档类型的 frontmatter 规范参见 `docs/00-meta/` 下对应的 `writing-*.md`。
 
-## Agent Skills
-
-| Skill | 用途 |
-|-------|------|
-| `/project-workflow` | 总入口，判断当前阶段 |
-| `/issue-generator` | 拆 issue |
-| `/spec-validator` | 写 behavior/api spec |
-| `/plan-generator` | 生成执行计划 |
-| `/dev-orchestrator` | 开发前检查 + 引导编码 |
-| `/kb-review` | 代码审查 / spec 对齐 / 安全审查 / 验收 |
-| `/issue-lifecycle` | 关闭 issue + 同步进度 |
-
 ## Skill routing
 
 当用户请求匹配以下场景时，优先 invoke 对应 skill。
 
-### 项目流程（kb 专属）
+### 项目流程
+
 - 不知道怎么开始/流程是什么/从哪开始 → `/project-workflow`
 - 拆 issue/生成工单/任务拆分 → `/issue-generator`
 - 审查 spec/写 behavior spec/写 API spec → `/spec-validator`
 - 写计划/生成实现方案 → `/plan-generator`
 - 开始开发 issue/开发 f-XX/b-XX → `/dev-orchestrator`
 - 代码审查 / spec 对齐 / 安全审查 / 验收 → `/kb-review`
-- 更新 issue 状态/标记完成 → `/issue-lifecycle`
-
-### 质量保障（gstack）
-- 代码审查 / diff 检查 / spec 对齐 / 关闭前验收 → `/kb-review`
 - 安全审计/漏洞检查/OWASP → `/kb-review`
-- Bug/错误/异常行为/为什么不工作 → `/gstack-investigate`
-
-### 设计审查（gstack）
-- 架构方案审查 → `/kb-review`（方案合理性）或 `/gstack-plan-eng-review`（架构深度）
-- UI 视觉问题/设计审计 → `/gstack-design-review`（截图分析 + 自动修复）
-
-### 发布（gstack）
-- 发布/PR/部署 → `/gstack-ship`
-- 部署配置 → `/gstack-setup-deploy`
-
-### 效率（gstack）
-- 保存进度 → `/gstack-context-save`
-- 恢复进度 → `/gstack-context-restore`
+- 更新 issue 状态/标记完成 → `/issue-lifecycle`
