@@ -61,8 +61,8 @@ test.describe('聊天标签栏 (f-04)', () => {
     const tabs = page.locator('[data-testid^="chat-tab-"]')
     const newTab = tabs.last()
 
-    // 使用 click 代替 dblclick，因为 dblclick 在某些情况下可能不稳定
-    await newTab.click({ clickCount: 2 })
+    // dblclick 处理器在 tab 标题的 span 上，而非 Button 上
+    await newTab.locator('span.truncate').dblclick()
 
     const input = page.locator('[data-testid^="tab-edit-input-"]')
     await input.waitFor({ timeout: 5000 })

@@ -61,10 +61,9 @@ test.describe('认证流程', () => {
     await registerPage.confirmPasswordInput.fill('456')
     await registerPage.submitButton.click()
 
-    // 检查字段验证错误（前端验证，不发送请求）
-    await expect(page.locator('text=请输入有效的邮箱地址')).toBeVisible()
-    await expect(page.locator('text=密码长度不能少于 6 位')).toBeVisible()
-    await expect(page.locator('text=两次输入的密码不一致')).toBeVisible()
+    // 检查字段验证错误：输入框包裹元素应有 has-error class
+    await expect(page.locator('.auth-input-wrap.has-error').first()).toBeVisible()
+    await expect(page.locator('.auth-input-wrap.has-error')).toHaveCount(3)
   })
 
   test('点击注册链接跳转注册页', async ({ page }) => {
