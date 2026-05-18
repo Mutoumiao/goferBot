@@ -108,62 +108,187 @@
 
 ### 环境要求
 
-- [Node.js](https://nodejs.org/)（建议 LTS 版本）
-- [pnpm](https://pnpm.io/)
-- [Docker](https://www.docker.com/)（运行 PostgreSQL + MinIO + Milvus + Redis）
+| 工具 | 最低版本 | 用途 |
+|------|---------|------|
+| [Node.js](https://nodejs.org/) | LTS（≥20） | 运行时 |
+| [pnpm](https://pnpm.io/) | ≥9 | Monorepo 包管理 |
+| [Docker](https://www.docker.com/) | ≥24 | 运行 PostgreSQL + MinIO + Milvus + Redis |
 
-### 启动基础设施
+### 首次运行（从头搭建）
 
-```bash
-# 启动 Docker 基础设施
-cd packages/server && docker compose -f docker-compose.dev.yml up -d
-```
-
-### 安装依赖
+按顺序执行以下步骤：
 
 ```bash
+# 1. 安装依赖（Monorepo 全部包）
 pnpm install
-```
 
-### 构建所有包
+# 2. 启动 Docker 基础设施（PostgreSQL + MinIO + Milvus + Redis）
+docker compose -f docker-compose.dev.yml up -d
 
-```bash
+# 3. 等待所有容器健康检查通过（约 30~60 秒）
+docker compose -f docker-compose.dev.yml ps
+
+# 4. 初始化数据库表结构（Prisma 迁移）
+cd packages/server && npx prisma migrate dev && cd ../..
+
+# 5. 构建 workspace 依赖包（rag-sdk 等）
 pnpm -r build
-```
 
-### 启动开发模式
-
-```bash
-# 同时启动前后端（webui Vite + NestJS watch）
+# 6. 启动开发模式（后端 NestJS :3000 + 前端 Vite :1420）
 pnpm dev
 ```
+
+### 日常开发（基础设施已运行）
+
+```bash
+# 启动前后端
+pnpm dev
+
+# 或分别启动
+pnpm dev:server   # 后端 → http://localhost:3000
+pnpm dev:web      # 前端 → http://localhost:1420
+```
+
+### 端口与服务一览
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| **WebUI** | `1420` | Vite dev server（前端 SPA） |
+| **NestJS API** | `3000` | 后端 HTTP 接口 |
+| **PostgreSQL** | `5432` | 元数据数据库 |
+| **MinIO** | `9000` | 对象存储 API |
+| **MinIO Console** | `9001` | MinIO Web 管理面板 |
+| **Milvus** | `19530` | 向量搜索引擎 |
+| **Redis** | `6379` | 缓存与任务队列 |
+
+**验证基础设施是否就绪：**
+
+```bash
+# 检查所有容器健康状态
+docker compose -f docker-compose.dev.yml ps
+# STATUS 列应全部显示 "healthy"
+
+# 验证后端接口
+curl http://localhost:3000/api/health
+# → {"status":"ok"}
+```
+
+### 项目结构（运行时视角）
+
+```
+goferbot/
+├── .env                          # Docker 基础设施变量（PG/MinIO/Milvus/Redis）
+├── docker-compose.dev.yml        # 开发环境容器编排（根目录）
+├── .data/                        # Docker 数据卷（Git 忽略）
+│   ├── postgres/
+│   ├── minio/
+│   ├── milvus/
+│   └── redis/
+├── packages/
+│   ├── server/
+│   │   ├── .env                  # 后端变量（DB URL、JWT、CORS 等）
+│   │   ├── prisma/               # 数据库 schema 与迁移
+│   │   └── src/main.ts           # NestJS 入口
+│   └── webui/
+│       ├── .env                  # 前端变量（VITE_API_BASE_URL）
+│       └── src/                  # Vue 3 源码
+```
+
+### 配置文件说明
+
+**根目录 `.env`** — Docker 容器所需的连接参数，`docker compose` 启动时自动读取：
+
+```bash
+POSTGRES_HOST=localhost      # PostgreSQL 地址
+POSTGRES_PORT=5432
+POSTGRES_USER=gofer
+POSTGRES_PASSWORD=gofer_dev_pass
+POSTGRES_DB=goferbot
+
+MINIO_HOST=localhost         # MinIO 对象存储
+MINIO_PORT=9000
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+
+MILVUS_HOST=localhost        # Milvus 向量引擎
+MILVUS_PORT=19530
+
+REDIS_HOST=localhost         # Redis 缓存
+REDIS_PORT=6379
+```
+
+**`packages/server/.env`** — 后端运行时读取，需与 Docker 容器信息保持一致：
+
+```bash
+PORT=3000                    # API 监听端口
+DATABASE_URL=postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot
+REDIS_HOST=localhost
+REDIS_PORT=6379
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+JWT_SECRET=...               # 生产环境务必更换
+CORS_ORIGIN=http://localhost:5173
+```
+
+**`packages/webui/.env`** — 前端构建时注入，指定后端地址：
+
+```bash
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### 常见问题
+
+**Docker 容器未全部 healthy？**
+```bash
+# 查看具体容器日志
+docker compose -f docker-compose.dev.yml logs postgres
+docker compose -f docker-compose.dev.yml logs milvus
+
+# 重启某个服务
+docker compose -f docker-compose.dev.yml restart minio
+```
+
+**Prisma 迁移报错？**
+```bash
+# 确认 PostgreSQL 容器已 healthy，然后重新迁移
+cd packages/server
+npx prisma migrate dev --name init
+```
+
+**端口冲突？**
+```bash
+# 检查端口占用（Linux/macOS）
+lsof -i :1420
+lsof -i :3000
+# Windows
+netstat -ano | findstr 1420
+```
+
+**前端请求报 CORS 错误？**
+确认 `packages/server/.env` 中 `CORS_ORIGIN` 包含你的前端实际访问地址（通常是 `http://localhost:1420`）。
 
 ### 检查与测试
 
 ```bash
-# 运行单元测试
-pnpm test
-
-# 运行 E2E 测试
-pnpm test:e2e
-
-# TypeScript 类型检查（所有 workspace 包）
-pnpm type-check
+pnpm test          # 单元测试（Vitest）
+pnpm test:e2e      # E2E 测试（Playwright）
+pnpm type-check    # TypeScript 类型检查（所有包）
 ```
 
-### 常用脚本说明
+### 常用脚本
 
 | 脚本 | 作用 |
 |------|------|
-| `pnpm dev` | **同时启动前后端**（NestJS + Vite dev server） |
-| `pnpm dev:web` | 只启动前端（Vite dev server） |
-| `pnpm dev:server` | 只启动后端 NestJS（watch 模式） |
-| `pnpm build` | 构建 webui 生产版本 |
-| `pnpm preview` | 预览 webui 生产构建 |
-| `pnpm -r build` | 构建所有 workspace 包（server、rag-sdk、webui） |
-| `pnpm test` | 运行根目录单元测试（Vitest，含组件、store、composable 测试） |
-| `pnpm test:e2e` | 运行 E2E 测试（Playwright，浏览器级交互测试） |
-| `pnpm type-check` | 对所有 workspace 包运行 TypeScript 类型检查 |
+| `pnpm dev` | **同时启动前后端**（concurrently 并行） |
+| `pnpm dev:web` | 只启动前端 Vite（`localhost:1420`） |
+| `pnpm dev:server` | 只启动后端 NestJS（watch 模式，`localhost:3000`） |
+| `pnpm -r build` | 构建所有 workspace 包 |
+| `pnpm test` | 运行单元测试 |
+| `pnpm test:e2e` | 运行 E2E 测试 |
+| `pnpm type-check` | 所有包 TypeScript 类型检查 |
 
 ***
 
@@ -198,28 +323,6 @@ Collection: chunks
   - document_id
   - content (text)
 ```
-
-***
-
-## 开发规范
-
-- 所有 API 响应统一为 `{ data: T }` 格式（由 ResponseInterceptor 处理）
-- 异常统一由全局 ExceptionFilter 捕获并标准化
-- 认证使用 `@UseGuards(JwtAuthGuard)` + `@CurrentUser()` 装饰器
-- Prisma 查询通过 `PrismaService` 注入，禁止直接实例化 `PrismaClient`
-
-***
-
-## 相关文档
-
-| 文档                                                                     | 说明                                          |
-| ---------------------------------------------------------------------- | ------------------------------------------- |
-| [`CLAUDE.md`](./CLAUDE.md)                                             | 项目全局指南（编码规范、技能路由、开发流程）             |
-| [`PROGRESS.md`](./PROGRESS.md)                                         | 项目进度追踪（Issue 执行状态与后续开发计划）                   |
-| [`docs/01-prd/v2-cloud-native.md`](./docs/01-prd/v2-cloud-native.md)   | 产品需求文档（PRD）v2                               |
-| [`docs/05-adrs/`](./docs/05-adrs/)                                     | 架构决策记录（ADR）                                 |
-| [`docs/02-issues/`](./docs/02-issues/)                                 | 活跃 Issue 跟踪（含验收标准与依赖声明）                        |
-| [`docs/03-specs/`](./docs/03-specs/)                                   | 功能规格、行为规格、API 规格（按 issue-id 组织）        |
 
 ***
 

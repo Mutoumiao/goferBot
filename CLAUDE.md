@@ -92,7 +92,14 @@ pnpm -r build         # 构建所有包
 - 颜色使用 Pencil tokens（`bg-surface-1`, `text-text-primary`）
 - Class 管理统一使用 `cn()` + `class-variance-authority`
 
-### 文档读取协议
+### 后端规范
+
+- 所有 API 响应统一为 `{ data: T }` 格式（由 ResponseInterceptor 处理）
+- 异常统一由全局 ExceptionFilter 捕获并标准化
+- 认证使用 `@UseGuards(JwtAuthGuard)` + `@CurrentUser()` 装饰器
+- Prisma 查询通过 `PrismaService` 注入，禁止直接实例化 `PrismaClient`
+
+## Agent文档读取协议
 
 Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 token：
 
