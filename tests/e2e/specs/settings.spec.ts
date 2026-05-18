@@ -49,20 +49,14 @@ test.describe('设置页面', () => {
         await page.waitForTimeout(500)
         await settings.save()
       })(),
-      page.waitForRequest((req) => req.url().includes(':3000') && req.url().includes('/settings') && req.method() === 'POST'),
+      page.waitForRequest((req) => req.url().includes('/api/settings') && req.method() === 'POST'),
     ])
 
     expect(request).toBeTruthy()
   })
 
   test('保存失败显示错误提示', async ({ page }) => {
-    await page.route('**/settings', (route) => {
-      const url = route.request().url()
-      // 只拦截 API 请求（端口 3000），不拦截页面导航
-      if (!url.includes(':3000')) {
-        route.continue()
-        return
-      }
+    await page.route('**/api/settings', (route) => {
       if (route.request().method() === 'POST') {
         return route.fulfill({ status: 400, json: { error: { message: 'Invalid provider' } } })
       }

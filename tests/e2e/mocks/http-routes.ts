@@ -121,14 +121,8 @@ export async function mockApiRoutes(page: Page) {
     }
   })
 
-  // Settings endpoints - only intercept API requests (port 3000), not page navigation (port 1420)
-  await page.route('**/settings', (route) => {
-    const url = route.request().url()
-    // 只拦截 API 请求（端口 3000），不拦截页面导航（端口 1420）
-    if (!url.includes(':3000')) {
-      route.continue()
-      return
-    }
+  // Settings endpoints
+  await page.route('**/api/settings', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: {

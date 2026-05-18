@@ -16,7 +16,7 @@ test.describe('聊天标签栏 (f-04)', () => {
     })
 
     await page.goto('/app/chat')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
     await page.waitForSelector('[data-testid="tab-bar"]', { timeout: 10000 })
   })
 

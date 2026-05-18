@@ -37,7 +37,8 @@ test.describe('知识库选择器 (f-11)', () => {
     })
 
     await page.goto('/app/chat')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
+    await page.waitForSelector('[data-testid="chat-input"]', { timeout: 10000 })
   })
 
   async function ensureChatInputVisible(page: any) {

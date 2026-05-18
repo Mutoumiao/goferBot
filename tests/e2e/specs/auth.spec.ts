@@ -33,7 +33,7 @@ test.describe('认证流程', () => {
     await loginPage.goto()
     await loginPage.login('test@example.com', 'Test123!@#')
 
-    await expect(page).toHaveURL('/')
+    await expect(page).toHaveURL('/app/chat')
   })
 
   test('登录失败显示错误提示', async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe('认证流程', () => {
     await registerPage.goto()
     await registerPage.register('newuser@example.com', 'NewPass123!@#', 'NewPass123!@#')
 
-    await expect(page).toHaveURL('/')
+    await expect(page).toHaveURL('/app/chat')
   })
 
   test('注册时表单验证失败显示字段错误', async ({ page }) => {
@@ -102,6 +102,6 @@ test.describe('认证流程', () => {
 
     await page.goto('/login')
 
-    await expect(page).toHaveURL('/')
+    await expect(page).toHaveURL('/app/chat')
   })
 })

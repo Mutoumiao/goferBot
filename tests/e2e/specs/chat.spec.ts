@@ -17,7 +17,8 @@ test.describe('聊天功能', () => {
     })
 
     await page.goto('/app/chat')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('load')
+    await page.waitForSelector('[data-testid="chat-input"]', { timeout: 10000 })
   })
 
   test('聊天页面正常加载', async ({ page }) => {

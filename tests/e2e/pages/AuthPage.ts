@@ -14,7 +14,7 @@ export class LoginPage {
     this.passwordInput = page.locator('#password')
     this.submitButton = page.locator('button:has-text("登录")')
     this.errorMessage = page.locator('[role="alert"]')
-    this.registerLink = page.locator('text=去注册')
+    this.registerLink = page.locator('text=立即注册')
   }
 
   async goto() {
