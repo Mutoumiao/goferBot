@@ -59,7 +59,8 @@ test.describe('认证流程', () => {
     await registerPage.emailInput.fill('invalid-email')
     await registerPage.passwordInput.fill('123')
     await registerPage.confirmPasswordInput.fill('456')
-    await registerPage.submitButton.click()
+    // 使用 Enter 键提交，确保触发表单 submit 事件
+    await registerPage.confirmPasswordInput.press('Enter')
 
     // 检查字段验证错误：输入框包裹元素应有 has-error class
     await expect(page.locator('.auth-input-wrap.has-error').first()).toBeVisible()

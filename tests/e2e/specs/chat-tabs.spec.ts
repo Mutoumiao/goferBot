@@ -61,8 +61,8 @@ test.describe('聊天标签栏 (f-04)', () => {
     const tabs = page.locator('[data-testid^="chat-tab-"]')
     const newTab = tabs.last()
 
-    // dblclick 处理器在 tab 标题的 span 上，而非 Button 上
-    await newTab.locator('span.truncate').dblclick()
+    // dblclick 处理器在 tab 标题 span 上，直接双击整个 tab button 内的文本区域
+    await newTab.dblclick({ position: { x: 20, y: 10 } })
 
     const input = page.locator('[data-testid^="tab-edit-input-"]')
     await input.waitFor({ timeout: 5000 })
