@@ -147,12 +147,10 @@ async function handleSave() {
   }
 }
 
-onBeforeRouteLeave((_to, _from, next) => {
+onBeforeRouteLeave((_to, _from) => {
   if (hasChanges.value) {
     const confirmLeave = window.confirm('配置有未保存的更改，确定要离开吗？')
-    next(confirmLeave)
-  } else {
-    next()
+    return confirmLeave
   }
 })
 </script>

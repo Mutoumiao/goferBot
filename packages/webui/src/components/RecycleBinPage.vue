@@ -1,40 +1,21 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed } from 'vue'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
-import { confirmDialog } from '@/utils/confirm'
 import { Button } from '@/components/ui/button'
 import {
   TrashIcon,
   Trash2Icon,
-  LoaderIcon,
-  RotateCcwIcon,
   InfoIcon,
-  DatabaseIcon,
 } from 'lucide-vue-next'
 
 const store = useKnowledgeBaseStore()
 
-onMounted(() => {
-  store.loadDeletedKnowledgeBases()
+// 回收站功能后端未实现，使用占位数据防止页面崩溃
+const deletedItems = computed(() => {
+  const items = (store as any).deletedKnowledgeBases as unknown[]
+  return Array.isArray(items) ? items : []
 })
-
-async function onRestore(id: string) {
-  const kb = store.deletedKnowledgeBases.find((k) => k.id === id)
-  if (kb && (await confirmDialog(`确认恢复知识库「${kb.name}」？`, { title: '提示', kind: 'info' }))) {
-    store.restoreKnowledgeBase(id)
-  }
-}
-
-async function onPermanentDelete(id: string) {
-  const kb = store.deletedKnowledgeBases.find((k) => k.id === id)
-  if (kb && (await confirmDialog(`确认彻底删除知识库「${kb.name}」？此操作不可撤销。`, { title: '提示', kind: 'danger' }))) {
-    store.permanentlyDeleteKnowledgeBase(id)
-  }
-}
-
-function formatDate(ts: number): string {
-  return new Date(ts).toLocaleString('zh-CN')
-}
+const hasItems = computed(() => deletedItems.value.length > 0)
 </script>
 
 <template>
@@ -64,62 +45,15 @@ function formatDate(ts: number): string {
             <TrashIcon class="size-5 text-text-secondary" />
           </div>
           <div class="flex-1">
-            <div class="text-lg font-medium text-text-primary">{{ store.deletedKnowledgeBases.length }} 个项目等待处理</div>
-            <div class="text-sm text-text-tertiary">最早的项目将在 30 天后永久删除。</div>
+            <div class="text-lg font-medium text-text-primary">{{ deletedItems.length }} 个项目等待处理</div>
+            <div class="text-sm text-text-tertiary">回收站功能即将上线，敬请期待。</div>
           </div>
-          <Button
-            v-if="store.deletedKnowledgeBases.length > 0"
-            variant="outline"
-            class="flex items-center gap-2 rounded-[15px] border-danger-500/20 bg-white px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
-            @click="store.deletedKnowledgeBases.forEach((kb) => onPermanentDelete(kb.id))"
-          >
-            <Trash2Icon data-icon="inline-start" class="size-4" />
-            清空
-          </Button>
-        </div>
-
-        <!-- Loading -->
-        <div v-if="store.isLoading" class="flex items-center justify-center py-12">
-          <LoaderIcon class="size-8 animate-spin text-accent-500" />
         </div>
 
         <!-- Empty -->
-        <div v-else-if="store.deletedKnowledgeBases.length === 0" class="flex flex-col items-center justify-center py-12 text-text-tertiary">
+        <div class="flex flex-col items-center justify-center py-12 text-text-tertiary">
           <Trash2Icon class="size-10" />
           <span class="mt-3 text-sm">回收站为空</span>
-        </div>
-
-        <!-- List -->
-        <div v-else class="space-y-2.5">
-          <div
-            v-for="kb in store.deletedKnowledgeBases"
-            :key="kb.id"
-            class="flex min-h-[76px] items-center gap-3.5 rounded-[20px] border border-border-default bg-[#fafbfc] p-4 transition-colors hover:bg-surface-1"
-          >
-            <div class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[14px] bg-surface-2">
-              <DatabaseIcon class="size-4 text-text-secondary" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-[15px] font-medium text-text-primary">{{ kb.name }}</div>
-              <div class="text-xs text-text-tertiary">删除于 {{ formatDate(kb.deleted_at!) }}</div>
-            </div>
-            <Button
-              variant="outline"
-              class="flex items-center gap-2 rounded-[14px] border-border-default bg-white px-3 py-2 text-sm text-text-secondary hover:border-accent-500/30 hover:text-accent-500"
-              @click="onRestore(kb.id)"
-            >
-              <RotateCcwIcon data-icon="inline-start" class="size-4" />
-              恢复
-            </Button>
-            <Button
-              variant="outline"
-              class="flex items-center gap-2 rounded-[14px] border-danger-500/20 bg-white px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
-              @click="onPermanentDelete(kb.id)"
-            >
-              <Trash2Icon data-icon="inline-start" class="size-4" />
-              彻底删除
-            </Button>
-          </div>
         </div>
       </div>
 
