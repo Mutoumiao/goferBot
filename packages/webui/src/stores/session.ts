@@ -57,7 +57,7 @@ export const useSessionStore = defineStore('session', () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await api.post<Session>('/api/sessions')
+      const data = await api.post<Session>('/api/sessions', {})
       sessions.value.unshift(data)
       activeSessionId.value = data.id
       messages.value.set(data.id, [])

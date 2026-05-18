@@ -3,8 +3,8 @@ import { z } from 'zod'
 import { validateBaseUrl, getAllowedHostnames } from '../../../common/utils/ssrf-guard.js'
 
 const providerSchema = z.object({
-  apiKey: z.string().min(1, 'apiKey 不能为空'),
-  model: z.string().min(1, 'model 不能为空'),
+  apiKey: z.string(),
+  model: z.string(),
   baseUrl: z.string().refine(
     (v) => v === '' || (z.string().url().safeParse(v).success && validateBaseUrl(v)),
     { message: `baseUrl 必须是合法 URL 或空字符串，仅允许: ${getAllowedHostnames().join(', ')}` },
@@ -21,9 +21,9 @@ const ollamaSchema = z.object({
 })
 
 const embeddingProviderSchema = z.object({
-  provider: z.string().min(1, 'provider 不能为空'),
-  apiKey: z.string().min(1, 'apiKey 不能为空'),
-  model: z.string().min(1, 'model 不能为空'),
+  provider: z.string(),
+  apiKey: z.string(),
+  model: z.string(),
   baseUrl: z.string().refine(
     (v) => v === '' || (z.string().url().safeParse(v).success && validateBaseUrl(v)),
     { message: `baseUrl 必须是合法 URL 或空字符串，仅允许: ${getAllowedHostnames().join(', ')}` },

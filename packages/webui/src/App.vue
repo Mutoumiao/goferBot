@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useSettingsStore } from './stores/settings'
+import { useAuthStore } from './stores/auth'
 import ConfigProvider from './components/ConfigProvider.vue'
 
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
 
 onMounted(() => {
-  settingsStore.loadConfig()
+  if (authStore.isAuthenticated) {
+    settingsStore.loadConfig()
+  }
 })
 </script>
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted, toRaw } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -21,6 +22,12 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import {
   EyeIcon,
   EyeOffIcon,
   CheckIcon,
@@ -28,10 +35,16 @@ import {
   CpuIcon,
   BrainIcon,
   PaletteIcon,
+  LogOutIcon,
+  UserIcon,
 } from 'lucide-vue-next'
 import type { AppConfig, ChatProviderConfig } from '@/types'
 
 const store = useSettingsStore()
+const authStore = useAuthStore()
+const router = useRouter()
+
+const activeTab = ref('models')
 
 const llmProviderKeys = ['openai', 'claude', 'deepseek', 'custom', 'ollama'] as const
 const llmProviderLabels: Record<string, string> = {
@@ -147,6 +160,11 @@ async function handleSave() {
   }
 }
 
+async function handleLogout() {
+  await authStore.logout()
+  router.push({ name: 'login' })
+}
+
 onBeforeRouteLeave((_to, _from) => {
   if (hasChanges.value) {
     const confirmLeave = window.confirm('配置有未保存的更改，确定要离开吗？')
@@ -157,284 +175,347 @@ onBeforeRouteLeave((_to, _from) => {
 
 <template>
   <div class="h-full overflow-y-auto bg-surface-1 p-6">
-    <div class="mx-auto max-w-3xl space-y-6" data-testid="settings-form">
+    <div class="mx-auto max-w-3xl space-y-6">
       <!-- Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold text-text-primary">设置</h1>
-        <Button
-          :disabled="!hasChanges"
-          data-testid="settings-save-btn"
-          class="rounded-2xl bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
-          @click="handleSave"
-        >
-          保存
-        </Button>
       </div>
 
-      <!-- LLM Providers Card -->
-      <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]">
-        <CardHeader class="pb-4">
-          <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
-            <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-accent-soft">
-              <CpuIcon class="size-[18px] text-accent-500" />
-            </span>
-            LLM 提供商配置
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="space-y-5">
-          <!-- Provider Tabs -->
-          <div class="flex gap-1 border-b border-border-default pb-1" data-testid="settings-nav-tabs">
+      <Tabs v-model="activeTab">
+        <TabsList class="w-full rounded-xl bg-surface-2 p-1">
+          <TabsTrigger
+            value="models"
+            class="flex-1 rounded-lg px-4 py-2 text-sm data-[state=active]:bg-white data-[state=active]:text-text-primary data-[state=active]:shadow-sm"
+          >
+            模型设置
+          </TabsTrigger>
+          <TabsTrigger
+            value="account"
+            class="flex-1 rounded-lg px-4 py-2 text-sm data-[state=active]:bg-white data-[state=active]:text-text-primary data-[state=active]:shadow-sm"
+          >
+            账户设置
+          </TabsTrigger>
+        </TabsList>
+
+        <!-- 模型设置 Tab -->
+        <TabsContent value="models" class="mt-6 space-y-6" data-testid="settings-form">
+          <!-- Save button (top) -->
+          <div class="flex items-center justify-end">
             <Button
-              v-for="key in llmProviderKeys"
-              :key="key"
-              variant="ghost"
-              size="sm"
-              :data-testid="`tab-${key}`"
-              :class="[
-                'rounded-t-lg px-3 py-1.5 text-sm',
-                activeLlmTab === key
-                  ? 'font-medium text-accent-500 hover:text-accent-500'
-                  : 'text-text-tertiary hover:text-text-secondary',
-              ]"
-              @click="activeLlmTab = key"
+              :disabled="!hasChanges"
+              data-testid="settings-save-btn"
+              class="rounded-2xl bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
+              @click="handleSave"
             >
-              {{ llmProviderLabels[key] }}
+              保存
             </Button>
           </div>
 
-          <!-- Provider Form -->
-          <div class="space-y-4">
-            <!-- Ollama enable switch -->
-            <div v-if="activeLlmTab === 'ollama'" class="flex items-center gap-3">
-              <span class="text-sm text-text-secondary">启用 Ollama</span>
-              <Switch
-                :checked="localConfig.providers.ollama.enabled"
-                @update:checked="
-                  (v: boolean) => {
-                    localConfig.providers.ollama.enabled = v
-                    markChanged()
-                  }
-                "
-              />
-            </div>
+          <!-- LLM Providers Card -->
+          <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]">
+            <CardHeader class="pb-4">
+              <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-accent-soft">
+                  <CpuIcon class="size-[18px] text-accent-500" />
+                </span>
+                LLM 提供商配置
+              </CardTitle>
+            </CardHeader>
+            <CardContent class="space-y-5">
+              <!-- Provider Tabs -->
+              <div class="flex gap-1 border-b border-border-default pb-1" data-testid="settings-nav-tabs">
+                <Button
+                  v-for="key in llmProviderKeys"
+                  :key="key"
+                  variant="ghost"
+                  size="sm"
+                  :data-testid="`tab-${key}`"
+                  :class="[
+                    'rounded-t-lg px-3 py-1.5 text-sm',
+                    activeLlmTab === key
+                      ? 'font-medium text-accent-500 hover:text-accent-500'
+                      : 'text-text-tertiary hover:text-text-secondary',
+                  ]"
+                  @click="activeLlmTab = key"
+                >
+                  {{ llmProviderLabels[key] }}
+                </Button>
+              </div>
 
-            <!-- API Key (not for ollama) -->
-            <div v-if="activeLlmTab !== 'ollama'">
-              <label class="mb-1 block text-sm text-text-secondary">API Key</label>
-              <div class="relative">
+              <!-- Provider Form -->
+              <div class="space-y-4">
+                <!-- Ollama enable switch -->
+                <div v-if="activeLlmTab === 'ollama'" class="flex items-center gap-3">
+                  <span class="text-sm text-text-secondary">启用 Ollama</span>
+                  <Switch
+                    :checked="localConfig.providers.ollama.enabled"
+                    @update:checked="
+                      (v: boolean) => {
+                        localConfig.providers.ollama.enabled = v
+                        markChanged()
+                      }
+                    "
+                  />
+                </div>
+
+                <!-- API Key (not for ollama) -->
+                <div v-if="activeLlmTab !== 'ollama'">
+                  <label class="mb-1 block text-sm text-text-secondary">API Key</label>
+                  <div class="relative">
+                    <Input
+                      v-model="localConfig.providers[activeLlmTab].apiKey"
+                      data-testid="api-key-input"
+                      name="apiKey"
+                      :type="showPassword[activeLlmTab] ? 'text' : 'password'"
+                      class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
+                      placeholder="输入 API Key"
+                      @input="markChanged"
+                    />
+                    <button
+                      type="button"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+                      @click="togglePassword(activeLlmTab)"
+                    >
+                      <EyeIcon v-if="!showPassword[activeLlmTab]" class="size-4" />
+                      <EyeOffIcon v-else class="size-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Model -->
+                <div>
+                  <label class="mb-1 block text-sm text-text-secondary">模型</label>
+                  <Input
+                    v-model="localConfig.providers[activeLlmTab].model"
+                    type="text"
+                    name="model"
+                    class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
+                    placeholder="输入模型名称"
+                    @input="markChanged"
+                  />
+                </div>
+
+                <!-- Base URL -->
+                <div v-if="activeLlmTab !== 'ollama'">
+                  <label class="mb-1 block text-sm text-text-secondary">Base URL（可选）</label>
+                  <Input
+                    v-model="localConfig.providers[activeLlmTab].baseUrl"
+                    type="text"
+                    class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
+                    placeholder="留空使用默认地址"
+                    @input="markChanged"
+                  />
+                </div>
+
+                <!-- Ollama URL -->
+                <div v-if="activeLlmTab === 'ollama'">
+                  <label class="mb-1 block text-sm text-text-secondary">服务地址</label>
+                  <Input
+                    v-model="localConfig.providers.ollama.url"
+                    type="text"
+                    class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
+                    placeholder="http://localhost:11434"
+                    @input="markChanged"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <!-- Default Provider Selector -->
+              <div>
+                <label class="mb-1 block text-sm text-text-secondary">默认对话提供商</label>
+                <Select
+                  v-model="localConfig.defaultChatProvider"
+                  @update:model-value="markChanged"
+                >
+                  <SelectTrigger class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
+                    <SelectValue placeholder="选择默认提供商" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem
+                        v-for="opt in defaultProviderOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- Embedding Card -->
+          <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]" data-testid="embedding-card">
+            <CardHeader class="pb-4">
+              <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-purple-soft">
+                  <BrainIcon class="size-[18px] text-purple-500" />
+                </span>
+                Embedding API
+              </CardTitle>
+            </CardHeader>
+            <CardContent class="space-y-4">
+              <div>
+                <label class="mb-1 block text-sm text-text-secondary">提供商</label>
+                <Select
+                  v-model="localConfig.embeddingProvider.provider"
+                  data-testid="embedding-provider-select"
+                  @update:model-value="markChanged"
+                >
+                  <SelectTrigger class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
+                    <SelectValue placeholder="选择提供商" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem
+                        v-for="ep in embeddingProviders"
+                        :key="ep.value"
+                        :value="ep.value"
+                      >
+                        {{ ep.label }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label class="mb-1 block text-sm text-text-secondary">API Key</label>
+                <div class="relative">
+                  <Input
+                    v-model="localConfig.embeddingProvider.apiKey"
+                    data-testid="embedding-api-key-input"
+                    :type="showPassword['embedding'] ? 'text' : 'password'"
+                    class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
+                    placeholder="输入 API Key"
+                    @input="markChanged"
+                  />
+                  <button
+                    type="button"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+                    @click="togglePassword('embedding')"
+                  >
+                    <EyeIcon v-if="!showPassword['embedding']" class="size-4" />
+                    <EyeOffIcon v-else class="size-4" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="mb-1 block text-sm text-text-secondary">模型</label>
                 <Input
-                  v-model="localConfig.providers[activeLlmTab].apiKey"
-                  data-testid="api-key-input"
-                  name="apiKey"
-                  :type="showPassword[activeLlmTab] ? 'text' : 'password'"
-                  class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
-                  placeholder="输入 API Key"
+                  v-model="localConfig.embeddingProvider.model"
+                  data-testid="embedding-model-input"
+                  type="text"
+                  class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
+                  placeholder="输入模型名称"
                   @input="markChanged"
                 />
-                <button
-                  type="button"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                  @click="togglePassword(activeLlmTab)"
-                >
-                  <EyeIcon v-if="!showPassword[activeLlmTab]" class="size-4" />
-                  <EyeOffIcon v-else class="size-4" />
-                </button>
               </div>
-            </div>
+              <div>
+                <label class="mb-1 block text-sm text-text-secondary">Base URL（可选）</label>
+                <Input
+                  v-model="localConfig.embeddingProvider.baseUrl"
+                  data-testid="embedding-baseurl-input"
+                  type="text"
+                  class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
+                  placeholder="留空使用默认地址"
+                  @input="markChanged"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-            <!-- Model -->
-            <div>
-              <label class="mb-1 block text-sm text-text-secondary">模型</label>
-              <Input
-                v-model="localConfig.providers[activeLlmTab].model"
-                type="text"
-                name="model"
-                class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
-                placeholder="输入模型名称"
-                @input="markChanged"
-              />
-            </div>
+          <!-- General Card -->
+          <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]">
+            <CardHeader class="pb-4">
+              <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-success-soft">
+                  <PaletteIcon class="size-[18px] text-success-500" />
+                </span>
+                通用配置
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div data-testid="temperature-container">
+                <div class="mb-2 flex items-center justify-between">
+                  <label class="text-sm text-text-secondary">温度参数</label>
+                  <span data-testid="temperature-value" class="text-sm font-medium text-text-primary">{{ localConfig.temperature.toFixed(1) }}</span>
+                </div>
+                <input
+                  data-testid="temperature-slider"
+                  v-model.number="localConfig.temperature"
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  class="w-full accent-accent-500"
+                  @input="markChanged"
+                />
+                <div class="mt-1 flex justify-between text-xs text-text-tertiary">
+                  <span>精确 (0)</span>
+                  <span>平衡 (1)</span>
+                  <span>创意 (2)</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <!-- Base URL -->
-            <div v-if="activeLlmTab !== 'ollama'">
-              <label class="mb-1 block text-sm text-text-secondary">Base URL（可选）</label>
-              <Input
-                v-model="localConfig.providers[activeLlmTab].baseUrl"
-                type="text"
-                class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
-                placeholder="留空使用默认地址"
-                @input="markChanged"
-              />
-            </div>
-
-            <!-- Ollama URL -->
-            <div v-if="activeLlmTab === 'ollama'">
-              <label class="mb-1 block text-sm text-text-secondary">服务地址</label>
-              <Input
-                v-model="localConfig.providers.ollama.url"
-                type="text"
-                class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
-                placeholder="http://localhost:11434"
-                @input="markChanged"
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          <!-- Default Provider Selector -->
-          <div>
-            <label class="mb-1 block text-sm text-text-secondary">默认对话提供商</label>
-            <Select
-              v-model="localConfig.defaultChatProvider"
-              @update:model-value="markChanged"
+          <!-- Save Button (bottom) -->
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <p v-if="saveError" class="text-sm text-danger-500">{{ saveError }}</p>
+            <Button
+              :disabled="!hasChanges"
+              data-testid="settings-save-btn"
+              class="rounded-2xl bg-accent-500 px-5 py-2 text-sm font-medium text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
+              @click="handleSave"
             >
-              <SelectTrigger class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
-                <SelectValue placeholder="选择默认提供商" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem
-                    v-for="opt in defaultProviderOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              保存
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      <!-- Embedding Card -->
-      <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]" data-testid="embedding-card">
-        <CardHeader class="pb-4">
-          <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
-            <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-purple-soft">
-              <BrainIcon class="size-[18px] text-purple-500" />
-            </span>
-            Embedding API
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="space-y-4">
-          <div>
-            <label class="mb-1 block text-sm text-text-secondary">提供商</label>
-            <Select
-              v-model="localConfig.embeddingProvider.provider"
-              data-testid="embedding-provider-select"
-              @update:model-value="markChanged"
-            >
-              <SelectTrigger class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
-                <SelectValue placeholder="选择提供商" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem
-                    v-for="ep in embeddingProviders"
-                    :key="ep.value"
-                    :value="ep.value"
-                  >
-                    {{ ep.label }}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-text-secondary">API Key</label>
-            <div class="relative">
-              <Input
-                v-model="localConfig.embeddingProvider.apiKey"
-                data-testid="embedding-api-key-input"
-                :type="showPassword['embedding'] ? 'text' : 'password'"
-                class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
-                placeholder="输入 API Key"
-                @input="markChanged"
-              />
-              <button
-                type="button"
-                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                @click="togglePassword('embedding')"
-              >
-                <EyeIcon v-if="!showPassword['embedding']" class="size-4" />
-                <EyeOffIcon v-else class="size-4" />
-              </button>
-            </div>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-text-secondary">模型</label>
-            <Input
-              v-model="localConfig.embeddingProvider.model"
-              data-testid="embedding-model-input"
-              type="text"
-              class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
-              placeholder="输入模型名称"
-              @input="markChanged"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-text-secondary">Base URL（可选）</label>
-            <Input
-              v-model="localConfig.embeddingProvider.baseUrl"
-              data-testid="embedding-baseurl-input"
-              type="text"
-              class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
-              placeholder="留空使用默认地址"
-              @input="markChanged"
-            />
-          </div>
-        </CardContent>
-      </Card>
+        <!-- 账户设置 Tab -->
+        <TabsContent value="account" class="mt-6 space-y-6">
+          <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]">
+            <CardHeader class="pb-4">
+              <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-accent-soft">
+                  <UserIcon class="size-[18px] text-accent-500" />
+                </span>
+                账户信息
+              </CardTitle>
+            </CardHeader>
+            <CardContent class="space-y-4">
+              <div class="space-y-3">
+                <div>
+                  <label class="text-sm text-text-tertiary">邮箱</label>
+                  <p class="text-sm font-medium text-text-primary">{{ authStore.user?.email || '—' }}</p>
+                </div>
+                <div>
+                  <label class="text-sm text-text-tertiary">昵称</label>
+                  <p class="text-sm font-medium text-text-primary">{{ authStore.user?.name || '—' }}</p>
+                </div>
+              </div>
 
-      <!-- General Card -->
-      <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]">
-        <CardHeader class="pb-4">
-          <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
-            <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-success-soft">
-              <PaletteIcon class="size-[18px] text-success-500" />
-            </span>
-            通用配置
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div data-testid="temperature-container">
-            <div class="mb-2 flex items-center justify-between">
-              <label class="text-sm text-text-secondary">温度参数</label>
-              <span data-testid="temperature-value" class="text-sm font-medium text-text-primary">{{ localConfig.temperature.toFixed(1) }}</span>
-            </div>
-            <input
-              data-testid="temperature-slider"
-              v-model.number="localConfig.temperature"
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
-              class="w-full accent-accent-500"
-              @input="markChanged"
-            />
-            <div class="mt-1 flex justify-between text-xs text-text-tertiary">
-              <span>精确 (0)</span>
-              <span>平衡 (1)</span>
-              <span>创意 (2)</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              <Separator />
 
-      <!-- Save Button (bottom) -->
-      <div class="flex items-center justify-end gap-3 pt-2">
-        <p v-if="saveError" class="text-sm text-danger-500">{{ saveError }}</p>
-        <Button
-          :disabled="!hasChanges"
-          data-testid="settings-save-btn"
-          class="rounded-2xl bg-accent-500 px-5 py-2 text-sm font-medium text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
-          @click="handleSave"
-        >
-          保存
-        </Button>
-      </div>
+              <div class="flex justify-start pt-1">
+                <Button
+                  variant="outline"
+                  class="gap-2 rounded-xl border-danger-500/30 text-danger-500 hover:bg-danger-50 hover:text-danger-600"
+                  @click="handleLogout"
+                >
+                  <LogOutIcon class="size-4" />
+                  登出
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
 
     <!-- Success Toast -->
