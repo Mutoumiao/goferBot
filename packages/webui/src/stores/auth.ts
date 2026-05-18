@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/api/client'
+import { encryptPassword, clearPublicKeyCache } from '@/utils/password-encryption'
 import type { AuthResponse, JwtTokens, UserDTO } from '@/api/types'
 
 function mapAuthError(e: unknown): string {
@@ -16,6 +17,8 @@ function mapAuthError(e: unknown): string {
         return '登录已过期，请重新登录'
       case 'USER_NOT_FOUND':
         return '用户不存在'
+      case 'DECRYPT_FAILED':
+        return '加密密钥已过期，请重试'
       default:
         return msg || '操作失败，请稍后重试'
     }
@@ -54,15 +57,24 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(REFRESH_TOKEN_KEY)
   }
 
-  async function login(credentials: { email: string; password: string }) {
+  async function login(credentials: { email: string; password: string }, isRetry = false) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.post<AuthResponse>('/api/auth/login', credentials)
+      const encryptedPassword = await encryptPassword(credentials.password)
+      const res = await api.post<AuthResponse>('/api/auth/login', {
+        email: credentials.email,
+        encryptedPassword,
+      })
       setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
       user.value = res.user
       return res
     } catch (e) {
+      const code = (e as { code?: string }).code
+      if (code === 'DECRYPT_FAILED' && !isRetry) {
+        clearPublicKeyCache()
+        return login(credentials, true)
+      }
       error.value = mapAuthError(e)
       throw e
     } finally {
@@ -70,15 +82,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(credentials: { email: string; password: string; name?: string }) {
+  async function register(credentials: { email: string; password: string; name?: string }, isRetry = false) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.post<AuthResponse>('/api/auth/register', credentials)
+      const encryptedPassword = await encryptPassword(credentials.password)
+      const res = await api.post<AuthResponse>('/api/auth/register', {
+        email: credentials.email,
+        encryptedPassword,
+        name: credentials.name,
+      })
       setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
       user.value = res.user
       return res
     } catch (e) {
+      const code = (e as { code?: string }).code
+      if (code === 'DECRYPT_FAILED' && !isRetry) {
+        clearPublicKeyCache()
+        return register(credentials, true)
+      }
       error.value = mapAuthError(e)
       throw e
     } finally {

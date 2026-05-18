@@ -36,10 +36,22 @@ export const test = base.extend<{ testUser: TestUser; authPage: { gotoLogin: () 
 })
 
 export async function mockAuthApi(page: any) {
+  await page.route('**/api/auth/public-key', (route) => {
+    route.fulfill({
+      json: {
+        data: {
+          publicKey: '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLH8G8vI4bp0B\nnwFFesHnH4sdFcb+5L5O8kcpqESIQ0Nx9F0PBqJFeBkLfKLpG+4XgXqDjGThgFmW\nnwIDAQAB\n-----END PUBLIC KEY-----',
+          algorithm: 'RSA-OAEP',
+          hash: 'SHA-256',
+        },
+      },
+    })
+  })
+
   await page.route('**/api/auth/login', (route) => {
     if (route.request().method() === 'POST') {
       const body = JSON.parse(route.request().postData() || '{}')
-      if (body.email === 'test@example.com' && body.password === 'Test123!@#') {
+      if (body.email === 'test@example.com' && body.encryptedPassword) {
         route.fulfill({
           json: {
             data: {
@@ -60,7 +72,7 @@ export async function mockAuthApi(page: any) {
       const body = JSON.parse(route.request().postData() || '{}')
       const newUser: TestUser = {
         email: body.email,
-        password: body.password,
+        password: body.encryptedPassword || 'encrypted',
         name: body.name || '',
         accessToken: `mock-access-token-${Date.now()}`,
         refreshToken: `mock-refresh-token-${Date.now()}`,
