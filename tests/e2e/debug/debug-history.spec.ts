@@ -21,7 +21,7 @@ test('调试历史页面', async ({ page }) => {
   })
   
   await mockApiRoutes(page)
-  await page.goto('/history')
+  await page.goto('/app/history')
   await page.waitForLoadState('networkidle')
   
   // 等待页面渲染

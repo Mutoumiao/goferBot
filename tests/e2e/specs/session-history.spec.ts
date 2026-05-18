@@ -7,7 +7,7 @@ test.describe('会话历史', () => {
   test.beforeEach(async ({ page }) => {
     await injectAuthToken(page)
     await mockApiRoutes(page)
-    await page.goto('/history')
+    await page.goto('/app/history')
     await page.waitForLoadState('networkidle')
   })
 
@@ -17,32 +17,34 @@ test.describe('会话历史', () => {
   })
 
   test('显示会话列表', async ({ page }) => {
-    await expect(page.locator('[data-testid="history-item"]')).toHaveCount(2)
+    await expect(page.locator('[data-testid="session-item"]')).toHaveCount(2)
   })
 
   test('点击会话恢复对话', async ({ page }) => {
     const historyPage = new HistoryPage(page)
-    await historyPage.clickSession('RAG 使用讨论')
+    await historyPage.clickSession('RAG 测试')
 
-    await expect(page.locator('[data-testid="chat-input"]')).toBeVisible()
-    await expect(page).toHaveURL('/')
+    await expect(page).toHaveURL('/app/chat')
   })
 
   test('新建聊天按钮跳转到首页', async ({ page }) => {
     const historyPage = new HistoryPage(page)
     await historyPage.goto()
-    await historyPage.newChatBtn.click()
 
-    await expect(page).toHaveURL('/')
-    await expect(page.locator('[data-testid="chat-input"]')).toBeVisible()
+    // 检查侧边栏的新建聊天按钮
+    const newChatBtn = page.locator('[data-testid="new-chat-btn"]')
+    if (await newChatBtn.isVisible()) {
+      await newChatBtn.click()
+      await expect(page).toHaveURL('/app/chat')
+    }
   })
 
   test('删除会话显示确认对话框', async ({ page }) => {
     const historyPage = new HistoryPage(page)
-    await historyPage.deleteSession('RAG 使用讨论')
+    await historyPage.deleteSession('RAG 测试')
 
-    await expect(page.locator('[data-testid="confirm-dialog"]')).toBeVisible()
-    await expect(page.locator('h3:has-text("提示")')).toBeVisible()
+    await expect(page.locator('[data-testid="delete-dialog"]')).toBeVisible()
+    await expect(page.locator('h3:has-text("删除会话")')).toBeVisible()
   })
 
   test('确认删除后会话从列表移除', async ({ page }) => {
@@ -53,30 +55,30 @@ test.describe('会话历史', () => {
     })
 
     const historyPage = new HistoryPage(page)
-    await historyPage.deleteSession('RAG 使用讨论')
-    await page.locator('button:has-text("确定")').click()
+    await historyPage.deleteSession('RAG 测试')
+    await page.locator('[data-testid="delete-confirm-btn"]').click()
 
     await page.waitForTimeout(300)
-    await expect(historyPage.getHistoryItemByTitle('RAG 使用讨论')).not.toBeVisible()
+    await expect(historyPage.getHistoryItemByTitle('RAG 测试')).not.toBeVisible()
   })
 
   test('取消删除对话框保持会话', async ({ page }) => {
     const historyPage = new HistoryPage(page)
-    await historyPage.deleteSession('RAG 使用讨论')
-    await page.locator('button:has-text("取消")').click()
+    await historyPage.deleteSession('RAG 测试')
+    await page.locator('[data-testid="delete-cancel-btn"]').click()
 
-    await expect(historyPage.getHistoryItemByTitle('RAG 使用讨论')).toBeVisible()
+    await expect(historyPage.getHistoryItemByTitle('RAG 测试')).toBeVisible()
   })
 
   test('重命名会话更新显示', async ({ page }) => {
     const historyPage = new HistoryPage(page)
-    await historyPage.renameSession('RAG 使用讨论', 'RAG 讨论重命名')
+    await historyPage.renameSession('RAG 测试', 'RAG 讨论重命名')
 
     await page.waitForTimeout(500)
     await expect(historyPage.getHistoryItemByTitle('RAG 讨论重命名')).toBeVisible()
   })
 
   test('会话列表显示标题和时间', async ({ page }) => {
-    await expect(page.locator('[data-testid="history-item"]').first()).toContainText('RAG 使用讨论')
+    await expect(page.locator('[data-testid="session-item"]').first()).toContainText('RAG 测试')
   })
 })

@@ -22,7 +22,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await api.get<KnowledgeBase[]>('/knowledge-bases')
+      const data = await api.get<KnowledgeBase[]>('/api/knowledge-bases')
       knowledgeBases.value = data ?? []
     } catch (e) {
       error.value = e instanceof Error ? e.message : '加载知识库失败'
@@ -34,7 +34,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function createKnowledgeBase(name: string, description?: string) {
     error.value = null
     try {
-      const kb = await api.post<KnowledgeBase>('/knowledge-bases', {
+      const kb = await api.post<KnowledgeBase>('/api/knowledge-bases', {
         name,
         description,
       })
@@ -49,7 +49,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function renameKnowledgeBase(id: string, name: string) {
     error.value = null
     try {
-      const updated = await api.patch<KnowledgeBase>(`/knowledge-bases/${id}`, { name })
+      const updated = await api.patch<KnowledgeBase>(`/api/knowledge-bases/${id}`, { name })
       const idx = knowledgeBases.value.findIndex((kb) => kb.id === id)
       if (idx !== -1) {
         knowledgeBases.value[idx] = updated
@@ -64,7 +64,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
   async function deleteKnowledgeBase(id: string) {
     error.value = null
     try {
-      await api.delete(`/knowledge-bases/${id}`)
+      await api.delete(`/api/knowledge-bases/${id}`)
       knowledgeBases.value = knowledgeBases.value.filter((kb) => kb.id !== id)
     } catch (e) {
       error.value = e instanceof Error ? e.message : '删除知识库失败'
@@ -77,7 +77,7 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     if (!kb) return
     const nextPinned = !kb.isPinned
     try {
-      const updated = await api.patch<KnowledgeBase>(`/knowledge-bases/${id}`, {
+      const updated = await api.patch<KnowledgeBase>(`/api/knowledge-bases/${id}`, {
         isPinned: nextPinned,
       })
       const idx = knowledgeBases.value.findIndex((k) => k.id === id)

@@ -35,6 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserDTO | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const isInitialized = ref(false)
 
   const isAuthenticated = computed(() => !!accessToken.value)
 
@@ -57,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.post<AuthResponse>('/auth/login', credentials)
+      const res = await api.post<AuthResponse>('/api/auth/login', credentials)
       setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
       user.value = res.user
       return res
@@ -73,7 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.post<AuthResponse>('/auth/register', credentials)
+      const res = await api.post<AuthResponse>('/api/auth/register', credentials)
       setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
       user.value = res.user
       return res
@@ -92,7 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      const res = await api.post<JwtTokens>('/auth/refresh', {
+      const res = await api.post<JwtTokens>('/api/auth/refresh', {
         refreshToken: currentRefreshToken,
       })
       setTokens(res)
@@ -106,7 +107,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     try {
       if (accessToken.value) {
-        await api.post('/auth/logout', {})
+        await api.post('/api/auth/logout', {})
       }
     } finally {
       clearTokens()
@@ -116,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchMe() {
     if (!accessToken.value) return null
     try {
-      const res = await api.get<{ data: UserDTO }>('/auth/me')
+      const res = await api.get<{ data: UserDTO }>('/api/auth/me')
       user.value = res.data
       return res.data
     } catch (e) {
@@ -125,16 +126,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function init() {
+  async function init() {
     const savedAccess = localStorage.getItem(ACCESS_TOKEN_KEY)
     const savedRefresh = localStorage.getItem(REFRESH_TOKEN_KEY)
     if (savedAccess && savedRefresh) {
       accessToken.value = savedAccess
       refreshToken.value = savedRefresh
-      fetchMe().catch(() => {
-        // 静默处理，fetchMe 会清除无效 token
-      })
+      try {
+        await fetchMe()
+      } catch {
+        // fetchMe 失败时已调用 clearTokens()
+      }
     }
+    isInitialized.value = true
   }
 
   return {
@@ -144,6 +148,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     isAuthenticated,
+    isInitialized,
     login,
     register,
     refresh,

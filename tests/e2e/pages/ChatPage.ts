@@ -16,7 +16,7 @@ export class ChatPage {
   }
 
   async goto() {
-    await this.page.goto('/')
+    await this.page.goto('/app/chat')
   }
 
   async sendMessage(content: string) {

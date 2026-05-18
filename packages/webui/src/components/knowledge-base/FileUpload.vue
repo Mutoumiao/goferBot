@@ -120,7 +120,7 @@ async function startUpload() {
 
     try {
       await api.uploadFile(
-        `/knowledge-bases/${props.kbId}/documents/upload`,
+        `/api/knowledge-bases/${props.kbId}/documents/upload`,
         formData,
         (percent) => { item.progress = percent },
       )

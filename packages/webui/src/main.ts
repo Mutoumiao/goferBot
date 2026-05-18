@@ -10,9 +10,10 @@ const pinia = createPinia()
 
 app.use(pinia)
 
-// 初始化 auth store（恢复 localStorage token），在路由守卫前执行
+// 初始化 auth store（恢复 token + 验证有效性），必须在路由注册前完成
+// await 确保 isAuthenticated 反映的是真实鉴权状态，消除刷新时侧栏闪烁
 const authStore = useAuthStore()
-authStore.init()
+await authStore.init()
 
 app.use(router)
 app.mount('#app')

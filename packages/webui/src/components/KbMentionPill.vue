@@ -20,6 +20,7 @@ const emit = defineEmits<{
     <DatabaseIcon class="size-4" />
     {{ props.kb.name }}
     <Button
+      data-testid="kb-mention-pill-remove"
       variant="ghost"
       size="icon-xs"
       class="ml-0.5 h-auto w-auto rounded-sm hover:bg-accent-500/10"

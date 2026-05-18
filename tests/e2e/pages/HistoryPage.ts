@@ -8,13 +8,13 @@ export class HistoryPage {
 
   constructor(page: Page) {
     this.page = page
-    this.historyList = page.locator('[data-testid="history-list"]')
-    this.historyItems = page.locator('[data-testid="history-item"]')
+    this.historyList = page.locator('[data-testid="session-list"]')
+    this.historyItems = page.locator('[data-testid="session-item"]')
     this.newChatBtn = page.locator('[data-testid="new-chat-btn"]')
   }
 
   async goto() {
-    await this.page.goto('/history')
+    await this.page.goto('/app/history')
   }
 
   async clickSession(title: string) {
@@ -23,16 +23,20 @@ export class HistoryPage {
 
   async deleteSession(title: string) {
     const item = this.historyItems.filter({ hasText: title }).first()
-    await item.hover()
-    await item.locator('[data-testid="delete-session-btn"]').click()
+    // 先点击菜单按钮打开菜单
+    await item.locator('[data-testid="session-menu-btn"]').click()
+    // 然后点击删除按钮
+    await item.locator('[data-testid="session-delete-btn"]').click()
   }
 
   async renameSession(oldTitle: string, newTitle: string) {
     const item = this.historyItems.filter({ hasText: oldTitle }).first()
-    await item.hover()
-    await item.locator('[data-testid="rename-session-btn"]').click()
+    // 先点击菜单按钮打开菜单
+    await item.locator('[data-testid="session-menu-btn"]').click()
+    // 然后点击重命名按钮
+    await item.locator('[data-testid="session-rename-btn"]').click()
     await this.page.locator('[data-testid="rename-input"]').fill(newTitle)
-    await this.page.locator('[data-testid="rename-confirm"]').click()
+    await this.page.locator('[data-testid="rename-input"]').press('Enter')
   }
 
   getHistoryItemByTitle(title: string): Locator {

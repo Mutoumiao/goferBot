@@ -24,7 +24,7 @@ async function handleSubmit() {
       email: form.email.value,
       password: form.password.value,
     })
-    router.push('/')
+    router.push({ name: 'chat' })
   } catch (e) {
     const status = (e as { status?: number }).status
     const code = (e as { code?: string }).code

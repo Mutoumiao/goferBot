@@ -9,20 +9,20 @@ export class SettingsPage {
   constructor(page: Page) {
     this.page = page
     this.navTabs = page.locator('[data-testid="settings-nav-tabs"]')
-    this.saveBtn = page.locator('[data-testid="settings-save-btn"]')
+    this.saveBtn = page.locator('[data-testid="settings-save-btn"]').first()
     this.errorMessage = page.locator('[data-testid="settings-error"]')
   }
 
   async goto() {
-    await this.page.goto('/settings')
+    await this.page.goto('/app/settings')
   }
 
   async clickTab(name: string) {
-    await this.navTabs.locator(`text=${name}`).click()
+    await this.navTabs.locator(`text=${name}`).first().click()
   }
 
   async fillInput(name: string, value: string) {
-    await this.page.locator(`[name="${name}"]`).fill(value)
+    await this.page.locator(`[name="${name}"]`).first().fill(value)
   }
 
   async save() {

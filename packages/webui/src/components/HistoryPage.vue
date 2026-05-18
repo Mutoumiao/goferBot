@@ -135,7 +135,7 @@ async function confirmDelete() {
 function onRowClick(sessionId: string) {
   openMenuId.value = null
   store.loadSession(sessionId)
-  router.push('/')
+  router.push({ name: 'chat' })
 }
 </script>
 

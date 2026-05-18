@@ -44,6 +44,7 @@ declare module 'vue' {
     ChatMessage: typeof import('./src/components/ChatMessage.vue')['default']
     ChatMessageList: typeof import('./src/components/ChatMessageList.vue')['default']
     ChatPage: typeof import('./src/components/ChatPage.vue')['default']
+    ConfigProvider: typeof import('./src/components/ConfigProvider.vue')['default']
     ConfirmDialog: typeof import('./src/components/ConfirmDialog.vue')['default']
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
     Dialog: typeof import('./src/components/ui/dialog/Dialog.vue')['default']

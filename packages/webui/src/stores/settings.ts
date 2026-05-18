@@ -23,7 +23,7 @@ export const useSettingsStore = defineStore('settings', () => {
   async function loadConfig() {
     isLoading.value = true
     try {
-      const data = await api.get<Record<string, unknown>>('/settings')
+      const data = await api.get<Record<string, unknown>>('/api/settings')
       config.value = { ...DEFAULT_CONFIG, ...data, providers: { ...DEFAULT_CONFIG.providers, ...(data.providers as Record<string, unknown> || {}) } }
     } finally {
       isLoading.value = false
@@ -39,7 +39,7 @@ export const useSettingsStore = defineStore('settings', () => {
         ? { ...config.value.embeddingProvider, ...updates.embeddingProvider }
         : config.value.embeddingProvider,
     } as AppConfig
-    await api.post('/settings', newConfig)
+    await api.post('/api/settings', newConfig)
     config.value = newConfig
     return true
   }

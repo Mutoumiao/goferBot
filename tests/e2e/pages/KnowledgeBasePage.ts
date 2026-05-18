@@ -18,7 +18,7 @@ export class KnowledgeBasePage {
   }
 
   async goto() {
-    await this.page.goto('/knowledge-base')
+    await this.page.goto('/app/knowledge-base')
   }
 
   async openKbContextMenu(kbName: string) {

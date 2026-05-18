@@ -43,14 +43,16 @@ export async function mockApiRoutes(page: Page) {
   await page.route('**/sessions', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
-        json: [
-          { id: 'session-1', title: 'RAG 测试', createdAt: new Date().toISOString() },
-          { id: 'session-2', title: '系统架构讨论', createdAt: new Date().toISOString() },
-        ],
+        json: {
+          items: [
+            { id: 'session-1', title: 'RAG 测试', createdAt: new Date(Date.now() - 3600000).toISOString(), updatedAt: new Date(Date.now() - 3600000).toISOString(), messageCount: 5 },
+            { id: 'session-2', title: '系统架构讨论', createdAt: new Date(Date.now() - 7200000).toISOString(), updatedAt: new Date(Date.now() - 7200000).toISOString(), messageCount: 3 },
+          ],
+        },
       })
     } else if (route.request().method() === 'POST') {
       route.fulfill({
-        json: { id: 'session-new', title: '新会话', createdAt: new Date().toISOString() },
+        json: { id: 'session-new', title: '新会话', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messageCount: 0 },
       })
     }
   })
@@ -59,14 +61,20 @@ export async function mockApiRoutes(page: Page) {
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: {
-          id: 'session-1',
-          title: 'RAG 测试',
-          messages: [
-            { id: 'msg-1', role: 'user', content: '你好' },
-            { id: 'msg-2', role: 'assistant', content: '你好！有什么可以帮你？' },
-          ],
+          data: {
+            id: 'session-1',
+            title: 'RAG 测试',
+            messages: [
+              { id: 'msg-1', role: 'user', content: '你好' },
+              { id: 'msg-2', role: 'assistant', content: '你好！有什么可以帮你？' },
+            ],
+          },
         },
       })
+    } else if (route.request().method() === 'DELETE') {
+      route.fulfill({ json: { data: { success: true } } })
+    } else if (route.request().method() === 'PATCH') {
+      route.fulfill({ json: { data: { success: true } } })
     }
   })
 
@@ -74,11 +82,28 @@ export async function mockApiRoutes(page: Page) {
   await page.route('**/knowledge-bases', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
-        json: [
-          { id: 'kb-1', name: '技术文档', isPinned: false, sortOrder: 0 },
-          { id: 'kb-2', name: '会议记录', isPinned: false, sortOrder: 1 },
-        ],
+        json: {
+          data: [
+            { id: 'kb-1', name: '技术文档', is_pinned: 0, sort_order: 0, created_at: Date.now() },
+            { id: 'kb-2', name: '会议记录', is_pinned: 0, sort_order: 1, created_at: Date.now() },
+          ],
+        },
       })
+    } else if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON()
+      route.fulfill({
+        json: {
+          data: { id: `kb-${Date.now()}`, name: body?.name || 'New KB', is_pinned: 0, sort_order: 0, created_at: Date.now() },
+        },
+      })
+    }
+  })
+
+  await page.route('**/knowledge-bases/*', (route) => {
+    if (route.request().method() === 'DELETE') {
+      route.fulfill({ json: { data: { success: true } } })
+    } else if (route.request().method() === 'PATCH') {
+      route.fulfill({ json: { data: { success: true } } })
     }
   })
 
@@ -86,16 +111,24 @@ export async function mockApiRoutes(page: Page) {
   await page.route('**/knowledge-bases/*/documents', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
-        json: [
-          { id: 'doc-1', title: 'API 设计规范', size: 1024, createdAt: new Date().toISOString() },
-          { id: 'doc-2', title: '架构图', size: 2048, createdAt: new Date().toISOString() },
-        ],
+        json: {
+          data: [
+            { id: 'doc-1', title: 'API 设计规范', size: 1024, created_at: new Date().toISOString() },
+            { id: 'doc-2', title: '架构图', size: 2048, created_at: new Date().toISOString() },
+          ],
+        },
       })
     }
   })
 
-  // Settings endpoints
+  // Settings endpoints - only intercept API requests (port 3000), not page navigation (port 1420)
   await page.route('**/settings', (route) => {
+    const url = route.request().url()
+    // 只拦截 API 请求（端口 3000），不拦截页面导航（端口 1420）
+    if (!url.includes(':3000')) {
+      route.continue()
+      return
+    }
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: {
@@ -112,7 +145,7 @@ export async function mockApiRoutes(page: Page) {
         },
       })
     } else if (route.request().method() === 'POST') {
-      route.fulfill({ json: { success: true } })
+      route.fulfill({ json: { data: { success: true } } })
     }
   })
 }

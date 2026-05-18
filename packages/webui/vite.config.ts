@@ -58,6 +58,12 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     host: HOST || false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
     hmr: HOST
       ? {
           protocol: 'ws',

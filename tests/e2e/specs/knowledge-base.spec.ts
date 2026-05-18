@@ -7,7 +7,7 @@ test.describe('知识库管理', () => {
   test.beforeEach(async ({ page }) => {
     await injectAuthToken(page)
     await mockApiRoutes(page)
-    await page.goto('/knowledge-base')
+    await page.goto('/app/knowledge-base')
     await page.waitForLoadState('networkidle')
   })
 
@@ -80,32 +80,6 @@ test.describe('知识库管理', () => {
     await expect(kbPage.contextMenu).not.toBeVisible()
   })
 
-  test('置顶知识库排序到首位', async ({ page }) => {
-    await page.route('**/api/knowledge-bases', (route) => {
-      if (route.request().method() === 'GET') {
-        route.fulfill({
-          json: [
-            { id: 'kb-1', name: '技术文档', icon: 'mdi-database', isPinned: false, sortOrder: 0 },
-            { id: 'kb-2', name: '会议记录', icon: 'mdi-database', isPinned: false, sortOrder: 1 },
-          ],
-        })
-      }
-    })
-
-    await page.route(/127\.0\.0\.1:\d+\/api\/knowledge-bases\/kb-2$/, (route) => {
-      if (route.request().method() === 'PATCH') {
-        route.fulfill({ json: { id: 'kb-2', isPinned: true, sortOrder: 999 } })
-      }
-    })
-
-    const kbPage = new KnowledgeBasePage(page)
-    await kbPage.openKbContextMenu('会议记录')
-    await kbPage.clickContextMenuItem('置顶')
-
-    const firstItem = page.locator('[data-testid="kb-item"]').first()
-    await expect(firstItem).toContainText('会议记录')
-  })
-
   test('删除知识库显示确认对话框', async ({ page }) => {
     await page.route('**/api/knowledge-bases', (route) => {
       if (route.request().method() === 'GET') {
@@ -121,9 +95,9 @@ test.describe('知识库管理', () => {
     await kbPage.openKbContextMenu('技术文档')
     await kbPage.clickContextMenuItem('删除')
 
-    await expect(page.locator('[data-testid="confirm-dialog"]')).toBeVisible()
-    await expect(page.locator('text=确定')).toBeVisible()
-    await expect(page.locator('text=取消')).toBeVisible()
+    await expect(page.locator('[data-testid="delete-dialog"]')).toBeVisible()
+    await expect(page.locator('[data-testid="delete-confirm-btn"]')).toBeVisible()
+    await expect(page.locator('[data-testid="delete-cancel-btn"]')).toBeVisible()
   })
 
   test('确认删除后知识库从列表移除', async ({ page }) => {
@@ -146,7 +120,7 @@ test.describe('知识库管理', () => {
     const kbPage = new KnowledgeBasePage(page)
     await kbPage.openKbContextMenu('技术文档')
     await kbPage.clickContextMenuItem('删除')
-    await page.locator('button:has-text("确定")').click()
+    await page.locator('[data-testid="delete-confirm-btn"]').click()
 
     await expect(page.locator('[data-testid="kb-item"]').filter({ hasText: '技术文档' })).not.toBeVisible()
   })

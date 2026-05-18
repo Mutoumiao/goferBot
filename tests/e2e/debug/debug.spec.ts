@@ -16,7 +16,7 @@ test('调试设置页面 - 检查页面结构', async ({ page }) => {
     errors.push(`Request failed: ${request.url()} - ${request.failure()?.errorText}`)
   })
 
-  await page.goto('/settings')
+  await page.goto('/app/settings')
   await page.waitForLoadState('load')
 
   // 等待一段时间让页面渲染

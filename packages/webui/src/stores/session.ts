@@ -44,7 +44,7 @@ export const useSessionStore = defineStore('session', () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await api.get<{ items: Session[] }>('/sessions')
+      const data = await api.get<{ items: Session[] }>('/api/sessions')
       sessions.value = data.items ?? []
     } catch (e) {
       error.value = e instanceof Error ? e.message : '加载会话列表失败'
@@ -57,7 +57,7 @@ export const useSessionStore = defineStore('session', () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await api.post<Session>('/sessions')
+      const data = await api.post<Session>('/api/sessions')
       sessions.value.unshift(data)
       activeSessionId.value = data.id
       messages.value.set(data.id, [])
@@ -74,7 +74,7 @@ export const useSessionStore = defineStore('session', () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await api.get<{ session: Session; messages: Message[] }>(`/sessions/${id}`)
+      const data = await api.get<{ session: Session; messages: Message[] }>(`/api/sessions/${id}`)
       const session = data.session
       const msgs = data.messages ?? []
 
@@ -98,7 +98,7 @@ export const useSessionStore = defineStore('session', () => {
     const trimmed = title.trim()
     if (!trimmed) return
     try {
-      await api.patch(`/sessions/${id}`, { title: trimmed })
+      await api.patch(`/api/sessions/${id}`, { title: trimmed })
       const idx = sessions.value.findIndex((s) => s.id === id)
       if (idx !== -1) {
         sessions.value[idx].title = trimmed
@@ -110,7 +110,7 @@ export const useSessionStore = defineStore('session', () => {
 
   async function deleteSession(id: string) {
     try {
-      await api.delete(`/sessions/${id}`)
+      await api.delete(`/api/sessions/${id}`)
       sessions.value = sessions.value.filter((s) => s.id !== id)
       messages.value.delete(id)
       if (activeSessionId.value === id) {
@@ -177,7 +177,7 @@ export const useSessionStore = defineStore('session', () => {
       }
 
       api.sse(
-        '/chat',
+        '/api/chat',
         {
           message: content,
           sessionId,

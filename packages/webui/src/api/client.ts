@@ -9,7 +9,7 @@ import type {
   JwtTokens,
 } from './types'
 
-const DEFAULT_BASE_URL = 'http://localhost:3000'
+const DEFAULT_BASE_URL = ''
 const DEFAULT_TIMEOUT = 30000
 const DEFAULT_SSE_TIMEOUT = 300000
 
@@ -349,7 +349,7 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
     }
 
     isRefreshing = true
-    refreshPromise = fetch(`${baseURL}/auth/refresh`, {
+    refreshPromise = fetch(`${baseURL}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken: savedRefresh }),

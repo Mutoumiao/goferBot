@@ -95,7 +95,7 @@ test.describe('认证流程', () => {
     await page.route('**/auth/me', (route) => {
       if (route.request().method() === 'GET') {
         route.fulfill({
-          json: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
+          json: { data: { id: 'user-1', email: 'test@example.com', name: 'Test User' } },
         })
       }
     })

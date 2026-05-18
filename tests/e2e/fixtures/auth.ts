@@ -42,13 +42,15 @@ export async function mockAuthApi(page: any) {
       if (body.email === 'test@example.com' && body.password === 'Test123!@#') {
         route.fulfill({
           json: {
-            accessToken: 'mock-access-token-12345',
-            refreshToken: 'mock-refresh-token-67890',
-            user: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
+            data: {
+              accessToken: 'mock-access-token-12345',
+              refreshToken: 'mock-refresh-token-67890',
+              user: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
+            },
           },
         })
       } else {
-        route.fulfill({ status: 401, json: { message: 'Invalid credentials' } })
+        route.fulfill({ status: 401, json: { error: { message: 'Invalid credentials' } } })
       }
     }
   })
@@ -67,9 +69,11 @@ export async function mockAuthApi(page: any) {
       route.fulfill({
         status: 201,
         json: {
-          accessToken: newUser.accessToken,
-          refreshToken: newUser.refreshToken,
-          user: { id: `user-${Date.now()}`, email: newUser.email, name: newUser.name },
+          data: {
+            accessToken: newUser.accessToken,
+            refreshToken: newUser.refreshToken,
+            user: { id: `user-${Date.now()}`, email: newUser.email, name: newUser.name },
+          },
         },
       })
     }
@@ -80,7 +84,7 @@ export async function mockAuthApi(page: any) {
       const authHeader = route.request().headers()['authorization']
       if (authHeader?.startsWith('Bearer ')) {
         route.fulfill({
-          json: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
+          json: { data: { id: 'user-1', email: 'test@example.com', name: 'Test User' } },
         })
       } else {
         route.fulfill({ status: 401 })
@@ -92,8 +96,10 @@ export async function mockAuthApi(page: any) {
     if (route.request().method() === 'POST') {
       route.fulfill({
         json: {
-          accessToken: 'mock-access-token-refreshed',
-          refreshToken: 'mock-refresh-token-refreshed',
+          data: {
+            accessToken: 'mock-access-token-refreshed',
+            refreshToken: 'mock-refresh-token-refreshed',
+          },
         },
       })
     }
