@@ -200,30 +200,52 @@ const sortedKbs = computed(() => store.knowledgeBases)
       </div>
 
       <!-- List -->
-      <div v-else class="flex-1 overflow-auto px-2">
+      <div v-else class="flex-1 space-y-1.5 overflow-auto px-3 py-2">
         <div
           v-for="kb in sortedKbs"
           :key="kb.id"
           data-testid="kb-item"
-          class="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 transition-colors"
+          class="group flex cursor-pointer items-center gap-3 rounded-[18px] px-3 py-3 transition-all duration-200"
           :class="
             selectedKbId === kb.id
-              ? 'bg-accent-500/10 text-accent-600'
-              : 'hover:bg-surface-2'
+              ? 'bg-white shadow-[0_1px_4px_rgba(0,0,0,0.03)] border border-border-default'
+              : 'border border-transparent hover:bg-white/50 hover:shadow-sm'
           "
           @click="selectKb(kb)"
           @contextmenu="openContextMenu($event, kb)"
         >
-          <DatabaseIcon
-            class="size-4"
-            :class="kb.isPinned ? 'text-accent-500' : 'text-text-tertiary'"
-          />
-          <span class="flex-1 truncate text-sm">{{ kb.name }}</span>
-          <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+          <!-- Icon box -->
+          <div
+            class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[15px]"
+            :class="selectedKbId === kb.id ? 'bg-accent-soft' : 'bg-surface-2'"
+          >
+            <DatabaseIcon
+              class="size-[18px]"
+              :class="selectedKbId === kb.id ? 'text-accent-500' : 'text-text-tertiary'"
+            />
+          </div>
+          <!-- Text -->
+          <div class="min-w-0 flex-1">
+            <h3
+              class="truncate text-[15px] font-normal"
+              :class="selectedKbId === kb.id ? 'text-text-primary' : 'text-text-secondary'"
+            >
+              {{ kb.name }}
+            </h3>
+            <p class="text-xs text-text-tertiary">
+              {{ (kb as any).documentCount ?? 0 }} 个文件
+              <template v-if="kb.isPinned">
+                · <PinIcon class="inline size-2.5 text-accent-500" /> 已置顶
+              </template>
+            </p>
+          </div>
+          <!-- Hover actions -->
+          <div class="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"
               size="icon-xs"
-              :class="kb.isPinned ? 'text-accent-500' : 'text-text-tertiary'"
+              class="h-7 w-7 rounded-[10px]"
+              :class="kb.isPinned ? 'text-accent-500 hover:bg-accent-soft' : 'text-text-tertiary hover:bg-surface-2 hover:text-text-secondary'"
               @click.stop="store.togglePin(kb.id)"
             >
               <PinIcon class="size-3" />
@@ -231,7 +253,7 @@ const sortedKbs = computed(() => store.knowledgeBases)
             <Button
               variant="ghost"
               size="icon-xs"
-              class="text-text-tertiary"
+              class="h-7 w-7 rounded-[10px] text-text-tertiary hover:bg-surface-2 hover:text-text-secondary"
               @click.stop="openRenameDialog(kb)"
             >
               <PencilIcon class="size-3" />
@@ -239,7 +261,7 @@ const sortedKbs = computed(() => store.knowledgeBases)
             <Button
               variant="ghost"
               size="icon-xs"
-              class="text-text-tertiary hover:text-danger-500"
+              class="h-7 w-7 rounded-[10px] text-text-tertiary hover:bg-danger-soft hover:text-danger-500"
               @click.stop="openDeleteDialog(kb)"
             >
               <TrashIcon class="size-3" />

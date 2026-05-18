@@ -25,6 +25,9 @@ import {
   EyeOffIcon,
   CheckIcon,
   AlertCircleIcon,
+  CpuIcon,
+  BrainIcon,
+  PaletteIcon,
 } from 'lucide-vue-next'
 import type { AppConfig, ChatProviderConfig } from '@/types'
 
@@ -171,9 +174,12 @@ onBeforeRouteLeave((_to, _from, next) => {
       </div>
 
       <!-- LLM Providers Card -->
-      <Card class="rounded-2xl border border-border-default bg-white shadow-sm">
+      <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]">
         <CardHeader class="pb-4">
-          <CardTitle class="text-lg font-medium text-text-primary">
+          <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-accent-soft">
+              <CpuIcon class="size-[18px] text-accent-500" />
+            </span>
             LLM 提供商配置
           </CardTitle>
         </CardHeader>
@@ -305,9 +311,12 @@ onBeforeRouteLeave((_to, _from, next) => {
       </Card>
 
       <!-- Embedding Card -->
-      <Card class="rounded-2xl border border-border-default bg-white shadow-sm" data-testid="embedding-card">
+      <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]" data-testid="embedding-card">
         <CardHeader class="pb-4">
-          <CardTitle class="text-lg font-medium text-text-primary">
+          <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-purple-soft">
+              <BrainIcon class="size-[18px] text-purple-500" />
+            </span>
             Embedding API
           </CardTitle>
         </CardHeader>
@@ -382,9 +391,12 @@ onBeforeRouteLeave((_to, _from, next) => {
       </Card>
 
       <!-- General Card -->
-      <Card class="rounded-2xl border border-border-default bg-white shadow-sm">
+      <Card class="rounded-3xl border border-border-default bg-white/80 shadow-[0_6px_22px_rgba(0,0,0,0.04)]">
         <CardHeader class="pb-4">
-          <CardTitle class="text-lg font-medium text-text-primary">
+          <CardTitle class="flex items-center gap-3 text-lg font-medium text-text-primary">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-success-soft">
+              <PaletteIcon class="size-[18px] text-success-500" />
+            </span>
             通用配置
           </CardTitle>
         </CardHeader>

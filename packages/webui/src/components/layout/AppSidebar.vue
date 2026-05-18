@@ -11,6 +11,7 @@ import {
   MessageSquareTextIcon,
   DatabaseIcon,
   HistoryIcon,
+  Trash2Icon,
   SettingsIcon,
 } from 'lucide-vue-next'
 
@@ -50,6 +51,12 @@ const bottomItems: NavItem[] = [
     icon: HistoryIcon,
     label: '历史记录',
     ariaLabel: '对话历史',
+  },
+  {
+    type: 'recycleBin',
+    icon: Trash2Icon,
+    label: '回收站',
+    ariaLabel: '回收站',
   },
   {
     type: 'settings',

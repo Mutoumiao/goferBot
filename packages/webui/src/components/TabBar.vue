@@ -87,6 +87,7 @@ function handleBlur(tabId: string) {
           v-if="editingTabId === tab.id"
           ref="inputRef"
           v-model="editingTitle"
+          :data-testid="`tab-edit-input-${tab.id}`"
           class="max-w-[120px] bg-transparent text-[13px] text-text-primary outline-none"
           @keydown="handleKeydown($event, tab.id)"
           @blur="handleBlur(tab.id)"
