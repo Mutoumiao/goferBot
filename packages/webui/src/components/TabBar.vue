@@ -61,7 +61,7 @@ function handleBlur(tabId: string) {
 </script>
 
 <template>
-  <div class="flex h-[38px] shrink-0 items-center gap-2 bg-surface-1 px-3.5">
+  <div data-testid="tab-bar" class="flex h-[38px] shrink-0 items-center gap-2 bg-surface-1 px-3.5">
     <div class="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
       <Button
         v-for="tab in tabs"
@@ -73,6 +73,7 @@ function handleBlur(tabId: string) {
             ? 'bg-white text-text-primary shadow-xs border border-border-default hover:bg-white'
             : 'bg-surface-2 text-text-secondary hover:bg-surface-3 hover:text-text-primary',
         ]"
+        :data-testid="`chat-tab-${tab.id}`"
         @click="emit('switch', tab.id)"
       >
         <!-- Active dot -->
@@ -104,6 +105,7 @@ function handleBlur(tabId: string) {
         <!-- Close button -->
         <XIcon
           v-if="tab.closable && tabs.length > 1"
+          data-testid="tab-close-btn"
           class="ml-0.5 size-3.5 cursor-pointer rounded p-0.5 text-text-tertiary opacity-0 transition-all duration-150 group-hover:opacity-100 hover:bg-surface-2 hover:text-text-primary"
           @click.stop="emit('close', tab.id)"
         />

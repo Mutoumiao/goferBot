@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, computed, onMounted } from 'vue'
+import { ref, reactive, watch, computed, onMounted, toRaw } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import { Button } from '@/components/ui/button'
@@ -56,7 +56,7 @@ const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const showPassword = ref<Record<string, boolean>>({})
 
 function cloneConfig<T>(obj: T): T {
-  return structuredClone(obj)
+  return structuredClone(toRaw(obj) as T)
 }
 
 const localConfig = reactive<AppConfig>(cloneConfig(store.config))
@@ -221,6 +221,7 @@ onBeforeRouteLeave((_to, _from, next) => {
                 <Input
                   v-model="localConfig.providers[activeLlmTab].apiKey"
                   data-testid="api-key-input"
+                  name="apiKey"
                   :type="showPassword[activeLlmTab] ? 'text' : 'password'"
                   class="rounded-lg border-border-default bg-surface-2 pr-10 text-sm text-text-primary focus:border-accent-500/50"
                   placeholder="输入 API Key"
@@ -243,6 +244,7 @@ onBeforeRouteLeave((_to, _from, next) => {
               <Input
                 v-model="localConfig.providers[activeLlmTab].model"
                 type="text"
+                name="model"
                 class="rounded-lg border-border-default bg-surface-2 text-sm text-text-primary focus:border-accent-500/50"
                 placeholder="输入模型名称"
                 @input="markChanged"
@@ -436,6 +438,7 @@ onBeforeRouteLeave((_to, _from, next) => {
     >
       <div
         v-if="saveSuccess"
+        data-testid="settings-success"
         class="fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-success-500/20 bg-white px-4 py-2.5 text-sm text-success-500 shadow-xl"
       >
         <CheckIcon class="size-4" />
@@ -454,6 +457,7 @@ onBeforeRouteLeave((_to, _from, next) => {
     >
       <div
         v-if="saveError"
+        data-testid="settings-error"
         class="fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-500/20 bg-white px-4 py-2.5 text-sm text-danger-500 shadow-xl"
       >
         <AlertCircleIcon class="size-4" />

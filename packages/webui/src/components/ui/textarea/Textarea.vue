@@ -3,6 +3,8 @@ import type { HTMLAttributes } from 'vue'
 import { useVModel } from '@vueuse/core'
 import { cn } from '@/lib/utils'
 
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps<{
   class?: HTMLAttributes['class']
   defaultValue?: string | number
