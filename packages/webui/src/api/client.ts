@@ -73,6 +73,15 @@ export function createApiClient(options?: CreateApiClientOptions): ApiClient {
   const requestInterceptors: RequestInterceptor[] = []
   const responseInterceptors: ResponseInterceptor[] = []
 
+  // 自动附加 Authorization header，避免首次请求 401
+  requestInterceptors.push(async (config) => {
+    const token = localStorage.getItem('goferbot_access_token')
+    if (token) {
+      config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
+    }
+    return config
+  })
+
   let isRefreshing = false
   let refreshPromise: Promise<JwtTokens> | null = null
 
