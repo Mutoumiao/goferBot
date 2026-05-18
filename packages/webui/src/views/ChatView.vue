@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch, ref, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/session'
-import { useChatTabsStore } from '@/stores/chatTabs'
+import { useTabsStore } from '@/stores/tabs'
 import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import { useSettingsStore } from '@/stores/settings'
 import { Button } from '@/components/ui/button'
@@ -9,11 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { SendIcon, LoaderIcon, AlertCircleIcon, XIcon } from 'lucide-vue-next'
 import EmptySession from '@/components/EmptySession.vue'
 import ChatMessageList from '@/components/ChatMessageList.vue'
-import TabBar from '@/components/TabBar.vue'
 import ChatInput from '@/components/ChatInput.vue'
 
 const sessionStore = useSessionStore()
-const chatTabsStore = useChatTabsStore()
+const tabsStore = useTabsStore()
 const kbStore = useKnowledgeBaseStore()
 const settingsStore = useSettingsStore()
 
@@ -24,7 +23,7 @@ function handleSend(content: string, knowledgeBaseIds: string[]) {
   sessionStore.sendMessage(content, knowledgeBaseIds, {
     llmConfig,
     onNewSession(sessionId, title) {
-      chatTabsStore.updateHomeTabSession(sessionId, title)
+      tabsStore.updateActiveTabSession(sessionId, title)
     },
   })
 }
@@ -51,52 +50,11 @@ function dismissToast() {
   sessionStore.error = null
 }
 
-// Tab handlers
-function onTabSwitch(tabId: string) {
-  chatTabsStore.switchTab(tabId)
-  const tab = chatTabsStore.activeTab
-  if (tab?.sessionId) {
-    sessionStore.loadSession(tab.sessionId)
-  } else {
-    sessionStore.activeSessionId = null
-  }
-}
 
-async function onNewChat() {
-  const session = await sessionStore.createSession()
-  chatTabsStore.addTab(session.id, session.title || '新会话')
-}
-
-function onTabClose(tabId: string) {
-  chatTabsStore.closeTab(tabId)
-  const tab = chatTabsStore.activeTab
-  if (tab?.sessionId) {
-    sessionStore.loadSession(tab.sessionId)
-  } else {
-    sessionStore.activeSessionId = null
-  }
-}
-
-async function onTabRename(tabId: string, title: string) {
-  const tab = chatTabsStore.tabs.find((t) => t.id === tabId)
-  if (tab?.sessionId) {
-    await sessionStore.renameSession(tab.sessionId, title)
-  }
-  chatTabsStore.renameTab(tabId, title)
-}
 </script>
 
 <template>
   <div class="flex h-full flex-col bg-surface-1">
-    <TabBar
-      :tabs="chatTabsStore.tabs"
-      :active-tab-id="chatTabsStore.activeTabId"
-      @switch="onTabSwitch"
-      @close="onTabClose"
-      @new-chat="onNewChat"
-      @rename="onTabRename"
-    />
-
     <EmptySession v-if="isEmpty" @send="handleSend" />
 
     <template v-else>

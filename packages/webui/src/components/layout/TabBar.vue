@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { ChatTab } from '@/stores/chatTabs'
+import type { Tab } from '@/types'
 import { Button } from '@/components/ui/button'
 import { PlusIcon, XIcon } from 'lucide-vue-next'
 import { ref, nextTick } from 'vue'
 
 defineProps<{
-  tabs: ChatTab[]
+  tabs: Tab[]
   activeTabId: string
 }>()
 
@@ -20,7 +20,7 @@ const editingTabId = ref<string | null>(null)
 const editingTitle = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
-function startRename(tab: ChatTab) {
+function startRename(tab: Tab) {
   editingTabId.value = tab.id
   editingTitle.value = tab.title
   nextTick(() => {
