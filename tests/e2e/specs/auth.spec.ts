@@ -92,7 +92,7 @@ test.describe('认证流程', () => {
     ` })
 
     // mock /auth/me 返回成功
-    await page.route('**/auth/me', (route) => {
+    await page.route('**/api/auth/me', (route) => {
       if (route.request().method() === 'GET') {
         route.fulfill({
           json: { data: { id: 'user-1', email: 'test@example.com', name: 'Test User' } },

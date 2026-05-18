@@ -36,7 +36,7 @@ export const test = base.extend<{ testUser: TestUser; authPage: { gotoLogin: () 
 })
 
 export async function mockAuthApi(page: any) {
-  await page.route('**/auth/login', (route) => {
+  await page.route('**/api/auth/login', (route) => {
     if (route.request().method() === 'POST') {
       const body = JSON.parse(route.request().postData() || '{}')
       if (body.email === 'test@example.com' && body.password === 'Test123!@#') {
@@ -55,7 +55,7 @@ export async function mockAuthApi(page: any) {
     }
   })
 
-  await page.route('**/auth/register', (route) => {
+  await page.route('**/api/auth/register', (route) => {
     if (route.request().method() === 'POST') {
       const body = JSON.parse(route.request().postData() || '{}')
       const newUser: TestUser = {
@@ -79,7 +79,7 @@ export async function mockAuthApi(page: any) {
     }
   })
 
-  await page.route('**/auth/me', (route) => {
+  await page.route('**/api/auth/me', (route) => {
     if (route.request().method() === 'GET') {
       const authHeader = route.request().headers()['authorization']
       if (authHeader?.startsWith('Bearer ')) {
@@ -92,7 +92,7 @@ export async function mockAuthApi(page: any) {
     }
   })
 
-  await page.route('**/auth/refresh', (route) => {
+  await page.route('**/api/auth/refresh', (route) => {
     if (route.request().method() === 'POST') {
       route.fulfill({
         json: {

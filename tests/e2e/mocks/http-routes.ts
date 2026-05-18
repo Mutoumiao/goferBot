@@ -2,12 +2,12 @@ import type { Page } from '@playwright/test'
 
 export async function mockApiRoutes(page: Page) {
   // Health check
-  await page.route('**/health', (route) => {
+  await page.route('**/api/health', (route) => {
     route.fulfill({ json: { status: 'ok' } })
   })
 
   // Auth endpoints
-  await page.route('**/auth/me', (route) => {
+  await page.route('**/api/auth/me', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: { data: { id: 'user-1', email: 'test@example.com', name: 'Test User' } },
@@ -15,7 +15,7 @@ export async function mockApiRoutes(page: Page) {
     }
   })
 
-  await page.route('**/auth/refresh', (route) => {
+  await page.route('**/api/auth/refresh', (route) => {
     if (route.request().method() === 'POST') {
       route.fulfill({
         json: {
@@ -29,7 +29,7 @@ export async function mockApiRoutes(page: Page) {
   })
 
   // Chat endpoints
-  await page.route('**/chat', (route) => {
+  await page.route('**/api/chat', (route) => {
     if (route.request().method() === 'POST') {
       route.fulfill({
         status: 200,
@@ -40,7 +40,7 @@ export async function mockApiRoutes(page: Page) {
   })
 
   // Sessions endpoints
-  await page.route('**/sessions', (route) => {
+  await page.route('**/api/sessions', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: {
@@ -57,7 +57,7 @@ export async function mockApiRoutes(page: Page) {
     }
   })
 
-  await page.route('**/sessions/*', (route) => {
+  await page.route('**/api/sessions/*', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: {
@@ -79,7 +79,7 @@ export async function mockApiRoutes(page: Page) {
   })
 
   // Knowledge bases endpoints
-  await page.route('**/knowledge-bases', (route) => {
+  await page.route('**/api/knowledge-bases', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: {
@@ -99,7 +99,7 @@ export async function mockApiRoutes(page: Page) {
     }
   })
 
-  await page.route('**/knowledge-bases/*', (route) => {
+  await page.route('**/api/knowledge-bases/*', (route) => {
     if (route.request().method() === 'DELETE') {
       route.fulfill({ json: { data: { success: true } } })
     } else if (route.request().method() === 'PATCH') {
@@ -108,7 +108,7 @@ export async function mockApiRoutes(page: Page) {
   })
 
   // Documents endpoints
-  await page.route('**/knowledge-bases/*/documents', (route) => {
+  await page.route('**/api/knowledge-bases/*/documents', (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({
         json: {
