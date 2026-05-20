@@ -3,7 +3,7 @@
 > **重要：本文档已废弃。**
 >
 > 测试用例不再以 markdown 形式保存在 `docs/08-test-cases/` 中。
-> 所有测试直接以 `.spec.ts` 文件形式编写在 `packages/` 对应目录下。
+> 所有测试直接以 `.spec.ts` 文件形式编写在 `tests/issues/{issue-dir}/` 目录下。
 >
 > 保留此文件仅作历史参考。
 
@@ -15,8 +15,7 @@
 
 | 类型 | 路径 |
 |------|------|
-| 前端单元测试 | `packages/webui/src/**/*.spec.ts` |
-| 后端单元测试 | `packages/server/src/**/*.spec.ts` |
+| 按 issue 组织的单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
 | 集成测试 | `tests/integration/**/*.spec.ts` |
 | E2E 测试 | `tests/e2e/**/*.spec.ts` |
 
@@ -25,7 +24,7 @@
 **TDD 强制**：在实现代码之前编写测试。
 
 1. 读取 spec 中的"测试映射"表格
-2. 创建对应的 `.spec.ts` 文件
+2. 在 `tests/issues/{issue-dir}/` 下创建 `.spec.ts` 文件
 3. 编写失败测试（red）
 4. 运行确认失败
 5. 编写最小实现使测试通过（green）
@@ -38,34 +37,26 @@
 - 错误路径（error cases）
 - 边界条件（empty、loading、partial 状态）
 
+### 命名规则
+
+- 测试用例名必须以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
+- 一个测试文件可包含多个 AC，一个 AC 只能有一个测试用例
+
 ### 示例
 
 ```typescript
-// packages/webui/src/composables/useAuthForm.spec.ts
+// tests/issues/f-15-global-tab-bar/TabBar.spec.ts
 import { describe, it, expect } from 'vitest'
-import { useAuthForm } from './useAuthForm'
+import { mount } from '@vue/test-utils'
+import TabBar from '@/components/layout/TabBar.vue'
 
-describe('useAuthForm', () => {
-  it('validates email format', () => {
-    const form = useAuthForm()
-    form.email.value = 'invalid-email'
-    expect(form.validateEmail()).toBe(false)
-    expect(form.emailError.value).toBe('请输入有效的邮箱地址')
+describe('TabBar', () => {
+  it('AC-01: renders TabBar in AuthenticatedLayout header', () => {
+    // ...
   })
 
-  it('validates password length', () => {
-    const form = useAuthForm()
-    form.password.value = '123'
-    expect(form.validatePassword()).toBe(false)
-    expect(form.passwordError.value).toBe('密码长度不能少于 6 位')
-  })
-
-  it('validates confirm password match', () => {
-    const form = useAuthForm({ confirmPassword: true })
-    form.password.value = 'password123'
-    form.confirmPassword.value = 'different'
-    expect(form.validateConfirmPassword()).toBe(false)
-    expect(form.confirmPasswordError.value).toBe('两次输入的密码不一致')
+  it('AC-04: rejects closing home tab', () => {
+    // ...
   })
 })
 ```

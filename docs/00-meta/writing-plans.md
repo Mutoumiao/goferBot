@@ -8,13 +8,14 @@
 ## 目录结构
 
 ```
-docs/04-plans/
-└── {issue-id}/
+docs/issues/{prefix}-{NN}-{kebab-slug}/
+├── plan.md              # 当前生效版本
+└── plans/               # 历史版本归档
     └── v{N}.md
 ```
 
-- 目录名 = issue 编号（如 `f-06`、`b-02`）
-- 文件名 = `v{N}.md`，N 从 1 开始递增
+- 当前生效版本固定为 `plan.md`
+- 历史版本归档在 `plans/v{N}.md`，N 从 1 开始递增
 - 禁止用时间戳或 `latest.md`
 
 ---
@@ -23,10 +24,10 @@ docs/04-plans/
 
 | 场景 | 操作 |
 |------|------|
-| 首次生成计划 | 创建 `v1.md` |
-| Spec 发生重大变更 | 创建 `v2.md`，保留 `v1.md` 历史 |
-| 审查后需大规模重构 | 创建 `v{N+1}.md` |
-| 执行中发现方案不可行 | 创建 `v{N+1}.md` 重新规划 |
+| 首次生成计划 | 创建 `plan.md` |
+| Spec 发生重大变更 | 保留原 `plan.md` 到 `plans/v1.md`，新建 `plan.md` |
+| 审查后需大规模重构 | 保留当前版本到 `plans/v{N}.md`，新建 `plan.md` |
+| 执行中发现方案不可行 | 保留当前版本到 `plans/v{N}.md`，新建 `plan.md` |
 
 ---
 
@@ -34,89 +35,33 @@ docs/04-plans/
 
 ```markdown
 ---
-issue_id: {issue-id}
-type: plan
-version: {N}
-status: {draft / ready / executing / done}
-task_count: {N}
-summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
+id: f-15
+issue: issue.md
+version: 1
 ---
 
-# {功能名称} 实现计划
+## 任务 1: 迁移 TabBar 组件
 
-> **目标：** {一句话描述要做什么}
-> **架构：** {技术方案概述}
-> **技术栈：** {Vue 3 + Pinia + NestJS + Prisma 等}
+**文件**：
+- 修改：`packages/webui/src/layouts/AuthenticatedLayout.vue`
+- 修改：`packages/webui/src/views/ChatView.vue`
+- 测试：`tests/issues/f-15-global-tab-bar/TabBar.spec.ts`
 
-**Issue 引用：** `docs/02-issues/{issue-id}-{slug}.md`
-**Spec 引用：** `docs/03-specs/{issue-id}/`
-**Test Case 引用：** `docs/08-test-cases/{issue-id}/`
+**规格引用**：
+- behavior-spec.md 第 3.1 节
 
----
-
-## 文件结构
-
-### 后端（新增/修改）
-
-- `packages/server/src/...` — {描述}
-- `packages/server/src/...` — {描述}
-
-### 前端（新增/修改）
-
-- `packages/webui/src/...` — {描述}
-- `packages/webui/src/...` — {描述}
-
----
-
-## 任务列表
-
-### 任务 1: {任务名称}
-
-**文件：**
-- 创建：`{路径}`
-- 修改：`{路径}`
-
-**规格引用：**
-- {引用 spec 的具体章节}
-
-- [ ] **步骤 1: {步骤名称}**
+- [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// 具体代码示例
+it('AC-01: renders TabBar in AuthenticatedLayout header', () => {
+  const wrapper = mount(AuthenticatedLayout)
+  expect(wrapper.find('[data-testid="tab-bar"]').exists()).toBe(true)
+})
 ```
 
-- [ ] **步骤 2: {步骤名称}**
-
-```typescript
-// 具体代码示例
-```
-
-- [ ] **步骤 N: 验证**
-
-运行：`{命令}`
-预期：`{预期输出}`
-
----
-
-### 任务 2: {任务名称}
-
-...
-
----
-
-## 规格覆盖检查
-
-- [ ] 功能规格：{列出覆盖的验收标准}
-- [ ] 行为规格：{列出覆盖的交互状态}
-- [ ] API 规格：{列出覆盖的端点}
-- [ ] 无占位符（"TODO" / "稍后实现" / "TBD"）
-
----
-
-## 阻塞与依赖
-
-- 阻塞于：{阻塞 issue 或 "无"}
-- 被阻塞：{被哪些 issue 依赖或 "无"}
+- [ ] **步骤 2: 运行测试确认失败**
+- [ ] **步骤 3: 编写最小实现**
+- [ ] **步骤 4: 运行测试确认通过**
 ```
 
 ---
@@ -128,6 +73,12 @@ summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
 - 每个步骤应在 **2~5 分钟** 内完成
 - 一个任务不超过 **8 个步骤**
 - 超过 8 步应拆分为多个任务
+
+### TDD 强制
+
+- 每个任务必须以"编写失败测试"开始
+- 以"运行测试确认通过"结束
+- 测试文件放在 `tests/issues/{issue-dir}/` 下
 
 ### 代码示例
 
@@ -148,19 +99,4 @@ summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
 | 占位符 | "TODO: 实现登录逻辑" | 完整的登录逻辑代码 |
 | 模糊步骤 | "配置路由" | "在 `router/index.ts` 第 15 行添加 `{ path: '/login', component: LoginView }`" |
 | 无验证 | 任务结束无验证步骤 | "运行 `pnpm type-check`，预期 PASS" |
-| 跨 issue 编码 | 在 f-06 计划中修改 b-02 的代码 | 只修改 f-06 范围内的文件 |
-
----
-
-## 多版本管理
-
-当存在多个版本时，在 issue 文件中引用最新版本：
-
-```markdown
-## 计划
-
-- 当前计划：`docs/04-plans/f-06/v2.md`
-- 历史版本：
-  - `v1.md` — 初版（2026-05-15）
-  - `v2.md` — 修订版（2026-05-17，spec 变更后重新生成）
-```
+| 跨 issue 编码 | 在 f-15 计划中修改 b-02 的代码 | 只修改 f-15 范围内的文件 |

@@ -1,22 +1,22 @@
 # 规格编写规范
 
 > 三层规格：功能规格 → 行为规格 → API 规格
+> 所有 spec 文件放在 issue 目录下的 `specs/` 子目录中
 
 ---
 
 ## 目录结构
 
 ```
-docs/03-specs/
-└── {issue-id}/
-    ├── feature-spec.md      # 功能规格（必须）
-    ├── behavior-spec.md     # 行为规格（前端必须）
-    └── api-spec.md          # API 规格（后端必须）
+docs/issues/{prefix}-{NN}-{kebab-slug}/specs/
+├── feature-spec.md      # 功能规格（必须）
+├── behavior-spec.md     # 行为规格（前端必须）
+└── api-spec.md          # API 规格（后端必须）
 ```
 
-- 目录名 = issue 编号（如 `f-06`、`b-02`）
-- 一个 issue 对应一个 spec 目录
-- 禁止用 feature-slug 命名目录
+- 纯前端功能（无 API）可省略 `api-spec.md`
+- 纯后端功能（无 UI）可省略 `behavior-spec.md`
+- 基础设施类 issue 至少包含 `feature-spec.md`
 
 ---
 
@@ -24,7 +24,7 @@ docs/03-specs/
 
 ```markdown
 ---
-issue_id: {issue-id}
+issue_id: f-15
 type: feature-spec
 status: draft
 summary: {功能边界与用户故事概要}
@@ -59,7 +59,7 @@ summary: {功能边界与用户故事概要}
 
 ```markdown
 ---
-issue_id: {issue-id}
+issue_id: f-15
 type: behavior-spec
 status: draft
 summary: {交互状态与错误场景概要}
@@ -95,27 +95,18 @@ summary: {交互状态与错误场景概要}
 |----------|---------|--------|----------|
 | {错误 1} | {触发} | {视觉} | {如何恢复} |
 
-## 动画与过渡
-| 过渡 | 持续时间 | 缓动 | 备注 |
-|------------|----------|--------|-------|
-| {过渡 1} | {毫秒} | {ease-in-out} | {备注} |
+## 测试映射
 
-## 无障碍
-- 键盘导航：{tab 顺序、快捷键}
-- 屏幕阅读器：{ARIA 标签、实时区域}
-- 触摸目标：{最小尺寸}
-
-## 响应式行为
-| 断点 | 布局变化 |
-|------------|---------------|
-| 375px | {变化} |
-| 768px | {变化} |
-| 1440px | {变化} |
+| 场景 | 测试文件 | 测试用例 |
+|------|----------|----------|
+| loading 状态 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| 401 错误 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
 ```
 
 **关键规则：**
 - 必须包含全部 5 种交互状态：loading / empty / error / success / partial
 - 每个错误场景必须有恢复路径
+- 底部必须包含**测试映射表**，链接到 `tests/issues/{issue-dir}/` 下的测试用例
 - 不允许使用模糊词汇（"appropriate", "reasonable", "etc."）
 
 ---
@@ -124,7 +115,7 @@ summary: {交互状态与错误场景概要}
 
 ```markdown
 ---
-issue_id: {issue-id}
+issue_id: b-02
 type: api-spec
 status: draft
 summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}

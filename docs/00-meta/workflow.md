@@ -2,7 +2,7 @@
 
 > 核心原则：**契约先行、TDD 强制、分批执行、双轨并行、质量内建。**
 >
-> 详细规范参见同目录下的 `writing-*.md` 文件，模板参见 `_templates/` 目录。
+> 详细规范参见同目录下的 `writing-*.md` 文件。
 
 ---
 
@@ -11,19 +11,19 @@
 | 阶段 | 输入 | 输出 | Skill | 规范文档 |
 |------|------|------|-------|----------|
 | 0. PRD 稳定化 | 需求草案 | 功能批次 | - | - |
-| 1. Issue 拆分 | PRD 批次 | `02-issues/{prefix}-{NN}-{slug}.md` | `/issue-generator` | [Issue 规范](writing-issues.md) |
-| 2. 契约编写 | Issue | `03-specs/{issue-id}/*.md` | `/spec-validator` | [Spec 规范](writing-specs.md) |
-| 3. 执行计划 | Issue + Spec | `04-plans/{issue-id}/v{N}.md` | `/plan-generator` | [Plan 规范](writing-plans.md) |
-| 4. 并行开发 | Plan + Spec | 代码 + `.spec.ts` 测试 | `/dev-orchestrator` | - |
+| 1. Issue 拆分 | PRD 批次 | `docs/issues/{prefix}-{NN}-{slug}/` | `/issue-generator` | [Issue 规范](writing-issues.md) |
+| 2. 契约编写 | Issue | `specs/*.md` | `/spec-validator` | [Spec 规范](writing-specs.md) |
+| 3. 执行计划 | Issue + Spec | `plan.md` + `plans/v{N}.md` | `/plan-generator` | [Plan 规范](writing-plans.md) |
+| 4. 并行开发 | Plan + Spec | 代码 + `tests/issues/{dir}/.spec.ts` | `/dev-orchestrator` | - |
 | 5. 联调整合 | 代码 | 审查记录 | `/kb-review` | [Review 规范](writing-reviews.md) |
-| 6. 关闭归档 | 已验证代码 | 关闭 issue | `/issue-lifecycle` | - |
+| 6. 关闭归档 | 已验证代码 | 关闭 issue + 更新 BACKLOG/CHANGELOG | `/issue-lifecycle` + `/issue-updater` | - |
 
 ---
 
 ## 文档依赖链
 
 ```
-01-prd/ → 02-issues/ → 03-specs/ → 04-plans/ → 代码 + .spec.ts → 07-reviews/
+01-prd/ → docs/issues/{dir}/ → 代码 + tests/issues/{dir}/ → 07-reviews/
    ↑___________________________________________|
               （发现 spec 不足时回溯更新）
 ```
@@ -43,8 +43,8 @@
 
 | 类型 | 路径 |
 |------|------|
-| 前端单元测试 | `packages/webui/src/**/*.spec.ts` |
-| 后端单元测试 | `packages/server/src/**/*.spec.ts` |
+| 前端单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
+| 后端单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
 | 集成测试 | `tests/integration/**/*.spec.ts` |
 | E2E 测试 | `tests/e2e/**/*.spec.ts` |
 
@@ -92,11 +92,11 @@
 ### 阶段 1: Issue 拆分
 
 **输入**：PRD 中当前批次的功能描述  
-**输出**：`docs/02-issues/` 下的双轨 issue
+**输出**：`docs/issues/{prefix}-{NN}-{slug}/` 目录
 
 **使用 skill**：`/issue-generator`
 
-**双轨前缀**：
+**轨道前缀**：
 - `f-XX`: 前端功能
 - `b-XX`: 后端接口
 - `d-XX`: 设计
@@ -109,15 +109,14 @@
 - 纯后端功能（如数据库迁移）可只拆 b-XX
 - 按依赖顺序发布（阻塞者先发布）
 
-详细规范：[writing-issues.md](writing-issues.md)  
-模板：[_templates/issue.md](_templates/issue.md)
+详细规范：[writing-issues.md](writing-issues.md)
 
 ---
 
 ### 阶段 2: 契约编写（Spec）
 
 **输入**：Issue 文件 + PRD 相关章节  
-**输出**：`docs/03-specs/{issue-id}/` 下的三层 spec
+**输出**：`docs/issues/{dir}/specs/*.md`
 
 **使用 skill**：`/spec-validator`
 
@@ -126,7 +125,7 @@
 2. **行为规格** (`behavior-spec.md`)：前端交互状态表格（loading/empty/error/success/partial）
 3. **API 规格** (`api-spec.md`)：后端接口契约（路由、DTO、错误码）
 
-**新增：测试映射表格**
+**测试映射表格**
 
 每个 behavior-spec 和 api-spec 底部必须包含：
 
@@ -135,25 +134,23 @@
 
 | 场景 | 测试文件 | 测试用例 |
 |------|----------|----------|
-| loading 状态 | `packages/webui/src/views/LoginView.spec.ts` | `it('shows spinner during submit')` |
-| 401 错误 | `packages/webui/src/views/LoginView.spec.ts` | `it('displays error on unauthorized')` |
+| loading 状态 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| 401 错误 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
 ```
 
 **关键规则**：
 - 一次只处理一个 issue 的 spec
 - 交互状态必须具体到"按钮是否禁用"、"显示什么颜色"
 - 发现术语冲突立即解决，不留到编码阶段
-- 可辅助使用 gstack `/grill-with-docs` 挑战术语精确性
 
-详细规范：[writing-specs.md](writing-specs.md)  
-模板：[_templates/feature-spec.md](_templates/feature-spec.md)、[_templates/behavior-spec.md](_templates/behavior-spec.md)、[_templates/api-spec.md](_templates/api-spec.md)
+详细规范：[writing-specs.md](writing-specs.md)
 
 ---
 
 ### 阶段 3: 执行计划
 
 **输入**：Issue + Spec  
-**输出**：`docs/04-plans/{issue-id}/v{N}.md`
+**输出**：`docs/issues/{dir}/plan.md` + `plans/v{N}.md`
 
 **使用 skill**：`/plan-generator`
 
@@ -164,62 +161,7 @@
 - **TDD 强制**：每个任务必须以"编写失败测试"开始，以"运行测试确认通过"结束
 - 自检：是否覆盖了 spec 中所有交互状态/端点？
 
-**任务结构示例**：
-
-```markdown
-### 任务 1: 实现登录表单校验
-
-**文件：**
-- 创建：`packages/webui/src/composables/useAuthForm.ts`
-- 测试：`packages/webui/src/composables/useAuthForm.spec.ts`
-
-**规格引用：**
-- 行为规格：[第 5.1 节 - 前端校验规则]
-
-- [ ] **步骤 1: 编写失败测试**
-
-```typescript
-import { describe, it, expect } from 'vitest'
-import { useAuthForm } from './useAuthForm'
-
-describe('useAuthForm', () => {
-  it('validates email format', () => {
-    const form = useAuthForm()
-    form.email.value = 'invalid-email'
-    expect(form.validateEmail()).toBe(false)
-    expect(form.emailError.value).toBe('请输入有效的邮箱地址')
-  })
-})
-```
-
-- [ ] **步骤 2: 运行测试确认失败**
-
-运行：`npx vitest run useAuthForm.spec.ts`
-预期：FAIL — "useAuthForm is not defined"
-
-- [ ] **步骤 3: 编写最小实现**
-
-```typescript
-export function useAuthForm() {
-  // 最小实现...
-}
-```
-
-- [ ] **步骤 4: 运行测试确认通过**
-
-运行：`npx vitest run useAuthForm.spec.ts`
-预期：PASS
-
-- [ ] **步骤 5: 提交**
-
-```bash
-git add useAuthForm.ts useAuthForm.spec.ts
-git commit -m "feat(auth): add useAuthForm with validation"
-```
-```
-
-详细规范：[writing-plans.md](writing-plans.md)  
-模板：[_templates/plan.md](_templates/plan.md)
+详细规范：[writing-plans.md](writing-plans.md)
 
 ---
 
@@ -234,7 +176,6 @@ git commit -m "feat(auth): add useAuthForm with validation"
 - 读行为规格 → 生成计划 → **先写测试** → 编码 → `/kb-review`
 - 若后端 API 未完成，先用 Mock 数据，标记 `TODO: 联调`
 - 编码后可用 `/kb-review` 做代码审查与 spec 对齐
-- 页面可访问后可用 `/gstack-design-review` 做视觉审计
 
 **后端 Agent**：
 - 读 API 规格 → 生成计划 → **先写测试** → 编码 → `/kb-review`
@@ -276,8 +217,7 @@ git commit -m "feat(auth): add useAuthForm with validation"
 - 后端问题 → 回到阶段 4 修复 b-XX
 - spec 问题 → 回到阶段 2 更新 spec（允许回溯）
 
-详细规范：[writing-reviews.md](writing-reviews.md)  
-模板：[_templates/review.md](_templates/review.md)
+详细规范：[writing-reviews.md](writing-reviews.md)
 
 ---
 
@@ -286,7 +226,7 @@ git commit -m "feat(auth): add useAuthForm with validation"
 **输入**：已验证的代码  
 **输出**：关闭的 issue + 更新的进度
 
-**使用 skill**：`/issue-lifecycle` + `/kb-review`
+**使用 skill**：`/issue-lifecycle` + `/issue-updater`
 
 **操作**：
 1. 使用 `/kb-review` 执行关闭前验收：
@@ -294,10 +234,9 @@ git commit -m "feat(auth): add useAuthForm with validation"
    - **确认 `.spec.ts` 测试全部通过**
    - 确认类型检查通过
    - 确认审查记录已归档到 `docs/07-reviews/`
-2. 更新 issue 状态为 `closed`
-3. 勾选验收标准 `[x]`
-4. 更新 `PROGRESS.md` 进度
-5. 可选：归档到 `docs/99-archived/`
+2. 运行 `sync-issue-status.js` 更新 issue 状态
+3. 运行 `issue-updater` 更新 `BACKLOG.md` + `CHANGELOG.md`
+4. 可选：归档到 `docs/99-archived/issues/`
 
 **然后**：回到阶段 1，启动下一批功能。
 
@@ -311,12 +250,11 @@ git commit -m "feat(auth): add useAuthForm with validation"
 
 | 目录 | 命名规则 | 示例 |
 |------|----------|------|
-| `02-issues/` | `{prefix}-{NN}-{kebab-slug}.md` | `f-06-knowledge-base-file-manager.md` |
-| `03-specs/` | `{issue-id}/*.md` | `f-06/feature-spec.md` |
-| `04-plans/` | `{issue-id}/v{N}.md` | `f-06/v1.md` |
+| `docs/issues/` | `{prefix}-{NN}-{kebab-slug}/` | `f-15-global-tab-bar/` |
+| `specs/` | `feature-spec.md` / `behavior-spec.md` / `api-spec.md` | `specs/behavior-spec.md` |
+| `plans/` | `v{N}.md` | `plans/v1.md` |
+| `tests/issues/` | `{issue-dir}/*.spec.ts` | `f-15-global-tab-bar/TabBar.spec.ts` |
 | `07-reviews/` | `{scope}/{type}-v{N}.md` | `phase-3/code-v1.md` |
-
-**注意：`08-test-cases/` 目录已废弃。** 测试用例直接以 `.spec.ts` 文件形式存在于 `packages/` 中。
 
 ---
 
@@ -356,14 +294,14 @@ git commit -m "feat(auth): add useAuthForm with validation"
 ### 联调机制
 
 ```
-前端 Agent 完成 F-05（文件上传组件）
+前端 Agent 完成 F-15（TabBar 全局化）
     ↓
-检查后端 API Spec：B-07 是否已完成？
+检查后端 API Spec：B-XX 是否已完成？
     ↓
 是 → 直接联调
 否 → 使用 Mock 数据，标记 TODO
     ↓
-后端 Agent 完成 B-07
+后端 Agent 完成 B-XX
     ↓
 验收 Agent 执行联调测试
     ↓
@@ -381,7 +319,7 @@ git commit -m "feat(auth): add useAuthForm with validation"
 ## Phase 1 验收
 
 - [ ] docker-compose up 后所有服务健康
-- [ ] Drizzle 迁移成功
+- [ ] Prisma 迁移成功
 - [ ] MinIO 可上传/下载文件
 - [ ] Milvus 可创建 Collection
 - [ ] Redis 可读写

@@ -10,64 +10,55 @@
 ```
 docs/
 ├── 00-meta/                 ← 规范契约层（本文档目录）
-│   ├── README.md            # 本文档：体系总览与快速导航
+│   ├── README.md            # 体系总览与快速导航
 │   ├── workflow.md          # 开发流程阶段定义与 Skill 路由
 │   ├── naming-convention.md # 全文档命名规范（唯一标识体系）
 │   ├── writing-issues.md    # Issue 编写规范
 │   ├── writing-specs.md     # Spec 编写规范
 │   ├── writing-plans.md     # Plan 编写规范
 │   ├── writing-reviews.md   # Review 归档规范
-│   ├── writing-test-cases.md# Test Case 编写规范
+│   ├── writing-test-cases.md# Test Case 规范（已废弃，仅历史参考）
 │   └── _templates/          # 所有模板集中存放
-│       ├── issue.md
-│       ├── feature-spec.md
-│       ├── behavior-spec.md
-│       ├── api-spec.md
-│       ├── plan.md
-│       ├── review.md
-│       └── test-case.md
 │
 ├── 01-prd/                  # 产品需求文档
-├── 02-issues/               # 活跃 Issue（双轨前缀 f-/b-/d-/i-/q-）
-├── 03-specs/                # 契约层（Feature/Behavior/API）
-├── 04-plans/                # 执行计划
+├── issues/                  # 活跃 Issue（Issue-Centric 结构）
+│   └── {prefix}-{NN}-{slug}/
+│       ├── issue.md
+│       ├── plan.md
+│       ├── plans/
+│       │   └── v{N}.md
+│       ├── checklist.json
+│       └── specs/
+│           ├── feature-spec.md
+│           ├── behavior-spec.md
+│           └── api-spec.md
 ├── 05-adrs/                 # 架构决策记录
 ├── 06-design/               # 设计系统
 ├── 07-reviews/              # 审查记录
-├── 08-test-cases/           # 测试用例
 └── 99-archived/             # 历史归档
+
+tests/
+├── issues/                  # 按 issue 组织的单元测试
+├── integration/             # 集成测试
+└── e2e/                     # E2E 测试
+
+BACKLOG.md                   # 待办事项（open / in-progress）
+CHANGELOG.md                 # 完成日志（closed，按日期倒序）
 ```
 
 ---
 
 ## 核心原则
 
-### 0. 分层读取优先
-
-Agent 不得在未读 frontmatter 前直接读取完整文档。读取顺序：
-
-```
-PROGRESS.md 索引 → 目标文档 frontmatter → 按需深入正文
-```
-
-| 层级 | 内容 | Token | 决策 |
-|------|------|-------|------|
-| 索引层 | `PROGRESS.md` Phase 表格 | ~500 | 定位目标文档 |
-| 元数据层 | 目标文档 YAML frontmatter | ~200 | 判断相关性、状态、依赖 |
-| 正文层 | 完整文档内容 | 按需 | 仅在前两层确认需要后读取 |
-
-读取协议详见 `CLAUDE.md` 的"文档读取协议"章节。
-
 ### 1. Issue 编号是唯一标识
 
-Issue 编号（如 `f-06`、`b-02`）贯穿全文档体系：
+Issue 编号（如 `f-15`、`b-02`）贯穿全文档体系：
 
 ```
-02-issues/f-06-knowledge-base-file-manager.md
-03-specs/f-06/feature-spec.md
-04-plans/f-06/v1.md
-07-reviews/phase-3/code-v1.md   ← 审查报告中引用 f-06
-08-test-cases/f-06/behavior.md
+docs/issues/f-15-global-tab-bar/issue.md
+docs/issues/f-15-global-tab-bar/specs/feature-spec.md
+docs/issues/f-15-global-tab-bar/plan.md
+tests/issues/f-15-global-tab-bar/TabBar.spec.ts
 ```
 
 ### 2. 00-meta 只写规则，不写内容
@@ -83,42 +74,34 @@ Issue 编号（如 `f-06`、`b-02`）贯穿全文档体系：
 
 ---
 
-## 流程阶段速查
+## 规范文件索引
 
-| 阶段 | 输入 | 输出 | Skill | 规范文档 |
-|------|------|------|-------|----------|
-| 0. PRD 稳定化 | 需求草案 | 功能批次 | - | - |
-| 1. Issue 拆分 | PRD 批次 | `02-issues/{prefix}-{NN}-{slug}.md` | `/issue-generator` | [Issue 规范](writing-issues.md) |
-| 2. 契约编写 | Issue | `03-specs/{issue-id}/*.md` | `/spec-validator` | [Spec 规范](writing-specs.md) |
-| 3. 执行计划 | Issue + Spec | `04-plans/{issue-id}/v{N}.md` | `/plan-generator` | [Plan 规范](writing-plans.md) |
-| 4. 并行开发 | Plan + Spec | 代码 | `/dev-orchestrator` | - |
-| 5. 联调整合 | 代码 | 审查记录 | `/kb-review` | [Review 规范](writing-reviews.md) |
-| 6. 关闭归档 | 已验证代码 | 测试用例 + 关闭 issue | `/issue-lifecycle` | [Test Case 规范](writing-test-cases.md) |
-
----
-
-## 文档依赖链
-
-```
-01-prd/ → 02-issues/ → 03-specs/ → 04-plans/ → 代码 → 07-reviews/ → 08-test-cases/
-   ↑___________________________________________|
-              （发现 spec 不足时回溯更新）
-```
+| 规范文件 | 说明 |
+|----------|------|
+| [workflow.md](workflow.md) | 开发流程阶段、TDD 强制规则、Skill 路由、常见陷阱 |
+| [naming-convention.md](naming-convention.md) | 全文档命名规范、目录结构、禁止事项 |
+| [writing-issues.md](writing-issues.md) | Issue 模板、frontmatter 规范、checklist.json 格式 |
+| [writing-specs.md](writing-specs.md) | 三层规格模板、测试映射表、编写顺序 |
+| [writing-plans.md](writing-plans.md) | Plan 模板、版本归档规则、步骤粒度 |
+| [writing-reviews.md](writing-reviews.md) | Review 类型、Scope 命名、Frontmatter 规范 |
+| [writing-test-cases.md](writing-test-cases.md) | 已废弃，测试用例改为 `.spec.ts` 文件 |
 
 ---
 
 ## 快速定位
 
-已知 issue 编号 = `f-06`：
+已知 issue 目录名 = `f-15-global-tab-bar`：
 
 | 文档类型 | 路径 |
 |----------|------|
-| Issue 原文 | `02-issues/f-06-knowledge-base-file-manager.md` |
-| 功能规格 | `03-specs/f-06/feature-spec.md` |
-| 行为规格 | `03-specs/f-06/behavior-spec.md` |
-| API 规格 | `03-specs/f-06/api-spec.md` |
-| 执行计划 | `04-plans/f-06/v1.md` |
-| 测试用例 | `08-test-cases/f-06/behavior.md` |
+| Issue 原文 | `docs/issues/f-15-global-tab-bar/issue.md` |
+| 功能规格 | `docs/issues/f-15-global-tab-bar/specs/feature-spec.md` |
+| 行为规格 | `docs/issues/f-15-global-tab-bar/specs/behavior-spec.md` |
+| API 规格 | `docs/issues/f-15-global-tab-bar/specs/api-spec.md` |
+| 执行计划 | `docs/issues/f-15-global-tab-bar/plan.md` |
+| 历史计划 | `docs/issues/f-15-global-tab-bar/plans/v1.md` |
+| 验收状态 | `docs/issues/f-15-global-tab-bar/checklist.json` |
+| 单元测试 | `tests/issues/f-15-global-tab-bar/*.spec.ts` |
 
 已知审查范围 = `phase-3`：
 
@@ -126,17 +109,3 @@ Issue 编号（如 `f-06`、`b-02`）贯穿全文档体系：
 |----------|------|
 | 代码审查 | `07-reviews/phase-3/code-v1.md` |
 | 规格对齐 | `07-reviews/phase-3/spec-v1.md` |
-
----
-
-## 规范文件索引
-
-| 规范文件 | 说明 |
-|----------|------|
-| [workflow.md](workflow.md) | 开发流程阶段、Skill 路由、常见陷阱 |
-| [naming-convention.md](naming-convention.md) | 全文档命名规范、目录结构、禁止事项 |
-| [writing-issues.md](writing-issues.md) | Issue 模板、双轨前缀、状态流转、垂直切片 |
-| [writing-specs.md](writing-specs.md) | 三层规格模板、编写顺序、审查规则 |
-| [writing-plans.md](writing-plans.md) | Plan 模板、版本规则、步骤粒度 |
-| [writing-reviews.md](writing-reviews.md) | Review 类型、Scope 命名、Frontmatter 规范 |
-| [writing-test-cases.md](writing-test-cases.md) | Test Case 模板、优先级、覆盖标准 |
