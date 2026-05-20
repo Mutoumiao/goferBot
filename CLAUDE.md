@@ -24,16 +24,16 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 11. **遵从规范**：一致性 > 个人偏好。不暗中另起范式。
 12. **显式失败**：不静默跳过。置信度<90%输出 `[UNCERTAIN]` 并征求指令。
 
-**禁止行为**：不修改PROGRESS.md里程碑 / 不在08-test-cases外写用例 / 不提交console.log / 不全文加载文档 / 不并行未声明优先级的skill
+**禁止行为**：不修改 BACKLOG.md/CHANGELOG.md / 不在 tests/issues/ 外写 issue 用例 / 不提交 console.log / 不全文加载文档 / 不并行未声明优先级的 skill
 
 ## 必读文档（开发前按顺序查阅）
 
 | 阶段     | 文档                             |
 |----------|----------------------------------|
-| 了解流程 | `docs/00-meta/workflow.md`       |
-| 了解产品 | `docs/01-prd/v2-cloud-native.md` |
-| 领取任务 | `docs/02-issues/`                |
-| 编码前   | `docs/03-specs/{issue-id}/`      |
+| 了解流程 | `docs/00-meta/workflow.md`                          |
+| 了解产品 | `docs/01-prd/v2-cloud-native.md`                    |
+| 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md`         |
+| 编码前   | `docs/issues/{prefix}-{NN}-{slug}/specs/`           |
 
 ## 项目结构
 
@@ -44,19 +44,21 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 │   └── rag-sdk/                  # RAG 工具库
 ├── src-tauri/                    # Tauri Rust 后端（冻结，Phase 6 扩展）
 ├── tests/                        # 测试（单元/集成/E2E）
-├── docs/                         # 文档（新架构 00-meta ~ 08-test-cases）
+├── docs/                         # 文档
 │   ├── 00-meta/                  # 流程规范、skills
 │   ├── 01-prd/                   # 产品需求
-│   ├── 02-issues/                # 活跃 issue（双轨前缀 f-/b-/d-/i-/q-）
-│   ├── 03-specs/                 # 契约层（按 issue-id 组织）
-│   ├── 04-plans/                 # 执行计划（issue-id/v{N}.md）
+│   ├── issues/                   # 活跃 issue（Issue-Centric 结构）
 │   ├── 05-adrs/                  # 架构决策记录
 │   ├── 06-design/                # 设计系统
 │   ├── 07-reviews/               # 审查记录
-│   ├── 08-test-cases/            # 测试用例
-│   └── 99-archived/              # 历史归档（已废弃）
+│   └── 99-archived/              # 历史归档
+├── tests/                        # 测试（单元/集成/E2E）
+│   ├── issues/                   # 按 issue 组织的单元测试
+│   ├── integration/              # 集成测试
+│   └── e2e/                      # E2E 测试
+├── BACKLOG.md                    # 待办事项（open / in-progress）
+├── CHANGELOG.md                  # 完成日志（closed，按日期倒序）
 ├── pnpm-workspace.yaml
-├── PROGRESS.md                   # 项目进度追踪
 └── package.json
 ```
 
@@ -103,8 +105,8 @@ pnpm -r build         # 构建所有包
 
 Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 token：
 
-1. **先读索引** — 查 `PROGRESS.md` 的 Phase 表格定位目标 issue
-2. **再读 frontmatter** — 读目标文档的 YAML 头部获取 `status`/`summary`/`blocked_by`/`token_estimate`
+1. **先读索引** — 查 `BACKLOG.md` 或 `CHANGELOG.md` 定位目标 issue
+2. **再读 frontmatter** — 读 `docs/issues/{dir}/issue.md` 的 YAML 头部获取 `status`/`summary`/`blocked_by`
 3. **按需深入正文** — 仅当 frontmatter 确认文档与当前任务相关，且状态非 closed/deprecated 时，才读正文
 4. **尽量避免全文扫读** — 不得在未读 frontmatter 前直接读取完整文档
 

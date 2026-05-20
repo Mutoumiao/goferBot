@@ -83,7 +83,8 @@
 
 - **事务驱动**：所有功能以 Markdown Issue 形式跟踪，含明确的 `Acceptance criteria` 和 `Blocked by` 依赖声明
 - **设计先行的文档化**：每个功能开发前通过 spec 确认领域术语和架构决策，避免返工
-- **状态机管理**：Issue 遵循多状态生命周期（`needs-triage` → `ready-for-agent` → `in-progress` → `ready-for-review` → `verified` → `completed`）
+- **Issue-Centric 结构**：一个 issue 一个目录，包含 `issue.md` + `plan.md` + `checklist.json` + `specs/`，测试按 issue 组织到 `tests/issues/`
+- **状态自动同步**：`checklist.json` 由 vitest reporter 自动生成，`sync-issue-status.js` 合并后保守更新 `issue.md` 的 `status`
 - **验证即完成**：禁止在未经验证的情况下声明完成，强制运行测试与类型检查
 
 ***
