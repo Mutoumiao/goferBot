@@ -49,7 +49,7 @@ docs/
 ```
 
 **命名规则**：
-- 格式：`{prefix}-{NNN}-{kebab-slug}`
+- 格式：`{prefix}-{NN}-{kebab-slug}`
 - 前缀：`f` 前端 / `b` 后端 / `d` 设计 / `i` 基础设施 / `q` 质量
 - 编号：全局递增，不分轨道，从 01 开始
 - slug：简短描述，kebab-case
@@ -394,11 +394,11 @@ function updateIssueStatus(issueDirName) {
   if (statuses.every(s => s === 'pass')) newStatus = 'closed'
   else if (statuses.some(s => s === 'fail')) newStatus = 'in-progress'
 
-  // 保守更新：只替换 status 行
+  // 保守更新：只替换 status 值，保留行尾注释
   const content = readFileSync(issuePath, 'utf-8')
-  const statusRegex = /^status:.*$/m
+  const statusRegex = /^(status:)\s*\S+(.*)$/m
   if (statusRegex.test(content)) {
-    const newContent = content.replace(statusRegex, `status: ${newStatus}`)
+    const newContent = content.replace(statusRegex, `$1 ${newStatus}$2`)
     writeFileSync(issuePath, newContent)
     console.log(`Updated ${issueDirName}: ${newStatus}`)
   }
@@ -424,10 +424,10 @@ for (const issueDirName of issueDirs) {
 
 | Skill | 改造内容 | 优先级 |
 |-------|----------|--------|
-| `issue-generator` | 输出 `docs/issues/{prefix}-{NNN}-{slug}/` 目录，包含 `issue.md` + `checklist.json` 骨架 | P0 |
-| `spec-validator` | 读取 `docs/issues/{prefix}-{NNN}-{slug}/specs/`，验证 behavior-spec 底部测试映射表 | P0 |
-| `plan-generator` | 输出 `docs/issues/{prefix}-{NNN}-{slug}/plan.md`，历史版本归档到 `plans/v{N}.md` | P0 |
-| `dev-orchestrator` | 在 `tests/issues/{prefix}-{NNN}-{slug}/` 下创建 `.spec.ts`，先 red 后 green | P0 |
+| `issue-generator` | 输出 `docs/issues/{prefix}-{NN}-{slug}/` 目录，包含 `issue.md` + `checklist.json` 骨架 | P0 |
+| `spec-validator` | 读取 `docs/issues/{prefix}-{NN}-{slug}/specs/`，验证 behavior-spec 底部测试映射表 | P0 |
+| `plan-generator` | 输出 `docs/issues/{prefix}-{NN}-{slug}/plan.md`，历史版本归档到 `plans/v{N}.md` | P0 |
+| `dev-orchestrator` | 在 `tests/issues/{prefix}-{NN}-{slug}/` 下创建 `.spec.ts`，先 red 后 green | P0 |
 | `kb-review` | 检查 checklist.json 状态，确认全部 pass 才允许关闭 | P0 |
 | `issue-lifecycle` | 调用 `sync-issue-status.js` 更新 issue.md frontmatter | P0 |
 | `issue-updater` | 更新 `BACKLOG.md` + `CHANGELOG.md` | P0 |
@@ -625,6 +625,7 @@ EOF
 **规则**：
 - 按日期倒序排列，最新在上
 - 条目使用归档路径 `docs/99-archived/issues/{dir}/`
+- 日期为运行更新当日的纯日期（如 `2026-05-20`），不涉及时分或 issue 实际关闭时间
 - 不显示 Phase 标题，纯时间线
 
 ### 10.4 自动生成脚本
