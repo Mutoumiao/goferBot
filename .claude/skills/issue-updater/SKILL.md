@@ -92,16 +92,17 @@ For newly closed issues (not already in CHANGELOG):
 
 ## [2026-05-20]
 
-- [closed] TabBar 全局化重构 [issue](docs/99-archived/issues/f-015-global-tab-bar/)
-- [closed] NestJS 安全基线 [issue](docs/99-archived/issues/i-010-nestjs-security/)
+- [closed] TabBar 全局化重构 [issue](docs/99-archived/issues/f-15-global-tab-bar/)
+- [closed] NestJS 安全基线 [issue](docs/99-archived/issues/i-10-nestjs-security/)
 
 ## [2026-05-19]
 
-- [closed] 侧边栏导航 [issue](docs/99-archived/issues/f-003-sidebar-navigation/)
+- [closed] 侧边栏导航 [issue](docs/99-archived/issues/f-03-sidebar-navigation/)
 ```
 
 **Rules:**
 - Group by date (newest first)
+- Date is the pure date when the update runs (e.g. `2026-05-20`), no time component
 - If `--date` specified, append to that date section
 - If date section doesn't exist, create it
 - If issue already exists in CHANGELOG, skip (idempotent)
