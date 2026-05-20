@@ -3,16 +3,16 @@ name: dev-orchestrator
 description: >
   当用户说"开始做 issue f-05"、"开发 issue b-07"、"issue 怎么实现"、
   "怎么开发这批功能"时触发。
-  自动协调完整开发准备流程：解析 issue → 读取 spec → 检查计划 → 检查测试用例 → 引导进入开发。
+  自动协调完整开发准备流程：解析 issue → 读取 spec → 检查计划 → 检查测试 → 引导进入开发。
   支持单 issue 开发和多 issue 并行开发两种模式。
   核心目的：避免在无规格、无计划、无测试的情况下直接写代码。
 ---
 
 # 开发编排器
 
-协调 issue 分析、spec 读取、计划检查、测试用例检查和开发执行的完整工作流。
+协调 issue 分析、spec 读取、计划检查、测试检查和开发执行的完整工作流。
 
-**核心理念**：开发前必须先有 spec，有 spec 后必须先有计划，有计划后必须先有测试。不要在没有行为契约和验收标准的情况下直接写代码。
+**核心理念**：开发前必须先有 spec，有 spec 后必须先有计划，有计划后必须先有测试代码。不要在没有行为契约和验收标准的情况下直接写代码。
 
 ---
 
@@ -35,7 +35,7 @@ description: >
 | Issue | `docs/02-issues/{prefix}-{NN}-{slug}.md` | 文件名必须符合格式 |
 | Spec | `docs/03-specs/{issue-id}/` | 目录名必须与 issue 编号一致 |
 | Plan | `docs/04-plans/{issue-id}/v{N}.md` | 目录名 = issue-id，文件名 = v{N}.md |
-| 测试用例 | `docs/08-test-cases/{issue-id}/` | 目录名必须与 issue 编号一致 |
+| 测试代码 | `packages/**/src/**/*.spec.ts` | 必须存在，且包含具体测试用例 |
 | 审查记录 | `docs/07-reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举 |
 
 **双轨前缀：**
@@ -64,7 +64,7 @@ description: >
    - 检查后端 issue 是否已完成
    - 若未完成，前端 plan 中需包含 Mock 方案
    - 标记 `TODO: 联调` 在双方 plan 中
-4. 分别检查每个 issue 的 spec、plan、测试用例
+4. 分别检查每个 issue 的 spec、plan、测试代码
 5. 全部就绪后，引导并行执行
 
 ---
@@ -131,36 +131,46 @@ docs/03-specs/{issue-id}/
 **若已存在：**
 1. 读取最新版本（最大 N 的 `v{N}.md`）
 2. 确认是否完整（任务分解、文件结构、验证步骤）
-3. 展示计划概要，进入步骤 5
+3. **关键检查**：计划中的每个任务是否都以"编写失败测试"开始？
+4. 若不是，提示计划不符合 TDD 规范，需重写
+5. 展示计划概要，进入步骤 5
 
 **多 issue 并行时的特殊处理**：
 - 若存在前后端配对且后端未完成，检查前端 plan 是否包含 Mock 方案
 - 若缺少 Mock 方案，提示补充
 
-### 5. 检查测试用例
+### 5. 检查测试代码（TDD 关卡）
 
-在 `docs/08-test-cases/{issue-id}/` 查找测试用例。
+**这是核心关卡。不再检查 `docs/08-test-cases/`，而是检查实际的 `.spec.ts` 文件。**
 
-**路径验证：**
-- 目录名必须与 issue 编号一致
-- 文件名使用 kind：`behavior.md`、`api.md`、`e2e.md`、`unit.md`
+根据 plan 中声明的测试文件路径，检查：
 
-**若不存在：**
-1. 告知用户未找到测试用例
-2. 读取 issue 的验收标准和 spec 的边界条件
-3. 转化为测试用例表格
-4. 创建文件 `docs/08-test-cases/{issue-id}/behavior.md`
-5. 进入步骤 6
+```
+packages/webui/src/**/*.spec.ts   # 前端测试
+packages/server/src/**/*.spec.ts  # 后端测试
+```
 
-**若已存在：**
-1. 读取测试用例，统计 TC-ID 数量
+**检查内容：**
+1. 测试文件是否存在？
+2. 是否包含 `describe` + `it` 块？
+3. 测试用例是否覆盖 spec 中的交互状态/错误场景？
+4. 测试是否是"失败"状态（即实现代码尚未编写）？
+
+**若测试不存在：**
+1. 告知用户未找到测试代码
+2. 根据 spec 生成测试骨架（`.spec.ts` 文件）
+3. 运行测试确认失败（red 阶段）
+4. 进入步骤 6
+
+**若测试已存在：**
+1. 读取测试代码，统计测试用例数量
 2. 检查是否覆盖所有验收标准和边界条件
 3. 若有遗漏，提示并询问是否补充
 4. 进入步骤 6
 
 ### 6. 引导进入开发
 
-spec、plan 和测试用例都就绪后，汇报状态：
+spec、plan 和测试代码都就绪后，汇报状态：
 
 **单 issue 模式：**
 
@@ -170,7 +180,8 @@ f-05 文件上传组件 — 开发准备就绪
 - Issue 状态: ready-for-agent
 - 行为契约: docs/03-specs/f-05/behavior-spec.md
 - 执行计划: docs/04-plans/f-05/v1.md (X 个任务)
-- 测试用例: docs/08-test-cases/f-05/behavior.md (Y 条 TC-ID)
+- 测试代码: packages/webui/src/components/FileUpload.spec.ts (Y 条测试用例)
+- TDD 状态: 🔴 测试已编写，运行失败（等待实现）
 
 请选择开发执行方式：
 1. /subagent-driven-development — 子代理并行开发（推荐）
@@ -186,11 +197,13 @@ f-05 文件上传组件 — 开发准备就绪
 f-05 文件上传组件
 - 状态: ready-for-agent
 - 计划: 5 个任务
+- 测试: FileUpload.spec.ts (8 条用例)
 - 注意: 后端 b-07 未完成，将使用 Mock 数据
 
 b-07 文档上传 API
 - 状态: ready-for-agent
 - 计划: 4 个任务
+- 测试: upload.service.spec.ts (6 条用例)
 
 依赖关系: f-05 阻塞于 b-07（接口对接阶段）
 
@@ -217,7 +230,9 @@ b-07 文档上传 API
 | 多个 issue 匹配 | 请用户确认 |
 | Spec 不存在 | 调用 `spec-validator` 生成 |
 | Plan 存在但不完整 | 提示需补充，询问是否重写 |
-| 测试用例覆盖不完整 | 列出未覆盖项，询问是否补充 |
+| Plan 不符合 TDD | 提示必须重写，每个任务以测试开始 |
+| 测试代码不存在 | 根据 spec 生成测试骨架，确认失败后再开发 |
+| 测试覆盖不完整 | 列出未覆盖项，询问是否补充 |
 | Issue 有未完成的阻塞依赖 | 警告用户先完成依赖 |
 | 用户仅"查看进度" | 仅展示当前状态 |
 | Issue 状态为 `closed` | 告知已完成，询问是否重新打开 |
@@ -228,6 +243,6 @@ b-07 文档上传 API
 ## 依赖 Skills
 
 - `spec-validator` — 验证/生成行为契约
-- `plan-generator` — 生成执行计划
+- `plan-generator` — 生成执行计划（TDD 强制）
 - `subagent-driven-development` — 子代理并行开发
 - `executing-plans` — 顺序执行计划

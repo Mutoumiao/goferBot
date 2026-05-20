@@ -1,103 +1,85 @@
-# Test Case 编写规范
+# Test Case 编写规范（已废弃）
 
-> 测试用例是验收标准的可执行化表达。
-> 每个测试用例必须可追溯到一个 issue 和一个 spec。
+> **重要：本文档已废弃。**
+>
+> 测试用例不再以 markdown 形式保存在 `docs/08-test-cases/` 中。
+> 所有测试直接以 `.spec.ts` 文件形式编写在 `packages/` 对应目录下。
+>
+> 保留此文件仅作历史参考。
 
 ---
 
-## 目录结构
+## 新规范
+
+### 测试文件位置
+
+| 类型 | 路径 |
+|------|------|
+| 前端单元测试 | `packages/webui/src/**/*.spec.ts` |
+| 后端单元测试 | `packages/server/src/**/*.spec.ts` |
+| 集成测试 | `tests/integration/**/*.spec.ts` |
+| E2E 测试 | `tests/e2e/**/*.spec.ts` |
+
+### 测试编写时机
+
+**TDD 强制**：在实现代码之前编写测试。
+
+1. 读取 spec 中的"测试映射"表格
+2. 创建对应的 `.spec.ts` 文件
+3. 编写失败测试（red）
+4. 运行确认失败
+5. 编写最小实现使测试通过（green）
+6. 重构（refactor）
+
+### 测试内容要求
+
+每个 `.spec.ts` 必须覆盖：
+- 正常路径（happy path）
+- 错误路径（error cases）
+- 边界条件（empty、loading、partial 状态）
+
+### 示例
+
+```typescript
+// packages/webui/src/composables/useAuthForm.spec.ts
+import { describe, it, expect } from 'vitest'
+import { useAuthForm } from './useAuthForm'
+
+describe('useAuthForm', () => {
+  it('validates email format', () => {
+    const form = useAuthForm()
+    form.email.value = 'invalid-email'
+    expect(form.validateEmail()).toBe(false)
+    expect(form.emailError.value).toBe('请输入有效的邮箱地址')
+  })
+
+  it('validates password length', () => {
+    const form = useAuthForm()
+    form.password.value = '123'
+    expect(form.validatePassword()).toBe(false)
+    expect(form.passwordError.value).toBe('密码长度不能少于 6 位')
+  })
+
+  it('validates confirm password match', () => {
+    const form = useAuthForm({ confirmPassword: true })
+    form.password.value = 'password123'
+    form.confirmPassword.value = 'different'
+    expect(form.validateConfirmPassword()).toBe(false)
+    expect(form.confirmPasswordError.value).toBe('两次输入的密码不一致')
+  })
+})
+```
+
+---
+
+## 历史规范（仅供参考）
 
 ```
 docs/08-test-cases/
 └── {issue-id}/
     └── {kind}.md
+
+kind: behavior / api / e2e / unit
 ```
 
-| 元素 | 规则 |
-|------|------|
-| `issue-id` | 与 issue 编号完全一致 |
-| `kind` | 测试类别：behavior / api / e2e / unit |
-
----
-
-## Kind 枚举
-
-| Kind | 含义 | 适用场景 |
-|-------|------|----------|
-| `behavior` | 行为测试用例 | 前端交互、UI 状态、用户操作流程 |
-| `api` | API 测试用例 | 后端接口、请求/响应、错误码 |
-| `e2e` | 端到端测试用例 | 完整用户旅程、前后端联调 |
-| `unit` | 单元测试用例 | 纯函数、工具类、独立模块 |
-
----
-
-## 规则
-
-- 目录名 = issue 编号
-- 一个 issue 可包含多个 kind 文件
-- 优先写 `behavior.md` 或 `api.md`
-- 跨端集成场景写 `e2e.md`
-- 复杂后端逻辑补充 `unit.md`
-
----
-
-## 模板
-
-```markdown
----
-issue_id: {issue-id}
-type: test-case
-kind: {behavior / api / e2e / unit}
-tc_count: {N}
-status: {drafted / reviewed / automated}
-summary: {测试覆盖范围、核心场景、自动化状态，2-3 句话}
----
-
-# {issue-id} {kind} 测试用例
-
-> 对应 issue: `docs/02-issues/{issue-id}-{slug}.md`
-> 规格引用:
-> - `docs/03-specs/{issue-id}/feature-spec.md`
-> - `docs/03-specs/{issue-id}/behavior-spec.md`
-> - `docs/03-specs/{issue-id}/api-spec.md`
-> - `docs/04-plans/{issue-id}/v1.md`
-
----
-
-## 1. {功能模块} 测试
-
-### TC-{issue-id}-{NNN}: {用例名称}
-
-- **前置条件**: {执行测试前必须满足的条件}
-- **步骤**:
-  1. {具体操作}
-  2. {具体操作}
-- **预期结果**:
-  - {具体断言}
-  - {具体断言}
-- **优先级**: P0 / P1 / P2
-
----
-
-## 2. {功能模块} 测试
-
-...
-
----
-
-## 测试用例汇总
-
-| TC-ID | 名称 | 优先级 | 类型 |
-|-------|------|--------|------|
-| TC-{issue-id}-001 | {名称} | P0 | API |
-| TC-{issue-id}-002 | {名称} | P0 | API |
-| TC-{issue-id}-003 | {名称} | P1 | 安全 |
-
----
-
-## 覆盖检查
-
-- [ ] 覆盖所有验收标准
-- [ ] 覆盖所有错误场景
-- [ ] 覆盖所有交互状态（loading/empty/error/success/partial）
-- [ ] 每个错误场景有恢复路径验证
+此目录不再使用。如需查看历史测试用例，请查阅 `docs/99-archived/`。

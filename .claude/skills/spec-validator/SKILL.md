@@ -136,6 +136,14 @@ description: >
 | 375px | {变化} |
 | 768px | {变化} |
 | 1440px | {变化} |
+
+## 测试映射（新增）
+
+| 交互状态 | 测试文件 | 测试用例 |
+|----------|----------|----------|
+| loading | `packages/webui/src/.../*.spec.ts` | `it('shows loading during submit')` |
+| error | `packages/webui/src/.../*.spec.ts` | `it('displays error message on failure')` |
+| success | `packages/webui/src/.../*.spec.ts` | `it('redirects to home after success')` |
 ```
 
 ### API 规格（后端）
@@ -175,6 +183,14 @@ description: >
 #### 异步行为
 - {异步发生什么}
 - {客户端如何轮询状态}
+
+## 测试映射（新增）
+
+| 场景 | 测试文件 | 测试用例 |
+|------|----------|----------|
+| 正常请求 | `packages/server/src/.../*.spec.ts` | `it('returns 200 with valid input')` |
+| 参数错误 | `packages/server/src/.../*.spec.ts` | `it('returns 400 for invalid input')` |
+| 未授权 | `packages/server/src/.../*.spec.ts` | `it('returns 401 without token')` |
 ```
 
 ---
@@ -203,6 +219,8 @@ description: >
 - [ ] 行为规格有带恢复路径的错误场景
 - [ ] API 规格有所有端点及请求/响应示例
 - [ ] API 规格有所有错误码及场景
+- [ ] **行为规格包含测试映射表格（测试文件路径 + 用例名）**
+- [ ] **API 规格包含测试映射表格（测试文件路径 + 用例名）**
 - [ ] 无模糊术语残留（"appropriate"、"reasonable"、"etc."）
 - [ ] 所有决策都有理由记录
 - [ ] Spec 目录名与 issue 编号一致（如 `f-06`）

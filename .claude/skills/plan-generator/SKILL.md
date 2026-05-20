@@ -8,7 +8,7 @@ description: >
 
 # 计划生成器
 
-编写全面的实现计划，假设工程师对代码库零了解。记录一切：每个任务要碰哪些文件、代码、测试、需查阅的文档、如何验证。DRY。YAGNI。TDD。频繁提交。
+编写全面的实现计划，假设工程师对代码库零了解。记录一切：每个任务要碰哪些文件、代码、测试、需查阅的文档、如何验证。DRY。YAGNI。**TDD 强制**。频繁提交。
 
 **开始时声明：** "正在使用 plan-generator skill 创建实现计划。"
 
@@ -53,7 +53,6 @@ description: >
 
 **Issue 引用：** [链接到 docs/02-issues/{prefix}-{NN}-{slug}.md]
 **Spec 引用：** [链接到 docs/03-specs/{issue-id}/]
-**测试用例：** [链接到 docs/08-test-cases/{issue-id}/]
 
 ---
 ```
@@ -69,6 +68,11 @@ description: >
 - 一起变更的文件应放在一起，按职责拆分而非按技术层拆分
 - 遵循代码库既定模式
 
+**必须包含测试文件：**
+- 前端：`packages/webui/src/**/*.spec.ts`
+- 后端：`packages/server/src/**/*.spec.ts`
+- 测试文件路径必须与实现文件同目录或 `__tests__/` 子目录
+
 ---
 
 ## 任务粒度
@@ -82,15 +86,17 @@ description: >
 
 ---
 
-## 任务结构
+## 任务结构（TDD 强制）
+
+**每个任务必须以测试开始，以测试通过结束。**
 
 ````markdown
-### 任务 N: [组件名称]
+### 任务 N: [组件/功能名称]
 
 **文件：**
-- 创建：`exact/path/to/file.py`
-- 修改：`exact/path/to/existing.py:123-145`
-- 测试：`tests/exact/path/to/test.py`
+- 创建：`exact/path/to/file.ts`
+- 修改：`exact/path/to/existing.ts:123-145`
+- 测试：`exact/path/to/file.spec.ts`（必须存在）
 
 **规格引用：**
 - 行为规格：[第 X 节 - 交互状态 Y]
@@ -98,36 +104,66 @@ description: >
 
 - [ ] **步骤 1: 编写失败测试**
 
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
+```typescript
+// file.spec.ts
+import { describe, it, expect } from 'vitest'
+import { myFunction } from './file'
+
+describe('myFunction', () => {
+  it('should return expected result for valid input', () => {
+    const result = myFunction('valid-input')
+    expect(result).toBe('expected-output')
+  })
+
+  it('should throw error for invalid input', () => {
+    expect(() => myFunction('invalid')).toThrow('Invalid input')
+  })
+})
 ```
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`pytest tests/path/test.py::test_name -v`
-预期：FAIL with "function not defined"
+运行：`npx vitest run file.spec.ts`
+预期：FAIL — "myFunction is not defined" 或断言失败
 
 - [ ] **步骤 3: 编写最小实现**
 
-```python
-def function(input):
-    return expected
+```typescript
+// file.ts
+export function myFunction(input: string): string {
+  if (input === 'invalid') {
+    throw new Error('Invalid input')
+  }
+  return 'expected-output'
+}
 ```
 
 - [ ] **步骤 4: 运行测试验证通过**
 
-运行：`pytest tests/path/test.py::test_name -v`
-预期：PASS
+运行：`npx vitest run file.spec.ts`
+预期：PASS（所有测试通过）
 
 - [ ] **步骤 5: 提交**
 
 ```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
+git add file.spec.ts file.ts
+git commit -m "feat(scope): add myFunction with tests"
 ```
 ````
+
+---
+
+## TDD 红线规则
+
+以下情况计划**必须打回重写**：
+
+| 违规 | 示例 | 正确做法 |
+|------|------|----------|
+| 任务不以测试开始 | "创建 LoginView.vue" | "编写 LoginView.spec.ts 失败测试" |
+| 测试放在最后 | 任务 1-5 实现，任务 6 写测试 | 每个任务都是 red-green-refactor |
+| 测试只有 happy path | `it('should work')` | 必须包含错误场景、边界条件 |
+| 测试代码模糊 | "测试表单提交" | 具体断言：`expect(wrapper.find('.error').exists()).toBe(true)` |
+| 无验证命令 | 步骤结束无运行命令 | 每个任务末尾必须有 `npx vitest run ...` |
 
 ---
 
@@ -150,8 +186,9 @@ git commit -m "feat: add specific feature"
 1. **功能规格覆盖**：每个用户故事都有对应任务？
 2. **行为规格覆盖**（前端）：所有交互状态、错误场景、动画都实现了？
 3. **API 规格覆盖**（后端）：所有路由、DTO、错误码都实现了？
-4. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
-5. **类型一致性**：后续任务中的类型、签名与早期任务一致？
+4. **测试覆盖**：每个任务都有对应的 `.spec.ts` 文件？
+5. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
+6. **类型一致性**：后续任务中的类型、签名与早期任务一致？
 
 发现问题直接修复，无需重新审查。发现没有任务的规格需求，添加任务。
 
@@ -164,7 +201,7 @@ git commit -m "feat: add specific feature"
 **"计划已保存到 `docs/04-plans/{issue-id}/v{N}.md`。两种执行方式：**
 
 1. **子代理驱动（推荐）** — 每个任务新子代理，任务间审查
-2. **内联执行** — 当前会话中顺序执行，带检查点
+2. **内联执行** — 当前会话顺序执行，带检查点
 
 **选择哪种？"**
 

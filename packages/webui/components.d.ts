@@ -116,7 +116,7 @@ declare module 'vue' {
     SettingsPage: typeof import('./src/components/SettingsPage.vue')['default']
     Skeleton: typeof import('./src/components/ui/skeleton/Skeleton.vue')['default']
     Switch: typeof import('./src/components/ui/switch/Switch.vue')['default']
-    TabBar: typeof import('./src/components/TabBar.vue')['default']
+    TabBar: typeof import('./src/components/layout/TabBar.vue')['default']
     Tabs: typeof import('./src/components/ui/tabs/Tabs.vue')['default']
     TabsContent: typeof import('./src/components/ui/tabs/TabsContent.vue')['default']
     TabsList: typeof import('./src/components/ui/tabs/TabsList.vue')['default']

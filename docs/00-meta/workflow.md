@@ -1,6 +1,6 @@
 # 开发流程
 
-> 核心原则：**契约先行、分批执行、双轨并行、质量内建。**
+> 核心原则：**契约先行、TDD 强制、分批执行、双轨并行、质量内建。**
 >
 > 详细规范参见同目录下的 `writing-*.md` 文件，模板参见 `_templates/` 目录。
 
@@ -14,19 +14,46 @@
 | 1. Issue 拆分 | PRD 批次 | `02-issues/{prefix}-{NN}-{slug}.md` | `/issue-generator` | [Issue 规范](writing-issues.md) |
 | 2. 契约编写 | Issue | `03-specs/{issue-id}/*.md` | `/spec-validator` | [Spec 规范](writing-specs.md) |
 | 3. 执行计划 | Issue + Spec | `04-plans/{issue-id}/v{N}.md` | `/plan-generator` | [Plan 规范](writing-plans.md) |
-| 4. 并行开发 | Plan + Spec | 代码 | `/dev-orchestrator` | - |
+| 4. 并行开发 | Plan + Spec | 代码 + `.spec.ts` 测试 | `/dev-orchestrator` | - |
 | 5. 联调整合 | 代码 | 审查记录 | `/kb-review` | [Review 规范](writing-reviews.md) |
-| 6. 关闭归档 | 已验证代码 | 测试用例 + 关闭 issue | `/issue-lifecycle` | [Test Case 规范](writing-test-cases.md) |
+| 6. 关闭归档 | 已验证代码 | 关闭 issue | `/issue-lifecycle` | - |
 
 ---
 
 ## 文档依赖链
 
 ```
-01-prd/ → 02-issues/ → 03-specs/ → 04-plans/ → 代码 → 07-reviews/ → 08-test-cases/
+01-prd/ → 02-issues/ → 03-specs/ → 04-plans/ → 代码 + .spec.ts → 07-reviews/
    ↑___________________________________________|
               （发现 spec 不足时回溯更新）
 ```
+
+---
+
+## TDD 强制流程（核心变更）
+
+### 规则
+
+1. **测试先行**：每个任务必须以编写失败测试开始
+2. **红绿循环**：red（失败）→ green（通过）→ refactor（重构）
+3. **测试即文档**：`.spec.ts` 取代 `08-test-cases/` 的 markdown 文档
+4. **无测试不合并**：代码审查时，无 `.spec.ts` 视为 Critical 问题
+
+### 测试文件位置
+
+| 类型 | 路径 |
+|------|------|
+| 前端单元测试 | `packages/webui/src/**/*.spec.ts` |
+| 后端单元测试 | `packages/server/src/**/*.spec.ts` |
+| 集成测试 | `tests/integration/**/*.spec.ts` |
+| E2E 测试 | `tests/e2e/**/*.spec.ts` |
+
+### 开发前检查清单（dev-orchestrator 执行）
+
+- [ ] spec 已编写且包含测试映射表格
+- [ ] plan 已生成且每个任务以测试开始
+- [ ] `.spec.ts` 测试骨架已创建
+- [ ] 运行测试确认失败（red 状态）
 
 ---
 
@@ -99,6 +126,19 @@
 2. **行为规格** (`behavior-spec.md`)：前端交互状态表格（loading/empty/error/success/partial）
 3. **API 规格** (`api-spec.md`)：后端接口契约（路由、DTO、错误码）
 
+**新增：测试映射表格**
+
+每个 behavior-spec 和 api-spec 底部必须包含：
+
+```markdown
+## 测试映射
+
+| 场景 | 测试文件 | 测试用例 |
+|------|----------|----------|
+| loading 状态 | `packages/webui/src/views/LoginView.spec.ts` | `it('shows spinner during submit')` |
+| 401 错误 | `packages/webui/src/views/LoginView.spec.ts` | `it('displays error on unauthorized')` |
+```
+
 **关键规则**：
 - 一次只处理一个 issue 的 spec
 - 交互状态必须具体到"按钮是否禁用"、"显示什么颜色"
@@ -121,7 +161,62 @@
 - 每个步骤 2~5 分钟
 - 禁止占位符（"TODO"、"稍后实现"）
 - 必须包含具体代码示例和验证命令
+- **TDD 强制**：每个任务必须以"编写失败测试"开始，以"运行测试确认通过"结束
 - 自检：是否覆盖了 spec 中所有交互状态/端点？
+
+**任务结构示例**：
+
+```markdown
+### 任务 1: 实现登录表单校验
+
+**文件：**
+- 创建：`packages/webui/src/composables/useAuthForm.ts`
+- 测试：`packages/webui/src/composables/useAuthForm.spec.ts`
+
+**规格引用：**
+- 行为规格：[第 5.1 节 - 前端校验规则]
+
+- [ ] **步骤 1: 编写失败测试**
+
+```typescript
+import { describe, it, expect } from 'vitest'
+import { useAuthForm } from './useAuthForm'
+
+describe('useAuthForm', () => {
+  it('validates email format', () => {
+    const form = useAuthForm()
+    form.email.value = 'invalid-email'
+    expect(form.validateEmail()).toBe(false)
+    expect(form.emailError.value).toBe('请输入有效的邮箱地址')
+  })
+})
+```
+
+- [ ] **步骤 2: 运行测试确认失败**
+
+运行：`npx vitest run useAuthForm.spec.ts`
+预期：FAIL — "useAuthForm is not defined"
+
+- [ ] **步骤 3: 编写最小实现**
+
+```typescript
+export function useAuthForm() {
+  // 最小实现...
+}
+```
+
+- [ ] **步骤 4: 运行测试确认通过**
+
+运行：`npx vitest run useAuthForm.spec.ts`
+预期：PASS
+
+- [ ] **步骤 5: 提交**
+
+```bash
+git add useAuthForm.ts useAuthForm.spec.ts
+git commit -m "feat(auth): add useAuthForm with validation"
+```
+```
 
 详细规范：[writing-plans.md](writing-plans.md)  
 模板：[_templates/plan.md](_templates/plan.md)
@@ -131,19 +226,26 @@
 ### 阶段 4: 并行开发
 
 **输入**：Plan + Spec  
-**输出**：可运行的代码
+**输出**：可运行的代码 + `.spec.ts` 测试
 
 **使用 skill**：`/dev-orchestrator`
 
 **前端 Agent**：
-- 读行为规格 → 生成计划 → 编码 → `/kb-review`
+- 读行为规格 → 生成计划 → **先写测试** → 编码 → `/kb-review`
 - 若后端 API 未完成，先用 Mock 数据，标记 `TODO: 联调`
 - 编码后可用 `/kb-review` 做代码审查与 spec 对齐
 - 页面可访问后可用 `/gstack-design-review` 做视觉审计
 
 **后端 Agent**：
-- 读 API 规格 → 生成计划 → 编码 → `/kb-review`
+- 读 API 规格 → 生成计划 → **先写测试** → 编码 → `/kb-review`
 - 编码后可用 `/kb-review` 做代码审查与安全检查
+
+**TDD 执行检查点**：
+
+每个任务完成后必须输出：
+```
+[CHECKPOINT] ✅ 测试通过 | 🔍 已验证 | ⏳ 待办 | 🚨 阻塞
+```
 
 **测试**：
 - 使用 gstack `/tdd` 遵循 red-green-refactor 循环
@@ -165,6 +267,7 @@
 3. 使用 `/kb-review` 执行审查：
    - 代码审查：验证代码质量、安全问题
    - 规格对齐审查：验证交互状态是否按 behavior-spec 实现
+   - **TDD 合规审查：验证 `.spec.ts` 存在且覆盖所有场景**
    - 安全审查：验证安全基线是否满足
 4. 审查记录归档到 `docs/07-reviews/`
 
@@ -188,18 +291,15 @@
 **操作**：
 1. 使用 `/kb-review` 执行关闭前验收：
    - 确认所有 Critical/Major 问题已修复
-   - 确认测试通过、类型检查通过
+   - **确认 `.spec.ts` 测试全部通过**
+   - 确认类型检查通过
    - 确认审查记录已归档到 `docs/07-reviews/`
-   - 确认测试用例已归档到 `docs/08-test-cases/`
 2. 更新 issue 状态为 `closed`
 3. 勾选验收标准 `[x]`
 4. 更新 `PROGRESS.md` 进度
 5. 可选：归档到 `docs/99-archived/`
 
 **然后**：回到阶段 1，启动下一批功能。
-
-详细规范：[writing-test-cases.md](writing-test-cases.md)  
-模板：[_templates/test-case.md](_templates/test-case.md)
 
 ---
 
@@ -215,7 +315,8 @@
 | `03-specs/` | `{issue-id}/*.md` | `f-06/feature-spec.md` |
 | `04-plans/` | `{issue-id}/v{N}.md` | `f-06/v1.md` |
 | `07-reviews/` | `{scope}/{type}-v{N}.md` | `phase-3/code-v1.md` |
-| `08-test-cases/` | `{issue-id}/{scope}.md` | `f-06/behavior.md` |
+
+**注意：`08-test-cases/` 目录已废弃。** 测试用例直接以 `.spec.ts` 文件形式存在于 `packages/` 中。
 
 ---
 
@@ -227,6 +328,8 @@
 | 一次拆完 PRD 所有 issue | issue 质量低，后期大量返工 | 按批次拆分，做完一批再拆下一批 |
 | 一个 issue 包含前后端 | 无法并行，plan 臃肿 | 拆成 f-XX + b-XX |
 | plan 里写 "TODO" | 工程师不知道怎么做 | 每个步骤给具体代码和命令 |
+| **不写测试先写实现** | TDD 流于形式，质量不可控 | **每个任务必须以测试开始** |
+| **测试只有 happy path** | 错误场景遗漏，线上崩溃 | **必须覆盖 error/empty/loading 状态** |
 | 前后端不联调直接关闭 | 接口不匹配 | 必须联调验证后再关闭 |
 | 发现 spec 错了硬改代码 | 代码和文档脱节 | 回溯更新 spec，再改代码 |
 | 审查后不保存记录 | 重复犯同样错误 | 必须归档到 `docs/07-reviews/` |
