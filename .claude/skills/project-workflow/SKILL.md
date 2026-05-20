@@ -22,7 +22,7 @@ description: >
 
 ---
 
-## 项目文档架构
+## 项目文档架构（Issue-Centric）
 
 ```
 docs/
@@ -33,28 +33,39 @@ docs/
 │   ├── writing-specs.md       # Spec 规范
 │   ├── writing-plans.md       # Plan 规范
 │   ├── writing-reviews.md     # Review 规范
-│   ├── writing-test-cases.md  # Test Case 规范
 │   └── _templates/            # 所有模板
 ├── 01-prd/            # 产品需求（唯一入口）
-├── 02-issues/         # 活跃 issue（双轨前缀 f-/b-/d-/i-/q-）
-├── 03-specs/          # 契约层（按 issue-id 组织）
-├── 04-plans/          # 执行计划（按 issue-id 组织，v{N}.md 版本化）
+├── issues/            # 活跃 issue（Issue-Centric 结构）
+│   └── {prefix}-{NN}-{slug}/
+│       ├── issue.md           # issue 正文
+│       ├── checklist.json     # 验收清单（机器管理）
+│       ├── plan.md            # 当前生效计划
+│       ├── plans/
+│       │   └── v{N}.md        # 历史计划版本
+│       └── specs/
+│           ├── feature-spec.md
+│           ├── behavior-spec.md（前端）
+│           └── api-spec.md（后端）
 ├── 05-adrs/           # 架构决策记录
 ├── 06-design/         # 设计系统、视觉稿
 ├── 07-reviews/        # 审查记录（按 scope 组织）
-├── 08-test-cases/     # 测试用例（按 issue-id 组织）
 └── 99-archived/       # 历史归档
+
+tests/
+└── issues/
+    └── {prefix}-{NN}-{slug}/
+        └── *.spec.ts          # 自动化测试（AC-XX 用例）
 ```
 
 **命名规范速查**：
 
 | 目录 | 命名规则 | 示例 |
 |------|----------|------|
-| `02-issues/` | `{prefix}-{NN}-{kebab-slug}.md` | `f-06-knowledge-base-file-manager.md` |
-| `03-specs/` | `{issue-id}/*.md` | `f-06/feature-spec.md` |
-| `04-plans/` | `{issue-id}/v{N}.md` | `f-06/v1.md` |
+| `issues/` | `{prefix}-{NN}-{kebab-slug}/` | `f-06-knowledge-base-file-manager/` |
+| `issues/{dir}/specs/` | `*.md` | `feature-spec.md` |
+| `issues/{dir}/plans/` | `v{N}.md` | `v1.md` |
 | `07-reviews/` | `{scope}/{type}-v{N}.md` | `phase-3/code-v1.md` |
-| `08-test-cases/` | `{issue-id}/{scope}.md` | `f-06/behavior.md` |
+| `tests/issues/` | `{dir}/*.spec.ts` | `TabBar.spec.ts` |
 
 ---
 
@@ -92,13 +103,14 @@ docs/
 **输入**：PRD 中该批功能的相关章节
 
 **输出**：
-- `docs/02-issues/f-XX-*.md`（前端 issue）
-- `docs/02-issues/b-XX-*.md`（后端 issue）
-- `docs/03-specs/{issue-id}/`（spec 占位目录，目录名与 issue 编号一致）
+- `docs/issues/f-XX-*/issue.md`（前端 issue）
+- `docs/issues/b-XX-*/issue.md`（后端 issue）
+- `docs/issues/{dir}/specs/`（spec 占位目录）
+- `docs/issues/{dir}/checklist.json`（验收清单）
 
 **路径验证**：
-- issue 文件名必须符合 `{prefix}-{NN}-{kebab-slug}.md`
-- spec 目录名必须与 issue 编号一致（如 `f-06`），禁止用 feature-slug
+- issue 目录名必须符合 `{prefix}-{NN}-{kebab-slug}`
+- 全局编号，不分轨道
 
 **关键决策**：
 - 每个功能拆成 f-XX + b-XX 两个独立 issue
@@ -120,18 +132,17 @@ docs/
 - **后端 issue (b-XX)**：重点编写 `api-spec.md`，必须包含请求/响应示例和错误码场景
 
 **输入**：
-- issue 文件 `docs/02-issues/f-XX-*.md`
+- issue 文件 `docs/issues/f-XX-*/issue.md`
 - PRD 相关章节
 - 现有代码（探索代码库确认当前状态）
 
 **输出**：
-- `docs/03-specs/{issue-id}/feature-spec.md`
-- `docs/03-specs/{issue-id}/behavior-spec.md`（前端）
-- `docs/03-specs/{issue-id}/api-spec.md`（后端）
+- `docs/issues/{dir}/specs/feature-spec.md`
+- `docs/issues/{dir}/specs/behavior-spec.md`（前端）
+- `docs/issues/{dir}/specs/api-spec.md`（后端）
 
 **路径验证**：
-- spec 目录名必须与 issue 编号一致（如 `f-06`）
-- 禁止用 feature-slug（如 `knowledge-base-file-manager`）作为目录名
+- spec 文件放在 issue 目录下的 `specs/` 子目录中
 
 **关键规则**：
 - 一次只处理一个 issue 的 spec，不要批量写
@@ -149,15 +160,16 @@ docs/
 **使用 skill**：`/plan-generator`
 
 **输入**：
-- issue 文件 `docs/02-issues/{prefix}-{NN}-*.md`
-- spec 文件 `docs/03-specs/{issue-id}/`
+- issue 文件 `docs/issues/{prefix}-{NN}-*/issue.md`
+- spec 文件 `docs/issues/{dir}/specs/`
 
 **输出**：
-- `docs/04-plans/{issue-id}/v{N}.md`
+- `docs/issues/{dir}/plan.md`（当前生效版本）
+- `docs/issues/{dir}/plans/v{N}.md`（历史归档）
 
 **路径验证**：
-- plan 目录名必须与 issue 编号一致
-- 文件名必须为 `v{N}.md`（如 `v1.md`），禁止用时间戳
+- 当前生效版本固定为 `plan.md`
+- 历史版本归档在 `plans/v{N}.md`，N 从 1 开始递增
 
 **关键规则**：
 - 每个步骤 2~5 分钟，禁止占位符（"TODO"、"稍后实现"）
@@ -176,7 +188,7 @@ docs/
 
 **执行方式**：
 1. 读取 issue → 读取 spec → 读取 plan
-2. 检查测试用例（若无则创建 `docs/08-test-cases/{issue-id}/`）
+2. 检查测试代码（若无则创建 `tests/issues/{dir}/*.spec.ts`）
 3. 引导选择执行方式：
    - **子代理驱动**（推荐）：`superpowers:subagent-driven-development`
    - **内联执行**：`superpowers:executing-plans`
@@ -225,13 +237,15 @@ docs/
 **操作**：
 1. 更新 issue 状态为 `closed`
 2. 勾选验收标准 `[x]`
-3. 更新 `PROGRESS.md` 进度
-4. 确认审查记录已归档到 `docs/07-reviews/{scope}/{type}-v{N}.md`
-5. 确认测试用例已归档到 `docs/08-test-cases/{issue-id}/`
-6. 可选：归档到 `docs/99-archived/`
+3. 更新 checklist.json 中对应 AC-XX 状态为 `passed`
+4. 更新 `BACKLOG.md` / `CHANGELOG.md` 进度
+5. 确认审查记录已归档到 `docs/07-reviews/{scope}/{type}-v{N}.md`
+6. 确认测试代码存在于 `tests/issues/{dir}/`
+7. 可选：归档到 `docs/99-archived/`
 
 **路径验证**：
-- 关闭前必须确认 `07-reviews/` 和 `08-test-cases/` 存在对应文件
+- 关闭前必须确认 `07-reviews/` 存在对应文件
+- 关闭前必须确认 checklist.json 中所有 AC-XX 为 `passed`
 - 禁止关闭无审查记录的 issue
 
 **下一步**：回到阶段 1，启动下一批功能。

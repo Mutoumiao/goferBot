@@ -3,7 +3,7 @@ name: plan-generator
 description: >
   基于 issue 和 spec 生成可执行实现计划。
   当用户说"写计划"、"生成实现方案"、"怎么开发这个"时触发。
-  保存路径：docs/04-plans/{issue-id}/v{N}.md
+  保存路径：docs/issues/{dir}/plan.md（当前生效版）+ plans/v{N}.md（历史归档）
 ---
 
 # 计划生成器
@@ -12,35 +12,42 @@ description: >
 
 **开始时声明：** "正在使用 plan-generator skill 创建实现计划。"
 
-**保存到：** `docs/04-plans/{issue-id}/v{N}.md`
+**保存到：** `docs/issues/{dir}/plan.md`（当前生效版本）
+
+**历史版本归档到：** `docs/issues/{dir}/plans/v{N}.md`
 
 **路径验证（强制执行）：**
-- 目录名必须与 issue 编号一致（如 `f-06`）
-- 文件名必须为 `v{N}.md`（如 `v1.md`），禁止用时间戳
-- 每次重新生成计划时，版本号自动递增
-- 保留历史版本（`v1.md`、`v2.md`...）
+- 当前生效版本固定为 `plan.md`
+- 历史版本归档在 `plans/v{N}.md`，N 从 1 开始递增
+- 每次重新生成计划时，保留旧版本到 `plans/`，新建 `plan.md`
 
 ---
 
 ## 计划前阅读
 
-1. **Issue 文件**: `docs/02-issues/{prefix}-{NN}-{slug}.md`
+1. **Issue 文件**: `docs/issues/{dir}/issue.md`
    - 提取：状态、构建内容、验收标准、阻塞于
 
-2. **Spec 文件**: `docs/03-specs/{issue-id}/`
+2. **Spec 文件**: `docs/issues/{dir}/specs/`
    - `feature-spec.md` — 用户故事、边界、涉及页面
    - `behavior-spec.md` — 前端：交互状态表、错误场景、动画
    - `api-spec.md` — 后端：路由、DTO、错误码、异步行为
 
-3. **现有计划**（如有）: `docs/04-plans/{issue-id}/`
+3. **现有计划**（如有）: `docs/issues/{dir}/plan.md` 和 `plans/`
 
-4. **审查记录**（如有）: `docs/07-reviews/{issue-id}/`
+4. **审查记录**（如有）: `docs/07-reviews/{scope}/`
 
 ---
 
 ## 计划文档头部
 
 ```markdown
+---
+id: f-15
+issue: issue.md
+version: 1
+---
+
 # [功能名称] 实现计划
 
 > **For agentic workers:** 必需子技能：superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans。步骤使用复选框（`- [ ]`）语法追踪。
@@ -51,8 +58,8 @@ description: >
 
 **技术栈：** [关键技术/库]
 
-**Issue 引用：** [链接到 docs/02-issues/{prefix}-{NN}-{slug}.md]
-**Spec 引用：** [链接到 docs/03-specs/{issue-id}/]
+**Issue 引用：** [链接到 issue.md]
+**Spec 引用：** [链接到 specs/]
 
 ---
 ```
@@ -69,9 +76,8 @@ description: >
 - 遵循代码库既定模式
 
 **必须包含测试文件：**
-- 前端：`packages/webui/src/**/*.spec.ts`
-- 后端：`packages/server/src/**/*.spec.ts`
-- 测试文件路径必须与实现文件同目录或 `__tests__/` 子目录
+- 测试文件放在 `tests/issues/{dir}/` 下
+- 测试用例名必须以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
 
 ---
 
@@ -96,7 +102,7 @@ description: >
 **文件：**
 - 创建：`exact/path/to/file.ts`
 - 修改：`exact/path/to/existing.ts:123-145`
-- 测试：`exact/path/to/file.spec.ts`（必须存在）
+- 测试：`tests/issues/{dir}/file.spec.ts`（必须存在）
 
 **规格引用：**
 - 行为规格：[第 X 节 - 交互状态 Y]
@@ -105,17 +111,17 @@ description: >
 - [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// file.spec.ts
+// tests/issues/{dir}/file.spec.ts
 import { describe, it, expect } from 'vitest'
 import { myFunction } from './file'
 
 describe('myFunction', () => {
-  it('should return expected result for valid input', () => {
+  it('AC-01: should return expected result for valid input', () => {
     const result = myFunction('valid-input')
     expect(result).toBe('expected-output')
   })
 
-  it('should throw error for invalid input', () => {
+  it('AC-02: should throw error for invalid input', () => {
     expect(() => myFunction('invalid')).toThrow('Invalid input')
   })
 })
@@ -123,7 +129,7 @@ describe('myFunction', () => {
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`npx vitest run file.spec.ts`
+运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
 预期：FAIL — "myFunction is not defined" 或断言失败
 
 - [ ] **步骤 3: 编写最小实现**
@@ -140,13 +146,13 @@ export function myFunction(input: string): string {
 
 - [ ] **步骤 4: 运行测试验证通过**
 
-运行：`npx vitest run file.spec.ts`
+运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
 预期：PASS（所有测试通过）
 
 - [ ] **步骤 5: 提交**
 
 ```bash
-git add file.spec.ts file.ts
+git add tests/issues/{dir}/file.spec.ts file.ts
 git commit -m "feat(scope): add myFunction with tests"
 ```
 ````
@@ -186,7 +192,7 @@ git commit -m "feat(scope): add myFunction with tests"
 1. **功能规格覆盖**：每个用户故事都有对应任务？
 2. **行为规格覆盖**（前端）：所有交互状态、错误场景、动画都实现了？
 3. **API 规格覆盖**（后端）：所有路由、DTO、错误码都实现了？
-4. **测试覆盖**：每个任务都有对应的 `.spec.ts` 文件？
+4. **测试覆盖**：每个任务都有对应的 `tests/issues/{dir}/.spec.ts` 文件？
 5. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
 6. **类型一致性**：后续任务中的类型、签名与早期任务一致？
 
@@ -198,7 +204,7 @@ git commit -m "feat(scope): add myFunction with tests"
 
 保存计划后，提供选择：
 
-**"计划已保存到 `docs/04-plans/{issue-id}/v{N}.md`。两种执行方式：**
+**"计划已保存到 `docs/issues/{dir}/plan.md`。两种执行方式：**
 
 1. **子代理驱动（推荐）** — 每个任务新子代理，任务间审查
 2. **内联执行** — 当前会话顺序执行，带检查点

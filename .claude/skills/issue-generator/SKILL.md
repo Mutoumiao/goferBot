@@ -3,7 +3,7 @@ name: issue-generator
 description: >
   将 PRD 或计划拆分为可独立领取的 issue，使用垂直切片。
   当用户说"拆 issue"、"生成工单"、"任务拆分"时触发。
-  输出路径：docs/02-issues/{prefix}-{NN}-{slug}.md
+  输出路径：docs/issues/{prefix}-{NN}-{kebab-slug}/issue.md
 ---
 
 # Issue 生成器
@@ -15,8 +15,8 @@ description: >
 ## 生成前阅读
 
 1. **PRD**: `docs/01-prd/v2-cloud-native.md`
-2. **架构规格**: `docs/03-specs/architecture/v2-cloud-native.md`
-3. **现有 Issues**: `docs/02-issues/` — 避免编号重复
+2. **架构规格**: `docs/05-adrs/`
+3. **现有 Issues**: `docs/issues/` — 避免编号重复
 4. **工作流**: `docs/00-meta/workflow.md`
 
 ---
@@ -35,14 +35,14 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 
 每个 issue 是贯穿所有层的薄垂直切片，**不是**单一层的水平切片。
 
-**双轨前缀：**
+**轨道前缀：**
 
 | 前缀 | 轨道 | 示例 |
 |------|------|------|
-| `f-XX` | 前端功能 | `f-06-knowledge-base-file-manager` |
+| `f-XX` | 前端功能 | `f-15-global-tab-bar` |
 | `b-XX` | 后端接口 | `b-02-knowledge-base-crud-api` |
-| `d-XX` | 设计 | `d-01-design-system-tokens` |
-| `i-XX` | 基础设施 | `i-01-docker-compose-setup` |
+| `d-XX` | 设计 | `d-01-rag-sdk-contracts` |
+| `i-XX` | 基础设施 | `i-01-docker-compose-infra` |
 | `q-XX` | 质量 | `q-01-security-baseline` |
 
 切片类型：
@@ -53,7 +53,7 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 - 每个切片交付贯穿每一层的完整路径（schema → API → UI → tests）
 - 完成的切片可独立演示或验证
 - 优先薄切片，避免厚切片
-- 每个切片在 `docs/03-specs/{issue-id}/` 下有对应 spec（目录名 = issue 编号）
+- 每个切片在 `docs/issues/{dir}/specs/` 下有对应 spec
 
 ### 4. 向用户确认
 
@@ -62,32 +62,49 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 - **标题**、**前缀**、**类型**（HITL/AFK）
 - **阻塞于**：哪些切片必须先完成
 - **覆盖的用户故事**
-- **Spec 路径**：`docs/03-specs/{issue-id}/`
+- **Spec 路径**：`docs/issues/{dir}/specs/`
 
 询问用户：粒度、依赖、合并/拆分、HITL/AFK 标记、前缀是否合理。
 
 ### 5. 发布 issue
 
-对每个批准的切片，创建文件到 `docs/02-issues/`。
+对每个批准的切片，创建目录和文件到 `docs/issues/{dir}/`。
 
 **命名验证（强制执行）：**
-- 格式：`{prefix}-{NN}-{kebab-case-slug}.md`
+- 目录格式：`{prefix}-{NN}-{kebab-case-slug}`
 - `prefix` 必须是 `f` / `b` / `d` / `i` / `q` 之一
-- `NN` 必须是两位数字，该轨道内不重复
+- `NN` 必须是两位数字，全局递增，不分轨道
 - `slug` 使用 kebab-case，不超过 5 个单词
 
 **编号规则：**
-- 每条轨道从 01 开始，独立递增
+- 全局递增，不分轨道，从 01 开始
 - 已关闭的 issue 编号不复用
-- 新 issue 取该轨道当前最大编号 + 1
+- 新 issue 取当前最大编号 + 1
 
 按依赖顺序发布（先阻塞者），以便在 "阻塞于" 中引用真实标识符。
 
-**Issue 正文：**
+**创建目录结构：**
+
+```bash
+mkdir -p docs/issues/{dir}/specs
+mkdir -p docs/issues/{dir}/plans
+mkdir -p tests/issues/{dir}
+```
+
+**Issue 正文（issue.md）：**
 
 ```markdown
-状态: needs-triage
-分类: enhancement
+---
+id: f-15
+status: open
+track: frontend
+priority: p1
+summary: {一句话描述}
+blocked_by: []
+checklist: checklist.json
+plan: plan.md
+specs: specs/
+---
 
 ## 要构建的内容
 
@@ -95,9 +112,9 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/{issue-id}/feature-spec.md
-- 行为规格: docs/03-specs/{issue-id}/behavior-spec.md（前端 issue）
-- API 规格: docs/03-specs/{issue-id}/api-spec.md（后端 issue）
+- 功能规格: specs/feature-spec.md
+- 行为规格: specs/behavior-spec.md（前端 issue）
+- API 规格: specs/api-spec.md（后端 issue）
 
 ## 验收标准
 
@@ -136,25 +153,36 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 - {不包含的内容}
 ```
 
+**创建 checklist.json：**
+
+```json
+{
+  "issue_id": "f-15",
+  "version": 1,
+  "updated_at": "{ISO日期}",
+  "items": [
+    {"id": "AC-01", "desc": "{验收项1}", "status": "pending"},
+    {"id": "AC-02", "desc": "{验收项2}", "status": "pending"}
+  ]
+}
+```
+
 ### 6. 创建 Spec 占位符
 
 **路径验证：**
-- 目录名必须与 issue 编号完全一致（如 `f-06`）
-- **禁止**用 feature-slug（如 `knowledge-base-file-manager`）作为目录名
-
-```bash
-mkdir -p docs/03-specs/{issue-id}/
-```
+- spec 文件放在 issue 目录下的 `specs/` 子目录中
 
 创建三个占位文件：
-- `feature-spec.md` — > 在 spec-validator 会话中填写
-- `behavior-spec.md` — > 在 spec-validator 会话中填写（前端 issue）
-- `api-spec.md` — > 在 spec-validator 会话中填写（后端 issue）
+- `specs/feature-spec.md` — > 在 spec-validator 会话中填写
+- `specs/behavior-spec.md` — > 在 spec-validator 会话中填写（前端 issue）
+- `specs/api-spec.md` — > 在 spec-validator 会话中填写（后端 issue）
 
 ### 7. 生成后验证
 
 创建完成后，验证：
-- [ ] Issue 文件名符合 `{prefix}-{NN}-{slug}.md`
-- [ ] 编号在该轨道内唯一
-- [ ] Spec 目录名与 issue 编号一致
+- [ ] Issue 目录名符合 `{prefix}-{NN}-{slug}`
+- [ ] 编号全局唯一
+- [ ] issue.md frontmatter 包含必要字段
+- [ ] checklist.json 已创建
+- [ ] specs/ 目录和占位文件已创建
 - [ ] 阻塞引用的 issue 已存在

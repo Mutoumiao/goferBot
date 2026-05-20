@@ -49,25 +49,25 @@ description: |
 审查前必须读取以下资料（按审查类型选择）：
 
 **代码审查：**
-- `docs/02-issues/{issue}.md` — 了解验收标准
-- `docs/03-specs/{issue-id}/` — 功能/行为/API 规格（目录名 = issue 编号）
-- `docs/04-plans/{issue-id}/` — 执行计划（了解预期改动范围）
-- **测试代码**：`packages/**/src/**/*.spec.ts` — 检查测试覆盖
+- `docs/issues/{dir}/issue.md` — 了解验收标准
+- `docs/issues/{dir}/specs/` — 功能/行为/API 规格
+- `docs/issues/{dir}/plan.md` — 执行计划（了解预期改动范围）
+- **测试代码**：`tests/issues/{dir}/*.spec.ts` — 检查测试覆盖
 - 实际代码 diff（`git diff` 或指定文件）
 
 **设计/架构审查：**
-- `docs/03-specs/{issue-id}/feature-spec.md` — 功能边界
+- `docs/issues/{dir}/specs/feature-spec.md` — 功能边界
 - `docs/05-adrs/` — 相关架构决策
 - 设计稿 / 架构图（如有）
 
 **安全审查：**
-- `docs/02-issues/q-01-security-baseline.md` — 安全基线
+- `docs/issues/q-01-security-baseline/issue.md` — 安全基线
 - 涉及认证/授权/输入验证的代码
 - 新增的外部依赖（检查已知漏洞）
 
 **Plan 审查：**
-- `docs/03-specs/{issue-id}/` — 三层规格
-- `docs/02-issues/{issue}.md` — 验收标准
+- `docs/issues/{dir}/specs/` — 三层规格
+- `docs/issues/{dir}/issue.md` — 验收标准
 - `docs/00-meta/workflow.md` — 流程规范
 
 ### 步骤 2：执行审查
@@ -301,7 +301,7 @@ status: completed
 
 ### 检查方法
 
-1. 读取 `docs/03-specs/{issue-id}/` 下的三层规格（目录名 = issue 编号）
+1. 读取 `docs/issues/{dir}/specs/` 下的三层规格
 2. 逐条检查验收标准
 3. 输出对齐表格
 
@@ -365,7 +365,7 @@ status: completed
 
 #### 7.4 文档验收
 - [ ] 相关 spec 已更新（如 API 有变更）
-- [ ] PROGRESS.md 已更新
+- [ ] BACKLOG.md / CHANGELOG.md 已更新
 
 #### 7.5 联调整合（前后端协作功能）
 - [ ] 前端已移除 Mock，对接真实 API

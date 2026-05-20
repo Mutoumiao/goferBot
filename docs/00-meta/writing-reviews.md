@@ -28,7 +28,7 @@ Scope 使用**语义化名称**，反映审查覆盖的范围：
 | 场景 | Scope 格式 | 示例 |
 |------|-----------|------|
 | Phase 批次审查 | `phase-{N}` | `phase-3` |
-| 单 Issue 深度审查 | `{issue-id}` | `f-06` |
+| 单 Issue 深度审查 | `{issue-id}` | `f-15` |
 | 跨 Issue 功能组审查 | 语义化组名 | `file-manager-group` |
 | 全项目综合审查 | `project` | `project` |
 | 专项审查 | 专项名称 | `security-baseline` |
@@ -68,7 +68,7 @@ Scope 使用**语义化名称**，反映审查覆盖的范围：
 scope: phase-3
 type: code
 date: 2026-05-17
-issues: [f-06, f-07, f-08, b-02]
+issues: [f-15, f-16, b-02]
 status: completed
 summary: {审查发现的核心问题与总体结论，2-3 句话}
 ---
@@ -76,7 +76,7 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 # {Scope} {Type} 审查报告
 
 > **审查类型**：{代码审查 / 规格对齐 / 安全审查 / 验收审查}
-> **审查范围**：{Phase 3 / f-06~f-08 / 全项目}
+> **审查范围**：{Phase 3 / f-15~f-18 / 全项目}
 > **覆盖 Issue**：{issue 列表}
 > **审查日期**：{日期}
 > **总体结论**：{通过 / 有条件通过 / 不通过}
@@ -97,8 +97,8 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 
 ## 覆盖 Issue
 
-- [{issue-id}](../02-issues/{issue-id}-{slug}.md) — {功能描述}
-- [{issue-id}](../02-issues/{issue-id}-{slug}.md) — {功能描述}
+- [{issue-id}](../issues/{issue-dir}/issue.md) — {功能描述}
+- [{issue-id}](../issues/{issue-dir}/issue.md) — {功能描述}
 
 ---
 
@@ -140,8 +140,8 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 
 | 验收标准 | 状态 | 证据 |
 |----------|------|------|
-| {标准 1} | ✅ / ❌ / ⚠️ | {文件位置} |
-| {标准 2} | ✅ / ❌ / ⚠️ | {文件位置} |
+| {标准 1} | ✅/❌ | {文件位置} |
+| {标准 2} | ✅/❌ | {文件位置} |
 
 ### 已修复的 Spec 偏差
 
@@ -197,9 +197,9 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 ```markdown
 ## 覆盖 Issue
 
-- [f-06](../02-issues/f-06-knowledge-base-file-manager.md) — 知识库文件管理器
-- [f-07](../02-issues/f-07-file-upload-component.md) — 文件上传组件
-- [b-02](../02-issues/b-02-knowledge-base-crud-api.md) — 知识库 CRUD API
+- [f-15](../issues/f-15-global-tab-bar/issue.md) — TabBar 全局化重构
+- [f-16](../issues/f-16-unified-tab-types/issue.md) — 统一 Tab 类型定义
+- [b-02](../issues/b-02-knowledge-base-crud-api/issue.md) — 知识库 CRUD API
 ```
 
 ---

@@ -3,7 +3,7 @@ name: spec-validator
 description: >
   对 spec 进行 relentless 质询，挑战其与领域模型的兼容性，精炼术语。
   当用户说"审查 spec"、"spec 对吗"、"帮我写 behavior spec"时触发。
-  输出路径：docs/03-specs/{issue-id}/
+  输出路径：docs/issues/{dir}/specs/
 ---
 
 # Spec 验证器
@@ -15,8 +15,8 @@ description: >
 ## 会前阅读
 
 1. **PRD**: `docs/01-prd/v2-cloud-native.md`
-2. **架构规格**: `docs/03-specs/architecture/v2-cloud-native.md`
-3. **相关 Specs**: `docs/03-specs/{related-issue-id}/`
+2. **架构规格**: `docs/05-adrs/`
+3. **相关 Specs**: `docs/issues/{related-dir}/specs/`
 4. **ADRs**: `docs/05-adrs/`
 5. **设计系统**: `docs/06-design/system/DESIGN.md`
 6. **命名规范**: `docs/00-meta/naming-convention.md`
@@ -52,14 +52,13 @@ description: >
 ### 路径验证（强制执行）
 
 生成 spec 前必须确认：
-- 对应 issue 存在于 `docs/02-issues/{issue-id}-{slug}.md`
-- spec 目录名必须与 issue 编号一致（如 `f-06`）
-- **禁止**用 feature-slug（如 `knowledge-base-file-manager`）作为目录名
-- 目录路径：`docs/03-specs/{issue-id}/`
+- 对应 issue 存在于 `docs/issues/{dir}/issue.md`
+- spec 文件放在 issue 目录下的 `specs/` 子目录中
+- 目录路径：`docs/issues/{dir}/specs/`
 
 ### 功能规格
 
-保存到：`docs/03-specs/{issue-id}/feature-spec.md`
+保存到：`docs/issues/{dir}/specs/feature-spec.md`
 
 ```markdown
 # 功能规格：{功能名称}
@@ -87,7 +86,7 @@ description: >
 
 ### 行为规格（前端）
 
-保存到：`docs/03-specs/{issue-id}/behavior-spec.md`
+保存到：`docs/issues/{dir}/specs/behavior-spec.md`
 
 ```markdown
 # 行为规格：{功能名称}
@@ -120,35 +119,17 @@ description: >
 |------|------|------|------|
 | {错误 1} | {触发} | {视觉} | {如何恢复} |
 
-## 动画与过渡
-| 过渡 | 持续时间 | 缓动 | 备注 |
-|------|----------|------|------|
-| {过渡 1} | {毫秒} | {ease-in-out} | {备注} |
-
-## 无障碍
-- 键盘导航：{tab 顺序、快捷键}
-- 屏幕阅读器：{ARIA 标签、实时区域}
-- 触摸目标：{最小尺寸}
-
-## 响应式行为
-| 断点 | 布局变化 |
-|------|----------|
-| 375px | {变化} |
-| 768px | {变化} |
-| 1440px | {变化} |
-
-## 测试映射（新增）
+## 测试映射
 
 | 交互状态 | 测试文件 | 测试用例 |
 |----------|----------|----------|
-| loading | `packages/webui/src/.../*.spec.ts` | `it('shows loading during submit')` |
-| error | `packages/webui/src/.../*.spec.ts` | `it('displays error message on failure')` |
-| success | `packages/webui/src/.../*.spec.ts` | `it('redirects to home after success')` |
+| loading | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| error | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
 ```
 
 ### API 规格（后端）
 
-保存到：`docs/03-specs/{issue-id}/api-spec.md`
+保存到：`docs/issues/{dir}/specs/api-spec.md`
 
 ```markdown
 # API 规格：{功能名称}
@@ -184,13 +165,12 @@ description: >
 - {异步发生什么}
 - {客户端如何轮询状态}
 
-## 测试映射（新增）
+## 测试映射
 
 | 场景 | 测试文件 | 测试用例 |
 |------|----------|----------|
-| 正常请求 | `packages/server/src/.../*.spec.ts` | `it('returns 200 with valid input')` |
-| 参数错误 | `packages/server/src/.../*.spec.ts` | `it('returns 400 for invalid input')` |
-| 未授权 | `packages/server/src/.../*.spec.ts` | `it('returns 401 without token')` |
+| 正常请求 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-01: creates knowledge base with valid data` |
+| 参数错误 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-02: returns 400 for invalid input` |
 ```
 
 ---
@@ -223,6 +203,5 @@ description: >
 - [ ] **API 规格包含测试映射表格（测试文件路径 + 用例名）**
 - [ ] 无模糊术语残留（"appropriate"、"reasonable"、"etc."）
 - [ ] 所有决策都有理由记录
-- [ ] Spec 目录名与 issue 编号一致（如 `f-06`）
-- [ ] 禁止用 feature-slug 作为目录名
+- [ ] Spec 文件放在 issue 目录下的 `specs/` 子目录中
 - [ ] 三个 spec 文件至少存在一个（按 issue 类型）
