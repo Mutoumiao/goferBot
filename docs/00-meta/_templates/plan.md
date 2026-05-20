@@ -2,12 +2,9 @@
 
 ```markdown
 ---
-issue_id: {issue-id}
-type: plan
-version: {N}
-status: {draft / ready / executing / done}
-task_count: {N}
-summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
+id: f-15
+issue: issue.md
+version: 1
 ---
 
 # {功能名称} 实现计划
@@ -16,9 +13,9 @@ summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
 > **架构：** {技术方案概述}
 > **技术栈：** {Vue 3 + Pinia + NestJS + Prisma 等}
 
-**Issue 引用：** `docs/02-issues/{issue-id}-{slug}.md`
-**Spec 引用：** `docs/03-specs/{issue-id}/`
-**Test Case 引用：** `docs/08-test-cases/{issue-id}/`
+**Issue 引用：** `issue.md`
+**Spec 引用：** `specs/`
+**测试引用：** `tests/issues/{issue-dir}/`
 
 ---
 
@@ -47,22 +44,15 @@ summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
 **规格引用：**
 - {引用 spec 的具体章节}
 
-- [ ] **步骤 1: {步骤名称}**
+- [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// 具体代码示例
+// 具体测试代码
 ```
 
-- [ ] **步骤 2: {步骤名称}**
-
-```typescript
-// 具体代码示例
-```
-
-- [ ] **步骤 N: 验证**
-
-运行：`{命令}`
-预期：`{预期输出}`
+- [ ] **步骤 2: 运行测试确认失败**
+- [ ] **步骤 3: 编写最小实现**
+- [ ] **步骤 4: 运行测试确认通过**
 
 ---
 
@@ -84,7 +74,6 @@ summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
 ## 阻塞与依赖
 
 - 阻塞于：{阻塞 issue 或 "无"}
-- 被阻塞：{被哪些 issue 依赖或 "无"}
 ```
 
 ---
@@ -93,12 +82,9 @@ summary: {技术方案、任务拆解思路、关键依赖，2-3 句话}
 
 | 字段 | 说明 | 必填 |
 |------|------|------|
-| `issue_id` | 对应 issue 编号 | ✅ |
-| `type` | 固定值：`plan` | ✅ |
-| `version` | 版本号 N（v{N}.md 中的 N） | ✅ |
-| `status` | draft → ready → executing → done | ✅ |
-| `task_count` | 任务总数 | 可选 |
-| `summary` | 清晰描述技术方案与任务结构，Agent 据此判断是否需深入阅读 | ✅ |
+| `id` | 对应 issue 编号 | ✅ |
+| `issue` | 指向 issue.md 的相对路径 | ✅ |
+| `version` | 版本号 N（plans/v{N}.md 中的 N） | ✅ |
 
 ## 正文填写说明
 

@@ -2,7 +2,7 @@
 
 ```markdown
 ---
-issue_id: {issue-id}
+issue_id: f-15
 type: feature-spec
 status: draft
 summary: {功能边界、核心用户故事、关键决策，2-3 句话}
@@ -44,7 +44,7 @@ summary: {功能边界、核心用户故事、关键决策，2-3 句话}
 |------|------|------|
 | `issue_id` | 对应 issue 编号 | ✅ |
 | `type` | 固定值：`feature-spec` | ✅ |
-| `status` | draft → review → approved → deprecated | ✅ |
+| `status` | draft / review / approved / deprecated | ✅ |
 | `summary` | 清晰描述功能边界与核心内容，Agent 据此判断是否需深入阅读 | ✅ |
 
 ## 正文填写说明

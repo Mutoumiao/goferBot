@@ -1,4 +1,62 @@
-# Test Case 模板
+# Test Case 模板（已废弃）
+
+> **重要：本文档已废弃。**
+>
+> 测试用例不再以 markdown 形式保存。
+> 所有测试直接以 `.spec.ts` 文件形式编写在 `tests/issues/{issue-dir}/` 目录下。
+>
+> 保留此模板仅作历史参考。
+
+---
+
+## 新规范
+
+### 测试文件位置
+
+| 类型 | 路径 |
+|------|------|
+| 按 issue 组织的单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
+| 集成测试 | `tests/integration/**/*.spec.ts` |
+| E2E 测试 | `tests/e2e/**/*.spec.ts` |
+
+### 测试编写时机
+
+**TDD 强制**：在实现代码之前编写测试。
+
+1. 读取 spec 中的"测试映射"表格
+2. 在 `tests/issues/{issue-dir}/` 下创建 `.spec.ts` 文件
+3. 编写失败测试（red）
+4. 运行确认失败
+5. 编写最小实现使测试通过（green）
+6. 重构（refactor）
+
+### 命名规则
+
+- 测试用例名必须以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
+- 一个测试文件可包含多个 AC，一个 AC 只能有一个测试用例
+
+### 示例
+
+```typescript
+// tests/issues/f-15-global-tab-bar/TabBar.spec.ts
+import { describe, it, expect } from 'vitest'
+import { mount } from '@vue/test-utils'
+import TabBar from '@/components/layout/TabBar.vue'
+
+describe('TabBar', () => {
+  it('AC-01: renders TabBar in AuthenticatedLayout header', () => {
+    // ...
+  })
+
+  it('AC-04: rejects closing home tab', () => {
+    // ...
+  })
+})
+```
+
+---
+
+## 历史模板（仅供参考）
 
 ```markdown
 ---
@@ -12,12 +70,12 @@ summary: {测试覆盖范围、核心场景、自动化状态，2-3 句话}
 
 # {issue-id} {kind} 测试用例
 
-> 对应 issue: `docs/02-issues/{issue-id}-{slug}.md`
+> 对应 issue: `docs/issues/{issue-dir}/issue.md`
 > 规格引用:
-> - `docs/03-specs/{issue-id}/feature-spec.md`
-> - `docs/03-specs/{issue-id}/behavior-spec.md`
-> - `docs/03-specs/{issue-id}/api-spec.md`
-> - `docs/04-plans/{issue-id}/v1.md`
+> - `docs/issues/{issue-dir}/specs/feature-spec.md`
+> - `docs/issues/{issue-dir}/specs/behavior-spec.md`
+> - `docs/issues/{issue-dir}/specs/api-spec.md`
+> - `docs/issues/{issue-dir}/plan.md`
 
 ---
 
@@ -33,12 +91,6 @@ summary: {测试覆盖范围、核心场景、自动化状态，2-3 句话}
   - {具体断言}
   - {具体断言}
 - **优先级**: P0 / P1 / P2
-
----
-
-## 2. {功能模块} 测试
-
-...
 
 ---
 
@@ -58,26 +110,3 @@ summary: {测试覆盖范围、核心场景、自动化状态，2-3 句话}
 - [ ] 覆盖所有交互状态（loading/empty/error/success/partial）
 - [ ] 每个错误场景有恢复路径验证
 ```
-
----
-
-## Frontmatter 字段说明
-
-| 字段 | 说明 | 必填 |
-|------|------|------|
-| `issue_id` | 对应 issue 编号 | ✅ |
-| `type` | 固定值：`test-case` | ✅ |
-| `kind` | 测试类别：behavior / api / e2e / unit | ✅ |
-| `tc_count` | 测试用例总数 | 可选 |
-| `status` | drafted → reviewed → automated | ✅ |
-| `summary` | 清晰描述测试覆盖范围与核心场景，Agent 据此判断是否需深入阅读 | ✅ |
-
-## 正文填写说明
-
-| 字段 | 说明 |
-|------|------|
-| `TC-ID` | 格式：`TC-{issue-id}-{NNN}`，如 `TC-f-06-001` |
-| `前置条件` | 测试执行前必须满足的环境/数据状态 |
-| `步骤` | 可复现的操作序列 |
-| `预期结果` | 明确的断言，避免模糊描述 |
-| `优先级` | P0（阻塞）/ P1（重要）/ P2（可选） |

@@ -2,7 +2,7 @@
 
 ```markdown
 ---
-issue_id: {issue-id}
+issue_id: b-02
 type: api-spec
 status: draft
 summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
@@ -40,6 +40,13 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 #### 异步行为
 - {异步发生什么}
 - {客户端如何轮询状态}
+
+## 测试映射
+
+| 场景 | 测试文件 | 测试用例 |
+|------|----------|----------|
+| 正常创建 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-01: creates knowledge base with valid data` |
+| 重复名称 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-02: returns 409 on duplicate name` |
 ```
 
 ---
@@ -50,7 +57,7 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 |------|------|------|
 | `issue_id` | 对应 issue 编号 | ✅ |
 | `type` | 固定值：`api-spec` | ✅ |
-| `status` | draft → review → approved → deprecated | ✅ |
+| `status` | draft / review / approved / deprecated | ✅ |
 | `summary` | 清晰描述 API 范围与核心端点，Agent 据此判断是否需深入阅读 | ✅ |
 
 ## 关键规则
@@ -58,3 +65,4 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 - 每个端点必须有请求/响应示例
 - 每个错误码必须有触发场景
 - 异步行为必须说明客户端如何获取状态更新
+- 底部必须包含**测试映射表**，链接到 `tests/issues/{issue-dir}/` 下的测试用例

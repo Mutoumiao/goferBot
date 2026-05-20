@@ -2,22 +2,16 @@
 
 ```markdown
 ---
-id: {prefix}-{NN}
-type: issue
-status: needs-triage
-track: {frontend / backend / design / infra / quality}
-priority: {p0 / p1 / p2}
+id: f-15
+status: open
+track: frontend
+priority: p1
 summary: {简洁描述功能目标与范围，2-3 句话，足够让 Agent 判断相关性}
 blocked_by: []
-blocks: []
-spec: docs/03-specs/{issue-id}/
-plan: docs/04-plans/{issue-id}/v1.md
-tests: docs/08-test-cases/{issue-id}/
-token_estimate: {预估全文 token}
+checklist: checklist.json
+plan: plan.md
+specs: specs/
 ---
-
-状态: needs-triage
-分类: enhancement
 
 ## 要构建的内容
 
@@ -25,9 +19,9 @@ token_estimate: {预估全文 token}
 
 ## 规格引用
 
-- 功能规格: docs/03-specs/{issue-id}/feature-spec.md
-- 行为规格: docs/03-specs/{issue-id}/behavior-spec.md
-- API 规格: docs/03-specs/{issue-id}/api-spec.md
+- 功能规格: specs/feature-spec.md
+- 行为规格: specs/behavior-spec.md
+- API 规格: specs/api-spec.md
 
 ## 验收标准
 
@@ -72,25 +66,21 @@ token_estimate: {预估全文 token}
 
 | 字段 | 说明 | 必填 |
 |------|------|------|
-| `id` | Issue 编号，如 `f-06` | ✅ |
-| `type` | 固定值：`issue` | ✅ |
-| `status` | 状态机：needs-triage → triaged → in-progress → in-review → blocked → closed | ✅ |
+| `id` | Issue 编号，如 `f-15` | ✅ |
+| `status` | `open` / `in-progress` / `closed`，由 checklist 推导 | ✅ |
 | `track` | 轨道：frontend / backend / design / infra / quality | ✅ |
 | `priority` | 优先级：p0（阻塞）/ p1（重要）/ p2（可选） | ✅ |
-| `summary` | 清晰描述功能目标与范围，Agent 据此判断是否需深入阅读全文（200 字内均可） | ✅ |
+| `summary` | 清晰描述功能目标与范围，Agent 据此判断是否需深入阅读 | ✅ |
 | `blocked_by` | 阻塞此 issue 的其他 issue ID 列表 | 可选 |
-| `blocks` | 被此 issue 阻塞的其他 issue ID 列表 | 可选 |
-| `spec` | 对应 spec 目录路径 | 可选（初始留空） |
-| `plan` | 对应 plan 文件路径 | 可选（初始留空） |
-| `tests` | 对应测试用例目录路径 | 可选（初始留空） |
-| `token_estimate` | 预估全文 token 数，Agent 判断是否深入读取 | 可选 |
+| `checklist` | 指向 checklist.json 的相对路径 | ✅ |
+| `plan` | 指向 plan.md 的相对路径 | ✅ |
+| `specs` | 指向 specs 目录的相对路径 | ✅ |
 
 ## 正文字段说明
 
 | 字段 | 说明 |
 |------|------|
-| `状态` | 与 frontmatter `status` 保持同步，由 `/issue-lifecycle` 管理流转 |
-| `分类` | `enhancement` / `bug` / `refactor` |
+| `要构建的内容` | 垂直切片描述 |
 | `规格引用` | 生成 issue 时先留空，spec 编写后回填 |
 | `验收标准` | 可验证的完成条件，每条必须能回答"怎么验证" |
 | `阻塞于` | 必须先完成的 issue，没有则写 "无" |

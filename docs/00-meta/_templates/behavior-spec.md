@@ -2,7 +2,7 @@
 
 ```markdown
 ---
-issue_id: {issue-id}
+issue_id: f-15
 type: behavior-spec
 status: draft
 summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话}
@@ -42,25 +42,12 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 |----------|---------|--------|----------|
 | {错误 1} | {触发} | {视觉} | {如何恢复} |
 
-## 动画与过渡
+## 测试映射
 
-| 过渡 | 持续时间 | 缓动 | 备注 |
-|------------|----------|--------|-------|
-| {过渡 1} | {毫秒} | {ease-in-out} | {备注} |
-
-## 无障碍
-
-- 键盘导航：{tab 顺序、快捷键}
-- 屏幕阅读器：{ARIA 标签、实时区域}
-- 触摸目标：{最小尺寸}
-
-## 响应式行为
-
-| 断点 | 布局变化 |
-|------------|---------------|
-| 375px | {变化} |
-| 768px | {变化} |
-| 1440px | {变化} |
+| 场景 | 测试文件 | 测试用例 |
+|------|----------|----------|
+| loading 状态 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| 401 错误 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
 ```
 
 ---
@@ -71,11 +58,12 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 |------|------|------|
 | `issue_id` | 对应 issue 编号 | ✅ |
 | `type` | 固定值：`behavior-spec` | ✅ |
-| `status` | draft → review → approved → deprecated | ✅ |
+| `status` | draft / review / approved / deprecated | ✅ |
 | `summary` | 清晰描述交互范围与关键行为，Agent 据此判断是否需深入阅读 | ✅ |
 
 ## 关键规则
 
 - 必须包含全部 5 种交互状态：loading / empty / error / success / partial
 - 每个错误场景必须有恢复路径
+- 底部必须包含**测试映射表**，链接到 `tests/issues/{issue-dir}/` 下的测试用例
 - 不允许使用模糊词汇（"appropriate", "reasonable", "etc."）
