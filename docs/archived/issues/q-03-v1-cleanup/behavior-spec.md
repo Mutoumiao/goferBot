@@ -37,7 +37,7 @@ Step 4: 更新 package.json 并重新安装依赖
 Step 5: 全局清理与文档更新
   ├── .sidecar-port 文件
   ├── CLAUDE.md
-  └── docs/01-prd/v2-cloud-native.md
+  └── docs/prd/v2-cloud-native.md
 ```
 
 ## 各文件清理行为详述
@@ -145,27 +145,27 @@ Step 5: 全局清理与文档更新
 ### 10. 文档更新
 
 - **CLAUDE.md**：若存在对 `shellAdapters` / `backendAdapters` 的过时描述，更新为当前架构描述。
-- **docs/01-prd/v2-cloud-native.md**：若 Sidecar / Tauri 描述与 ADR-0004 冲突，修正为一致。
+- **docs/prd/v2-cloud-native.md**：若 Sidecar / Tauri 描述与 ADR-0004 冲突，修正为一致。
 - **验证命令**：
   ```bash
-  grep -n "sidecar\|shellAdapters\|backendAdapters" CLAUDE.md docs/01-prd/v2-cloud-native.md
+  grep -n "sidecar\|shellAdapters\|backendAdapters" CLAUDE.md docs/prd/v2-cloud-native.md
   ```
 
 ## 验证清单（Checklist）
 
-| # | 验证项 | 命令 | 期望结果 |
-|---|--------|------|----------|
-| 1 | 无 better-sqlite3 原生构建 | `pnpm install` | 不出现 `prebuild-install` / `node-gyp` 编译日志 |
-| 2 | Server 启动正常 | `pnpm dev:server` | Hono 服务启动，监听端口，无报错 |
-| 3 | Web 启动正常 | `pnpm dev:web` | Vite 开发服务器启动，无编译错误 |
-| 4 | 类型检查通过 | `pnpm type-check` | `tsc --noEmit` 0 错误 |
-| 5 | sync.ts 已删除 | `ls packages/server/src/sync.ts` | 文件不存在 |
-| 6 | rag.ts 已删除 | `ls packages/server/src/services/rag.ts` | 文件不存在 |
-| 7 | embedding.ts 已删除 | `ls packages/server/src/services/embedding.ts` | 文件不存在 |
-| 8 | db.ts 已标记 | `head -2 packages/server/src/db.ts` | 包含 TODO(i-02) 标记 |
-| 9 | indexer.ts 已标记 | `head -2 packages/server/src/services/indexer.ts` | 包含 TODO(Phase 5) 标记 |
-| 10 | 无 `.sidecar-port` 残留 | `find . -name ".sidecar-port" -type f` | 空结果 |
-| 11 | package.json 无旧依赖 | `grep -E "better-sqlite3|sqlite-vec|langchain" packages/server/package.json` | 空结果 |
+| #  | 验证项                     | 命令                                              | 期望结果                                        |
+|----|----------------------------|---------------------------------------------------|-------------------------------------------------|
+| 1  | 无 better-sqlite3 原生构建 | `pnpm install`                                    | 不出现 `prebuild-install` / `node-gyp` 编译日志 |
+| 2  | Server 启动正常            | `pnpm dev:server`                                 | Hono 服务启动，监听端口，无报错                 |
+| 3  | Web 启动正常               | `pnpm dev:web`                                    | Vite 开发服务器启动，无编译错误                 |
+| 4  | 类型检查通过               | `pnpm type-check`                                 | `tsc --noEmit` 0 错误                           |
+| 5  | sync.ts 已删除             | `ls packages/server/src/sync.ts`                  | 文件不存在                                      |
+| 6  | rag.ts 已删除              | `ls packages/server/src/services/rag.ts`          | 文件不存在                                      |
+| 7  | embedding.ts 已删除        | `ls packages/server/src/services/embedding.ts`    | 文件不存在                                      |
+| 8  | db.ts 已标记               | `head -2 packages/server/src/db.ts`               | 包含 TODO(i-02) 标记                            |
+| 9  | indexer.ts 已标记          | `head -2 packages/server/src/services/indexer.ts` | 包含 TODO(Phase 5) 标记                         |
+| 10 | 无 `.sidecar-port` 残留    | `find . -name ".sidecar-port" -type f`            | 空结果                                          |
+| 11 | package.json 无旧依赖      | `grep -E "better-sqlite3                          | sqlite-vec                                      |
 
 ## 回滚策略
 

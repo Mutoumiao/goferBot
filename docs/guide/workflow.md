@@ -23,7 +23,7 @@
 ## 文档依赖链
 
 ```
-01-prd/ → docs/issues/{dir}/ → 代码 + tests/issues/{dir}/ → reviews/
+prd/ → docs/issues/{dir}/ → 代码 + tests/issues/{dir}/ → reviews/
    ↑___________________________________________|
               （发现 spec 不足时回溯更新）
 ```

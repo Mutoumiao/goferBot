@@ -135,7 +135,7 @@
 ## 相关文档
 
 - [ADR-0004: 云原生架构重构](../docs/adrs/0004-cloud-native-rearchitecture.md)
-- [PRD v2: 云原生产品需求](../docs/01-prd/v2-cloud-native.md)
+- [PRD v2: 云原生产品需求](../docs/prd/v2-cloud-native.md)
 - [开发流程](../docs/guide/workflow.md)
 
 ---

@@ -281,6 +281,6 @@ packages/server/
 
 ## 9. 参考文档
 
-- PRD: `docs/01-prd/v2-cloud-native.md`
+- PRD: `docs/prd/v2-cloud-native.md`
 - ADR: `docs/adrs/0004-cloud-native-rearchitecture.md`
 - 旧 Drizzle Spec: `docs/03-specs/i-02-drizzle-orm-setup/`

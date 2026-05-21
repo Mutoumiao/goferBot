@@ -31,7 +31,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 | 阶段     | 文档                                        |
 |----------|---------------------------------------------|
 | 了解流程 | `docs/guide/workflow.md`                    |
-| 了解产品 | `docs/01-prd/v2-cloud-native.md`            |
+| 了解产品 | `docs/prd/v2-cloud-native.md`               |
 | 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md` |
 | 编码前   | `docs/issues/{prefix}-{NN}-{slug}/specs/`   |
 
@@ -46,7 +46,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 ├── tests/                        # 测试（单元/集成/E2E）
 ├── docs/                         # 文档
 │   ├── guide/                  # 流程规范、skills
-│   ├── 01-prd/                   # 产品需求
+│   ├── prd/                   # 产品需求
 │   ├── issues/                   # 活跃 issue（Issue-Centric 结构）
 │   ├── adrs/                  # 架构决策记录
 │   ├── design/                # 设计系统
@@ -134,13 +134,13 @@ Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 t
 
 ### 项目流程
 
-| 用户请求 | 必须调用的 skill | 禁止的行为 |
-|----------|-----------------|-----------|
-| 不知道怎么开始/流程是什么/从哪开始 | `/project-workflow` | 直接给建议而不走流程 |
-| 拆 issue/生成工单/任务拆分 | `/issue-generator` | 直接创建文件而不验证命名规范 |
-| 审查 spec/写 behavior spec/写 API spec | `/spec-validator` | 跳过 spec 直接写 plan |
-| 写计划/生成实现方案 | `/plan-generator` | 计划中出现 TODO/TBD/稍后实现 |
-| 开始开发 issue/开发 f-XX/b-XX | `/dev-orchestrator` | 无 spec/plan/测试直接编码 |
-| 代码审查 / spec 对齐 / 安全审查 / 验收 | `/kb-review` | 只审查代码不读 spec |
-| 安全审计/漏洞检查/OWASP | `/kb-review` | 流于形式不逐项检查 |
-| 更新 issue 状态/标记完成 | `/issue-lifecycle` | 未验证测试就标记完成 |
+| 用户请求                               | 必须调用的 skill    | 禁止的行为                   |
+|----------------------------------------|---------------------|------------------------------|
+| 不知道怎么开始/流程是什么/从哪开始     | `/project-workflow` | 直接给建议而不走流程         |
+| 拆 issue/生成工单/任务拆分             | `/issue-generator`  | 直接创建文件而不验证命名规范 |
+| 审查 spec/写 behavior spec/写 API spec | `/spec-validator`   | 跳过 spec 直接写 plan        |
+| 写计划/生成实现方案                    | `/plan-generator`   | 计划中出现 TODO/TBD/稍后实现 |
+| 开始开发 issue/开发 f-XX/b-XX          | `/dev-orchestrator` | 无 spec/plan/测试直接编码    |
+| 代码审查 / spec 对齐 / 安全审查 / 验收 | `/kb-review`        | 只审查代码不读 spec          |
+| 安全审计/漏洞检查/OWASP                | `/kb-review`        | 流于形式不逐项检查           |
+| 更新 issue 状态/标记完成               | `/issue-lifecycle`  | 未验证测试就标记完成         |

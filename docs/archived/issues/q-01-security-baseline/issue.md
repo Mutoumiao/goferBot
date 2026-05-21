@@ -23,7 +23,7 @@ token_estimate: 1100
 ## 规格引用
 
 - 安全审计报告: 2026-05-16 (gstack-cso)
-- PRD: docs/01-prd/v2-cloud-native.md
+- PRD: docs/prd/v2-cloud-native.md
 
 ## 验收标准
 

@@ -22,7 +22,7 @@ token_estimate: 900
 
 ## 规格引用
 
-- PRD: docs/01-prd/v2-cloud-native.md
+- PRD: docs/prd/v2-cloud-native.md
 - ADR: docs/adrs/0004-cloud-native-rearchitecture.md
 
 ## 验收标准

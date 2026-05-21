@@ -24,16 +24,16 @@ token_estimate: 1300
 
 ADR-0004 架构改革后，以下 V1 代码已废弃但仍在仓库中：
 
-| 文件/目录 | V1 用途 | V2 替代方案 | 风险（不清理） |
-|-----------|---------|------------|--------------|
-| `packages/server/src/db.ts` | better-sqlite3 + 内联 schema | Drizzle ORM + PostgreSQL | 新开发者可能误用旧 DB |
-| `packages/server/src/sync.ts` | 物理文件夹同步到 DB | 虚拟文件夹（数据库树结构） | 启动时意外执行同步 |
-| `packages/server/src/services/indexer.ts` | sqlite-vec / FTS5 索引 | Milvus + BullMQ | 构建依赖 sqlite-vec |
-| `packages/server/src/services/embedding.ts` | 直接调用 embedding API | 通过 RAG SDK 抽象 | 代码路径分散 |
-| `packages/server/src/services/rag.ts` | V1 RAG 实现 | Phase 5 新实现 | 与旧 schema 耦合 |
-| `packages/server/src/utils.ts` | `getAppDataDir()` 等本地工具 | 不再需要 | 无直接风险 |
-| `packages/server/package.json` 中的 `better-sqlite3`、`sqlite-vec` | V1 数据库依赖 | `drizzle-orm`、`pg` | 安装时间、构建问题 |
-| `.sidecar-port` 文件（若存在） | Sidecar 端口发现 | 固定端口 `PORT` | 无直接风险 |
+| 文件/目录                                                          | V1 用途                      | V2 替代方案                | 风险（不清理）        |
+|--------------------------------------------------------------------|------------------------------|----------------------------|-----------------------|
+| `packages/server/src/db.ts`                                        | better-sqlite3 + 内联 schema | Drizzle ORM + PostgreSQL   | 新开发者可能误用旧 DB |
+| `packages/server/src/sync.ts`                                      | 物理文件夹同步到 DB          | 虚拟文件夹（数据库树结构） | 启动时意外执行同步    |
+| `packages/server/src/services/indexer.ts`                          | sqlite-vec / FTS5 索引       | Milvus + BullMQ            | 构建依赖 sqlite-vec   |
+| `packages/server/src/services/embedding.ts`                        | 直接调用 embedding API       | 通过 RAG SDK 抽象          | 代码路径分散          |
+| `packages/server/src/services/rag.ts`                              | V1 RAG 实现                  | Phase 5 新实现             | 与旧 schema 耦合      |
+| `packages/server/src/utils.ts`                                     | `getAppDataDir()` 等本地工具 | 不再需要                   | 无直接风险            |
+| `packages/server/package.json` 中的 `better-sqlite3`、`sqlite-vec` | V1 数据库依赖                | `drizzle-orm`、`pg`        | 安装时间、构建问题    |
+| `.sidecar-port` 文件（若存在）                                     | Sidecar 端口发现             | 固定端口 `PORT`            | 无直接风险            |
 
 ## 验收标准
 
@@ -49,7 +49,7 @@ ADR-0004 架构改革后，以下 V1 代码已废弃但仍在仓库中：
 ### 全局清理
 - [ ] 删除工作区中任何 `.sidecar-port` 文件（gitignore 已处理，但需确认）
 - [ ] 更新 `CLAUDE.md` 中关于 `shellAdapters` / `backendAdapters` 的引用（若存在）
-- [ ] 更新 `docs/01-prd/v2-cloud-native.md` 中关于 Sidecar / Tauri 的描述（若与最新 ADR 冲突）
+- [ ] 更新 `docs/prd/v2-cloud-native.md` 中关于 Sidecar / Tauri 的描述（若与最新 ADR 冲突）
 
 ### 验证
 - [x] `pnpm install` 后无 better-sqlite3 原生构建
