@@ -15,11 +15,11 @@ description: >
 ## 会前阅读
 
 1. **PRD**: `docs/01-prd/v2-cloud-native.md`
-2. **架构规格**: `docs/05-adrs/`
+2. **架构规格**: `docs/adrs/`
 3. **相关 Specs**: `docs/issues/{related-dir}/specs/`
-4. **ADRs**: `docs/05-adrs/`
-5. **设计系统**: `docs/06-design/system/DESIGN.md`
-6. **命名规范**: `docs/00-meta/naming-convention.md`
+4. **ADRs**: `docs/adrs/`
+5. **设计系统**: `docs/design/system/DESIGN.md`
+6. **命名规范**: `docs/guide/naming-convention.md`
 
 ---
 
@@ -79,8 +79,8 @@ description: >
 - {下游功能} — 消费 {什么}
 
 ## 已做决策
-| 决策 | 理由 | 可逆？ |
-|------|------|--------|
+| 决策     | 理由   | 可逆？  |
+|----------|--------|---------|
 | {决策 1} | {原因} | {是/否} |
 ```
 
@@ -100,31 +100,31 @@ description: >
 
 ## 交互状态
 
-| 状态 | 视觉 | 用户操作 | 系统响应 |
-|------|------|----------|----------|
+| 状态    | 视觉   | 用户操作    | 系统响应   |
+|---------|--------|-------------|------------|
 | loading | {描述} | {禁用/启用} | {发生什么} |
-| empty | {描述} | {可用操作} | {发生什么} |
-| error | {描述} | {重试/取消} | {发生什么} |
-| success | {描述} | {下一步} | {发生什么} |
-| partial | {描述} | {可用操作} | {发生什么} |
+| empty   | {描述} | {可用操作}  | {发生什么} |
+| error   | {描述} | {重试/取消} | {发生什么} |
+| success | {描述} | {下一步}    | {发生什么} |
+| partial | {描述} | {可用操作}  | {发生什么} |
 
 ## 正常流程
 | 步骤 | 用户操作 | 系统响应 | 视觉状态 |
 |------|----------|----------|----------|
-| 1 | {操作} | {响应} | {状态} |
-| 2 | {操作} | {响应} | {状态} |
+| 1    | {操作}   | {响应}   | {状态}   |
+| 2    | {操作}   | {响应}   | {状态}   |
 
 ## 错误场景
-| 场景 | 触发 | 视觉 | 恢复 |
-|------|------|------|------|
+| 场景     | 触发   | 视觉   | 恢复       |
+|----------|--------|--------|------------|
 | {错误 1} | {触发} | {视觉} | {如何恢复} |
 
 ## 测试映射
 
-| 交互状态 | 测试文件 | 测试用例 |
-|----------|----------|----------|
-| loading | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
-| error | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
+| 交互状态 | 测试文件                                          | 测试用例                                              |
+|----------|---------------------------------------------------|-------------------------------------------------------|
+| loading  | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| error    | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized`               |
 ```
 
 ### API 规格（后端）
@@ -156,8 +156,8 @@ description: >
 ```
 
 #### 错误码
-| 码 | 场景 | 响应体 |
-|----|------|--------|
+| 码  | 场景   | 响应体               |
+|-----|--------|----------------------|
 | 400 | {场景} | `{ "error": "..." }` |
 | 409 | {场景} | `{ "error": "..." }` |
 
@@ -167,10 +167,10 @@ description: >
 
 ## 测试映射
 
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
+| 场景     | 测试文件                                                              | 测试用例                                        |
+|----------|-----------------------------------------------------------------------|-------------------------------------------------|
 | 正常请求 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-01: creates knowledge base with valid data` |
-| 参数错误 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-02: returns 400 for invalid input` |
+| 参数错误 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-02: returns 400 for invalid input`          |
 ```
 
 ---
@@ -188,7 +188,7 @@ description: >
 2. **没有上下文会令人惊讶** — 未来读者会想知道"为什么这样做？"
 3. **真实权衡的结果** — 存在真正的替代方案，出于特定原因选择了其中一个
 
-保存到 `docs/05-adrs/NNNN-{slug}.md`。
+保存到 `docs/adrs/NNNN-{slug}.md`。
 
 ---
 

@@ -20,13 +20,13 @@
 
 `src-tauri/` 在此架构中的核心职责：
 
-| 文件 | 职责 |
-|------|------|
-| `src/lib.rs` | Tauri 应用入口，管理 SidecarHandle 状态 |
-| `src/sidecar.rs` | Sidecar 进程管理：启动、端口发现、健康监控、自动重启 |
-| `src/main.rs` | 二进制入口，调用 lib |
-| `Cargo.toml` | Rust 依赖（tauri、tokio、reqwest、dialog 插件等） |
-| `tauri.conf.json` | Tauri 配置：窗口、CSP、构建钩子、图标 |
+| 文件              | 职责                                                 |
+|-------------------|------------------------------------------------------|
+| `src/lib.rs`      | Tauri 应用入口，管理 SidecarHandle 状态              |
+| `src/sidecar.rs`  | Sidecar 进程管理：启动、端口发现、健康监控、自动重启 |
+| `src/main.rs`     | 二进制入口，调用 lib                                 |
+| `Cargo.toml`      | Rust 依赖（tauri、tokio、reqwest、dialog 插件等）    |
+| `tauri.conf.json` | Tauri 配置：窗口、CSP、构建钩子、图标                |
 
 关键 Sidecar 机制：
 - Tauri 启动时 `spawn_sidecar()` 启动 Node 进程
@@ -39,14 +39,14 @@
 
 项目从"本地桌面应用"全面转向**"云端优先的 SaaS 型 Web 应用"**：
 
-| 维度 | V1（旧） | V2（新） |
-|------|---------|---------|
-| 部署模式 | Tauri 打包桌面应用 | Web + 独立 Server |
-| 数据库 | SQLite 本地文件 | PostgreSQL（Docker） |
-| 文件存储 | 本地物理文件夹 | MinIO 对象存储（Docker） |
-| 向量检索 | sqlite-vec 本地扩展 | Milvus（Docker） |
-| 认证 | 无 | Better Auth + Session Cookie |
-| 前端通信 | Tauri IPC → Sidecar 端口发现 | 直接 HTTP `fetch` 到 Server |
+| 维度     | V1（旧）                     | V2（新）                     |
+|----------|------------------------------|------------------------------|
+| 部署模式 | Tauri 打包桌面应用           | Web + 独立 Server            |
+| 数据库   | SQLite 本地文件              | PostgreSQL（Docker）         |
+| 文件存储 | 本地物理文件夹               | MinIO 对象存储（Docker）     |
+| 向量检索 | sqlite-vec 本地扩展          | Milvus（Docker）             |
+| 认证     | 无                           | Better Auth + Session Cookie |
+| 前端通信 | Tauri IPC → Sidecar 端口发现 | 直接 HTTP `fetch` 到 Server  |
 
 **根本原因**：
 1. 物理文件夹无法支持远程同步、分享、协作
@@ -81,16 +81,16 @@
 
 ### 已删除/废弃的 V1 机制
 
-| V1 机制 | 状态 | V2 替代方案 |
-|---------|------|------------|
-| `packages/shellAdapters/` | **待删除** | 直接 `fetch` |
-| `packages/backendAdapters/` | **待删除** | 直接 `fetch` 或薄封装 `apiClient` |
-| `useSidecarStatus` composable | **待删除** | 删除，Server 健康由部署层保障 |
-| `SplashScreen.vue` Sidecar 等待 | **待删除** | 删除，应用直接启动 |
-| Sidecar 端口发现 | **已废弃** | Server 使用固定端口（`PORT` 环境变量） |
-| `.sidecar-port` 文件 | **已废弃** | 不再使用 |
-| `syncKnowledgeBasesFromDisk` | **已废弃** | 虚拟文件夹（数据库树结构） |
-| sqlite-vec / FTS5 | **已废弃** | Milvus 向量检索 |
+| V1 机制                         | 状态       | V2 替代方案                            |
+|---------------------------------|------------|----------------------------------------|
+| `packages/shellAdapters/`       | **待删除** | 直接 `fetch`                           |
+| `packages/backendAdapters/`     | **待删除** | 直接 `fetch` 或薄封装 `apiClient`      |
+| `useSidecarStatus` composable   | **待删除** | 删除，Server 健康由部署层保障          |
+| `SplashScreen.vue` Sidecar 等待 | **待删除** | 删除，应用直接启动                     |
+| Sidecar 端口发现                | **已废弃** | Server 使用固定端口（`PORT` 环境变量） |
+| `.sidecar-port` 文件            | **已废弃** | 不再使用                               |
+| `syncKnowledgeBasesFromDisk`    | **已废弃** | 虚拟文件夹（数据库树结构）             |
+| sqlite-vec / FTS5               | **已废弃** | Milvus 向量检索                        |
 
 ### 保留但冻结的文件
 
@@ -134,9 +134,9 @@
 
 ## 相关文档
 
-- [ADR-0004: 云原生架构重构](../docs/05-adrs/0004-cloud-native-rearchitecture.md)
+- [ADR-0004: 云原生架构重构](../docs/adrs/0004-cloud-native-rearchitecture.md)
 - [PRD v2: 云原生产品需求](../docs/01-prd/v2-cloud-native.md)
-- [开发流程](../docs/00-meta/workflow.md)
+- [开发流程](../docs/guide/workflow.md)
 
 ---
 

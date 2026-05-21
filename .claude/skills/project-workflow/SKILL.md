@@ -26,7 +26,7 @@ description: >
 
 ```
 docs/
-├── 00-meta/           # 流程规范、skills 说明、命名规范
+├── guide/           # 流程规范、skills 说明、命名规范
 │   ├── naming-convention.md   # 全文档命名规范（必读）
 │   ├── workflow.md            # 本文件：流程阶段
 │   ├── writing-issues.md      # Issue 规范
@@ -46,9 +46,9 @@ docs/
 │           ├── feature-spec.md
 │           ├── behavior-spec.md（前端）
 │           └── api-spec.md（后端）
-├── 05-adrs/           # 架构决策记录
-├── 06-design/         # 设计系统、视觉稿
-├── 07-reviews/        # 审查记录（按 scope 组织）
+├── adrs/           # 架构决策记录
+├── design/         # 设计系统、视觉稿
+├── reviews/        # 审查记录（按 scope 组织）
 └── 99-archived/       # 历史归档
 
 tests/
@@ -59,13 +59,13 @@ tests/
 
 **命名规范速查**：
 
-| 目录 | 命名规则 | 示例 |
-|------|----------|------|
-| `issues/` | `{prefix}-{NN}-{kebab-slug}/` | `f-06-knowledge-base-file-manager/` |
-| `issues/{dir}/specs/` | `*.md` | `feature-spec.md` |
-| `issues/{dir}/plans/` | `v{N}.md` | `v1.md` |
-| `07-reviews/` | `{scope}/{type}-v{N}.md` | `phase-3/code-v1.md` |
-| `tests/issues/` | `{dir}/*.spec.ts` | `TabBar.spec.ts` |
+| 目录                  | 命名规则                      | 示例                                |
+|-----------------------|-------------------------------|-------------------------------------|
+| `issues/`             | `{prefix}-{NN}-{kebab-slug}/` | `f-06-knowledge-base-file-manager/` |
+| `issues/{dir}/specs/` | `*.md`                        | `feature-spec.md`                   |
+| `issues/{dir}/plans/` | `v{N}.md`                     | `v1.md`                             |
+| `reviews/`            | `{scope}/{type}-v{N}.md`      | `phase-3/code-v1.md`                |
+| `tests/issues/`       | `{dir}/*.spec.ts`             | `TabBar.spec.ts`                    |
 
 ---
 
@@ -83,11 +83,11 @@ tests/
 ```markdown
 ## 功能批次
 
-| 批次 | 功能 | 优先级 | 状态 |
-|------|------|--------|------|
-| 01 | 登录/注册 | P0 | 待启动 |
-| 02 | 知识库列表 | P0 | 待启动 |
-| 03 | 文件上传 | P1 | 待启动 |
+| 批次 | 功能       | 优先级 | 状态   |
+|------|------------|--------|--------|
+| 01   | 登录/注册  | P0     | 待启动 |
+| 02   | 知识库列表 | P0     | 待启动 |
+| 03   | 文件上传   | P1     | 待启动 |
 ```
 
 **下一步**：进入阶段 1，选第一批启动。
@@ -239,12 +239,12 @@ tests/
 2. 勾选验收标准 `[x]`
 3. 更新 checklist.json 中对应 AC-XX 状态为 `passed`
 4. 更新 `BACKLOG.md` / `CHANGELOG.md` 进度
-5. 确认审查记录已归档到 `docs/07-reviews/{scope}/{type}-v{N}.md`
+5. 确认审查记录已归档到 `docs/reviews/{scope}/{type}-v{N}.md`
 6. 确认测试代码存在于 `tests/issues/{dir}/`
 7. 可选：归档到 `docs/99-archived/`
 
 **路径验证**：
-- 关闭前必须确认 `07-reviews/` 存在对应文件
+- 关闭前必须确认 `reviews/` 存在对应文件
 - 关闭前必须确认 checklist.json 中所有 AC-XX 为 `passed`
 - 禁止关闭无审查记录的 issue
 
@@ -276,29 +276,29 @@ tests/
 
 ## 各阶段使用的 skills 汇总
 
-| 阶段 | 自定义 skills | gstack skills |
-|------|--------------|---------------|
-| 0 - PRD 稳定 | — | — |
-| 1 - 拆 issue | `/issue-generator` | — |
-| 2 - 写 spec | `/spec-validator` | `/grill-with-docs`（可选） |
-| 3 - 生成 plan | `/plan-generator` | — |
-| 4 - 开发执行 | `/dev-orchestrator` | `/subagent-driven-development` 或 `/executing-plans` |
-| 4 - 前端设计审查 | — | `/plan-design-review` |
-| 4 - 前端视觉审计 | — | `/design-review` |
-| 4 - 后端代码审查 | — | `/review` |
-| 4 - 测试 | — | `/tdd` |
-| 5 - 联调 | — | — |
-| 6 - 关闭 | `/issue-lifecycle` | — |
+| 阶段             | 自定义 skills       | gstack skills                                        |
+|------------------|---------------------|------------------------------------------------------|
+| 0 - PRD 稳定     | —                   | —                                                    |
+| 1 - 拆 issue     | `/issue-generator`  | —                                                    |
+| 2 - 写 spec      | `/spec-validator`   | `/grill-with-docs`（可选）                           |
+| 3 - 生成 plan    | `/plan-generator`   | —                                                    |
+| 4 - 开发执行     | `/dev-orchestrator` | `/subagent-driven-development` 或 `/executing-plans` |
+| 4 - 前端设计审查 | —                   | `/plan-design-review`                                |
+| 4 - 前端视觉审计 | —                   | `/design-review`                                     |
+| 4 - 后端代码审查 | —                   | `/review`                                            |
+| 4 - 测试         | —                   | `/tdd`                                               |
+| 5 - 联调         | —                   | —                                                    |
+| 6 - 关闭         | `/issue-lifecycle`  | —                                                    |
 
 ---
 
 ## 常见陷阱
 
-| 陷阱 | 后果 | 正确做法 |
-|------|------|----------|
-| 跳过 spec 直接写 plan | plan 太粗，交互不符预期 | 必须先写 behavior-spec |
+| 陷阱                    | 后果                       | 正确做法                       |
+|-------------------------|----------------------------|--------------------------------|
+| 跳过 spec 直接写 plan   | plan 太粗，交互不符预期    | 必须先写 behavior-spec         |
 | 一次拆完 PRD 所有 issue | issue 质量低，后期大量返工 | 按批次拆分，做完一批再拆下一批 |
-| 一个 issue 包含前后端 | 无法并行，plan 臃肿 | 拆成 f-XX + b-XX |
-| plan 里写 "TODO" | 工程师不知道怎么做 | 每个步骤给具体代码和命令 |
-| 前后端不联调直接关闭 | 接口不匹配 | 必须联调验证后再关闭 |
-| 发现 spec 错了硬改代码 | 代码和文档脱节 | 回溯更新 spec，再改代码 |
+| 一个 issue 包含前后端   | 无法并行，plan 臃肿        | 拆成 f-XX + b-XX               |
+| plan 里写 "TODO"        | 工程师不知道怎么做         | 每个步骤给具体代码和命令       |
+| 前后端不联调直接关闭    | 接口不匹配                 | 必须联调验证后再关闭           |
+| 发现 spec 错了硬改代码  | 代码和文档脱节             | 回溯更新 spec，再改代码        |

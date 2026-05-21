@@ -30,14 +30,14 @@ description: >
 
 ## 路径约定
 
-| 文档类型 | 路径 | 验证规则 |
-|----------|------|----------|
-| Issue | `docs/issues/{dir}/issue.md` | frontmatter 必须包含 id/status/track/priority |
-| Spec | `docs/issues/{dir}/specs/` | 目录在 issue 目录下 |
-| Plan | `docs/issues/{dir}/plan.md` | 当前生效版本 |
-| 历史 Plan | `docs/issues/{dir}/plans/v{N}.md` | 版本归档 |
-| 测试代码 | `tests/issues/{dir}/*.spec.ts` | 必须存在，且包含 AC-XX 用例 |
-| 审查记录 | `docs/07-reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举 |
+| 文档类型  | 路径                                  | 验证规则                                      |
+|-----------|---------------------------------------|-----------------------------------------------|
+| Issue     | `docs/issues/{dir}/issue.md`          | frontmatter 必须包含 id/status/track/priority |
+| Spec      | `docs/issues/{dir}/specs/`            | 目录在 issue 目录下                           |
+| Plan      | `docs/issues/{dir}/plan.md`           | 当前生效版本                                  |
+| 历史 Plan | `docs/issues/{dir}/plans/v{N}.md`     | 版本归档                                      |
+| 测试代码  | `tests/issues/{dir}/*.spec.ts`        | 必须存在，且包含 AC-XX 用例                   |
+| 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举                   |
 
 **轨道前缀：**
 - `f-XX`: 前端功能
@@ -223,19 +223,19 @@ b-02 知识库 CRUD API
 
 ## 边界情况
 
-| 场景 | 处理方式 |
-|------|----------|
-| Issue 文件不存在 | 报错，列出所有 issue 供核对 |
-| 多个 issue 匹配 | 请用户确认 |
-| Spec 不存在 | 调用 `spec-validator` 生成 |
-| Plan 存在但不完整 | 提示需补充，询问是否重写 |
-| Plan 不符合 TDD | 提示必须重写，每个任务以测试开始 |
-| 测试代码不存在 | 根据 spec 生成测试骨架，确认失败后再开发 |
-| 测试覆盖不完整 | 列出未覆盖项，询问是否补充 |
-| Issue 有未完成的阻塞依赖 | 警告用户先完成依赖 |
-| 用户仅"查看进度" | 仅展示当前状态 |
-| Issue 状态为 `closed` | 告知已完成，询问是否重新打开 |
-| 多 issue 中有前后端配对但后端未完成 | 前端 plan 中补充 Mock 方案 |
+| 场景                                | 处理方式                                 |
+|-------------------------------------|------------------------------------------|
+| Issue 文件不存在                    | 报错，列出所有 issue 供核对              |
+| 多个 issue 匹配                     | 请用户确认                               |
+| Spec 不存在                         | 调用 `spec-validator` 生成               |
+| Plan 存在但不完整                   | 提示需补充，询问是否重写                 |
+| Plan 不符合 TDD                     | 提示必须重写，每个任务以测试开始         |
+| 测试代码不存在                      | 根据 spec 生成测试骨架，确认失败后再开发 |
+| 测试覆盖不完整                      | 列出未覆盖项，询问是否补充               |
+| Issue 有未完成的阻塞依赖            | 警告用户先完成依赖                       |
+| 用户仅"查看进度"                    | 仅展示当前状态                           |
+| Issue 状态为 `closed`               | 告知已完成，询问是否重新打开             |
+| 多 issue 中有前后端配对但后端未完成 | 前端 plan 中补充 Mock 方案               |
 
 ---
 

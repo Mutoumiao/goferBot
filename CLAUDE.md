@@ -28,12 +28,12 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 
 ## 必读文档（开发前按顺序查阅）
 
-| 阶段     | 文档                             |
-|----------|----------------------------------|
-| 了解流程 | `docs/00-meta/workflow.md`                          |
-| 了解产品 | `docs/01-prd/v2-cloud-native.md`                    |
-| 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md`         |
-| 编码前   | `docs/issues/{prefix}-{NN}-{slug}/specs/`           |
+| 阶段     | 文档                                        |
+|----------|---------------------------------------------|
+| 了解流程 | `docs/guide/workflow.md`                    |
+| 了解产品 | `docs/01-prd/v2-cloud-native.md`            |
+| 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md` |
+| 编码前   | `docs/issues/{prefix}-{NN}-{slug}/specs/`   |
 
 ## 项目结构
 
@@ -45,12 +45,12 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 ├── src-tauri/                    # Tauri Rust 后端（冻结，Phase 6 扩展）
 ├── tests/                        # 测试（单元/集成/E2E）
 ├── docs/                         # 文档
-│   ├── 00-meta/                  # 流程规范、skills
+│   ├── guide/                  # 流程规范、skills
 │   ├── 01-prd/                   # 产品需求
 │   ├── issues/                   # 活跃 issue（Issue-Centric 结构）
-│   ├── 05-adrs/                  # 架构决策记录
-│   ├── 06-design/                # 设计系统
-│   ├── 07-reviews/               # 审查记录
+│   ├── adrs/                  # 架构决策记录
+│   ├── design/                # 设计系统
+│   ├── reviews/               # 审查记录
 │   └── 99-archived/              # 历史归档
 ├── tests/                        # 测试（单元/集成/E2E）
 │   ├── issues/                   # 按 issue 组织的单元测试
@@ -110,7 +110,7 @@ Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 t
 3. **按需深入正文** — 仅当 frontmatter 确认文档与当前任务相关，且状态非 closed/deprecated 时，才读正文
 4. **尽量避免全文扫读** — 不得在未读 frontmatter 前直接读取完整文档
 
-> 各文档类型的 frontmatter 规范参见 `docs/00-meta/` 下对应的 `writing-*.md`。
+> 各文档类型的 frontmatter 规范参见 `docs/guide/` 下对应的 `writing-*.md`。
 
 ## Skill routing
 

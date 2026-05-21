@@ -15,9 +15,9 @@ description: >
 ## 生成前阅读
 
 1. **PRD**: `docs/01-prd/v2-cloud-native.md`
-2. **架构规格**: `docs/05-adrs/`
+2. **架构规格**: `docs/adrs/`
 3. **现有 Issues**: `docs/issues/` — 避免编号重复
-4. **工作流**: `docs/00-meta/workflow.md`
+4. **工作流**: `docs/guide/workflow.md`
 
 ---
 
@@ -37,13 +37,13 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 
 **轨道前缀：**
 
-| 前缀 | 轨道 | 示例 |
-|------|------|------|
-| `f-XX` | 前端功能 | `f-15-global-tab-bar` |
+| 前缀   | 轨道     | 示例                           |
+|--------|----------|--------------------------------|
+| `f-XX` | 前端功能 | `f-15-global-tab-bar`          |
 | `b-XX` | 后端接口 | `b-02-knowledge-base-crud-api` |
-| `d-XX` | 设计 | `d-01-rag-sdk-contracts` |
-| `i-XX` | 基础设施 | `i-01-docker-compose-infra` |
-| `q-XX` | 质量 | `q-01-security-baseline` |
+| `d-XX` | 设计     | `d-01-rag-sdk-contracts`       |
+| `i-XX` | 基础设施 | `i-01-docker-compose-infra`    |
+| `q-XX` | 质量     | `q-01-security-baseline`       |
 
 切片类型：
 - **HITL**: 需人工交互（架构决策、设计评审）

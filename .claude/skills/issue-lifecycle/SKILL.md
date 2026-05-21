@@ -26,15 +26,15 @@ description: >
 
 ## 路径约定
 
-| 文档类型 | 路径 | 验证规则 |
-|----------|------|----------|
-| Issue | `docs/issues/{prefix}-{NN}-{slug}/issue.md` | 目录名必须符合格式 |
-| Spec | `docs/issues/{dir}/specs/` | 目录在 issue 目录下 |
-| Plan | `docs/issues/{dir}/plan.md` | 当前生效版本 |
-| 测试代码 | `tests/issues/{dir}/*.spec.ts` | 必须存在，且包含 AC-XX 用例 |
-| checklist | `docs/issues/{dir}/checklist.json` | 机器管理，AC-XX 条目 |
-| 审查记录 | `docs/07-reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举 |
-| 进度文档 | `BACKLOG.md` / `CHANGELOG.md`（根目录） |
+| 文档类型  | 路径                                        | 验证规则                    |
+|-----------|---------------------------------------------|-----------------------------|
+| Issue     | `docs/issues/{prefix}-{NN}-{slug}/issue.md` | 目录名必须符合格式          |
+| Spec      | `docs/issues/{dir}/specs/`                  | 目录在 issue 目录下         |
+| Plan      | `docs/issues/{dir}/plan.md`                 | 当前生效版本                |
+| 测试代码  | `tests/issues/{dir}/*.spec.ts`              | 必须存在，且包含 AC-XX 用例 |
+| checklist | `docs/issues/{dir}/checklist.json`          | 机器管理，AC-XX 条目        |
+| 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md`       | scope 语义化，type 限定枚举 |
+| 进度文档  | `BACKLOG.md` / `CHANGELOG.md`（根目录）     |                             |
 
 **双轨前缀：**
 - `f-XX`: 前端功能
@@ -92,12 +92,12 @@ description: >
 
 **判定规则：**
 
-| 场景 | 处理方式 |
-|------|----------|
-| 测试文件不存在 | 警告缺少测试，询问是否继续 |
-| 测试未全部通过 | 列出失败测试，阻止更新 |
-| 测试通过但覆盖不完整 | 提示未覆盖的 AC-XX，由用户决定 |
-| 测试全部通过且覆盖完整 | 允许继续更新 |
+| 场景                   | 处理方式                       |
+|------------------------|--------------------------------|
+| 测试文件不存在         | 警告缺少测试，询问是否继续     |
+| 测试未全部通过         | 列出失败测试，阻止更新         |
+| 测试通过但覆盖不完整   | 提示未覆盖的 AC-XX，由用户决定 |
+| 测试全部通过且覆盖完整 | 允许继续更新                   |
 
 **判定 issue 是否可标记完成：**
 
@@ -105,7 +105,7 @@ description: >
 - 状态不是 `closed`：先执行测试检查，通过后询问是否完成
 
 **关闭前路径验证：**
-- [ ] 审查记录已归档到 `docs/07-reviews/{scope}/{type}-v{N}.md`
+- [ ] 审查记录已归档到 `docs/reviews/{scope}/{type}-v{N}.md`
 - [ ] 测试代码存在于 `tests/issues/{dir}/`
 - [ ] checklist.json 中所有 AC-XX 状态为 `passed`
 - [ ] 以上路径存在对应文件，否则提示用户补全
@@ -141,7 +141,7 @@ issue 中通常有两处验收标准：
 用户要求归档已关闭 issue 时：
 
 1. issue 目录：`docs/issues/{dir}/` → `docs/99-archived/v2-issues/{dir}/`
-2. review 记录：`docs/07-reviews/{scope}/` → `docs/99-archived/v2-reviews/{scope}/`
+2. review 记录：`docs/reviews/{scope}/` → `docs/99-archived/v2-reviews/{scope}/`
 3. 测试代码保留在 `tests/issues/{dir}/`（历史参考）
 
 ### 8. 提交变更（可选）
@@ -158,14 +158,14 @@ issue 中通常有两处验收标准：
 
 ## 边界情况
 
-| 场景 | 处理方式 |
-|------|----------|
-| Issue 文件不存在 | 报错，列出所有 issue 供核对 |
-| 多个 issue 匹配同一编号 | 列出匹配项，请用户指定完整目录名 |
-| BACKLOG.md 不存在 | 仅更新 issue 文件，提示未找到进度文档 |
-| 验收标准已是 `[x]` | 跳过，告知无需重复更新 |
-| 用户未明确说"完成" | 先检查状态，询问意图后再执行 |
-| 测试代码路径不存在 | 提示未找到，询问是否跳过检查 |
+| 场景                    | 处理方式                              |
+|-------------------------|---------------------------------------|
+| Issue 文件不存在        | 报错，列出所有 issue 供核对           |
+| 多个 issue 匹配同一编号 | 列出匹配项，请用户指定完整目录名      |
+| BACKLOG.md 不存在       | 仅更新 issue 文件，提示未找到进度文档 |
+| 验收标准已是 `[x]`      | 跳过，告知无需重复更新                |
+| 用户未明确说"完成"      | 先检查状态，询问意图后再执行          |
+| 测试代码路径不存在      | 提示未找到，询问是否跳过检查          |
 
 ---
 
@@ -176,7 +176,7 @@ issue 中通常有两处验收标准：
 - Plan 文件：`docs/issues/{dir}/plan.md`
 - checklist：`docs/issues/{dir}/checklist.json`
 - 测试代码：`tests/issues/{dir}/`
-- 审查记录目录：`docs/07-reviews/{scope}/`
+- 审查记录目录：`docs/reviews/{scope}/`
 - 归档目录：`docs/99-archived/`
 - 进度文档：`BACKLOG.md` / `CHANGELOG.md`
 

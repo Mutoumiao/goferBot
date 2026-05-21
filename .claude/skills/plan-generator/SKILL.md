@@ -35,7 +35,7 @@ description: >
 
 3. **现有计划**（如有）: `docs/issues/{dir}/plan.md` 和 `plans/`
 
-4. **审查记录**（如有）: `docs/07-reviews/{scope}/`
+4. **审查记录**（如有）: `docs/reviews/{scope}/`
 
 ---
 
@@ -163,13 +163,13 @@ git commit -m "feat(scope): add myFunction with tests"
 
 以下情况计划**必须打回重写**：
 
-| 违规 | 示例 | 正确做法 |
-|------|------|----------|
-| 任务不以测试开始 | "创建 LoginView.vue" | "编写 LoginView.spec.ts 失败测试" |
-| 测试放在最后 | 任务 1-5 实现，任务 6 写测试 | 每个任务都是 red-green-refactor |
-| 测试只有 happy path | `it('should work')` | 必须包含错误场景、边界条件 |
-| 测试代码模糊 | "测试表单提交" | 具体断言：`expect(wrapper.find('.error').exists()).toBe(true)` |
-| 无验证命令 | 步骤结束无运行命令 | 每个任务末尾必须有 `npx vitest run ...` |
+| 违规                | 示例                         | 正确做法                                                       |
+|---------------------|------------------------------|----------------------------------------------------------------|
+| 任务不以测试开始    | "创建 LoginView.vue"         | "编写 LoginView.spec.ts 失败测试"                              |
+| 测试放在最后        | 任务 1-5 实现，任务 6 写测试 | 每个任务都是 red-green-refactor                                |
+| 测试只有 happy path | `it('should work')`          | 必须包含错误场景、边界条件                                     |
+| 测试代码模糊        | "测试表单提交"               | 具体断言：`expect(wrapper.find('.error').exists()).toBe(true)` |
+| 无验证命令          | 步骤结束无运行命令           | 每个任务末尾必须有 `npx vitest run ...`                        |
 
 ---
 
