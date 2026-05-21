@@ -1,20 +1,20 @@
 ---
 name: spec-validator
 description: >
-  对 spec 进行 relentless 质询，挑战其与领域模型的兼容性，精炼术语。
-  当用户说"审查 spec"、"spec 对吗"、"帮我写 behavior spec"时触发。
+  编写并验证 issue 的三层规格文档（feature-spec / behavior-spec / api-spec）。
+  当用户说"写 spec"、"编写 behavior spec"、"生成 api spec"、"审查 spec"、"spec 对吗"时触发。
   输出路径：docs/issues/{dir}/specs/
 ---
 
 # Spec 验证器
 
-毫不留情地向我质询此 spec 的每个方面，直到达成共同理解。一次只问一个问题，等待反馈后再继续。如果问题可通过探索代码库回答，那就探索代码库。
+为 issue 编写完整的三层规格文档，确保交互状态完整、API 契约清晰、术语一致。编写过程中通过质询澄清模糊需求，但核心目标是产出可执行的规格文件。
 
 ---
 
 ## 会前阅读
 
-1. **PRD**: `docs/01-prd/v2-cloud-native.md`
+1. **PRD**: `docs/prd/v2-cloud-native.md`
 2. **架构规格**: `docs/adrs/`
 3. **相关 Specs**: `docs/issues/{related-dir}/specs/`
 4. **ADRs**: `docs/adrs/`
@@ -189,6 +189,23 @@ description: >
 3. **真实权衡的结果** — 存在真正的替代方案，出于特定原因选择了其中一个
 
 保存到 `docs/adrs/NNNN-{slug}.md`。
+
+---
+
+## 用户审批门（融入自 brainstorming）
+
+**硬关卡：spec 未经用户批准，禁止进入 plan-generator。**
+
+写完 spec 后：
+1. 自检（检查清单下方）
+2. 向用户展示 spec 摘要
+3. **询问用户**："spec 已写入 `docs/issues/{dir}/specs/`。请审查并确认无修改后再生成 plan。"
+4. 用户要求修改 → 修改 → 重新自检 → 再次询问
+5. 用户批准 → 方可调用 `plan-generator`
+
+**禁止：**
+- 未经用户确认就自动生成 plan
+- "spec 看起来没问题，我继续生成 plan 了"
 
 ---
 

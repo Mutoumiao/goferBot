@@ -34,7 +34,7 @@ docs/
 │   ├── writing-plans.md       # Plan 规范
 │   ├── writing-reviews.md     # Review 规范
 │   └── _templates/            # 所有模板
-├── 01-prd/            # 产品需求（唯一入口）
+├── prd/               # 产品需求（唯一入口）
 ├── issues/            # 活跃 issue（Issue-Centric 结构）
 │   └── {prefix}-{NN}-{slug}/
 │       ├── issue.md           # issue 正文
@@ -49,7 +49,7 @@ docs/
 ├── adrs/           # 架构决策记录
 ├── design/         # 设计系统、视觉稿
 ├── reviews/        # 审查记录（按 scope 组织）
-└── 99-archived/       # 历史归档
+└── archived/          # 历史归档
 
 tests/
 └── issues/
@@ -89,6 +89,11 @@ tests/
 | 02   | 知识库列表 | P0     | 待启动 |
 | 03   | 文件上传   | P1     | 待启动 |
 ```
+
+**硬关卡（Hard Gate）：**
+> 在 PRD 未稳定、功能批次未划分前，**禁止**进入阶段 1 拆 issue。
+> 即使功能看起来"很简单"，也必须先明确边界和优先级。
+> 未批准的 PRD → issue 拆出来还是粗的 → spec 质量低 → 后期大量返工。
 
 **下一步**：进入阶段 1，选第一批启动。
 
@@ -241,7 +246,7 @@ tests/
 4. 更新 `BACKLOG.md` / `CHANGELOG.md` 进度
 5. 确认审查记录已归档到 `docs/reviews/{scope}/{type}-v{N}.md`
 6. 确认测试代码存在于 `tests/issues/{dir}/`
-7. 可选：归档到 `docs/99-archived/`
+7. 可选：归档到 `docs/archived/`
 
 **路径验证**：
 - 关闭前必须确认 `reviews/` 存在对应文件

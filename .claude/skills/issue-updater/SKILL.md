@@ -92,12 +92,12 @@ For newly closed issues (not already in CHANGELOG):
 
 ## [2026-05-20]
 
-- [closed] TabBar 全局化重构 [issue](docs/99-archived/issues/f-15-global-tab-bar/)
-- [closed] NestJS 安全基线 [issue](docs/99-archived/issues/i-10-nestjs-security/)
+- [closed] TabBar 全局化重构 [issue](docs/archived/issues/f-15-global-tab-bar/)
+- [closed] NestJS 安全基线 [issue](docs/archived/issues/i-10-nestjs-security/)
 
 ## [2026-05-19]
 
-- [closed] 侧边栏导航 [issue](docs/99-archived/issues/f-03-sidebar-navigation/)
+- [closed] 侧边栏导航 [issue](docs/archived/issues/f-03-sidebar-navigation/)
 ```
 
 **Rules:**
@@ -107,7 +107,7 @@ For newly closed issues (not already in CHANGELOG):
 - If date section doesn't exist, create it
 - If issue already exists in CHANGELOG, skip (idempotent)
 - Each entry format: `- [closed] {summary} [issue]({archive_path}/)`
-- Archive path: `docs/99-archived/issues/{dir}/`
+- Archive path: `docs/archived/issues/{dir}/`
 
 ### Step 5: Write Files
 
@@ -204,7 +204,7 @@ function generateChangelog(issues, existingContent = '', targetDate = null) {
 
   // Parse existing entries to avoid duplicates
   const existingIds = new Set()
-  const idRegex = /\[issue\]\(docs\/99-archived\/issues\/([^/]+)\//g
+  const idRegex = /\[issue\]\(docs\/archived\/issues\/([^/]+)\//g
   let match
   while ((match = idRegex.exec(existingContent)) !== null) {
     existingIds.add(match[1])
@@ -213,7 +213,7 @@ function generateChangelog(issues, existingContent = '', targetDate = null) {
   // Filter new closed issues
   const newEntries = closed
     .filter(i => !existingIds.has(i.dir))
-    .map(i => `- [closed] ${i.summary} [issue](docs/99-archived/issues/${i.dir}/)`)
+    .map(i => `- [closed] ${i.summary} [issue](docs/archived/issues/${i.dir}/)`)
 
   if (newEntries.length === 0 && existingContent) {
     return existingContent // No changes

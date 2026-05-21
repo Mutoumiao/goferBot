@@ -2,13 +2,15 @@
 name: plan-generator
 description: >
   基于 issue 和 spec 生成可执行实现计划。
-  当用户说"写计划"、"生成实现方案"、"怎么开发这个"时触发。
+  当用户说"写计划"、"生成实现方案"、"怎么开发这个"、"基于 spec 生成 plan"时触发。
   保存路径：docs/issues/{dir}/plan.md（当前生效版）+ plans/v{N}.md（历史归档）
+  务必在以下场景主动使用：用户有 spec 需要转化为开发步骤、需要为 issue 编写执行计划、
+  需要规划具体代码实现路径、需要拆分为可执行的任务步骤。
 ---
 
 # 计划生成器
 
-编写全面的实现计划，假设工程师对代码库零了解。记录一切：每个任务要碰哪些文件、代码、测试、需查阅的文档、如何验证。DRY。YAGNI。**TDD 强制**。频繁提交。
+编写全面的实现计划，假设工程师对代码库零了解。记录一切：每个任务要碰哪些文件、写什么代码、测试、需查阅的文档、如何验证。DRY。YAGNI。**TDD 强制**。频繁提交。
 
 **开始时声明：** "正在使用 plan-generator skill 创建实现计划。"
 
@@ -21,12 +23,21 @@ description: >
 - 历史版本归档在 `plans/v{N}.md`，N 从 1 开始递增
 - 每次重新生成计划时，保留旧版本到 `plans/`，新建 `plan.md`
 
+**版本规则：**
+
+| 场景 | 操作 |
+|------|------|
+| 首次生成计划 | 创建 `plan.md` |
+| Spec 发生重大变更 | 保留原 `plan.md` 到 `plans/v1.md`，新建 `plan.md` |
+| 审查后需大规模重构 | 保留当前版本到 `plans/v{N}.md`，新建 `plan.md` |
+| 执行中发现方案不可行 | 保留当前版本到 `plans/v{N}.md`，新建 `plan.md` |
+
 ---
 
 ## 计划前阅读
 
 1. **Issue 文件**: `docs/issues/{dir}/issue.md`
-   - 提取：状态、构建内容、验收标准、阻塞于
+   - 提取：id、status、track、priority、summary、blocked_by、checklist、plan、specs
 
 2. **Spec 文件**: `docs/issues/{dir}/specs/`
    - `feature-spec.md` — 用户故事、边界、涉及页面
@@ -39,30 +50,13 @@ description: >
 
 ---
 
-## 计划文档头部
+## 范围检查
 
-```markdown
----
-id: f-15
-issue: issue.md
-version: 1
----
+如果 spec 覆盖多个独立子系统，建议拆分为独立计划 —— 每个子系统一个 plan。每个 plan 应产出可独立运行、可测试的代码。
 
-# [功能名称] 实现计划
-
-> **For agentic workers:** 必需子技能：superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans。步骤使用复选框（`- [ ]`）语法追踪。
-
-**目标：** [一句话描述构建什么]
-
-**架构：** [2-3 句话关于方法]
-
-**技术栈：** [关键技术/库]
-
-**Issue 引用：** [链接到 issue.md]
-**Spec 引用：** [链接到 specs/]
-
----
-```
+**本项目典型拆分：**
+- 前端 f-XX 和后端 b-XX 各自独立生成 plan
+- 一个 plan 只覆盖一个 issue 的范围
 
 ---
 
@@ -89,6 +83,137 @@ version: 1
 - "编写最小代码使测试通过" — 步骤
 - "运行测试确保通过" — 步骤
 - "提交" — 步骤
+
+---
+
+## 计划文档头部
+
+**每个 plan 必须以以下头部开始：**
+
+```markdown
+---
+id: f-15
+issue: issue.md
+version: 1
+---
+
+# [功能名称] 实现计划
+
+> **For agentic workers:** 必需子技能：superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans。步骤使用复选框（`- [ ]`）语法追踪。
+
+**目标：** [一句话描述构建什么]
+
+**架构：** [2-3 句话关于方法]
+
+**技术栈：** [关键技术/库]
+
+**Issue 引用：** [链接到 issue.md]
+**Spec 引用：** [链接到 specs/]
+
+---
+```
+
+---
+
+## TDD 执行细节
+
+### Red-Green-Refactor 循环
+
+```
+RED（编写失败测试） → 验证失败 → GREEN（最小实现） → 验证通过 → REFACTOR（清理代码） → 保持绿色 → 下一个
+```
+
+**核心原则：如果你没看到测试失败，你就不知道它是否测试了正确的东西。**
+
+**铁律：没有先失败的测试，不写生产代码。**
+
+### RED - 编写失败测试
+
+编写一个最小测试展示期望行为。
+
+**好测试标准：**
+- 一个行为（名称中有 "and"？拆分它）
+- 清晰名称描述行为
+- 真实代码（不 mock，除非不可避免）
+
+**坏测试示例：**
+```typescript
+// 坏：模糊名称，测试 mock 而非真实代码
+test('retry works', async () => {
+  const mock = vi.fn()
+    .mockRejectedValueOnce(new Error())
+    .mockRejectedValueOnce(new Error())
+    .mockResolvedValueOnce('success')
+  await retryOperation(mock)
+  expect(mock).toHaveBeenCalledTimes(3)
+})
+```
+
+### Verify RED - 观察失败（强制，不可跳过）
+
+运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
+
+确认：
+- 测试失败（不是报错）
+- 失败消息符合预期
+- 因功能缺失而失败（不是拼写错误）
+
+**测试通过了？** 你在测试已有行为。修复测试。
+
+**测试报错了？** 修复错误，重跑直到正确失败。
+
+### GREEN - 最小实现
+
+编写最简单代码让测试通过。
+
+**禁止：**
+- 添加计划外的功能
+- 重构其他代码
+- "改进"超出测试范围
+
+### Verify GREEN - 观察通过（强制）
+
+运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
+
+确认：
+- 测试通过
+- 其他测试仍通过
+- 输出干净（无错误、警告）
+
+**测试失败？** 修复代码，不是测试。
+
+**其他测试失败？** 立即修复。
+
+### REFACTOR - 清理
+
+仅在 green 后：
+- 消除重复
+- 改善命名
+- 提取辅助函数
+
+保持测试绿色。不添加行为。
+
+### 常见辩解与反驳
+
+| 辩解 | 现实 |
+|------|------|
+| "太简单了不用测试" | 简单代码也会坏。测试只需 30 秒。 |
+| "我后面再补测试" | 后补的测试立即通过，证明不了什么。 |
+| "后补测试目标一样" | 后补 = "这代码做什么？" 先写 = "这代码该做什么？" |
+| "我已经手动测过所有边界" | 手动 ≠ 系统化。无记录，无法重跑。 |
+| "删了 X 小时工作太浪费" | 沉没成本谬误。保留未验证代码才是技术债。 |
+| "TDD 太教条，我 pragmatic" | TDD 就是 pragmatic：比生产环境调试快。 |
+
+### TDD 红线 - 立即停止重来
+
+- 先写代码后写测试
+- 测试在实现之后
+- 测试立即通过
+- 无法解释测试为何失败
+- "这次例外"
+- "我已经手动测过了"
+
+**以上任何一条出现：删除代码，用 TDD 重新开始。**
 
 ---
 
@@ -163,13 +288,13 @@ git commit -m "feat(scope): add myFunction with tests"
 
 以下情况计划**必须打回重写**：
 
-| 违规                | 示例                         | 正确做法                                                       |
-|---------------------|------------------------------|----------------------------------------------------------------|
-| 任务不以测试开始    | "创建 LoginView.vue"         | "编写 LoginView.spec.ts 失败测试"                              |
-| 测试放在最后        | 任务 1-5 实现，任务 6 写测试 | 每个任务都是 red-green-refactor                                |
-| 测试只有 happy path | `it('should work')`          | 必须包含错误场景、边界条件                                     |
-| 测试代码模糊        | "测试表单提交"               | 具体断言：`expect(wrapper.find('.error').exists()).toBe(true)` |
-| 无验证命令          | 步骤结束无运行命令           | 每个任务末尾必须有 `npx vitest run ...`                        |
+| 违规 | 示例 | 正确做法 |
+|------|------|----------|
+| 任务不以测试开始 | "创建 LoginView.vue" | "编写 LoginView.spec.ts 失败测试" |
+| 测试放在最后 | 任务 1-5 实现，任务 6 写测试 | 每个任务都是 red-green-refactor |
+| 测试只有 happy path | `it('should work')` | 必须包含错误场景、边界条件 |
+| 测试代码模糊 | "测试表单提交" | 具体断言：`expect(wrapper.find('.error').exists()).toBe(true)` |
+| 无验证命令 | 步骤结束无运行命令 | 每个任务末尾必须有 `npx vitest run ...` |
 
 ---
 
@@ -182,6 +307,20 @@ git commit -m "feat(scope): add myFunction with tests"
 - "类似于任务 N"（重复代码 —— 工程师可能按不同顺序阅读任务）
 - 描述做什么但不展示如何做的步骤（代码步骤需要代码块）
 - 引用任何任务中未定义的类型、函数或方法
+
+---
+
+## 自检
+
+写完完整计划后，用 fresh eyes 对照 spec 检查。这是你自己运行的检查清单 —— 不是子代理任务。
+
+**1. 规格覆盖：** 浏览 spec 的每个章节/需求。能指出实现它的任务吗？列出遗漏。
+
+**2. 占位符扫描：** 搜索计划中的 red flags —— "禁止占位符" 中的任何模式。修复它们。
+
+**3. 类型一致性：** 后续任务中的类型、方法签名、属性名是否与早期任务一致？任务 3 叫 `clearLayers()` 但任务 7 叫 `clearFullLayers()` 是 bug。
+
+发现问题直接修复，无需重新审查。发现没有任务的规格需求，添加任务。
 
 ---
 

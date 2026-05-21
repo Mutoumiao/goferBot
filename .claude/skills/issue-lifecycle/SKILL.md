@@ -104,8 +104,23 @@ description: >
 - 状态已是 `closed`：询问是否仍需同步
 - 状态不是 `closed`：先执行测试检查，通过后询问是否完成
 
+**关闭前强制验证（融入自 verification-before-completion）：**
+
+声明 issue 完成前，必须运行以下验证并确认输出：
+
+1. **单元测试**：`npx vitest run tests/issues/{dir}/`
+   - 预期：全部通过，0 失败
+
+2. **类型检查**：`pnpm type-check`
+   - 预期：0 错误
+
+3. **测试覆盖确认**：
+   - 所有 checklist.json 中的 AC-XX 都有对应测试
+   - 测试用例名以 `AC-XX:` 开头
+
+**验证失败 = 禁止关闭。** 必须先修复，再重新验证。
+
 **关闭前路径验证：**
-- [ ] 审查记录已归档到 `docs/reviews/{scope}/{type}-v{N}.md`
 - [ ] 测试代码存在于 `tests/issues/{dir}/`
 - [ ] checklist.json 中所有 AC-XX 状态为 `passed`
 - [ ] 以上路径存在对应文件，否则提示用户补全
@@ -130,18 +145,21 @@ issue 中通常有两处验收标准：
 
 用户确认完成后，保守更新 frontmatter：仅替换 `status:` 行。
 
-### 6. 更新进度文档
+### 6. 更新进度文档（可选）
 
+如用户明确要求更新进度文档：
 1. **更新 BACKLOG.md**：检查该 issue 对应行的状态是否已标记为 `closed`。若未标记，询问是否同步更新
 2. **更新 CHANGELOG.md**（如需要）：新增变更记录
 3. **避免意外删除**：仅修改状态相关文本，不删除章节标题或内容区块
+
+> **注意**：系统性的进度文档更新应使用 `/issue-updater` skill。本 skill 仅在关闭 issue 时做最小化同步。
 
 ### 7. 归档（可选）
 
 用户要求归档已关闭 issue 时：
 
-1. issue 目录：`docs/issues/{dir}/` → `docs/99-archived/v2-issues/{dir}/`
-2. review 记录：`docs/reviews/{scope}/` → `docs/99-archived/v2-reviews/{scope}/`
+1. issue 目录：`docs/issues/{dir}/` → `docs/archived/v2-issues/{dir}/`
+2. review 记录：`docs/reviews/{scope}/` → `docs/archived/v2-reviews/{scope}/`
 3. 测试代码保留在 `tests/issues/{dir}/`（历史参考）
 
 ### 8. 提交变更（可选）
@@ -177,7 +195,7 @@ issue 中通常有两处验收标准：
 - checklist：`docs/issues/{dir}/checklist.json`
 - 测试代码：`tests/issues/{dir}/`
 - 审查记录目录：`docs/reviews/{scope}/`
-- 归档目录：`docs/99-archived/`
+- 归档目录：`docs/archived/`
 - 进度文档：`BACKLOG.md` / `CHANGELOG.md`
 
 项目根目录通过当前工作目录确定。若不存在上述路径，向上遍历一级，最多两级。

@@ -112,17 +112,35 @@ Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 t
 
 > 各文档类型的 frontmatter 规范参见 `docs/guide/` 下对应的 `writing-*.md`。
 
+## Skill 调用规则（融入自 using-superpowers）
+
+**1% 规则：** 只要用户请求有 1% 的可能性匹配某个 skill，就必须调用它。
+
+**禁止的借口：**
+- "这只是个简单问题" → 简单问题也需要正确流程
+- "我需要先获取上下文" → skill 告诉你如何获取
+- "这感觉很有生产力" → 无纪律的行动浪费 token
+- "我记得这个 skill" → skill 会演进，必须读取当前版本
+
+**指令优先级：**
+1. 用户显式指令（最高）
+2. 项目 skill（`project-workflow`、`issue-generator` 等）
+3. Superpowers skill（`subagent-driven-development`、`executing-plans` 等）
+4. 默认行为（最低）
+
 ## Skill routing
 
-当用户请求匹配以下场景时，优先 invoke 对应 skill。
+当用户请求匹配以下场景时，**必须** invoke 对应 skill。
 
 ### 项目流程
 
-- 不知道怎么开始/流程是什么/从哪开始 → `/project-workflow`
-- 拆 issue/生成工单/任务拆分 → `/issue-generator`
-- 审查 spec/写 behavior spec/写 API spec → `/spec-validator`
-- 写计划/生成实现方案 → `/plan-generator`
-- 开始开发 issue/开发 f-XX/b-XX → `/dev-orchestrator`
-- 代码审查 / spec 对齐 / 安全审查 / 验收 → `/kb-review`
-- 安全审计/漏洞检查/OWASP → `/kb-review`
-- 更新 issue 状态/标记完成 → `/issue-lifecycle`
+| 用户请求 | 必须调用的 skill | 禁止的行为 |
+|----------|-----------------|-----------|
+| 不知道怎么开始/流程是什么/从哪开始 | `/project-workflow` | 直接给建议而不走流程 |
+| 拆 issue/生成工单/任务拆分 | `/issue-generator` | 直接创建文件而不验证命名规范 |
+| 审查 spec/写 behavior spec/写 API spec | `/spec-validator` | 跳过 spec 直接写 plan |
+| 写计划/生成实现方案 | `/plan-generator` | 计划中出现 TODO/TBD/稍后实现 |
+| 开始开发 issue/开发 f-XX/b-XX | `/dev-orchestrator` | 无 spec/plan/测试直接编码 |
+| 代码审查 / spec 对齐 / 安全审查 / 验收 | `/kb-review` | 只审查代码不读 spec |
+| 安全审计/漏洞检查/OWASP | `/kb-review` | 流于形式不逐项检查 |
+| 更新 issue 状态/标记完成 | `/issue-lifecycle` | 未验证测试就标记完成 |
