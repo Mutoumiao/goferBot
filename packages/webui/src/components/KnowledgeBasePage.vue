@@ -21,7 +21,8 @@ import {
   XIcon,
 } from 'lucide-vue-next'
 import FileManager from './knowledge-base/FileManager.vue'
-import ContextMenu from './ContextMenu.vue'
+import { openContextMenu, closeAllContextMenus } from '@/overlays'
+import KbContextMenu from '@/overlays/context-menus/KbContextMenu.vue'
 
 const store = useKnowledgeBaseStore()
 
@@ -74,7 +75,6 @@ const renameError = ref('')
 const isRenaming = ref(false)
 
 function openRenameDialog(kb: { id: string; name: string }) {
-  closeContextMenu()
   renameId.value = kb.id
   renameName.value = kb.name
   renameError.value = ''
@@ -108,7 +108,6 @@ const deleteTarget = ref<{ id: string; name: string } | null>(null)
 const isDeleting = ref(false)
 
 function openDeleteDialog(kb: { id: string; name: string }) {
-  closeContextMenu()
   deleteTarget.value = kb
   showDeleteDialog.value = true
 }
@@ -128,30 +127,20 @@ async function confirmDelete() {
 }
 
 // Context menu
-const contextMenuVisible = ref(false)
-const contextMenuX = ref(0)
-const contextMenuY = ref(0)
-const contextMenuTarget = ref<{ id: string; name: string } | null>(null)
-
-function openContextMenu(event: MouseEvent, kb: { id: string; name: string }) {
+function handleContextMenu(event: MouseEvent, kb: { id: string; name: string; isPinned?: boolean }) {
   event.preventDefault()
   event.stopPropagation()
-  contextMenuTarget.value = kb
-  contextMenuX.value = event.clientX
-  contextMenuY.value = event.clientY
-  contextMenuVisible.value = true
-}
-
-function closeContextMenu() {
-  contextMenuVisible.value = false
-  contextMenuTarget.value = null
-}
-
-function togglePinFromMenu() {
-  if (contextMenuTarget.value) {
-    store.togglePin(contextMenuTarget.value.id)
-  }
-  closeContextMenu()
+  closeAllContextMenus()
+  openContextMenu(KbContextMenu, {
+    x: event.clientX,
+    y: event.clientY,
+    kb,
+    onAction: (action, target) => {
+      if (action === 'pin') store.togglePin(target.id)
+      else if (action === 'rename') openRenameDialog(target)
+      else if (action === 'delete') openDeleteDialog(target)
+    },
+  })
 }
 
 // Dismiss store error
@@ -212,7 +201,7 @@ const sortedKbs = computed(() => store.knowledgeBases)
               : 'border border-transparent hover:bg-white/50 hover:shadow-sm'
           "
           @click="selectKb(kb)"
-          @contextmenu="openContextMenu($event, kb)"
+          @contextmenu="handleContextMenu($event, kb)"
         >
           <!-- Icon box -->
           <div
@@ -275,42 +264,6 @@ const sortedKbs = computed(() => store.knowledgeBases)
     <div class="flex-1">
       <FileManager :kb-id="selectedKbId" />
     </div>
-
-    <!-- Context Menu -->
-    <ContextMenu
-      :visible="contextMenuVisible"
-      :x="contextMenuX"
-      :y="contextMenuY"
-      @close="closeContextMenu"
-    >
-      <Button
-        variant="ghost"
-        size="sm"
-        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2"
-        @click="togglePinFromMenu"
-      >
-        <PinIcon class="size-4" />
-        {{ contextMenuTarget?.isPinned ? '取消置顶' : '置顶' }}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2"
-        @click="contextMenuTarget && openRenameDialog(contextMenuTarget)"
-      >
-        <PencilIcon class="size-4" />
-        编辑
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
-        @click="contextMenuTarget && openDeleteDialog(contextMenuTarget)"
-      >
-        <TrashIcon class="size-4" />
-        删除
-      </Button>
-    </ContextMenu>
 
     <!-- Create Dialog -->
     <Dialog :open="showCreateDialog" @update:open="(v) => !v && (showCreateDialog = false)">
