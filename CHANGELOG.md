@@ -1,5 +1,9 @@
 # 完成日志
 
+## [2026-05-23]
+
+- [closed] Dialog 迁移 — FileManager 内联 Dialog + 独立组件迁移至 overlays/ [issue](docs/issues/f-09-dialog-migration/)
+
 ## [2026-05-22]
 
 - [closed] API 测试共享基础设施 — 5 个 helper + vitest 配置 + .env.test [issue](docs/issues/i-01-testing-infra-setup/)
