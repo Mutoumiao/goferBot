@@ -2,6 +2,7 @@
 
 ## [2026-05-22]
 
+- [closed] API 测试共享基础设施 — 5 个 helper + vitest 配置 + .env.test [issue](docs/issues/i-01-testing-infra-setup/)
 - [closed] Overlay 核心机制 — 前端 Dialog/ContextMenu 函数式调用基础设施 [issue](docs/issues/f-08-overlay-core/)
 
 ## [2026-05-20]

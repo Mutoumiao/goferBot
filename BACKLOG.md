@@ -10,8 +10,7 @@ _暂无_
 
 按依赖顺序执行：
 
-1. **i-01-testing-infra-setup** — 测试基础设施搭建（阻塞所有后续 issue）
-2. **b-02-auth-api-testing** — AuthController 测试
+1. **b-02-auth-api-testing** — AuthController 测试
 3. **b-03-document-api-testing** — DocumentController 测试
 4. **b-04-knowledge-base-api-testing** — KnowledgeBaseController 测试
 5. **b-05-chat-api-testing** — ChatController SSE 测试
