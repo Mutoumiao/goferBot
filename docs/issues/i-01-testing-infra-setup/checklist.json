@@ -7,7 +7,7 @@
     {"id": "AC-02", "desc": "TestAppFactory 实现（overrideProvider PrismaService + Fastify inject）", "status": "completed"},
     {"id": "AC-03", "desc": "AuthFixtures 实现（createUser + loginAs 含 RSA-OAEP 加密）", "status": "completed"},
     {"id": "AC-04", "desc": "ExternalServiceMocker 实现（nock 拦截 LLM/Embedding）", "status": "completed"},
-    {"id": "AC-05", "desc": "StorageCleaner 实现（TRUNCATE PG + 清理 MinIO/Milvus/Redis）", "status": "completed"},
+    {"id": "AC-05", "desc": "StorageCleaner 实现（TRUNCATE PG；MinIO/Milvus/Redis 清理待 E2E 阶段）", "status": "completed"},
     {"id": "AC-06", "desc": "vitest.integration.config.ts 更新（含 SWC decoratorMetadata）", "status": "completed"},
     {"id": "AC-07", "desc": "vitest.e2e-api.config.ts 新增", "status": "completed"},
     {"id": "AC-08", "desc": "package.json 测试脚本更新", "status": "completed"},

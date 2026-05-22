@@ -5,7 +5,8 @@ export class TestDatabaseManager {
   async createDatabase(suffix: string): Promise<string> {
     const random = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     const dbName = `goferbot_test_${suffix}_${random}`
-    const adminUrl = process.env.TEST_DATABASE_ADMIN_URL!
+    const adminUrl = process.env.TEST_DATABASE_ADMIN_URL
+    if (!adminUrl) throw new Error('TEST_DATABASE_ADMIN_URL is not set')
 
     const client = new Client({ connectionString: adminUrl })
     await client.connect()
@@ -31,7 +32,8 @@ export class TestDatabaseManager {
   }
 
   async dropDatabase(dbName: string): Promise<void> {
-    const adminUrl = process.env.TEST_DATABASE_ADMIN_URL!
+    const adminUrl = process.env.TEST_DATABASE_ADMIN_URL
+    if (!adminUrl) throw new Error('TEST_DATABASE_ADMIN_URL is not set')
     const client = new Client({ connectionString: adminUrl })
     await client.connect()
     await client.query(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`)

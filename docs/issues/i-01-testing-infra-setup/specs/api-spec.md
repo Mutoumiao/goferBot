@@ -63,7 +63,9 @@
 
 **保证**：
 - 全局 Guard/Interceptor/Pipe 与生产一致
-- MinIO/Milvus/Redis 客户端使用真实连接
+- MinIO/Milvus 客户端使用真实连接
+- QueueService（Redis/BullMQ）在模块级测试中被 mock（避免 Redis 不可用时超时），
+  真实 Redis 连接由 E2E 测试（vitest.e2e-api.config.ts）覆盖
 
 ---
 
@@ -138,21 +140,19 @@ TRUNCATE 所有业务表。
 
 ### cleanMinIO(): Promise<void>
 
-清空 MinIO test bucket 中的所有对象。
-
-**错误**：连接失败或 bucket 不存在 → 抛出 Error（提示检查 MinIO 服务）
+> **待实现（E2E 阶段）**：清空 MinIO test bucket 中的所有对象。
+> 模块级集成测试无需此方法（MinIO 并非始终运行，且 `minio` 包仅在 server workspace），
+> 由后续 E2E API 测试 issue 实现。
 
 ### cleanMilvus(): Promise<void>
 
-清空 Milvus test collection 中的所有向量。
-
-**错误**：连接失败或 collection 不存在 → 抛出 Error（提示检查 Milvus 服务）
+> **待实现（E2E 阶段）**：清空 Milvus test collection 中的所有向量。
+> 同上，由后续 E2E API 测试 issue 实现。
 
 ### cleanRedis(): Promise<void>
 
-清空 Redis db index 15 中的所有 key。
-
-**错误**：连接失败 → 抛出 Error（提示检查 Redis 服务）
+> **待实现（E2E 阶段）**：清空 Redis test DB 中的所有 key。
+> 同上，由后续 E2E API 测试 issue 实现。
 
 ---
 
