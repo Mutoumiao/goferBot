@@ -2,6 +2,7 @@
 
 ## [2026-05-23]
 
+- [closed] AuthController 测试 — 模块级集成测试 AC-01~AC-15 + E2E 完整链路 AC-16，覆盖 public-key/register/login/refresh/logout/me 全部端点 [issue](docs/issues/b-02-auth-api-testing/)
 - [closed] ContextMenu 迁移 — FileManager/FileExplorer/KnowledgeBasePage 内联 ContextMenu 迁移至 overlays/，废弃旧 ContextMenu.vue，建立前端 overlay 规范文档 [issue](docs/issues/f-10-context-menu-and-conventions/)
 - [closed] Dialog 迁移 — FileManager 内联 Dialog + 独立组件迁移至 overlays/ [issue](docs/issues/f-09-dialog-migration/)
 

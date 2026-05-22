@@ -1,6 +1,6 @@
 ---
 id: b-02
-status: open
+status: closed
 track: backend
 priority: p1
 summary: AuthController 模块级集成测试 + Auth 核心链路 E2E
