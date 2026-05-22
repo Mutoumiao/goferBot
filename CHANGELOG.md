@@ -2,6 +2,7 @@
 
 ## [2026-05-23]
 
+- [closed] ContextMenu 迁移 — FileManager/FileExplorer/KnowledgeBasePage 内联 ContextMenu 迁移至 overlays/，废弃旧 ContextMenu.vue，建立前端 overlay 规范文档 [issue](docs/issues/f-10-context-menu-and-conventions/)
 - [closed] Dialog 迁移 — FileManager 内联 Dialog + 独立组件迁移至 overlays/ [issue](docs/issues/f-09-dialog-migration/)
 
 ## [2026-05-22]
