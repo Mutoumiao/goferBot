@@ -3,15 +3,15 @@
   "version": 1,
   "updated_at": "2026-05-22",
   "items": [
-    {"id": "AC-01", "desc": "TestDatabaseManager 实现（CREATE/DROP DATABASE + migrate deploy）", "status": "pending"},
-    {"id": "AC-02", "desc": "TestAppFactory 实现（overrideProvider PrismaService + Fastify inject）", "status": "pending"},
-    {"id": "AC-03", "desc": "AuthFixtures 实现（createUser + loginAs 含 RSA-OAEP 加密）", "status": "pending"},
-    {"id": "AC-04", "desc": "ExternalServiceMocker 实现（nock 拦截 LLM/Embedding）", "status": "pending"},
-    {"id": "AC-05", "desc": "StorageCleaner 实现（TRUNCATE PG + 清理 MinIO/Milvus/Redis）", "status": "pending"},
-    {"id": "AC-06", "desc": "vitest.integration.config.ts 更新（含 tsconfigPaths）", "status": "pending"},
-    {"id": "AC-07", "desc": "vitest.e2e-api.config.ts 新增", "status": "pending"},
-    {"id": "AC-08", "desc": "package.json 测试脚本更新", "status": "pending"},
-    {"id": "AC-09", "desc": ".env.test 新增", "status": "pending"},
-    {"id": "AC-10", "desc": "所有 helpers 在单个测试文件中可正常运行", "status": "pending"}
+    {"id": "AC-01", "desc": "TestDatabaseManager 实现（CREATE/DROP DATABASE + migrate deploy）", "status": "completed"},
+    {"id": "AC-02", "desc": "TestAppFactory 实现（overrideProvider PrismaService + Fastify inject）", "status": "completed"},
+    {"id": "AC-03", "desc": "AuthFixtures 实现（createUser + loginAs 含 RSA-OAEP 加密）", "status": "completed"},
+    {"id": "AC-04", "desc": "ExternalServiceMocker 实现（nock 拦截 LLM/Embedding）", "status": "completed"},
+    {"id": "AC-05", "desc": "StorageCleaner 实现（TRUNCATE PG + 清理 MinIO/Milvus/Redis）", "status": "completed"},
+    {"id": "AC-06", "desc": "vitest.integration.config.ts 更新（含 SWC decoratorMetadata）", "status": "completed"},
+    {"id": "AC-07", "desc": "vitest.e2e-api.config.ts 新增", "status": "completed"},
+    {"id": "AC-08", "desc": "package.json 测试脚本更新", "status": "completed"},
+    {"id": "AC-09", "desc": ".env.test 新增", "status": "completed"},
+    {"id": "AC-10", "desc": "所有 helpers 在单个测试文件中可正常运行", "status": "completed"}
   ]
 }
