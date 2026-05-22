@@ -4,4 +4,6 @@ export { openDialog, closeDialog, closeAllDialogs } from './services/dialog.serv
 export { openContextMenu, closeContextMenu, closeAllContextMenus } from './services/context-menu.service'
 export { defineDialog } from './composables/useDialog'
 export { defineContextMenu } from './composables/useContextMenu'
+export { default as FileContextMenu } from './context-menus/FileContextMenu.vue'
+export { default as FileExplorerContextMenu } from './context-menus/FileExplorerContextMenu.vue'
 export type { OverlayItem, DialogBaseProps, ContextMenuBaseProps } from './types/overlay.types'

@@ -3,10 +3,11 @@ import { ref, computed, watch } from 'vue'
 import { useFileStore, type DocumentItem, type Folder } from '@/stores/file'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { openDialog } from '@/overlays'
+import { openDialog, openContextMenu, closeAllContextMenus } from '@/overlays'
 import CreateFolderDialog from '@/overlays/dialogs/CreateFolderDialog.vue'
 import RenameDialog from '@/overlays/dialogs/RenameDialog.vue'
 import DeleteConfirmDialog from '@/overlays/dialogs/DeleteConfirmDialog.vue'
+import FileContextMenu from '@/overlays/context-menus/FileContextMenu.vue'
 import {
   SearchIcon,
   ArrowUpDownIcon,
@@ -34,12 +35,6 @@ const sortBy = ref<'name' | 'date' | 'type'>('date')
 const selectedIds = ref<Set<string>>(new Set())
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null)
 const isDragOver = ref(false)
-
-// Context menu
-const contextMenuPos = ref({ x: 0, y: 0 })
-const showContextMenu = ref(false)
-const contextMenuTarget = ref<(DocumentItem | Folder) | null>(null)
-const contextMenuIsBackground = ref(false)
 
 watch(
   () => props.kbId,
@@ -105,27 +100,34 @@ function toggleSelect(item: DocumentItem | Folder, add: boolean) {
 
 function handleContextMenu(e: MouseEvent, item: DocumentItem | Folder) {
   e.preventDefault()
-  contextMenuTarget.value = item
-  contextMenuIsBackground.value = false
-  contextMenuPos.value = { x: e.clientX, y: e.clientY }
-  showContextMenu.value = true
+  closeAllContextMenus()
+  openContextMenu(FileContextMenu, {
+    x: e.clientX,
+    y: e.clientY,
+    item,
+    onAction: (action, target) => {
+      if (!target) return
+      if (action === 'open') openItem(target)
+      else if (action === 'rename') openRenameDialog(target)
+      else if (action === 'delete') openDeleteDialog(target)
+    },
+  })
 }
 
 function handleBackgroundContextMenu(e: MouseEvent) {
   e.preventDefault()
-  contextMenuTarget.value = null
-  contextMenuIsBackground.value = true
-  contextMenuPos.value = { x: e.clientX, y: e.clientY }
-  showContextMenu.value = true
-}
-
-function closeContextMenu() {
-  showContextMenu.value = false
-  contextMenuTarget.value = null
+  closeAllContextMenus()
+  openContextMenu(FileContextMenu, {
+    x: e.clientX,
+    y: e.clientY,
+    item: null,
+    onAction: (action) => {
+      if (action === 'createFolder') openCreateFolderDialog()
+    },
+  })
 }
 
 function openCreateFolderDialog() {
-  closeContextMenu()
   openDialog(CreateFolderDialog, {
     kbId: props.kbId!,
     parentFolderId: fileStore.currentFolderId,
@@ -137,7 +139,6 @@ function openCreateFolderDialog() {
 }
 
 function openRenameDialog(item: DocumentItem | Folder) {
-  closeContextMenu()
   openDialog(RenameDialog, {
     title: '重命名',
     initialValue: item.name,
@@ -153,7 +154,6 @@ function openRenameDialog(item: DocumentItem | Folder) {
 }
 
 function openDeleteDialog(item: DocumentItem | Folder) {
-  closeContextMenu()
   const isFolder = !('status' in item)
   openDialog(DeleteConfirmDialog, {
     title: '删除确认',
@@ -329,50 +329,5 @@ function handleDrop(e: DragEvent) {
       />
     </div>
 
-    <!-- Context Menu -->
-    <Teleport to="body">
-      <div
-        v-if="showContextMenu"
-        class="fixed z-50 min-w-[160px] rounded-lg border border-border-default bg-white py-1 shadow-xl"
-        :style="{ left: `${contextMenuPos.x}px`, top: `${contextMenuPos.y}px` }"
-        @click.stop
-      >
-        <template v-if="contextMenuIsBackground">
-          <button
-            class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-2"
-            @click="openCreateFolderDialog"
-          >
-            <FolderPlusIcon class="size-4" />
-            新建文件夹
-          </button>
-        </template>
-        <template v-else-if="contextMenuTarget">
-          <button
-            v-if="!('status' in contextMenuTarget)"
-            class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-2"
-            @click="openItem(contextMenuTarget)"
-          >
-            <FolderIcon class="size-4" />
-            打开
-          </button>
-          <button
-            class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-2"
-            @click="openRenameDialog(contextMenuTarget)"
-          >
-            <PencilIcon class="size-4" />
-            重命名
-          </button>
-          <div class="my-1 h-px bg-border-default" />
-          <button
-            class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger-500 hover:bg-danger-50"
-            @click="openDeleteDialog(contextMenuTarget)"
-          >
-            <TrashIcon class="size-4" />
-            删除
-          </button>
-        </template>
-      </div>
-      <div v-if="showContextMenu" class="fixed inset-0 z-40" @click="closeContextMenu" />
-    </Teleport>
   </div>
 </template>
