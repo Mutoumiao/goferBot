@@ -1,0 +1,15 @@
+{
+  "issue_id": "b-04",
+  "version": 1,
+  "updated_at": "2026-05-22",
+  "items": [
+    {"id": "AC-01", "desc": "GET /api/knowledge-bases 模块级测试（列表 + 分页）", "status": "pending"},
+    {"id": "AC-02", "desc": "POST /api/knowledge-bases 模块级测试（happy path + 400 + 409）", "status": "pending"},
+    {"id": "AC-03", "desc": "PATCH /api/knowledge-bases/:id 模块级测试", "status": "pending"},
+    {"id": "AC-04", "desc": "DELETE /api/knowledge-bases/:id 模块级测试", "status": "pending"},
+    {"id": "AC-05", "desc": "GET /api/knowledge-bases/:id/search 模块级测试", "status": "pending"},
+    {"id": "AC-06", "desc": "多用户认证隔离测试（用户 A 无法操作用户 B 的 KB）", "status": "pending"},
+    {"id": "AC-07", "desc": "KB 核心链路 HTTP E2E（创建 → 更新 → 搜索 → 删除）", "status": "pending"},
+    {"id": "AC-08", "desc": "所有测试在 pnpm test:integration 和 pnpm test:e2e:api 中通过", "status": "pending"}
+  ]
+}
