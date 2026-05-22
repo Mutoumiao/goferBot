@@ -14,7 +14,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ['tests/unit/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/issues/**/*.spec.ts'],
     exclude: ['tests/e2e/**', 'tests/e2e-full/**', 'tests/integration/**', 'packages/**'],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],
