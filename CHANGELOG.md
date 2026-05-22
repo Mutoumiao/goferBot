@@ -1,5 +1,9 @@
 # 完成日志
 
+## [2026-05-22]
+
+- [closed] Overlay 核心机制 — 前端 Dialog/ContextMenu 函数式调用基础设施 [issue](docs/issues/f-08-overlay-core/)
+
 ## [2026-05-20]
 
 - [closed] 设置页账户 Tab [issue](docs/99-archived/issues/f-19-settings-account-tabs/)

@@ -1,0 +1,22 @@
+{
+  "issue_id": "f-08",
+  "version": 1,
+  "updated_at": "2026-05-22",
+  "items": [
+    {"id": "AC-01", "desc": "overlays/ 目录结构建立完成", "status": "passed"},
+    {"id": "AC-02", "desc": "OverlayHost.vue 实现队列管理和动态渲染", "status": "passed"},
+    {"id": "AC-03", "desc": "App.vue 模板声明 OverlayHost，main.ts 注册组件", "status": "passed"},
+    {"id": "AC-04", "desc": "dialog.service.ts 实现 openDialog/closeDialog/closeAllDialogs", "status": "passed"},
+    {"id": "AC-05", "desc": "context-menu.service.ts 实现 openContextMenu/closeContextMenu/closeAllContextMenus", "status": "passed"},
+    {"id": "AC-06", "desc": "defineDialog() 返回 isOpen 状态和 close 方法", "status": "passed"},
+    {"id": "AC-07", "desc": "defineContextMenu() 返回 isOpen 状态和 close 方法", "status": "passed"},
+    {"id": "AC-08", "desc": "overlay.types.ts 无 any 类型，泛型约束正确", "status": "passed"},
+    {"id": "AC-09", "desc": "z-index 堆叠管理正常，Dialog 和 ContextMenu 共享全局递增序列", "status": "passed"},
+    {"id": "AC-10", "desc": "页面刷新时 overlay 自动清理，DOM 无残留", "status": "passed"},
+    {"id": "AC-11", "desc": "路由切换时自动关闭所有 overlay", "status": "passed"},
+    {"id": "AC-12", "desc": "组件异常时 Vue 错误处理器触发 overlay 移除", "status": "passed"},
+    {"id": "AC-13", "desc": "closeAllDialogs 仅关闭 Dialog，不影响 ContextMenu（反之亦然）", "status": "passed"},
+    {"id": "AC-14", "desc": "ContextMenu 超出视口时自动调整位置", "status": "pending"},
+    {"id": "AC-15", "desc": "单元测试覆盖 service、host、composable 完整生命周期", "status": "passed"}
+  ]
+}
