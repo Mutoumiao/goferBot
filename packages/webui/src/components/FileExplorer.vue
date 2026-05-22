@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
-import { openDialog } from '@/overlays'
+import { openDialog, openContextMenu, closeAllContextMenus } from '@/overlays'
 import ConfirmDialog from '@/overlays/dialogs/ConfirmDialog.vue'
+import FileExplorerContextMenu from '@/overlays/context-menus/FileExplorerContextMenu.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import type { FileItem, SearchResultItem } from '@/types'
-import ContextMenu from './ContextMenu.vue'
 import InlineRename from './InlineRename.vue'
 import {
   ChevronLeftIcon,
@@ -87,25 +87,33 @@ function formatDate(ts: number): string {
 }
 
 // Context menu
-const contextMenuVisible = ref(false)
-const contextMenuX = ref(0)
-const contextMenuY = ref(0)
-const contextMenuFile = ref<string | null>(null)
-const contextMenuIsBlank = ref(false)
-
 function onContextMenu(event: MouseEvent, fileName?: string) {
   event.preventDefault()
-  contextMenuVisible.value = true
-  contextMenuX.value = event.clientX
-  contextMenuY.value = event.clientY
-  contextMenuFile.value = fileName || null
-  contextMenuIsBlank.value = !fileName
-}
-
-function closeFileContextMenu() {
-  contextMenuVisible.value = false
-  contextMenuFile.value = null
-  contextMenuIsBlank.value = false
+  closeAllContextMenus()
+  openContextMenu(FileExplorerContextMenu, {
+    x: event.clientX,
+    y: event.clientY,
+    fileName: fileName || null,
+    onAction: (action, target) => {
+      if (!target && action !== 'createFolder') return
+      if (action === 'rename') {
+        renamingFile.value = target!
+      } else if (action === 'move') {
+        emit('moveFile', target!)
+      } else if (action === 'copy') {
+        emit('copyFile', target!)
+      } else if (action === 'delete') {
+        openDialog(ConfirmDialog, {
+          title: '提示',
+          message: `确认永久删除文件「${target}」？此操作不可撤销。`,
+          kind: 'danger',
+          onConfirm: () => emit('deleteFile', target!),
+        })
+      } else if (action === 'createFolder') {
+        emit('createFolder')
+      }
+    },
+  })
 }
 
 // Inline rename
@@ -122,13 +130,6 @@ watchEffect(() => {
   }
 })
 
-function onRenameClick() {
-  if (contextMenuFile.value) {
-    renamingFile.value = contextMenuFile.value
-  }
-  closeFileContextMenu()
-}
-
 function onRenameSave(oldName: string, newName: string) {
   renamingFile.value = null
   if (newName && newName !== oldName) {
@@ -138,40 +139,6 @@ function onRenameSave(oldName: string, newName: string) {
 
 function onRenameCancel() {
   renamingFile.value = null
-}
-
-function onDeleteClick() {
-  if (contextMenuFile.value) {
-    const fileName = contextMenuFile.value
-    closeFileContextMenu()
-    openDialog(ConfirmDialog, {
-      title: '提示',
-      message: `确认永久删除文件「${fileName}」？此操作不可撤销。`,
-      kind: 'danger',
-      onConfirm: () => {
-        emit('deleteFile', fileName)
-      },
-    })
-  }
-}
-
-function onMoveClick() {
-  if (contextMenuFile.value) {
-    emit('moveFile', contextMenuFile.value)
-  }
-  closeFileContextMenu()
-}
-
-function onCopyClick() {
-  if (contextMenuFile.value) {
-    emit('copyFile', contextMenuFile.value)
-  }
-  closeFileContextMenu()
-}
-
-function onCreateFolderClick() {
-  closeFileContextMenu()
-  emit('createFolder')
 }
 </script>
 
@@ -291,58 +258,5 @@ function onCreateFolderClick() {
       </div>
     </div>
 
-    <!-- Context Menu -->
-    <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @close="closeFileContextMenu">
-      <div v-if="contextMenuIsBlank" class="py-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-          @click="onCreateFolderClick"
-        >
-          <FolderPlusIcon class="size-4" />
-          <span>新建文件夹</span>
-        </Button>
-      </div>
-      <div v-else class="py-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-          @click="onRenameClick"
-        >
-          <PencilIcon class="size-4" />
-          <span>重命名</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-          @click="onMoveClick"
-        >
-          <FolderInputIcon class="size-4" />
-          <span>移动到...</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-          @click="onCopyClick"
-        >
-          <CopyIcon class="size-4" />
-          <span>复制到...</span>
-        </Button>
-        <Separator class="my-1" />
-        <Button
-          variant="ghost"
-          size="sm"
-          class="flex w-full items-center justify-start gap-2 px-3 py-2 text-sm text-danger-500 hover:bg-danger-soft"
-          @click="onDeleteClick"
-        >
-          <Trash2Icon class="size-4" />
-          <span>永久删除</span>
-        </Button>
-      </div>
-    </ContextMenu>
   </div>
 </template>
