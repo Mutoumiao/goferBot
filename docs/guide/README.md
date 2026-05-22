@@ -20,6 +20,10 @@ docs/
 │   ├── writing-test-cases.md# Test Case 规范（已废弃，仅历史参考）
 │   └── _templates/          # 所有模板集中存放
 │
+├── webui-guide/          # 前端专项规范（overlay、组件约定等）
+│   ├── README.md
+│   └── overlay-conventions.md
+│
 ├── prd/                  # 产品需求文档
 ├── issues/                  # 活跃 Issue（Issue-Centric 结构）
 │   └── {prefix}-{NN}-{slug}/
