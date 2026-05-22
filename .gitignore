@@ -63,3 +63,5 @@ docs/bugs/*
 # Docker Compose local data volumes
 .data/
 .gstack/
+
+.trae/
