@@ -23,7 +23,7 @@ describe('TestDatabaseManager', () => {
     `)
     await client.end()
 
-    const tables = result.rows.map((r: { tablename: string }) => r.tablename)
+    const tables = result.rows.map((r) => r.tablename)
     expect(tables).toContain('users')
     expect(tables).toContain('knowledge_bases')
 

@@ -51,6 +51,8 @@ mkdir -p tests/issues/b-02-auth-api-testing
 - [ ] **步骤 1: 编写测试**
 
 > 注：AuthController 已实现，测试会直接通过（green）。这是**为已有代码补测试**的场景，TDD 严格 red-green 不适用。验证通过即确认测试代码正确。
+>
+> **Throttler 绕过：** 实际实现中，每个 `app.inject()` 调用需传递唯一的 `remoteAddress`（如 `::ffff:192.168.1.X`），避免 `@nestjs/throttler` 返回 429。以下代码示例省略此参数以保持简洁，实际代码已包含。
 
 ```typescript
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'

@@ -26,7 +26,7 @@ describe('ExternalServiceMocker', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'text-embedding-3-small', input: 'test' }),
     })
-    const json = (await res.json()) as any
+    const json = (await res.json()) as { data: [{ embedding: number[] }] }
     expect(json.data[0].embedding).toHaveLength(1536)
     expect(json.data[0].embedding[0]).toBe(0.1)
 

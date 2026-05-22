@@ -306,11 +306,7 @@ export class TestAppFactory {
     })
 
     const moduleRef = await Test.createTestingModule({
-      imports: [
-        // 优先加载 .env.test，确保测试配置覆盖开发配置
-        ConfigModule.forRoot({ envFilePath: ['.env.test', '.env'], isGlobal: true }),
-        AppModule,
-      ],
+      imports: [AppModule],
     })
       .overrideProvider(PrismaService)
       .useValue(testPrisma)
@@ -414,47 +410,71 @@ npx vitest run tests/issues/i-01-testing-infra-setup/auth.fixtures.spec.ts
 
 ```typescript
 // tests/integration/helpers/auth.fixtures.ts
-import { INestApplication } from '@nestjs/common'
+import { publicEncrypt, constants } from 'node:crypto'
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 export const AuthFixtures = {
   normalUser: { email: 'test@gofer.bot', password: 'Test1234!' },
   adminUser: { email: 'admin@gofer.bot', password: 'Admin1234!' },
 
   async createUser(
-    app: INestApplication,
-    user: { email: string; password: string; name?: string }
+    app: NestFastifyApplication,
+    user: { email: string; password: string; name?: string },
+    opts?: { remoteAddress?: string },
   ) {
+    const encryptedPassword = await this.encryptPassword(app, user.password, opts)
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/register',
-      payload: user,
+      payload: { email: user.email, encryptedPassword, name: user.name },
+      remoteAddress: opts?.remoteAddress,
     })
-    return res.json().data
+    if (res.statusCode >= 400) {
+      throw new Error(`createUser failed: ${res.statusCode} ${res.body}`)
+    }
+    const body = res.json()
+    const data = body.data ? body.data : body
+    return data.user
   },
 
   async loginAs(
-    app: INestApplication,
-    user: { email: string; password: string }
+    app: NestFastifyApplication,
+    user: { email: string; password: string },
+    opts?: { remoteAddress?: string },
+  ): Promise<string> {
+    const encryptedPassword = await this.encryptPassword(app, user.password, opts)
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { email: user.email, encryptedPassword },
+      remoteAddress: opts?.remoteAddress,
+    })
+    if (res.statusCode >= 400) {
+      throw new Error(`loginAs failed: ${res.statusCode} ${res.body}`)
+    }
+    const body = res.json()
+    const data = body.data ? body.data : body
+    return data.accessToken
+  },
+
+  async encryptPassword(
+    app: NestFastifyApplication,
+    password: string,
+    opts?: { remoteAddress?: string },
   ): Promise<string> {
     const keyRes = await app.inject({
       method: 'GET',
       url: '/api/auth/public-key',
+      remoteAddress: opts?.remoteAddress,
     })
-    const publicKey = keyRes.json().data.publicKey
+    const body = keyRes.json()
+    const publicKey = body.data ? body.data.publicKey : body.publicKey
 
-    // 使用 RSA-OAEP 加密密码
-    import { publicEncrypt, constants } from 'crypto'
-    const encryptedPassword = publicEncrypt(
-      { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING },
-      Buffer.from(user.password)
-    ).toString('base64')
-
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email: user.email, password: encryptedPassword },
-    })
-    return res.json().data.accessToken
+    const encrypted = publicEncrypt(
+      { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: 'sha256' },
+      Buffer.from(password),
+    )
+    return encrypted.toString('base64')
   },
 }
 ```
