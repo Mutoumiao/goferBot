@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/auth'
+import { useOverlayHost } from './overlays/host/useOverlayHost'
 import './assets/main.css'
 
 const app = createApp(App)
@@ -16,4 +17,17 @@ const authStore = useAuthStore()
 await authStore.init()
 
 app.use(router)
+
+// 路由切换时清理所有 overlay
+router.beforeEach(() => {
+  const { clearOverlays } = useOverlayHost()
+  clearOverlays()
+})
+
+// 页面刷新/关闭时清理所有 overlay
+window.addEventListener('beforeunload', () => {
+  const { clearOverlays } = useOverlayHost()
+  clearOverlays()
+})
+
 app.mount('#app')
