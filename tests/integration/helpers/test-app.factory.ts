@@ -1,7 +1,10 @@
 import { Test } from '@nestjs/testing'
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify'
+import { CanActivate } from '@nestjs/common'
 import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
 import { QueueService } from '../../../packages/server/src/processors/queue/queue.service.js'
+import { VectorService } from '../../../packages/server/src/processors/vector/vector.service.js'
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { AppModule } from '../../../packages/server/src/app.module.js'
 import { bootstrap } from '../../../packages/server/src/bootstrap.js'
 
@@ -20,6 +23,22 @@ const mockQueueService = {
   getRedisConnection: () => null,
 }
 
+const mockVectorService = {
+  onModuleInit: async () => {},
+  ensureCollection: async () => {},
+  insertVectors: async () => {},
+  searchVectors: async () => [],
+  deleteByIds: async () => {},
+  deleteByFileId: async () => {},
+  deleteByKbId: async () => {},
+}
+
+class NoOpThrottlerGuard implements CanActivate {
+  canActivate() {
+    return true
+  }
+}
+
 export class TestAppFactory {
   static async create(dbUrl: string): Promise<NestFastifyApplication> {
     const moduleRef = await Test.createTestingModule({
@@ -33,6 +52,15 @@ export class TestAppFactory {
       )
       .overrideProvider(QueueService)
       .useValue(mockQueueService)
+      .overrideProvider(VectorService)
+      .useValue(mockVectorService)
+      .overrideModule(ThrottlerModule)
+      .useModule(
+        ThrottlerModule.forRoot([
+          { name: 'default', ttl: 60000, limit: 9999 },
+          { name: 'auth', ttl: 60000, limit: 9999 },
+        ]),
+      )
       .compile()
 
     const app = moduleRef.createNestApplication<NestFastifyApplication>(

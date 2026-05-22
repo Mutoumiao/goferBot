@@ -27,6 +27,9 @@ importers:
       '@nestjs/testing':
         specifier: ^11.1.23
         version: 11.1.23(@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.2))(@nestjs/core@10.4.22(@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.2))(reflect-metadata@0.1.14)(rxjs@7.8.2))
+      '@nestjs/throttler':
+        specifier: ^5.2.0
+        version: 5.2.0(@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.2))(@nestjs/core@10.4.22(@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.2))(reflect-metadata@0.1.14)(rxjs@7.8.2))(reflect-metadata@0.1.14)
       '@pinia/testing':
         specifier: ^1.0.3
         version: 1.0.3(pinia@3.0.4(typescript@5.9.3)(vue@3.5.30(typescript@5.9.3)))
@@ -84,6 +87,9 @@ importers:
       vitest:
         specifier: ^4.1.0
         version: 4.1.0(@opentelemetry/api@1.9.1)(@types/node@25.5.0)(happy-dom@20.9.0)(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.31.1)(stylus@0.57.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))
+      vitest-ai-reporter:
+        specifier: ^0.0.3
+        version: 0.0.3(vitest@4.1.0(@opentelemetry/api@1.9.1)(@types/node@25.5.0)(happy-dom@20.9.0)(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.31.1)(stylus@0.57.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0)))
       vue:
         specifier: ^3.5.27
         version: 3.5.30(typescript@5.9.3)
@@ -7134,6 +7140,11 @@ packages:
         optional: true
       yaml:
         optional: true
+
+  vitest-ai-reporter@0.0.3:
+    resolution: {integrity: sha512-tRadfbfI9UnQQnMn28D3bi70h+p4nciKvhtNHzcP/g+NkBGvKcLd8zMbe90t36M8prBCXzpYm4ezWS9Om+wpbQ==}
+    peerDependencies:
+      vitest: '>=1.0.0'
 
   vitest@1.6.1:
     resolution: {integrity: sha512-Ljb1cnSJSivGN0LqXd/zmDbWEM0RNNg2t1QW/XUhYl/qPqyu7CsqeWtqQXHVaJsecLPuDoak2oJcZN2QoRIOag==}
@@ -14494,6 +14505,10 @@ snapshots:
       terser: 5.47.1
       tsx: 4.21.0
       yaml: 2.9.0
+
+  vitest-ai-reporter@0.0.3(vitest@4.1.0(@opentelemetry/api@1.9.1)(@types/node@25.5.0)(happy-dom@20.9.0)(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.31.1)(stylus@0.57.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))):
+    dependencies:
+      vitest: 4.1.0(@opentelemetry/api@1.9.1)(@types/node@25.5.0)(happy-dom@20.9.0)(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.31.1)(stylus@0.57.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))
 
   vitest@1.6.1(@types/node@20.19.41)(happy-dom@20.9.0)(lightningcss@1.31.1)(stylus@0.57.0)(terser@5.47.1):
     dependencies:

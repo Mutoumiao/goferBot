@@ -12,7 +12,6 @@
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:integration:watch": "vitest --config vitest.integration.config.ts",
-    "test:e2e:api": "vitest run --config vitest.e2e-api.config.ts",
     "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e",
     "type-check": "pnpm -r type-check",
     "preview": "pnpm --filter @goferbot/webui preview",
@@ -29,6 +28,7 @@
     "@nestjs/core": "^10.4.22",
     "@nestjs/platform-fastify": "^10.4.22",
     "@nestjs/testing": "^11.1.23",
+    "@nestjs/throttler": "^5.2.0",
     "@pinia/testing": "^1.0.3",
     "@playwright/test": "^1.59.1",
     "@prisma/client": "^5.22.0",
@@ -48,6 +48,7 @@
     "typescript": "^5.9.3",
     "unplugin-swc": "^1.5.9",
     "vitest": "^4.1.0",
+    "vitest-ai-reporter": "^0.0.3",
     "vue": "^3.5.27"
   },
   "dependencies": {
