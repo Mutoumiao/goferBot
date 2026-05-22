@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import AIReporter from 'vitest-ai-reporter'
 
 export default defineConfig({
   plugins: [vue()],
@@ -18,6 +19,7 @@ export default defineConfig({
     exclude: ['tests/e2e/**', 'tests/e2e-full/**', 'tests/integration/**', 'packages/**'],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],
+    reporters: [new AIReporter()],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary'],

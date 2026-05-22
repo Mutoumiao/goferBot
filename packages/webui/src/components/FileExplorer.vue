@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
-import { confirmDialog } from '@/utils/confirm'
+import { openDialog } from '@/overlays'
+import ConfirmDialog from '@/overlays/dialogs/ConfirmDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -139,13 +140,19 @@ function onRenameCancel() {
   renamingFile.value = null
 }
 
-async function onDeleteClick() {
+function onDeleteClick() {
   if (contextMenuFile.value) {
-    if (await confirmDialog(`确认永久删除文件「${contextMenuFile.value}」？此操作不可撤销。`, { title: '提示', kind: 'danger' })) {
-      emit('deleteFile', contextMenuFile.value)
-    }
+    const fileName = contextMenuFile.value
+    closeFileContextMenu()
+    openDialog(ConfirmDialog, {
+      title: '提示',
+      message: `确认永久删除文件「${fileName}」？此操作不可撤销。`,
+      kind: 'danger',
+      onConfirm: () => {
+        emit('deleteFile', fileName)
+      },
+    })
   }
-  closeFileContextMenu()
 }
 
 function onMoveClick() {
