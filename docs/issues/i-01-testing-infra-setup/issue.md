@@ -1,6 +1,6 @@
 ---
 id: i-01
-status: open
+status: closed
 track: infrastructure
 priority: p0
 summary: 搭建 API 测试共享基础设施

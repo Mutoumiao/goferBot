@@ -1,7 +1,7 @@
 {
   "issue_id": "i-01",
   "version": 1,
-  "updated_at": "2026-05-22",
+  "updated_at": "2026-05-22T23:54:00+08:00",
   "items": [
     {"id": "AC-01", "desc": "TestDatabaseManager 实现（CREATE/DROP DATABASE + migrate deploy）", "status": "completed"},
     {"id": "AC-02", "desc": "TestAppFactory 实现（overrideProvider PrismaService + Fastify inject）", "status": "completed"},
