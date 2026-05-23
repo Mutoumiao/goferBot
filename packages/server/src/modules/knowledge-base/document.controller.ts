@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnsupportedMediaTypeException, PayloadTooLargeException } from '@nestjs/common'
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnsupportedMediaTypeException, PayloadTooLargeException, BadRequestException } from '@nestjs/common'
 import type { FastifyRequest } from 'fastify'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
@@ -50,6 +50,15 @@ export class DocumentController {
     @Param('kbId') kbId: string,
     @Query('folderId') folderId?: string,
   ) {
+    if (folderId !== undefined && folderId !== '') {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(folderId)) {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: 'folderId 格式非法',
+        })
+      }
+    }
     return this.documentService.list(userId, kbId, folderId)
   }
 

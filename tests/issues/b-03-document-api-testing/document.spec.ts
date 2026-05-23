@@ -407,19 +407,94 @@ describe('DocumentController', () => {
   })
 
   it('AC-09: returns 400 when name is empty string', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_name_empty')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a9@gofer.bot', password: 'Test1234!', name: 'A9' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a9@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: '' },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-10: returns 400 when name exceeds 255 chars', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_name_long')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a10@gofer.bot', password: 'Test1234!', name: 'A10' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a10@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'a'.repeat(256) },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-11: returns 400 when folderId is not uuid', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_folderid_bad')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a11@gofer.bot', password: 'Test1234!', name: 'A11' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a11@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'valid', folderId: 'not-a-uuid' },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-12: returns 400 when query folderId is not uuid', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_query_folderid')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a12@gofer.bot', password: 'Test1234!', name: 'A12' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a12@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/knowledge-bases/${kb.id}/documents?folderId=bad-id`,
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-13: returns 413 for file exceeding 50MB', async () => {

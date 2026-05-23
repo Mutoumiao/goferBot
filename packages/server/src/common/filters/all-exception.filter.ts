@@ -92,6 +92,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       [HttpStatus.FORBIDDEN]: 'FORBIDDEN',
       [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
       [HttpStatus.PAYLOAD_TOO_LARGE]: 'PAYLOAD_TOO_LARGE',
+      [HttpStatus.UNPROCESSABLE_ENTITY]: 'VALIDATION_ERROR',
       [HttpStatus.TOO_MANY_REQUESTS]: 'RATE_LIMIT_EXCEEDED',
       [HttpStatus.INTERNAL_SERVER_ERROR]: 'INTERNAL_ERROR',
     }

@@ -1,6 +1,6 @@
 import { createZodValidationPipe } from 'nestjs-zod'
 import { ZodError } from 'zod'
-import { UnprocessableEntityException } from '@nestjs/common'
+import { BadRequestException } from '@nestjs/common'
 
 export const ZodValidationPipe = createZodValidationPipe({
   createValidationException: (error: ZodError) => {
@@ -9,7 +9,7 @@ export const ZodValidationPipe = createZodValidationPipe({
       issue: e.message,
     }))
 
-    return new UnprocessableEntityException({
+    return new BadRequestException({
       code: 'VALIDATION_ERROR',
       message: '请求参数校验失败',
       details,
