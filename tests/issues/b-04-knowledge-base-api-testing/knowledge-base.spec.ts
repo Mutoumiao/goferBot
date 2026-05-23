@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
 import { AuthFixtures } from '../../integration/helpers/auth.fixtures.js'
 import { TestDatabaseManager } from '../../integration/helpers/test-database.manager.js'
