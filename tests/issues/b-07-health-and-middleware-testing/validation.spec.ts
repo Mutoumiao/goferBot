@@ -34,6 +34,12 @@ describe('ZodValidationPipe', () => {
     expect(body.error).toBeDefined()
     expect(body.error.code).toBe('VALIDATION_ERROR')
     expect(body.error.message).toBeDefined()
+    if (body.error.details) {
+      expect(Array.isArray(body.error.details)).toBe(true)
+      expect(body.error.details.length).toBeGreaterThanOrEqual(1)
+      expect(body.error.details[0]).toHaveProperty('field')
+      expect(body.error.details[0]).toHaveProperty('issue')
+    }
     await teardownValidationApp(app, dbManager, dbUrl)
   })
 })
