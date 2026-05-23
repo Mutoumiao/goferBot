@@ -644,14 +644,68 @@ describe('DocumentController', () => {
   })
 
   it('AC-19: returns 404 for non-existent knowledge base', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_404_kb')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a19@gofer.bot', password: 'Test1234!', name: 'A19' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a19@gofer.bot', password: 'Test1234!' })
+
+    const fakeKbId = '00000000-0000-0000-0000-000000000000'
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/knowledge-bases/${fakeKbId}/documents`,
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(res.statusCode).toBe(404)
+    const body = res.json()
+    expect(body.error.code).toBe('NOT_FOUND')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-20: returns 404 for non-existent document', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_404_doc')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a20@gofer.bot', password: 'Test1234!', name: 'A20' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a20@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const fakeDocId = '00000000-0000-0000-0000-000000000000'
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/knowledge-bases/${kb.id}/documents/${fakeDocId}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'new-name' },
+    })
+    expect(res.statusCode).toBe(404)
+    const body = res.json()
+    expect(body.error.code).toBe('NOT_FOUND')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-21: returns 404 for invalid docId format', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_404_format')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a21@gofer.bot', password: 'Test1234!', name: 'A21' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a21@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/api/knowledge-bases/${kb.id}/documents/not-a-uuid`,
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(res.statusCode).toBe(404)
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 })
