@@ -2,6 +2,7 @@
 
 ## [2026-05-23]
 
+- [closed] KnowledgeBaseController 测试 — 模块级集成测试 15 AC，覆盖 list/create/update/delete 全部端点 + DTO 校验 + 多用户隔离 [issue](docs/issues/b-04-knowledge-base-api-testing/)
 - [closed] DocumentController 测试 — 模块级集成测试 21 AC，覆盖 upload/create/update/delete/list 全部端点 + DTO 校验 + 文件上传边界 + 权限控制 [issue](docs/issues/b-03-document-api-testing/)
 - [closed] AuthController 测试 — 模块级集成测试 AC-01~AC-15 + E2E 完整链路 AC-16，覆盖 public-key/register/login/refresh/logout/me 全部端点 [issue](docs/issues/b-02-auth-api-testing/)
 - [closed] ContextMenu 迁移 — FileManager/FileExplorer/KnowledgeBasePage 内联 ContextMenu 迁移至 overlays/，废弃旧 ContextMenu.vue，建立前端 overlay 规范文档 [issue](docs/issues/f-10-context-menu-and-conventions/)

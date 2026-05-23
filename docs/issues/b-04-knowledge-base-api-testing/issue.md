@@ -1,6 +1,6 @@
 ---
 id: b-04
-status: open
+status: closed
 track: backend
 priority: p1
 summary: KnowledgeBaseController 模块级集成测试 + KB 链路 E2E
