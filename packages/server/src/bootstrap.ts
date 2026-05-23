@@ -24,12 +24,17 @@ export async function bootstrap(app: NestFastifyApplication) {
   })
 
   // 2. CORS（白名单 origin）
-  const allowedOrigins = [
-    'http://localhost:1420',
-    'tauri://localhost',
-    'http://localhost:3000',
-    'http://localhost:5173',
-  ]
+  const isProduction = process.env.NODE_ENV === 'production'
+  const envOrigin = configService.get<string>('CORS_ORIGIN')
+  const allowedOrigins = isProduction
+    ? (envOrigin ? [envOrigin] : [])
+    : [
+        'http://localhost:1420',
+        'tauri://localhost',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        ...(envOrigin ? [envOrigin] : []),
+      ]
 
   app.enableCors({
     origin: (origin, callback) => {
