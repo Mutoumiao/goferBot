@@ -553,15 +553,110 @@ describe('ChatController', () => {
     await dbManager.dropDatabase(dbName)
   })
 
+  // ============================================================
+  // AC-15: LLM API 失败 → SSE error
+  // ============================================================
+
   it('AC-15: returns error via SSE when LLM API fails', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_llmerr')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c15@gofer.bot', password: 'Test1234!', name: 'C15' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c15@gofer.bot', password: 'Test1234!' })
+    const session = await createTestSession(app, token)
+
+    mockFetchSSE([], { status: 500 })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ sessionId: session.id }),
+    })
+
+    expect(res.statusCode).toBe(200)
+    const chunks = parseSSE(res.payload)
+    const lastChunk = chunks[chunks.length - 1] as Record<string, unknown>
+    expect(lastChunk.done).toBe(true)
+    expect(lastChunk.error).toContain('LLM 请求失败')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
+
+  // ============================================================
+  // AC-16: LLM 超时 → SSE LLM_TIMEOUT error
+  // ============================================================
 
   it('AC-16: returns LLM_TIMEOUT error when LLM times out', async () => {
-    expect(true).toBe(false)
+    const prevTimeout = process.env.LLM_TIMEOUT_MS
+    process.env.LLM_TIMEOUT_MS = '500'
+
+    const dbUrl = await dbManager.createDatabase('chat_timeout')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c16@gofer.bot', password: 'Test1234!', name: 'C16' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c16@gofer.bot', password: 'Test1234!' })
+    const session = await createTestSession(app, token)
+
+    mockFetchSSE(['irrelevant'], { delayMs: 2000 })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ sessionId: session.id }),
+    })
+
+    expect(res.statusCode).toBe(200)
+    const chunks = parseSSE(res.payload)
+    const lastChunk = chunks[chunks.length - 1] as Record<string, unknown>
+    expect(lastChunk.done).toBe(true)
+    expect(lastChunk.error).toContain('LLM 请求超时')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
+
+    if (prevTimeout) process.env.LLM_TIMEOUT_MS = prevTimeout
+    else delete process.env.LLM_TIMEOUT_MS
   })
 
+  // ============================================================
+  // AC-17: LLM 空回复持久化
+  // ============================================================
+
   it('AC-17: persists assistant message even when LLM returns empty', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_empty')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c17@gofer.bot', password: 'Test1234!', name: 'C17' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c17@gofer.bot', password: 'Test1234!' })
+    const session = await createTestSession(app, token)
+
+    mockFetchSSE([])
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ sessionId: session.id }),
+    })
+
+    const prisma = app.get(PrismaService)
+    const messages = await prisma.message.findMany({
+      where: { sessionId: session.id },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    expect(messages).toHaveLength(2)
+    expect(messages[0].role).toBe('user')
+    expect(messages[1].role).toBe('assistant')
+    expect(messages[1].content).toBe('')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 })
