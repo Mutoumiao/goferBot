@@ -1,82 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { Test } from '@nestjs/testing'
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify'
-import { CanActivate } from '@nestjs/common'
-import { ThrottlerModule } from '@nestjs/throttler'
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
 import { AuthFixtures } from '../../integration/helpers/auth.fixtures.js'
 import { TestDatabaseManager } from '../../integration/helpers/test-database.manager.js'
-import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
-import { QueueService } from '../../../packages/server/src/processors/queue/queue.service.js'
-import { VectorService } from '../../../packages/server/src/processors/vector/vector.service.js'
-import { StorageService } from '../../../packages/server/src/processors/storage/storage.service.js'
-import { AppModule } from '../../../packages/server/src/app.module.js'
-import { bootstrap } from '../../../packages/server/src/bootstrap.js'
-
-const mockStorageService = {
-  uploadFile: async () => 'mock-key',
-  downloadFile: async () => Buffer.from(''),
-  deleteFile: async () => {},
-  getUrl: () => 'http://mock.url',
-  getPresignedUploadUrl: async () => 'http://mock.url',
-}
-
-async function createAppWithMocks(dbUrl: string): Promise<NestFastifyApplication> {
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  })
-    .overrideProvider(PrismaService)
-    .useValue(
-      new PrismaService({
-        datasources: { db: { url: dbUrl } },
-      }),
-    )
-    .overrideProvider(QueueService)
-    .useValue({
-      onModuleInit: async () => {},
-      onModuleDestroy: async () => {},
-      addDocumentJob: async () => null,
-      addEmbeddingJob: async () => null,
-      getJobStatus: async () => null,
-      getQueueStats: async () => ({
-        documentQueue: {},
-        embeddingQueue: {},
-      }),
-      getDocumentQueue: () => null,
-      getEmbeddingQueue: () => null,
-      getRedisConnection: () => null,
-    })
-    .overrideProvider(VectorService)
-    .useValue({
-      onModuleInit: async () => {},
-      ensureCollection: async () => {},
-      insertVectors: async () => {},
-      searchVectors: async () => [],
-      deleteByIds: async () => {},
-      deleteByFileId: async () => {},
-      deleteByKbId: async () => {},
-    })
-    .overrideProvider(StorageService)
-    .useValue(mockStorageService)
-    .overrideModule(ThrottlerModule)
-    .useModule(
-      ThrottlerModule.forRoot([
-        { name: 'default', ttl: 60000, limit: 9999 },
-        { name: 'auth', ttl: 60000, limit: 9999 },
-      ]),
-    )
-    .compile()
-
-  const app = moduleRef.createNestApplication<NestFastifyApplication>(
-    new FastifyAdapter({ bodyLimit: 1048576 }),
-  )
-
-  await bootstrap(app)
-  await app.init()
-  await app.getHttpAdapter().getInstance().ready()
-
-  return app
-}
 
 async function createKnowledgeBase(
   app: NestFastifyApplication,
@@ -136,7 +62,7 @@ describe('DocumentController', () => {
 
   it('AC-01: lists documents for owned knowledge base', async () => {
     const dbUrl = await dbManager.createDatabase('doc_list')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a1@gofer.bot', password: 'Test1234!', name: 'A1' })
     const token = await AuthFixtures.loginAs(app, { email: 'a1@gofer.bot', password: 'Test1234!' })
@@ -178,7 +104,7 @@ describe('DocumentController', () => {
 
   it('AC-02: uploads a valid file and creates document record', async () => {
     const dbUrl = await dbManager.createDatabase('doc_upload')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a2@gofer.bot', password: 'Test1234!', name: 'A2' })
     const token = await AuthFixtures.loginAs(app, { email: 'a2@gofer.bot', password: 'Test1234!' })
@@ -207,7 +133,7 @@ describe('DocumentController', () => {
 
   it('AC-03: creates a document with valid data', async () => {
     const dbUrl = await dbManager.createDatabase('doc_create')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a3@gofer.bot', password: 'Test1234!', name: 'A3' })
     const token = await AuthFixtures.loginAs(app, { email: 'a3@gofer.bot', password: 'Test1234!' })
@@ -235,7 +161,7 @@ describe('DocumentController', () => {
 
   it('AC-04: updates a document with valid data', async () => {
     const dbUrl = await dbManager.createDatabase('doc_update')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a4@gofer.bot', password: 'Test1234!', name: 'A4' })
     const token = await AuthFixtures.loginAs(app, { email: 'a4@gofer.bot', password: 'Test1234!' })
@@ -268,7 +194,7 @@ describe('DocumentController', () => {
 
   it('AC-05: deletes a document and returns confirmation', async () => {
     const dbUrl = await dbManager.createDatabase('doc_delete')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a5@gofer.bot', password: 'Test1234!', name: 'A5' })
     const token = await AuthFixtures.loginAs(app, { email: 'a5@gofer.bot', password: 'Test1234!' })
@@ -301,7 +227,7 @@ describe('DocumentController', () => {
 
   it('AC-06: returns empty array when no documents exist', async () => {
     const dbUrl = await dbManager.createDatabase('doc_empty')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a6@gofer.bot', password: 'Test1234!', name: 'A6' })
     const token = await AuthFixtures.loginAs(app, { email: 'a6@gofer.bot', password: 'Test1234!' })
@@ -325,7 +251,7 @@ describe('DocumentController', () => {
 
   it('AC-07: lists documents filtered by folderId', async () => {
     const dbUrl = await dbManager.createDatabase('doc_filter')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a7@gofer.bot', password: 'Test1234!', name: 'A7' })
     const token = await AuthFixtures.loginAs(app, { email: 'a7@gofer.bot', password: 'Test1234!' })
@@ -375,7 +301,7 @@ describe('DocumentController', () => {
 
   it('AC-08: updates document with empty body returns unchanged', async () => {
     const dbUrl = await dbManager.createDatabase('doc_empty_body')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a8@gofer.bot', password: 'Test1234!', name: 'A8' })
     const token = await AuthFixtures.loginAs(app, { email: 'a8@gofer.bot', password: 'Test1234!' })
@@ -408,7 +334,7 @@ describe('DocumentController', () => {
 
   it('AC-09: returns 400 when name is empty string', async () => {
     const dbUrl = await dbManager.createDatabase('doc_name_empty')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a9@gofer.bot', password: 'Test1234!', name: 'A9' })
     const token = await AuthFixtures.loginAs(app, { email: 'a9@gofer.bot', password: 'Test1234!' })
@@ -431,7 +357,7 @@ describe('DocumentController', () => {
 
   it('AC-10: returns 400 when name exceeds 255 chars', async () => {
     const dbUrl = await dbManager.createDatabase('doc_name_long')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a10@gofer.bot', password: 'Test1234!', name: 'A10' })
     const token = await AuthFixtures.loginAs(app, { email: 'a10@gofer.bot', password: 'Test1234!' })
@@ -454,7 +380,7 @@ describe('DocumentController', () => {
 
   it('AC-11: returns 400 when folderId is not uuid', async () => {
     const dbUrl = await dbManager.createDatabase('doc_folderid_bad')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a11@gofer.bot', password: 'Test1234!', name: 'A11' })
     const token = await AuthFixtures.loginAs(app, { email: 'a11@gofer.bot', password: 'Test1234!' })
@@ -477,7 +403,7 @@ describe('DocumentController', () => {
 
   it('AC-12: returns 400 when query folderId is not uuid', async () => {
     const dbUrl = await dbManager.createDatabase('doc_query_folderid')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a12@gofer.bot', password: 'Test1234!', name: 'A12' })
     const token = await AuthFixtures.loginAs(app, { email: 'a12@gofer.bot', password: 'Test1234!' })
@@ -499,7 +425,7 @@ describe('DocumentController', () => {
 
   it('AC-13: returns 413 for file exceeding 50MB', async () => {
     const dbUrl = await dbManager.createDatabase('doc_413')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a13@gofer.bot', password: 'Test1234!', name: 'A13' })
     const token = await AuthFixtures.loginAs(app, { email: 'a13@gofer.bot', password: 'Test1234!' })
@@ -525,7 +451,7 @@ describe('DocumentController', () => {
 
   it('AC-14: returns 415 for unsupported file type', async () => {
     const dbUrl = await dbManager.createDatabase('doc_415_type')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a14@gofer.bot', password: 'Test1234!', name: 'A14' })
     const token = await AuthFixtures.loginAs(app, { email: 'a14@gofer.bot', password: 'Test1234!' })
@@ -549,7 +475,7 @@ describe('DocumentController', () => {
 
   it('AC-15: returns 415 for filename with illegal characters', async () => {
     const dbUrl = await dbManager.createDatabase('doc_415_name')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a15@gofer.bot', password: 'Test1234!', name: 'A15' })
     const token = await AuthFixtures.loginAs(app, { email: 'a15@gofer.bot', password: 'Test1234!' })
@@ -573,7 +499,7 @@ describe('DocumentController', () => {
 
   it('AC-16: accepts empty file (0 bytes) as valid', async () => {
     const dbUrl = await dbManager.createDatabase('doc_empty_file')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a16@gofer.bot', password: 'Test1234!', name: 'A16' })
     const token = await AuthFixtures.loginAs(app, { email: 'a16@gofer.bot', password: 'Test1234!' })
@@ -599,7 +525,7 @@ describe('DocumentController', () => {
 
   it('AC-17: returns 401 without valid JWT', async () => {
     const dbUrl = await dbManager.createDatabase('doc_401')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a17@gofer.bot', password: 'Test1234!', name: 'A17' })
     const token = await AuthFixtures.loginAs(app, { email: 'a17@gofer.bot', password: 'Test1234!' })
@@ -620,7 +546,7 @@ describe('DocumentController', () => {
 
   it('AC-18: returns 403 for non-owner access', async () => {
     const dbUrl = await dbManager.createDatabase('doc_403')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const userA = await AuthFixtures.createUser(app, { email: 'owner@gofer.bot', password: 'Test1234!', name: 'Owner' })
     const tokenA = await AuthFixtures.loginAs(app, { email: 'owner@gofer.bot', password: 'Test1234!' })
@@ -645,7 +571,7 @@ describe('DocumentController', () => {
 
   it('AC-19: returns 404 for non-existent knowledge base', async () => {
     const dbUrl = await dbManager.createDatabase('doc_404_kb')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a19@gofer.bot', password: 'Test1234!', name: 'A19' })
     const token = await AuthFixtures.loginAs(app, { email: 'a19@gofer.bot', password: 'Test1234!' })
@@ -667,7 +593,7 @@ describe('DocumentController', () => {
 
   it('AC-20: returns 404 for non-existent document', async () => {
     const dbUrl = await dbManager.createDatabase('doc_404_doc')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a20@gofer.bot', password: 'Test1234!', name: 'A20' })
     const token = await AuthFixtures.loginAs(app, { email: 'a20@gofer.bot', password: 'Test1234!' })
@@ -691,7 +617,7 @@ describe('DocumentController', () => {
 
   it('AC-21: returns 404 for invalid docId format', async () => {
     const dbUrl = await dbManager.createDatabase('doc_404_format')
-    const app = await createAppWithMocks(dbUrl)
+    const app = await TestAppFactory.create(dbUrl)
 
     const user = await AuthFixtures.createUser(app, { email: 'a21@gofer.bot', password: 'Test1234!', name: 'A21' })
     const token = await AuthFixtures.loginAs(app, { email: 'a21@gofer.bot', password: 'Test1234!' })
