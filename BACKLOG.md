@@ -10,6 +10,5 @@ _暂无_
 
 按依赖顺序执行：
 
-1. **b-05-chat-api-testing** — ChatController SSE 测试
-6. **b-06-folder-session-settings-testing** — Folder/Session/Settings 测试
-7. **b-07-health-and-middleware-testing** — Health + 全局中间件测试
+1. **b-06-folder-session-settings-testing** — Folder/Session/Settings 测试
+2. **b-07-health-and-middleware-testing** — Health + 全局中间件测试

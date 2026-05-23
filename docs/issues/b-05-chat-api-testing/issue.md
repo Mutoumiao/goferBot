@@ -1,6 +1,6 @@
 ---
 id: b-05
-status: open
+status: closed
 track: backend
 priority: p1
 summary: ChatController SSE 模块级集成测试 + Chat 链路 E2E
