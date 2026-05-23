@@ -251,12 +251,96 @@ describe('ChatController', () => {
   // 占位测试（任务 3~6 实现）
   // ============================================================
 
+  // ============================================================
+  // AC-05: knowledgeBaseIds 参数接受
+  // ============================================================
+
   it('AC-05: accepts knowledgeBaseIds in request without error', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_kbids')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c5@gofer.bot', password: 'Test1234!', name: 'C5' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c5@gofer.bot', password: 'Test1234!' })
+    const session = await createTestSession(app, token)
+
+    mockFetchSSE(['OK'])
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({
+        sessionId: session.id,
+        knowledgeBaseIds: ['00000000-0000-0000-0000-000000000000'],
+      }),
+    })
+
+    expect(res.statusCode).toBe(200)
+    const chunks = parseSSE(res.payload)
+    expect(chunks.some((c: any) => c.chunk === 'OK')).toBe(true)
+    expect(chunks[chunks.length - 1].done).toBe(true)
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
+  // ============================================================
+  // AC-06: E2E 完整链路
+  // ============================================================
+
   it('AC-06: E2E flow (create session → send message → verify stream → view history)', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_e2e')
+    const app = await TestAppFactory.create(dbUrl)
+
+    // Step 1: 注册 + 登录
+    const user = await AuthFixtures.createUser(app, { email: 'c6@gofer.bot', password: 'Test1234!', name: 'C6' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c6@gofer.bot', password: 'Test1234!' })
+
+    // Step 2: 创建会话
+    const sessionRes = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: 'E2E Test Chat' },
+    })
+    expect(sessionRes.statusCode).toBe(201)
+    const session = sessionRes.json().data
+    expect(session.title).toBe('E2E Test Chat')
+
+    // Step 3: 发送消息，获取 SSE 流
+    mockFetchSSE(['E2E', ' Response'])
+
+    const chatRes = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ sessionId: session.id, message: 'E2E test message' }),
+    })
+    expect(chatRes.statusCode).toBe(200)
+
+    const chunks = parseSSE(chatRes.payload)
+    expect(chunks[0]).toEqual({ chunk: 'E2E', done: false })
+    expect(chunks[1]).toEqual({ chunk: ' Response', done: false })
+    expect(chunks[2]).toEqual({ chunk: '', done: true })
+
+    // Step 4: 查看会话历史
+    const historyRes = await app.inject({
+      method: 'GET',
+      url: `/api/sessions/${session.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(historyRes.statusCode).toBe(200)
+    const history = historyRes.json().data
+    expect(history.messages).toHaveLength(2)
+    expect(history.messages[0].role).toBe('user')
+    expect(history.messages[0].content).toBe('E2E test message')
+    expect(history.messages[1].role).toBe('assistant')
+    expect(history.messages[1].content).toBe('E2E Response')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-07: returns 400 when message is empty', async () => {
