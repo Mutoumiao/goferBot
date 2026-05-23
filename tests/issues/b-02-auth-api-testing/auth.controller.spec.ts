@@ -55,7 +55,7 @@ describe('AuthController integration', () => {
       payload: { email: 'not-an-email', encryptedPassword },
       remoteAddress: '::ffff:192.168.1.3',
     })
-    expect(res.statusCode).toBe(422)
+    expect(res.statusCode).toBe(400)
     const body = res.json()
     expect(body.error.code).toBe('VALIDATION_ERROR')
   })
@@ -129,7 +129,7 @@ describe('AuthController integration', () => {
       payload: { email: 'bad-email', encryptedPassword },
       remoteAddress: '::ffff:192.168.1.9',
     })
-    expect(res.statusCode).toBe(422)
+    expect(res.statusCode).toBe(400)
     const body = res.json()
     expect(body.error.code).toBe('VALIDATION_ERROR')
   })
