@@ -34,7 +34,7 @@ export class DocumentService {
     const storageKey = `${kbId}/${Date.now()}-${payload.filename}`
     await this.storage.uploadFile(payload.buffer, storageKey, payload.mimeType)
 
-    return this.prisma.document.create({
+    const doc = await this.prisma.document.create({
       data: {
         kbId,
         folderId: payload.folderId,
@@ -46,6 +46,7 @@ export class DocumentService {
         status: 'uploaded',
       },
     })
+    return { ...doc, size: doc.size !== null ? Number(doc.size) : null }
   }
 
   async create(userId: string, kbId: string, dto: CreateDocumentDto) {
