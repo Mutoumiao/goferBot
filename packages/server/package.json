@@ -15,7 +15,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
-    "export:v1": "npx tsx src/tools/export-v1-data.ts"
+    "export:v1": "npx tsx src/tools/export-v1-data.ts",
+    "export:openapi": "npx tsx src/tools/export-openapi.ts"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -27,6 +28,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-fastify": "^10.3.0",
+    "@nestjs/swagger": "^11.4.4",
     "@nestjs/throttler": "^5.1.1",
     "@prisma/client": "^5.7.0",
     "@zilliz/milvus2-sdk-node": "^2.3.0",
