@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
@@ -42,6 +43,7 @@ export class SessionController {
   }
 
   @Post(':id/rename')
+  @HttpCode(200)
   async update(
     @CurrentUser('id') userId: string,
     @Param('id') id: string,

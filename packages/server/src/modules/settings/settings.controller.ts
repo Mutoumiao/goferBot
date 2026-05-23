@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Body, UseGuards, HttpCode } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js'
@@ -16,6 +16,7 @@ export class SettingsController {
   }
 
   @Post()
+  @HttpCode(200)
   async saveSettings(
     @CurrentUser('id') userId: string,
     @Body() dto: SettingsDto,
