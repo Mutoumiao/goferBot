@@ -157,42 +157,263 @@ describe('KnowledgeBaseController', () => {
   })
 
   it('AC-06: updates with empty body returns unchanged', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_empty_body')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a6@gofer.bot', password: 'Test1234!', name: 'A6' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a6@gofer.bot', password: 'Test1234!' })
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'unchanged' },
+    })
+    const kb = createRes.json().data
+
+    const updateRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/knowledge-bases/${kb.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: {},
+    })
+    expect(updateRes.statusCode).toBe(200)
+    const updated = updateRes.json().data
+    expect(updated.name).toBe('unchanged')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-07: updates isPinned and sortOrder', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_pin_sort')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a7@gofer.bot', password: 'Test1234!', name: 'A7' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a7@gofer.bot', password: 'Test1234!' })
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'sortable' },
+    })
+    const kb = createRes.json().data
+
+    const updateRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/knowledge-bases/${kb.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { isPinned: true, sortOrder: 5 },
+    })
+    expect(updateRes.statusCode).toBe(200)
+    const updated = updateRes.json().data
+    expect(updated.isPinned).toBe(true)
+    expect(updated.sortOrder).toBe(5)
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-08: returns 400 when name is empty string', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_name_empty')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a8@gofer.bot', password: 'Test1234!', name: 'A8' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a8@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: '' },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-09: returns 400 when name exceeds 100 chars', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_name_long')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a9@gofer.bot', password: 'Test1234!', name: 'A9' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a9@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'a'.repeat(101) },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-10: returns 400 when description exceeds 500 chars', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_desc_long')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a10@gofer.bot', password: 'Test1234!', name: 'A10' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a10@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'valid', description: 'a'.repeat(501) },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-11: returns 400 when sortOrder is negative', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_sort_neg')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a11@gofer.bot', password: 'Test1234!', name: 'A11' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a11@gofer.bot', password: 'Test1234!' })
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'kb' },
+    })
+    const kb = createRes.json().data
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/knowledge-bases/${kb.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { sortOrder: -1 },
+    })
+    expect(res.statusCode).toBe(400)
+    const body = res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-12: returns 401 without valid JWT', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_401')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/knowledge-bases',
+    })
+    expect(res.statusCode).toBe(401)
+    const body = res.json()
+    expect(body.error.code).toBe('AUTH_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-13: returns 403 for non-owner access', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_403')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const userA = await AuthFixtures.createUser(app, { email: 'owner@gofer.bot', password: 'Test1234!', name: 'Owner' })
+    const tokenA = await AuthFixtures.loginAs(app, { email: 'owner@gofer.bot', password: 'Test1234!' })
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { name: 'kb-a' },
+    })
+    const kb = createRes.json().data
+
+    const userB = await AuthFixtures.createUser(app, { email: 'intruder@gofer.bot', password: 'Test1234!', name: 'Intruder' })
+    const tokenB = await AuthFixtures.loginAs(app, { email: 'intruder@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/api/knowledge-bases/${kb.id}`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    })
+    expect(res.statusCode).toBe(403)
+    const body = res.json()
+    expect(body.error.code).toBe('FORBIDDEN')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-14: returns 404 for non-existent knowledge base', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_404')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a14@gofer.bot', password: 'Test1234!', name: 'A14' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a14@gofer.bot', password: 'Test1234!' })
+
+    const fakeId = '00000000-0000-0000-0000-000000000000'
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/knowledge-bases/${fakeId}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'ghost' },
+    })
+    expect(res.statusCode).toBe(404)
+    const body = res.json()
+    expect(body.error.code).toBe('NOT_FOUND')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-15: user A cannot see user B knowledge bases', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('kb_isolation')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const userA = await AuthFixtures.createUser(app, { email: 'alice@gofer.bot', password: 'Test1234!', name: 'Alice' })
+    const tokenA = await AuthFixtures.loginAs(app, { email: 'alice@gofer.bot', password: 'Test1234!' })
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { name: 'alice-kb' },
+    })
+    expect(createRes.statusCode).toBe(201)
+
+    const userB = await AuthFixtures.createUser(app, { email: 'bob@gofer.bot', password: 'Test1234!', name: 'Bob' })
+    const tokenB = await AuthFixtures.loginAs(app, { email: 'bob@gofer.bot', password: 'Test1234!' })
+
+    const listRes = await app.inject({
+      method: 'GET',
+      url: '/api/knowledge-bases',
+      headers: { authorization: `Bearer ${tokenB}` },
+    })
+    expect(listRes.statusCode).toBe(200)
+    const kbs = listRes.json().data
+    expect(Array.isArray(kbs)).toBe(true)
+    expect(kbs.some((kb: { name: string }) => kb.name === 'alice-kb')).toBe(false)
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 })
