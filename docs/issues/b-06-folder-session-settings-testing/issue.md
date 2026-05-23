@@ -1,6 +1,6 @@
 ---
 id: b-06
-status: open
+status: closed
 track: backend
 priority: p2
 summary: Folder/Session/Settings 模块级集成测试
