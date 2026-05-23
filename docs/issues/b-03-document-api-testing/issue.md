@@ -1,6 +1,6 @@
 ---
 id: b-03
-status: open
+status: closed
 track: backend
 priority: p1
 summary: DocumentController 模块级集成测试 + 文件上传链路 E2E
