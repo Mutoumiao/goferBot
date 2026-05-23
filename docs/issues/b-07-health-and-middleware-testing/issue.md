@@ -1,6 +1,6 @@
 ---
 id: b-07
-status: open
+status: closed
 track: backend
 priority: p3
 summary: HealthController + 全局中间件验证测试
