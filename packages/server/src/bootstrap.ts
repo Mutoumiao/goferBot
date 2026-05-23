@@ -20,6 +20,7 @@ export async function bootstrap(app: NestFastifyApplication) {
       fileSize: 50 * 1024 * 1024, // 50MB
       files: 10,
     },
+    throwFileSizeLimit: true,
   })
 
   // 2. CORS（白名单 origin）

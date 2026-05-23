@@ -498,19 +498,103 @@ describe('DocumentController', () => {
   })
 
   it('AC-13: returns 413 for file exceeding 50MB', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_413')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a13@gofer.bot', password: 'Test1234!', name: 'A13' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a13@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const chunk = Buffer.alloc(1024 * 1024)
+    const bigBuffer = Buffer.concat(Array(51).fill(chunk))
+    const { payload, headers } = buildMultipartPayload('big.md', bigBuffer)
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents/upload`,
+      headers: { ...headers, authorization: `Bearer ${token}` },
+      payload,
+    })
+    expect(res.statusCode).toBe(413)
+    const body = res.json()
+    expect(body.error.code).toBe('PAYLOAD_TOO_LARGE')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-14: returns 415 for unsupported file type', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_415_type')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a14@gofer.bot', password: 'Test1234!', name: 'A14' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a14@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const { payload, headers } = buildMultipartPayload('virus.exe', Buffer.from('fake'))
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents/upload`,
+      headers: { ...headers, authorization: `Bearer ${token}` },
+      payload,
+    })
+    expect(res.statusCode).toBe(415)
+    const body = res.json()
+    expect(body.error.code).toBe('UNSUPPORTED_TYPE')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-15: returns 415 for filename with illegal characters', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_415_name')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a15@gofer.bot', password: 'Test1234!', name: 'A15' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a15@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const { payload, headers } = buildMultipartPayload('file..name.md', Buffer.from('# hello'))
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents/upload`,
+      headers: { ...headers, authorization: `Bearer ${token}` },
+      payload,
+    })
+    expect(res.statusCode).toBe(415)
+    const body = res.json()
+    expect(body.error.code).toBe('UNSUPPORTED_TYPE')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-16: accepts empty file (0 bytes) as valid', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_empty_file')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a16@gofer.bot', password: 'Test1234!', name: 'A16' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a16@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const { payload, headers } = buildMultipartPayload('empty.md', Buffer.alloc(0))
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents/upload`,
+      headers: { ...headers, authorization: `Bearer ${token}` },
+      payload,
+    })
+    expect(res.statusCode).toBe(201)
+    const body = res.json()
+    const doc = body.data ? body.data : body
+    expect(doc.name).toBe('empty.md')
+    expect(doc.size).toBe(0)
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-17: returns 401 without valid JWT', async () => {

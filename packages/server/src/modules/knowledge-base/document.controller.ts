@@ -112,6 +112,14 @@ export class DocumentController {
     }
     const buffer = Buffer.concat(chunks)
 
+    const fileStream = data.file as unknown as { truncated?: boolean }
+    if (fileStream.truncated) {
+      throw new PayloadTooLargeException({
+        code: 'PAYLOAD_TOO_LARGE',
+        message: '文件超过 50MB 限制',
+      })
+    }
+
     const folderField = data.fields?.folderId
     const folderId = folderField && !Array.isArray(folderField) && 'value' in folderField
       ? (folderField.value as string | undefined)
