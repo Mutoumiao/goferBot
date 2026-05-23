@@ -32,6 +32,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 |----------|---------------------------------------------|
 | 了解流程 | `docs/guide/workflow.md`                    |
 | 了解产品 | `docs/prd/v2-cloud-native.md`               |
+| 后端规范 | `docs/guide/backend/`                       |
 | 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md` |
 | 编码前   | `docs/issues/{prefix}-{NN}-{slug}/specs/`   |
 
@@ -46,6 +47,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 ├── tests/                        # 测试（单元/集成/E2E）
 ├── docs/                         # 文档
 │   ├── guide/                  # 流程规范、skills
+│   │   └── backend/            # 后端开发指南（API测试、规范等）
 │   ├── webui-guide/            # 前端专项规范（overlay、组件约定等）
 │   ├── prd/                   # 产品需求
 │   ├── issues/                   # 活跃 issue（Issue-Centric 结构）
