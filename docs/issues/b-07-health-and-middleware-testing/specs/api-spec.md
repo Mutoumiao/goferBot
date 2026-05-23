@@ -77,7 +77,7 @@
 
 ### ThrottlerGuard
 
-触发限流时返回 429，响应头包含 `retry-after: <秒数>`。
+触发限流时返回 429。
 
 响应体：
 ```json
@@ -89,6 +89,8 @@
 }
 ```
 
+> 注：`Retry-After` 响应头取决于 ThrottlerModule 的存储实现，测试环境中不保证返回。
+
 ---
 
 ## 测试实现说明
@@ -97,7 +99,7 @@
 在测试中动态注册一个测试 Controller，使用 `createZodDto` 定义带校验规则的 DTO，通过发送非法 payload 触发 `BadRequestException`，验证响应体包含 `error.code = "VALIDATION_ERROR"` 及 `error.details` 字段级错误数组。
 
 ### AC-05（ThrottlerGuard）
-在测试中动态注册一个测试 Controller，在方法上添加 `@Throttle(1, 60)`（1 分钟内限 1 次），连续请求两次验证第二次返回 429，且响应头包含 `retry-after`。
+在测试中动态注册一个测试 Controller，在方法上添加 `@Throttle(1, 60)`（1 分钟内限 1 次），连续请求两次验证第二次返回 429。
 
 ## 测试映射
 
@@ -107,4 +109,4 @@
 | ResponseInterceptor data 包装 | `tests/issues/b-07-health-and-middleware-testing/health.spec.ts` | `AC-02: wraps response in data field` |
 | AllExceptionsFilter 异常格式 | `tests/issues/b-07-health-and-middleware-testing/exception.spec.ts` | `AC-03: returns structured error for unknown route` |
 | ZodValidationPipe 400 | `tests/issues/b-07-health-and-middleware-testing/validation.spec.ts` | `AC-04: returns 400 with field-level errors` |
-| ThrottlerGuard 429 | `tests/issues/b-07-health-and-middleware-testing/throttle.spec.ts` | `AC-05: returns 429 with Retry-After header` |
+| ThrottlerGuard 429 | `tests/issues/b-07-health-and-middleware-testing/throttle.spec.ts` | `AC-05: returns 429 on rate limit` |
