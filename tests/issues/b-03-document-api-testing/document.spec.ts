@@ -324,11 +324,86 @@ describe('DocumentController', () => {
   })
 
   it('AC-07: lists documents filtered by folderId', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_filter')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a7@gofer.bot', password: 'Test1234!', name: 'A7' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a7@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const folderRes = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/folders`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'folder1' },
+    })
+    expect(folderRes.statusCode).toBe(201)
+    const folderBody = folderRes.json()
+    const folder = folderBody.data ? folderBody.data : folderBody
+
+    const docRes1 = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'in-folder', folderId: folder.id },
+    })
+    expect(docRes1.statusCode).toBe(201)
+
+    const docRes2 = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'no-folder' },
+    })
+    expect(docRes2.statusCode).toBe(201)
+
+    const listRes = await app.inject({
+      method: 'GET',
+      url: `/api/knowledge-bases/${kb.id}/documents?folderId=${folder.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    })
+    expect(listRes.statusCode).toBe(200)
+    const body = listRes.json()
+    const docs = body.data ? body.data : body
+    expect(docs).toHaveLength(1)
+    expect(docs[0].name).toBe('in-folder')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-08: updates document with empty body returns unchanged', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_empty_body')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a8@gofer.bot', password: 'Test1234!', name: 'A8' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a8@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: 'unchanged' },
+    })
+    const createBody = createRes.json()
+    const doc = createBody.data ? createBody.data : createBody
+
+    const updateRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/knowledge-bases/${kb.id}/documents/${doc.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: {},
+    })
+    expect(updateRes.statusCode).toBe(200)
+    const updateBody = updateRes.json()
+    const updated = updateBody.data ? updateBody.data : updateBody
+    expect(updated.name).toBe('unchanged')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-09: returns 400 when name is empty string', async () => {
