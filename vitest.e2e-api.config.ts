@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import swc from 'unplugin-swc'
 import path from 'path'
+import AIReporter from 'vitest-ai-reporter'
 
 export default defineConfig({
   plugins: [
@@ -23,6 +24,7 @@ export default defineConfig({
   test: {
     include: ['tests/e2e/api/**/*.spec.ts'],
     pool: 'forks',
+    reporters: [new AIReporter()],
     setupFiles: ['./tests/setup/integration-env.ts'],
     testTimeout: 60000,
     hookTimeout: 30000,
