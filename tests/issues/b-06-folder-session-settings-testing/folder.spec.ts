@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
