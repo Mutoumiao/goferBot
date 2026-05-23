@@ -598,11 +598,49 @@ describe('DocumentController', () => {
   })
 
   it('AC-17: returns 401 without valid JWT', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_401')
+    const app = await createAppWithMocks(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'a17@gofer.bot', password: 'Test1234!', name: 'A17' })
+    const token = await AuthFixtures.loginAs(app, { email: 'a17@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, token)
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+    })
+    expect(res.statusCode).toBe(401)
+    const body = res.json()
+    expect(body.error.code).toBe('AUTH_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-18: returns 403 for non-owner access', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('doc_403')
+    const app = await createAppWithMocks(dbUrl)
+
+    const userA = await AuthFixtures.createUser(app, { email: 'owner@gofer.bot', password: 'Test1234!', name: 'Owner' })
+    const tokenA = await AuthFixtures.loginAs(app, { email: 'owner@gofer.bot', password: 'Test1234!' })
+    const kb = await createKnowledgeBase(app, tokenA)
+
+    const userB = await AuthFixtures.createUser(app, { email: 'intruder@gofer.bot', password: 'Test1234!', name: 'Intruder' })
+    const tokenB = await AuthFixtures.loginAs(app, { email: 'intruder@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/knowledge-bases/${kb.id}/documents`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    })
+    expect(res.statusCode).toBe(403)
+    const body = res.json()
+    expect(body.error.code).toBe('FORBIDDEN')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-19: returns 404 for non-existent knowledge base', async () => {
