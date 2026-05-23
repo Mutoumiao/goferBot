@@ -491,12 +491,66 @@ describe('ChatController', () => {
     await dbManager.dropDatabase(dbName)
   })
 
+  // ============================================================
+  // AC-13: 非会话所有者 → SSE error
+  // ============================================================
+
   it('AC-13: returns error via SSE when user is not session owner', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_perm')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const userA = await AuthFixtures.createUser(app, { email: 'owner@gofer.bot', password: 'Test1234!', name: 'Owner' })
+    const tokenA = await AuthFixtures.loginAs(app, { email: 'owner@gofer.bot', password: 'Test1234!' })
+    const session = await createTestSession(app, tokenA)
+
+    const userB = await AuthFixtures.createUser(app, { email: 'intruder@gofer.bot', password: 'Test1234!', name: 'Intruder' })
+    const tokenB = await AuthFixtures.loginAs(app, { email: 'intruder@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: chatPayload({ sessionId: session.id }),
+    })
+
+    expect(res.statusCode).toBe(200)
+    const chunks = parseSSE(res.payload)
+    const lastChunk = chunks[chunks.length - 1] as Record<string, unknown>
+    expect(lastChunk.done).toBe(true)
+    expect(lastChunk.error).toBe('无权访问该会话')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
+  // ============================================================
+  // AC-14: 会话不存在 → SSE error
+  // ============================================================
+
   it('AC-14: returns error via SSE when session does not exist', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_notfound')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c14@gofer.bot', password: 'Test1234!', name: 'C14' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c14@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ sessionId: '00000000-0000-0000-0000-000000000000' }),
+    })
+
+    expect(res.statusCode).toBe(200)
+    const chunks = parseSSE(res.payload)
+    const lastChunk = chunks[chunks.length - 1] as Record<string, unknown>
+    expect(lastChunk.done).toBe(true)
+    expect(lastChunk.error).toBe('会话不存在')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-15: returns error via SSE when LLM API fails', async () => {
