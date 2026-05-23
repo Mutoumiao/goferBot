@@ -16,7 +16,7 @@
     {"id": "AC-11", "desc": "路由切换时自动关闭所有 overlay", "status": "passed"},
     {"id": "AC-12", "desc": "组件异常时 Vue 错误处理器触发 overlay 移除", "status": "passed"},
     {"id": "AC-13", "desc": "closeAllDialogs 仅关闭 Dialog，不影响 ContextMenu（反之亦然）", "status": "passed"},
-    {"id": "AC-14", "desc": "ContextMenu 超出视口时自动调整位置", "status": "pending"},
+    {"id": "AC-14", "desc": "ContextMenu 超出视口时自动调整位置（已移至 f-10 范围）", "status": "not_applicable"},
     {"id": "AC-15", "desc": "单元测试覆盖 service、host、composable 完整生命周期", "status": "passed"}
   ]
 }
