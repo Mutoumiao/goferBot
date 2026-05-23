@@ -5,6 +5,7 @@ import {
   UseGuards,
   Res,
   HttpStatus,
+  HttpException,
 } from '@nestjs/common'
 import type { FastifyReply } from 'fastify'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
@@ -48,7 +49,17 @@ export class ChatController {
         reply.raw.write(`data: ${JSON.stringify(chunk)}\n\n`)
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '未知错误'
+      let message = '未知错误'
+      if (err instanceof HttpException) {
+        const res = err.getResponse()
+        if (typeof res === 'object' && res !== null) {
+          message = (res as Record<string, unknown>).message as string || err.message
+        } else {
+          message = String(res)
+        }
+      } else if (err instanceof Error) {
+        message = err.message
+      }
       reply.raw.write(
         `data: ${JSON.stringify({ error: message, done: true })}\n\n`,
       )
