@@ -343,28 +343,152 @@ describe('ChatController', () => {
     await dbManager.dropDatabase(dbName)
   })
 
+  // ============================================================
+  // AC-07: message 为空 → 400
+  // ============================================================
+
   it('AC-07: returns 400 when message is empty', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_msg_empty')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c7@gofer.bot', password: 'Test1234!', name: 'C7' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c7@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ message: '' }),
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
+
+  // ============================================================
+  // AC-08: message 超长 → 400
+  // ============================================================
 
   it('AC-08: returns 400 when message exceeds 4000 chars', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_msg_long')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c8@gofer.bot', password: 'Test1234!', name: 'C8' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c8@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ message: 'a'.repeat(4001) }),
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
+
+  // ============================================================
+  // AC-09: sessionId 非 UUID → 400
+  // ============================================================
 
   it('AC-09: returns 400 when sessionId is not a valid UUID', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_sid_fmt')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c9@gofer.bot', password: 'Test1234!', name: 'C9' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c9@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({ sessionId: 'not-a-uuid' }),
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
+
+  // ============================================================
+  // AC-10: config 字段缺失 → 400
+  // ============================================================
 
   it('AC-10: returns 400 when config fields are missing', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_cfg_miss')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c10@gofer.bot', password: 'Test1234!', name: 'C10' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c10@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { message: 'test', sessionId: '00000000-0000-0000-0000-000000000000', config: {} },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
+
+  // ============================================================
+  // AC-11: baseUrl 不在白名单 → 400
+  // ============================================================
 
   it('AC-11: returns 400 when config.baseUrl is not in whitelist', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_ssrf')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const user = await AuthFixtures.createUser(app, { email: 'c11@gofer.bot', password: 'Test1234!', name: 'C11' })
+    const token = await AuthFixtures.loginAs(app, { email: 'c11@gofer.bot', password: 'Test1234!' })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { authorization: `Bearer ${token}` },
+      payload: chatPayload({
+        config: { ...defaultConfig, baseUrl: 'https://evil.example.com' },
+      }),
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error.code).toBe('VALIDATION_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
+  // ============================================================
+  // AC-12: 无 JWT → 401
+  // ============================================================
+
   it('AC-12: returns 401 without valid JWT', async () => {
-    expect(true).toBe(false)
+    const dbUrl = await dbManager.createDatabase('chat_401')
+    const app = await TestAppFactory.create(dbUrl)
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: chatPayload({ sessionId: '00000000-0000-0000-0000-000000000000' }),
+    })
+    expect(res.statusCode).toBe(401)
+    expect(res.json().error.code).toBe('AUTH_ERROR')
+
+    await app.close()
+    const dbName = new URL(dbUrl).pathname.replace('/', '')
+    await dbManager.dropDatabase(dbName)
   })
 
   it('AC-13: returns error via SSE when user is not session owner', async () => {
