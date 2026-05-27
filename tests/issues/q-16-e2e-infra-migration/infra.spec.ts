@@ -45,8 +45,16 @@ test.describe('E2E Infrastructure (q-16)', () => {
     // 验证
     const client = new Client({ connectionString: process.env.DATABASE_URL })
     await client.connect()
-    const res = await client.query('SELECT COUNT(*) FROM "User"')
+    const res = await client.query('SELECT COUNT(*) FROM users')
     expect(parseInt(res.rows[0].count)).toBe(0)
     await client.end()
+  })
+
+  test('AC-05: auth fixture creates user and returns token', async () => {
+    const { createTestUser } = await import('../fixtures/auth')
+    const user = await createTestUser()
+    expect(user.email).toContain('@test.gofer')
+    expect(user.token).toBeDefined()
+    expect(user.token.length).toBeGreaterThan(0)
   })
 })
