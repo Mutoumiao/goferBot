@@ -1,6 +1,6 @@
 ---
 id: d-15
-status: open
+status: closed
 track: design
 priority: p2
 summary: RAG SDK 集成验证（单元测试 / demo / server 集成点）

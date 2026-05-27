@@ -1,6 +1,6 @@
 ---
 id: d-14
-status: open
+status: closed
 track: design
 priority: p1
 summary: RAG SDK 可观测性模块（tracer / observer / metrics）

@@ -1,6 +1,6 @@
 ---
 id: d-13
-status: open
+status: closed
 track: design
 priority: p1
 summary: RAG SDK 在线检索模块（hybrid retriever / postprocessor / runtime pipeline / RRF）

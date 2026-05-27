@@ -3,11 +3,11 @@
   "version": 1,
   "updated_at": "2026-05-27",
   "items": [
-    {"id": "AC-01", "desc": "RAGTrace / RAGStage / RAGObserver 类型定义完成（兼容 RuntimeStage / SelectionTrace）", "status": "pending"},
-    {"id": "AC-02", "desc": "RAGTracer 实现：支持 start / stage / complete / error 生命周期", "status": "pending"},
-    {"id": "AC-03", "desc": "consoleObserver 实现：默认输出结构化日志到 console", "status": "pending"},
-    {"id": "AC-04", "desc": "observability/index.ts 统一导出", "status": "pending"},
-    {"id": "AC-05", "desc": "pnpm type-check 通过", "status": "pending"},
-    {"id": "AC-06", "desc": "单元测试：Tracer 生命周期、多 stage 嵌套、error 状态捕获", "status": "pending"}
+    {"id": "AC-01", "desc": "RAGTrace / RAGStage / RAGObserver 类型定义完成（兼容 RuntimeStage / SelectionTrace）", "status": "passed"},
+    {"id": "AC-02", "desc": "RAGTracer 实现：支持 start / stage / complete / error 生命周期", "status": "passed"},
+    {"id": "AC-03", "desc": "consoleObserver 实现：默认输出结构化日志到 console", "status": "passed"},
+    {"id": "AC-04", "desc": "observability/index.ts 统一导出", "status": "passed"},
+    {"id": "AC-05", "desc": "pnpm type-check 通过", "status": "passed"},
+    {"id": "AC-06", "desc": "单元测试：Tracer 生命周期、多 stage 嵌套、error 状态捕获", "status": "passed"}
   ]
 }

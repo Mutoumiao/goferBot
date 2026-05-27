@@ -21,14 +21,7 @@ _暂无_
    - 阻塞于：q-16
 4. **q-19-e2e-settings-journey** — E2E 设置持久化与跨模块用户旅程测试
    - 阻塞于：q-16, q-17
-5. **d-12-rag-sdk-indexing-module** — RAG SDK 索引构建模块（chunkers / embedders / indexers / indexing pipeline）
-   - 阻塞于：d-11
-6. **d-13-rag-sdk-runtime-module** — RAG SDK 在线检索模块（hybrid retriever / postprocessor / runtime pipeline / RRF）
-   - 阻塞于：d-11
-7. **d-14-rag-sdk-observability** — RAG SDK 可观测性模块（tracer / observer / metrics）
-   - 阻塞于：d-11, d-13（依赖 runtime 产生的 SelectionTrace 等 trace 数据）
-8. **d-15-rag-sdk-integration** — RAG SDK 集成验证（单元测试 / demo / server 集成点文档）
-   - 阻塞于：d-12, d-13, d-14
+5. ~~**d-15-rag-sdk-integration** — RAG SDK 集成验证（单元测试 / demo / server 集成点文档）~~ [已关闭](CHANGELOG.md#2026-05-27)
 
 ## 备注
 

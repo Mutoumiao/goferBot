@@ -2,7 +2,11 @@
 
 ## [2026-05-27]
 
+- [closed] RAG SDK 集成验证 — 5 AC，覆盖最小闭环 demo / server 集成点文档 / 覆盖率 97.44% / pnpm test & build 通过，修复 RecursiveCharacterChunker 无限循环 bug [issue](docs/issues/d-15-rag-sdk-integration/)
 - [closed] RAG SDK Core 契约层 — 9 AC，覆盖 types/schema/interfaces/errors/pipeline/vector-store/index 导出，Zod v4 类型推导，12 个单元测试全部通过 [issue](docs/issues/d-11-rag-sdk-core-contracts/)
+- [closed] RAG SDK 索引构建模块 — 7 AC，覆盖 RecursiveCharacterChunker / OpenAIEmbedder / MilvusIndexer / runIndexing pipeline，15 个单元测试全部通过 [issue](docs/issues/d-12-rag-sdk-indexing-module/)
+- [closed] RAG SDK 在线检索模块 — 9 AC，覆盖 HybridRetriever / RRF / DefaultRetrievalPostprocessor / SelectionTrace / runRetrievalPipeline，20 个单元测试全部通过 [issue](docs/issues/d-13-rag-sdk-runtime-module/)
+- [closed] RAG SDK 可观测性模块 — 6 AC，覆盖 RAGTracer / consoleObserver / 类型定义，7 个单元测试全部通过 [issue](docs/issues/d-14-rag-sdk-observability/)
 
 ## [2026-05-23]
 

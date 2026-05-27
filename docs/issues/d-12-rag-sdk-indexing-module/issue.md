@@ -1,6 +1,6 @@
 ---
 id: d-12
-status: open
+status: closed
 track: design
 priority: p1
 summary: RAG SDK 离线索引构建模块（chunkers / embedders / indexers / indexing pipeline）
