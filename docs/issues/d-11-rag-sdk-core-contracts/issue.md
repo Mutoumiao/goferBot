@@ -1,6 +1,6 @@
 ---
 id: d-11
-status: open
+status: closed
 track: design
 priority: p1
 summary: RAG SDK Core 契约层（types / schema / interfaces / errors / pipeline / vector-store）
