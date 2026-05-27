@@ -31,7 +31,7 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
     global: {
       plugins: [pinia],
       stubs: {
-        FileExplorer: true,
+        FileManager: true,
         ContextMenu: true,
         EditKbDialog: true,
         MoveCopyDialog: true,
@@ -43,17 +43,17 @@ function mountPage(storeOverrides?: Record<string, unknown>) {
 }
 
 describe('KnowledgeBasePage', () => {
-  it('renders FileExplorer when no knowledge base is selected', () => {
+  it('renders FileManager when no knowledge base is selected', () => {
     const wrapper = mountPage()
-    expect(wrapper.findComponent({ name: 'FileExplorer' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'FileManager' }).exists()).toBe(true)
   })
 
-  it('shows FileExplorer when a knowledge base is selected', () => {
+  it('shows FileManager when a knowledge base is selected', () => {
     const wrapper = mountPage({
       knowledgeBases: [{ id: 'kb1', name: 'Test', path: '/tmp', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' }],
       selectedKbId: 'kb1',
     })
-    expect(wrapper.findComponent({ name: 'FileExplorer' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'FileManager' }).exists()).toBe(true)
   })
 
   it('calls loadKnowledgeBases on mount', () => {
@@ -73,13 +73,15 @@ describe('KnowledgeBasePage', () => {
     expect(wrapper.text()).toContain('Beta')
   })
 
-  it('highlights selected knowledge base', () => {
+  it('highlights selected knowledge base', async () => {
     const wrapper = mountPage({
       knowledgeBases: [
         { id: 'kb1', name: 'Alpha', path: '/a', created_at: 1, deleted_at: null, is_pinned: 0, sort_order: 0, icon: 'mdi-database' },
       ],
-      selectedKbId: 'kb1',
     })
+    // 点击选中知识库
+    const item = wrapper.find('[data-testid="kb-item"]')
+    await item.trigger('click')
     const selected = wrapper.find('[data-testid="kb-item"]')
     expect(selected.exists()).toBe(true)
     expect(selected.text()).toContain('Alpha')

@@ -20,7 +20,8 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    this.llmTimeoutMs = this.configService.get<number>('LLM_TIMEOUT_MS') ?? 300000
+    const envTimeout = process.env.LLM_TIMEOUT_MS
+    this.llmTimeoutMs = envTimeout ? parseInt(envTimeout, 10) : 300000
   }
 
   async *streamChat(

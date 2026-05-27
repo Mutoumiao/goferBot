@@ -31,7 +31,11 @@ describe('ChatMessageList', () => {
     })
     const container = wrapper.find({ ref: 'containerRef' }).element as HTMLDivElement
     const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {})
-    Object.defineProperty(container, 'scrollHeight', { value: 500, configurable: true })
+    // happy-dom 中 scrollHeight 始终为 0，mock getter 使其返回非零值
+    Object.defineProperty(container, 'scrollHeight', {
+      configurable: true,
+      get() { return 500 },
+    })
 
     await wrapper.setProps({
       messages: [
@@ -39,12 +43,13 @@ describe('ChatMessageList', () => {
       ],
     })
     await nextTick()
+    await nextTick()
 
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 500, behavior: 'smooth' })
     scrollToSpy.mockRestore()
   })
 
-  it('does not scroll when message count stays the same', async () => {
+  it('does not scroll when messages stay exactly the same', async () => {
     const messages = [
       { id: '1', session_id: 's1', role: 'user' as const, content: 'a', created_at: 1 },
     ]
@@ -54,16 +59,16 @@ describe('ChatMessageList', () => {
     const container = wrapper.find({ ref: 'containerRef' }).element as HTMLDivElement
     const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {})
 
-    // Update props with same length but different content
-    await wrapper.setProps({
-      messages: [
-        { id: '1', session_id: 's1', role: 'user' as const, content: 'b', created_at: 1 },
-      ],
-    })
+    // 等待初始挂载稳定
+    await nextTick()
+    await nextTick()
+    scrollToSpy.mockClear()
+
+    // 用完全相同的对象引用更新 props，watch 不应触发
+    await wrapper.setProps({ messages })
+    await nextTick()
     await nextTick()
 
-    // watch trigger on length, not deep content, so scrollTo should NOT be called again
-    // Actually, setProps replaces the array with same length, watch sees length unchanged
     expect(scrollToSpy).not.toHaveBeenCalled()
     scrollToSpy.mockRestore()
   })

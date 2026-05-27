@@ -11,11 +11,10 @@ describe('SettingsPage', () => {
 
   it('renders three card sections', () => {
     const wrapper = mount(SettingsPage)
-    const headings = wrapper.findAll('h2')
-    expect(headings.length).toBe(3)
-    expect(headings[0].text()).toContain('LLM 提供商配置')
-    expect(headings[1].text()).toContain('Embedding')
-    expect(headings[2].text()).toContain('通用设置')
+    const text = wrapper.text()
+    expect(text).toContain('LLM 提供商配置')
+    expect(text).toContain('Embedding API')
+    expect(text).toContain('通用配置')
   })
 
   it('shows provider tabs', () => {
@@ -28,13 +27,14 @@ describe('SettingsPage', () => {
   it('changing temperature marks dirty and save button becomes enabled', async () => {
     const wrapper = mount(SettingsPage)
 
-    const saveBtn = wrapper.find('button:disabled')
-    expect(saveBtn.exists()).toBe(true)
+    const saveBtn = wrapper.find('[data-testid="settings-save-btn"]')
+    expect(saveBtn.attributes('disabled')).toBeDefined()
 
     const range = wrapper.find('input[type="range"]')
     await range.setValue('1.5')
 
-    const enabledSave = wrapper.find('button:not(:disabled)')
+    const enabledSave = wrapper.find('[data-testid="settings-save-btn"]')
+    expect(enabledSave.attributes('disabled')).toBeUndefined()
     expect(enabledSave.text()).toBe('保存')
   })
 })

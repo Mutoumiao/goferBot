@@ -17,7 +17,7 @@ describe('EmptySession', () => {
     )
     await pills[0].trigger('click')
     expect(wrapper.emitted('send')).toHaveLength(1)
-    expect(wrapper.emitted('send')![0]).toEqual(['总结文档'])
+    expect(wrapper.emitted('send')![0]).toEqual(['总结文档', []])
   })
 
   it('emits send on Enter key', async () => {
@@ -26,7 +26,7 @@ describe('EmptySession', () => {
     await textarea.setValue('hello')
     await textarea.trigger('keydown', { key: 'Enter', shiftKey: false })
     expect(wrapper.emitted('send')).toHaveLength(1)
-    expect(wrapper.emitted('send')![0]).toEqual(['hello'])
+    expect(wrapper.emitted('send')![0]).toEqual(['hello', []])
   })
 
   it('does not emit send on Shift+Enter', async () => {
@@ -54,7 +54,7 @@ describe('EmptySession', () => {
     await btn!.trigger('click')
 
     expect(wrapper.emitted('send')).toHaveLength(1)
-    expect(wrapper.emitted('send')![0]).toEqual(['test message'])
+    expect(wrapper.emitted('send')![0]).toEqual(['test message', []])
     expect((textarea.element as HTMLTextAreaElement).value).toBe('')
   })
 })
