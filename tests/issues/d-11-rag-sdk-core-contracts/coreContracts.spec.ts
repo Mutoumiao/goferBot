@@ -47,3 +47,46 @@ describe('Schema validation', () => {
     expect(result.success).toBe(false)
   })
 })
+
+describe('Type inference', () => {
+  it('AC-06: infers correct types from Zod schemas', () => {
+    const docResult = DocumentSourceSchema.safeParse({
+      documentId: '550e8400-e29b-41d4-a716-446655440000',
+      kbId: '550e8400-e29b-41d4-a716-446655440001',
+      content: 'hello',
+      mimeType: 'text/plain',
+    })
+    expect(docResult.success).toBe(true)
+    if (docResult.success) {
+      expect(docResult.data.content).toBe('hello')
+    }
+
+    const queryResult = QuerySchema.safeParse({
+      original: 'test query',
+      kbIds: ['550e8400-e29b-41d4-a716-446655440000'],
+    })
+    expect(queryResult.success).toBe(true)
+    if (queryResult.success) {
+      expect(queryResult.data.original).toBe('test query')
+    }
+
+    const chunkResult = ChunkSchema.safeParse({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      documentId: '550e8400-e29b-41d4-a716-446655440001',
+      kbId: '550e8400-e29b-41d4-a716-446655440002',
+      content: 'hello',
+      chunkIndex: 0,
+    })
+    expect(chunkResult.success).toBe(true)
+
+    const candidateResult = RetrievalCandidateSchema.safeParse({
+      chunk: chunkResult.success ? chunkResult.data : {},
+      score: 0.5,
+      source: 'vector',
+    })
+    expect(candidateResult.success).toBe(true)
+    if (candidateResult.success) {
+      expect(candidateResult.data.source).toBe('vector')
+    }
+  })
+})
