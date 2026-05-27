@@ -5,6 +5,7 @@ import {
   EmbeddingConfigSchema, HybridSearchOptionsSchema,
 } from '../../../packages/rag-sdk/src/schema.js'
 import { RAGError, EmbeddingError, IndexingError } from '../../../packages/rag-sdk/src/errors.js'
+import type { IChunker, IEmbedder, IIndexer, IRetriever, IReranker, IGenerator, IVectorStore, IKeywordStore } from '../../../packages/rag-sdk/src/interfaces.js'
 
 describe('Schema validation', () => {
   it('AC-01: validates valid DocumentSource', () => {
@@ -66,6 +67,28 @@ describe('Error hierarchy', () => {
     expect((err.cause as Error).message).toBe('milvus down')
     expect(err.name).toBe('IndexingError')
     expect(err).toBeInstanceOf(RAGError)
+  })
+})
+
+describe('Interface shapes', () => {
+  it('AC-09: IVectorStore has required methods', () => {
+    const store: IVectorStore = {
+      insertVectors: async () => {},
+      searchVectors: async () => [],
+      deleteByIds: async () => {},
+      ensureCollection: async () => {},
+    }
+    expect(store).toBeDefined()
+  })
+
+  it('AC-09b: IRetriever accepts Query object', () => {
+    const retriever: IRetriever = {
+      retrieve: async (query, topK, options) => {
+        expect(query.original).toBeDefined()
+        return []
+      },
+    }
+    expect(retriever).toBeDefined()
   })
 })
 
