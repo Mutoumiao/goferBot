@@ -1,8 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { existsSync } from 'fs'
 import { Client } from 'pg'
+import { cleanupDatabase } from '../fixtures/database'
 
 test.describe('E2E Infrastructure (q-16)', () => {
+  test.beforeEach(async () => {
+    await cleanupDatabase()
+  })
+
   test('AC-01: Tauri e2e-full directory is removed', () => {
     expect(existsSync('tests/e2e-full')).toBe(false)
   })
@@ -36,11 +41,10 @@ test.describe('E2E Infrastructure (q-16)', () => {
   })
 
   test('AC-04: database cleanup removes test data', async () => {
-    const { cleanupDatabase } = await import('../fixtures/database')
     // 先创建用户
     const { createTestUser } = await import('../fixtures/auth')
     await createTestUser()
-    // 清理
+    // beforeEach 会自动清理，这里手动再清理一次验证
     await cleanupDatabase()
     // 验证
     const client = new Client({ connectionString: process.env.DATABASE_URL })
@@ -61,9 +65,7 @@ test.describe('E2E Infrastructure (q-16)', () => {
   test('AC-03: api client creates KB via direct HTTP', async () => {
     const { createTestUser } = await import('../fixtures/auth')
     const { ApiClient } = await import('../fixtures/api-client')
-    const { cleanupDatabase } = await import('../fixtures/database')
 
-    await cleanupDatabase()
     const user = await createTestUser()
     const client = new ApiClient(user.accessToken)
     const kb = await client.createKB('Test KB')
