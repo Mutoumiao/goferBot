@@ -34,4 +34,19 @@ test.describe('E2E Infrastructure (q-16)', () => {
     expect(config.webServer.timeout).toBeGreaterThanOrEqual(120000)
     expect(config.workers).toBe(1)
   })
+
+  test('AC-04: database cleanup removes test data', async () => {
+    const { cleanupDatabase } = await import('../fixtures/database')
+    // 先创建用户
+    const { createTestUser } = await import('../fixtures/auth')
+    await createTestUser()
+    // 清理
+    await cleanupDatabase()
+    // 验证
+    const client = new Client({ connectionString: process.env.DATABASE_URL })
+    await client.connect()
+    const res = await client.query('SELECT COUNT(*) FROM "User"')
+    expect(parseInt(res.rows[0].count)).toBe(0)
+    await client.end()
+  })
 })
