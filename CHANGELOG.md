@@ -1,5 +1,9 @@
 # 完成日志
 
+## [2026-05-27]
+
+- [closed] RAG SDK Core 契约层 — 9 AC，覆盖 types/schema/interfaces/errors/pipeline/vector-store/index 导出，Zod v4 类型推导，12 个单元测试全部通过 [issue](docs/issues/d-11-rag-sdk-core-contracts/)
+
 ## [2026-05-23]
 
 - [closed] ChatController 测试 — 模块级集成测试 17 AC，覆盖 SSE 流式响应/格式验证/abort/持久化/DTO 校验/LLM 异常/E2E 完整链路，修复 controller 错误提取 [issue](docs/issues/b-05-chat-api-testing/)
