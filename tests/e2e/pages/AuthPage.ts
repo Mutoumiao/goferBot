@@ -32,6 +32,54 @@ export class LoginPage {
   }
 }
 
+export class AuthPage {
+  readonly page: Page
+  readonly emailInput: Locator
+  readonly passwordInput: Locator
+  readonly confirmPasswordInput: Locator
+  readonly nameInput: Locator
+  readonly submitButton: Locator
+  readonly errorMessage: Locator
+
+  constructor(page: Page) {
+    this.page = page
+    this.emailInput = page.locator('input[type="email"], input[name="email"]').first()
+    this.passwordInput = page.locator('input[type="password"]').nth(0)
+    this.confirmPasswordInput = page.locator('input[type="password"]').nth(1)
+    this.nameInput = page.locator('input[name="name"], input#name').first()
+    this.submitButton = page.locator('button[type="submit"]').first()
+    this.errorMessage = page.locator('[data-testid="auth-error"], .text-red-500, text=错误').first()
+  }
+
+  async gotoRegister() {
+    await this.page.goto('/register')
+    await this.page.waitForLoadState('load')
+  }
+
+  async gotoLogin() {
+    await this.page.goto('/login')
+    await this.page.waitForLoadState('load')
+  }
+
+  async register(email: string, password: string, confirmPassword?: string) {
+    if (await this.nameInput.isVisible().catch(() => false)) {
+      await this.nameInput.fill('E2E User')
+    }
+    await this.emailInput.fill(email)
+    await this.passwordInput.fill(password)
+    if (confirmPassword !== undefined) {
+      await this.confirmPasswordInput.fill(confirmPassword)
+    }
+    await this.submitButton.click()
+  }
+
+  async login(email: string, password: string) {
+    await this.emailInput.fill(email)
+    await this.passwordInput.fill(password)
+    await this.submitButton.click()
+  }
+}
+
 export class RegisterPage {
   readonly page: Page
   readonly emailInput: Locator
