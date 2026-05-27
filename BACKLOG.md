@@ -10,7 +10,14 @@ _暂无_
 
 按依赖顺序执行：
 
-1. **d-11-rag-sdk-core-contracts** — RAG SDK Core 契约层（types / schema / interfaces / errors / pipeline / vector-store）
+1. **q-16-e2e-infra-migration** — E2E 测试基础设施重构（删除 Tauri，建立真实 API Web E2E）
+2. **q-17-e2e-auth-kb-specs** — E2E 认证流程与知识库生命周期测试
+   - 阻塞于：q-16
+3. **q-18-e2e-chat-session-specs** — E2E 聊天 SSE 与会话管理测试
+   - 阻塞于：q-16
+4. **q-19-e2e-settings-journey** — E2E 设置持久化与跨模块用户旅程测试
+   - 阻塞于：q-16, q-17
+5. **d-11-rag-sdk-core-contracts** — RAG SDK Core 契约层（types / schema / interfaces / errors / pipeline / vector-store）
    - 阻塞性基础 issue，d-12/d-13/d-14 均依赖此 issue
 2. **d-12-rag-sdk-indexing-module** — RAG SDK 索引构建模块（chunkers / embedders / indexers / indexing pipeline）
    - 阻塞于：d-11
