@@ -23,26 +23,9 @@
 - 发送第一条消息
 - 看到 AI 响应
 
-### FR-03: RAG 检索增强工作流
-- 创建专用测试知识库
-- 上传包含特定事实的文档
-- 等待文档解析索引完成（轮询或超时）
-- 在聊天中 @ 引用该知识库
-- 发送与文档内容相关的问题
-- 验证 AI 响应引用了文档中的信息
-
 ## 测试数据
 
-### RAG 测试文档内容
-```markdown
-# GoferBot 架构说明
-
-GoferBot 使用 Vue 3 作为前端框架，NestJS 作为后端框架。
-数据库使用 PostgreSQL 16，向量检索使用 Milvus 2.4。
-```
-
-### RAG 测试问题
-"GoferBot 使用什么数据库？"
-
-### 期望响应包含
-"PostgreSQL"
+### Onboarding 测试用户
+- 邮箱：`onboarding-{timestamp}@test.gofer`
+- 密码：`Test1234!`
+- 名称：`E2E User`

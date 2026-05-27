@@ -15,11 +15,8 @@
     {"id": "AC-10", "desc": "onboarding-journey.spec.ts: 上传第一个文档", "status": "pending"},
     {"id": "AC-11", "desc": "onboarding-journey.spec.ts: 新建会话并发送首条消息", "status": "pending"},
     {"id": "AC-12", "desc": "onboarding-journey.spec.ts: 验证 AI 响应显示", "status": "pending"},
-    {"id": "AC-13", "desc": "rag-workflow.spec.ts: 创建专用 RAG 测试知识库", "status": "pending"},
-    {"id": "AC-14", "desc": "rag-workflow.spec.ts: 上传包含特定内容的文档", "status": "pending"},
-    {"id": "AC-15", "desc": "rag-workflow.spec.ts: 等待文档索引完成", "status": "pending"},
-    {"id": "AC-16", "desc": "rag-workflow.spec.ts: 聊天中 @ 引用知识库", "status": "pending"},
-    {"id": "AC-17", "desc": "rag-workflow.spec.ts: 发送与文档内容相关的问题", "status": "pending"},
-    {"id": "AC-18", "desc": "rag-workflow.spec.ts: 验证 AI 响应包含文档中的信息", "status": "pending"}
+    {"id": "AC-13", "desc": "onboarding-journey.spec.ts: 注册后未创建 KB 直接聊天可用", "status": "pending"},
+    {"id": "AC-14", "desc": "settings-persist.spec.ts: 保存无效 temperature 显示验证错误", "status": "pending"},
+    {"id": "AC-15", "desc": "settings-persist.spec.ts: 保存空 API Key 允许（非必填）", "status": "pending"}
   ]
 }

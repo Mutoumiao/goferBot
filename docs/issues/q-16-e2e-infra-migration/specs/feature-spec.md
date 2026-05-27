@@ -12,10 +12,11 @@
 - 清理 package.json 中 Tauri 相关的 E2E 脚本
 
 ### FR-02: Playwright 配置重构
-- `webServer` 同时启动 `pnpm dev:server` 和 `pnpm dev:web`
-- 或分别启动基础设施（docker）+ 后端 + 前端
+- `globalSetup` 启动 docker 基础设施（`pnpm infra:up`）
+- `webServer` 使用 `concurrently` 同时启动 `pnpm dev:server` 和 `pnpm dev:web`
 - `baseURL` 指向 `http://localhost:1420`
 - 支持 `reuseExistingServer` 开发模式
+- 端口占用时自动检测并报错
 
 ### FR-03: API Client Fixture
 - 封装 `fetch` 直接调用 `http://localhost:3000/api`
@@ -23,9 +24,9 @@
 - 提供常用 API 辅助：创建用户、创建 KB、上传文件等
 
 ### FR-04: Database Cleanup Fixture
-- 每个 spec 前清理测试数据
-- 或每个 spec 使用独立数据库
-- 复用现有 `TestDatabaseManager` 或新建 E2E 专用清理逻辑
+- 每个 spec 前执行 TRUNCATE 清理测试数据（用户、KB、会话、消息、设置）
+- 或复用 `TestDatabaseManager` 为每个 spec 创建独立数据库
+- 优先方案：单一 E2E 数据库 + `beforeEach` TRUNCATE（更快）
 
 ### FR-05: Auth Fixture
 - 真实调用 `POST /api/auth/public-key` 获取公钥
@@ -34,8 +35,15 @@
 - 调用 `POST /api/auth/login` 登录
 - 将 token 注入 localStorage
 
+### FR-06: 环境配置
+- 新增 `.env.e2e` 文件
+- 定义 `E2E_DATABASE_URL` 指向独立数据库（如 `goferbot_e2e`）
+- 定义 `PORT=3000` 和前端端口
+- 后端启动时加载 `.env.e2e`
+
 ## 非功能需求
 
 - E2E 测试总运行时间 < 5 分钟
 - 支持 CI/CD 无头模式运行
 - 测试失败自动截图/录像
+- 并行 issue 测试数据隔离（用户名/KB 名加时间戳）

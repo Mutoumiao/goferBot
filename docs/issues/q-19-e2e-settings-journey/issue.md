@@ -19,7 +19,8 @@ specs: specs/
 包含：
 - `specs/05-settings-persist.spec.ts` — 设置保存与页面刷新恢复测试
 - `specs/06-onboarding-journey.spec.ts` — 新用户首次使用完整旅程
-- `specs/07-rag-workflow.spec.ts` — RAG 检索增强完整工作流
+
+注意：RAG 端到端验证（文档索引 → 检索 → 引用）依赖 d-15 RAG SDK 集成完成，待后续 issue 补充
 
 ## 规格引用
 

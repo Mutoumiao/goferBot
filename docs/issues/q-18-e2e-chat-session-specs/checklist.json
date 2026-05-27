@@ -10,7 +10,8 @@
     {"id": "AC-05", "desc": "chat-with-rag.spec.ts: 选择知识库显示标签 pill", "status": "pending"},
     {"id": "AC-06", "desc": "chat-with-rag.spec.ts: 多选知识库显示多个标签", "status": "pending"},
     {"id": "AC-07", "desc": "chat-with-rag.spec.ts: 删除已选标签", "status": "pending"},
-    {"id": "AC-08", "desc": "chat-with-rag.spec.ts: 带知识库标签的消息发送后触发 RAG", "status": "pending"},
+    {"id": "AC-08", "desc": "chat-with-rag.spec.ts: 发送请求 payload 包含 knowledgeBaseIds", "status": "pending"},
+    {"id": "AC-08b", "desc": "chat-with-rag.spec.ts: SSE 错误时显示错误提示", "status": "pending"},
     {"id": "AC-09", "desc": "session-management.spec.ts: 初始状态仅显示首页标签", "status": "pending"},
     {"id": "AC-10", "desc": "session-management.spec.ts: 新建标签创建新会话", "status": "pending"},
     {"id": "AC-11", "desc": "session-management.spec.ts: 切换标签显示对应会话内容", "status": "pending"},
@@ -20,6 +21,7 @@
     {"id": "AC-15", "desc": "session-management.spec.ts: 历史记录页面显示会话列表", "status": "pending"},
     {"id": "AC-16", "desc": "session-management.spec.ts: 点击历史会话恢复对话", "status": "pending"},
     {"id": "AC-17", "desc": "session-management.spec.ts: 删除历史会话显示确认对话框", "status": "pending"},
-    {"id": "AC-18", "desc": "session-management.spec.ts: 重命名历史会话更新显示", "status": "pending"}
+    {"id": "AC-18", "desc": "session-management.spec.ts: 重命名历史会话更新显示", "status": "pending"},
+    {"id": "AC-19", "desc": "session-management.spec.ts: 空历史状态显示提示", "status": "pending"}
   ]
 }

@@ -32,14 +32,6 @@ interface Settings {
 5. `POST /api/sessions` — 创建会话
 6. `POST /api/chat` — 发送消息
 
-### RAG 工作流
-1. `POST /api/knowledge-bases` — 创建 KB
-2. `POST /api/knowledge-bases/:kbId/documents/upload` — 上传文档
-3. 轮询 `GET /api/knowledge-bases/:kbId/documents` 等待 status = ready
-4. `POST /api/sessions` — 创建会话
-5. `POST /api/chat`（携带 knowledgeBaseIds）— 发送问题
-6. 验证 SSE 响应包含预期内容
-
 ## 前端路由
 
 - `/app/settings` — 设置页面
