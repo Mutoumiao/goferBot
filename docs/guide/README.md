@@ -24,6 +24,15 @@ docs/
 │   ├── README.md
 │   └── overlay-conventions.md
 │
+├── frontend/             # 前端开发指南
+│   ├── README.md
+│   └── unit-testing-guide.md
+│
+├── backend/              # 后端开发指南
+│   ├── README.md
+│   ├── api-testing-guide.md
+│   └── integration-testing-guide.md
+│
 ├── prd/                  # 产品需求文档
 ├── issues/                  # 活跃 Issue（Issue-Centric 结构）
 │   └── {prefix}-{NN}-{slug}/
@@ -89,6 +98,8 @@ tests/issues/f-15-global-tab-bar/TabBar.spec.ts
 | [writing-plans.md](writing-plans.md)           | Plan 模板、版本归档规则、步骤粒度                 |
 | [writing-reviews.md](writing-reviews.md)       | Review 类型、Scope 命名、Frontmatter 规范         |
 | [writing-test-cases.md](writing-test-cases.md) | 已废弃，测试用例改为 `.spec.ts` 文件              |
+| [frontend/unit-testing-guide.md](frontend/unit-testing-guide.md) | 前端单元测试完整指南（组件、Store、工具函数） |
+| [backend/integration-testing-guide.md](backend/integration-testing-guide.md) | 后端集成测试完整指南（环境、工具、模板、CI/CD） |
 
 ---
 

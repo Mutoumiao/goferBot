@@ -9,6 +9,7 @@
 | 文档 | 内容 |
 |------|------|
 | [api-testing-guide.md](./api-testing-guide.md) | API 自动化测试标准流程与模板 |
+| [integration-testing-guide.md](./integration-testing-guide.md) | 后端集成测试完整指南（环境、工具、模板、CI/CD） |
 
 ---
 
