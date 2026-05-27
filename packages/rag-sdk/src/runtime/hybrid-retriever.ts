@@ -49,6 +49,7 @@ export class HybridRetriever implements IRetriever {
       const [queryVector] = await this.embedder.embed([query.original])
       const vectorSearchResults = await this.vectorStore.searchVectors(queryVector, { topK: limit })
       vectorResults = vectorSearchResults.map(r => ({
+        // TODO: #adjacent-fix VectorSearchResult 缺少 chunk 完整信息，当前用占位值。真实场景需通过 chunkId 反查。
         chunk: { id: r.chunkId, documentId: '', kbId: query.kbIds[0], content: '', chunkIndex: 0 } as any,
         score: r.score,
         source: 'vector' as const,
