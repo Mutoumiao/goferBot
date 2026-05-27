@@ -24,6 +24,7 @@ dist-ssr
 *.local
 LOCAL_NOTES.md
 .env
+.env.e2e
 target/
 .worktrees/
 
