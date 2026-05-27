@@ -11,8 +11,11 @@
  */
 export class RAGError extends Error {
   constructor(message: string, cause?: unknown) {
-    super(message, { cause })
+    super(message)
     this.name = 'RAGError'
+    if (cause !== undefined) {
+      this.cause = cause
+    }
   }
 }
 
@@ -26,7 +29,7 @@ export class RAGError extends Error {
  */
 export class EmbeddingError extends RAGError {
   constructor(message: string, cause?: unknown) {
-    super(message, { cause })
+    super(message, cause)
     this.name = 'EmbeddingError'
   }
 }
@@ -41,7 +44,7 @@ export class EmbeddingError extends RAGError {
  */
 export class RetrievalError extends RAGError {
   constructor(message: string, cause?: unknown) {
-    super(message, { cause })
+    super(message, cause)
     this.name = 'RetrievalError'
   }
 }
@@ -60,5 +63,19 @@ export class ValidationError extends RAGError {
   constructor(message: string) {
     super(message)
     this.name = 'ValidationError'
+  }
+}
+
+/**
+ * 索引错误。
+ *
+ * 触发场景：
+ * - 向量库写入失败（连接断开、collection 不存在）
+ * - 批量插入部分失败
+ */
+export class IndexingError extends RAGError {
+  constructor(message: string, cause?: unknown) {
+    super(message, cause)
+    this.name = 'IndexingError'
   }
 }

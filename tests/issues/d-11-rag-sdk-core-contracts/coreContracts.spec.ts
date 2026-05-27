@@ -4,6 +4,7 @@ import {
   ChunkWithScoreSchema, RetrievalCandidateSchema,
   EmbeddingConfigSchema, HybridSearchOptionsSchema,
 } from '../../../packages/rag-sdk/src/schema.js'
+import { RAGError, EmbeddingError, IndexingError } from '../../../packages/rag-sdk/src/errors.js'
 
 describe('Schema validation', () => {
   it('AC-01: validates valid DocumentSource', () => {
@@ -45,6 +46,26 @@ describe('Schema validation', () => {
       mimeType: 'text/plain',
     })
     expect(result.success).toBe(false)
+  })
+})
+
+describe('Error hierarchy', () => {
+  it('AC-05: preserves error cause chain', () => {
+    const cause = new Error('network timeout')
+    const err = new EmbeddingError('embed failed', cause)
+    // vitest happy-dom 环境下 cause 可能被包装，检查 message 更可靠
+    expect(err.cause).toBeDefined()
+    expect((err.cause as Error).message).toBe('network timeout')
+    expect(err.name).toBe('EmbeddingError')
+  })
+
+  it('AC-05b: IndexingError exists and supports cause', () => {
+    const cause = new Error('milvus down')
+    const err = new IndexingError('index failed', cause)
+    expect(err.cause).toBeDefined()
+    expect((err.cause as Error).message).toBe('milvus down')
+    expect(err.name).toBe('IndexingError')
+    expect(err).toBeInstanceOf(RAGError)
   })
 })
 
