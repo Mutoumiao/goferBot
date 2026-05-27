@@ -1,0 +1,14 @@
+{
+  "issue_id": "q-16",
+  "version": 1,
+  "updated_at": "2026-05-27",
+  "items": [
+    {"id": "AC-01", "desc": "删除 tests/e2e-full/ 目录及 Tauri 相关配置", "status": "pending"},
+    {"id": "AC-02", "desc": "重构 playwright.config.ts，webServer 同时启动前后端", "status": "pending"},
+    {"id": "AC-03", "desc": "创建 fixtures/api-client.ts（直接 HTTP 调用后端）", "status": "pending"},
+    {"id": "AC-04", "desc": "创建 fixtures/database.ts（E2E 数据清理钩子）", "status": "pending"},
+    {"id": "AC-05", "desc": "创建 fixtures/auth.ts（真实注册/登录/获取 JWT）", "status": "pending"},
+    {"id": "AC-06", "desc": "更新 package.json E2E 测试脚本", "status": "pending"},
+    {"id": "AC-07", "desc": "E2E 基础设施可成功启动并运行示例测试", "status": "pending"}
+  ]
+}

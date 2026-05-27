@@ -1,0 +1,25 @@
+{
+  "issue_id": "q-19",
+  "version": 1,
+  "updated_at": "2026-05-27",
+  "items": [
+    {"id": "AC-01", "desc": "settings-persist.spec.ts: 设置页面正常加载", "status": "pending"},
+    {"id": "AC-02", "desc": "settings-persist.spec.ts: LLM 提供商 Tab 显示正确", "status": "pending"},
+    {"id": "AC-03", "desc": "settings-persist.spec.ts: 修改 API Key 并保存", "status": "pending"},
+    {"id": "AC-04", "desc": "settings-persist.spec.ts: 切换默认提供商", "status": "pending"},
+    {"id": "AC-05", "desc": "settings-persist.spec.ts: 刷新页面后设置恢复", "status": "pending"},
+    {"id": "AC-06", "desc": "settings-persist.spec.ts: Embedding 配置保存", "status": "pending"},
+    {"id": "AC-07", "desc": "settings-persist.spec.ts: 温度参数保存", "status": "pending"},
+    {"id": "AC-08", "desc": "onboarding-journey.spec.ts: 新用户注册成功", "status": "pending"},
+    {"id": "AC-09", "desc": "onboarding-journey.spec.ts: 创建第一个知识库", "status": "pending"},
+    {"id": "AC-10", "desc": "onboarding-journey.spec.ts: 上传第一个文档", "status": "pending"},
+    {"id": "AC-11", "desc": "onboarding-journey.spec.ts: 新建会话并发送首条消息", "status": "pending"},
+    {"id": "AC-12", "desc": "onboarding-journey.spec.ts: 验证 AI 响应显示", "status": "pending"},
+    {"id": "AC-13", "desc": "rag-workflow.spec.ts: 创建专用 RAG 测试知识库", "status": "pending"},
+    {"id": "AC-14", "desc": "rag-workflow.spec.ts: 上传包含特定内容的文档", "status": "pending"},
+    {"id": "AC-15", "desc": "rag-workflow.spec.ts: 等待文档索引完成", "status": "pending"},
+    {"id": "AC-16", "desc": "rag-workflow.spec.ts: 聊天中 @ 引用知识库", "status": "pending"},
+    {"id": "AC-17", "desc": "rag-workflow.spec.ts: 发送与文档内容相关的问题", "status": "pending"},
+    {"id": "AC-18", "desc": "rag-workflow.spec.ts: 验证 AI 响应包含文档中的信息", "status": "pending"}
+  ]
+}
