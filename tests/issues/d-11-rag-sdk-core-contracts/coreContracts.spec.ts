@@ -6,6 +6,7 @@ import {
 } from '../../../packages/rag-sdk/src/schema.js'
 import { RAGError, EmbeddingError, IndexingError } from '../../../packages/rag-sdk/src/errors.js'
 import type { IChunker, IEmbedder, IIndexer, IRetriever, IReranker, IGenerator, IVectorStore, IKeywordStore } from '../../../packages/rag-sdk/src/interfaces.js'
+import type { IndexingStage, RuntimeDebugInfo } from '../../../packages/rag-sdk/src/pipeline.js'
 
 describe('Schema validation', () => {
   it('AC-01: validates valid DocumentSource', () => {
@@ -89,6 +90,32 @@ describe('Interface shapes', () => {
       },
     }
     expect(retriever).toBeDefined()
+  })
+})
+
+describe('Pipeline types', () => {
+  it('AC-08: validates IndexingStage status enum', () => {
+    const stage: IndexingStage = {
+      name: 'chunking',
+      status: 'running',
+    }
+    expect(stage.status).toBe('running')
+  })
+
+  it('AC-08b: RuntimeDebugInfo has required metrics', () => {
+    const debug: RuntimeDebugInfo = {
+      traceId: 'abc',
+      query: { original: 'test', kbIds: ['550e8400-e29b-41d4-a716-446655440000'] },
+      stages: [],
+      metrics: {
+        retrievalCount: 0,
+        selectedCount: 0,
+        droppedCount: 0,
+        totalTokens: 0,
+        latencyMs: 0,
+      },
+    }
+    expect(debug.metrics.latencyMs).toBe(0)
   })
 })
 
