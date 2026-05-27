@@ -22,6 +22,7 @@ export default defineConfig({
       'tests/integration/**',
       'tests/issues/b-*/**',
       'tests/issues/i-*/**',
+      // 排除其他 packages 但保留 rag-sdk，以便测试可以引用其源码
       'packages/webui/**',
       'packages/server/**',
       'packages/shellAdapters/**',
