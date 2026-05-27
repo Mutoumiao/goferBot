@@ -3,16 +3,16 @@
   "version": 1,
   "updated_at": "2026-05-23",
   "items": [
-    {"id": "AC-01", "desc": "FileManager.vue 内联 ContextMenu 迁移到 overlays/context-menus/", "status": "completed"},
-    {"id": "AC-02", "desc": "现有 ContextMenu.vue 迁移到 overlays/context-menus/，接入函数式 API", "status": "completed"},
-    {"id": "AC-03", "desc": "ContextMenu 视口边界检测实现", "status": "completed"},
-    {"id": "AC-04", "desc": "ContextMenu 关闭后 DOM 无残留", "status": "completed"},
-    {"id": "AC-05", "desc": "docs/webui-guide/ 目录创建", "status": "completed"},
-    {"id": "AC-06", "desc": "docs/webui-guide/README.md 编写完成", "status": "completed"},
-    {"id": "AC-07", "desc": "overlay-conventions.md 编写完成（目录/类型/可访问性三维度）", "status": "completed"},
-    {"id": "AC-08", "desc": "CLAUDE.md 项目结构区块更新", "status": "completed"},
-    {"id": "AC-09", "desc": "docs/guide/README.md 文档体系图更新", "status": "completed"},
-    {"id": "AC-10", "desc": "迁移后 FileManager 功能测试通过", "status": "completed"},
-    {"id": "AC-11", "desc": "所有 overlay 相关类型无 any，回调使用可选链", "status": "completed"}
+    {"id": "AC-01", "desc": "FileManager.vue 内联 ContextMenu 迁移到 overlays/context-menus/", "status": "passed"},
+    {"id": "AC-02", "desc": "现有 ContextMenu.vue 迁移到 overlays/context-menus/，接入函数式 API", "status": "passed"},
+    {"id": "AC-03", "desc": "ContextMenu 视口边界检测实现", "status": "passed"},
+    {"id": "AC-04", "desc": "ContextMenu 关闭后 DOM 无残留", "status": "passed"},
+    {"id": "AC-05", "desc": "docs/webui-guide/ 目录创建", "status": "passed"},
+    {"id": "AC-06", "desc": "docs/webui-guide/README.md 编写完成", "status": "passed"},
+    {"id": "AC-07", "desc": "overlay-conventions.md 编写完成（目录/类型/可访问性三维度）", "status": "passed"},
+    {"id": "AC-08", "desc": "CLAUDE.md 项目结构区块更新", "status": "passed"},
+    {"id": "AC-09", "desc": "docs/guide/README.md 文档体系图更新", "status": "passed"},
+    {"id": "AC-10", "desc": "迁移后 FileManager 功能测试通过", "status": "passed"},
+    {"id": "AC-11", "desc": "所有 overlay 相关类型无 any，回调使用可选链", "status": "passed"}
   ]
 }
