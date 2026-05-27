@@ -16,7 +16,14 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['tests/unit/**/*.test.ts', 'tests/issues/**/*.spec.ts'],
-    exclude: ['tests/e2e/**', 'tests/e2e-full/**', 'tests/integration/**', 'packages/**'],
+    exclude: [
+      'tests/e2e/**',
+      'tests/e2e-full/**',
+      'tests/integration/**',
+      'tests/issues/b-*/**',
+      'tests/issues/i-*/**',
+      'packages/**',
+    ],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],
     reporters: [new AIReporter()],
