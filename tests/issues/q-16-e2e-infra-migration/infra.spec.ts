@@ -54,7 +54,19 @@ test.describe('E2E Infrastructure (q-16)', () => {
     const { createTestUser } = await import('../fixtures/auth')
     const user = await createTestUser()
     expect(user.email).toContain('@test.gofer')
-    expect(user.token).toBeDefined()
-    expect(user.token.length).toBeGreaterThan(0)
+    expect(user.accessToken).toBeDefined()
+    expect(user.accessToken.length).toBeGreaterThan(0)
+  })
+
+  test('AC-03: api client creates KB via direct HTTP', async () => {
+    const { createTestUser } = await import('../fixtures/auth')
+    const { ApiClient } = await import('../fixtures/api-client')
+    const { cleanupDatabase } = await import('../fixtures/database')
+
+    await cleanupDatabase()
+    const user = await createTestUser()
+    const client = new ApiClient(user.accessToken)
+    const kb = await client.createKB('Test KB')
+    expect(kb.name).toBe('Test KB')
   })
 })
