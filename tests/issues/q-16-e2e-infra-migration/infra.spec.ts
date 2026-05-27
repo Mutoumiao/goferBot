@@ -25,4 +25,13 @@ test.describe('E2E Infrastructure (q-16)', () => {
     const res = await request.get('http://localhost:3000/api/health')
     expect(res.status()).toBe(200)
   })
+
+  test('AC-11: playwright config has globalSetup and webServer timeout >= 120s', async () => {
+    const configModule = await import('../playwright.config.ts')
+    const config = configModule.default || configModule
+    expect(config.globalSetup).toBeDefined()
+    expect(config.webServer).toBeDefined()
+    expect(config.webServer.timeout).toBeGreaterThanOrEqual(120000)
+    expect(config.workers).toBe(1)
+  })
 })

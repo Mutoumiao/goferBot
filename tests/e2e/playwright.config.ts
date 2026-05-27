@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import path from 'path'
 
 delete process.env.NO_COLOR
 
@@ -7,7 +8,9 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,
+  workers: 1, // 串行执行，避免数据库状态冲突
+  globalSetup: path.resolve(__dirname, './playwright.global-setup.ts'),
+  globalTeardown: path.resolve(__dirname, './playwright.global-teardown.ts'),
   reporter: [
     ['list'],
     ['html', { outputFolder: './report', open: 'never' }],
@@ -19,13 +22,14 @@ export default defineConfig({
     video: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm dev:web',
+    command: 'concurrently "pnpm dev:server" "pnpm dev:web" --names server,web --prefix-colors cyan,green',
     url: 'http://localhost:1420',
-    reuseExistingServer: true,
-    timeout: 60000,
+    reuseExistingServer: !process.env.CI, // CI 强制启动新实例
+    timeout: 120000,
     env: {
       ...process.env,
       NO_COLOR: '',
+      NODE_ENV: 'test',
     },
   },
   projects: [

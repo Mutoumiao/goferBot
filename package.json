@@ -39,6 +39,7 @@
     "@vue/test-utils": "^2.4.6",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "dotenv-cli": "^11.0.0",
     "fastify": "4.28.1",
     "happy-dom": "^20.9.0",
     "lodash-es": "^4.17.23",
