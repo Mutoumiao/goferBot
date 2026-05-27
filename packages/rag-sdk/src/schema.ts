@@ -13,7 +13,7 @@ export const QuerySchema = z.object({
   rewritten: z.string().optional(),
   expanded: z.array(z.string()).optional(),
   kbIds: z.array(z.string().uuid()).min(1),
-  filters: z.record(z.unknown()).optional(),
+  filters: z.record(z.string(), z.unknown()).optional(),
 })
 
 export const ChunkSchema = z.object({
@@ -25,7 +25,7 @@ export const ChunkSchema = z.object({
   tokenCount: z.number().int().optional(),
   parentId: z.string().uuid().optional(),
   hierarchyPath: z.array(z.string()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
 export const ChunkWithScoreSchema = ChunkSchema.extend({
@@ -37,7 +37,7 @@ export const RetrievalCandidateSchema = z.object({
   score: z.number().min(0).max(1),
   source: z.enum(['vector', 'keyword', 'hybrid']),
   route: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
 export const EmbeddingConfigSchema = z.object({
