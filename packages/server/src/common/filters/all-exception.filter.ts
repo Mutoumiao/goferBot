@@ -13,7 +13,6 @@ export interface ErrorResponse {
     code: string
     message: string
     details?: unknown
-    stack?: string
   }
 }
 
@@ -63,13 +62,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       },
     }
 
-    if (isDevelopment) {
-      if (details) {
-        errorResponse.error.details = details
-      }
-      if (exception instanceof Error && exception.stack) {
-        errorResponse.error.stack = exception.stack
-      }
+    if (details) {
+      errorResponse.error.details = details
     }
 
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {

@@ -7,6 +7,7 @@ import {
 import { RAGError, EmbeddingError, IndexingError } from '../../../packages/rag-sdk/src/errors.js'
 import type { IChunker, IEmbedder, IIndexer, IRetriever, IReranker, IGenerator, IVectorStore, IKeywordStore } from '../../../packages/rag-sdk/src/interfaces.js'
 import type { IndexingStage, RuntimeDebugInfo } from '../../../packages/rag-sdk/src/pipeline.js'
+import * as sdk from '../../../packages/rag-sdk/src/index.js'
 
 describe('Schema validation', () => {
   it('AC-01: validates valid DocumentSource', () => {
@@ -116,6 +117,15 @@ describe('Pipeline types', () => {
       },
     }
     expect(debug.metrics.latencyMs).toBe(0)
+  })
+})
+
+describe('Index exports', () => {
+  it('AC-07: exports all contracts from index.ts', () => {
+    expect(sdk.DocumentSourceSchema).toBeDefined()
+    expect(sdk.QuerySchema).toBeDefined()
+    expect(sdk.RAGError).toBeDefined()
+    expect(sdk.IndexingError).toBeDefined()
   })
 })
 

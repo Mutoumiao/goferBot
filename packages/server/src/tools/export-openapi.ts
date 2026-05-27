@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
+import { cleanupOpenApiDoc } from 'nestjs-zod'
 import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { AppModule } from '../app.module.js'
@@ -19,9 +20,10 @@ async function exportOpenApi() {
     .build()
 
   const document = SwaggerModule.createDocument(app, config)
+  const cleanedDocument = cleanupOpenApiDoc(document)
 
   const outputPath = resolve(process.cwd(), 'openapi.json')
-  writeFileSync(outputPath, JSON.stringify(document, null, 2))
+  writeFileSync(outputPath, JSON.stringify(cleanedDocument, null, 2))
 
   console.log(`OpenAPI spec exported to ${outputPath}`)
   await app.close()

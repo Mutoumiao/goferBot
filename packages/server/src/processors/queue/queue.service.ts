@@ -29,15 +29,29 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     const password = this.configService.get<string>('REDIS_PASSWORD')
 
     this.redis = createRedisConnection(host, port, password)
+
+    try {
+      await this.redis.ping()
+    } catch {
+      console.warn(`[QueueService] Redis 连接失败 (${host}:${port})，队列功能已禁用。如需使用队列，请启动 Redis 服务。`)
+      await this.redis.quit().catch(() => {})
+      this.redis = undefined as unknown as Redis
+      return
+    }
+
     this.documentQueue = createDocumentQueue(this.redis)
     this.embeddingQueue = createEmbeddingQueue(this.redis)
 
-    await this.redis.ping()
     console.log('QueueService: Redis connection established')
     this.workerService.startWorkers(this.redis)
   }
 
+  private isEnabled(): boolean {
+    return this.redis !== (undefined as unknown as Redis)
+  }
+
   async onModuleDestroy() {
+    if (!this.isEnabled()) return
     await this.documentQueue.close()
     await this.embeddingQueue.close()
     await this.redis.quit()
@@ -45,14 +59,17 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   async addDocumentJob(documentId: string, type: 'parse' | 'chunk' | 'embed'): Promise<Job<DocumentJobData>> {
+    if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
     return this.documentQueue.add('process-document', { documentId, type })
   }
 
   async addEmbeddingJob(chunkIds: string[]): Promise<Job<EmbeddingJobData>> {
+    if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
     return this.embeddingQueue.add('process-embedding', { chunkIds })
   }
 
   async getJobStatus(jobId: string): Promise<{ id: string; state: string; progress: number; data: unknown } | null> {
+    if (!this.isEnabled()) return null
     const docJob = await this.documentQueue.getJob(jobId)
     if (docJob) {
       const state = await docJob.getState()
@@ -79,6 +96,12 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getQueueStats(): Promise<{ documentQueue: Record<string, number>; embeddingQueue: Record<string, number> }> {
+    if (!this.isEnabled()) {
+      return {
+        documentQueue: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
+        embeddingQueue: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
+      }
+    }
     const [documentWaiting, documentActive, documentCompleted, documentFailed, documentDelayed,
            embeddingWaiting, embeddingActive, embeddingCompleted, embeddingFailed, embeddingDelayed] = await Promise.all([
       this.documentQueue.getWaitingCount(),
@@ -112,14 +135,17 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   getDocumentQueue(): Queue<DocumentJobData> {
+    if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
     return this.documentQueue
   }
 
   getEmbeddingQueue(): Queue<EmbeddingJobData> {
+    if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
     return this.embeddingQueue
   }
 
   getRedisConnection(): Redis {
+    if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
     return this.redis
   }
 }

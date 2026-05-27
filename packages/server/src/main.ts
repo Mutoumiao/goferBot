@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
+import { cleanupOpenApiDoc } from 'nestjs-zod'
 import { AppModule } from './app.module.js'
 import { bootstrap } from './bootstrap.js'
 
@@ -21,7 +22,7 @@ async function main() {
       .addBearerAuth()
       .build()
     const document = SwaggerModule.createDocument(app, config)
-    SwaggerModule.setup('api/docs', app, document)
+    SwaggerModule.setup('api/docs', app, cleanupOpenApiDoc(document))
   }
 
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
