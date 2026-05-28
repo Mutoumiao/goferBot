@@ -2,10 +2,12 @@ import {
   Injectable,
   BadRequestException,
   ServiceUnavailableException,
+  Logger,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { ChatDto } from './dto/chat.dto.js'
+import type { HybridRetriever, DefaultRetrievalPostprocessor } from '@goferbot/rag-sdk'
 
 interface ChatChunk {
   chunk: string
@@ -14,11 +16,14 @@ interface ChatChunk {
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name)
   private readonly llmTimeoutMs: number
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly retriever: HybridRetriever,
+    private readonly postprocessor: DefaultRetrievalPostprocessor,
   ) {
     const envTimeout = process.env.LLM_TIMEOUT_MS
     this.llmTimeoutMs = envTimeout ? parseInt(envTimeout, 10) : 300000
@@ -54,8 +59,24 @@ export class ChatService {
       select: { role: true, content: true },
     })
 
-    // TODO(phase-5): 接入 RAG 检索，将检索结果注入 system 消息
-    const llmMessages = historyMessages.map((m) => ({ role: m.role, content: m.content }))
+    const llmMessages: Array<{ role: string; content: string }> = []
+
+    // RAG 检索：当 knowledgeBaseIds 存在时检索相关 chunks 并注入 system message
+    if (dto.knowledgeBaseIds && dto.knowledgeBaseIds.length > 0) {
+      try {
+        const query = { original: message, kbIds: dto.knowledgeBaseIds }
+        const candidates = await this.retriever.retrieve(query, 10)
+        const processed = await this.postprocessor.process(candidates, query)
+        if (processed.candidates.length > 0) {
+          const context = processed.candidates.map((c) => c.chunk.content).join('\n---\n')
+          llmMessages.push({ role: 'system', content: `基于以下上下文回答问题：\n${context}` })
+        }
+      } catch (err) {
+        this.logger.warn(`Retrieval failed: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+
+    historyMessages.forEach((m) => llmMessages.push({ role: m.role, content: m.content }))
 
     let fullReply = ''
     const abortController = new AbortController()
