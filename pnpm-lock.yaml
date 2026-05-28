@@ -100,16 +100,6 @@ importers:
         specifier: ^3.5.27
         version: 3.5.30(typescript@5.9.3)
 
-  packages/backendAdapters:
-    dependencies:
-      '@goferbot/shell-adapters':
-        specifier: workspace:*
-        version: link:../shellAdapters
-    devDependencies:
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
   packages/rag-sdk:
     dependencies:
       zod:
@@ -134,6 +124,9 @@ importers:
       '@fastify/static':
         specifier: ^7.0.4
         version: 7.0.4
+      '@goferbot/rag-sdk':
+        specifier: workspace:*
+        version: link:../rag-sdk
       '@nestjs/common':
         specifier: ^10.3.0
         version: 10.4.22(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.2)
@@ -237,25 +230,6 @@ importers:
       vitest:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.41)(happy-dom@20.9.0)(lightningcss@1.31.1)(stylus@0.57.0)(terser@5.47.1)
-
-  packages/shellAdapters:
-    dependencies:
-      '@tauri-apps/api':
-        specifier: ^2.10.1
-        version: 2.11.0
-      '@tauri-apps/plugin-dialog':
-        specifier: ^2.7.1
-        version: 2.7.1
-      '@tauri-apps/plugin-shell':
-        specifier: ^2.3.5
-        version: 2.3.5
-      vue:
-        specifier: ^3.5.0
-        version: 3.5.30(typescript@5.9.3)
-    devDependencies:
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
 
   packages/webui:
     dependencies:
