@@ -11,6 +11,7 @@ import { HealthModule } from './modules/health/health.module.js'
 import { UserModule } from './modules/user/user.module.js'
 import { AuthModule } from './auth/auth.module.js'
 import { VectorModule } from './processors/vector/vector.module.js'
+import { KeywordModule } from './processors/keyword/keyword.module.js'
 import { QueueModule } from './processors/queue/queue.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module.js'
@@ -45,6 +46,7 @@ import { SpiderGuard } from './common/guards/spider.guard.js'
     UserModule,
     AuthModule,
     VectorModule,
+    KeywordModule,
     QueueModule.forRoot(),
     StorageModule,
     KnowledgeBaseModule,

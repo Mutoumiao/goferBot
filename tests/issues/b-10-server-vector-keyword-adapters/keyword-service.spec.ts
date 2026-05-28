@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { KeywordService } from '../../../packages/server/src/processors/keyword/keyword.service.js'
+import { KeywordModule } from '../../../packages/server/src/processors/keyword/keyword.module.js'
 
 describe('KeywordService', () => {
   let keywordService: KeywordService
@@ -53,5 +54,13 @@ describe('KeywordService', () => {
     await keywordService.onModuleInit()
     expect((keywordService as any).useChineseConfig).toBe(false)
     expect((keywordService as any).configChecked).toBe(true)
+  })
+})
+
+describe('KeywordModule', () => {
+  it('AC-09: KeywordModule is a global module with KeywordService provider', () => {
+    expect(KeywordModule).toBeDefined()
+    const moduleMeta = Reflect.getMetadata('providers', KeywordModule)
+    expect(moduleMeta).toContain(KeywordService)
   })
 })
