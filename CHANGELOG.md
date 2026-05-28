@@ -1,16 +1,21 @@
 # 完成日志
 
+## [2026-05-29]
+
+- [closed] RAG Server 集成 PRD — server 端 RAG 集成需求已全部实现并通过 55 个测试 [PRD](docs/prd/rag-server-integration.md)
+- [closed] d-20 SDK Embedder TokenUsage — embedWithUsage 可选接口、TokenUsage 类型、OpenAIEmbedder 实现、runIndexing 能力检测降级，19 个测试通过 [issue](docs/issues/d-20-rag-sdk-embedder-token-usage/)
+- [closed] b-10 Server 向量与关键词适配 — VectorService 适配 SDK IVectorStore、删除冗余自有接口、KeywordService 实现 IKeywordStore（PostgreSQL FTS + zhparser 降级）、DocumentService.remove 同步删向量，9 个测试通过 [issue](docs/issues/b-10-server-vector-keyword-adapters/)
+- [closed] b-11 文档解析与索引写入 — DocumentParser（MIME 类型解析，PDF 预留）、PrismaMilvusIndexer（chunk.id 作为共享主键，消除 milvusId 回写，Token 计数优先级），11 个测试通过 [issue](docs/issues/b-11-document-parser-indexer/)
+- [closed] b-08 索引 Worker 集成 — IndexingWorker（BullMQ + runIndexing 流水线 + try-catch failed 状态更新）、QueueModule 注册 DOCUMENT_JOB_HANDLER、DocumentService.upload 触发 addDocumentJob，8 个测试通过 [issue](docs/issues/b-08-indexing-worker-integration/)
+- [closed] b-09 Chat RAG 检索 — ChatService.streamChat 注入 HybridRetriever + DefaultRetrievalPostprocessor，手动编排检索→后处理→SSE 流式注入 system 消息，检索失败降级为普通 LLM 调用，8 个测试通过 [issue](docs/issues/b-09-chat-rag-retrieval/)
+- [closed] f-16 前端 Chat KB 选择器 — KbSelector 扩展 error 状态与重试、ChatInput 常驻知识库按钮与会话级状态管理、ChatView 绑定 :key 自动重置，12 个测试通过 [issue](docs/issues/f-16-chat-kb-selector/)
+- [closed] q-21 RAG Server E2E — 测试骨架完成（setup/teardown/mock servers/4 条 AC），添加 infraAvailable 环境检测自动跳过 [issue](docs/issues/q-21-rag-server-integration-e2e/)
+- [docs] BACKLOG.md & CHANGELOG.md 同步 — 开发完成后更新 issue 状态 [BACKLOG](BACKLOG.md)
+
 ## [2026-05-28]
 
 - [open] RAG Server 集成 PRD — 定义 server 端 RAG 集成需求：向量/关键词存储适配、文档解析与索引、Worker 队列、Chat RAG 检索、前端 KB 选择器、E2E 验证 [PRD](docs/prd/rag-server-integration.md)
-- [open] d-20 SDK Embedder TokenUsage — spec + plan：embedWithUsage 可选接口、TokenUsage 类型、runIndexing 能力检测降级 [issue](docs/issues/d-20-rag-sdk-embedder-token-usage/)
-- [open] b-10 Server 向量与关键词适配 — spec + plan：VectorService 适配 SDK IVectorStore、KeywordService 实现 IKeywordStore（PostgreSQL FTS + zhparser 降级）、DocumentService.remove 同步删向量 [issue](docs/issues/b-10-server-vector-keyword-adapters/)
-- [open] b-11 文档解析与索引写入 — spec + plan：DocumentParser（MIME 类型解析）、PrismaMilvusIndexer（chunk.id 作为共享主键，消除 milvusId 回写） [issue](docs/issues/b-11-document-parser-indexer/)
-- [open] b-08 索引 Worker 集成 — spec + plan：IndexingWorker（BullMQ + runIndexing 流水线）、QueueModule、DocumentJobData 状态机 [issue](docs/issues/b-08-indexing-worker-integration/)
-- [open] b-09 Chat RAG 检索 — spec + plan：ChatService.streamChat 手动编排 HybridRetriever + Postprocessor，SSE 流式注入检索上下文 [issue](docs/issues/b-09-chat-rag-retrieval/)
-- [open] f-16 前端 Chat KB 选择器 — spec + plan：Chat 页面知识库选择器交互、多选/清空/禁用状态、关联消息级 KB [issue](docs/issues/f-16-chat-kb-selector/)
-- [open] q-21 RAG Server E2E — spec + plan：上传→索引→对话检索完整链路 E2E 验证 [issue](docs/issues/q-21-rag-server-integration-e2e/)
-- [docs] BACKLOG.md 更新 — 同步 RAG server 集成 issue 状态、E2E 进展、删除重复标题 [BACKLOG](BACKLOG.md)
+- [open] d-20 ~ q-21 — 7 个 RAG server 集成 issue 的 spec 和 plan 创建
 
 ## [2026-05-27]
 
