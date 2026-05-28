@@ -32,6 +32,7 @@ docs/design-discussions/*
 .claude/settings.local.json
 
 # Playwright
+junit.xml
 tests/e2e/report/
 tests/e2e/test-results/
 tests/e2e-full/report/

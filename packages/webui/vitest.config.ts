@@ -26,7 +26,7 @@ export default mergeConfig(
     ],
     test: {
       globals: true,
-      include: ['tests/unit/**/*.test.ts', 'src/**/*.spec.ts', '../../tests/issues/**/*.spec.ts'],
+      include: ['tests/unit/**/*.test.ts', 'src/**/*.spec.ts', '../../tests/unit/webui/**/*.spec.ts'],
       root: fileURLToPath(new URL('./', import.meta.url)),
       environment: 'happy-dom',
       setupFiles: ['./tests/setup/testglobals.ts'],

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { injectAuthToken } from '../../e2e/fixtures/auth'
+import { injectMockToken } from '../../e2e/fixtures/auth'
 import { mockApiRoutes } from '../../e2e/mocks/http-routes'
 
 test.describe('会话管理 (q-18)', () => {
@@ -7,7 +7,7 @@ test.describe('会话管理 (q-18)', () => {
     page.on('console', (msg) => {
       console.log(`[BROWSER ${msg.type()}]`, msg.text())
     })
-    await injectAuthToken(page)
+    await injectMockToken(page)
     await mockApiRoutes(page)
     await page.goto('/app/chat')
     await page.waitForLoadState('load')

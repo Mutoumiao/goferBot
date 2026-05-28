@@ -8,25 +8,19 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./packages/webui/src', import.meta.url)),
-      '@goferbot/shell-adapters': fileURLToPath(new URL('./packages/shellAdapters/dist/index.js', import.meta.url)),
-      '@goferbot/backend-adapters': fileURLToPath(new URL('./packages/backendAdapters/dist/index.js', import.meta.url)),
       '@goferbot/rag-sdk': fileURLToPath(new URL('./packages/rag-sdk/src/index.ts', import.meta.url)),
     },
   },
   test: {
     globals: true,
-    include: ['tests/unit/**/*.test.ts', 'tests/issues/**/*.spec.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.spec.ts'],
     exclude: [
       'tests/e2e/**',
       'tests/e2e-full/**',
       'tests/integration/**',
-      'tests/issues/b-*/**',
-      'tests/issues/i-*/**',
-      // 排除其他 packages 但保留 rag-sdk，以便测试可以引用其源码
+      // 排除 packages/ 但保留 rag-sdk，以便测试可以引用其源码
       'packages/webui/**',
       'packages/server/**',
-      'packages/shellAdapters/**',
-      'packages/backendAdapters/**',
     ],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],

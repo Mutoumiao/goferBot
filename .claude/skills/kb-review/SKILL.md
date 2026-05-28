@@ -54,7 +54,7 @@ description: |
 - `docs/issues/{dir}/issue.md` — 了解验收标准
 - `docs/issues/{dir}/specs/` — 功能/行为/API 规格
 - `docs/issues/{dir}/plan.md` — 执行计划（了解预期改动范围）
-- **测试代码**：`tests/issues/{dir}/*.spec.ts` — 检查测试覆盖
+- **测试代码**：`tests/{layer}/{name}.spec.ts` — 检查测试覆盖
 - 实际代码 diff（`git diff` 或指定文件）
 
 **设计/架构审查：**
@@ -378,7 +378,7 @@ description: |
 
 #### 8.1 测试存在性
 - [ ] 新增功能是否有对应 `.spec.ts` 测试文件？
-- [ ] 测试文件是否放在 `tests/issues/{dir}/` 下？
+- [ ] 测试文件是否放在 `tests/{layer}/` 下？
 - [ ] 测试用例名是否以 `AC-XX:` 开头？
 
 #### 8.2 测试覆盖度

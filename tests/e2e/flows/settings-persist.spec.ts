@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../../e2e/mocks/http-routes'
-import { injectAuthToken } from '../../e2e/fixtures/auth'
+import { injectMockToken } from '../../e2e/fixtures/auth'
 import { SettingsPage } from '../../e2e/pages/SettingsPage'
 
 test.describe('设置持久化', () => {
   test.beforeEach(async ({ page }) => {
-    await injectAuthToken(page)
+    await injectMockToken(page)
     await mockApiRoutes(page)
     await page.goto('/app/settings')
     await page.waitForLoadState('load')
@@ -64,7 +64,8 @@ test.describe('设置持久化', () => {
   })
 
   test('AC-05: 刷新页面后设置恢复', async ({ page }) => {
-    // 先 mock 保存后的配置，使刷新后能恢复
+    // 移除 beforeEach 中的 mock，替换为持久化数据的自定义路由
+    await page.unroute('**/api/settings')
     await page.route('**/api/settings', (route) => {
       if (route.request().method() === 'GET') {
         route.fulfill({
@@ -83,6 +84,8 @@ test.describe('设置持久化', () => {
         })
       } else if (route.request().method() === 'POST') {
         route.fulfill({ json: { data: { success: true } } })
+      } else {
+        route.fallback()
       }
     })
 
@@ -107,10 +110,7 @@ test.describe('设置持久化', () => {
 
   test('AC-06: Embedding 配置保存', async ({ page }) => {
     const settings = new SettingsPage(page)
-    // 先滚动到 Embedding 区域并等待元素可交互
-    await settings.embeddingCard.scrollIntoViewIfNeeded()
-    await page.waitForTimeout(500)
-    await page.waitForSelector('[data-testid="embedding-provider-select"]', { state: 'visible', timeout: 10000 })
+    await expect(settings.embeddingProviderSelect).toBeVisible()
     await settings.selectEmbeddingProvider('硅基流动')
     await settings.fillEmbeddingApiKey('sk-embedding-sf')
     await settings.fillEmbeddingModel('BAAI/bge-large-zh-v1.5')
@@ -144,34 +144,46 @@ test.describe('设置持久化', () => {
   })
 
   test('AC-14: 保存无效 temperature 显示验证错误', async ({ page }) => {
-    const settings = new SettingsPage(page)
-    // 先修改温度使保存按钮可用，然后再用 evaluate 绕过前端限制设置越界值
-    await settings.setTemperature(1.0)
-    await page.waitForTimeout(300)
-    // 通过 evaluate 直接修改 input value 和 Vue 内部状态
-    await page.evaluate(() => {
-      const slider = document.querySelector('[data-testid="temperature-slider"]') as HTMLInputElement
-      if (slider) {
-        slider.value = '2.5'
-        slider.dispatchEvent(new Event('input', { bubbles: true }))
-        slider.dispatchEvent(new Event('change', { bubbles: true }))
+    // 通过 mock GET 注入越界温度值，测试前端 validate() 校验逻辑
+    await page.unroute('**/api/settings')
+    await page.route('**/api/settings', (route) => {
+      if (route.request().method() === 'GET') {
+        route.fulfill({
+          json: {
+            providers: {
+              openai: { apiKey: '', model: 'gpt-4o', baseUrl: '' },
+              claude: { apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
+              deepseek: { apiKey: 'fake-api-key-for-e2e', model: 'deepseek-chat', baseUrl: '' },
+              custom: { apiKey: '', model: '', baseUrl: '' },
+              ollama: { enabled: false, url: 'http://localhost:11434', model: '' },
+            },
+            embeddingProvider: { provider: 'openai', apiKey: '', model: 'text-embedding-3-small', baseUrl: '' },
+            temperature: 2.5,
+            defaultChatProvider: 'deepseek',
+          },
+        })
+      } else if (route.request().method() === 'POST') {
+        route.fulfill({ json: { data: { success: true } } })
+      } else {
+        route.fallback()
       }
     })
-    await page.waitForTimeout(300)
-    await settings.save()
 
-    // 如果前端校验阻止了保存，errorMessage 可能不会出现
-    // 此时测试通过（前端校验生效）或失败（需要后端校验）
-    // 这里我们检查两种情况：errorMessage 显示 或 保存按钮仍 disabled（表示前端阻止了）
-    const isErrorVisible = await settings.errorMessage.isVisible().catch(() => false)
-    if (isErrorVisible) {
-      const errorText = await settings.errorMessage.textContent()
-      expect(errorText).toContain('温度参数必须在 0-2 之间')
-    } else {
-      // 前端校验阻止了保存，保存按钮应该仍 disabled
-      const isEnabled = await settings.isSaveButtonEnabled()
-      expect(isEnabled).toBe(false)
-    }
+    // 先 reload 使越界 temperature 加载到 localConfig
+    await page.reload()
+    await page.waitForLoadState('load')
+    await page.waitForSelector('[data-testid="settings-nav-tabs"]', { timeout: 10000 })
+
+    // 修改 API Key 以启用保存按钮
+    const settings = new SettingsPage(page)
+    await settings.clickTab('OpenAI')
+    await settings.fillInput('apiKey', 'sk-test')
+    await page.waitForTimeout(300)
+
+    // 点击保存 → validate() 应检测到 temperature=2.5 越界 → 显示错误
+    await settings.save()
+    await expect(settings.errorMessage).toBeVisible()
+    await expect(settings.errorMessage).toContainText('温度参数必须在 0-2 之间')
   })
 
   test('AC-15: 保存空 API Key 允许（非必填）', async ({ page }) => {

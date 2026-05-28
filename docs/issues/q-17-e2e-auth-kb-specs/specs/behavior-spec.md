@@ -2,7 +2,7 @@
 
 ## 入口
 
-- **触发条件**：运行 `pnpm test:e2e` 或 `npx playwright test tests/issues/q-17-e2e-auth-kb-specs/`
+- **触发条件**：运行 `pnpm test:e2e` 或 `npx playwright test tests/integration/`
 - **页面入口**：`http://localhost:1420/login`、`http://localhost:1420/register`、`http://localhost:1420/knowledge-bases`
 - **前置依赖**：q-16 E2E 基础设施已就绪（docker、前后端、Playwright）
 
@@ -84,20 +84,20 @@
 
 | 交互状态 | 测试文件 | 测试用例 |
 |----------|----------|----------|
-| 注册表单填写 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should display register form with all fields` |
-| RSA 加密传输 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should encrypt password with RSA public key before submission` |
-| 注册成功跳转 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should register successfully and redirect to home` |
-| 登录成功存储 Token | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should store accessToken and refreshToken in localStorage after login` |
-| 登录错误提示 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should show error message for invalid credentials` |
-| 未登录重定向 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should redirect to login when accessing protected page without token` |
-| 已登录反重定向 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should redirect to home when accessing login page with valid token` |
-| Token 刷新 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should refresh accessToken when expired` |
-| 知识库列表加载 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should load knowledge base list on page visit` |
-| 知识库创建对话框 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should open create dialog and validate form` |
-| 知识库创建成功 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should create new knowledge base and appear in list` |
-| 文档上传成功 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should upload document and show in document list` |
-| 知识库删除确认 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should show confirm dialog before deleting knowledge base` |
-| 知识库软删除 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should move deleted knowledge base to trash` |
-| 知识库恢复 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should restore knowledge base from trash to list` |
-| 注册邮箱已存在 | `tests/issues/q-17-e2e-auth-kb-specs/01-auth-flow.spec.ts` | `should show error for duplicate email registration` |
-| 上传文件格式校验 | `tests/issues/q-17-e2e-auth-kb-specs/02-kb-lifecycle.spec.ts` | `should reject unsupported file formats` |
+| 注册表单填写 | `tests/integration/auth-flow.spec.ts` | `should display register form with all fields` |
+| RSA 加密传输 | `tests/integration/auth-flow.spec.ts` | `should encrypt password with RSA public key before submission` |
+| 注册成功跳转 | `tests/integration/auth-flow.spec.ts` | `should register successfully and redirect to home` |
+| 登录成功存储 Token | `tests/integration/auth-flow.spec.ts` | `should store accessToken and refreshToken in localStorage after login` |
+| 登录错误提示 | `tests/integration/auth-flow.spec.ts` | `should show error message for invalid credentials` |
+| 未登录重定向 | `tests/integration/auth-flow.spec.ts` | `should redirect to login when accessing protected page without token` |
+| 已登录反重定向 | `tests/integration/auth-flow.spec.ts` | `should redirect to home when accessing login page with valid token` |
+| Token 刷新 | `tests/integration/auth-flow.spec.ts` | `should refresh accessToken when expired` |
+| 知识库列表加载 | `tests/integration/kb-lifecycle.spec.ts` | `should load knowledge base list on page visit` |
+| 知识库创建对话框 | `tests/integration/kb-lifecycle.spec.ts` | `should open create dialog and validate form` |
+| 知识库创建成功 | `tests/integration/kb-lifecycle.spec.ts` | `should create new knowledge base and appear in list` |
+| 文档上传成功 | `tests/integration/kb-lifecycle.spec.ts` | `should upload document and show in document list` |
+| 知识库删除确认 | `tests/integration/kb-lifecycle.spec.ts` | `should show confirm dialog before deleting knowledge base` |
+| 知识库软删除 | `tests/integration/kb-lifecycle.spec.ts` | `should move deleted knowledge base to trash` |
+| 知识库恢复 | `tests/integration/kb-lifecycle.spec.ts` | `should restore knowledge base from trash to list` |
+| 注册邮箱已存在 | `tests/integration/auth-flow.spec.ts` | `should show error for duplicate email registration` |
+| 上传文件格式校验 | `tests/integration/kb-lifecycle.spec.ts` | `should reject unsupported file formats` |

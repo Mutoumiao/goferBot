@@ -1,10 +1,18 @@
 import { test, expect } from '@playwright/test'
 import { existsSync } from 'fs'
 import { Client } from 'pg'
-import { cleanupDatabase } from '../fixtures/database'
+import { cleanupDatabase } from '../e2e/fixtures/database'
+import { isBackendAvailable } from '../e2e/fixtures/auth'
+
+let backendOk: boolean
 
 test.describe('E2E Infrastructure (q-16)', () => {
+  test.beforeAll(async () => {
+    backendOk = await isBackendAvailable()
+  })
+
   test.beforeEach(async () => {
+    test.skip(!backendOk, 'Backend unavailable — skipping infrastructure test')
     await cleanupDatabase()
   })
 

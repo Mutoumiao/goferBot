@@ -1,9 +1,17 @@
 import { test, expect } from '@playwright/test'
-import { cleanupDatabase } from '../../e2e/fixtures/database'
-import { AuthPage } from '../../e2e/pages/AuthPage'
+import { cleanupDatabase } from '../e2e/fixtures/database'
+import { isBackendAvailable } from '../e2e/fixtures/auth'
+import { AuthPage } from '../e2e/pages/AuthPage'
+
+let backendOk: boolean
 
 test.describe('认证流程 (q-17)', () => {
+  test.beforeAll(async () => {
+    backendOk = await isBackendAvailable()
+  })
+
   test.beforeEach(async () => {
+    test.skip(!backendOk, 'Backend unavailable — skipping auth integration test')
     await cleanupDatabase()
   })
 

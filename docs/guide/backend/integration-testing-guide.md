@@ -102,12 +102,13 @@ docker compose -f docker-compose.dev.yml ps
 ### 4.1 文件位置
 
 ```
-tests/issues/{prefix}-{NN}-{slug}/
+tests/integration/
   {feature}.spec.ts
 ```
 
-- 后端 issue 使用 `b-` 前缀（bug）或 `i-` 前缀（infrastructure）
-- 示例：`tests/issues/b-05-chat-api-testing/chat.spec.ts`
+- 集成测试（真实数据库 + `app.inject`）放在 `tests/integration/`
+- 纯单元测试（vi.mock）放在 `tests/unit/server/`
+- 本指南覆盖的是集成测试，示例：`tests/integration/chat.spec.ts`
 
 ### 4.2 文件头部
 
@@ -115,9 +116,9 @@ tests/issues/{prefix}-{NN}-{slug}/
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
-import { AuthFixtures } from '../../integration/helpers/auth.fixtures.js'
-import { TestDatabaseManager } from '../../integration/helpers/test-database.manager.js'
+import { TestAppFactory } from './helpers/test-app.factory.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 ```
 
 ### 4.3 用例命名规范
@@ -141,9 +142,9 @@ it('AC-03: returns error via SSE when LLM API fails', async () => {})
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
-import { AuthFixtures } from '../../integration/helpers/auth.fixtures.js'
-import { TestDatabaseManager } from '../../integration/helpers/test-database.manager.js'
+import { TestAppFactory } from './helpers/test-app.factory.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 
 async function setupApp() {
   const dbManager = new TestDatabaseManager()
@@ -280,13 +281,13 @@ pnpm test:integration
 ### 7.2 单个 issue 测试
 
 ```bash
-pnpm vitest run --config vitest.integration.config.ts tests/issues/b-05-chat-api-testing/
+pnpm vitest run --config vitest.integration.config.ts tests/integration/
 ```
 
 ### 7.3 单个测试文件
 
 ```bash
-pnpm vitest run --config vitest.integration.config.ts tests/issues/b-05-chat-api-testing/chat.spec.ts
+pnpm vitest run --config vitest.integration.config.ts tests/integration/chat/chat.spec.ts
 ```
 
 ### 7.4 按名称过滤
@@ -328,13 +329,10 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/integration/**/*.spec.ts', 'tests/issues/**/*.spec.ts'],
+    include: ['tests/integration/**/*.spec.ts'],
     exclude: [
       'tests/integration/legacy/**',
       'tests/integration/sidecar/**',
-      'tests/issues/f-08*/**',  // 前端测试
-      'tests/issues/f-09*/**',
-      'tests/issues/f-10*/**',
     ],
     pool: 'forks',
     testTimeout: 60000,

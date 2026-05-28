@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
-import { injectAuthToken } from '../fixtures/auth'
+import { injectMockToken } from '../fixtures/auth'
 
 test('调试设置页面 - 检查页面结构', async ({ page }) => {
-  await injectAuthToken(page)
+  await injectMockToken(page)
   await mockApiRoutes(page)
 
   // 收集所有错误

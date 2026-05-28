@@ -50,9 +50,7 @@ export class SettingsPage {
   }
 
   async selectEmbeddingProvider(providerLabel: string) {
-    // reka-ui Select 组件没有透传 data-testid，使用 combobox role 定位
-    const selectTrigger = this.embeddingCard.locator('[role="combobox"]').first()
-    await selectTrigger.click()
+    await this.embeddingProviderSelect.click()
     await this.page.locator(`[role="option"]:has-text("${providerLabel}")`).click()
   }
 

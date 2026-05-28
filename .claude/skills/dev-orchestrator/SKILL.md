@@ -40,8 +40,19 @@ description: >
 | Spec      | `docs/issues/{dir}/specs/`            | 目录在 issue 目录下                           |
 | Plan      | `docs/issues/{dir}/plan.md`           | 当前生效版本                                  |
 | 历史 Plan | `docs/issues/{dir}/plans/v{N}.md`     | 版本归档                                      |
-| 测试代码  | `tests/issues/{dir}/*.spec.ts`        | 必须存在，且包含 AC-XX 用例                   |
 | 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举                   |
+
+**测试代码路径（按测试层级分层，不再使用 `tests/issues/`）：**
+
+| Issue Track | 测试层级 | 测试路径 |
+|-------------|---------|---------|
+| `b-*`, `d-*` | 后端单元 | `tests/unit/server/{name}.spec.ts` |
+| `f-*` | 前端单元 | `tests/unit/webui/{name}.spec.ts` |
+| `i-*` | 集成测试 | `tests/integration/{name}.spec.ts` |
+| `q-*` (E2E) | 端到端测试 | `tests/e2e/specs/` 或 `tests/e2e/flows/` |
+
+> 测试文件命名：`{feature-name}.spec.ts`，测试用例名以 `AC-XX:` 开头。
+> Issue → 测试映射关系记录在 `tests/README.md`。
 
 **轨道前缀：**
 - `f-XX`: 前端功能
@@ -168,13 +179,9 @@ docs/issues/{dir}/specs/
 
 ### 5. 检查测试代码（TDD 关卡）
 
-**这是核心关卡。检查 `tests/issues/{dir}/` 下的 `.spec.ts` 文件。**
+**这是核心关卡。根据 issue 的 track 前缀确定测试层级目录，检查对应的 `.spec.ts` 文件。**
 
 根据 plan 中声明的测试文件路径，检查：
-
-```
-tests/issues/{dir}/*.spec.ts
-```
 
 **检查内容：**
 1. 测试文件是否存在？
@@ -193,7 +200,15 @@ tests/issues/{dir}/*.spec.ts
 1. 读取测试代码，统计测试用例数量
 2. 检查是否覆盖所有验收标准和边界条件
 3. 若有遗漏，提示并询问是否补充
-4. 进入步骤 6
+4. 进入步骤 5b
+
+### 5b. 检查集成/E2E 测试（补充闸门）
+
+**b-*, d-* track**：如果 issue 涉及 API 端点或数据库操作，检查 `tests/integration/` 下是否有对应的集成测试。若无，提示用户补充（参考 `docs/guide/backend/integration-testing-guide.md`）。
+
+**i-*, q-*（集成）track**：必须存在 `tests/integration/{name}.spec.ts`，否则阻塞。
+
+**q-*（E2E）track**：必须存在 `tests/e2e/specs/{name}.spec.ts` 或 `tests/e2e/flows/{name}.spec.ts`，用 Playwright 运行确认失败。验证命令：`npx playwright test --config tests/e2e/playwright.config.ts -g "AC-"`。
 
 ### 6. 引导进入开发
 
@@ -207,7 +222,7 @@ f-15 文件上传组件 — 开发准备就绪
 - Issue 状态: open
 - 行为契约: docs/issues/f-15-global-tab-bar/specs/behavior-spec.md
 - 执行计划: docs/issues/f-15-global-tab-bar/plan.md (X 个任务)
-- 测试代码: tests/issues/f-15-global-tab-bar/TabBar.spec.ts (Y 条测试用例)
+- 测试代码: tests/unit/webui/TabBar.spec.ts (Y 条测试用例)
 - TDD 状态: 🔴 测试已编写，运行失败（等待实现）
 
 请选择开发执行方式：
@@ -404,10 +419,10 @@ Spec 审查通过？ → 否 → 实现子代理修复 → 重新审查
 
 ### 强制验证（未通过禁止关闭）
 
-1. **单元测试全部通过**
-   ```bash
-   npx vitest run tests/issues/{dir}/
-   ```
+1. **按 track 运行对应测试全部通过**
+   - f-*, b-*, d-*：`npx vitest run tests/unit/`
+   - i-*, q-*（集成）：`pnpm test:integration`
+   - q-*（E2E）：`pnpm test:e2e`
    - 预期：0 失败，全部绿色
 
 2. **类型检查通过**
@@ -416,11 +431,11 @@ Spec 审查通过？ → 否 → 实现子代理修复 → 重新审查
    ```
    - 预期：0 错误
 
-3. **相关测试无回归**
+3. **全量回归无退化**
    ```bash
-   npx vitest run
+   npx vitest run && pnpm test:integration && pnpm test:e2e
    ```
-   - 预期：其他 issue 的测试也全部通过
+   - 预期：所有层级的测试全部通过
 
 ### 验证通过后
 

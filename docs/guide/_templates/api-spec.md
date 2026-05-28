@@ -45,8 +45,8 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 
 | 场景 | 测试文件 | 测试用例 |
 |------|----------|----------|
-| 正常创建 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-01: creates knowledge base with valid data` |
-| 重复名称 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-02: returns 409 on duplicate name` |
+| 正常创建 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-01: creates knowledge base with valid data` |
+| 重复名称 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-02: returns 409 on duplicate name` |
 ```
 
 ---
@@ -65,4 +65,4 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 - 每个端点必须有请求/响应示例
 - 每个错误码必须有触发场景
 - 异步行为必须说明客户端如何获取状态更新
-- 底部必须包含**测试映射表**，链接到 `tests/issues/{issue-dir}/` 下的测试用例
+- 底部必须包含**测试映射表**，链接到测试层级目录下的测试用例

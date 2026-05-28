@@ -14,7 +14,7 @@
 | 1. Issue 拆分 | PRD 批次     | `docs/issues/{prefix}-{NN}-{slug}/`  | `/issue-generator`                    | [Issue 规范](writing-issues.md)   |
 | 2. 契约编写   | Issue        | `specs/*.md`                         | `/spec-validator`                     | [Spec 规范](writing-specs.md)     |
 | 3. 执行计划   | Issue + Spec | `plan.md` + `plans/v{N}.md`          | `/plan-generator`                     | [Plan 规范](writing-plans.md)     |
-| 4. 并行开发   | Plan + Spec  | 代码 + `tests/issues/{dir}/.spec.ts` | `/dev-orchestrator`                   | -                                 |
+| 4. 并行开发   | Plan + Spec  | 代码 + `tests/{layer}/*.spec.ts`    | `/dev-orchestrator`                   | -                                 |
 | 5. 联调整合   | 代码         | 审查记录                             | `/kb-review`                          | [Review 规范](writing-reviews.md) |
 | 6. 关闭归档   | 已验证代码   | 关闭 issue + 更新 BACKLOG/CHANGELOG  | `/issue-lifecycle` + `/issue-updater` | -                                 |
 
@@ -23,7 +23,7 @@
 ## 文档依赖链
 
 ```
-prd/ → docs/issues/{dir}/ → 代码 + tests/issues/{dir}/ → reviews/
+prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
    ↑___________________________________________|
               （发现 spec 不足时回溯更新）
 ```
@@ -43,8 +43,8 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/issues/{dir}/ → reviews/
 
 | 类型         | 路径                                 |
 |--------------|--------------------------------------|
-| 前端单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
-| 后端单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
+| 前端单元测试 | `tests/unit/webui/*.spec.ts`        |
+| 后端单元测试 | `tests/unit/server/*.spec.ts`       |
 | 集成测试     | `tests/integration/**/*.spec.ts`     |
 | E2E 测试     | `tests/e2e/**/*.spec.ts`             |
 
@@ -132,10 +132,10 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/issues/{dir}/ → reviews/
 ```markdown
 ## 测试映射
 
-| 场景         | 测试文件                                          | 测试用例                                              |
-|--------------|---------------------------------------------------|-------------------------------------------------------|
-| loading 状态 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
-| 401 错误     | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized`               |
+| 场景         | 测试文件                              | 测试用例                                              |
+|--------------|---------------------------------------|-------------------------------------------------------|
+| loading 状态 | `tests/unit/webui/TabBar.spec.ts`    | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| 401 错误     | `tests/unit/webui/TabBar.spec.ts`    | `AC-02: displays error on unauthorized`               |
 ```
 
 **关键规则**：
@@ -253,7 +253,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/issues/{dir}/ → reviews/
 | `docs/issues/`  | `{prefix}-{NN}-{kebab-slug}/`                          | `f-15-global-tab-bar/`               |
 | `specs/`        | `feature-spec.md` / `behavior-spec.md` / `api-spec.md` | `specs/behavior-spec.md`             |
 | `plans/`        | `v{N}.md`                                              | `plans/v1.md`                        |
-| `tests/issues/` | `{issue-dir}/*.spec.ts`                                | `f-15-global-tab-bar/TabBar.spec.ts` |
+| `tests/unit/` | `{layer}/{name}.spec.ts`                                  | `webui/TabBar.spec.ts`              |
 | `reviews/`      | `{scope}/{type}-v{N}.md`                               | `phase-3/code-v1.md`                 |
 
 ---

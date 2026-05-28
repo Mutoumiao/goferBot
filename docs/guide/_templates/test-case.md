@@ -3,7 +3,7 @@
 > **重要：本文档已废弃。**
 >
 > 测试用例不再以 markdown 形式保存。
-> 所有测试直接以 `.spec.ts` 文件形式编写在 `tests/issues/{issue-dir}/` 目录下。
+> 所有测试直接以 `.spec.ts` 文件形式编写在测试层级目录下（`tests/unit/`、`tests/integration/`、`tests/e2e/`）。
 >
 > 保留此模板仅作历史参考。
 
@@ -15,7 +15,8 @@
 
 | 类型 | 路径 |
 |------|------|
-| 按 issue 组织的单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
+| 单元测试（前端） | `tests/unit/webui/*.spec.ts` |
+| 单元测试（后端） | `tests/unit/server/*.spec.ts` |
 | 集成测试 | `tests/integration/**/*.spec.ts` |
 | E2E 测试 | `tests/e2e/**/*.spec.ts` |
 
@@ -24,7 +25,7 @@
 **TDD 强制**：在实现代码之前编写测试。
 
 1. 读取 spec 中的"测试映射"表格
-2. 在 `tests/issues/{issue-dir}/` 下创建 `.spec.ts` 文件
+2. 在对应的 `tests/unit/`、`tests/integration/` 或 `tests/e2e/` 目录下创建 `.spec.ts` 文件
 3. 编写失败测试（red）
 4. 运行确认失败
 5. 编写最小实现使测试通过（green）
@@ -38,7 +39,7 @@
 ### 示例
 
 ```typescript
-// tests/issues/f-15-global-tab-bar/TabBar.spec.ts
+// tests/unit/webui/TabBar.spec.ts
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import TabBar from '@/components/layout/TabBar.vue'

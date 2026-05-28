@@ -4,8 +4,8 @@
 
 - 触发：运行 `pnpm test:e2e` 或 `pnpm test:e2e:ui`
 - 测试文件：
-  - `tests/issues/q-18-e2e-chat-session-specs/03-chat-with-rag.spec.ts`
-  - `tests/issues/q-18-e2e-chat-session-specs/04-session-management.spec.ts`
+  - `tests/e2e/flows/chat-with-rag.spec.ts`
+  - `tests/e2e/flows/session-management.spec.ts`
 - 前置依赖：q-16 E2E 基础设施已就绪（docker / webServer / 登录态）
 
 ## 初始状态
@@ -122,18 +122,18 @@
 
 | 交互状态 | 测试文件 | 测试用例 |
 |----------|----------|----------|
-| empty / typing / success | `03-chat-with-rag.spec.ts` | `it('sends a message and receives SSE streaming response', ...)` |
-| streaming | `03-chat-with-rag.spec.ts` | `it('displays AI response word by word via SSE', ...)` |
-| error (SSE 500) | `03-chat-with-rag.spec.ts` | `it('shows error when SSE connection fails', ...)` |
-| partial (SSE 断开) | `03-chat-with-rag.spec.ts` | `it('handles incomplete SSE stream gracefully', ...)` |
-| dropdown-open / selected / multi-selected | `03-chat-with-rag.spec.ts` | `it('opens kb dropdown on @ and selects multiple items', ...)` |
-| delete-pill | `03-chat-with-rag.spec.ts` | `it('removes kb pill when clicking delete', ...)` |
-| send-with-kb | `03-chat-with-rag.spec.ts` | `it('sends request with knowledgeBaseIds', ...)` |
-| single-tab / multi-tab | `04-session-management.spec.ts` | `it('creates new session tab on new chat', ...)` |
-| switching | `04-session-management.spec.ts` | `it('switches between tabs and loads session history', ...)` |
-| renaming | `04-session-management.spec.ts` | `it('renames session tab on double click', ...)` |
-| closing | `04-session-management.spec.ts` | `it('closes tab and switches to left tab', ...)` |
-| close-prevented | `04-session-management.spec.ts` | `it('prevents closing the home tab', ...)` |
-| list-loaded / click-restore | `04-session-management.spec.ts` | `it('restores session from history list', ...)` |
-| delete-confirm | `04-session-management.spec.ts` | `it('deletes session from history with confirmation', ...)` |
-| rename-inline | `04-session-management.spec.ts` | `it('renames session from history list', ...)` |
+| empty / typing / success | `tests/e2e/flows/chat-with-rag.spec.ts` | `it('sends a message and receives SSE streaming response', ...)` |
+| streaming | `tests/e2e/flows/chat-with-rag.spec.ts` | `it('displays AI response word by word via SSE', ...)` |
+| error (SSE 500) | `tests/e2e/flows/chat-with-rag.spec.ts` | `it('shows error when SSE connection fails', ...)` |
+| partial (SSE 断开) | `tests/e2e/flows/chat-with-rag.spec.ts` | `it('handles incomplete SSE stream gracefully', ...)` |
+| dropdown-open / selected / multi-selected | `tests/e2e/flows/chat-with-rag.spec.ts` | `it('opens kb dropdown on @ and selects multiple items', ...)` |
+| delete-pill | `tests/e2e/flows/chat-with-rag.spec.ts` | `it('removes kb pill when clicking delete', ...)` |
+| send-with-kb | `tests/e2e/flows/chat-with-rag.spec.ts` | `it('sends request with knowledgeBaseIds', ...)` |
+| single-tab / multi-tab | `tests/e2e/flows/session-management.spec.ts` | `it('creates new session tab on new chat', ...)` |
+| switching | `tests/e2e/flows/session-management.spec.ts` | `it('switches between tabs and loads session history', ...)` |
+| renaming | `tests/e2e/flows/session-management.spec.ts` | `it('renames session tab on double click', ...)` |
+| closing | `tests/e2e/flows/session-management.spec.ts` | `it('closes tab and switches to left tab', ...)` |
+| close-prevented | `tests/e2e/flows/session-management.spec.ts` | `it('prevents closing the home tab', ...)` |
+| list-loaded / click-restore | `tests/e2e/flows/session-management.spec.ts` | `it('restores session from history list', ...)` |
+| delete-confirm | `tests/e2e/flows/session-management.spec.ts` | `it('deletes session from history with confirmation', ...)` |
+| rename-inline | `tests/e2e/flows/session-management.spec.ts` | `it('renames session from history list', ...)` |

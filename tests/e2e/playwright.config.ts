@@ -43,8 +43,8 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'chromium-issues',
-      testDir: path.resolve(__dirname, '../issues'),
+      name: 'chromium-flows',
+      testDir: path.resolve(__dirname, './flows'),
       use: { ...devices['Desktop Chrome'] },
     },
   ],

@@ -31,7 +31,7 @@ description: >
 | Issue     | `docs/issues/{prefix}-{NN}-{slug}/issue.md` | 目录名必须符合格式          |
 | Spec      | `docs/issues/{dir}/specs/`                  | 目录在 issue 目录下         |
 | Plan      | `docs/issues/{dir}/plan.md`                 | 当前生效版本                |
-| 测试代码  | `tests/issues/{dir}/*.spec.ts`              | 必须存在，且包含 AC-XX 用例 |
+| 测试代码  | `tests/{layer}/{name}.spec.ts`              | 按轨道：f→unit/webui, b→unit/server, i→integration, q→e2e |
 | checklist | `docs/issues/{dir}/checklist.json`          | 机器管理，AC-XX 条目        |
 | 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md`       | scope 语义化，type 限定枚举 |
 | 进度文档  | `BACKLOG.md` / `CHANGELOG.md`（根目录）     |                             |
@@ -77,18 +77,18 @@ description: >
 
 **定位测试代码：**
 
-在 `tests/issues/{dir}/` 查找 `.spec.ts` 文件。
-- 例如 `f-05` → `tests/issues/f-05-file-upload/*.spec.ts`
+在 `tests/{layer}/` 查找 `.spec.ts` 文件。
+- 例如 `f-05` → `tests/unit/webui/file-upload.spec.ts`
 
 **路径验证：**
-- 测试文件放在 issue 目录下
+- 测试文件按层级放在 tests/unit/、tests/integration/、tests/e2e/ 对应目录下
 - 测试用例名以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
 
 **统计与验证：**
 
 1. 读取 `docs/issues/{dir}/checklist.json`，统计所有 AC-XX 条目
 2. 检查 `manual: true` 的条目（非自动化测试覆盖）
-3. 运行 `npx vitest run tests/issues/{dir}/` 验证是否全部通过
+3. 运行 `npx vitest run tests/{layer}/` 验证是否全部通过
 
 **判定规则：**
 
@@ -108,22 +108,27 @@ description: >
 
 声明 issue 完成前，必须运行以下验证并确认输出：
 
-1. **单元测试**：`npx vitest run tests/issues/{dir}/`
-   - 预期：全部通过，0 失败
+1. **按 track 运行对应测试**：
+   - f-*, b-*, d-*：`npx vitest run tests/unit/` — 预期全部通过
+   - i-*, q-*（集成）：`pnpm test:integration` — 预期全部通过
+   - q-*（E2E）：`pnpm test:e2e` — 预期全部通过
 
-2. **类型检查**：`pnpm type-check`
+2. **全量回归**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
+   - 确保其他 issue 的测试无退化
+
+3. **类型检查**：`pnpm type-check`
    - 预期：0 错误
 
-3. **测试覆盖确认**：
+4. **测试覆盖确认**：
    - 所有 checklist.json 中的 AC-XX 都有对应测试
    - 测试用例名以 `AC-XX:` 开头
 
 **验证失败 = 禁止关闭。** 必须先修复，再重新验证。
 
 **关闭前路径验证：**
-- [ ] 测试代码存在于 `tests/issues/{dir}/`
+- [ ] 测试代码存在于 `tests/{layer}/`
 - [ ] checklist.json 中所有 AC-XX 状态为 `passed`
-- [ ] 以上路径存在对应文件，否则提示用户补全
+- [ ] `tests/README.md` 中有对应映射条目
 
 ### 5. 更新 Issue 文件
 
@@ -160,7 +165,7 @@ issue 中通常有两处验收标准：
 
 1. issue 目录：`docs/issues/{dir}/` → `docs/archived/v2-issues/{dir}/`
 2. review 记录：`docs/reviews/{scope}/` → `docs/archived/v2-reviews/{scope}/`
-3. 测试代码保留在 `tests/issues/{dir}/`（历史参考）
+3. 测试代码保留在 `tests/{layer}/`（历史参考）
 
 ### 8. 提交变更（可选）
 
@@ -193,7 +198,7 @@ issue 中通常有两处验收标准：
 - Spec 目录：`docs/issues/{dir}/specs/`
 - Plan 文件：`docs/issues/{dir}/plan.md`
 - checklist：`docs/issues/{dir}/checklist.json`
-- 测试代码：`tests/issues/{dir}/`
+- 测试代码：`tests/{layer}/`
 - 审查记录目录：`docs/reviews/{scope}/`
 - 归档目录：`docs/archived/`
 - 进度文档：`BACKLOG.md` / `CHANGELOG.md`

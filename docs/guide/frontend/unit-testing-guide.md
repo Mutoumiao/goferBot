@@ -11,7 +11,7 @@
 
 | 层级 | 范围 | 运行命令 | 配置文件 | 数量 |
 |------|------|----------|----------|------|
-| 单元测试 | 组件/Store/工具函数 | `pnpm test` | `vitest.config.ts` | 141 |
+| 单元测试 | 组件/Store/工具/后端Service | `pnpm test` | `vitest.config.ts` | 141 |
 | 集成测试 | API + 数据库 | `pnpm test:integration` | `vitest.integration.config.ts` | 113 |
 | E2E 测试 | 完整用户流程 | `pnpm test:e2e` | Playwright | - |
 
@@ -33,10 +33,8 @@
   - `markdown` — Markdown 渲染
   - `confirm` — 确认对话框
 
-- **前端 Issue 测试** (`tests/issues/f-*/`) — 按功能模块组织的验收测试
-  - `f-08-overlay-core` — 浮层/对话框核心
-  - `f-09-dialog-migration` — 对话框迁移
-  - `f-10-context-menu-and-conventions` — 右键菜单
+- **前端 Issue 验收测试** (`tests/unit/webui/`) — 按功能模块组织的 TDD 验收测试
+  - KbSelector, ChatInput, ChatView — 知识库选择器 (f-16)
 
 ---
 
@@ -58,8 +56,6 @@
 resolve: {
   alias: {
     '@': fileURLToPath(new URL('./packages/webui/src', import.meta.url)),
-    '@goferbot/shell-adapters': fileURLToPath(new URL('./packages/shellAdapters/dist/index.js', import.meta.url)),
-    '@goferbot/backend-adapters': fileURLToPath(new URL('./packages/backendAdapters/dist/index.js', import.meta.url)),
     '@goferbot/rag-sdk': fileURLToPath(new URL('./packages/rag-sdk/dist/index.js', import.meta.url)),
   },
 }
@@ -91,7 +87,7 @@ pnpm install
 
 ### 3.2 构建依赖包
 
-前端测试可能依赖 `shellAdapters`、`backendAdapters`、`rag-sdk` 的构建产物：
+前端测试可能依赖 `rag-sdk` 等 workspace 包的构建产物：
 
 ```bash
 pnpm -r build
@@ -113,17 +109,13 @@ tests/unit/
   composables/    # 组合式函数测试
   stores/         # Pinia Store 测试
   utils/          # 工具函数测试
-
-tests/issues/
-  f-08-overlay-core/           # 浮层系统测试
-  f-09-dialog-migration/       # 对话框迁移测试
-  f-10-context-menu-and-conventions/  # 右键菜单测试
+  webui/          # 前端 Issue 验收测试
 ```
 
 ### 4.2 文件命名
 
 - 单元测试：`{name}.test.ts`
-- Issue 测试：`{name}.spec.ts`
+- 验收测试：`{name}.spec.ts`
 
 ### 4.3 用例命名规范
 
@@ -254,24 +246,24 @@ describe('useSessionStore', () => {
 })
 ```
 
-### 6.2 Mock 后端传输层
+### 6.2 Mock API 调用
+
+Store 中的 API 调用通过 `vi.mock` 或 `vi.fn()` 进行 mock：
 
 ```typescript
-import { FakeBackendTransport } from '@goferbot/backend-adapters'
-import { setBackend } from '@goferbot/backend-adapters'
-import { MemoryShell } from '@goferbot/shell-adapters'
-import { setShell } from '@goferbot/shell-adapters'
+import { vi } from 'vitest'
+
+// Mock API 模块
+vi.mock('@/api/client', () => ({
+  apiClient: {
+    get: vi.fn().mockResolvedValue({ data: [] }),
+    post: vi.fn().mockResolvedValue({ data: { id: '1' } }),
+  },
+}))
 
 beforeEach(() => {
   setActivePinia(createPinia())
-  setShell(new MemoryShell({ initialPort: 11451 }))
-  const backend = new FakeBackendTransport()
-  setBackend(backend)
-})
-
-afterEach(() => {
-  setBackend(null)
-  setShell(null)
+  vi.clearAllMocks()
 })
 ```
 
@@ -374,14 +366,13 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ['tests/unit/**/*.test.ts', 'tests/issues/**/*.spec.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.spec.ts'],
     exclude: [
       'tests/e2e/**',
       'tests/e2e-full/**',
       'tests/integration/**',
-      'tests/issues/b-*/**',  // 后端测试
-      'tests/issues/i-*/**',
-      'packages/**',
+      'packages/webui/**',
+      'packages/server/**',
     ],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],

@@ -1,21 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
-import { injectAuthToken } from '../fixtures/auth'
+import { injectMockToken } from '../fixtures/auth'
 
 test.describe('知识库选择器 (f-11)', () => {
   test.beforeEach(async ({ page }) => {
-    await injectAuthToken(page)
+    await injectMockToken(page)
     await mockApiRoutes(page)
 
-    await page.route('**/auth/me', (route) => {
-      if (route.request().method() === 'GET') {
-        route.fulfill({
-          json: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
-        })
-      }
-    })
-
-    // Mock 知识库列表
+    // Mock 知识库列表（覆盖 mockApiRoutes 默认值以适配选择器测试）
     await page.route('**/api/knowledge-bases', (route) => {
       if (route.request().method() === 'GET') {
         route.fulfill({

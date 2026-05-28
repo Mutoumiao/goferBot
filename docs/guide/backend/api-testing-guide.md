@@ -37,11 +37,12 @@ set -a && source .env.test && set +a
 ### 2.1 文件位置
 
 ```
-tests/issues/{prefix}-{NN}-{slug}/
+tests/integration/
   {feature}.spec.ts
 ```
 
-示例：`tests/issues/b-11-document-details/document-details.spec.ts`
+- 集成测试（真实数据库 + `app.inject`）放在 `tests/integration/`
+- 本指南覆盖的是集成测试，示例：`tests/integration/document-details.spec.ts`
 
 ### 2.2 文件头部
 
@@ -49,9 +50,9 @@ tests/issues/{prefix}-{NN}-{slug}/
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
-import { AuthFixtures } from '../../integration/helpers/auth.fixtures.js'
-import { TestDatabaseManager } from '../../integration/helpers/test-database.manager.js'
+import { TestAppFactory } from './helpers/test-app.factory.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 ```
 
 ### 2.3 用例命名规范
@@ -76,9 +77,9 @@ it('AC-03: returns 403 for non-owner access', async () => {})
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
-import { AuthFixtures } from '../../integration/helpers/auth.fixtures.js'
-import { TestDatabaseManager } from '../../integration/helpers/test-database.manager.js'
+import { TestAppFactory } from './helpers/test-app.factory.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 
 async function setupApp() {
   const dbManager = new TestDatabaseManager()
@@ -171,7 +172,7 @@ describe('PublicEndpoint', () => {
 export TEST_DATABASE_ADMIN_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres?schema=public"
 export DATABASE_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_test?schema=public"
 
-npx vitest run --config vitest.integration.config.ts tests/issues/b-11-*/
+npx vitest run --config vitest.integration.config.ts tests/integration/
 ```
 
 ### 5.2 全部后端测试

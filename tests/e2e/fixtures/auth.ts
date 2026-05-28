@@ -10,7 +10,9 @@ export interface TestUser {
   userId?: string
 }
 
-// Mock 用户（用于前端 mock 测试）
+// ============================================================
+// Mock 用户 — 用于纯 UI 流程测试（不依赖后端）
+// ============================================================
 const mockUsers: Record<string, TestUser> = {
   registered: {
     email: 'test@example.com',
@@ -21,9 +23,9 @@ const mockUsers: Record<string, TestUser> = {
   },
 }
 
-const createdUsers: TestUser[] = []
-
+// ============================================================
 // Playwright test fixture 扩展
+// ============================================================
 export const test = base.extend<{ testUser: TestUser; authPage: { gotoLogin: () => Promise<void> } }>({
   testUser: async ({ page }, use) => {
     const user = mockUsers.registered
@@ -39,17 +41,59 @@ export const test = base.extend<{ testUser: TestUser; authPage: { gotoLogin: () 
   },
 })
 
+// ============================================================
+// 策略 A：injectMockToken — 纯 mock 模式（UI 流程测试）
+// 零后端依赖，配合 mockApiRoutes 使用
+// 适用：页面渲染、交互状态、前端校验、组件行为
+// ============================================================
+export async function injectMockToken(page: any): Promise<void> {
+  const user = mockUsers.registered
+  await page.addInitScript({
+    content: `
+      try {
+        localStorage.setItem('goferbot_access_token', '${user.accessToken}')
+        localStorage.setItem('goferbot_refresh_token', '${user.refreshToken}')
+      } catch (e) {}
+    `,
+  })
+}
+
+// ============================================================
+// 策略 B：injectAuthToken — 真实后端模式（集成测试）
+// 通过真实 API 注册用户，验证完整链路
+// 适用：注册→登录→KB→聊天 全链路集成测试
+// 前置条件：后端运行在 http://127.0.0.1:3000
+// ============================================================
+
 let cachedPublicKey: string | null = null
 let cachedTestUser: TestUser | null = null
+let backendAvailable: boolean | null = null
 
-// 通过真实后端 API 创建测试用户
+/** 检测后端是否可用（结果缓存，避免重复请求触发限流） */
+export async function isBackendAvailable(): Promise<boolean> {
+  if (backendAvailable !== null) return backendAvailable
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/health', {
+      signal: AbortSignal.timeout(3000),
+    })
+    backendAvailable = res.ok
+  } catch {
+    backendAvailable = false
+  }
+  return backendAvailable
+}
+
+/** 重置后端可用性缓存（测试环境切换时调用） */
+export function resetBackendAvailability(): void {
+  backendAvailable = null
+}
+
 export async function createTestUser(): Promise<TestUser> {
   const timestamp = Date.now()
   const email = `e2e-${timestamp}@test.gofer`
   const password = 'Test1234!'
   const name = 'E2E Test User'
 
-  // 1. 获取公钥（缓存避免重复请求触发限流）
   if (!cachedPublicKey) {
     const keyRes = await fetch('http://127.0.0.1:3000/api/auth/public-key')
     if (!keyRes.ok) {
@@ -60,14 +104,12 @@ export async function createTestUser(): Promise<TestUser> {
   }
   const publicKey = cachedPublicKey
 
-  // 2. RSA 加密密码
   const encrypted = publicEncrypt(
     { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: 'sha256' },
     Buffer.from(password),
   )
   const encryptedPassword = encrypted.toString('base64')
 
-  // 3. 注册
   const registerRes = await fetch('http://127.0.0.1:3000/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -77,7 +119,6 @@ export async function createTestUser(): Promise<TestUser> {
     throw new Error(`Register failed: ${registerRes.status} ${await registerRes.text()}`)
   }
 
-  // 4. 登录
   const loginRes = await fetch('http://127.0.0.1:3000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -100,7 +141,6 @@ export async function createTestUser(): Promise<TestUser> {
   }
 }
 
-// 预创建测试用户（供 beforeAll 调用，避免限流）
 export async function ensureTestUser(): Promise<TestUser> {
   if (!cachedTestUser) {
     cachedTestUser = await createTestUser()
@@ -108,7 +148,6 @@ export async function ensureTestUser(): Promise<TestUser> {
   return cachedTestUser
 }
 
-// 向页面注入认证 token（复用缓存用户避免限流）
 export async function injectAuthToken(page: any, token?: string): Promise<void> {
   let t = token
   if (!t) {
@@ -128,6 +167,8 @@ export async function injectAuthToken(page: any, token?: string): Promise<void> 
 }
 
 // Mock API 路由（保留现有功能）
+const createdUsers: TestUser[] = []
+
 export async function mockAuthApi(page: any) {
   await page.route('**/api/auth/public-key', (route) => {
     route.fulfill({

@@ -3,7 +3,7 @@
 > **重要：本文档已废弃。**
 >
 > 测试用例不再以 markdown 形式保存在 `docs/08-test-cases/` 中。
-> 所有测试直接以 `.spec.ts` 文件形式编写在 `tests/issues/{issue-dir}/` 目录下。
+> 测试按金字塔层级放在对应目录下，不再使用 `tests/issues/`。
 >
 > 保留此文件仅作历史参考。
 
@@ -13,18 +13,22 @@
 
 ### 测试文件位置
 
-| 类型 | 路径 |
-|------|------|
-| 按 issue 组织的单元测试 | `tests/issues/{issue-dir}/*.spec.ts` |
-| 集成测试 | `tests/integration/**/*.spec.ts` |
-| E2E 测试 | `tests/e2e/**/*.spec.ts` |
+| 类型 | 路径 | 说明 |
+|------|------|------|
+| 后端单元测试 | `tests/unit/server/{name}.spec.ts` | b-*, d-* issue |
+| 前端单元测试 | `tests/unit/webui/{name}.spec.ts` | f-* issue |
+| 集成测试 | `tests/integration/{name}.spec.ts` | i-*, 部分 q-* |
+| E2E 单页面测试 | `tests/e2e/specs/{name}.spec.ts` | q-* (页面级) |
+| E2E 跨模块旅程 | `tests/e2e/flows/{name}.spec.ts` | q-* (流程级) |
+
+> Issue → 测试映射关系记录在 `tests/README.md`。
 
 ### 测试编写时机
 
 **TDD 强制**：在实现代码之前编写测试。
 
 1. 读取 spec 中的"测试映射"表格
-2. 在 `tests/issues/{issue-dir}/` 下创建 `.spec.ts` 文件
+2. 在对应层级目录下创建 `.spec.ts` 文件
 3. 编写失败测试（red）
 4. 运行确认失败
 5. 编写最小实现使测试通过（green）
@@ -45,7 +49,7 @@
 ### 示例
 
 ```typescript
-// tests/issues/f-15-global-tab-bar/TabBar.spec.ts
+// tests/unit/webui/TabBar.spec.ts
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import TabBar from '@/components/layout/TabBar.vue'

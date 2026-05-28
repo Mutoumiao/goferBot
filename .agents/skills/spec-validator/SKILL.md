@@ -123,8 +123,8 @@ description: >
 
 | 交互状态 | 测试文件                                          | 测试用例                                              |
 |----------|---------------------------------------------------|-------------------------------------------------------|
-| loading  | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
-| error    | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized`               |
+| loading  | `tests/unit/webui/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| error    | `tests/unit/webui/TabBar.spec.ts` | `AC-02: displays error on unauthorized`               |
 ```
 
 ### API 规格（后端）
@@ -169,8 +169,8 @@ description: >
 
 | 场景     | 测试文件                                                              | 测试用例                                        |
 |----------|-----------------------------------------------------------------------|-------------------------------------------------|
-| 正常请求 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-01: creates knowledge base with valid data` |
-| 参数错误 | `tests/issues/b-02-knowledge-base-crud-api/knowledgeBaseCrud.spec.ts` | `AC-02: returns 400 for invalid input`          |
+| 正常请求 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-01: creates knowledge base with valid data` |
+| 参数错误 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-02: returns 400 for invalid input`          |
 ```
 
 ---

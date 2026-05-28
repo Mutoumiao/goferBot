@@ -57,9 +57,9 @@
 
 | 交互状态 | 测试文件 | 测试用例 |
 |----------|----------|----------|
-| starting | `tests/issues/q-16-e2e-infra-migration/infra.spec.ts` | `it('globalSetup starts docker infrastructure', ...)` |
-| ready | `tests/issues/q-16-e2e-infra-migration/infra.spec.ts` | `it('webServer starts backend and frontend', ...)` |
-| passed | `tests/issues/q-16-e2e-infra-migration/infra.spec.ts` | `it('example test passes with real API', ...)` |
-| failed | `tests/issues/q-16-e2e-infra-migration/infra.spec.ts` | `it('reports port conflict when 3000 is occupied', ...)` |
-| timeout | `tests/issues/q-16-e2e-infra-migration/infra.spec.ts` | `it('handles service startup timeout gracefully', ...)` |
-| teardown | `tests/issues/q-16-e2e-infra-migration/infra.spec.ts` | `it('globalTeardown shuts down docker in CI', ...)` |
+| starting | `tests/integration/infra.spec.ts` | `it('globalSetup starts docker infrastructure', ...)` |
+| ready | `tests/integration/infra.spec.ts` | `it('webServer starts backend and frontend', ...)` |
+| passed | `tests/integration/infra.spec.ts` | `it('example test passes with real API', ...)` |
+| failed | `tests/integration/infra.spec.ts` | `it('reports port conflict when 3000 is occupied', ...)` |
+| timeout | `tests/integration/infra.spec.ts` | `it('handles service startup timeout gracefully', ...)` |
+| teardown | `tests/integration/infra.spec.ts` | `it('globalTeardown shuts down docker in CI', ...)` |

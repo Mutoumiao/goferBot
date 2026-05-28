@@ -51,11 +51,11 @@
 
 | 交互状态 | 测试文件 | 测试用例 |
 |----------|----------|----------|
-| loading | `tests/issues/f-16-chat-kb-selector/KbSelector.spec.ts` | `AC-02: displays skeleton while loading knowledge bases` |
-| empty | `tests/issues/f-16-chat-kb-selector/KbSelector.spec.ts` | `AC-03: shows empty hint when no knowledge bases exist` |
-| error | `tests/issues/f-16-chat-kb-selector/KbSelector.spec.ts` | `AC-04: shows error and retry button on load failure` |
-| success | `tests/issues/f-16-chat-kb-selector/ChatInput.spec.ts` | `AC-01: renders KbSelector and toggles selection` |
-| partial | `tests/issues/f-16-chat-kb-selector/KbSelector.spec.ts` | `AC-05: keyboard navigation works in dropdown` |
-| 正常流程 | `tests/issues/f-16-chat-kb-selector/ChatInput.spec.ts` | `AC-06: sends message with selected knowledgeBaseIds` |
-| 空选回归 | `tests/issues/f-16-chat-kb-selector/ChatInput.spec.ts` | `AC-07: sends message without knowledgeBaseIds when none selected` |
-| 会话切换清空 | `tests/issues/f-16-chat-kb-selector/ChatView.spec.ts` | `AC-05: clears selected KBs on session switch` |
+| loading | `tests/unit/webui/KbSelector.spec.ts` | `AC-02: displays skeleton while loading knowledge bases` |
+| empty | `tests/unit/webui/KbSelector.spec.ts` | `AC-03: shows empty hint when no knowledge bases exist` |
+| error | `tests/unit/webui/KbSelector.spec.ts` | `AC-04: shows error and retry button on load failure` |
+| success | `tests/unit/webui/ChatInput.spec.ts` | `AC-01: renders KbSelector and toggles selection` |
+| partial | `tests/unit/webui/KbSelector.spec.ts` | `AC-05: keyboard navigation works in dropdown` |
+| 正常流程 | `tests/unit/webui/ChatInput.spec.ts` | `AC-06: sends message with selected knowledgeBaseIds` |
+| 空选回归 | `tests/unit/webui/ChatInput.spec.ts` | `AC-07: sends message without knowledgeBaseIds when none selected` |
+| 会话切换清空 | `tests/unit/webui/ChatView.spec.ts` | `AC-05: clears selected KBs on session switch` |

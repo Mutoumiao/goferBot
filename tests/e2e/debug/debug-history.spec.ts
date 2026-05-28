@@ -1,9 +1,9 @@
 import { test } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
-import { injectAuthToken } from '../fixtures/auth'
+import { injectMockToken } from '../fixtures/auth'
 
 test('调试历史页面', async ({ page }) => {
-  await injectAuthToken(page)
+  await injectMockToken(page)
   
   // 记录所有请求
   page.on('request', (request) => {

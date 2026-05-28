@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
-import { injectAuthToken } from '../fixtures/auth'
+import { injectMockToken } from '../fixtures/auth'
 import { HistoryPage } from '../pages/HistoryPage'
 
 test.describe('会话历史', () => {
   test.beforeEach(async ({ page }) => {
-    await injectAuthToken(page)
+    await injectMockToken(page)
     await mockApiRoutes(page)
     await page.goto('/app/history')
     await page.waitForLoadState('networkidle')

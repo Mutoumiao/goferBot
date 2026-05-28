@@ -45,7 +45,7 @@ version: 1
 **文件**：
 - 修改：`packages/webui/src/layouts/AuthenticatedLayout.vue`
 - 修改：`packages/webui/src/views/ChatView.vue`
-- 测试：`tests/issues/f-15-global-tab-bar/TabBar.spec.ts`
+- 测试：`tests/unit/webui/TabBar.spec.ts`
 
 **规格引用**：
 - behavior-spec.md 第 3.1 节
@@ -78,7 +78,7 @@ it('AC-01: renders TabBar in AuthenticatedLayout header', () => {
 
 - 每个任务必须以"编写失败测试"开始
 - 以"运行测试确认通过"结束
-- 测试文件放在 `tests/issues/{issue-dir}/` 下
+- 测试文件按层级放在对应目录下（`tests/unit/`、`tests/integration/`、`tests/e2e/`）
 
 ### 代码示例
 

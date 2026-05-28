@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { injectAuthToken, ensureTestUser } from '../../e2e/fixtures/auth'
+import { injectMockToken } from '../../e2e/fixtures/auth'
 import { mockApiRoutes } from '../../e2e/mocks/http-routes'
 
 test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
-  test.beforeAll(async () => {
-    await ensureTestUser()
-  })
-
   test.beforeEach(async ({ page }) => {
-    await injectAuthToken(page)
+    await injectMockToken(page)
     await mockApiRoutes(page)
 
     // 局部覆盖：SSE 流式逐字响应（格式与后端一致：{ chunk, done }）

@@ -366,10 +366,11 @@ onBeforeRouteLeave((_to, _from) => {
                 <label class="mb-1 block text-sm text-text-secondary">提供商</label>
                 <Select
                   v-model="localConfig.embeddingProvider.provider"
-                  data-testid="embedding-provider-select"
                   @update:model-value="markChanged"
                 >
-                  <SelectTrigger class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
+                  <SelectTrigger
+                    data-testid="embedding-provider-select"
+                    class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
                     <SelectValue placeholder="选择提供商" />
                   </SelectTrigger>
                   <SelectContent>

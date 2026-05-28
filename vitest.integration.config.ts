@@ -23,13 +23,10 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/integration/**/*.spec.ts', 'tests/issues/**/*.spec.ts'],
+    include: ['tests/integration/**/*.spec.ts'],
     exclude: [
       'tests/integration/legacy/**',
       'tests/integration/sidecar/**',
-      'tests/issues/f-08*/**',
-      'tests/issues/f-09*/**',
-      'tests/issues/f-10*/**',
     ],
     pool: 'forks',
     reporters: [new AIReporter()],

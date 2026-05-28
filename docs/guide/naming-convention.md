@@ -28,8 +28,15 @@ docs/
         └── {prefix}-{NN}-{kebab-slug}/  # 归档 issue（同活跃结构）
 
 tests/
-└── issues/                              # 按 issue 组织的单元测试
-    └── {prefix}-{NN}-{kebab-slug}/
+├── unit/                                # 单元测试（按层次组织）
+│   ├── server/                          # 后端 Service/Util 测试
+│   │   └── *.spec.ts
+│   └── webui/                           # 前端组件/Store/工具测试
+│       └── *.spec.ts
+├── integration/                         # 集成测试（API + DB）
+│   └── *.spec.ts
+└── e2e/                                 # E2E 测试（Playwright）
+    └── flows/                           # 用户流程测试
         └── *.spec.ts
 ```
 
@@ -159,15 +166,34 @@ docs/reviews/{scope}/
 ### 目录结构
 
 ```
-tests/issues/{issue-dir}/
-└── *.spec.ts
+tests/
+├── unit/
+│   ├── server/        # 后端单元测试（Service/Util）
+│   └── webui/         # 前端单元测试（组件/Store/工具）
+├── integration/       # 集成测试（API + DB）
+└── e2e/
+    ├── specs/         # E2E 单页面功能测试（Playwright）
+    ├── flows/         # E2E 跨模块用户旅程（Playwright）
+    ├── pages/         # Page Object 模型
+    ├── fixtures/      # 测试夹具（auth、database、api-client）
+    └── mocks/         # Mock API 路由处理
 ```
 
 ### 规则
 
-- 测试文件放在 `tests/issues/{issue-dir}/` 下
+- 测试文件按层次组织在 `tests/unit/`、`tests/integration/`、`tests/e2e/` 下
 - 测试用例名必须以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
 - 一个测试文件可包含多个 AC，一个 AC 只能有一个测试用例
+
+### 命名后缀
+
+| 后缀 | 用途 | 目录 |
+|------|------|------|
+| `.test.ts` | 通用单元测试（组件/Store/工具函数） | `tests/unit/components/` `tests/unit/stores/` `tests/unit/composables/` `tests/unit/utils/` |
+| `.spec.ts` | Issue 验收测试（TDD，含 AC-XX 用例） | `tests/unit/server/` `tests/unit/webui/` `tests/integration/` `tests/e2e/specs/` `tests/e2e/flows/` |
+
+> `.spec.ts` 文件是 Issue-Centric 流程的核心产物，对应 `checklist.json` 中的验收标准。
+> `.test.ts` 文件是传统单元测试，不绑定特定 issue。
 
 ---
 
@@ -184,7 +210,7 @@ tests/issues/{issue-dir}/
 | 执行计划   | `docs/issues/f-15-global-tab-bar/plan.md`                |
 | 历史计划   | `docs/issues/f-15-global-tab-bar/plans/v1.md`            |
 | 验收状态   | `docs/issues/f-15-global-tab-bar/checklist.json`         |
-| 单元测试   | `tests/issues/f-15-global-tab-bar/*.spec.ts`             |
+| 单元测试   | `tests/unit/webui/TabBar.spec.ts`                          |
 
 已知审查范围 = `phase-3`：
 
@@ -216,4 +242,4 @@ tests/issues/{issue-dir}/
 | `/spec-validator`   | issue 目录下必须存在 `specs/`；三个 spec 文件至少存在一个                   |
 | `/plan-generator`   | 当前版本为 `plan.md`；历史版本归档到 `plans/v{N}.md`                        |
 | `/kb-review`        | 输出路径必须为 `reviews/{scope}/{type}-v{N}.md`；必须包含 frontmatter       |
-| `/dev-orchestrator` | 测试文件必须放在 `tests/issues/{issue-dir}/` 下；用例名必须以 `AC-XX:` 开头 |
+| `/dev-orchestrator` | 测试文件必须按层次放在 `tests/unit/`、`tests/integration/` 或 `tests/e2e/` 下；用例名必须以 `AC-XX:` 开头 |

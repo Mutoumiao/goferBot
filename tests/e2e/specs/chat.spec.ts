@@ -1,21 +1,12 @@
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
-import { injectAuthToken } from '../fixtures/auth'
+import { injectMockToken } from '../fixtures/auth'
 import { ChatPage } from '../pages/ChatPage'
 
 test.describe('聊天功能', () => {
   test.beforeEach(async ({ page }) => {
-    await injectAuthToken(page)
+    await injectMockToken(page)
     await mockApiRoutes(page)
-
-    await page.route('**/auth/me', (route) => {
-      if (route.request().method() === 'GET') {
-        route.fulfill({
-          json: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
-        })
-      }
-    })
-
     await page.goto('/app/chat')
     await page.waitForLoadState('load')
     await page.waitForSelector('[data-testid="chat-input"]', { timeout: 10000 })

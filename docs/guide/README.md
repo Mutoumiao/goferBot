@@ -51,7 +51,9 @@ docs/
 └── 99-archived/             # 历史归档
 
 tests/
-├── issues/                  # 按 issue 组织的单元测试
+├── unit/                    # 单元测试（按层次组织）
+│   ├── server/              # 后端 Service/Util 测试
+│   └── webui/               # 前端组件/Store/工具测试
 ├── integration/             # 集成测试
 └── e2e/                     # E2E 测试
 
@@ -71,7 +73,7 @@ Issue 编号（如 `f-15`、`b-02`）贯穿全文档体系：
 docs/issues/f-15-global-tab-bar/issue.md
 docs/issues/f-15-global-tab-bar/specs/feature-spec.md
 docs/issues/f-15-global-tab-bar/plan.md
-tests/issues/f-15-global-tab-bar/TabBar.spec.ts
+tests/unit/webui/TabBar.spec.ts
 ```
 
 ### 2. meta 只写规则，不写内容
@@ -116,7 +118,7 @@ tests/issues/f-15-global-tab-bar/TabBar.spec.ts
 | 执行计划   | `docs/issues/f-15-global-tab-bar/plan.md`                |
 | 历史计划   | `docs/issues/f-15-global-tab-bar/plans/v1.md`            |
 | 验收状态   | `docs/issues/f-15-global-tab-bar/checklist.json`         |
-| 单元测试   | `tests/issues/f-15-global-tab-bar/*.spec.ts`             |
+| 单元测试   | `tests/unit/webui/*.spec.ts`                              |
 
 已知审查范围 = `phase-3`：
 

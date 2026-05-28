@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
-import { injectAuthToken } from '../fixtures/auth'
+import { injectMockToken } from '../fixtures/auth'
 import { SettingsPage } from '../pages/SettingsPage'
 
 test.describe('设置页面', () => {
   test.beforeEach(async ({ page }) => {
-    await injectAuthToken(page)
+    await injectMockToken(page)
     await mockApiRoutes(page)
     await page.goto('/app/settings')
     // 等待页面加载完成，增加超时时间

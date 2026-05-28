@@ -1,10 +1,17 @@
 import { test, expect } from '@playwright/test'
-import { cleanupDatabase } from '../../e2e/fixtures/database'
-import { createTestUser } from '../../e2e/fixtures/auth'
-import { ApiClient } from '../../e2e/fixtures/api-client'
+import { cleanupDatabase } from '../e2e/fixtures/database'
+import { createTestUser, isBackendAvailable } from '../e2e/fixtures/auth'
+import { ApiClient } from '../e2e/fixtures/api-client'
+
+let backendOk: boolean
 
 test.describe('知识库生命周期 (q-17)', () => {
+  test.beforeAll(async () => {
+    backendOk = await isBackendAvailable()
+  })
+
   test.beforeEach(async () => {
+    test.skip(!backendOk, 'Backend unavailable — skipping KB lifecycle integration test')
     await cleanupDatabase()
   })
 

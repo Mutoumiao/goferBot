@@ -46,8 +46,8 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 
 | 场景 | 测试文件 | 测试用例 |
 |------|----------|----------|
-| loading 状态 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
-| 401 错误 | `tests/issues/f-15-global-tab-bar/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
+| loading 状态 | `tests/unit/webui/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
+| 401 错误 | `tests/unit/webui/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
 ```
 
 ---
@@ -65,5 +65,5 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 
 - 必须包含全部 5 种交互状态：loading / empty / error / success / partial
 - 每个错误场景必须有恢复路径
-- 底部必须包含**测试映射表**，链接到 `tests/issues/{issue-dir}/` 下的测试用例
+- 底部必须包含**测试映射表**，链接到测试层级目录下的测试用例
 - 不允许使用模糊词汇（"appropriate", "reasonable", "etc."）

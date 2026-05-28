@@ -24,7 +24,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 11. **遵从规范**：一致性 > 个人偏好。不暗中另起范式。
 12. **显式失败**：不静默跳过。置信度<90%输出 `[UNCERTAIN]` 并征求指令。
 
-**禁止行为**：不修改 BACKLOG.md/CHANGELOG.md / 不在 tests/issues/ 外写 issue 用例 / 不提交 console.log / 不全文加载文档 / 不并行未声明优先级的 skill
+**禁止行为**：不修改 BACKLOG.md/CHANGELOG.md / 测试文件按层级放在 tests/unit/ | tests/integration/ | tests/e2e/ 对应目录 / 不提交 console.log / 不全文加载文档 / 不并行未声明优先级的 skill
 
 ## 必读文档（开发前按顺序查阅）
 
@@ -44,7 +44,6 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 │   ├── server/                   # NestJS API 服务端（@goferbot/server）
 │   └── rag-sdk/                  # RAG 工具库
 ├── src-tauri/                    # Tauri Rust 后端（冻结，Phase 6 扩展）
-├── tests/                        # 测试（单元/集成/E2E）
 ├── docs/                         # 文档
 │   ├── guide/                  # 流程规范、skills
 │   │   └── backend/            # 后端开发指南（API测试、规范等）
@@ -55,10 +54,17 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 │   ├── design/                # 设计系统
 │   ├── reviews/               # 审查记录
 │   └── 99-archived/              # 历史归档
-├── tests/                        # 测试（单元/集成/E2E）
-│   ├── issues/                   # 按 issue 组织的单元测试
-│   ├── integration/              # 集成测试
-│   └── e2e/                      # E2E 测试
+├── tests/                        # 测试（按金字塔分层）
+│   ├── unit/                     #   单元测试 (vitest)
+│   │   ├── server/               #     后端服务测试
+│   │   └── webui/                #     前端组件测试
+│   ├── integration/              #   真实后端集成测试
+│   └── e2e/                      #   E2E 浏览器测试 (Playwright)
+│       ├── specs/                #     单页面功能
+│       ├── flows/                #     跨模块旅程
+│       ├── pages/                #     Page Objects
+│       ├── fixtures/             #     测试夹具
+│       └── mocks/                #     Mock 路由
 ├── BACKLOG.md                    # 待办事项（open / in-progress）
 ├── CHANGELOG.md                  # 完成日志（closed，按日期倒序）
 ├── pnpm-workspace.yaml

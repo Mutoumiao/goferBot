@@ -70,7 +70,7 @@ description: >
 - 遵循代码库既定模式
 
 **必须包含测试文件：**
-- 测试文件放在 `tests/issues/{dir}/` 下
+- 测试文件放在 `tests/{layer}/` 下（按轨道分层：f→unit/webui, b→unit/server, i→integration, q→e2e）
 - 测试用例名必须以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
 
 ---
@@ -151,7 +151,7 @@ test('retry works', async () => {
 
 ### Verify RED - 观察失败（强制，不可跳过）
 
-运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
+运行：`npx vitest run tests/{layer}/{name}.spec.ts`
 
 确认：
 - 测试失败（不是报错）
@@ -173,7 +173,7 @@ test('retry works', async () => {
 
 ### Verify GREEN - 观察通过（强制）
 
-运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
+运行：`npx vitest run tests/{layer}/{name}.spec.ts`
 
 确认：
 - 测试通过
@@ -227,7 +227,7 @@ test('retry works', async () => {
 **文件：**
 - 创建：`exact/path/to/file.ts`
 - 修改：`exact/path/to/existing.ts:123-145`
-- 测试：`tests/issues/{dir}/file.spec.ts`（必须存在）
+- 测试：`tests/{layer}/{name}.spec.ts`（必须存在）
 
 **规格引用：**
 - 行为规格：[第 X 节 - 交互状态 Y]
@@ -236,7 +236,7 @@ test('retry works', async () => {
 - [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// tests/issues/{dir}/file.spec.ts
+// tests/{layer}/{name}.spec.ts
 import { describe, it, expect } from 'vitest'
 import { myFunction } from './file'
 
@@ -254,7 +254,7 @@ describe('myFunction', () => {
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
+运行：`npx vitest run tests/{layer}/{name}.spec.ts`
 预期：FAIL — "myFunction is not defined" 或断言失败
 
 - [ ] **步骤 3: 编写最小实现**
@@ -271,13 +271,13 @@ export function myFunction(input: string): string {
 
 - [ ] **步骤 4: 运行测试验证通过**
 
-运行：`npx vitest run tests/issues/{dir}/file.spec.ts`
+运行：`npx vitest run tests/{layer}/{name}.spec.ts`
 预期：PASS（所有测试通过）
 
 - [ ] **步骤 5: 提交**
 
 ```bash
-git add tests/issues/{dir}/file.spec.ts file.ts
+git add tests/{layer}/{name}.spec.ts file.ts
 git commit -m "feat(scope): add myFunction with tests"
 ```
 ````
@@ -331,7 +331,7 @@ git commit -m "feat(scope): add myFunction with tests"
 1. **功能规格覆盖**：每个用户故事都有对应任务？
 2. **行为规格覆盖**（前端）：所有交互状态、错误场景、动画都实现了？
 3. **API 规格覆盖**（后端）：所有路由、DTO、错误码都实现了？
-4. **测试覆盖**：每个任务都有对应的 `tests/issues/{dir}/.spec.ts` 文件？
+4. **测试覆盖**：每个任务都有对应的 `tests/{layer}/{name}.spec.ts` 文件？
 5. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
 6. **类型一致性**：后续任务中的类型、签名与早期任务一致？
 

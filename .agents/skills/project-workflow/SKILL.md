@@ -52,9 +52,13 @@ docs/
 └── archived/          # 历史归档
 
 tests/
-└── issues/
-    └── {prefix}-{NN}-{slug}/
-        └── *.spec.ts          # 自动化测试（AC-XX 用例）
+├── unit/
+│   ├── webui/          # 前端单元测试（f-*）
+│   └── server/         # 后端单元测试（b-*, d-*）
+├── integration/        # 集成测试（i-*）
+└── e2e/                # 端到端测试（q-*）
+    ├── specs/
+    └── flows/
 ```
 
 **命名规范速查**：
@@ -65,7 +69,7 @@ tests/
 | `issues/{dir}/specs/` | `*.md`                        | `feature-spec.md`                   |
 | `issues/{dir}/plans/` | `v{N}.md`                     | `v1.md`                             |
 | `reviews/`            | `{scope}/{type}-v{N}.md`      | `phase-3/code-v1.md`                |
-| `tests/issues/`       | `{dir}/*.spec.ts`             | `TabBar.spec.ts`                    |
+| `tests/{layer}/`      | `{name}.spec.ts`              | `TabBar.spec.ts`                    |
 
 ---
 
@@ -193,7 +197,7 @@ tests/
 
 **执行方式**：
 1. 读取 issue → 读取 spec → 读取 plan
-2. 检查测试代码（若无则创建 `tests/issues/{dir}/*.spec.ts`）
+2. 检查测试代码（若无则创建 `tests/{layer}/{name}.spec.ts`）
 3. 引导选择执行方式：
    - **子代理驱动**（推荐）：`superpowers:subagent-driven-development`
    - **内联执行**：`superpowers:executing-plans`
@@ -245,7 +249,7 @@ tests/
 3. 更新 checklist.json 中对应 AC-XX 状态为 `passed`
 4. 更新 `BACKLOG.md` / `CHANGELOG.md` 进度
 5. 确认审查记录已归档到 `docs/reviews/{scope}/{type}-v{N}.md`
-6. 确认测试代码存在于 `tests/issues/{dir}/`
+6. 确认测试代码存在于 `tests/{layer}/`
 7. 可选：归档到 `docs/archived/`
 
 **路径验证**：

@@ -99,7 +99,7 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 ```bash
 mkdir -p docs/issues/{dir}/specs
 mkdir -p docs/issues/{dir}/plans
-mkdir -p tests/issues/{dir}
+mkdir -p tests/unit/server/  # 按轨道选择：f→tests/unit/webui/, b→tests/unit/server/, d→tests/unit/server/, i→tests/integration/, q→tests/e2e/
 ```
 
 **Issue 正文（issue.md）：**
