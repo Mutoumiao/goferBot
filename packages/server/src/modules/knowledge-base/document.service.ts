@@ -1,7 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common'
+import { Injectable, ForbiddenException, NotFoundException, Optional } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
 import { VectorService } from '../../processors/vector/vector.service.js'
+import { QueueService } from '../../processors/queue/queue.service.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
 
@@ -20,6 +21,7 @@ export class DocumentService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly vectorService: VectorService,
+    @Optional() private readonly queueService?: QueueService,
   ) {}
 
   async list(userId: string, kbId: string, folderId?: string | null) {
@@ -48,6 +50,11 @@ export class DocumentService {
         status: 'uploaded',
       },
     })
+
+    if (this.queueService) {
+      await this.queueService.addDocumentJob(doc.id, 'index')
+    }
+
     return { ...doc, size: doc.size !== null ? Number(doc.size) : null }
   }
 
