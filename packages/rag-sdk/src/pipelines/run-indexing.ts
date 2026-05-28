@@ -1,4 +1,4 @@
-import type { DocumentSource, Chunk } from '../types.js'
+import type { DocumentSource, Chunk, TokenUsage } from '../types.js'
 import type { IndexingStage, IndexingResult } from '../pipeline.js'
 import type { IChunker, IEmbedder, IIndexer } from '../interfaces.js'
 
@@ -29,6 +29,7 @@ export async function runIndexing(
 
   let chunks: Chunk[] = []
   let vectors: number[][] = []
+  let usage: TokenUsage[] | undefined
 
   try {
     // Stage 1: chunk
@@ -41,14 +42,20 @@ export async function runIndexing(
     // Stage 2: embed
     stages[1].status = 'running'
     await notify()
-    vectors = await embedder.embed(chunks.map(c => c.content))
+    if ('embedWithUsage' in embedder && typeof embedder.embedWithUsage === 'function') {
+      const embedResult = await embedder.embedWithUsage(chunks.map(c => c.content))
+      vectors = embedResult.vectors
+      usage = embedResult.usage
+    } else {
+      vectors = await embedder.embed(chunks.map(c => c.content))
+    }
     stages[1].status = 'completed'
     await notify()
 
     // Stage 3: index
     stages[2].status = 'running'
     await notify()
-    await indexer.index(chunks, vectors)
+    await indexer.index(chunks, vectors, usage)
     stages[2].status = 'completed'
     await notify()
   } catch (error) {
