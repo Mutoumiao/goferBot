@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
+import { VectorService } from '../../processors/vector/vector.service.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
 
@@ -18,6 +19,7 @@ export class DocumentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly vectorService: VectorService,
   ) {}
 
   async list(userId: string, kbId: string, folderId?: string | null) {
@@ -78,6 +80,8 @@ export class DocumentService {
     await this.ensureOwnership(userId, kbId)
     const doc = await this.prisma.document.findUnique({ where: { id: docId } })
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
+
+    await this.vectorService.deleteByFileId(docId)
     await this.prisma.document.delete({ where: { id: docId } })
     return { id: docId, deleted: true }
   }
