@@ -120,6 +120,16 @@ export async function mockApiRoutes(page: Page) {
     }
   })
 
+  await page.route('**/api/knowledge-bases/*/documents/upload', (route) => {
+    if (route.request().method() === 'POST') {
+      route.fulfill({
+        json: {
+          data: { id: `doc-${Date.now()}`, title: 'sample-doc.txt', size: 1024, created_at: new Date().toISOString() },
+        },
+      })
+    }
+  })
+
   // Settings endpoints
   await page.route('**/api/settings', (route) => {
     if (route.request().method() === 'GET') {

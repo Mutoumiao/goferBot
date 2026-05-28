@@ -43,4 +43,11 @@ export class KnowledgeBasePage {
   async selectKb(name: string) {
     await this.page.locator('[data-testid="kb-item"]').filter({ hasText: name }).click()
   }
+
+  async uploadDocument(filePath: string) {
+    const fileInput = this.page.locator('input[type="file"]')
+    await fileInput.setInputFiles(filePath)
+    // 等待上传完成（根据前端实现调整）
+    await this.page.waitForTimeout(1000)
+  }
 }

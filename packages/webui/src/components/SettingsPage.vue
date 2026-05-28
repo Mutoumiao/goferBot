@@ -329,7 +329,10 @@ onBeforeRouteLeave((_to, _from) => {
                   v-model="localConfig.defaultChatProvider"
                   @update:model-value="markChanged"
                 >
-                  <SelectTrigger class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary">
+                  <SelectTrigger
+                    data-testid="default-provider-select-trigger"
+                    class="w-full rounded-lg border-border-default bg-surface-2 text-sm text-text-primary"
+                  >
                     <SelectValue placeholder="选择默认提供商" />
                   </SelectTrigger>
                   <SelectContent>
