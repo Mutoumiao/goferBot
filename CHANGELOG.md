@@ -1,5 +1,17 @@
 # 完成日志
 
+## [2026-05-28]
+
+- [open] RAG Server 集成 PRD — 定义 server 端 RAG 集成需求：向量/关键词存储适配、文档解析与索引、Worker 队列、Chat RAG 检索、前端 KB 选择器、E2E 验证 [PRD](docs/prd/rag-server-integration.md)
+- [open] d-20 SDK Embedder TokenUsage — spec + plan：embedWithUsage 可选接口、TokenUsage 类型、runIndexing 能力检测降级 [issue](docs/issues/d-20-rag-sdk-embedder-token-usage/)
+- [open] b-10 Server 向量与关键词适配 — spec + plan：VectorService 适配 SDK IVectorStore、KeywordService 实现 IKeywordStore（PostgreSQL FTS + zhparser 降级）、DocumentService.remove 同步删向量 [issue](docs/issues/b-10-server-vector-keyword-adapters/)
+- [open] b-11 文档解析与索引写入 — spec + plan：DocumentParser（MIME 类型解析）、PrismaMilvusIndexer（chunk.id 作为共享主键，消除 milvusId 回写） [issue](docs/issues/b-11-document-parser-indexer/)
+- [open] b-08 索引 Worker 集成 — spec + plan：IndexingWorker（BullMQ + runIndexing 流水线）、QueueModule、DocumentJobData 状态机 [issue](docs/issues/b-08-indexing-worker-integration/)
+- [open] b-09 Chat RAG 检索 — spec + plan：ChatService.streamChat 手动编排 HybridRetriever + Postprocessor，SSE 流式注入检索上下文 [issue](docs/issues/b-09-chat-rag-retrieval/)
+- [open] f-16 前端 Chat KB 选择器 — spec + plan：Chat 页面知识库选择器交互、多选/清空/禁用状态、关联消息级 KB [issue](docs/issues/f-16-chat-kb-selector/)
+- [open] q-21 RAG Server E2E — spec + plan：上传→索引→对话检索完整链路 E2E 验证 [issue](docs/issues/q-21-rag-server-integration-e2e/)
+- [docs] BACKLOG.md 更新 — 同步 RAG server 集成 issue 状态、E2E 进展、删除重复标题 [BACKLOG](BACKLOG.md)
+
 ## [2026-05-27]
 
 - [closed] RAG SDK 集成验证 — 5 AC，覆盖最小闭环 demo / server 集成点文档 / 覆盖率 97.44% / pnpm test & build 通过，修复 RecursiveCharacterChunker 无限循环 bug [issue](docs/issues/d-15-rag-sdk-integration/)
