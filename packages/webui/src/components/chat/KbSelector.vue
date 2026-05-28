@@ -9,12 +9,14 @@ const props = defineProps<{
   selectedIds: string[]
   visible: boolean
   loading?: boolean
+  error?: string | null
 }>()
 
 const emit = defineEmits<{
   select: [kb: KnowledgeBase]
   unselect: [kbId: string]
   close: []
+  retry: []
 }>()
 
 const selectedIndex = ref(0)
@@ -67,6 +69,16 @@ defineExpose({ handleKeydown })
   >
     <div v-if="loading" class="space-y-2 p-3">
       <Skeleton v-for="i in 3" :key="i" class="h-8 w-full" />
+    </div>
+    <div v-else-if="error" class="space-y-2 p-4 text-center text-sm">
+      <p class="text-text-secondary">{{ error }}</p>
+      <button
+        data-testid="kb-selector-retry"
+        class="text-accent-500 hover:underline"
+        @click="$emit('retry')"
+      >
+        重试
+      </button>
     </div>
     <div v-else-if="knowledgeBases.length === 0" class="p-4 text-center text-sm text-text-secondary">
       请先创建知识库
