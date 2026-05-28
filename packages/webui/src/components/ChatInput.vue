@@ -3,7 +3,7 @@ import { ref, watch, computed } from 'vue'
 import type { KnowledgeBase } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { PaperclipIcon, SendIcon, LoaderIcon } from 'lucide-vue-next'
+import { PaperclipIcon, SendIcon, LoaderIcon, DatabaseIcon } from 'lucide-vue-next'
 import KbSelector from './chat/KbSelector.vue'
 import KbMentionPill from './KbMentionPill.vue'
 import ModelSelector from './ModelSelector.vue'
@@ -30,6 +30,8 @@ const selectedKbs = ref<KnowledgeBase[]>([])
 const mentionQuery = ref('')
 const mentionVisible = ref(false)
 const mentionStart = ref(-1)
+const kbDropdownVisible = ref(false)
+const kbDropdownRef = ref<InstanceType<typeof KbSelector>>()
 
 function autoResize() {
   const el = textareaRef.value?.$el as HTMLTextAreaElement | undefined
@@ -47,6 +49,10 @@ function extractPlainText(): string {
 function handleKeydown(e: KeyboardEvent) {
   if (mentionVisible.value) {
     dropdownRef.value?.handleKeydown(e)
+    return
+  }
+  if (kbDropdownVisible.value) {
+    kbDropdownRef.value?.handleKeydown(e)
     return
   }
 
@@ -96,6 +102,13 @@ function onUnselectKb(kbId: string) {
 
 function onCloseDropdown() {
   mentionVisible.value = false
+}
+
+function toggleKbDropdown() {
+  kbDropdownVisible.value = !kbDropdownVisible.value
+}
+function onCloseKbDropdown() {
+  kbDropdownVisible.value = false
 }
 
 function handleSend() {
@@ -170,6 +183,26 @@ const dropdownRef = ref<InstanceType<typeof KbSelector>>()
             >
               <PaperclipIcon class="size-4" />
             </Button>
+            <Button
+              data-testid="chat-kb-btn"
+              variant="ghost"
+              size="sm"
+              class="h-[34px] gap-1.5 rounded-[14px] bg-surface-2 px-3 text-sm text-text-secondary hover:bg-surface-3"
+              title="知识库"
+              @click="toggleKbDropdown"
+            >
+              <DatabaseIcon class="size-4" />
+              <span>知识库</span>
+            </Button>
+            <KbSelector
+              ref="kbDropdownRef"
+              :knowledge-bases="knowledgeBases ?? []"
+              :selected-ids="selectedKbs.map((k) => k.id)"
+              :visible="kbDropdownVisible"
+              @select="onSelectKb"
+              @unselect="onUnselectKb"
+              @close="onCloseKbDropdown"
+            />
             <ModelSelector
               :provider="provider"
               :model="model"
