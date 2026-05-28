@@ -6,7 +6,7 @@ export const EMBEDDING_QUEUE = 'embedding'
 
 export interface DocumentJobData {
   documentId: string
-  type: 'parse' | 'chunk' | 'embed'
+  type: 'index'
 }
 
 export interface EmbeddingJobData {

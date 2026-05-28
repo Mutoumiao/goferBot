@@ -58,9 +58,9 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     console.log('QueueService: Queues and Redis connection closed')
   }
 
-  async addDocumentJob(documentId: string, type: 'parse' | 'chunk' | 'embed'): Promise<Job<DocumentJobData>> {
+  async addDocumentJob(documentId: string, type: 'index'): Promise<Job<DocumentJobData>> {
     if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
-    return this.documentQueue.add('process-document', { documentId, type })
+    return this.documentQueue.add('index', { documentId, type })
   }
 
   async addEmbeddingJob(chunkIds: string[]): Promise<Job<EmbeddingJobData>> {
