@@ -64,3 +64,31 @@ export type EmbeddingConfig = z.infer<typeof EmbeddingConfigSchema>
  * 供 IRetriever.retrieve 使用，支持向量检索与关键词检索的融合策略。
  */
 export type HybridSearchOptions = z.infer<typeof HybridSearchOptionsSchema>
+
+/**
+ * 单条文本的 Token 用量。
+ *
+ * 由 IEmbedder.embedWithUsage() 返回，供下游 IIndexer 写入精确 tokenCount。
+ * promptTokens 与 totalTokens 在 Embedding 场景下通常相等，因为 Embedding API
+ * 不生成输出 token，保留两个字段以兼容未来可能产生 completion token 的 embedder。
+ */
+export interface TokenUsage {
+  /** 输入文本消耗的 prompt token 数（非负整数）。 */
+  promptTokens: number
+
+  /** 总 token 数（prompt + completion）。在纯 Embedding 场景下等于 promptTokens。 */
+  totalTokens: number
+}
+
+/**
+ * embedWithUsage() 的返回结构。
+ *
+ * vectors 与 usage 数组长度严格等于输入 texts 的长度，且按相同索引一一对应。
+ */
+export interface EmbedWithUsageResult {
+  /** 向量化结果。vectors[i] 对应 texts[i] 的嵌入向量。 */
+  vectors: number[][]
+
+  /** 逐条 token 用量。usage[i] 对应 texts[i] 的用量。 */
+  usage: TokenUsage[]
+}
