@@ -31,6 +31,7 @@
     "@nestjs/platform-fastify": "^10.3.0",
     "@nestjs/swagger": "^11.4.4",
     "@nestjs/throttler": "^5.1.1",
+    "@goferbot/rag-sdk": "workspace:*",
     "@prisma/client": "^5.7.0",
     "@zilliz/milvus2-sdk-node": "^2.3.0",
     "bcrypt": "^5.1.1",

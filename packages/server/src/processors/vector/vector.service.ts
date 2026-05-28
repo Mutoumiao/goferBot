@@ -5,7 +5,7 @@ import type {
   VectorRecord,
   VectorSearchOptions,
   VectorSearchResult,
-} from '../../interfaces/IVectorStore.js'
+} from '@goferbot/rag-sdk'
 import { MilvusVectorStore } from '../../vector/milvus.js'
 
 @Injectable()

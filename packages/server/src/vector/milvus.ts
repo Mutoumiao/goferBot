@@ -10,7 +10,7 @@ import type {
   VectorRecord,
   VectorSearchOptions,
   VectorSearchResult,
-} from '../interfaces/IVectorStore.js'
+} from '@goferbot/rag-sdk'
 import { VectorStoreError } from '../interfaces/errors.js'
 
 export interface MilvusVectorStoreOptions {
