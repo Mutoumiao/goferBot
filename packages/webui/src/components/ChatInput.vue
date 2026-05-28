@@ -13,6 +13,8 @@ const props = defineProps<{
   disabled?: boolean
   disabledHint?: string
   knowledgeBases?: KnowledgeBase[]
+  kbLoading?: boolean
+  kbError?: string | null
   /** 当前对话标签绑定的模型（对齐设计稿底栏「model」芯片） */
   provider?: string
   model?: string
@@ -199,6 +201,8 @@ const dropdownRef = ref<InstanceType<typeof KbSelector>>()
               :knowledge-bases="knowledgeBases ?? []"
               :selected-ids="selectedKbs.map((k) => k.id)"
               :visible="kbDropdownVisible"
+              :loading="kbLoading"
+              :error="kbError"
               @select="onSelectKb"
               @unselect="onUnselectKb"
               @close="onCloseKbDropdown"

@@ -70,7 +70,10 @@ function dismissToast() {
 
       <!-- Bottom input -->
       <ChatInput
+        :key="sessionStore.activeSessionId ?? 'empty'"
         :knowledge-bases="kbStore.knowledgeBases"
+        :kb-loading="kbStore.isLoading"
+        :kb-error="kbStore.error"
         :loading="sessionStore.isLoading"
         @send="handleSend"
       />
