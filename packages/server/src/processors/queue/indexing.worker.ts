@@ -30,11 +30,12 @@ export class IndexingWorker {
     if (!doc) throw new Error(`Document not found: ${documentId}`)
 
     const buffer = await this.storage.downloadFile(doc.storageKey)
-    const text = await this.parser.parse(buffer, doc.mimeType)
+    const text = await this.parser.parse(buffer, doc.mimeType ?? 'text/plain')
 
     const embedder = new OpenAIEmbedder({
+      provider: 'openai',
       apiKey: this.config.getOrThrow<string>('EMBEDDING_API_KEY'),
-      baseUrl: this.config.get<string>('EMBEDDING_BASE_URL'), // 可选，默认 OpenAI 官方
+      baseUrl: this.config.get<string>('EMBEDDING_BASE_URL') ?? undefined,
       model: this.config.get<string>('EMBEDDING_MODEL', 'text-embedding-3-small'),
       dimension: this.config.get<number>('EMBEDDING_DIMENSIONS', 1536),
     })
@@ -44,7 +45,7 @@ export class IndexingWorker {
       documentId: doc.id,
       kbId: doc.kbId,
       content: text,
-      mimeType: doc.mimeType,
+      mimeType: doc.mimeType ?? 'text/plain',
     }, {
       chunker,
       embedder,
