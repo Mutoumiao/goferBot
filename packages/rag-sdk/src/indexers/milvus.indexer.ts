@@ -1,11 +1,11 @@
-import type { Chunk } from '../types.js'
+import type { Chunk, TokenUsage } from '../types.js'
 import type { IVectorStore, VectorRecord } from '../vector-store.js'
 import { ValidationError, IndexingError } from '../errors.js'
 
 export class MilvusIndexer {
   constructor(private vectorStore: IVectorStore) {}
 
-  async index(chunks: Chunk[], vectors: number[][]): Promise<void> {
+  async index(chunks: Chunk[], vectors: number[][], _usage?: TokenUsage[]): Promise<void> {
     if (chunks.length !== vectors.length) {
       throw new ValidationError(`chunks length ${chunks.length} != vectors length ${vectors.length}`)
     }
