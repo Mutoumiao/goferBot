@@ -4,7 +4,7 @@
  * 所有接口由具体实现类实现，server 通过依赖注入将实现传入 SDK。
  */
 
-import type { DocumentSource, Chunk, Query, RetrievalCandidate, EmbeddingConfig, HybridSearchOptions } from './types.js'
+import type { DocumentSource, Chunk, Query, RetrievalCandidate, EmbeddingConfig, HybridSearchOptions, TokenUsage, EmbedWithUsageResult } from './types.js'
 
 /**
  * 文档分块策略抽象。
@@ -24,6 +24,14 @@ export interface IChunker {
  */
 export interface IEmbedder {
   embed(texts: string[]): Promise<number[][]>
+
+  /**
+   * 将字符串数组转换为高维向量数组，并返回逐条 token 用量。
+   *
+   * 本方法为可选扩展。实现类可选择不实现，调用方通过 `in` 检查或能力检测后降级到 `embed()`。
+   */
+  embedWithUsage?(texts: string[]): Promise<EmbedWithUsageResult>
+
   readonly config: Readonly<EmbeddingConfig>
 }
 
@@ -34,7 +42,14 @@ export interface IEmbedder {
  * chunks 与 vectors 长度不匹配时应抛出 ValidationError。
  */
 export interface IIndexer {
-  index(chunks: Chunk[], vectors: number[][]): Promise<void>
+  /**
+   * 将分块后的文本及其向量批量写入向量数据库。
+   *
+   * @param chunks  文本块数组
+   * @param vectors 向量数组，长度必须与 chunks 一致
+   * @param usage   可选的逐条 token 用量
+   */
+  index(chunks: Chunk[], vectors: number[][], usage?: TokenUsage[]): Promise<void>
 }
 
 /**
