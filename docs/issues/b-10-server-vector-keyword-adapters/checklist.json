@@ -1,0 +1,14 @@
+{
+  "issue_id": "b-10",
+  "version": 1,
+  "updated_at": "2026-05-28",
+  "items": [
+    {"id": "AC-01", "desc": "VectorService 改为实现 SDK IVectorStore 接口", "status": "pending"},
+    {"id": "AC-02", "desc": "删除 server 自有 IVectorStore 接口定义（packages/server/src/interfaces/IVectorStore.ts）", "status": "pending"},
+    {"id": "AC-03", "desc": "KeywordService 实现 SDK IKeywordStore，基于 PostgreSQL FTS", "status": "pending"},
+    {"id": "AC-04", "desc": "KeywordService zhparser 降级策略（simple config）", "status": "pending"},
+    {"id": "AC-05", "desc": "DocumentService.remove() 同步调用 deleteByFileId", "status": "pending"},
+    {"id": "AC-06", "desc": "pnpm type-check 通过", "status": "pending"},
+    {"id": "AC-07", "desc": "单元测试：KeywordService.search（FTS 查询、kbIds 过滤、空结果）", "status": "pending"}
+  ]
+}
