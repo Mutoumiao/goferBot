@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
-import type { IIndexer, Chunk, TokenUsage } from '../../../../rag-sdk/src/index.js'
-import { ValidationError } from '../../../../rag-sdk/src/errors.js'
+import type { IIndexer, Chunk, TokenUsage } from '@goferbot/rag-sdk'
+import { ValidationError } from '@goferbot/rag-sdk'
 
 @Injectable()
 export class PrismaMilvusIndexer implements IIndexer {

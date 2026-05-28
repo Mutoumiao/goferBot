@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PrismaMilvusIndexer } from '../../../packages/server/src/processors/indexing/prisma-milvus.indexer.js'
-import { ValidationError } from '../../../packages/rag-sdk/src/errors.js'
-import type { Chunk } from '../../../packages/rag-sdk/src/types.js'
+import { ValidationError } from '@goferbot/rag-sdk'
+import type { Chunk } from '@goferbot/rag-sdk'
 
 describe('PrismaMilvusIndexer', () => {
   let indexer: PrismaMilvusIndexer

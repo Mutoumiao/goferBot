@@ -19,6 +19,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './packages/server/src'),
       '@goferbot/server': path.resolve(__dirname, './packages/server/src'),
+      '@goferbot/rag-sdk': path.resolve(__dirname, './packages/rag-sdk/src/index.ts'),
     },
   },
   test: {
