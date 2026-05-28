@@ -41,29 +41,36 @@ export class IndexingWorker {
     })
     const chunker = new RecursiveCharacterChunker()
 
-    await runIndexing({
-      documentId: doc.id,
-      kbId: doc.kbId,
-      content: text,
-      mimeType: doc.mimeType ?? 'text/plain',
-    }, {
-      chunker,
-      embedder,
-      indexer: this.indexer,
-      onStageChange: async (stages) => {
-        const map: Record<string, DocumentStatus> = {
-          chunk: 'chunking',
-          embed: 'embedding',
-          index: 'indexing',
-        }
-        const running = stages.find(s => s.status === 'running')
-        if (running && map[running.name]) {
-          await this.updateStatus(doc.id, map[running.name])
-        }
-      },
-    })
+    try {
+      await runIndexing({
+        documentId: doc.id,
+        kbId: doc.kbId,
+        content: text,
+        mimeType: doc.mimeType ?? 'text/plain',
+      }, {
+        chunker,
+        embedder,
+        indexer: this.indexer,
+        onStageChange: async (stages) => {
+          const map: Record<string, DocumentStatus> = {
+            chunk: 'chunking',
+            embed: 'embedding',
+            index: 'indexing',
+          }
+          const running = stages.find(s => s.status === 'running')
+          if (running && map[running.name]) {
+            await this.updateStatus(doc.id, map[running.name])
+          }
+        },
+      })
 
-    await this.updateStatus(doc.id, 'ready')
+      await this.updateStatus(doc.id, 'ready')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      this.logger.error(`Indexing failed for document ${documentId}: ${message}`)
+      await this.updateStatus(doc.id, 'failed', message)
+      throw err
+    }
   }
 
   private async updateStatus(docId: string, status: DocumentStatus, errorMessage?: string): Promise<void> {

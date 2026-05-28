@@ -2,7 +2,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { setupE2E, teardownE2E, app, prisma, mockEmbeddingPort, mockLLMPort } from './setup.js'
 import { cleanupTestData } from './teardown.js'
 
-describe('RAG Server Integration E2E', () => {
+const infraAvailable = process.env.DATABASE_URL?.includes('goferbot_test') ?? false
+
+describe.skipIf(!infraAvailable)('RAG Server Integration E2E', () => {
   let token: string
   let kbId: string
 
