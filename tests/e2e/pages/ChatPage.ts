@@ -41,4 +41,8 @@ export class ChatPage {
   async waitForMessageAppear(content: string, timeout: number = 5000) {
     await this.messageList.locator(`text=${content}`).waitFor({ timeout })
   }
+
+  async waitForAiResponse(timeout: number = 15000) {
+    await this.messageList.locator('[data-testid="chat-message"]').nth(1).waitFor({ timeout })
+  }
 }
