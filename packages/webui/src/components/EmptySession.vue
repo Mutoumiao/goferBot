@@ -102,6 +102,7 @@ function sendQuick(content: string) {
               <PaperclipIcon class="size-4" />
             </Button>
             <Button
+              data-testid="chat-kb-btn"
               variant="ghost"
               size="sm"
               class="h-[34px] gap-1.5 rounded-[14px] bg-surface-2 px-3 text-sm text-text-secondary hover:bg-surface-3"

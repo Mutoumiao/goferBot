@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ChatInput from '@/components/ChatInput.vue'
+import EmptySession from '@/components/EmptySession.vue'
 
 const mockKbs = [
   { id: 'kb-1', name: 'KB A', documentCount: 2 },
@@ -78,5 +79,15 @@ describe('ChatInput KB selection', () => {
     await nextTick()
 
     expect(wrapper.findAll('[data-testid="kb-mention-pill"]').length).toBe(0)
+  })
+})
+
+describe('EmptySession', () => {
+  it('AC-10: KB button is UI placeholder without selector', () => {
+    const wrapper = mount(EmptySession)
+    const btn = wrapper.find('[data-testid="chat-kb-btn"]')
+    expect(btn.exists()).toBe(true)
+    // clicking does not open any dropdown
+    expect(wrapper.find('[data-testid="kb-selector-dropdown"]').exists()).toBe(false)
   })
 })
