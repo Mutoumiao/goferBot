@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import { Client } from 'pg'
 
 async function waitForPostgres(url: string, timeout = 60000): Promise<void> {
@@ -15,6 +15,20 @@ async function waitForPostgres(url: string, timeout = 60000): Promise<void> {
     }
   }
   throw new Error('Postgres not ready within timeout')
+}
+
+async function waitForBackend(url: string, timeout = 60000): Promise<void> {
+  const start = Date.now()
+  while (Date.now() - start < timeout) {
+    try {
+      const res = await fetch(url)
+      if (res.ok) return
+    } catch {
+      // ignore
+    }
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  throw new Error('Backend not ready within timeout')
 }
 
 export default async function globalSetup() {
@@ -53,4 +67,23 @@ export default async function globalSetup() {
     stdio: 'inherit',
   })
   console.log('[E2E] Database migrated')
+
+  // 6. 启动后端服务（如果尚未运行）
+  try {
+    await fetch('http://127.0.0.1:3000/health')
+    console.log('[E2E] Backend already running')
+  } catch {
+    console.log('[E2E] Starting backend server...')
+    const isWin = process.platform === 'win32'
+    const cmd = isWin ? 'pnpm.cmd' : 'pnpm'
+    const backend = spawn(cmd, ['--filter', '@goferbot/server', 'dev:server'], {
+      env: { ...process.env, NO_COLOR: '' },
+      detached: !isWin,
+      stdio: 'ignore',
+      shell: isWin,
+    })
+    backend.unref()
+    await waitForBackend('http://127.0.0.1:3000/health')
+    console.log('[E2E] Backend is ready')
+  }
 }

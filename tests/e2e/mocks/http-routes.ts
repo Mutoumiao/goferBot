@@ -62,11 +62,10 @@ export async function mockApiRoutes(page: Page) {
       route.fulfill({
         json: {
           data: {
-            id: 'session-1',
-            title: 'RAG 测试',
+            session: { id: 'session-1', title: 'RAG 测试', provider: null, model: null, messageCount: 2, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
             messages: [
-              { id: 'msg-1', role: 'user', content: '你好' },
-              { id: 'msg-2', role: 'assistant', content: '你好！有什么可以帮你？' },
+              { id: 'msg-1', role: 'user', content: '你好', createdAt: new Date().toISOString() },
+              { id: 'msg-2', role: 'assistant', content: '你好！有什么可以帮你？', createdAt: new Date().toISOString() },
             ],
           },
         },
@@ -129,7 +128,7 @@ export async function mockApiRoutes(page: Page) {
           providers: {
             openai: { apiKey: '', model: 'gpt-4o', baseUrl: '' },
             claude: { apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
-            deepseek: { apiKey: '', model: 'deepseek-chat', baseUrl: '' },
+            deepseek: { apiKey: 'fake-api-key-for-e2e', model: 'deepseek-chat', baseUrl: '' },
             custom: { apiKey: '', model: '', baseUrl: '' },
             ollama: { enabled: false, url: 'http://localhost:11434', model: '' },
           },

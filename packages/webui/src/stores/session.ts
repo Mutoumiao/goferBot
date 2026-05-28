@@ -158,7 +158,7 @@ export const useSessionStore = defineStore('session', () => {
         options?.onNewSession?.(sessionId!, summary)
       }
 
-      const assistantMsg: Message = {
+      let assistantMsg: Message = {
         id: `msg-assistant-${crypto.randomUUID()}`,
         role: 'assistant',
         content: '',
@@ -186,8 +186,14 @@ export const useSessionStore = defineStore('session', () => {
         },
         {
           onChunk: (chunk: { chunk: string; done: boolean }) => {
-            assistantMsg.content += chunk.chunk
-            messages.value.set(sessionId!, [...listWithAssistant])
+            // Create new message object to trigger Vue reactivity
+            assistantMsg = { ...assistantMsg, content: assistantMsg.content + chunk.chunk }
+            const updatedList = listWithAssistant.map((msg) =>
+              msg.id === assistantMsg.id ? assistantMsg : msg,
+            )
+            messages.value.set(sessionId!, updatedList)
+            // Trigger Vue reactivity by replacing the Map reference
+            messages.value = new Map(messages.value)
           },
           onError: (err) => {
             error.value = err.message

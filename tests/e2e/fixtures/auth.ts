@@ -39,6 +39,9 @@ export const test = base.extend<{ testUser: TestUser; authPage: { gotoLogin: () 
   },
 })
 
+let cachedPublicKey: string | null = null
+let cachedTestUser: TestUser | null = null
+
 // 通过真实后端 API 创建测试用户
 export async function createTestUser(): Promise<TestUser> {
   const timestamp = Date.now()
@@ -46,10 +49,16 @@ export async function createTestUser(): Promise<TestUser> {
   const password = 'Test1234!'
   const name = 'E2E Test User'
 
-  // 1. 获取公钥
-  const keyRes = await fetch('http://localhost:3000/api/auth/public-key')
-  const keyData = await keyRes.json()
-  const publicKey = keyData.data ? keyData.data.publicKey : keyData.publicKey
+  // 1. 获取公钥（缓存避免重复请求触发限流）
+  if (!cachedPublicKey) {
+    const keyRes = await fetch('http://127.0.0.1:3000/api/auth/public-key')
+    if (!keyRes.ok) {
+      throw new Error(`Failed to fetch public key: ${keyRes.status} ${await keyRes.text()}`)
+    }
+    const keyData = await keyRes.json()
+    cachedPublicKey = keyData.data ? keyData.data.publicKey : keyData.publicKey
+  }
+  const publicKey = cachedPublicKey
 
   // 2. RSA 加密密码
   const encrypted = publicEncrypt(
@@ -59,7 +68,7 @@ export async function createTestUser(): Promise<TestUser> {
   const encryptedPassword = encrypted.toString('base64')
 
   // 3. 注册
-  const registerRes = await fetch('http://localhost:3000/api/auth/register', {
+  const registerRes = await fetch('http://127.0.0.1:3000/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, encryptedPassword, name }),
@@ -69,7 +78,7 @@ export async function createTestUser(): Promise<TestUser> {
   }
 
   // 4. 登录
-  const loginRes = await fetch('http://localhost:3000/api/auth/login', {
+  const loginRes = await fetch('http://127.0.0.1:3000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, encryptedPassword }),
@@ -91,12 +100,22 @@ export async function createTestUser(): Promise<TestUser> {
   }
 }
 
-// 向页面注入认证 token
+// 预创建测试用户（供 beforeAll 调用，避免限流）
+export async function ensureTestUser(): Promise<TestUser> {
+  if (!cachedTestUser) {
+    cachedTestUser = await createTestUser()
+  }
+  return cachedTestUser
+}
+
+// 向页面注入认证 token（复用缓存用户避免限流）
 export async function injectAuthToken(page: any, token?: string): Promise<void> {
   let t = token
   if (!t) {
-    const user = await createTestUser()
-    t = user.accessToken
+    if (!cachedTestUser) {
+      cachedTestUser = await createTestUser()
+    }
+    t = cachedTestUser.accessToken
   }
   await page.addInitScript({
     content: `

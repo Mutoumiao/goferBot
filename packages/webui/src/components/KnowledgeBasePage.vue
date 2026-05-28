@@ -248,6 +248,7 @@ const sortedKbs = computed(() => store.knowledgeBases)
               <PencilIcon class="size-3" />
             </Button>
             <Button
+              data-testid="kb-delete-btn"
               variant="ghost"
               size="icon-xs"
               class="h-7 w-7 rounded-[10px] text-text-tertiary hover:bg-danger-soft hover:text-danger-500"

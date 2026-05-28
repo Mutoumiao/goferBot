@@ -25,17 +25,18 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
   },
-  webServer: {
-    command: 'concurrently "pnpm dev:server" "pnpm dev:web" --names server,web --prefix-colors cyan,green',
-    url: 'http://localhost:1420',
-    reuseExistingServer: !process.env.CI, // CI 强制启动新实例
-    timeout: 120000,
-    env: {
-      ...process.env,
-      NO_COLOR: '',
-      NODE_ENV: 'test',
+  webServer: [
+    {
+      command: 'pnpm dev:web',
+      url: 'http://localhost:1420',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+      env: {
+        ...process.env,
+        NO_COLOR: '',
+      },
     },
-  },
+  ],
   projects: [
     {
       name: 'chromium',

@@ -19,7 +19,7 @@ export class AuthController {
   ) {}
 
   @Get('public-key')
-  @SkipThrottle()
+  @SkipThrottle({ default: true, auth: true })
   getPublicKey() {
     return {
       publicKey: this.passwordEncryption.getPublicKeyPem(),

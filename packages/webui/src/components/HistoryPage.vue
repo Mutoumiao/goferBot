@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
+import { useTabsStore } from '@/stores/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -18,6 +19,7 @@ import {
 } from 'lucide-vue-next'
 
 const store = useSessionStore()
+const tabsStore = useTabsStore()
 const router = useRouter()
 
 const editingId = ref<string | null>(null)
@@ -132,10 +134,11 @@ async function confirmDelete() {
   }
 }
 
-function onRowClick(sessionId: string) {
+async function onRowClick(sessionId: string) {
   openMenuId.value = null
-  store.loadSession(sessionId)
-  router.push({ name: 'chat' })
+  await store.loadSession(sessionId)
+  // 创建新的 chat 标签并激活，让 AuthenticatedLayout 的 watch 自动同步路由到 /app/chat
+  tabsStore.addTab('chat', sessionId)
 }
 </script>
 
@@ -276,15 +279,13 @@ function onRowClick(sessionId: string) {
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon-sm"
+          <button
             data-testid="session-open-btn"
-            class="h-[34px] w-[34px] rounded-[14px] bg-surface-2 text-text-secondary hover:bg-surface-3"
+            class="flex h-[34px] w-[34px] items-center justify-center rounded-[14px] bg-surface-2 text-text-secondary hover:bg-surface-3"
             @click="onRowClick(session.id)"
           >
             <ArrowRightIcon class="size-[15px]" />
-          </Button>
+          </button>
         </div>
       </div>
     </div>

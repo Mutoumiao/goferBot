@@ -48,7 +48,7 @@ export class AuthPage {
     this.confirmPasswordInput = page.locator('input[type="password"]').nth(1)
     this.nameInput = page.locator('input[name="name"], input#name').first()
     this.submitButton = page.locator('button[type="submit"]').first()
-    this.errorMessage = page.locator('[data-testid="auth-error"], .text-red-500, text=错误').first()
+    this.errorMessage = page.locator('[role="alert"]').first()
   }
 
   async gotoRegister() {
