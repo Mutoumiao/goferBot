@@ -155,3 +155,25 @@ describe('OpenAIEmbedder.embedWithUsage', () => {
     await expect(embedder.embedWithUsage(['hello'])).rejects.toThrow(EmbeddingError)
   })
 })
+
+describe('OpenAIEmbedder backward compatibility', () => {
+  it('AC-19: embed() method signature and behavior remain unchanged', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '',
+      json: async () => ({
+        data: [{ embedding: [0.1, 0.2, 0.3] }],
+        usage: { prompt_tokens: 5 },
+      }),
+    })
+
+    const embedder = new OpenAIEmbedder(config)
+    const result = await embedder.embed(['hello'])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual([0.1, 0.2, 0.3])
+    // embed() 不返回 usage
+    expect(Array.isArray(result)).toBe(true)
+  })
+})
