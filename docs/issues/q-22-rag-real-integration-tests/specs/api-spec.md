@@ -2,32 +2,35 @@
 
 ## 测试基础设施接口
 
-### TestAppFactory.create 扩展
+### TestAppFactory.create 扩展（向后兼容）
 
 ```typescript
 interface CreateAppOptions {
-  dbUrl: string
-  realMode?: boolean  // 新增： true 时连接真实外部服务
+  realMode?: boolean  // 新增：true 时连接真实外部服务，默认 false
 }
 
+// 签名变更：create(dbUrl: string, opts?: CreateAppOptions)
 // realMode=true 时不 Mock 以下服务：
 // - VectorService (Milvus)
 // - KeywordService (PostgreSQL FTS)
 // - QueueService (BullMQ + Redis)
 // - StorageService (MinIO)
+// realMode=false（默认）保持现有 Mock 行为，不影响已有测试
 ```
 
 ### 基础设施健康检测
 
 ```typescript
 interface InfraHealthCheck {
-  postgres: boolean   // PG 可连接
-  milvus: boolean     // Milvus 可连接
-  redis: boolean      // Redis 可连接
-  minio: boolean      // MinIO 可连接
+  postgres: boolean   // PG 可连接且可创建数据库
+  milvus: boolean     // Milvus 可连接且集合操作正常
+  redis: boolean      // Redis 可连接且可读写
+  minio: boolean      // MinIO 可连接且可创建 bucket
 }
 
-// globalSetup 中执行，任一 false 则跳过真实集成测试套件
+// 检测函数路径：tests/integration/helpers/infra-check.ts
+// globalSetup 中执行，任一 false 则在控制台输出跳过原因并优雅退出
+// 不抛出错误，避免 CI 失败
 ```
 
 ## 测试数据接口
@@ -52,6 +55,14 @@ interface TestRetrievalQuery {
   topK?: number         // 默认 10
 }
 ```
+
+## 测试文件与映射
+
+| 测试文件 | 说明 | AC 覆盖 |
+|----------|------|---------|
+| `tests/integration/rag-real.spec.ts` | 真实 RAG 集成测试（新建） | AC-03 ~ AC-05 |
+| `tests/integration/helpers/infra-check.ts` | 基础设施健康检测（新建） | AC-01 |
+| `tests/integration/helpers/test-app.factory.ts` | TestAppFactory 扩展 realMode | AC-02 |
 
 ## 断言标准
 
@@ -80,7 +91,7 @@ expect(vectors.length).toBeGreaterThan(0)
 const candidates = await retriever.retrieve({ original: query, kbIds }, 10)
 expect(candidates.length).toBeGreaterThan(0)
 
-// 2. 候选含 content
+// 2. 候选含 content（关键：验证 HybridRetriever 返回的候选有实际 content）
 expect(candidates[0].chunk.content).toBeTruthy()
 expect(candidates[0].score).toBeGreaterThan(0)
 

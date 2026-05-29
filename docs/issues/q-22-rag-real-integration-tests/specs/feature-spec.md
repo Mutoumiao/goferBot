@@ -44,3 +44,12 @@
 - 不破坏现有 Mock 测试的快速和稳定性
 - 真实集成测试仅在基础设施可用时运行
 - 每个测试用例使用独立的数据库命名空间，避免数据污染
+
+## 已做决策
+
+| 决策 | 理由 | 可逆？ |
+|------|------|--------|
+| 新建 `tests/integration/rag-real.spec.ts` | `rag-e2e.spec.ts` 是 q-21 的 E2E 骨架，`rag.test.ts` 是旧版 SQLite 测试，新建文件避免污染 | 是 |
+| 重构 `TestAppFactory.create(dbUrl, opts?)` | 新增可选 `realMode` 参数，向后兼容，不新建类避免代码重复 | 是 |
+| 四服务全检测（PG+Milvus+Redis+MinIO） | q-21 仅检测 DATABASE_URL 过于宽松，q-22 需显式检测所有依赖 | 是 |
+| 继续 Mock Embedding API | 避免外部网络依赖和费用，保证测试稳定性 | 是 |
