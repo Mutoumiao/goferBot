@@ -1,6 +1,6 @@
 ---
 id: d-20
-status: open
+status: closed
 track: design
 priority: p1
 summary: SDK Embedder 接口扩展（embedWithUsage + TokenUsage）

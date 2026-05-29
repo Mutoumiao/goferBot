@@ -1,6 +1,6 @@
 ---
 id: q-21
-status: open
+status: closed
 track: quality
 priority: p1
 summary: RAG Server 集成端到端验证（上传→索引→对话检索完整链路）

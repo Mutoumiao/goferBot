@@ -1,6 +1,6 @@
 ---
 id: b-11
-status: open
+status: closed
 track: backend
 priority: p1
 summary: 文档解析与索引写入（DocumentParser + PrismaMilvusIndexer）

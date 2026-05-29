@@ -1,6 +1,6 @@
 ---
 id: f-16
-status: open
+status: closed
 track: frontend
 priority: p1
 summary: 前端对话知识库选择器（Chat 页面 KB 关联）

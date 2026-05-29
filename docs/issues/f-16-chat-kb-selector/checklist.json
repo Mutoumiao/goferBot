@@ -3,12 +3,12 @@
   "version": 1,
   "updated_at": "2026-05-28",
   "items": [
-    {"id": "AC-01", "desc": "知识库选择器 UI 组件（多选、展示知识库名称）", "status": "pending"},
-    {"id": "AC-02", "desc": "选择器接入知识库列表 API", "status": "pending"},
-    {"id": "AC-03", "desc": "选中的 kbIds 随聊天请求发送到后端", "status": "pending"},
-    {"id": "AC-04", "desc": "空选时对话行为无回归", "status": "pending"},
-    {"id": "AC-05", "desc": "选中状态在会话切换时正确保持/清空", "status": "pending"},
-    {"id": "AC-06", "desc": "响应式布局适配移动端", "status": "pending"},
-    {"id": "AC-07", "desc": "单元测试：选择器交互逻辑", "status": "pending"}
+    {"id": "AC-01", "desc": "知识库选择器 UI 组件（多选、展示知识库名称）", "status": "passed"},
+    {"id": "AC-02", "desc": "选择器接入知识库列表 API", "status": "passed"},
+    {"id": "AC-03", "desc": "选中的 kbIds 随聊天请求发送到后端", "status": "passed"},
+    {"id": "AC-04", "desc": "空选时对话行为无回归", "status": "passed"},
+    {"id": "AC-05", "desc": "选中状态在会话切换时正确保持/清空", "status": "passed"},
+    {"id": "AC-06", "desc": "响应式布局适配移动端", "status": "passed"},
+    {"id": "AC-07", "desc": "单元测试：选择器交互逻辑", "status": "passed"}
   ]
 }

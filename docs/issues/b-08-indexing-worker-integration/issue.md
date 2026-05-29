@@ -1,6 +1,6 @@
 ---
 id: b-08
-status: open
+status: closed
 track: backend
 priority: p1
 summary: 索引 Worker 与队列集成（IndexingWorker + QueueModule + DocumentService 触发）

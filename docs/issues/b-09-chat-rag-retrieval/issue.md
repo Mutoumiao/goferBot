@@ -1,6 +1,6 @@
 ---
 id: b-09
-status: open
+status: closed
 track: backend
 priority: p1
 summary: 对话 RAG 检索接入（ChatService 检索上下文注入）

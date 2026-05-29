@@ -1,6 +1,6 @@
 ---
 id: b-10
-status: open
+status: closed
 track: backend
 priority: p1
 summary: Server 向量与关键词存储适配（SDK IVectorStore + IKeywordStore 实现）
