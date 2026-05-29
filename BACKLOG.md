@@ -4,6 +4,13 @@
 
 ## 进行中
 
+### 集成测试
+
+5. **q-22-rag-real-integration-tests** — RAG 真实集成测试（索引+检索端到端链路验证）
+   - 阻塞于：q-21
+   - 目标：在真实 PG + Milvus + Redis + MinIO 上验证 RAG 端到端链路
+   - 范围：索引链路（上传→解析→分块→嵌入→写入→ready）、检索链路（查询→向量+关键词→RRF→后处理）
+
 ### E2E 测试
 
 1. **q-16-e2e-infra-migration** — E2E 测试基础设施重构（删除 Tauri，建立真实 API Web E2E）
