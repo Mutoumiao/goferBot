@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common'
 import type { IIndexer, Chunk, TokenUsage } from '@goferbot/rag-sdk'
 import { ValidationError } from '@goferbot/rag-sdk'
+import { PrismaService } from '../database/prisma.service.js'
+import { VectorService } from '../vector/vector.service.js'
 
 @Injectable()
 export class PrismaMilvusIndexer implements IIndexer {
   constructor(
-    private readonly prisma: any,
-    private readonly vectorService: any,
+    private readonly prisma: PrismaService,
+    private readonly vectorService: VectorService,
   ) {}
 
   async index(chunks: Chunk[], vectors: number[][], usage?: TokenUsage[]): Promise<void> {

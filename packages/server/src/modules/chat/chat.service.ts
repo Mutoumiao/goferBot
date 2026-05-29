@@ -26,7 +26,8 @@ export class ChatService {
     private readonly postprocessor: DefaultRetrievalPostprocessor,
   ) {
     const envTimeout = process.env.LLM_TIMEOUT_MS
-    this.llmTimeoutMs = envTimeout ? parseInt(envTimeout, 10) : 300000
+    const parsed = envTimeout ? parseInt(envTimeout, 10) : 300000
+    this.llmTimeoutMs = Number.isNaN(parsed) ? 300000 : parsed
   }
 
   async *streamChat(
@@ -67,8 +68,10 @@ export class ChatService {
         const query = { original: message, kbIds: dto.knowledgeBaseIds }
         const candidates = await this.retriever.retrieve(query, 10)
         const processed = await this.postprocessor.process(candidates, query)
-        if (processed.candidates.length > 0) {
-          const context = processed.candidates.map((c) => c.chunk.content).join('\n---\n')
+        // 过滤掉 content 为空的候选（向量检索结果可能缺少 content，需反查补全）
+        const validCandidates = processed.candidates.filter((c) => c.chunk.content && c.chunk.content.trim().length > 0)
+        if (validCandidates.length > 0) {
+          const context = validCandidates.map((c) => c.chunk.content).join('\n---\n')
           llmMessages.push({ role: 'system', content: `基于以下上下文回答问题：\n${context}` })
         }
       } catch (err) {

@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject, Optional } f
 import { ConfigService } from '@nestjs/config'
 import { Worker } from 'bullmq'
 import type { Redis } from 'ioredis'
+import { PrismaService } from '../database/prisma.service.js'
 import {
   createDocumentWorker,
   createEmbeddingWorker,
@@ -17,6 +18,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
     @Optional() @Inject('DOCUMENT_JOB_HANDLER') private readonly documentHandler?: DocumentJobHandler,
     @Optional() @Inject('EMBEDDING_JOB_HANDLER') private readonly embeddingHandler?: EmbeddingJobHandler,
   ) {}
@@ -49,8 +51,19 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       this.documentWorker.on('completed', (job) => {
         this.logger.log(`Document job ${job.id} completed`)
       })
-      this.documentWorker.on('failed', (job, err) => {
+      this.documentWorker.on('failed', async (job, err) => {
         this.logger.error(`Document job ${job?.id} failed: ${err.message}`)
+        if (job?.data?.documentId) {
+          await this.prisma.document.update({
+            where: { id: job.data.documentId },
+            data: {
+              status: 'failed',
+              errorMessage: err.message.slice(0, 500),
+            },
+          }).catch((e) => {
+            this.logger.error(`Failed to update document status: ${e.message}`)
+          })
+        }
       })
       this.logger.log('Document worker started')
     }
