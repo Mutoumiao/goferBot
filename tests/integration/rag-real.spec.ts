@@ -121,11 +121,15 @@ describe('RAG Real Integration Tests', () => {
     expect(chunks[0].content).toBeTruthy()
     expect(chunks[0].tokenCount).toBeGreaterThan(0)
 
-    // 验证 Milvus 向量存在
-    const vectorService = app.get('VectorService')
-    const queryVector = new Array(1536).fill(0.1).map((v, i) => v + i * 0.0001)
-    const vectors = await vectorService.searchVectors(queryVector, { kbId, topK: 10 })
-    expect(vectors.length).toBeGreaterThan(0)
+    // 验证 pgvector 向量存在（通过原始 SQL 查询）
+    const prisma = app.get('PrismaService')
+    const chunkWithEmbedding = await prisma.$queryRaw`
+      SELECT embedding IS NOT NULL as has_embedding
+      FROM chunks
+      WHERE document_id = ${docId}
+      LIMIT 1
+    `
+    expect(chunkWithEmbedding[0]?.has_embedding).toBe(true)
   }, 90000)
 
   // AC-04: 检索链路

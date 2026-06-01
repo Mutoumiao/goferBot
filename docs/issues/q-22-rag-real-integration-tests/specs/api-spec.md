@@ -11,7 +11,7 @@ interface CreateAppOptions {
 
 // 签名变更：create(dbUrl: string, opts?: CreateAppOptions)
 // realMode=true 时不 Mock 以下服务：
-// - VectorService (Milvus)
+// - VectorService (pgvector)
 // - KeywordService (PostgreSQL FTS)
 // - QueueService (BullMQ + Redis)
 // - StorageService (MinIO)
@@ -23,7 +23,7 @@ interface CreateAppOptions {
 ```typescript
 interface InfraHealthCheck {
   postgres: boolean   // PG 可连接且可创建数据库
-  milvus: boolean     // Milvus 可连接且集合操作正常
+  pgvector: boolean   // pgvector 扩展已安装
   redis: boolean      // Redis 可连接且可读写
   minio: boolean      // MinIO 可连接且可创建 bucket
 }
@@ -79,23 +79,32 @@ expect(chunks.length).toBeGreaterThan(0)
 expect(chunks[0].content).toBeTruthy()
 expect(chunks[0].tokenCount).toBeGreaterThan(0)
 
-// 3. 向量存在
-const vectors = await vectorService.search({ kbId, queryVector, topK: 10 })
-expect(vectors.length).toBeGreaterThan(0)
+// 3. 向量存在（pgvector）
+const chunkWithEmbedding = await prisma.$queryRaw`
+  SELECT embedding IS NOT NULL as has_embedding
+  FROM chunks
+  WHERE document_id = ${docId}
+  LIMIT 1
+`
+expect(chunkWithEmbedding[0]?.has_embedding).toBe(true)
 ```
 
 ### 检索链路断言
 
 ```typescript
-// 1. 候选非空
-const candidates = await retriever.retrieve({ original: query, kbIds }, 10)
-expect(candidates.length).toBeGreaterThan(0)
+// 1. Chat API 返回 SSE
+const chatRes = await app.inject({ ... })
+expect(chatRes.statusCode).toBe(200)
+expect(chatRes.headers['content-type']).toContain('text/event-stream')
 
-// 2. 候选含 content（关键：验证 HybridRetriever 返回的候选有实际 content）
-expect(candidates[0].chunk.content).toBeTruthy()
-expect(candidates[0].score).toBeGreaterThan(0)
-
-// 3. 后处理有效
-const processed = await postprocessor.process(candidates, query)
-expect(processed.candidates.length).toBeGreaterThan(0)
+// 2. SSE 内容包含预期文本
+const body = chatRes.body as string
+expect(body).toContain('GoferBot')
 ```
+
+## 架构变更说明
+
+**2026-06-01 更新**：根据 ADR 0005（pgvector 替代 Milvus）：
+- `InfraHealthCheck` 接口：`milvus` 字段替换为 `pgvector`
+- 向量存在性验证：从 `vectorService.searchVectors()` 改为 `prisma.$queryRaw` 查询 `chunks.embedding`
+- 检测逻辑：从 TCP 端口检测 Milvus 改为 PostgreSQL 查询 `pg_extension`

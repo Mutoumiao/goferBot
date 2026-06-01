@@ -1,14 +1,15 @@
 import net from 'net'
+import { Client } from 'pg'
 
 export interface InfraHealthResult {
   postgres: boolean
-  milvus: boolean
+  pgvector: boolean
   redis: boolean
   minio: boolean
   allAvailable: boolean
   details: {
     postgres?: string
-    milvus?: string
+    pgvector?: string
     redis?: string
     minio?: string
   }
@@ -37,7 +38,7 @@ function checkTcpPort(host: string, port: number, timeout = 5000): Promise<boole
 export async function checkInfrastructure(): Promise<InfraHealthResult> {
   const result: InfraHealthResult = {
     postgres: false,
-    milvus: false,
+    pgvector: false,
     redis: false,
     minio: false,
     allAvailable: false,
@@ -56,16 +57,30 @@ export async function checkInfrastructure(): Promise<InfraHealthResult> {
     result.details.postgres = err instanceof Error ? err.message : String(err)
   }
 
-  // 2. Milvus
-  const milvusHost = process.env.MILVUS_HOST || 'localhost'
-  const milvusPort = parseInt(process.env.MILVUS_PORT || '19530', 10)
-  try {
-    result.milvus = await checkTcpPort(milvusHost, milvusPort)
-    if (!result.milvus) {
-      result.details.milvus = `Milvus TCP port ${milvusHost}:${milvusPort} unreachable`
+  // 2. pgvector 扩展（通过 PostgreSQL 查询检测）
+  if (result.postgres) {
+    const adminUrl = process.env.TEST_DATABASE_ADMIN_URL || process.env.DATABASE_URL
+    if (adminUrl) {
+      const client = new Client({ connectionString: adminUrl })
+      try {
+        await client.connect()
+        const res = await client.query(
+          "SELECT 1 FROM pg_extension WHERE extname = 'vector'"
+        )
+        result.pgvector = res.rowCount !== null && res.rowCount > 0
+        if (!result.pgvector) {
+          result.details.pgvector = 'pgvector extension not installed in PostgreSQL'
+        }
+      } catch (err) {
+        result.details.pgvector = err instanceof Error ? err.message : String(err)
+      } finally {
+        await client.end().catch(() => {})
+      }
+    } else {
+      result.details.pgvector = 'DATABASE_URL or TEST_DATABASE_ADMIN_URL not set'
     }
-  } catch (err) {
-    result.details.milvus = err instanceof Error ? err.message : String(err)
+  } else {
+    result.details.pgvector = 'PostgreSQL unavailable, skipping pgvector check'
   }
 
   // 3. Redis
@@ -92,7 +107,7 @@ export async function checkInfrastructure(): Promise<InfraHealthResult> {
     result.details.minio = err instanceof Error ? err.message : String(err)
   }
 
-  result.allAvailable = result.postgres && result.milvus && result.redis && result.minio
+  result.allAvailable = result.postgres && result.pgvector && result.redis && result.minio
   return result
 }
 
