@@ -58,7 +58,7 @@ describe('RAG Real Integration Tests', () => {
     // 清理数据
     const prisma = app.get('PrismaService')
     await prisma.$executeRawUnsafe(`
-      TRUNCATE TABLE "Chunk", "Document", "KnowledgeBase", "User" RESTART IDENTITY CASCADE
+      TRUNCATE TABLE chunks, documents, knowledge_bases, users RESTART IDENTITY CASCADE
     `)
 
     // 创建测试用户
@@ -88,7 +88,7 @@ describe('RAG Real Integration Tests', () => {
   })
 
   // AC-03: 索引链路
-  it('AC-03: 文本文件上传后经过解析→分块→嵌入，PG Chunk 表和 Milvus 均有数据，document status = ready', async () => {
+  it('AC-03: 文本文件上传后经过解析→分块→嵌入，PG Chunk 表和 pgvector 均有数据，document status = ready', async () => {
     if (!infraAvailable) {
       console.log('[SKIP] 基础设施不可用')
       return
@@ -122,7 +122,6 @@ describe('RAG Real Integration Tests', () => {
     expect(chunks[0].tokenCount).toBeGreaterThan(0)
 
     // 验证 pgvector 向量存在（通过原始 SQL 查询）
-    const prisma = app.get('PrismaService')
     const chunkWithEmbedding = await prisma.$queryRaw`
       SELECT embedding IS NOT NULL as has_embedding
       FROM chunks

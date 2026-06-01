@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { setupE2E, teardownE2E, app, prisma, mockEmbeddingPort, mockLLMPort } from './setup.js'
-import { cleanupTestData } from './teardown.js'
+import { setupE2E, teardownE2E, app, prisma, mockEmbeddingPort, mockLLMPort } from './setup.ts'
+import { cleanupTestData } from './teardown.ts'
 
 const infraAvailable = process.env.DATABASE_URL?.includes('goferbot_test') ?? false
 
