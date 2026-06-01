@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
 import { PrismaService } from '../database/prisma.service.js'
-import { VectorService } from '../vector/vector.service.js'
 import { StorageService } from '../storage/storage.service.js'
 import { ConfigService } from '@nestjs/config'
 import { DocumentParser } from '../parser/document.parser.js'
-import { PrismaMilvusIndexer } from '../indexing/prisma-milvus.indexer.js'
+import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
 import { runIndexing, OpenAIEmbedder, RecursiveCharacterChunker } from '@goferbot/rag-sdk'
 import type { DocumentJobData } from '../../queue/queues.js'
 
@@ -17,10 +16,9 @@ export class IndexingWorker {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly vectorService: VectorService,
     private readonly storage: StorageService,
     private readonly parser: DocumentParser,
-    private readonly indexer: PrismaMilvusIndexer,
+    private readonly indexer: PrismaVectorIndexer,
     private readonly config: ConfigService,
   ) {}
 

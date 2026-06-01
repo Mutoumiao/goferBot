@@ -10,7 +10,7 @@ import { QueueService } from './queue.service.js'
 import { WorkerService } from './worker.service.js'
 import { IndexingWorker } from './indexing.worker.js'
 import { DocumentParser } from '../parser/document.parser.js'
-import { PrismaMilvusIndexer } from '../indexing/prisma-milvus.indexer.js'
+import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
 import {
   type DocumentJobHandler,
   type EmbeddingJobHandler,
@@ -35,7 +35,7 @@ export class QueueModule {
       WorkerService,
       IndexingWorker,
       DocumentParser,
-      PrismaMilvusIndexer,
+      PrismaVectorIndexer,
       {
         provide: 'DOCUMENT_JOB_HANDLER',
         useFactory: (indexingWorker: IndexingWorker): DocumentJobHandler => {
