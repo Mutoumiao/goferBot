@@ -144,7 +144,7 @@ describe('ChatService RAG retrieval', () => {
   })
 
   it('AC-07: falls back to plain LLM when retrieval throws', async () => {
-    mockRetriever.retrieve.mockRejectedValue(new Error('Milvus down'))
+    mockRetriever.retrieve.mockRejectedValue(new Error('Vector store down'))
 
     const { ChatService } = await import('../../../packages/server/src/modules/chat/chat.service.js')
     const service = new ChatService(mockPrisma as any, {} as any, mockRetriever as any, mockPostprocessor as any)

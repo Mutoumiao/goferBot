@@ -9,6 +9,7 @@
 ### infra
 
 - [closed] i-02 pgvector 基础设施迁移 — Docker Compose 移除 milvus，postgres 改用 pgvector:pg16，Prisma Schema 添加 embedding 列，生成迁移文件 [issue](docs/issues/i-02-pgvector-infra-migration/)
+- [closed] i-03 Milvus 代码清理 — 删除 MilvusVectorStore/PrismaMilvusIndexer，移除 @zilliz/milvus2-sdk-node 依赖，清理 MILVUS_ 环境变量 [issue](docs/issues/i-03-cleanup-milvus-code/)
 
 ### backend
 

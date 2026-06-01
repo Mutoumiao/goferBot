@@ -55,7 +55,7 @@
 | `keyword-service.spec.ts` | b-10 | 关键字搜索、过滤、边界 |
 | `document-service.spec.ts` | b-10 | 文档删除联动向量清理 |
 | `document-parser.spec.ts` | b-11 | txt/md 解析、PDF 抛错、fallback |
-| `prisma-milvus-indexer.spec.ts` | b-11 | 分块、向量、token 用量、错误场景 |
+| `prisma-vector-indexer.spec.ts` | b-13 | 单事务写入 chunks + embedding、token 用量、重试 |
 | `embedder-interfaces.spec.ts` | d-20 | 类型级接口一致性 |
 | `openai-embedder-usage.spec.ts` | d-20 | Token 记账、批处理、舍入 |
 | `run-indexing-usage.spec.ts` | d-20 | 流水线 token 用量、fallback |

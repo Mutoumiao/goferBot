@@ -16,9 +16,7 @@ describe('VectorService', () => {
     await prisma.$disconnect()
   })
 
-  it('AC-05: uses PgVectorStore instead of MilvusVectorStore', () => {
-    // VectorService 不再引用 MilvusVectorStore
-    // 通过检查 onModuleInit 不依赖 MILVUS_HOST 等环境变量来验证
+  it('AC-05: uses PgVectorStore', () => {
     expect(service).toBeDefined()
     expect(service.ensureCollection).toBeDefined()
     expect(service.insertVectors).toBeDefined()

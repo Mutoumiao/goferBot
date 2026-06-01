@@ -1,6 +1,6 @@
 ---
 id: i-03
-status: open
+status: closed
 track: infra
 priority: p2
 summary: 清理 Milvus 相关代码和依赖，完成 ADR 0005 迁移
@@ -29,15 +29,15 @@ specs: specs/
 
 ## 验收标准
 
-- [ ] `packages/server/src/vector/milvus.ts` 已删除
-- [ ] `packages/server/src/processors/indexing/prisma-milvus.indexer.ts` 已删除
-- [ ] `packages/server/package.json` 无 `@zilliz/milvus2-sdk-node`
-- [ ] 代码中无 `MilvusVectorStore` 引用
-- [ ] 代码中无 `PrismaMilvusIndexer` 引用
-- [ ] 代码中无 `MILVUS_` 环境变量引用
-- [ ] `pnpm install` 后 node_modules 无 milvus 相关包
-- [ ] `pnpm type-check` 通过
-- [ ] `npx vitest run tests/unit` 全部通过
+- [x] `packages/server/src/vector/milvus.ts` 已删除
+- [x] `packages/server/src/processors/indexing/prisma-milvus.indexer.ts` 已删除
+- [x] `packages/server/package.json` 无 `@zilliz/milvus2-sdk-node`
+- [x] 代码中无 `MilvusVectorStore` 引用
+- [x] 代码中无 `PrismaMilvusIndexer` 引用
+- [x] 代码中无 `MILVUS_` 环境变量引用
+- [x] `pnpm install` 后 node_modules 无 milvus 相关包
+- [x] `pnpm type-check` 通过
+- [x] `npx vitest run tests/unit` 全部通过
 
 ## 阻塞于
 
@@ -71,11 +71,11 @@ specs: specs/
 - `packages/server/package.json`
 
 **验收标准：**
-- [ ] milvus.ts 删除
-- [ ] prisma-milvus.indexer.ts 删除
-- [ ] package.json 清理
-- [ ] 无引用残留
-- [ ] 测试通过
+- [x] milvus.ts 删除
+- [x] prisma-milvus.indexer.ts 删除
+- [x] package.json 清理
+- [x] 无引用残留
+- [x] 测试通过
 
 **范围外：**
 - 新功能
