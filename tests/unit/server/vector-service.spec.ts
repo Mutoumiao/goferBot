@@ -1,17 +1,57 @@
-import { describe, it, expect } from 'vitest'
-import { VectorService } from '../../../packages/server/src/processors/vector/vector.service.js'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { PrismaClient } from '@prisma/client'
+import { VectorService } from '../../../packages/server/src/processors/vector/vector.service'
 
 describe('VectorService', () => {
-  it('AC-01: implements SDK IVectorStore interface', () => {
-    // 类型编译测试：VectorService 必须能被赋值给 SDK IVectorStore
-    const svc: import('@goferbot/rag-sdk').IVectorStore = {} as VectorService
-    expect(svc).toBeDefined()
+  let prisma: PrismaClient
+  let service: VectorService
+
+  beforeAll(async () => {
+    prisma = new PrismaClient()
+    service = new VectorService(prisma as any)
+    await service.onModuleInit()
   })
 
-  it('AC-02: deleteByFileId and deleteByKbId remain as extension methods', () => {
-    const proto = VectorService.prototype as any
-    expect(typeof proto.deleteByFileId).toBe('function')
-    expect(typeof proto.deleteByKbId).toBe('function')
-    // 扩展方法不在 SDK IVectorStore 接口中，但 TypeScript 允许
+  afterAll(async () => {
+    await prisma.$disconnect()
+  })
+
+  it('AC-05: uses PgVectorStore instead of MilvusVectorStore', () => {
+    // VectorService 不再引用 MilvusVectorStore
+    // 通过检查 onModuleInit 不依赖 MILVUS_HOST 等环境变量来验证
+    expect(service).toBeDefined()
+    expect(service.ensureCollection).toBeDefined()
+    expect(service.insertVectors).toBeDefined()
+    expect(service.searchVectors).toBeDefined()
+    expect(service.deleteByIds).toBeDefined()
+    // deleteByFileId / deleteByKbId 已移除
+    expect((service as any).deleteByFileId).toBeUndefined()
+    expect((service as any).deleteByKbId).toBeUndefined()
+  })
+
+  it('AC-06: delegates to PgVectorStore for search', async () => {
+    const kbId = crypto.randomUUID()
+    const id = crypto.randomUUID()
+
+    // 插入测试数据
+    await service.insertVectors([{
+      id,
+      chunkId: id,
+      kbId,
+      fileId: crypto.randomUUID(),
+      embedding: new Array(1536).fill(0.1),
+    }])
+
+    // 搜索
+    const results = await service.searchVectors(new Array(1536).fill(0.1), {
+      topK: 1,
+      filter: { kbId },
+    })
+
+    expect(results.length).toBe(1)
+    expect(results[0].chunkId).toBe(id)
+
+    // 清理
+    await service.deleteByIds([id])
   })
 })

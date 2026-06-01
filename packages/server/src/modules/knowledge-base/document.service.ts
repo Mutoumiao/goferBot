@@ -88,7 +88,6 @@ export class DocumentService {
     const doc = await this.prisma.document.findUnique({ where: { id: docId } })
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
 
-    await this.vectorService.deleteByFileId(docId)
     await this.prisma.document.delete({ where: { id: docId } })
     return { id: docId, deleted: true }
   }
