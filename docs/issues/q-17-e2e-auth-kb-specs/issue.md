@@ -3,8 +3,9 @@ id: q-17
 status: open
 track: quality
 priority: p1
-summary: E2E 认证流程与知识库生命周期测试
-blocked_by: []  # q-16 已关闭，解除阻塞
+summary: E2E 认证流程与知识库生命周期测试（待 q-17-rev 完成后关闭）
+blocked_by:
+  - q-23
 checklist: checklist.json
 plan: plan.md
 specs: specs/
@@ -13,6 +14,8 @@ specs: specs/
 ## 要构建的内容
 
 基于 q-16 建立的真实 API E2E 基础设施，编写认证和知识库模块的端到端测试。
+
+**当前状态**：11/16 AC 已通过（mock API），5 个 pending AC 待 q-17-rev 实现。
 
 包含：
 - `specs/01-auth-flow.spec.ts` — 完整认证流程测试
@@ -25,7 +28,7 @@ specs: specs/
 
 ## 补充说明
 
-- 所有测试必须走真实后端 API，禁止 mock
+- 所有测试必须走真实后端 API，禁止 mock（当前 11 个 AC 使用 mock，待 q-17-rev 重写）
 - 认证测试需验证 RSA 加密、JWT 获取、Token 刷新、路由守卫
 - 知识库测试需验证创建、列表、上传文档、删除、回收站
 - 每个测试用例独立创建/清理数据
@@ -43,4 +46,11 @@ specs: specs/
 - AC-15：用户 B 无法看到/操作用户 A 的知识库
 - AC-16：上传 txt/md/pdf 三种类型文档
 
-**技术债务**：当前测试使用 mock API（`page.route`），与 spec 要求的"真实后端 API"冲突。后续需重写为真实 API 版本或调整 spec。
+**处理方案**：
+- 5 个 pending AC 由 `q-17-rev-real-api-auth-kb` 实现（使用真实后端 API）
+- 本 issue 保持 open 直到 q-17-rev 完成
+- q-17-rev 完成后，本 issue checklist 同步更新并关闭
+
+**阻塞于**：
+- q-23：需要集成测试基础设施完整（TestAppFactory、真实数据库、索引流水线）
+- i-02 ~ b-13：需要 ADR 0005（pgvector）实施完成
