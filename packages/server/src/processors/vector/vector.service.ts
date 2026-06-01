@@ -1,28 +1,22 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import type {
   IVectorStore,
   VectorRecord,
   VectorSearchOptions,
   VectorSearchResult,
 } from '@goferbot/rag-sdk'
-import { MilvusVectorStore } from '../../vector/milvus.js'
+import { PrismaService } from '../database/prisma.service.js'
+import { PgVectorStore } from '../../vector/pgvector.js'
 
 @Injectable()
 export class VectorService implements IVectorStore, OnModuleInit {
-  private readonly store: MilvusVectorStore
+  private readonly store: PgVectorStore
 
-  constructor(private readonly config: ConfigService) {
-    this.store = new MilvusVectorStore({
-      host: this.config.getOrThrow<string>('MILVUS_HOST'),
-      port: this.config.getOrThrow<string>('MILVUS_PORT'),
-      collectionName: this.config.getOrThrow<string>('MILVUS_COLLECTION'),
-      vectorDim: this.config.getOrThrow<number>('MILVUS_VECTOR_DIM'),
-    })
+  constructor(private readonly prisma: PrismaService) {
+    this.store = new PgVectorStore(prisma)
   }
 
   async onModuleInit(): Promise<void> {
-    await this.store.checkHealth()
     await this.store.ensureCollection()
   }
 
@@ -43,13 +37,5 @@ export class VectorService implements IVectorStore, OnModuleInit {
 
   async deleteByIds(ids: string[]): Promise<void> {
     return this.store.deleteByIds(ids)
-  }
-
-  async deleteByFileId(fileId: string): Promise<void> {
-    return this.store.deleteByFileId(fileId)
-  }
-
-  async deleteByKbId(kbId: string): Promise<void> {
-    return this.store.deleteByKbId(kbId)
   }
 }
