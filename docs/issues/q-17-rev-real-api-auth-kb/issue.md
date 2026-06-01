@@ -1,6 +1,6 @@
 ---
 id: q-17-rev
-status: open
+status: closed
 track: quality
 priority: p1
 summary: q-17 真实 API 版本 — 实现 5 个 pending AC（AC-06/08/12/15/16）
@@ -29,14 +29,14 @@ specs: specs/
 
 ## 验收标准
 
-- [ ] AC-06：未登录访问 `/chat` 等保护路由，重定向到 `/login`
-- [ ] AC-08：重复注册相同邮箱，后端返回 409，前端显示错误
-- [ ] AC-12：上传文档到知识库，状态流转 uploaded → ready
-- [ ] AC-15：用户 B 的 token 无法访问用户 A 的知识库（返回 403）
-- [ ] AC-16：上传 txt/md/pdf 三种类型文档，均成功索引
-- [ ] 全部测试使用真实后端 API，非 mock
-- [ ] `pnpm type-check` 通过
-- [ ] q-17 原 issue 可关闭（16/16 AC 通过）
+- [x] AC-06：未登录访问 `/chat` 等保护路由，重定向到 `/login`
+- [x] AC-08：重复注册相同邮箱，后端返回 409，前端显示错误
+- [x] AC-12：上传文档到知识库，状态流转 uploaded → ready
+- [x] AC-15：用户 B 的 token 无法访问用户 A 的知识库（返回 403）
+- [x] AC-16：上传 txt/md/pdf 三种类型文档，均成功索引
+- [x] 全部测试使用真实后端 API，非 mock
+- [x] `pnpm type-check` 通过
+- [x] q-17 原 issue 可关闭（16/16 AC 通过）
 
 ## 阻塞于
 
@@ -70,12 +70,12 @@ specs: specs/
 - `GET /api/knowledge-bases`
 
 **验收标准：**
-- [ ] AC-06 通过
-- [ ] AC-08 通过
-- [ ] AC-12 通过
-- [ ] AC-15 通过
-- [ ] AC-16 通过
-- [ ] q-17 关闭
+- [x] AC-06 通过
+- [x] AC-08 通过
+- [x] AC-12 通过
+- [x] AC-15 通过
+- [x] AC-16 通过
+- [x] q-17 关闭
 
 **范围外：**
 - 已通过的 11 个 AC

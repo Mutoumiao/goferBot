@@ -17,6 +17,7 @@
 
 ### quality
 
+- [closed] q-17 E2E 认证与知识库生命周期 — 16/16 AC 全部通过，q-17-rev 使用真实后端 API 完成 5 个 pending AC（AC-06/08/12/15/16） [issue](docs/issues/q-17-e2e-auth-kb-specs/)
 - [closed] q-23 集成测试层修复 — infra.spec.ts Playwright→vitest 转换，新建 setup.ts/teardown.ts，rag-real.spec.ts 适配 pgvector，清理 sidecar/ 遗留目录 [issue](docs/issues/q-23-integration-test-fix/)
 
 ### docs

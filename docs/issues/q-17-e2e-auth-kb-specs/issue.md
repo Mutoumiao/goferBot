@@ -1,6 +1,6 @@
 ---
 id: q-17
-status: open
+status: closed
 track: quality
 priority: p1
 summary: E2E 认证流程与知识库生命周期测试（待 q-17-rev 完成后关闭）
@@ -15,7 +15,7 @@ specs: specs/
 
 基于 q-16 建立的真实 API E2E 基础设施，编写认证和知识库模块的端到端测试。
 
-**当前状态**：11/16 AC 已通过（mock API），5 个 pending AC 待 q-17-rev 实现。
+**当前状态**：16/16 AC 全部通过（q-17-rev 使用真实后端 API 完成 5 个 pending AC）。
 
 包含：
 - `specs/01-auth-flow.spec.ts` — 完整认证流程测试
@@ -47,9 +47,8 @@ specs: specs/
 - AC-16：上传 txt/md/pdf 三种类型文档
 
 **处理方案**：
-- 5 个 pending AC 由 `q-17-rev-real-api-auth-kb` 实现（使用真实后端 API）
-- 本 issue 保持 open 直到 q-17-rev 完成
-- q-17-rev 完成后，本 issue checklist 同步更新并关闭
+- ✅ 5 个 pending AC 已由 `q-17-rev-real-api-auth-kb` 实现（使用真实后端 API）
+- ✅ q-17-rev 已完成，本 issue 关闭（16/16 AC 全部通过）
 
 **阻塞于**：
 - q-23：需要集成测试基础设施完整（TestAppFactory、真实数据库、索引流水线）
