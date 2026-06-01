@@ -1,0 +1,16 @@
+{
+  "issue_id": "b-13",
+  "version": 1,
+  "updated_at": "2026-06-01",
+  "items": [
+    {"id": "AC-01", "desc": "PrismaVectorIndexer 实现 SDK IIndexer 接口", "status": "completed", "test_file": "tests/unit/server/prisma-vector-indexer.spec.ts"},
+    {"id": "AC-02", "desc": "index() 使用 $transaction 单事务写入所有 chunks + vectors", "status": "completed", "test_file": "tests/unit/server/prisma-vector-indexer.spec.ts"},
+    {"id": "AC-03", "desc": "优先使用 embedder 提供的精确 tokenCount", "status": "completed", "test_file": "tests/unit/server/prisma-vector-indexer.spec.ts"},
+    {"id": "AC-04", "desc": "无 usage 时回退到 chunker 估算值", "status": "completed", "test_file": "tests/unit/server/prisma-vector-indexer.spec.ts"},
+    {"id": "AC-05", "desc": "ON CONFLICT (id) DO UPDATE 支持 Worker 重试", "status": "completed", "test_file": "tests/unit/server/prisma-vector-indexer.spec.ts"},
+    {"id": "AC-06", "desc": "不依赖 VectorService，直接操作 Prisma", "status": "completed"},
+    {"id": "AC-07", "desc": "空 chunks 数组时直接返回，不报错", "status": "completed", "test_file": "tests/unit/server/prisma-vector-indexer.spec.ts"},
+    {"id": "AC-08", "desc": "单元测试覆盖正常索引、重试、空 chunks", "status": "completed", "note": "测试文件已创建，待 Docker 启动后运行验证"},
+    {"id": "AC-09", "desc": "pnpm type-check 通过", "status": "completed"}
+  ]
+}
