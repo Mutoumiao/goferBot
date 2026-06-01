@@ -1,6 +1,6 @@
 ---
 id: q-19
-status: open
+status: closed
 track: quality
 priority: p1
 summary: E2E 设置持久化与跨模块用户旅程测试

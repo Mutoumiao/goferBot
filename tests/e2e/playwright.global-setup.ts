@@ -1,10 +1,13 @@
 import { execSync, spawn } from 'child_process'
 import { Client } from 'pg'
+import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+const PID_FILE = path.resolve(__dirname, '.e2e-backend.pid')
 
 async function waitForPostgres(url: string, timeout = 60000): Promise<void> {
   const start = Date.now()
@@ -92,6 +95,10 @@ export default async function globalSetup() {
       stdio: 'ignore',
       shell: isWin,
     })
+    // 记录 PID 供 teardown 清理
+    if (backend.pid) {
+      fs.writeFileSync(PID_FILE, String(backend.pid))
+    }
     backend.unref()
     await waitForBackend('http://127.0.0.1:3000/health')
     console.log('[E2E] Backend is ready')

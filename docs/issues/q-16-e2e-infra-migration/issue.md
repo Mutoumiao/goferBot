@@ -1,6 +1,6 @@
 ---
 id: q-16
-status: open
+status: closed
 track: quality
 priority: p1
 summary: 重构 E2E 测试基础设施，废弃 Tauri 方案，建立真实 API 的 Web E2E 体系

@@ -1,6 +1,6 @@
 ---
 id: q-18
-status: open
+status: closed
 track: quality
 priority: p1
 summary: E2E 聊天 SSE 流式响应与会话管理测试
