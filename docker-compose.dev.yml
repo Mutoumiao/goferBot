@@ -3,7 +3,7 @@ name: goferbot-infra
 services:
   postgres:
     container_name: goferbot-postgres
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -41,31 +41,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    networks:
-      - goferbot-infra
-
-  milvus:
-    container_name: goferbot-milvus
-    image: milvusdb/milvus:v2.4.17
-    restart: unless-stopped
-    command: ["milvus", "run", "standalone"]
-    ports:
-      - "${MILVUS_PORT:-19530}:19530"
-      - "${MILVUS_METRIC_PORT:-9091}:9091"
-    environment:
-      ETCD_USE_EMBED: "true"
-      ETCD_DATA_DIR: /var/lib/milvus/etcd
-      MINIO_ADDRESS: minio:9000
-    volumes:
-      - ./.data/milvus:/var/lib/milvus
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9091/healthz"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
-    depends_on:
-      - minio
     networks:
       - goferbot-infra
 

@@ -85,10 +85,10 @@ model Chunk {
   documentId String   @map("document_id")
   kbId       String   @map("kb_id")
   content    String
-  tokenCount Int?     @map("token_count")
-  chunkIndex Int      @map("chunk_index")
-  milvusId   String?  @map("milvus_id")
-  createdAt  DateTime @default(now()) @map("created_at")
+  tokenCount Int?                      @map("token_count")
+  chunkIndex Int                       @map("chunk_index")
+  embedding  Unsupported("vector(1536)")?
+  createdAt  DateTime                  @default(now()) @map("created_at")
 
   document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
   knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
