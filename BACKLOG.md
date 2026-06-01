@@ -1,29 +1,17 @@
 # 待办事项
 
-> 自动生成于 2026-05-22，最后更新于 2026-05-29
+> 自动生成于 2026-05-22，最后更新于 2026-05-30
 
 ## 进行中
 
-### 集成测试
-
-5. **q-22-rag-real-integration-tests** — RAG 真实集成测试（索引+检索端到端链路验证）
-   - 阻塞于：q-21
-   - 目标：在真实 PG + Milvus + Redis + MinIO 上验证 RAG 端到端链路
-   - 范围：索引链路（上传→解析→分块→嵌入→写入→ready）、检索链路（查询→向量+关键词→RRF→后处理）
-
 ### E2E 测试
 
-1. **q-16-e2e-infra-migration** — E2E 测试基础设施重构（删除 Tauri，建立真实 API Web E2E）
-   - 已有提交：infra 测试、globalSetup/globalTeardown、fixtures（auth/api-client/database）
-2. **q-17-e2e-auth-kb-specs** — E2E 认证流程与知识库生命周期测试
-   - 阻塞于：q-16
-   - 已有提交：AuthPage POM、01-auth-flow.spec.ts、02-kb-lifecycle.spec.ts
-3. **q-18-e2e-chat-session-specs** — E2E 聊天 SSE 与会话管理测试
-   - 阻塞于：q-16
-   - 已有提交：03-chat-with-rag.spec.ts、04-session-management.spec.ts
-4. **q-19-e2e-settings-journey** — E2E 设置持久化与跨模块用户旅程测试
-   - 阻塞于：q-16, q-17
-   - 已有提交：05-settings-persist.spec.ts、06-onboarding-journey.spec.ts
+1. **q-17-e2e-auth-kb-specs** — E2E 认证流程与知识库生命周期测试
+   - 状态：open
+   - 阻塞已解除（q-16 已关闭）
+   - 已有提交：AuthPage POM、auth.spec.ts（mock）、knowledge-base.spec.ts（mock）
+   - 缺口：AC-06、AC-08、AC-12、AC-15、AC-16（5 项 pending）
+   - 技术债务：当前测试使用 mock API，与 spec 要求的真实后端 API 冲突
 
 ## 待启动
 
@@ -32,5 +20,6 @@ _暂无_
 ## 备注
 
 - RAG SDK 系列 issue（d-11 ~ d-15）已全部关闭
-- RAG Server 集成 issue（d-20 / b-10 / b-11 / b-08 / b-09 / f-16 / q-21）已于 2026-05-29 完成开发，55 个测试全部通过
-- q-21 E2E 测试骨架已创建，等待 Docker 基础设施就绪后运行验证
+- RAG Server 集成 issue（d-20 / b-10 / b-11 / b-08 / b-09 / f-16 / q-21 / q-22）已于 2026-05-29 完成开发
+- q-21 E2E 测试骨架已完成，真实链路验证由 q-22 覆盖
+- q-22 RAG 真实集成测试已完成（AC-01~AC-07 全部 passed），基础设施不可用时优雅跳过

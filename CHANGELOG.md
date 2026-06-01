@@ -1,5 +1,14 @@
 # 完成日志
 
+## [2026-05-30]
+
+- [closed] q-22 RAG 真实集成测试 — `rag-real.spec.ts` 在真实 PG+Milvus+Redis+MinIO 上验证索引链路（AC-03）和检索链路（AC-04），含失败降级（AC-05），基础设施不可用时优雅跳过 [issue](docs/issues/q-22-rag-real-integration-tests/)
+- [closed] q-21 RAG Server E2E — 测试骨架完成（setup/teardown/mock servers/4 条 AC），添加 infraAvailable 环境检测自动跳过，真实验证由 q-22 覆盖 [issue](docs/issues/q-21-rag-server-integration-e2e/)
+- [closed] q-19 E2E 设置持久化与跨模块用户旅程测试 — settings-persist.spec.ts（9 AC）+ onboarding-journey.spec.ts（6 AC）全部覆盖 [issue](docs/issues/q-19-e2e-settings-journey/)
+- [closed] q-18 E2E 聊天 SSE 流式响应与会话管理测试 — chat-with-rag.spec.ts（9 AC）+ session-management.spec.ts（11 AC）全部覆盖 [issue](docs/issues/q-18-e2e-chat-session-specs/)
+- [closed] q-16 E2E 基础设施重构 — 删除 Tauri E2E，建立真实 API Web E2E：globalSetup 启动 docker+后端、globalTeardown 清理后端进程、fixtures（auth/api-client/database）、.env.e2e 隔离数据库 [issue](docs/issues/q-16-e2e-infra-migration/)
+- [docs] BACKLOG.md & CHANGELOG.md 同步 — 更新 issue 状态 [BACKLOG](BACKLOG.md)
+
 ## [2026-05-29]
 
 - [closed] RAG Server 集成 PRD — server 端 RAG 集成需求已全部实现并通过 55 个测试 [PRD](docs/prd/rag-server-integration.md)
@@ -9,8 +18,7 @@
 - [closed] b-08 索引 Worker 集成 — IndexingWorker（BullMQ + runIndexing 流水线 + try-catch failed 状态更新）、QueueModule 注册 DOCUMENT_JOB_HANDLER、DocumentService.upload 触发 addDocumentJob，8 个测试通过 [issue](docs/issues/b-08-indexing-worker-integration/)
 - [closed] b-09 Chat RAG 检索 — ChatService.streamChat 注入 HybridRetriever + DefaultRetrievalPostprocessor，手动编排检索→后处理→SSE 流式注入 system 消息，检索失败降级为普通 LLM 调用，8 个测试通过 [issue](docs/issues/b-09-chat-rag-retrieval/)
 - [closed] f-16 前端 Chat KB 选择器 — KbSelector 扩展 error 状态与重试、ChatInput 常驻知识库按钮与会话级状态管理、ChatView 绑定 :key 自动重置，12 个测试通过 [issue](docs/issues/f-16-chat-kb-selector/)
-- [closed] q-21 RAG Server E2E — 测试骨架完成（setup/teardown/mock servers/4 条 AC），添加 infraAvailable 环境检测自动跳过 [issue](docs/issues/q-21-rag-server-integration-e2e/)
-- [docs] BACKLOG.md & CHANGELOG.md 同步 — 开发完成后更新 issue 状态 [BACKLOG](BACKLOG.md)
+- [docs] BACKLOG.md & CHANGELOG.md 同步 — 更新 issue 状态 [BACKLOG](BACKLOG.md)
 
 ## [2026-05-28]
 

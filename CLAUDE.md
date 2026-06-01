@@ -47,7 +47,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 ├── docs/                         # 文档
 │   ├── guide/                  # 流程规范、skills
 │   │   └── backend/            # 后端开发指南（API测试、规范等）
-│   ├── webui-guide/            # 前端专项规范（overlay、组件约定等）
+│   │   └── frontend/            # 前端专项规范（overlay、组件约定、测试规范等）
 │   ├── prd/                   # 产品需求
 │   ├── issues/                   # 活跃 issue（Issue-Centric 结构）
 │   ├── adrs/                  # 架构决策记录
