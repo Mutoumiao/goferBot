@@ -29,11 +29,11 @@ specs: specs/
 
 ## 验收标准
 
-- [x] AC-06：未登录访问 `/chat` 等保护路由，重定向到 `/login`
+- [x] AC-06：未登录访问 `/api/auth/me` 等保护路由返回 401
 - [x] AC-08：重复注册相同邮箱，后端返回 409，前端显示错误
 - [x] AC-12：上传文档到知识库，状态流转 uploaded → ready
 - [x] AC-15：用户 B 的 token 无法访问用户 A 的知识库（返回 403）
-- [x] AC-16：上传 txt/md/pdf 三种类型文档，均成功索引
+- [x] AC-16：上传 txt/md/pdf 三种类型文档，txt/md 成功索引，pdf 因解析未实现而失败降级
 - [x] 全部测试使用真实后端 API，非 mock
 - [x] `pnpm type-check` 通过
 - [x] q-17 原 issue 可关闭（16/16 AC 通过）

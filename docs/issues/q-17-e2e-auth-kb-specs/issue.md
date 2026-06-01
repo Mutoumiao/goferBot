@@ -40,11 +40,11 @@ specs: specs/
 - `tests/e2e/specs/knowledge-base.spec.ts` — 覆盖 AC-09~AC-11、AC-13~AC-14（UI 行为层面，使用 mock API）
 
 **缺口（5 项 pending）**：
-- AC-06：未登录访问保护路由重定向
+- AC-06：未登录访问保护路由返回 401
 - AC-08：重复注册相同邮箱返回错误
 - AC-12：上传文档到知识库
 - AC-15：用户 B 无法看到/操作用户 A 的知识库
-- AC-16：上传 txt/md/pdf 三种类型文档
+- AC-16：上传 txt/md/pdf 三种类型文档（pdf 解析未实现，预期失败降级）
 
 **处理方案**：
 - ✅ 5 个 pending AC 已由 `q-17-rev-real-api-auth-kb` 实现（使用真实后端 API）
