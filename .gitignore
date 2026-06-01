@@ -61,9 +61,11 @@ packages/webui/src/**/*.js.map
 docs/agents/*
 docs/backups/*
 docs/bugs/*
+docs/handoff/*
 
 # Docker Compose local data volumes
 .data/
 .gstack/
 
 .trae/
+
