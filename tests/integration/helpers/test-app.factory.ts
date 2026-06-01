@@ -48,8 +48,17 @@ class NoOpThrottlerGuard implements CanActivate {
   }
 }
 
+export interface CreateAppOptions {
+  realMode?: boolean
+}
+
 export class TestAppFactory {
-  static async create(dbUrl: string): Promise<NestFastifyApplication> {
+  static async create(
+    dbUrl: string,
+    opts: CreateAppOptions = {},
+  ): Promise<NestFastifyApplication> {
+    const { realMode = false } = opts
+
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -59,12 +68,6 @@ export class TestAppFactory {
           datasources: { db: { url: dbUrl } },
         }),
       )
-      .overrideProvider(QueueService)
-      .useValue(mockQueueService)
-      .overrideProvider(VectorService)
-      .useValue(mockVectorService)
-      .overrideProvider(StorageService)
-      .useValue(mockStorageService)
       .overrideModule(ThrottlerModule)
       .useModule(
         ThrottlerModule.forRoot([
@@ -72,9 +75,20 @@ export class TestAppFactory {
           { name: 'auth', ttl: 60000, limit: 9999 },
         ]),
       )
-      .compile()
 
-    const app = moduleRef.createNestApplication<NestFastifyApplication>(
+    if (!realMode) {
+      moduleRef
+        .overrideProvider(QueueService)
+        .useValue(mockQueueService)
+        .overrideProvider(VectorService)
+        .useValue(mockVectorService)
+        .overrideProvider(StorageService)
+        .useValue(mockStorageService)
+    }
+
+    const compiled = await moduleRef.compile()
+
+    const app = compiled.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ bodyLimit: 1048576 }),
     )
 

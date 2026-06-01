@@ -1,11 +1,9 @@
 ---
 id: q-22
-status: open
+status: closed
 track: quality
 priority: p1
 summary: RAG 真实集成测试（索引+检索端到端链路验证）
-blocked_by:
-  - q-21
 checklist: checklist.json
 plan: plan.md
 specs: specs/
