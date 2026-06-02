@@ -17,7 +17,6 @@ vi.mock('@goferbot/rag-sdk', async (importOriginal) => {
 describe('IndexingWorker', () => {
   let worker: IndexingWorker
   let mockPrisma: any
-  let mockVectorService: any
   let mockStorage: any
   let mockParser: any
   let mockIndexer: any
@@ -31,7 +30,6 @@ describe('IndexingWorker', () => {
         update: vi.fn().mockResolvedValue({}),
       },
     }
-    mockVectorService = {}
     mockStorage = {
       downloadFile: vi.fn().mockResolvedValue(Buffer.from('test content')),
     }
@@ -43,7 +41,8 @@ describe('IndexingWorker', () => {
       get: vi.fn().mockReturnValue('mock-key'),
       getOrThrow: vi.fn().mockReturnValue('mock-key'),
     }
-    worker = new IndexingWorker(mockPrisma, mockVectorService, mockStorage, mockParser, mockIndexer, mockConfig)
+    // IndexingWorker 构造函数签名：(prisma, storage, parser, indexer, config)
+    worker = new IndexingWorker(mockPrisma, mockStorage, mockParser, mockIndexer, mockConfig)
   })
 
   it('AC-02: handleIndexJob drives full pipeline and sets status to ready', async () => {

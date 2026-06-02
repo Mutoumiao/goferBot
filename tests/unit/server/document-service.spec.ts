@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { DocumentService } from '../../../packages/server/src/modules/knowledge-base/document.service.js'
 
 describe('DocumentService.remove with vector deletion', () => {
-  it('AC-08: remove calls deleteByFileId before deleting document record', async () => {
+  it('AC-08: remove deletes document and relies on ON DELETE CASCADE for chunks', async () => {
     const mockPrisma = {
       knowledgeBase: { findUnique: vi.fn().mockResolvedValue({ userId: 'u1' }) },
       document: {
@@ -11,16 +11,14 @@ describe('DocumentService.remove with vector deletion', () => {
       },
     } as any
     const mockStorage = {} as any
-    const mockVector = { deleteByFileId: vi.fn().mockResolvedValue(undefined) } as any
+    const mockVector = {} as any
 
     const service = new DocumentService(mockPrisma, mockStorage, mockVector)
     await service.remove('u1', 'kb1', 'd1')
 
-    expect(mockVector.deleteByFileId).toHaveBeenCalledWith('d1')
+    // ADR 0005 后，deleteByFileId 已由数据库级 ON DELETE CASCADE 替代
+    // DocumentService 不再显式调用向量删除
+    expect(mockVector.deleteByFileId).toBeUndefined()
     expect(mockPrisma.document.delete).toHaveBeenCalledWith({ where: { id: 'd1' } })
-    // 验证调用顺序：deleteByFileId 在 document.delete 之前
-    const deleteCallOrder = mockVector.deleteByFileId.mock.invocationCallOrder[0]
-    const docDeleteCallOrder = mockPrisma.document.delete.mock.invocationCallOrder[0]
-    expect(deleteCallOrder).toBeLessThan(docDeleteCallOrder)
   })
 })

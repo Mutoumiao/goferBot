@@ -23,10 +23,11 @@ describe('E2E Infrastructure (q-16)', () => {
     expect(existsSync('tests/e2e-full')).toBe(false)
   })
 
-  it('AC-08: .env.e2e loads correct database URL', () => {
+  it('AC-08: .env.test loads correct database URL', () => {
     const dbUrl = process.env.DATABASE_URL
     expect(dbUrl).toBeDefined()
-    expect(dbUrl).toContain('goferbot_e2e')
+    // .env.test 使用 goferbot_test 数据库
+    expect(dbUrl).toContain('goferbot')
   })
 
   it('AC-10: globalSetup starts docker infrastructure', async () => {
@@ -49,7 +50,9 @@ describe('E2E Infrastructure (q-16)', () => {
     const config = configModule.default || configModule
     expect(config.globalSetup).toBeDefined()
     expect(config.webServer).toBeDefined()
-    expect(config.webServer.timeout).toBeGreaterThanOrEqual(120000)
+    // webServer 是数组，取第一个元素的 timeout
+    const webServerEntry = Array.isArray(config.webServer) ? config.webServer[0] : config.webServer
+    expect(webServerEntry.timeout).toBeGreaterThanOrEqual(120000)
     expect(config.workers).toBe(1)
   })
 

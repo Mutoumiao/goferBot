@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { PrismaVectorIndexer } from '../../../packages/server/src/processors/indexing/prisma-vector.indexer'
+import { PrismaVectorIndexer } from '../../packages/server/src/processors/indexing/prisma-vector.indexer'
 import { ValidationError } from '@goferbot/rag-sdk'
 
 describe('PrismaVectorIndexer', () => {

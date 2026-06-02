@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { VectorService } from '../../../packages/server/src/processors/vector/vector.service'
+import { VectorService } from '../../packages/server/src/processors/vector/vector.service'
 
 describe('VectorService', () => {
   let prisma: PrismaClient
@@ -31,14 +31,11 @@ describe('VectorService', () => {
     const kbId = crypto.randomUUID()
     const id = crypto.randomUUID()
 
-    // 插入测试数据
-    await service.insertVectors([{
-      id,
-      chunkId: id,
-      kbId,
-      fileId: crypto.randomUUID(),
-      embedding: new Array(1536).fill(0.1),
-    }])
+    // 使用 $executeRaw 插入测试数据（Prisma Client 不支持 Unsupported 类型字段的 create）
+    await prisma.$executeRaw`
+      INSERT INTO chunks (id, document_id, kb_id, content, chunk_index, embedding)
+      VALUES (${id}::uuid, ${crypto.randomUUID()}::uuid, ${kbId}::uuid, ${'test content'}, ${0}, ${new Array(1536).fill(0.1)}::vector)
+    `
 
     // 搜索
     const results = await service.searchVectors(new Array(1536).fill(0.1), {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { PgVectorStore } from '../../../packages/server/src/vector/pgvector'
-import { VectorStoreError } from '../../../packages/server/src/interfaces/errors'
+import { PgVectorStore } from '../../packages/server/src/vector/pgvector'
+import { VectorStoreError } from '../../packages/server/src/interfaces/errors'
 
 describe('PgVectorStore', () => {
   let prisma: PrismaClient
@@ -24,38 +24,34 @@ describe('PgVectorStore', () => {
     expect(store.deleteByIds).toBeDefined()
   })
 
-  it('AC-02: insertVectors writes to chunks.embedding', async () => {
-    const id = crypto.randomUUID()
+  it('AC-02: insertVectors is deprecated, use PrismaVectorIndexer.index instead', async () => {
+    // ADR 0005 后，向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）
+    // PgVectorStore.insertVectors 已废弃并抛错
     const record = {
-      id,
-      chunkId: id,
+      id: crypto.randomUUID(),
+      chunkId: crypto.randomUUID(),
       kbId: crypto.randomUUID(),
       fileId: crypto.randomUUID(),
       embedding: new Array(1536).fill(0.1),
     }
 
-    await store.insertVectors([record])
-
-    const result = await prisma.$queryRaw<{ embedding: string }[]>`
-      SELECT embedding::text FROM chunks WHERE id = ${id}::uuid
-    `
-    expect(result.length).toBe(1)
-    expect(result[0].embedding).toContain('0.1')
-
-    // 清理
-    await store.deleteByIds([id])
+    await expect(store.insertVectors([record])).rejects.toThrow(VectorStoreError)
+    await expect(store.insertVectors([record])).rejects.toThrow('已废弃')
   })
 
   it('AC-03: searchVectors returns results ordered by similarity', async () => {
     const kbId = crypto.randomUUID()
+    const docId = crypto.randomUUID()
     const ids = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()]
 
-    // 插入 3 个不同向量
-    await store.insertVectors([
-      { id: ids[0], chunkId: ids[0], kbId, fileId: crypto.randomUUID(), embedding: new Array(1536).fill(0.1) },
-      { id: ids[1], chunkId: ids[1], kbId, fileId: crypto.randomUUID(), embedding: new Array(1536).fill(0.2) },
-      { id: ids[2], chunkId: ids[2], kbId, fileId: crypto.randomUUID(), embedding: new Array(1536).fill(0.3) },
-    ])
+    // 使用 $executeRaw 插入测试数据（Prisma Client 不支持 Unsupported 类型字段的 create）
+    for (let i = 0; i < ids.length; i++) {
+      const embedding = [new Array(1536).fill(0.1), new Array(1536).fill(0.2), new Array(1536).fill(0.3)][i]
+      await prisma.$executeRaw`
+        INSERT INTO chunks (id, document_id, kb_id, content, chunk_index, embedding)
+        VALUES (${ids[i]}::uuid, ${docId}::uuid, ${kbId}::uuid, ${'chunk ' + i}, ${i}, ${embedding}::vector)
+      `
+    }
 
     // 搜索最接近 0.2 的向量
     const results = await store.searchVectors(new Array(1536).fill(0.2), {
@@ -73,13 +69,14 @@ describe('PgVectorStore', () => {
 
   it('AC-04: deleteByIds removes records', async () => {
     const id = crypto.randomUUID()
-    await store.insertVectors([{
-      id,
-      chunkId: id,
-      kbId: crypto.randomUUID(),
-      fileId: crypto.randomUUID(),
-      embedding: new Array(1536).fill(0.1),
-    }])
+    const docId = crypto.randomUUID()
+    const kbId = crypto.randomUUID()
+
+    // 使用 $executeRaw 插入测试数据（Prisma Client 不支持 Unsupported 类型字段的 create）
+    await prisma.$executeRaw`
+      INSERT INTO chunks (id, document_id, kb_id, content, chunk_index, embedding)
+      VALUES (${id}::uuid, ${docId}::uuid, ${kbId}::uuid, ${'test content'}, ${0}, ${new Array(1536).fill(0.1)}::vector)
+    `
 
     await store.deleteByIds([id])
 
