@@ -33,11 +33,11 @@
 
 ### 1. 定制深度原则
 
-| 层级 | 说明 | 使用场景 |
-|------|------|---------|
+| 层级   | 说明                       | 使用场景           |
+|--------|----------------------------|--------------------|
 | 层级 1 | 仅改样式（Tailwind class） | 改颜色、圆角、阴影 |
-| 层级 2 | 改结构 + 样式 | 加插槽、调整布局 |
-| 层级 3 | 完全重写 | 复杂业务交互 |
+| 层级 2 | 改结构 + 样式              | 加插槽、调整布局   |
+| 层级 3 | 完全重写                   | 复杂业务交互       |
 
 **原则**：shadcn-vue 组件最多定制到层级 2。复杂业务交互（如 Mention 下拉、文件拖拽）自行开发业务组件，不魔改 shadcn 源码。
 
@@ -79,48 +79,51 @@
 
 解决最基础的样式不一致问题。
 
-| 组件 | 替换目标 | 现有文件影响 |
-|------|---------|-------------|
-| `Button` | 所有 raw `<button>` | 全部 24 个组件 |
-| `Input` | 所有 raw `<input>` | `ChatInput.vue`, `SettingsPage.vue`, `InlineRename.vue` 等 |
-| `Textarea` | `ChatInput.vue` 的 textarea | `ChatInput.vue` |
-| `Dialog` | `ConfirmDialog.vue`, `EditKbDialog.vue`, `MoveCopyDialog.vue` | `ConfirmDialog.vue`, `EditKbDialog.vue`, `MoveCopyDialog.vue`, `KnowledgeBasePage.vue` |
-| `Label` | 所有表单标签 | `SettingsPage.vue`, `EditKbDialog.vue` |
+| 组件                   | 替换目标                                 | 现有文件影响                                                      |
+|------------------------|------------------------------------------|-------------------------------------------------------------------|
+| `Button`               | 所有 raw `<button>`                      | 全部 24 个组件                                                    |
+| `Input`                | 所有 raw `<input>`                       | `ChatInput.vue`, `SettingsPage.vue`, `InlineRename.vue` 等        |
+| `Textarea`             | `ChatInput.vue` 的 textarea              | `ChatInput.vue`                                                   |
+| `Dialog`               | `EditKbDialog.vue`, `MoveCopyDialog.vue` | `EditKbDialog.vue`, `MoveCopyDialog.vue`, `KnowledgeBasePage.vue` |
+| `AlertDialog`          | `ConfirmDialog.vue`（确认/警告场景）     | `ConfirmDialog.vue`                                               |
+| `Label`                | 所有表单标签                             | `SettingsPage.vue`, `EditKbDialog.vue`                            |
+| `FieldGroup` + `Field` | 所有表单布局                             | `SettingsPage.vue`, `EditKbDialog.vue`, `MoveCopyDialog.vue`      |
 
 ### 第二批：交互组件（P1）
 
 解决可访问性和复杂交互。
 
-| 组件 | 替换目标 | 现有文件影响 |
-|------|---------|-------------|
+| 组件           | 替换目标                                       | 现有文件影响                           |
+|----------------|------------------------------------------------|----------------------------------------|
 | `DropdownMenu` | `ContextMenu.vue`（部分）、`ModelSelector.vue` | `ContextMenu.vue`, `ModelSelector.vue` |
-| `Select` | `SettingsPage.vue` 的 native select | `SettingsPage.vue` |
-| `Tabs` | `SettingsPage.vue`、`TabBar.vue` | `SettingsPage.vue`, `TabBar.vue` |
-| `Switch` | `SettingsPage.vue` 的自定义 toggle | `SettingsPage.vue` |
-| `Separator` | 各种分隔线 | `SideBar.vue`, `SettingsPage.vue` |
+| `Select`       | `SettingsPage.vue` 的 native select            | `SettingsPage.vue`                     |
+| `Tabs`         | `SettingsPage.vue`、`TabBar.vue`               | `SettingsPage.vue`, `TabBar.vue`       |
+| `Switch`       | `SettingsPage.vue` 的自定义 toggle             | `SettingsPage.vue`                     |
+| `Separator`    | 各种分隔线                                     | `SideBar.vue`, `SettingsPage.vue`      |
 
 ### 第三批：展示组件（P2）
 
 提升视觉一致性和用户体验。
 
-| 组件 | 替换目标 | 现有文件影响 |
-|------|---------|-------------|
-| `Badge` | 状态标签 | `RecycleBinPage.vue`, `FileExplorer.vue` |
-| `Card` | 卡片布局 | `KnowledgeBasePage.vue`, `EmptySession.vue` |
-| `Skeleton` | Loading 状态 | `ChatLoading.vue`, `FileExplorer.vue` |
-| `Tooltip` | 替代 native `title` | 全局 |
-| `Avatar` | `ChatMessage.vue`, `SideBar.vue` | `ChatMessage.vue`, `SideBar.vue` |
+| 组件       | 替换目标                         | 现有文件影响                                                 |
+|------------|----------------------------------|--------------------------------------------------------------|
+| `Badge`    | 状态标签                         | `RecycleBinPage.vue`, `FileExplorer.vue`                     |
+| `Card`     | 卡片布局                         | `KnowledgeBasePage.vue`, `EmptySession.vue`                  |
+| `Skeleton` | Loading 状态                     | `ChatLoading.vue`, `FileExplorer.vue`                        |
+| `Tooltip`  | 替代 native `title`              | 全局                                                         |
+| `Avatar`   | `ChatMessage.vue`, `SideBar.vue` | `ChatMessage.vue`, `SideBar.vue`                             |
+| `Empty`    | 空状态                           | `EmptySession.vue`, `FileExplorer.vue`, `RecycleBinPage.vue` |
 
 ### 暂不引入（自行封装业务组件）
 
-| 功能 | 原因 | 方案 |
-|------|------|------|
-| `Combobox` | `KbMentionDropdown.vue`、`ModelSelector.vue` 有复杂过滤逻辑 | 基于 `DropdownMenu` + `Input` 自行封装 |
-| `Table` | `FileExplorer.vue` 用 CSS grid，需求特殊 | 保持现有实现 |
-| `Toast` | `ChatPage.vue` toast 有特定定位逻辑 | 保持现有实现或基于 `Dialog` 封装 |
-| `Pagination` | `HistoryPage.vue` 的分页有自定义样式 | 保持现有实现 |
-| `Command` | 命令面板，当前无此需求 | 暂不引入 |
-| `Popover` | 与 `DropdownMenu` 功能重叠 | 按需评估 |
+| 功能         | 原因                                                        | 方案                                   |
+|--------------|-------------------------------------------------------------|----------------------------------------|
+| `Combobox`   | `KbMentionDropdown.vue`、`ModelSelector.vue` 有复杂过滤逻辑 | 基于 `DropdownMenu` + `Input` 自行封装 |
+| `Table`      | `FileExplorer.vue` 用 CSS grid，需求特殊                    | 保持现有实现                           |
+| `Toast`      | `ChatPage.vue` toast 有特定定位逻辑                         | 保持现有实现或基于 `Dialog` 封装       |
+| `Pagination` | `HistoryPage.vue` 的分页有自定义样式                        | 保持现有实现                           |
+| `Command`    | 命令面板，当前无此需求                                      | 暂不引入                               |
+| `Popover`    | 与 `DropdownMenu` 功能重叠                                  | 按需评估                               |
 
 ---
 
@@ -128,12 +131,12 @@
 
 ### 需要拆分为 "primitive + 业务封装" 的组件
 
-| 现有组件 | 拆分方案 |
-|---------|---------|
-| `ConfirmDialog.vue` | `ui/Dialog.vue`（primitive）+ `components/ConfirmDialog.vue`（业务封装：图标、标题、按钮逻辑） |
-| `EditKbDialog.vue` | `ui/Dialog.vue` + `components/EditKbDialog.vue`（表单逻辑） |
-| `MoveCopyDialog.vue` | `ui/Dialog.vue` + `components/MoveCopyDialog.vue`（文件夹树逻辑） |
-| `ContextMenu.vue` | `ui/DropdownMenu.vue` + `components/ContextMenu.vue`（右键定位逻辑） |
+| 现有组件             | 拆分方案                                                                                            |
+|----------------------|-----------------------------------------------------------------------------------------------------|
+| `ConfirmDialog.vue`  | `ui/AlertDialog.vue`（primitive）+ `components/ConfirmDialog.vue`（业务封装：图标、标题、按钮逻辑） |
+| `EditKbDialog.vue`   | `ui/Dialog.vue` + `components/EditKbDialog.vue`（表单逻辑，使用 FieldGroup + Field）                |
+| `MoveCopyDialog.vue` | `ui/Dialog.vue` + `components/MoveCopyDialog.vue`（文件夹树逻辑，使用 FieldGroup + Field）          |
+| `ContextMenu.vue`    | `ui/DropdownMenu.vue` + `components/ContextMenu.vue`（右键定位逻辑）                                |
 
 ### 需要重构 class 管理的组件（全部）
 
@@ -170,7 +173,8 @@ const buttonVariants = cva('flex items-center justify-center', {
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.0",
-    "radix-vue": "^1.9.0"
+    "radix-vue": "^1.9.0",
+    "lucide-vue-next": "^0.400.0"
   }
 }
 ```
@@ -185,7 +189,10 @@ packages/webui/src/
       input/
       textarea/
       dialog/
+      alert-dialog/
       label/
+      field-group/
+      field/
       dropdown-menu/
       select/
       tabs/
@@ -196,6 +203,7 @@ packages/webui/src/
       skeleton/
       tooltip/
       avatar/
+      empty/
     # 业务组件保持原位，逐步重构
   lib/
     utils.ts               # cn() 工具函数
@@ -227,15 +235,20 @@ packages/webui/src/
   - [ ] 定制样式：与 Input 一致
 - [ ] `npx shadcn-vue add dialog`
   - [ ] 定制样式：圆角、阴影、动画
+- [ ] `npx shadcn-vue add alert-dialog`
+  - [ ] 定制样式：与 Dialog 一致，用于确认/警告场景
 - [ ] `npx shadcn-vue add label`
   - [ ] 定制样式：字体大小、颜色
+- [ ] `npx shadcn-vue add field-group` + `field`
+  - [ ] 表单布局基础组件
 - [ ] 重构业务组件使用 P0 primitive
-  - [ ] `ConfirmDialog.vue` → 拆分为 `ui/Dialog` + 业务封装
-  - [ ] `EditKbDialog.vue` → 同上
-  - [ ] `MoveCopyDialog.vue` → 同上
-  - [ ] 全局替换 raw `<button>` → `<Button>`
+  - [ ] `ConfirmDialog.vue` → 拆分为 `ui/AlertDialog` + 业务封装
+  - [ ] `EditKbDialog.vue` → `ui/Dialog` + FieldGroup/Field 表单布局
+  - [ ] `MoveCopyDialog.vue` → `ui/Dialog` + FieldGroup/Field 表单布局
+  - [ ] 全局替换 raw `<button>` → `<Button>`（图标使用 data-icon）
   - [ ] 全局替换 raw `<input>` → `<Input>`
   - [ ] `ChatInput.vue` → `<Textarea>`
+  - [ ] 全局表单布局 → `FieldGroup` + `Field`
 
 ### Phase 3: 第二批交互组件（P1）
 
@@ -259,10 +272,11 @@ packages/webui/src/
 - [ ] `npx shadcn-vue add avatar`
 - [ ] 重构业务组件
   - [ ] `KnowledgeBasePage.vue` → `<Card>`
-  - [ ] `EmptySession.vue` → `<Card>`
+  - [ ] `EmptySession.vue` → `<Card>` + `<Empty>`
   - [ ] `ChatLoading.vue` → `<Skeleton>`
   - [ ] `ChatMessage.vue` → `<Avatar>`
   - [ ] 全局替换 `title` → `<Tooltip>`
+  - [ ] `FileExplorer.vue` / `RecycleBinPage.vue` → `<Empty>`
 
 ### Phase 5: class 管理统一化
 
@@ -298,27 +312,29 @@ packages/webui/src/
 
 ## 风险与缓解
 
-| 风险 | 影响 | 缓解 |
-|------|------|------|
-| shadcn-vue 与 Tailwind v4 兼容性 | 高 | 确认 shadcn-vue 支持 Tailwind v4；如遇问题，参考官方迁移指南 |
-| 样式覆盖冲突 | 中 | 严格区分 `ui/`（shadcn 变量）和业务组件（Pencil tokens）；不混用 |
-| 组件体积增加 | 低 | shadcn-vue 按需引入，Tree-shaking 友好；监控构建产物大小 |
-| 团队学习成本 | 低 | shadcn-vue API 简洁；文档化定制规则 |
-| 现有自定义动画丢失 | 中 | 保留自定义 CSS 动画；shadcn 动画通过 CSS 变量调整 |
+| 风险                             | 影响 | 缓解                                                             |
+|----------------------------------|------|------------------------------------------------------------------|
+| shadcn-vue 与 Tailwind v4 兼容性 | 高   | 确认 shadcn-vue 支持 Tailwind v4；如遇问题，参考官方迁移指南     |
+| 样式覆盖冲突                     | 中   | 严格区分 `ui/`（shadcn 变量）和业务组件（Pencil tokens）；不混用 |
+| 组件体积增加                     | 低   | shadcn-vue 按需引入，Tree-shaking 友好；监控构建产物大小         |
+| 团队学习成本                     | 低   | shadcn-vue API 简洁；文档化定制规则                              |
+| 现有自定义动画丢失               | 中   | 保留自定义 CSS 动画；shadcn 动画通过 CSS 变量调整                |
 
 ---
 
 ## 验收标准
 
-- [x] 所有 raw `<button>` 替换为 `<Button>`
-- [x] 所有 raw `<input>` 替换为 `<Input>`
-- [x] 所有 Dialog 使用 `ui/Dialog` primitive
-- [x] 无 `:class="[` 条件数组（全部使用 `cn()` + CVA）
-- [x] 键盘导航完整（Tab、Enter、Escape、Arrow keys）
-- [x] Focus ring 在所有交互元素上可见
-- [x] 构建产物大小增加 < 20%
-- [x] 所有测试通过
-- [x] 视觉无回归（关键页面截图对比通过）
+- [ ] 所有 raw `<button>` 替换为 `<Button>`
+- [ ] 所有 raw `<input>` 替换为 `<Input>`
+- [ ] 所有确认/警告 Dialog 使用 `ui/AlertDialog`，其他使用 `ui/Dialog`
+- [ ] 所有表单使用 `FieldGroup` + `Field` 布局
+- [ ] 所有 Button 图标使用 `data-icon`，不加 sizing class
+- [ ] 无 `:class="[` 条件数组（全部使用 `cn()` + CVA）
+- [ ] 键盘导航完整（Tab、Enter、Escape、Arrow keys）
+- [ ] Focus ring 在所有交互元素上可见
+- [ ] 构建产物大小增加 < 20%
+- [ ] 所有测试通过
+- [ ] 视觉无回归（关键页面截图对比通过）
 
 ---
 

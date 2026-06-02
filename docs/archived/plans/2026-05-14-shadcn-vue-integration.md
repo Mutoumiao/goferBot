@@ -30,7 +30,10 @@ packages/webui/src/
       input/
       textarea/
       dialog/
+      alert-dialog/
       label/
+      field-group/
+      field/
       dropdown-menu/
       select/
       tabs/
@@ -41,9 +44,10 @@ packages/webui/src/
       skeleton/
       tooltip/
       avatar/
-    ConfirmDialog.vue      # 业务封装（基于 ui/dialog）
-    EditKbDialog.vue       # 业务封装（基于 ui/dialog）
-    MoveCopyDialog.vue     # 业务封装（基于 ui/dialog）
+      empty/
+    ConfirmDialog.vue      # 业务封装（基于 ui/alert-dialog）
+    EditKbDialog.vue       # 业务封装（基于 ui/dialog + FieldGroup/Field）
+    MoveCopyDialog.vue     # 业务封装（基于 ui/dialog + FieldGroup/Field）
     ContextMenu.vue        # 业务封装（基于 ui/dropdown-menu）
     ...                    # 其他业务组件
   lib/
@@ -303,7 +307,7 @@ export const buttonVariants = cva(
         default: 'h-10 px-4 py-2',
         sm: 'h-8 px-3 text-xs',
         lg: 'h-12 px-6 text-base',
-        icon: 'h-10 w-10',
+        icon: 'size-10',
       },
     },
     defaultVariants: {
@@ -331,8 +335,8 @@ import { Button } from '@/components/ui/button'
   <!-- <button class="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-surface-2 transition-colors"> -->
 
   <!-- 重构后 -->
-  <Button variant="ghost" size="icon" class="w-10 h-10">
-    <span class="i-mdi-home text-xl" />
+  <Button variant="ghost" size="icon" class="size-10">
+    <HomeIcon data-icon="inline-start" />
   </Button>
 </template>
 ```
@@ -460,19 +464,29 @@ npx shadcn-vue add dialog
 - 背景：`bg-surface-0`
 - 边框：`border-border-default`
 
-- [ ] **Step 3: 重构 ConfirmDialog.vue**
+- [ ] **Step 3: 安装 AlertDialog**
+
+```bash
+cd packages/webui
+npx shadcn-vue add alert-dialog
+```
+
+- [ ] **Step 4: 重构 ConfirmDialog.vue（使用 AlertDialog）**
 
 ```vue
 <script setup lang="ts">
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { InfoIcon, AlertTriangleIcon, AlertCircleIcon } from 'lucide-vue-next'
 
 const props = defineProps<{
   open: boolean
@@ -487,9 +501,9 @@ const emit = defineEmits<{
 }>()
 
 const iconMap = {
-  info: 'i-mdi-information-circle text-accent-500',
-  warning: 'i-mdi-alert text-amber-500',
-  danger: 'i-mdi-alert-circle text-danger-500',
+  info: { component: InfoIcon, class: 'text-accent-500' },
+  warning: { component: AlertTriangleIcon, class: 'text-amber-500' },
+  danger: { component: AlertCircleIcon, class: 'text-danger-500' },
 }
 
 const confirmVariant = {
@@ -497,75 +511,125 @@ const confirmVariant = {
   warning: 'default' as const,
   danger: 'destructive' as const,
 }
+
+const icon = computed(() => iconMap[props.type ?? 'info'])
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="sm:max-w-[425px]">
-      <DialogHeader class="flex flex-row items-center gap-3">
-        <span :class="['text-2xl', iconMap[type ?? 'info']]" />
+  <AlertDialog :open="open" @update:open="emit('update:open', $event)">
+    <AlertDialogContent class="sm:max-w-[425px]">
+      <AlertDialogHeader class="flex flex-row items-center gap-3">
+        <component :is="icon.component" :class="['size-6', icon.class]" />
         <div>
-          <DialogTitle>{{ title }}</DialogTitle>
-          <DialogDescription>{{ description }}</DialogDescription>
+          <AlertDialogTitle>{{ title }}</AlertDialogTitle>
+          <AlertDialogDescription>{{ description }}</AlertDialogDescription>
         </div>
+      </AlertDialogHeader>
+      <AlertDialogFooter class="gap-2">
+        <AlertDialogCancel as-child>
+          <Button variant="outline">取消</Button>
+        </AlertDialogCancel>
+        <AlertDialogAction as-child>
+          <Button :variant="confirmVariant[type ?? 'info']" @click="emit('confirm')">确认</Button>
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+</template>
+```
+
+- [ ] **Step 5: 重构 EditKbDialog.vue 和 MoveCopyDialog.vue**
+
+使用 `Dialog` + `FieldGroup` + `Field` + `Input` + `Button` primitive：
+
+```vue
+<template>
+  <Dialog :open="open" @update:open="emit('update:open', $event)">
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>编辑知识库</DialogTitle>
       </DialogHeader>
-      <DialogFooter class="gap-2">
+      <FieldGroup>
+        <Field>
+          <FieldLabel>名称</FieldLabel>
+          <Input v-model="name" />
+        </Field>
+        <Field>
+          <FieldLabel>图标</FieldLabel>
+          <IconPicker v-model="icon" />
+        </Field>
+      </FieldGroup>
+      <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">取消</Button>
-        <Button :variant="confirmVariant[type ?? 'info']" @click="emit('confirm')">确认</Button>
+        <Button @click="save">保存</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
 ```
 
-- [ ] **Step 4: 重构 EditKbDialog.vue 和 MoveCopyDialog.vue**
-
-类似方式，使用 `Dialog` + `Input` + `Button` primitive。
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add packages/webui/src/components/ui/dialog/
+git add packages/webui/src/components/ui/alert-dialog/
 git add packages/webui/src/components/ConfirmDialog.vue
 git add packages/webui/src/components/EditKbDialog.vue
 git add packages/webui/src/components/MoveCopyDialog.vue
-git commit -m "feat(ui): add shadcn Dialog and refactor business dialogs"
+git commit -m "feat(ui): add shadcn Dialog, AlertDialog and refactor business dialogs"
 ```
 
 ---
 
-### Task 5: 引入 Label
+### Task 5: 引入 Label, FieldGroup, Field
 
 **Files:**
 - Create: `packages/webui/src/components/ui/label/`
-- Modify: `SettingsPage.vue`, `EditKbDialog.vue`
+- Create: `packages/webui/src/components/ui/field-group/`
+- Create: `packages/webui/src/components/ui/field/`
+- Modify: `SettingsPage.vue`, `EditKbDialog.vue`, `MoveCopyDialog.vue`
 
-- [ ] **Step 1: 安装 Label**
+- [ ] **Step 1: 安装 Label, FieldGroup, Field**
 
 ```bash
 cd packages/webui
 npx shadcn-vue add label
+npx shadcn-vue add field-group
+npx shadcn-vue add field
 ```
 
 - [ ] **Step 2: 定制样式**
 
-调整颜色为 `text-text-secondary`，字体大小 `text-sm`。
+Label：调整颜色为 `text-text-secondary`，字体大小 `text-sm`。
+FieldGroup/Field：使用 `flex flex-col gap-4` 布局。
 
-- [ ] **Step 3: 替换表单标签**
+- [ ] **Step 3: 替换表单布局**
 
 ```vue
 <!-- 重构前 -->
-<label class="text-sm text-text-secondary">API Key</label>
+<div class="space-y-4">
+  <div>
+    <label class="text-sm text-text-secondary">API Key</label>
+    <input class="..." />
+  </div>
+</div>
 
 <!-- 重构后 -->
-<Label>API Key</Label>
+<FieldGroup>
+  <Field>
+    <FieldLabel>API Key</FieldLabel>
+    <Input />
+  </Field>
+</FieldGroup>
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add packages/webui/src/components/ui/label/
-git commit -m "feat(ui): add shadcn Label"
+git add packages/webui/src/components/ui/field-group/
+git add packages/webui/src/components/ui/field/
+git commit -m "feat(ui): add shadcn Label, FieldGroup, Field"
 ```
 
 ---
@@ -683,7 +747,7 @@ git commit -m "feat(ui): add shadcn Separator"
 
 ---
 
-### Task 9: 引入 Badge, Card, Skeleton, Tooltip, Avatar
+### Task 9: 引入 Badge, Card, Skeleton, Tooltip, Avatar, Empty
 
 **Files:**
 - Create: `packages/webui/src/components/ui/badge/`
@@ -691,6 +755,7 @@ git commit -m "feat(ui): add shadcn Separator"
 - Create: `packages/webui/src/components/ui/skeleton/`
 - Create: `packages/webui/src/components/ui/tooltip/`
 - Create: `packages/webui/src/components/ui/avatar/`
+- Create: `packages/webui/src/components/ui/empty/`
 - Modify: 多个业务组件
 
 - [ ] **Step 1: 安装组件**
@@ -702,6 +767,7 @@ npx shadcn-vue add card
 npx shadcn-vue add skeleton
 npx shadcn-vue add tooltip
 npx shadcn-vue add avatar
+npx shadcn-vue add empty
 ```
 
 - [ ] **Step 2: 定制样式**
@@ -711,11 +777,12 @@ npx shadcn-vue add avatar
 - [ ] **Step 3: 重构业务组件**
 
 - `KnowledgeBasePage.vue` → `<Card>`
-- `EmptySession.vue` → `<Card>`
+- `EmptySession.vue` → `<Card>` + `<Empty>`
 - `ChatLoading.vue` → `<Skeleton>`
-- `ChatMessage.vue` → `<Avatar>`
+- `ChatMessage.vue` → `<Avatar>`（必须包含 `<AvatarFallback>`）
 - 全局 `title` → `<Tooltip>`
 - `RecycleBinPage.vue` / `FileExplorer.vue` → `<Badge>`
+- `FileExplorer.vue` / `RecycleBinPage.vue` 空状态 → `<Empty>`
 
 - [ ] **Step 4: Commit**
 
@@ -725,8 +792,9 @@ git add packages/webui/src/components/ui/card/
 git add packages/webui/src/components/ui/skeleton/
 git add packages/webui/src/components/ui/tooltip/
 git add packages/webui/src/components/ui/avatar/
+git add packages/webui/src/components/ui/empty/
 git add packages/webui/src/components/KnowledgeBase.vue  # 等
-git commit -m "feat(ui): add shadcn Badge, Card, Skeleton, Tooltip, Avatar"
+git commit -m "feat(ui): add shadcn Badge, Card, Skeleton, Tooltip, Avatar, Empty"
 ```
 
 ---
@@ -947,6 +1015,11 @@ This directory contains shadcn-vue components.
 2. **Use Pencil design tokens** for colors: `bg-surface-1`, `text-text-primary`, etc.
 3. **Preserve accessibility**: focus rings, keyboard navigation, ARIA attributes
 4. **Run `npx shadcn-vue add <component>`** to add new components from upstream
+5. **Use `lucide-vue-next`** for icons, not `@egoist/tailwindcss-icons`
+6. **Button icons use `data-icon`**, no sizing classes on icons
+7. **Forms use `FieldGroup` + `Field`**, never raw `div` with `space-y-*`
+8. **Confirm/warning dialogs use `AlertDialog`**, not `Dialog`
+9. **Avatar always has `AvatarFallback`**
 
 ## Customization
 
@@ -981,12 +1054,12 @@ git commit -m "docs(ui): update documentation for shadcn-vue integration"
 | shadcn-vue 初始化 | Task 1 |
 | Button 引入 + 替换 | Task 2 |
 | Input/Textarea 引入 + 替换 | Task 3 |
-| Dialog 引入 + 业务重构 | Task 4 |
-| Label 引入 | Task 5 |
+| Dialog/AlertDialog 引入 + 业务重构 | Task 4 |
+| Label/FieldGroup/Field 引入 | Task 5 |
 | DropdownMenu + ContextMenu 重构 | Task 6 |
 | Select/Tabs/Switch 引入 | Task 7 |
 | Separator 引入 | Task 8 |
-| Badge/Card/Skeleton/Tooltip/Avatar 引入 | Task 9 |
+| Badge/Card/Skeleton/Tooltip/Avatar/Empty 引入 | Task 9 |
 | class 管理统一化 | Task 10 |
 | 可访问性验证 | Task 11 |
 | 全面测试 | Task 12 |

@@ -8,7 +8,17 @@ description: >
 
 # Spec 验证器
 
-为 issue 编写完整的三层规格文档，确保交互状态完整、API 契约清晰、术语一致。编写过程中通过质询澄清模糊需求，但核心目标是产出可执行的规格文件。
+## 执行摘要
+
+| 项目 | 内容 |
+|------|------|
+| **触发词** | "写 spec"、"审查 spec"、"spec 对吗" |
+| **硬关卡** | spec 须经**用户批准**才能进入 plan-generator |
+| **核心输出** | `docs/issues/{dir}/specs/*.md` |
+| **禁止行为** | 未经用户确认自动生成 plan、批量写多个 spec |
+| **下一步** | 用户批准后 → 调用 plan-generator |
+
+为 issue 编写完整的三层规格文档，确保交互状态完整、API 契约清晰、术语一致。编写过程中通过质询澄清模糊需求。
 
 ---
 
@@ -17,21 +27,15 @@ description: >
 1. **PRD**: `docs/prd/v2-cloud-native.md`
 2. **架构规格**: `docs/adrs/`
 3. **相关 Specs**: `docs/issues/{related-dir}/specs/`
-4. **ADRs**: `docs/adrs/`
-5. **设计系统**: `docs/design/system/DESIGN.md`
-6. **命名规范**: `docs/guide/naming-convention.md`
-7. **代码库规范**（按 issue track 选择，参考）：
-   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)（了解前端技术栈、组件目录结构，确保"涉及页面/组件"描述准确）
-   - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)（了解 Dialog/ContextMenu 的目录约束和类型规范）
-   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)（了解后端 API 开发流程，确保端点描述符合代码库模式）
-   - **为什么参考**：behavior-spec 中的"涉及页面/组件"和 api-spec 中的端点描述需要与代码库实际结构对齐。不需要全文阅读，重点了解目录结构和开发流程即可。
-
-8. **测试指南**（按 issue track 选择，参考）：
-   - `f-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（了解前端测试文件路径和命名规范）
-   - `b-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（了解后端测试文件路径和命名规范）
-   - `i-*` → [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)
-   - `q-*` → [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)
-   - **为什么参考**：spec 中的"测试映射"表格只需列出测试文件路径和用例名，不需要深入了解测试基础设施细节。测试映射应与测试指南的"文件位置"和"命名规范"章节对齐。
+4. **设计系统**: `docs/design/system/DESIGN.md`
+5. **命名规范**: `docs/guide/naming-convention.md`
+6. **代码库规范**（按 issue track 选择，参考）：
+   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)
+   - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)
+   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)
+7. **测试指南**（按 issue track 选择，参考）：
+   - 测试路径与命名规范 → [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)
+   - 详细测试写法 → `docs/guide/testing/unit-testing-guide.md`（f/b）、`integration-testing-guide.md`（i）、`e2e-testing-guide.md`（q）
 
 ---
 
@@ -66,7 +70,6 @@ description: >
 生成 spec 前必须确认：
 - 对应 issue 存在于 `docs/issues/{dir}/issue.md`
 - spec 文件放在 issue 目录下的 `specs/` 子目录中
-- 目录路径：`docs/issues/{dir}/specs/`
 
 ### 功能规格
 
@@ -124,7 +127,6 @@ description: >
 | 步骤 | 用户操作 | 系统响应 | 视觉状态 |
 |------|----------|----------|----------|
 | 1    | {操作}   | {响应}   | {状态}   |
-| 2    | {操作}   | {响应}   | {状态}   |
 
 ## 错误场景
 | 场景     | 触发   | 视觉   | 恢复       |
@@ -138,7 +140,8 @@ description: >
 | loading  | `tests/unit/webui/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
 | error    | `tests/unit/webui/TabBar.spec.ts` | `AC-02: displays error on unauthorized`               |
 
-> 测试文件和用例必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) 中的规范对齐（文件位置、命名、AAA 结构、fixtures 使用）。
+> 测试文件和用例必须与 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md) 中的规范对齐。
+```
 
 ### API 规格（后端）
 
@@ -185,7 +188,8 @@ description: >
 | 正常请求 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-01: creates knowledge base with valid data` |
 | 参数错误 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-02: returns 400 for invalid input`          |
 
-> 测试文件和用例必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（单元测试）或 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)（集成测试）中的规范对齐。
+> 测试文件和用例必须与 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md) 中的规范对齐。
+```
 
 ---
 
@@ -206,9 +210,9 @@ description: >
 
 ---
 
-## 用户审批门（融入自 brainstorming）
+## 用户审批门（硬关卡）
 
-**硬关卡：spec 未经用户批准，禁止进入 plan-generator。**
+**spec 未经用户批准，禁止进入 plan-generator。**
 
 写完 spec 后：
 1. 自检（检查清单下方）

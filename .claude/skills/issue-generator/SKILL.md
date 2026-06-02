@@ -8,6 +8,16 @@ description: >
 
 # Issue 生成器
 
+## 执行摘要
+
+| 项目 | 内容 |
+|------|------|
+| **触发词** | "拆 issue"、"生成工单"、"任务拆分" |
+| **硬关卡** | PRD 未稳定前禁止拆 issue |
+| **核心输出** | `docs/issues/{dir}/issue.md` + `checklist.json` + `specs/` 占位 |
+| **禁止行为** | 一次拆完所有 issue、一个 issue 包含前后端 |
+| **下一步** | issue 创建后 → 调用 spec-validator 写 spec |
+
 将计划拆分为垂直切片，每个切片是一条端到端的完整路径。
 
 ---
@@ -46,15 +56,7 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 
 每个 issue 是贯穿所有层的薄垂直切片，**不是**单一层的水平切片。
 
-**轨道前缀：**
-
-| 前缀   | 轨道     | 示例                           |
-|--------|----------|--------------------------------|
-| `f-XX` | 前端功能 | `f-15-global-tab-bar`          |
-| `b-XX` | 后端接口 | `b-02-knowledge-base-crud-api` |
-| `d-XX` | 设计     | `d-01-rag-sdk-contracts`       |
-| `i-XX` | 基础设施 | `i-01-docker-compose-infra`    |
-| `q-XX` | 质量     | `q-01-security-baseline`       |
+**轨道前缀**参见 [`_shared/references/track-prefixes.md`](mdc:.claude/skills/_shared/references/track-prefixes.md)。
 
 切片类型：
 - **HITL**: 需人工交互（架构决策、设计评审）
@@ -99,8 +101,13 @@ Issue 标题和描述应使用项目领域词汇，尊重相关 ADR。
 ```bash
 mkdir -p docs/issues/{dir}/specs
 mkdir -p docs/issues/{dir}/plans
-mkdir -p tests/unit/server/  # 按轨道选择：f→tests/unit/webui/, b→tests/unit/server/, d→tests/unit/server/, i→tests/integration/, q→tests/e2e/
 ```
+
+**测试目录**按轨道选择（参见 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)）：
+- `f-*` → `tests/unit/webui/`
+- `b-*`, `d-*` → `tests/unit/server/`
+- `i-*` → `tests/integration/`
+- `q-*` → `tests/e2e/`
 
 **Issue 正文（issue.md）：**
 

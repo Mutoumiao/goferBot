@@ -52,12 +52,50 @@ version: 1
 - [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// 具体测试代码
+// tests/{layer}/{name}.spec.ts
+import { describe, it, expect } from 'vitest'
+import { myFunction } from './file'
+
+describe('myFunction', () => {
+  it('AC-01: should return expected result for valid input', () => {
+    const result = myFunction('valid-input')
+    expect(result).toBe('expected-output')
+  })
+
+  it('AC-02: should throw error for invalid input', () => {
+    expect(() => myFunction('invalid')).toThrow('Invalid input')
+  })
+})
 ```
 
 - [ ] **步骤 2: 运行测试确认失败**
+
+运行：`npx vitest run tests/{layer}/{name}.spec.ts`
+预期：FAIL — "myFunction is not defined" 或断言失败
+
 - [ ] **步骤 3: 编写最小实现**
+
+```typescript
+// file.ts
+export function myFunction(input: string): string {
+  if (input === 'invalid') {
+    throw new Error('Invalid input')
+  }
+  return 'expected-output'
+}
+```
+
 - [ ] **步骤 4: 运行测试确认通过**
+
+运行：`npx vitest run tests/{layer}/{name}.spec.ts`
+预期：PASS（所有测试通过）
+
+- [ ] **步骤 5: 提交**
+
+```bash
+git add tests/{layer}/{name}.spec.ts file.ts
+git commit -m "feat(scope): add myFunction with tests"
+```
 
 ---
 
