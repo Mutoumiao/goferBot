@@ -10,27 +10,27 @@ description: >
 
 # 计划生成器
 
+## 执行摘要
+
+| 项目 | 内容 |
+|------|------|
+| **触发词** | "写计划"、"生成实现方案"、"基于 spec 生成 plan" |
+| **硬关卡** | 禁止占位符（"TODO"、"TBD"）；每个任务必须以测试开始 |
+| **核心输出** | `docs/issues/{dir}/plan.md` + `plans/v{N}.md` |
+| **禁止行为** | 写 TODO、任务不以测试开始、无验证命令 |
+| **下一步** | plan 生成后 → 用户确认 → 调用 dev-orchestrator |
+
 编写全面的实现计划，假设工程师对代码库零了解。记录一切：每个任务要碰哪些文件、写什么代码、测试、需查阅的文档、如何验证。DRY。YAGNI。**TDD 强制**。频繁提交。
 
 **开始时声明：** "正在使用 plan-generator skill 创建实现计划。"
 
-**保存到：** `docs/issues/{dir}/plan.md`（当前生效版本）
+---
 
-**历史版本归档到：** `docs/issues/{dir}/plans/v{N}.md`
+## 保存路径
 
-**路径验证（强制执行）：**
-- 当前生效版本固定为 `plan.md`
-- 历史版本归档在 `plans/v{N}.md`，N 从 1 开始递增
-- 每次重新生成计划时，保留旧版本到 `plans/`，新建 `plan.md`
-
-**版本规则：**
-
-| 场景 | 操作 |
-|------|------|
-| 首次生成计划 | 创建 `plan.md` |
-| Spec 发生重大变更 | 保留原 `plan.md` 到 `plans/v1.md`，新建 `plan.md` |
-| 审查后需大规模重构 | 保留当前版本到 `plans/v{N}.md`，新建 `plan.md` |
-| 执行中发现方案不可行 | 保留当前版本到 `plans/v{N}.md`，新建 `plan.md` |
+- **当前生效版**：`docs/issues/{dir}/plan.md`
+- **历史归档**：`docs/issues/{dir}/plans/v{N}.md`，N 从 1 开始递增
+- **每次重新生成计划时**，保留旧版本到 `plans/`，新建 `plan.md`
 
 ---
 
@@ -45,17 +45,13 @@ description: >
    - `api-spec.md` — 后端：路由、DTO、错误码、异步行为
 
 3. **代码库规范**（按 track 选择，必读）：
-   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)（前端开发流程、目录结构、技术栈）
-   - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)（Dialog/ContextMenu 目录约束）
-   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)（后端开发流程、API 开发步骤）
-   - **为什么必读**：Plan 中的文件结构必须遵循代码库既定模式。不了解前端 `overlays/` 目录约束或后端 API 开发流程，会导致 plan 中的文件路径和实现步骤与实际代码库冲突。
+   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)
+   - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)
+   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)
 
-4. **测试指南**（按 track 选择，参考）：
-   - `f-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（前端单元测试：了解测试命令和文件路径约定）
-   - `b-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（后端单元测试：了解测试命令和文件路径约定）
-   - `i-*` → [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)
-   - `q-*` → [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)
-   - **为什么参考**：Plan 中需要声明测试文件路径和验证命令，必须与测试指南一致。不需要全文阅读，重点了解对应层级的"文件位置"和"运行命令"章节即可。
+4. **测试指南**（参考）：
+   - 测试路径与命名 → [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)
+   - TDD 规则详情 → [`_shared/references/tdd-rules.md`](mdc:.claude/skills/_shared/references/tdd-rules.md)
 
 5. **现有计划**（如有）: `docs/issues/{dir}/plan.md` 和 `plans/`
 
@@ -83,7 +79,7 @@ description: >
 - 遵循代码库既定模式
 
 **必须包含测试文件：**
-- 测试文件放在 `tests/{layer}/` 下（按轨道分层：f→unit/webui, b→unit/server, i→integration, q→e2e）
+- 测试文件放在 `tests/{layer}/` 下（按轨道分层，参见 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)）
 - 测试用例名必须以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
 
 ---
@@ -130,111 +126,17 @@ version: 1
 
 ## TDD 执行细节
 
-### Red-Green-Refactor 循环
+**TDD 规则详情参见** [`_shared/references/tdd-rules.md`](mdc:.claude/skills/_shared/references/tdd-rules.md)。以下是 plan 中必须遵守的摘要：
 
-```
-RED（编写失败测试） → 验证失败 → GREEN（最小实现） → 验证通过 → REFACTOR（清理代码） → 保持绿色 → 下一个
-```
+### 核心原则
 
-**核心原则：如果你没看到测试失败，你就不知道它是否测试了正确的东西。**
+- **铁律**：没有先失败的测试，不写生产代码
+- **循环**：RED（失败测试）→ 验证失败 → GREEN（最小实现）→ 验证通过 → REFACTOR → 保持绿色
+- **每个任务**必须以测试开始，以测试通过结束
 
-**铁律：没有先失败的测试，不写生产代码。**
+### 任务结构模板
 
-### RED - 编写失败测试
-
-编写一个最小测试展示期望行为。
-
-**好测试标准：**
-- 一个行为（名称中有 "and"？拆分它）
-- 清晰名称描述行为
-- 真实代码（不 mock，除非不可避免）
-
-**坏测试示例：**
-```typescript
-// 坏：模糊名称，测试 mock 而非真实代码
-test('retry works', async () => {
-  const mock = vi.fn()
-    .mockRejectedValueOnce(new Error())
-    .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success')
-  await retryOperation(mock)
-  expect(mock).toHaveBeenCalledTimes(3)
-})
-```
-
-### Verify RED - 观察失败（强制，不可跳过）
-
-运行：`npx vitest run tests/{layer}/{name}.spec.ts`
-
-确认：
-- 测试失败（不是报错）
-- 失败消息符合预期
-- 因功能缺失而失败（不是拼写错误）
-
-**测试通过了？** 你在测试已有行为。修复测试。
-
-**测试报错了？** 修复错误，重跑直到正确失败。
-
-### GREEN - 最小实现
-
-编写最简单代码让测试通过。
-
-**禁止：**
-- 添加计划外的功能
-- 重构其他代码
-- "改进"超出测试范围
-
-### Verify GREEN - 观察通过（强制）
-
-运行：`npx vitest run tests/{layer}/{name}.spec.ts`
-
-确认：
-- 测试通过
-- 其他测试仍通过
-- 输出干净（无错误、警告）
-
-**测试失败？** 修复代码，不是测试。
-
-**其他测试失败？** 立即修复。
-
-### REFACTOR - 清理
-
-仅在 green 后：
-- 消除重复
-- 改善命名
-- 提取辅助函数
-
-保持测试绿色。不添加行为。
-
-### 常见辩解与反驳
-
-| 辩解 | 现实 |
-|------|------|
-| "太简单了不用测试" | 简单代码也会坏。测试只需 30 秒。 |
-| "我后面再补测试" | 后补的测试立即通过，证明不了什么。 |
-| "后补测试目标一样" | 后补 = "这代码做什么？" 先写 = "这代码该做什么？" |
-| "我已经手动测过所有边界" | 手动 ≠ 系统化。无记录，无法重跑。 |
-| "删了 X 小时工作太浪费" | 沉没成本谬误。保留未验证代码才是技术债。 |
-| "TDD 太教条，我 pragmatic" | TDD 就是 pragmatic：比生产环境调试快。 |
-
-### TDD 红线 - 立即停止重来
-
-- 先写代码后写测试
-- 测试在实现之后
-- 测试立即通过
-- 无法解释测试为何失败
-- "这次例外"
-- "我已经手动测过了"
-
-**以上任何一条出现：删除代码，用 TDD 重新开始。**
-
----
-
-## 任务结构（TDD 强制）
-
-**每个任务必须以测试开始，以测试通过结束。**
-
-````markdown
+```markdown
 ### 任务 N: [组件/功能名称]
 
 **文件：**
@@ -258,10 +160,6 @@ describe('myFunction', () => {
     const result = myFunction('valid-input')
     expect(result).toBe('expected-output')
   })
-
-  it('AC-02: should throw error for invalid input', () => {
-    expect(() => myFunction('invalid')).toThrow('Invalid input')
-  })
 })
 ```
 
@@ -275,9 +173,6 @@ describe('myFunction', () => {
 ```typescript
 // file.ts
 export function myFunction(input: string): string {
-  if (input === 'invalid') {
-    throw new Error('Invalid input')
-  }
   return 'expected-output'
 }
 ```
@@ -293,7 +188,7 @@ export function myFunction(input: string): string {
 git add tests/{layer}/{name}.spec.ts file.ts
 git commit -m "feat(scope): add myFunction with tests"
 ```
-````
+```
 
 ---
 
@@ -325,13 +220,11 @@ git commit -m "feat(scope): add myFunction with tests"
 
 ## 自检
 
-写完完整计划后，用 fresh eyes 对照 spec 检查。这是你自己运行的检查清单 —— 不是子代理任务。
+写完完整计划后，用 fresh eyes 对照 spec 检查：
 
-**1. 规格覆盖：** 浏览 spec 的每个章节/需求。能指出实现它的任务吗？列出遗漏。
-
-**2. 占位符扫描：** 搜索计划中的 red flags —— "禁止占位符" 中的任何模式。修复它们。
-
-**3. 类型一致性：** 后续任务中的类型、方法签名、属性名是否与早期任务一致？任务 3 叫 `clearLayers()` 但任务 7 叫 `clearFullLayers()` 是 bug。
+1. **规格覆盖**：浏览 spec 的每个章节/需求。能指出实现它的任务吗？列出遗漏。
+2. **占位符扫描**：搜索计划中的 red flags —— "禁止占位符" 中的任何模式。修复它们。
+3. **类型一致性**：后续任务中的类型、方法签名、属性名是否与早期任务一致？
 
 发现问题直接修复，无需重新审查。发现没有任务的规格需求，添加任务。
 
@@ -347,8 +240,6 @@ git commit -m "feat(scope): add myFunction with tests"
 4. **测试覆盖**：每个任务都有对应的 `tests/{layer}/{name}.spec.ts` 文件？
 5. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
 6. **类型一致性**：后续任务中的类型、签名与早期任务一致？
-
-发现问题直接修复，无需重新审查。发现没有任务的规格需求，添加任务。
 
 ---
 

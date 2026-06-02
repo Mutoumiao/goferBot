@@ -8,13 +8,23 @@ description: >
 
 # Issue 生命周期管理
 
+## 执行摘要
+
+| 项目 | 内容 |
+|------|------|
+| **触发词** | "更新 issue 状态"、"标记完成"、"issue f-05 已完成" |
+| **硬关卡** | 关闭前必须通过全部测试 + 类型检查 + 全量回归 |
+| **核心输出** | 更新后的 issue.md、checklist.json、进度文档 |
+| **禁止行为** | 测试未通过就关闭、不验证就声明完成 |
+| **下一步** | 验证通过后 → 更新 BACKLOG.md/CHANGELOG.md |
+
 根据 issue 编号，自动更新对应的 issue Markdown 文件、`checklist.json` 和进度文档。
 
 ---
 
 ## 读取协议
 
-**每步读取必须遵守分层读取，避免全文加载：**
+**每步读取必须遵守分层读取，避免全文加载浪费 token：**
 
 1. **先读索引** — 查 `BACKLOG.md` 或 `CHANGELOG.md` 快速索引表确认 issue 当前状态
 2. **再读 frontmatter** — 读目标 issue 的 YAML 头部获取 `status`/`summary`/`blocked_by`/`checklist`/`plan`/`specs`
@@ -31,17 +41,12 @@ description: >
 | Issue     | `docs/issues/{prefix}-{NN}-{slug}/issue.md` | 目录名必须符合格式          |
 | Spec      | `docs/issues/{dir}/specs/`                  | 目录在 issue 目录下         |
 | Plan      | `docs/issues/{dir}/plan.md`                 | 当前生效版本                |
-| 测试代码  | `tests/{layer}/{name}.spec.ts`              | 按轨道：f→unit/webui, b→unit/server, i→integration, q→e2e |
+| 测试代码  | `tests/{layer}/{name}.spec.ts`              | 参见 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md) |
 | checklist | `docs/issues/{dir}/checklist.json`          | 机器管理，AC-XX 条目        |
 | 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md`       | scope 语义化，type 限定枚举 |
 | 进度文档  | `BACKLOG.md` / `CHANGELOG.md`（根目录）     |                             |
 
-**双轨前缀：**
-- `f-XX`: 前端功能
-- `b-XX`: 后端接口
-- `d-XX`: 设计
-- `i-XX`: 基础设施
-- `q-XX`: 质量
+**轨道前缀**参见 [`_shared/references/track-prefixes.md`](mdc:.claude/skills/_shared/references/track-prefixes.md)。
 
 ---
 
@@ -53,6 +58,8 @@ description: >
 
 统一提取前缀 + 数字部分。
 
+---
+
 ### 2. 定位 Issue 文件
 
 在 `docs/issues/` 查找匹配的目录。
@@ -60,6 +67,8 @@ description: >
 - 唯一匹配：**先读 frontmatter**（`---` 之间），提取 `status`/`summary`/`blocked_by`/`checklist`/`plan`/`specs`
 - 多个匹配：列出请用户确认
 - 未找到：报错并停止
+
+---
 
 ### 3. 读取并分析 Issue
 
@@ -71,24 +80,21 @@ description: >
 
 **仅当需要更新正文内容时**，才深入读取完整文档。
 
+---
+
 ### 4. 检查测试覆盖
 
 更新验收标准前，先验证测试覆盖。
 
 **定位测试代码：**
 
-在 `tests/{layer}/` 查找 `.spec.ts` 文件。
-- 例如 `f-05` → `tests/unit/webui/file-upload.spec.ts`
-
-**路径验证：**
-- 测试文件按层级放在 tests/unit/、tests/integration/、tests/e2e/ 对应目录下
-- 测试用例名以 `AC-XX:` 开头，与 checklist.json 的 `id` 对应
+在 `tests/{layer}/` 查找 `.spec.ts` 文件。路径规则参见 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)。
 
 **统计与验证：**
 
 1. 读取 `docs/issues/{dir}/checklist.json`，统计所有 AC-XX 条目
 2. 检查 `manual: true` 的条目（非自动化测试覆盖）
-3. 运行 `npx vitest run tests/{layer}/` 验证是否全部通过
+3. 运行对应层级的测试命令验证是否全部通过
 
 **判定规则：**
 
@@ -104,14 +110,18 @@ description: >
 - 状态已是 `closed`：询问是否仍需同步
 - 状态不是 `closed`：先执行测试检查，通过后询问是否完成
 
-**关闭前强制验证（融入自 verification-before-completion）：**
+---
+
+### 5. 关闭前强制验证
+
+**验证命令**参见 [`_shared/references/verification-commands.md`](mdc:.claude/skills/_shared/references/verification-commands.md)。
 
 声明 issue 完成前，必须运行以下验证并确认输出：
 
 1. **按 track 运行对应测试**：
-   - f-*, b-*, d-*：`npx vitest run tests/unit/` — 预期全部通过
-   - i-*, q-*（集成）：`pnpm test:integration` — 预期全部通过
-   - q-*（E2E）：`pnpm test:e2e` — 预期全部通过
+   - `f-*`, `b-*`, `d-*`：`npx vitest run tests/unit/` — 预期全部通过
+   - `i-*`, `q-*`（集成）：`pnpm test:integration` — 预期全部通过
+   - `q-*`（E2E）：`pnpm test:e2e` — 预期全部通过
 
 2. **全量回归**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
    - 确保其他 issue 的测试无退化
@@ -130,7 +140,9 @@ description: >
 - [ ] checklist.json 中所有 AC-XX 状态为 `passed`
 - [ ] `tests/README.md` 中有对应映射条目
 
-### 5. 更新 Issue 文件
+---
+
+### 6. 更新 Issue 文件
 
 **验收标准 `[ ]` → `[x]`**
 
@@ -150,7 +162,9 @@ issue 中通常有两处验收标准：
 
 用户确认完成后，保守更新 frontmatter：仅替换 `status:` 行。
 
-### 6. 更新进度文档（可选）
+---
+
+### 7. 更新进度文档（可选）
 
 如用户明确要求更新进度文档：
 1. **更新 BACKLOG.md**：检查该 issue 对应行的状态是否已标记为 `closed`。若未标记，询问是否同步更新
@@ -159,7 +173,9 @@ issue 中通常有两处验收标准：
 
 > **注意**：系统性的进度文档更新应使用 `/issue-updater` skill。本 skill 仅在关闭 issue 时做最小化同步。
 
-### 7. 归档（可选）
+---
+
+### 8. 归档（可选）
 
 用户要求归档已关闭 issue 时：
 
@@ -167,7 +183,9 @@ issue 中通常有两处验收标准：
 2. review 记录：`docs/reviews/{scope}/` → `docs/archived/v2-reviews/{scope}/`
 3. 测试代码保留在 `tests/{layer}/`（历史参考）
 
-### 8. 提交变更（可选）
+---
+
+### 9. 提交变更（可选）
 
 展示 diff 摘要。用户要求提交时：
 1. `git diff --stat` 确认变更范围
@@ -189,18 +207,3 @@ issue 中通常有两处验收标准：
 | 验收标准已是 `[x]`      | 跳过，告知无需重复更新                |
 | 用户未明确说"完成"      | 先检查状态，询问意图后再执行          |
 | 测试代码路径不存在      | 提示未找到，询问是否跳过检查          |
-
----
-
-## 文件路径约定
-
-- Issue 目录：`docs/issues/{prefix}-{NN}-{slug}/`
-- Spec 目录：`docs/issues/{dir}/specs/`
-- Plan 文件：`docs/issues/{dir}/plan.md`
-- checklist：`docs/issues/{dir}/checklist.json`
-- 测试代码：`tests/{layer}/`
-- 审查记录目录：`docs/reviews/{scope}/`
-- 归档目录：`docs/archived/`
-- 进度文档：`BACKLOG.md` / `CHANGELOG.md`
-
-项目根目录通过当前工作目录确定。若不存在上述路径，向上遍历一级，最多两级。

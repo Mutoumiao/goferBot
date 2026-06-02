@@ -12,6 +12,16 @@ description: >
 
 # 开发编排器
 
+## 执行摘要
+
+| 项目 | 内容 |
+|------|------|
+| **触发词** | "开发 issue"、"开始做 f-15"、"issue 怎么实现" |
+| **硬关卡** | spec 存在 → plan 存在 → 测试存在（缺一不可） |
+| **核心输出** | 检查点 `[CHECKPOINT] ✅|🔍|⏳|🚨` |
+| **禁止行为** | 无 spec 写代码、无测试直接实现、跳过验证声明完成 |
+| **下一步** | spec 缺失 → 调用 spec-validator；plan 缺失 → 调用 plan-generator |
+
 协调 issue 分析、spec 读取、计划检查、测试检查和开发执行的完整工作流。
 
 **核心理念**：开发前必须先有 spec，有 spec 后必须先有计划，有计划后必须先有测试代码。不要在没有行为契约和验收标准的情况下直接写代码。
@@ -30,42 +40,25 @@ description: >
 4. **读 spec/plan 同理** — 先读其 frontmatter 获取 `status`/`summary`，确认后再深入
 5. **尽量避免全文扫读** — 不得在未读 frontmatter 前直接读取完整文档
 
+---
+
 ## 开发前必读文档
 
-根据 issue track 前缀，**必须**阅读以下文档（了解代码库实际模式、目录约束、测试基础设施）：
+根据 issue track 前缀，**必须**阅读以下文档：
 
-### 前端开发（`f-*`）
+| Track | 必读文档 | 读取方式 |
+|-------|---------|---------|
+| `f-*` | [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md) | 必读全文 |
+| `f-*`（浮层） | [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md) | 按需阅读 |
+| `f-*` | 前端测试规范 → `docs/guide/testing/unit-testing-guide.md` 第 5-6 章 | 必读 |
+| `b-*` / `d-*` | [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md) | 必读全文 |
+| `b-*` / `d-*` | 后端测试规范 → `docs/guide/testing/unit-testing-guide.md` 第 7 章 | 必读 |
+| `i-*` | [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md) | 必读全文 |
+| `q-*` | [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md) | 必读全文 |
 
-| 文档 | 用途 | 读取方式 |
-|------|------|----------|
-| [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md) | 前端开发流程、常用命令、技术栈 | 必读全文 |
-| [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md) | Dialog/ContextMenu 目录约束、类型安全（仅当涉及浮层组件时） | 按需阅读 |
-| [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) | 前端组件/Store/工具测试规范 | 必读第 5-6 章（组件/Store 测试） |
+**为什么必须读**：代码库规范定义了实际目录结构、开发流程、目录约束。测试指南定义了实际测试基础设施（`TestAppFactory`、`AuthFixtures`、`injectMockToken` 等）。不阅读直接写 = 大概率与现有模式冲突。
 
-### 后端开发（`b-*` / `d-*`）
-
-| 文档 | 用途 | 读取方式 |
-|------|------|----------|
-| [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md) | 后端开发流程、常用命令、新增 API 步骤 | 必读全文 |
-| [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) | 后端 Service/Worker/DTO 测试规范 | 必读第 7 章（Service/Worker/DTO 测试） |
-
-### 基础设施开发（`i-*`）
-
-| 文档 | 用途 | 读取方式 |
-|------|------|----------|
-| [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md) | 集成测试规范、TestAppFactory、数据库生命周期 | 必读全文 |
-
-### 质量/E2E 开发（`q-*`）
-
-| 文档 | 用途 | 读取方式 |
-|------|------|----------|
-| [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md) | Playwright 规范、Page Object、Fixtures | 必读全文 |
-
-**为什么必须读**：
-- **前后端规范**定义了代码库的实际目录结构、开发流程、目录约束（如 Dialog 必须放 `overlays/`）。不阅读 = 代码放错位置、使用错误模式。
-- **测试指南**定义了当前代码库的实际测试基础设施（`TestAppFactory`、`AuthFixtures`、`injectMockToken`、`cleanupDatabase` 等）、文件模板和常见陷阱。不阅读直接写测试 = 大概率与现有模式冲突，导致审查返工。
-
-**分层读取原则**：先读 README 了解全貌（5 分钟），再按需深入相关章节，避免全文加载。
+**分层读取原则**：先读 README 了解全貌（5 分钟），再按需深入相关章节。
 
 ---
 
@@ -79,24 +72,9 @@ description: >
 | 历史 Plan | `docs/issues/{dir}/plans/v{N}.md`     | 版本归档                                      |
 | 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md` | scope 语义化，type 限定枚举                   |
 
-**测试代码路径（按测试层级分层，不再使用 `tests/issues/`）：**
+**测试代码路径**参见 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)。
 
-| Issue Track | 测试层级 | 测试路径 |
-|-------------|---------|---------|
-| `b-*`, `d-*` | 后端单元 | `tests/unit/server/{name}.spec.ts` |
-| `f-*` | 前端单元 | `tests/unit/webui/{name}.spec.ts` |
-| `i-*` | 集成测试 | `tests/integration/{name}.spec.ts` |
-| `q-*` (E2E) | 端到端测试 | `tests/e2e/specs/` 或 `tests/e2e/flows/` |
-
-> 测试文件命名：`{feature-name}.spec.ts`，测试用例名以 `AC-XX:` 开头。
-> Issue → 测试映射关系记录在 `tests/README.md`。
-
-**轨道前缀：**
-- `f-XX`: 前端功能
-- `b-XX`: 后端接口
-- `d-XX`: 设计
-- `i-XX`: 基础设施
-- `q-XX`: 质量
+**轨道前缀**参见 [`_shared/references/track-prefixes.md`](mdc:.claude/skills/_shared/references/track-prefixes.md)。
 
 ---
 
@@ -117,7 +95,7 @@ description: >
 
 ### 模式 B：多 Issue 并行开发
 
-用户说"开发这批功能"、"并行实现 f-15 和 b-02"，需要协调多个 issue。
+用户说"开发这批功能"、"并行实现 f-15 和 b-02"。
 
 **协调逻辑：**
 1. 读取所有指定 issue
@@ -142,10 +120,6 @@ description: >
 - 需要并行处理多个 issue
 - 需要干净的基线测试
 
-**不适用：**
-- 当前工作区已干净
-- 单 issue 快速修复
-
 ---
 
 ### 1. 解析 Issue 编号
@@ -156,6 +130,8 @@ description: >
 
 统一提取前缀 + 数字部分。
 
+---
+
 ### 2. 读取 Issue 文件
 
 在 `docs/issues/` 查找匹配目录。
@@ -165,6 +141,8 @@ description: >
 - 未找到：报错并列出所有 issue
 
 **仅当 frontmatter `status` 非 closed 时继续**。`status: closed` → 告知已完成，询问是否重新打开。
+
+---
 
 ### 3. 读取对应 Spec
 
@@ -177,9 +155,6 @@ docs/issues/{dir}/specs/
 └── api-spec.md           # 后端 issue 必须存在
 ```
 
-**路径验证：**
-- spec 文件放在 issue 目录下的 `specs/` 子目录中
-
 **若 spec 不存在：**
 1. 告知用户未找到行为契约
 2. 调用 `spec-validator` skill 创建 spec
@@ -189,6 +164,8 @@ docs/issues/{dir}/specs/
 1. 确认是否包含交互状态表格（前端）或 API 契约（后端）
 2. 若不完整，提示需补充
 3. 进入步骤 4
+
+---
 
 ### 4. 检查执行计划
 
@@ -214,9 +191,11 @@ docs/issues/{dir}/specs/
 - 若存在前后端配对且后端未完成，检查前端 plan 是否包含 Mock 方案
 - 若缺少 Mock 方案，提示补充
 
+---
+
 ### 5. 检查测试代码（TDD 关卡）
 
-**这是核心关卡。根据 issue 的 track 前缀确定测试层级目录，检查对应的 `.spec.ts` 文件。**
+**这是核心关卡。** 根据 issue 的 track 前缀确定测试层级目录，检查对应的 `.spec.ts` 文件。
 
 根据 plan 中声明的测试文件路径，检查：
 
@@ -240,13 +219,19 @@ docs/issues/{dir}/specs/
 3. 若有遗漏，提示并询问是否补充
 4. 进入步骤 5b
 
+---
+
 ### 5b. 检查集成/E2E 测试（补充闸门）
 
-**b-*, d-* track**：如果 issue 涉及 API 端点或数据库操作，检查 `tests/integration/` 下是否有对应的集成测试。若无，提示用户补充（参考 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)）。
+**b-*, d-* track**：如果 issue 涉及 API 端点或数据库操作，检查 `tests/integration/` 下是否有对应的集成测试。若无，提示用户补充。
 
-**i-*, q-*（集成）track**：必须存在 `tests/integration/{name}.spec.ts`，否则阻塞。参考 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)。
+**i-*, q-*（集成）track**：必须存在 `tests/integration/{name}.spec.ts`，否则阻塞。
 
-**q-*（E2E）track**：必须存在 `tests/e2e/specs/{name}.spec.ts` 或 `tests/e2e/flows/{name}.spec.ts`，用 Playwright 运行确认失败。验证命令：`npx playwright test --config tests/e2e/playwright.config.ts -g "AC-"`。参考 [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)。
+**q-*（E2E）track**：必须存在 `tests/e2e/specs/{name}.spec.ts` 或 `tests/e2e/flows/{name}.spec.ts`，用 Playwright 运行确认失败。
+
+测试路径与命名规范参见 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)。
+
+---
 
 ### 6. 引导进入开发
 
@@ -310,14 +295,6 @@ b-02 知识库 CRUD API
 
 **核心模式：** 每个任务一个新鲜子代理 + 两阶段审查（spec 对齐 → 代码质量）
 
-**为什么用子代理：**
-- 委托任务给隔离上下文的专用代理
-- 精确构建指令和上下文，确保专注成功
-- 子代理不继承你的会话历史 —— 你构建它们需要的精确内容
-- 保留你自己的上下文用于协调工作
-
-**核心原则：** 新鲜子代理 per 任务 + 两阶段审查 = 高质量，快速迭代
-
 **模型选择策略：**
 
 | 任务复杂度 | 模型选择 | 信号 |
@@ -326,44 +303,21 @@ b-02 知识库 CRUD API
 | 集成判断（多文件协调，模式匹配） | 标准模型 | 需要一定推理能力 |
 | 架构/设计/审查 | 最强可用模型 | 需要深度理解和判断 |
 
-**执行流程：**
+**执行流程（简化）：**
 
-```
-读取 plan，提取所有任务及完整文本，记录上下文，创建 TodoWrite
-  ↓
-任务 1: 派发实现子代理（提供完整任务文本 + 上下文）
-  ↓
-实现子代理提问？ → 是 → 回答问题，提供上下文 → 重新派发
-  ↓ 否
-实现子代理实现、测试、提交、自检
-  ↓
-派发 spec 对齐审查子代理
-  ↓
-Spec 审查通过？ → 否 → 实现子代理修复 → 重新审查
-  ↓ 是
-派发代码质量审查子代理
-  ↓
-代码审查通过？ → 否 → 实现子代理修复 → 重新审查
-  ↓ 是
-标记任务完成
-  ↓
-还有更多任务？ → 是 → 下一个任务
-  ↓ 否
-派发最终代码审查子代理
-  ↓
-使用 `superpowers:finishing-a-development-branch` 完成
-```
+1. 读取 plan，提取所有任务及完整文本
+2. 对每个任务：派发实现子代理 → 自检 → 审查 → 标记完成
+3. 所有任务完成后，派发最终审查
+4. 使用 `superpowers:finishing-a-development-branch` 完成
 
 **子代理状态处理：**
-
-实现子代理报告四种状态之一：
 
 | 状态 | 含义 | 处理方式 |
 |------|------|----------|
 | **DONE** | 完成 | 进入 spec 对齐审查 |
-| **DONE_WITH_CONCERNS** | 完成但有疑虑 | 先读疑虑，正确性/范围问题先解决，观察性问题记录后继续 |
+| **DONE_WITH_CONCERNS** | 完成但有疑虑 | 先读疑虑，正确性/范围问题先解决 |
 | **NEEDS_CONTEXT** | 需要更多信息 | 提供缺失上下文，重新派发 |
-| **BLOCKED** | 无法完成 | 1. 上下文问题 → 提供更多上下文，同模型重试<br>2. 需要更多推理 → 更强模型重试<br>3. 任务太大 → 拆分为更小的任务<br>4. 计划本身错误 → 升级给人类 |
+| **BLOCKED** | 无法完成 | 1. 上下文问题 → 提供更多上下文<br>2. 需要更多推理 → 更强模型<br>3. 任务太大 → 拆分<br>4. 计划本身错误 → 升级给人类 |
 
 **审查顺序（强制）：**
 1. **spec 对齐审查** 先于 **代码质量审查**
@@ -385,59 +339,11 @@ Spec 审查通过？ → 否 → 实现子代理修复 → 重新审查
 
 **执行流程：**
 
-```
 1. 加载并审查 plan
-   - 读取 plan 文件
-   - 批判性审查 —— 识别任何问题或顾虑
-   - 如有顾虑：向用户提出
-   - 如无顾虑：创建 TodoWrite 并继续
+2. 对每个任务：标记 in_progress → 执行步骤 → 运行验证 → 标记 completed
+3. 所有任务完成后，使用 `superpowers:finishing-a-development-branch`
 
-2. 执行任务
-   对每个任务：
-   - 标记为 in_progress
-   - 严格遵循每个步骤（plan 已拆分为 bite-sized 步骤）
-   - 运行 plan 指定的验证
-   - 标记为 completed
-
-3. 完成开发
-   - 所有任务完成并验证后：
-   - 声明："使用 `superpowers:finishing-a-development-branch` skill 完成工作"
-   - 运行测试验证
-   - 提供合并/PR/保留/丢弃选项
-```
-
-**验证铁律（融入自 verification-before-completion）：**
-
-声明任何状态或表达满意前必须运行验证。
-
-```
-声明完成前：
-1. 识别：什么命令能证明这个声明？
-2. 运行：执行完整命令（新鲜、完整）
-3. 读取：完整输出，检查退出码，统计失败数
-4. 验证：输出是否确认声明？
-   - 否：陈述实际状态并附证据
-   - 是：附证据陈述声明
-5. 只有此时：做出声明
-
-跳过任何步骤 = 撒谎，不是验证
-```
-
-**常见失败：**
-
-| 声明 | 需要 | 不足够 |
-|------|------|--------|
-| 测试通过 | 测试命令输出：0 失败 | 上次运行、"应该通过" |
-| 类型检查通过 | `pnpm type-check` exit 0 | linter 通过 |
-| Bug 修复 | 原症状测试：通过 | 代码改了、假设已修复 |
-| 需求满足 | 逐条对照 spec 检查 | 测试通过 |
-
-**红旗 - 停止：**
-- 使用 "应该"、"可能"、"看起来"
-- 验证前表达满意（"好了！"、"完成！"）
-- 信任子代理成功报告而不独立验证
-- 依赖部分验证
-- "这次例外"
+**验证铁律**参见 [`_shared/references/verification-commands.md`](mdc:.claude/skills/_shared/references/verification-commands.md)。
 
 **何时停止并求助：**
 - 遇到阻塞（缺少依赖、测试失败、指令不清）
@@ -449,31 +355,17 @@ Spec 审查通过？ → 否 → 实现子代理修复 → 重新审查
 
 ---
 
----
-
-## 开发完成检查清单（融入自 finishing-a-development-branch）
+## 开发完成检查清单
 
 所有任务完成后、关闭 issue 前，必须运行以下验证：
 
 ### 强制验证（未通过禁止关闭）
 
+验证命令参见 [`_shared/references/verification-commands.md`](mdc:.claude/skills/_shared/references/verification-commands.md)。
+
 1. **按 track 运行对应测试全部通过**
-   - f-*, b-*, d-*：`npx vitest run tests/unit/`
-   - i-*, q-*（集成）：`pnpm test:integration`
-   - q-*（E2E）：`pnpm test:e2e`
-   - 预期：0 失败，全部绿色
-
-2. **类型检查通过**
-   ```bash
-   pnpm type-check
-   ```
-   - 预期：0 错误
-
-3. **全量回归无退化**
-   ```bash
-   npx vitest run && pnpm test:integration && pnpm test:e2e
-   ```
-   - 预期：所有层级的测试全部通过
+2. **类型检查通过**：`pnpm type-check`
+3. **全量回归无退化**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
 
 ### 验证通过后
 
@@ -523,4 +415,3 @@ Spec 审查通过？ → 否 → 实现子代理修复 → 重新审查
 - `kb-review` — 代码审查与质量检查
 - `finishing-a-development-branch` — 完成开发分支
 - `issue-lifecycle` — issue 状态管理与关闭流程
-- `issue-updater` — 更新 BACKLOG.md 和 CHANGELOG.md
