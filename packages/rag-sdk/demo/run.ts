@@ -7,7 +7,7 @@
 
 import {
   RecursiveCharacterChunker,
-  MilvusIndexer,
+  VectorIndexer,
   runIndexing,
   HybridRetriever,
   DefaultRetrievalPostprocessor,
@@ -111,7 +111,7 @@ async function main() {
   const indexingResult = await runIndexing(document, {
     chunker: new RecursiveCharacterChunker({ chunkSize: 30, chunkOverlap: 5 }),
     embedder,
-    indexer: new MilvusIndexer(vectorStore),
+    indexer: new VectorIndexer(vectorStore),
     onStageChange: (stages) => {
       console.log('[Demo] Indexing stages:', stages.map(s => `${s.name}=${s.status}`).join(', '))
     },

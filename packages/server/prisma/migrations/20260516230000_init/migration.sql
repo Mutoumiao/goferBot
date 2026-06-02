@@ -64,7 +64,6 @@ CREATE TABLE "chunks" (
     "content" TEXT NOT NULL,
     "token_count" INTEGER,
     "chunk_index" INTEGER NOT NULL,
-    "milvus_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "chunks_pkey" PRIMARY KEY ("id")

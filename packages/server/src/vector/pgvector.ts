@@ -25,42 +25,11 @@ export class PgVectorStore implements IVectorStore {
    * @deprecated ADR 0005 后，向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）。
    * 本方法保留仅用于 IVectorStore 接口完整性，直接调用会丢失 content/tokenCount/chunkIndex。
    */
-  async insertVectors(records: VectorRecord[]): Promise<void> {
-    if (!records.length) {
-      throw new VectorStoreError('插入失败: 向量数组不能为空')
-    }
-
-    for (const record of records) {
-      if (record.embedding.length !== 1536) {
-        throw new VectorStoreError(
-          `维度不匹配: 期望 1536, 实际 ${record.embedding.length}`,
-        )
-      }
-    }
-
-    for (const record of records) {
-      try {
-        await this.prisma.$executeRaw`
-          INSERT INTO chunks (id, document_id, kb_id, content, token_count, chunk_index, embedding)
-          VALUES (
-            ${record.id}::uuid,
-            ${record.chunkId}::uuid,
-            ${record.kbId}::uuid,
-            ${''},
-            ${0},
-            ${0},
-            ${record.embedding}::vector
-          )
-          ON CONFLICT (id) DO UPDATE SET
-            embedding = EXCLUDED.embedding
-        `
-      } catch (err) {
-        throw new VectorStoreError(
-          `向量插入失败: ${err instanceof Error ? err.message : String(err)}`,
-          err,
-        )
-      }
-    }
+  async insertVectors(_records: VectorRecord[]): Promise<void> {
+    throw new VectorStoreError(
+      'insertVectors 已废弃。请使用 PrismaVectorIndexer.index() 进行单事务写入，' +
+        '以确保 chunks 元数据（content/tokenCount/chunkIndex）与向量同时写入。',
+    )
   }
 
   async searchVectors(

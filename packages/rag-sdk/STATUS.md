@@ -1,11 +1,14 @@
 # @goferbot/rag-sdk — 项目状态与开发路线图
 
-> 本文档记录 rag-sdk 的当前工程状态、接口冻结情况、下游依赖就绪度，以及建议的实施顺序。
-> 最后更新：2026-05-27
+> ⚠️ **本文档已过时** — 最后更新于 2026-05-27，pgvector 迁移（ADR 0005，2026-06-01）后大量内容未同步更新。
+> 当前可靠信息请查阅：
+> - ADR 0005: `docs/adrs/0005-pgvector-replaces-milvus.md`
+> - PRD v1.1: `docs/prd/rag-server-integration.md`
+> - 代码: `packages/rag-sdk/src/`
 
 ---
 
-## 1. 当前状态总览
+## 1. 当前状态总览（⚠️ 过时）
 
 | 维度 | 状态 |
 |------|------|
