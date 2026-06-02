@@ -20,6 +20,12 @@ description: >
 4. **ADRs**: `docs/adrs/`
 5. **设计系统**: `docs/design/system/DESIGN.md`
 6. **命名规范**: `docs/guide/naming-convention.md`
+7. **测试指南**（按 issue track 选择）：
+   - `f-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（前端单元测试规范：组件/Store/工具测试模板、AC-XX 命名、fixtures 使用）
+   - `b-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（后端单元测试规范：Service/Worker/DTO 测试模板、mock 策略）
+   - `i-*` → [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)（集成测试规范：TestAppFactory、数据库生命周期、infra-check）
+   - `q-*` → [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)（E2E 测试规范：Playwright、Page Object、injectMockToken）
+   - **为什么读**：spec 中的"测试映射"表格必须与测试指南定义的基础设施和模板对齐。例如，若测试指南要求集成测试使用 `TestAppFactory.create(dbUrl, { realMode: true })`，spec 中的测试映射应体现这一点。
 
 ---
 
@@ -125,7 +131,8 @@ description: >
 |----------|---------------------------------------------------|-------------------------------------------------------|
 | loading  | `tests/unit/webui/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
 | error    | `tests/unit/webui/TabBar.spec.ts` | `AC-02: displays error on unauthorized`               |
-```
+
+> 测试文件和用例必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) 中的规范对齐（文件位置、命名、AAA 结构、fixtures 使用）。
 
 ### API 规格（后端）
 
@@ -171,7 +178,8 @@ description: >
 |----------|-----------------------------------------------------------------------|-------------------------------------------------|
 | 正常请求 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-01: creates knowledge base with valid data` |
 | 参数错误 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-02: returns 400 for invalid input`          |
-```
+
+> 测试文件和用例必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（单元测试）或 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)（集成测试）中的规范对齐。
 
 ---
 

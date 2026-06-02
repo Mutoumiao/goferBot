@@ -47,6 +47,8 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 |------|----------|----------|
 | 正常创建 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-01: creates knowledge base with valid data` |
 | 重复名称 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-02: returns 409 on duplicate name` |
+
+> 测试映射必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（单元测试）或 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)（集成测试）中的规范对齐（TestAppFactory、AuthFixtures、AC-XX 命名、数据库生命周期）。
 ```
 
 ---

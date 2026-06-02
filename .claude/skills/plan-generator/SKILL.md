@@ -44,9 +44,16 @@ description: >
    - `behavior-spec.md` — 前端：交互状态表、错误场景、动画
    - `api-spec.md` — 后端：路由、DTO、错误码、异步行为
 
-3. **现有计划**（如有）: `docs/issues/{dir}/plan.md` 和 `plans/`
+3. **测试指南**（按 track 选择，必读）：
+   - `f-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（前端单元测试）
+   - `b-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（后端单元测试）
+   - `i-*` → [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)
+   - `q-*` → [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)
+   - **为什么必读**：测试指南包含当前代码库的实际基础设施（`TestAppFactory`、`AuthFixtures`、`injectMockToken` 等）、文件模板和常见陷阱。Plan 中引用的工具函数和验证命令必须与测试指南一致。
 
-4. **审查记录**（如有）: `docs/reviews/{scope}/`
+4. **现有计划**（如有）: `docs/issues/{dir}/plan.md` 和 `plans/`
+
+5. **审查记录**（如有）: `docs/reviews/{scope}/`
 
 ---
 

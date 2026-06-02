@@ -30,6 +30,19 @@ description: >
 4. **读 spec/plan 同理** — 先读其 frontmatter 获取 `status`/`summary`，确认后再深入
 5. **尽量避免全文扫读** — 不得在未读 frontmatter 前直接读取完整文档
 
+## 开发前必读文档
+
+根据 issue track 前缀，**必须**阅读对应的测试指南（了解测试基础设施、模板、规范）：
+
+| Issue Track | 必读测试指南 |
+|-------------|-------------|
+| `f-*`（前端） | [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) — 前端组件/Store/工具测试规范 |
+| `b-*`（后端） | [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) — 后端 Service/Worker/DTO 测试规范 |
+| `i-*`（基础设施） | [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md) — 集成测试规范 |
+| `q-*`（质量/E2E） | [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md) — E2E 测试规范 |
+
+**为什么必须读**：测试指南定义了当前代码库的实际测试基础设施（`TestAppFactory`、`AuthFixtures`、`injectMockToken`、`cleanupDatabase` 等）、文件模板、命名规范和常见陷阱。不阅读直接写测试 = 大概率与现有模式冲突，导致审查返工。
+
 ---
 
 ## 路径约定
@@ -189,6 +202,7 @@ docs/issues/{dir}/specs/
 3. 测试用例名是否以 `AC-XX:` 开头？
 4. 测试用例是否覆盖 spec 中的交互状态/错误场景？
 5. 测试是否是"失败"状态（即实现代码尚未编写）？
+6. **测试代码是否符合对应测试指南的规范？**（infra-check、realMode、fixtures 使用等）
 
 **若测试不存在：**
 1. 告知用户未找到测试代码
@@ -204,11 +218,11 @@ docs/issues/{dir}/specs/
 
 ### 5b. 检查集成/E2E 测试（补充闸门）
 
-**b-*, d-* track**：如果 issue 涉及 API 端点或数据库操作，检查 `tests/integration/` 下是否有对应的集成测试。若无，提示用户补充（参考 `docs/guide/backend/integration-testing-guide.md`）。
+**b-*, d-* track**：如果 issue 涉及 API 端点或数据库操作，检查 `tests/integration/` 下是否有对应的集成测试。若无，提示用户补充（参考 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)）。
 
-**i-*, q-*（集成）track**：必须存在 `tests/integration/{name}.spec.ts`，否则阻塞。
+**i-*, q-*（集成）track**：必须存在 `tests/integration/{name}.spec.ts`，否则阻塞。参考 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)。
 
-**q-*（E2E）track**：必须存在 `tests/e2e/specs/{name}.spec.ts` 或 `tests/e2e/flows/{name}.spec.ts`，用 Playwright 运行确认失败。验证命令：`npx playwright test --config tests/e2e/playwright.config.ts -g "AC-"`。
+**q-*（E2E）track**：必须存在 `tests/e2e/specs/{name}.spec.ts` 或 `tests/e2e/flows/{name}.spec.ts`，用 Playwright 运行确认失败。验证命令：`npx playwright test --config tests/e2e/playwright.config.ts -g "AC-"`。参考 [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)。
 
 ### 6. 引导进入开发
 

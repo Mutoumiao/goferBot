@@ -48,6 +48,8 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 |------|----------|----------|
 | loading 状态 | `tests/unit/webui/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
 | 401 错误 | `tests/unit/webui/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
+
+> 测试映射必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) 中的前端测试规范对齐（组件测试模板、Store mock 策略、AC-XX 命名）。
 ```
 
 ---
