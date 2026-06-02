@@ -1,3 +1,9 @@
+/**
+ * @scope UI 行为测试（Mock API）
+ * @purpose 验证知识库页面渲染、Overlay 交互（ContextMenu/Dialog）、路由跳转
+ * @note 使用 Mock API，不验证后端契约。
+ *       API 契约验证（创建 KB/上传文档/权限隔离）见 tests/integration/q-17-rev.spec.ts
+ */
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
 import { injectMockToken } from '../fixtures/auth'
@@ -16,14 +22,7 @@ test.describe('知识库管理', () => {
     await expect(page.locator('[data-testid="create-kb-btn"]')).toBeVisible()
   })
 
-  test('创建新知识库', async ({ page }) => {
-    const kbPage = new KnowledgeBasePage(page)
-    const newKbName = `测试知识库_${Date.now()}`
-
-    await kbPage.createKnowledgeBase(newKbName)
-
-    await expect(page.locator('[data-testid="kb-item"]').filter({ hasText: newKbName })).toBeVisible()
-  })
+  // ❌ "创建新知识库" — 已移除（API 创建行为由 q-17-rev 真实 API 覆盖）
 
   test('点击知识库进入详情', async ({ page }) => {
     await page.route('**/api/knowledge-bases', (route) => {

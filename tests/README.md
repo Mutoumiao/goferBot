@@ -10,11 +10,11 @@
 
 | 文件 | 关联 Issue | 覆盖范围 |
 |------|-----------|---------|
-| `auth.spec.ts` | q-17 | 登录/注册页面元素、成功/失败流程 |
-| `chat.spec.ts` | q-14, q-18 | 聊天页面加载、多行输入 |
+| `auth-ui.spec.ts` | q-17 | 🔧 Mock — 页面元素、表单校验、路由跳转（API 契约→q-17-rev） |
+| `chat-ui.spec.ts` | q-18 | 🔧 Mock — 聊天页面加载、多行输入（SSE→chat-with-rag） |
 | `chat-tabs.spec.ts` | f-04 | 标签栏初始、新建、切换、关闭、重命名 |
 | `kb-selector.spec.ts` | f-11 | @ 提及下拉、单选/多选、Escape、删除 |
-| `knowledge-base.spec.ts` | q-17 | KB 列表、创建、详情、上下文菜单、删除 |
+| `knowledge-base-ui.spec.ts` | q-17 | 🔧 Mock — KB 列表、详情、ContextMenu/Dialog 交互（API 契约→q-17-rev） |
 | `session-history.spec.ts` | q-18 | 历史页面、会话列表、恢复、删除、重命名 |
 | `settings.spec.ts` | q-19 | 设置页加载、提供商 Tab、切换/保存/错误 |
 
@@ -23,7 +23,7 @@
 | 文件 | 关联 Issue | 覆盖范围 |
 |------|-----------|---------|
 | `settings-persist.spec.ts` | q-19 | 设置保存、刷新恢复、Embedding、温度校验 |
-| `onboarding-journey.spec.ts` | q-19 | 注册→KB→文档→会话→AI 响应全旅程 |
+| `onboarding-journey-ui.spec.ts` | q-19 | 🔧 Mock — 路由守卫、页面导航、聊天交互（API 契约→q-17-rev） |
 | `chat-with-rag.spec.ts` | q-18 | SSE 流式、@ 提及、多选 KB、payload 验证 |
 | `session-management.spec.ts` | q-18 | Tab CRUD、历史恢复、删除确认、空状态 |
 
@@ -34,11 +34,14 @@
 | 文件 | 关联 Issue | 覆盖范围 | 后端依赖 |
 |------|-----------|---------|---------|
 | `infra.spec.ts` | q-16 | 目录移除、DB/URL/健康检查 | 需要 |
-| `auth-flow.spec.ts` | q-17 | 注册/登录成功、错误密码、重定向、重复注册 | 需要 |
-| `kb-lifecycle.spec.ts` | q-17 | KB CRUD、文档上传、删除确认、隔离 | 需要 |
+| `q-17-rev.spec.ts` | q-17 | ✅ 真实 API — 注册/登录/401/409/上传/权限隔离/多类型文档 | 需要 |
+| `pgvector-store.spec.ts` | b-12 | PgVectorStore CRUD、维度校验、idempotent | 需要 |
+| `vector-service.spec.ts` | b-10 | VectorService 委托 PgVectorStore 验证 | 需要 |
+| `prisma-vector-indexer.spec.ts` | b-13 | 单事务写入、token 用量、重试、接口 | 需要 |
 | `rag-e2e.spec.ts` | q-21 | 上传→索引→完成→聊天 RAG 全链路 | 需要 |
+| `rag-real.spec.ts` | q-22 | ✅ 真实 API — 索引链路/检索链路/失败降级 | 需要 |
 
-> 集成测试有 `isBackendAvailable()` 守卫，后端不可用时自动 skip。
+> 集成测试通过 `checkInfrastructure()` 检测基础设施可用性，不可用时跳过全部用例。
 
 ---
 
@@ -89,9 +92,10 @@
 
 | 标记 | 含义 |
 |------|------|
-| `e2e/specs/` | Playwright 单页面功能，无后端依赖（mock 模式） |
-| `e2e/flows/` | Playwright 跨模块旅程，无后端依赖（mock 模式） |
-| `integration/` | 真实后端集成测试，有 `isBackendAvailable()` 守卫 |
+| `🔧 Mock` | E2E Mock 模式 — 验证 UI 渲染、交互、路由，不验证后端契约 |
+| `✅ 真实 API` | 使用真实后端 API，验证端到端契约和数据持久化 |
+| `e2e/specs/` | Playwright 单页面功能，mock 模式下无后端依赖 |
+| `e2e/flows/` | Playwright 跨模块旅程，mock 模式下无后端依赖 |
+| `integration/` | 真实后端集成测试，通过 `checkInfrastructure()` 优雅跳过 |
 | `unit/server/` | vitest 后端 issue 验收测试（`.spec.ts`），零外部依赖 |
 | `unit/webui/` | vitest 前端 issue 验收测试（`.spec.ts`），零外部依赖 |
-| `unit/components/` 等 | vitest 传统单元测试（`.test.ts`），不绑定特定 issue |

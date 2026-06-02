@@ -1,3 +1,9 @@
+/**
+ * @scope UI 行为测试（Mock API）
+ * @purpose 验证聊天页面渲染、输入交互
+ * @note 使用 Mock API，不验证 SSE 流式响应。
+ *       SSE 流式响应验证见 tests/e2e/flows/chat-with-rag.spec.ts（真实后端）
+ */
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
 import { injectMockToken } from '../fixtures/auth'

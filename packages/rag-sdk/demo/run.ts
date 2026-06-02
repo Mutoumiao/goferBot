@@ -7,7 +7,6 @@
 
 import {
   RecursiveCharacterChunker,
-  VectorIndexer,
   runIndexing,
   HybridRetriever,
   DefaultRetrievalPostprocessor,
@@ -108,10 +107,26 @@ async function main() {
 
   // ========== Indexing Pipeline ==========
   console.log('[Demo] 执行索引流水线...')
+
+  // 内联 indexer：将 Chunk+向量组装为 VectorRecord 后写入 IVectorStore
+  // （原 VectorIndexer 已删除，SDK 不包含存储耦合实现）
+  const indexer = {
+    async index(chunks: Chunk[], vectors: number[][]) {
+      const records: VectorRecord[] = chunks.map((chunk, i) => ({
+        id: chunk.id,
+        chunkId: chunk.id,
+        kbId: chunk.kbId,
+        fileId: chunk.documentId,
+        embedding: vectors[i],
+      }))
+      await vectorStore.insertVectors(records)
+    },
+  }
+
   const indexingResult = await runIndexing(document, {
     chunker: new RecursiveCharacterChunker({ chunkSize: 30, chunkOverlap: 5 }),
     embedder,
-    indexer: new VectorIndexer(vectorStore),
+    indexer,
     onStageChange: (stages) => {
       console.log('[Demo] Indexing stages:', stages.map(s => `${s.name}=${s.status}`).join(', '))
     },

@@ -1,3 +1,9 @@
+/**
+ * @scope UI 行为测试（Mock API）
+ * @purpose 验证认证页面渲染、前端表单校验、路由跳转
+ * @note 使用 Mock API，不验证后端契约。
+ *       API 契约验证（注册/登录/401/409）见 tests/integration/q-17-rev.spec.ts
+ */
 import { test, expect } from '@playwright/test'
 import { mockAuthApi } from '../fixtures/auth'
 import { LoginPage, RegisterPage } from '../pages/AuthPage'
@@ -28,29 +34,9 @@ test.describe('认证流程', () => {
     await expect(registerPage.loginLink).toBeVisible()
   })
 
-  test('成功登录后跳转首页', async ({ page }) => {
-    const loginPage = new LoginPage(page)
-    await loginPage.goto()
-    await loginPage.login('test@example.com', 'Test123!@#')
-
-    await expect(page).toHaveURL('/app/chat')
-  })
-
-  test('登录失败显示错误提示', async ({ page }) => {
-    const loginPage = new LoginPage(page)
-    await loginPage.goto()
-    await loginPage.login('wrong@example.com', 'wrongpass')
-
-    await expect(loginPage.errorMessage).toBeVisible()
-  })
-
-  test('成功注册后自动登录', async ({ page }) => {
-    const registerPage = new RegisterPage(page)
-    await registerPage.goto()
-    await registerPage.register('newuser@example.com', 'NewPass123!@#', 'NewPass123!@#')
-
-    await expect(page).toHaveURL('/app/chat')
-  })
+  // ❌ "成功登录后跳转首页" — 已移除（API 登录行为由 q-17-rev 真实 API 覆盖）
+  // ❌ "登录失败显示错误提示" — 已移除（API 错误码由 q-17-rev 覆盖）
+  // ❌ "成功注册后自动登录" — 已移除（API 注册行为由 q-17-rev 覆盖）
 
   test('注册时表单验证失败显示字段错误', async ({ page }) => {
     const registerPage = new RegisterPage(page)

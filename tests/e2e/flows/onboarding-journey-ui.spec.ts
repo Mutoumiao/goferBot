@@ -1,3 +1,9 @@
+/**
+ * @scope UI 行为测试（Mock API）
+ * @purpose 验证新用户入职旅程中的路由守卫、页面导航、聊天交互
+ * @note 使用 Mock API，不验证后端契约。
+ *       创建 KB/上传文档的 API 契约验证见 tests/integration/q-17-rev.spec.ts
+ */
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../../e2e/mocks/http-routes'
 import { injectMockToken } from '../../e2e/fixtures/auth'
@@ -19,30 +25,8 @@ test.describe('新用户入职旅程', () => {
     await expect(page.locator('[data-testid="chat-input"]')).toBeVisible()
   })
 
-  test('AC-09: 创建第一个知识库', async ({ page }) => {
-    const kbPage = new KnowledgeBasePage(page)
-    await kbPage.goto()
-    await page.waitForSelector('[data-testid="create-kb-btn"]', { timeout: 10000 })
-
-    const kbName = `我的知识库_${Date.now()}`
-    await kbPage.createKnowledgeBase(kbName)
-
-    const kbItem = await kbPage.getKbItem(kbName)
-    await expect(kbItem).toBeVisible()
-  })
-
-  test('AC-10: 上传第一个文档', async ({ page }) => {
-    const kbPage = new KnowledgeBasePage(page)
-    await kbPage.goto()
-    await page.waitForSelector('[data-testid="kb-item"]', { timeout: 10000 })
-
-    // 选择 mock 路由中已存在的知识库
-    await kbPage.selectKb('技术文档')
-    await page.waitForSelector('[data-testid="file-explorer"]', { timeout: 10000 })
-
-    await kbPage.uploadDocument('tests/e2e/fixtures/sample-doc.txt')
-    await expect(page.locator('[data-testid="file-item"]').first()).toBeVisible()
-  })
+  // ❌ AC-09 "创建第一个知识库" — 已移除（API 创建行为由 q-17-rev 覆盖）
+  // ❌ AC-10 "上传第一个文档" — 已移除（API 上传行为由 q-17-rev 覆盖）
 
   test('AC-11: 新建会话并发送首条消息', async ({ page }) => {
     const chatPage = new ChatPage(page)
