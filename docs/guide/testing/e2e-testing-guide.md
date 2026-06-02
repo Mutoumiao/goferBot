@@ -45,17 +45,22 @@
 ### 2.2 全局生命周期
 
 ```
-globalSetup (playwright.global-setup.ts):
+globalSetup (tests/e2e/playwright.global-setup.ts):
   1. pnpm infra:up → 启动 Docker 基础设施
   2. 等待 PostgreSQL 就绪
   3. 创建 goferbot_e2e 数据库（若不存在）
   4. pnpm prisma:generate → 确保 Prisma Client 已生成
   5. prisma migrate deploy → 执行 schema 迁移
   6. 启动后端服务（若未运行）→ 等待 /health 就绪
+     - Windows: 使用 pnpm.cmd + shell: true
+     - Linux/macOS: 使用 pnpm + detached 模式
 
-globalTeardown (playwright.global-teardown.ts):
+globalTeardown (tests/e2e/playwright.global-teardown.ts):
   1. 关闭后端服务（若由 setup 启动）
-  2. 清理资源
+     - Windows: taskkill /PID /T /F
+     - Linux/macOS: process.kill(-pid, 'SIGTERM')
+  2. CI 模式下执行 pnpm infra:down
+  3. 本地模式保持 docker 运行以便复用
 ```
 
 ### 2.3 两种测试模式
@@ -81,12 +86,15 @@ docker compose -f docker-compose.dev.yml ps
 
 ### 3.2 环境变量
 
-E2E 测试自动加载 `.env.test` 中的变量：
+E2E 测试通过 `dotenv -e .env.e2e` 加载 `.env.e2e` 文件：
 
 ```bash
+# .env.e2e
 TEST_DATABASE_ADMIN_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres?schema=public"
 DATABASE_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public"
 ```
+
+> **注意**：E2E 使用独立数据库 `goferbot_e2e`，避免与集成测试的 `goferbot_test` 冲突。
 
 ### 3.3 前置构建
 
@@ -122,13 +130,20 @@ tests/e2e/
     KnowledgeBasePage.ts
     ...
   fixtures/        # 测试夹具
-    auth.ts
-    database.ts
+    auth.ts          # injectMockToken / injectAuthToken / createTestUser
+    database.ts      # cleanupDatabase
     api-client.ts
     ...
   mocks/           # Mock 路由
     http-routes.ts
+  debug/           # 临时调试测试（不提交到 git）
+  .gstack/         # QA 报告截图
+  playwright.config.ts
+  playwright.global-setup.ts
+  playwright.global-teardown.ts
 ```
+
+> **debug/** 目录用于临时调试测试，不应提交到 git。如需持久化，移动到 `specs/` 或 `flows/`。
 
 ### 4.2 文件命名
 
@@ -138,14 +153,34 @@ tests/e2e/
 
 ### 4.3 用例命名规范
 
+**`flows/` 目录（Issue 验收测试）**：
+
 - 必须以 `AC-XX:` 开头，与验收清单的 `id` 对应
 - 格式：`AC-XX: {用户行为} {预期结果}`
 
 ```typescript
+// tests/e2e/flows/chat-with-rag.spec.ts
 test('AC-01: 聊天页面正常加载（输入框+发送按钮）', async ({ page }) => {})
 test('AC-02: 发送消息显示在用户消息列表', async ({ page }) => {})
 test('AC-03: SSE 流式响应显示 AI 回复', async ({ page }) => {})
 ```
+
+**`specs/` 目录（单页面功能测试）**：
+
+- 允许使用描述式命名（无 AC-XX 前缀），用于快速验证页面功能
+- 或沿用 `TC-FXX-XXX:` 前缀（与 issue 编号对应）
+
+```typescript
+// tests/e2e/specs/auth.spec.ts — 描述式
+test('登录页面元素完整', async ({ page }) => {})
+test('成功登录后跳转首页', async ({ page }) => {})
+
+// tests/e2e/specs/chat-tabs.spec.ts — TC 前缀
+test('TC-F04-001: 初始状态仅显示首页标签', async ({ page }) => {})
+test('TC-F04-002: 新建标签创建新会话', async ({ page }) => {})
+```
+
+> **规范说明**：`flows/` 目录严格使用 `AC-XX:`（与 checklist.json 对齐），`specs/` 目录允许描述式或 `TC-` 前缀（历史遗留，逐步迁移至 AC-XX）。
 
 ---
 
@@ -168,6 +203,7 @@ export class LoginPage {
   readonly passwordInput: Locator
   readonly submitButton: Locator
   readonly errorMessage: Locator
+  readonly registerLink: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -175,6 +211,7 @@ export class LoginPage {
     this.passwordInput = page.locator('#password')
     this.submitButton = page.locator('button:has-text("登录")')
     this.errorMessage = page.locator('[role="alert"]')
+    this.registerLink = page.locator('text=立即注册')
   }
 
   async goto() {
@@ -189,6 +226,91 @@ export class LoginPage {
 
   async getErrorMessage(): Promise<string> {
     return (await this.errorMessage.textContent()) ?? ''
+  }
+}
+
+export class RegisterPage {
+  readonly page: Page
+  readonly emailInput: Locator
+  readonly passwordInput: Locator
+  readonly confirmPasswordInput: Locator
+  readonly submitButton: Locator
+  readonly errorMessage: Locator
+  readonly loginLink: Locator
+
+  constructor(page: Page) {
+    this.page = page
+    this.emailInput = page.locator('#email')
+    this.passwordInput = page.locator('#password')
+    this.confirmPasswordInput = page.locator('#confirmPassword')
+    this.submitButton = page.locator('button:has-text("注册")')
+    this.errorMessage = page.locator('[role="alert"]')
+    this.loginLink = page.locator('text=去登录')
+  }
+
+  async goto() {
+    await this.page.goto('/register')
+  }
+
+  async register(email: string, password: string, confirmPassword?: string) {
+    await this.emailInput.fill(email)
+    await this.passwordInput.fill(password)
+    if (confirmPassword) {
+      await this.confirmPasswordInput.fill(confirmPassword)
+    }
+    await this.submitButton.click()
+  }
+
+  async getErrorMessage(): Promise<string> {
+    return (await this.errorMessage.textContent()) ?? ''
+  }
+}
+
+export class AuthPage {
+  readonly page: Page
+  readonly emailInput: Locator
+  readonly passwordInput: Locator
+  readonly confirmPasswordInput: Locator
+  readonly nameInput: Locator
+  readonly submitButton: Locator
+  readonly errorMessage: Locator
+
+  constructor(page: Page) {
+    this.page = page
+    this.emailInput = page.locator('input[type="email"], input[name="email"]').first()
+    this.passwordInput = page.locator('input[type="password"]').nth(0)
+    this.confirmPasswordInput = page.locator('input[type="password"]').nth(1)
+    this.nameInput = page.locator('input[name="name"], input#name').first()
+    this.submitButton = page.locator('button[type="submit"]').first()
+    this.errorMessage = page.locator('[role="alert"]').first()
+  }
+
+  async gotoRegister() {
+    await this.page.goto('/register')
+    await this.page.waitForLoadState('load')
+  }
+
+  async gotoLogin() {
+    await this.page.goto('/login')
+    await this.page.waitForLoadState('load')
+  }
+
+  async register(email: string, password: string, confirmPassword?: string) {
+    if (await this.nameInput.isVisible().catch(() => false)) {
+      await this.nameInput.fill('E2E User')
+    }
+    await this.emailInput.fill(email)
+    await this.passwordInput.fill(password)
+    if (confirmPassword !== undefined) {
+      await this.confirmPasswordInput.fill(confirmPassword)
+    }
+    await this.submitButton.click()
+  }
+
+  async login(email: string, password: string) {
+    await this.emailInput.fill(email)
+    await this.passwordInput.fill(password)
+    await this.submitButton.click()
   }
 }
 ```
@@ -214,34 +336,76 @@ test.describe('认证流程', () => {
 
 ## 6. Fixtures（测试夹具）
 
-### 6.1 认证夹具
+### 6.1 Mock 模式：injectMockToken
+
+纯前端 mock，零后端依赖。向 localStorage 注入假 token：
 
 ```typescript
 // tests/e2e/fixtures/auth.ts
-import { test as base } from '@playwright/test'
-
-export interface TestUser {
-  email: string
-  password: string
-  name: string
-  accessToken: string
-  refreshToken: string
+export async function injectMockToken(page: Page): Promise<void> {
+  await page.addInitScript({
+    content: `
+      try {
+        localStorage.setItem('goferbot_access_token', 'mock-access-token-12345')
+        localStorage.setItem('goferbot_refresh_token', 'mock-refresh-token-67890')
+      } catch (e) {}
+    `,
+  })
 }
+```
 
-export const test = base.extend<{ testUser: TestUser }>({
-  testUser: async ({}, use) => {
-    await use({
-      email: 'test@example.com',
-      password: 'Test123!@#',
-      name: 'Test User',
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-    })
-  },
+配合 `mockAuthApi()` 使用（mock `/api/auth/me` 等路由）：
+
+```typescript
+import { test, expect } from '@playwright/test'
+import { injectMockToken, mockAuthApi } from '../fixtures/auth'
+
+test.beforeEach(async ({ page }) => {
+  await injectMockToken(page)
+  await mockAuthApi(page)
 })
 ```
 
-### 6.2 Mock API 路由
+### 6.2 真实后端模式：createTestUser / injectAuthToken
+
+通过真实 API 注册用户，验证完整链路：
+
+```typescript
+import { createTestUser, injectAuthToken } from '../fixtures/auth'
+
+test('AC-01: 真实注册后登录', async ({ page }) => {
+  // 通过真实 API 创建用户（自动处理 RSA 加密）
+  const user = await createTestUser()
+
+  // 将真实 token 注入 localStorage
+  await injectAuthToken(page, user.accessToken)
+
+  await page.goto('/app/chat')
+  await expect(page).toHaveURL('/app/chat')
+})
+```
+
+**关键工具说明**：
+- `createTestUser()`：调用真实注册/登录 API，自动获取公钥、加密密码
+- `injectAuthToken(page, token?)`：将 token 写入 localStorage；不传 token 时自动调用 `createTestUser()`
+- `isBackendAvailable()`：检测后端是否运行（结果缓存，避免重复请求触发限流）
+- `resetBackendAvailability()`：重置缓存（环境切换时调用）
+
+### 6.3 数据清理：cleanupDatabase
+
+E2E 测试间共享数据库，使用 `cleanupDatabase()` 清理数据：
+
+```typescript
+import { cleanupDatabase } from '../fixtures/database'
+
+test.afterEach(async () => {
+  await cleanupDatabase()  // TRUNCATE 所有业务表
+})
+```
+
+清理的表包括：`chunks`, `messages`, `sessions`, `documents`, `folders`, `knowledge_bases`, `settings`, `users`。
+
+### 6.4 Mock API 路由
 
 ```typescript
 // tests/e2e/mocks/http-routes.ts
@@ -358,8 +522,10 @@ pnpm test:e2e
 ### 9.2 UI 模式（可调试）
 
 ```bash
-pnpm test:e2e --ui
+pnpm test:e2e:ui
 ```
+
+> 注意：`pnpm test:e2e --ui` 与 `pnpm test:e2e:ui` 不等价。后者是 package.json 中定义的脚本，使用 `dotenv -e .env.e2e` 加载环境变量。
 
 ### 9.3 单个测试文件
 
@@ -391,6 +557,7 @@ pnpx playwright test tests/e2e/flows/
 
 ```typescript
 import { defineConfig, devices } from '@playwright/test'
+import path from 'path'
 
 export default defineConfig({
   testDir: path.resolve(__dirname, './specs'),
@@ -416,6 +583,10 @@ export default defineConfig({
       url: 'http://localhost:1420',
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
+      env: {
+        ...process.env,
+        NO_COLOR: '',
+      },
     },
   ],
   projects: [
@@ -455,8 +626,11 @@ export default defineConfig({
 # 手动启动后端
 pnpm dev:server
 
-# 或检查端口占用
+# 或检查端口占用（Linux/macOS）
 lsof -ti:3000 | xargs kill -9
+
+# Windows (PowerShell)
+Get-NetTCPConnection -LocalPort 3000 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
 ```
 
 ### 11.2 数据库迁移失败
@@ -473,8 +647,16 @@ pnpm --filter @goferbot/server prisma:generate
 **原因**：E2E 测试共享同一个数据库。
 **解决**：
 - 每个 `test.describe` 使用独立用户/数据
-- 测试结束后清理数据（在 `test.afterEach` 中）
-- 或使用 `workers: 1` 串行执行（已配置）
+- 测试结束后清理数据（在 `test.afterEach` 中调用 `cleanupDatabase()`）
+- 使用 `workers: 1` 串行执行（已配置）
+
+```typescript
+import { cleanupDatabase } from '../fixtures/database'
+
+test.afterEach(async () => {
+  await cleanupDatabase()
+})
+```
 
 ### 11.4 前端页面加载超时
 

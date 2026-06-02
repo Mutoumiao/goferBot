@@ -29,17 +29,19 @@
 
 ## 2. 核心基础设施
 
-### 2.1 三大核心工具
+### 2.1 核心工具
 
 | 工具 | 路径 | 职责 |
 |------|------|------|
 | `TestAppFactory` | `tests/integration/helpers/test-app.factory.ts` | 创建隔离的 NestJS 测试应用实例 |
 | `AuthFixtures` | `tests/integration/helpers/auth.fixtures.ts` | 快速创建用户、登录获取 JWT Token |
 | `TestDatabaseManager` | `tests/integration/helpers/test-database.manager.ts` | 动态创建/销毁隔离的测试数据库 |
+| `ExternalServiceMocker` | `tests/integration/helpers/external-service.mocker.ts` | 封装 `nock` 的常用外部 API mock |
+| `checkInfrastructure` | `tests/integration/helpers/infra-check.ts` | 检测基础设施可用性（Postgres/pgvector/Redis/MinIO） |
 
-### 2.2 依赖 Mock 策略
+### 2.2 依赖 Mock 策略（默认模式）
 
-`TestAppFactory` 对以下外部依赖进行 Mock，确保测试快速且稳定：
+`TestAppFactory.create(dbUrl)` 默认对以下外部依赖进行 Mock：
 
 | 服务 | Mock 行为 |
 |------|-----------|
@@ -48,7 +50,11 @@
 | `StorageService` (MinIO) | 返回固定 mock 值 |
 | `ThrottlerGuard` | 放行所有请求（NoOp） |
 
-### 2.3 数据库生命周期
+**真实模式**：`TestAppFactory.create(dbUrl, { realMode: true })` 加载真实 Service（用于需要完整基础设施的集成测试，如 RAG 端到端测试）。
+
+### 2.3 数据库生命周期模式
+
+**模式 A：每个 it() 独立数据库（标准模式）**
 
 ```
 每个 it() 块：
@@ -58,6 +64,25 @@
   4. app.close() → 关闭 NestJS 应用
   5. TestDatabaseManager.dropDatabase() → 强制删除数据库
 ```
+
+**模式 B：beforeAll 共享数据库 + beforeEach 清理（复杂场景）**
+
+```
+beforeAll：
+  1. TestDatabaseManager.createDatabase() → 创建数据库
+  2. prisma migrate deploy → 执行迁移
+  3. TestAppFactory.create() → 启动应用
+
+每个 it() 块：
+  1. beforeEach: TRUNCATE TABLE ... → 清理数据
+  2. 运行测试
+
+afterAll：
+  1. app.close()
+  2. TestDatabaseManager.dropDatabase()
+```
+
+模式 B 适用于需要 Worker 异步处理、文件上传等跨多个 it() 的复杂场景（如 `q-17-rev.spec.ts`）。
 
 ---
 
@@ -69,9 +94,13 @@
 # 数据库管理员连接（用于创建/删除测试数据库）
 export TEST_DATABASE_ADMIN_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres?schema=public"
 
-# 应用数据库连接（可选，测试会自行创建）
+# 应用数据库连接（集成测试默认使用 goferbot_test）
 export DATABASE_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_test?schema=public"
 ```
+
+> **注意**：`DATABASE_URL` 并非可选。部分集成测试（如 `rag-e2e.spec.ts`）直接使用 `DATABASE_URL` 连接现有数据库，而非通过 `TestDatabaseManager` 创建。`TestDatabaseManager` 仅用于需要数据库隔离的场景。
+>
+> **E2E 测试使用独立数据库**：`goferbot_e2e`，避免与集成测试冲突。详见 [E2E 测试指南](./e2e-testing-guide.md)。
 
 ### 3.2 加载环境文件
 
@@ -218,35 +247,134 @@ describe('HealthController', () => {
 })
 ```
 
-### 5.3 SSE 流式响应测试
+### 5.3 外部 API Mock（推荐：使用 nock）
+
+集成测试中 mock 外部 HTTP API（如 OpenAI Embedding）推荐使用 `nock`：
 
 ```typescript
-function parseSSE(payload: string): Array<Record<string, unknown>> {
-  return payload
-    .split('\n\n')
-    .filter(Boolean)
-    .map((line) => JSON.parse(line.slice(6)))
+import nock from 'nock'
+import { ExternalServiceMocker } from './helpers/external-service.mocker.js'
+
+// 方式 1：直接使用 nock
+nock('http://localhost:9999')
+  .post('/v1/embeddings')
+  .reply(200, () => ({
+    data: [{ embedding: new Array(1536).fill(0.1).map((v, i) => v + i * 0.0001) }],
+  }))
+  .persist()  // 持久化，所有请求复用
+
+// 方式 2：使用 ExternalServiceMocker 封装
+ExternalServiceMocker.mockEmbedding(new Array(1536).fill(0.1))
+ExternalServiceMocker.mockLLMStream('Hello World')
+
+// 测试结束后清理
+afterAll(() => {
+  nock.cleanAll()
+})
+```
+
+### 5.4 文件上传测试（multipart/form-data）
+
+```typescript
+function buildMultipartBody(
+  boundary: string,
+  fieldName: string,
+  filename: string,
+  contentType: string,
+  buffer: Buffer,
+): Buffer {
+  const prefix = Buffer.from(
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
+    `Content-Type: ${contentType}\r\n\r\n`,
+  )
+  const suffix = Buffer.from(`\r\n--${boundary}--\r\n`)
+  return Buffer.concat([prefix, buffer, suffix])
 }
 
-function mockFetchSSE(chunks: string[], opts?: { delayMs?: number }) {
-  const encoder = new TextEncoder()
-  const body = chunks.map((c) => `data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`).join('') + 'data: [DONE]\n\n'
+it('AC-01: uploads document and returns 201', async () => {
+  const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+  const content = 'Test content'.repeat(50)
+  const multipartBody = buildMultipartBody(boundary, 'file', 'test.txt', 'text/plain', Buffer.from(content))
 
-  vi.spyOn(global, 'fetch').mockImplementation(async (_url, init) => {
-    const signal = init?.signal as AbortSignal | undefined
-    if (opts?.delayMs) {
-      await new Promise<void>((resolve, reject) => {
-        if (signal?.aborted) reject(new DOMException('AbortError', 'AbortError'))
-        const timer = setTimeout(resolve, opts.delayMs)
-        signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('AbortError', 'AbortError')) }, { once: true })
-      })
-    }
-    return new Response(
-      new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(body)); controller.close() } }),
-      { status: 200 },
-    ) as unknown as Response
+  const res = await app.inject({
+    method: 'POST',
+    url: `/api/knowledge-bases/${kbId}/documents/upload`,
+    headers: {
+      'content-type': `multipart/form-data; boundary=${boundary}`,
+      authorization: `Bearer ${token}`,
+    },
+    payload: multipartBody,
   })
-}
+
+  expect(res.statusCode).toBe(201)
+})
+```
+
+### 5.5 基础设施可用性检查（优雅降级）
+
+对于需要完整基础设施（pgvector、Redis、MinIO）的集成测试，使用 `checkInfrastructure` 实现条件跳过：
+
+```typescript
+import { checkInfrastructure } from './helpers/infra-check.js'
+
+describe('Real Integration Tests', () => {
+  let infraAvailable = false
+
+  beforeAll(async () => {
+    const result = await checkInfrastructure()
+    infraAvailable = result.allAvailable
+    if (!infraAvailable) {
+      console.log('基础设施不可用，跳过测试:', result.details)
+    }
+  })
+
+  it('AC-01: tests with real vector search', async () => {
+    if (!infraAvailable) {
+      console.log('[SKIP] 基础设施不可用')
+      return
+    }
+    // 测试代码...
+  })
+})
+```
+
+或使用 `describe.skipIf`：
+
+```typescript
+const infraAvailable = process.env.DATABASE_URL?.includes('goferbot_test') ?? false
+describe.skipIf(!infraAvailable)('RAG E2E', () => {
+  // 所有测试在基础设施不可用时自动跳过
+})
+```
+
+### 5.6 共享生命周期（setup.ts / teardown.ts）
+
+对于需要跨测试文件共享应用实例的场景（如 RAG 端到端测试），使用 `setup.ts` 和 `teardown.ts`：
+
+```typescript
+// 在测试文件中
+import { setupE2E, teardownE2E, app, prisma } from './setup.ts'
+import { cleanupTestData } from './teardown.ts'
+
+describe('RAG Integration', () => {
+  beforeAll(async () => {
+    await setupE2E()  // 创建数据库 + 启动应用
+  })
+
+  afterAll(async () => {
+    await teardownE2E()  // 关闭应用 + 删除数据库
+  })
+
+  beforeEach(async () => {
+    await cleanupTestData()  // TRUNCATE 所有表
+  })
+
+  it('AC-01: full RAG pipeline', async () => {
+    const res = await app.inject({ ... })
+    expect(res.statusCode).toBe(200)
+  })
+})
 ```
 
 ---
@@ -392,8 +520,12 @@ pnpm --filter @goferbot/server prisma:generate
 **解决**：
 
 ```bash
-# 查找并杀死残留 node 进程
+# Linux/macOS
 lsof -ti:3000 | xargs kill -9
+
+# Windows (PowerShell)
+Get-NetTCPConnection -LocalPort 3000 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+```
 ```
 
 ---

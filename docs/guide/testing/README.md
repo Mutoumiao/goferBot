@@ -62,12 +62,25 @@ tests/
 │   ├── composables/   # 组合式函数测试 — .test.ts
 │   └── utils/         # 工具函数测试 — .test.ts
 ├── integration/       # 后端 API 集成测试 — .spec.ts
+│   └── helpers/
+│       ├── test-app.factory.ts
+│       ├── auth.fixtures.ts
+│       ├── test-database.manager.ts
+│       ├── infra-check.ts          # 基础设施可用性检测
+│       ├── external-service.mocker.ts  # nock 封装
+│       ├── setup.ts                # 共享生命周期（setupE2E/teardownE2E）
+│       └── teardown.ts             # 共享数据清理
 └── e2e/
     ├── specs/         # 单页面功能测试
     ├── flows/         # 跨模块用户旅程
     ├── pages/         # Page Object 模式
     ├── fixtures/      # 测试夹具
-    └── mocks/         # Mock 路由
+    ├── mocks/         # Mock 路由
+    ├── debug/         # 临时调试测试（不提交）
+    ├── .gstack/       # QA 报告截图
+    ├── playwright.config.ts
+    ├── playwright.global-setup.ts
+    └── playwright.global-teardown.ts
 ```
 
 ---
@@ -79,7 +92,7 @@ tests/
 | `f-XX` | 前端功能 | `tests/unit/webui/` | 单元 | `f-16-kb-selector` → `tests/unit/webui/kb-selector.spec.ts` |
 | `b-XX` | 后端功能 | `tests/unit/server/` 或 `tests/integration/` | 单元/集成 | `b-04-kb-crud` → `tests/integration/knowledge-base.spec.ts` |
 | `i-XX` | 基础设施 | `tests/integration/` | 集成 | `i-01-infra` → `tests/integration/infra.spec.ts` |
-| `q-XX` | 质量/测试 | `tests/e2e/` | E2E | `q-01-onboarding` → `tests/e2e/flows/onboarding.spec.ts` |
+| `q-XX` | 质量/测试 | `tests/e2e/` 或 `tests/integration/` | E2E / 集成 | `q-01-onboarding` → `tests/e2e/flows/onboarding.spec.ts`<br>`q-17-rev` → `tests/integration/q-17-rev.spec.ts` |
 | `d-XX` | 设计 | — | — | 无测试代码 |
 
 ---
@@ -133,7 +146,7 @@ pnpx playwright test tests/e2e/flows/onboarding.spec.ts   # 单个文件
 | 集成测试 | — | — | — | — |
 | E2E 测试 | — | — | — | — |
 
-> 后端单元/集成/E2E 覆盖率门槛待定义。
+> 后端单元/集成/E2E 覆盖率门槛待定义。当前仅前端单元测试强制执行。
 
 ---
 

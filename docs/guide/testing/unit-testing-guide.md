@@ -60,17 +60,19 @@ resolve: {
 }
 ```
 
-**后端：**
+**实际配置（前后端共用 `vitest.config.ts`）：**
 
 ```typescript
-// vitest.config.ts（与前端共用配置，但 exclude 不同）
+// vitest.config.ts
 resolve: {
   alias: {
-    '@': path.resolve(__dirname, './packages/server/src'),
-    '@goferbot/server': path.resolve(__dirname, './packages/server/src'),
+    '@': fileURLToPath(new URL('./packages/webui/src', import.meta.url)),
+    '@goferbot/rag-sdk': fileURLToPath(new URL('./packages/rag-sdk/src/index.ts', import.meta.url)),
   },
 }
 ```
+
+> **注意**：后端单元测试（`tests/unit/server/`）通常通过相对路径 `../../../packages/server/src/...` 导入源码，而非路径别名。这是因为后端单元测试与前端单元测试共用同一个 `vitest.config.ts`，但后端源码不在 `@` 别名的覆盖范围内。
 
 ### 2.3 全局 Setup
 
@@ -398,20 +400,73 @@ describe('CreateUserDto', () => {
 ### 7.4 Worker 测试
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest'
-import { IndexingWorker } from '@/workers/indexing.worker'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { IndexingWorker } from '../../../packages/server/src/processors/queue/indexing.worker.js'
+
+// Mock @goferbot/rag-sdk 模块 — 使用 vi.hoisted 确保变量在 vi.mock 提升前初始化
+const { mockRunIndexing } = vi.hoisted(() => ({
+  mockRunIndexing: vi.fn(),
+}))
+
+vi.mock('@goferbot/rag-sdk', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as any),
+    runIndexing: mockRunIndexing,
+  }
+})
 
 describe('IndexingWorker', () => {
-  it('AC-01: processes document and creates chunks', async () => {
-    const mockQueue = { add: vi.fn() }
-    const worker = new IndexingWorker(mockQueue as any)
+  let worker: IndexingWorker
+  let mockPrisma: any
+  let mockStorage: any
+  let mockParser: any
+  let mockIndexer: any
+  let mockConfig: any
 
-    await worker.process({ documentId: '1', content: 'test' })
+  beforeEach(() => {
+    vi.resetAllMocks()
+    mockPrisma = {
+      document: {
+        findUnique: vi.fn(),
+        update: vi.fn().mockResolvedValue({}),
+      },
+    }
+    mockStorage = { downloadFile: vi.fn().mockResolvedValue(Buffer.from('test')) }
+    mockParser = { parse: vi.fn().mockResolvedValue('test') }
+    mockIndexer = {}
+    mockConfig = { get: vi.fn().mockReturnValue('mock'), getOrThrow: vi.fn().mockReturnValue('mock') }
+    // 构造函数签名：(prisma, storage, parser, indexer, config)
+    worker = new IndexingWorker(mockPrisma, mockStorage, mockParser, mockIndexer, mockConfig)
+  })
 
-    expect(mockQueue.add).toHaveBeenCalledWith('chunk', expect.any(Object))
+  it('AC-01: processes document and sets status to ready', async () => {
+    mockPrisma.document.findUnique.mockResolvedValue({
+      id: 'd1', kbId: 'kb1', storageKey: 'k1', mimeType: 'text/plain', status: 'uploaded',
+    })
+    mockRunIndexing.mockImplementation(async (_doc: any, options: any) => {
+      const { onStageChange } = options
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'completed' },
+        { name: 'index', status: 'completed' },
+      ])
+    })
+
+    await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
+
+    expect(mockPrisma.document.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'd1' },
+      data: expect.objectContaining({ status: 'ready' }),
+    }))
   })
 })
 ```
+
+**关键模式：**
+- **`vi.hoisted`**：确保 mock 变量在 `vi.mock` 提升（hoist）前已初始化，避免引用错误
+- **`vi.mock('@goferbot/rag-sdk', ...)`**：mock workspace 包中的模块
+- **相对路径导入**：后端单元测试使用 `../../../packages/server/src/...` 而非 `@` 别名
 
 ---
 
@@ -526,12 +581,15 @@ pnpm vitest --ui
 ```typescript
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
+import { fileURLToPath, URL } from 'node:url'
+import AIReporter from 'vitest-ai-reporter'
 
 export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./packages/webui/src', import.meta.url)),
+      '@goferbot/rag-sdk': fileURLToPath(new URL('./packages/rag-sdk/src/index.ts', import.meta.url)),
     },
   },
   test: {
@@ -546,9 +604,16 @@ export default defineConfig({
     ],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],
+    reporters: [new AIReporter()],
     coverage: {
       provider: 'v8',
-      include: ['packages/webui/src/**/*.ts', 'packages/webui/src/**/*.vue'],
+      reporter: ['text', 'json', 'json-summary'],
+      include: [
+        'packages/webui/src/**/*.ts',
+        'packages/webui/src/**/*.vue',
+        'packages/rag-sdk/src/**/*.ts',
+      ],
+      exclude: ['packages/webui/src/main.ts', 'packages/rag-sdk/src/index.ts'],
       thresholds: {
         lines: 70,
         functions: 60,
@@ -566,6 +631,7 @@ export default defineConfig({
 |--------|-----|------|
 | `environment: 'happy-dom'` | 虚拟 DOM | 轻量级，启动快，适合单元测试 |
 | `globals: true` | 全局 API | 无需在每个文件 import `describe/it/expect` |
+| `reporters` | `AIReporter` | 自定义 AI reporter，输出结构化测试结果 |
 | `coverage.thresholds` | 行 70%/函数 60% | 最低覆盖率门槛 |
 
 ---
