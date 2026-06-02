@@ -4,6 +4,18 @@
 
 ---
 
+## [2026-06-02]
+
+### quality
+
+- [closed] 测试架构清理 — 删除 16 个 V1 遗留测试文件（引用不存在模块），删除 3 个临时 vitest 配置，修复 pgvector/IndexingWorker/DocumentService 测试，3 个需真实 DB 的测试移至集成层，集成测试添加 infra-check 优雅跳过机制 — 单元测试 125/125 通过，集成测试 16/16 通过 [handoff](docs/handoff/handoff-2026-06-02-test-cleanup.md)
+
+### docs
+
+- [docs] 测试架构诊断 handoff — 创建 `docs/handoff/handoff-2026-06-02-test-cleanup.md`，记录问题发现、修复方案和执行记录
+
+---
+
 ## [2026-06-01]
 
 ### infra
