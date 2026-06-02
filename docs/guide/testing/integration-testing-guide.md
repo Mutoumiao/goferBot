@@ -1,4 +1,4 @@
-# 后端集成测试指南
+# 集成测试指南
 
 > 本文档定义 GoferBot 后端集成测试的完整流程、规范与最佳实践。
 > 适用于 NestJS API 的模块级集成测试，所有测试通过真实 HTTP 请求验证后端行为。
@@ -11,21 +11,19 @@
 
 | 层级 | 范围 | 运行命令 | 配置文件 | 数量 |
 |------|------|----------|----------|------|
-| 单元测试 | Service/Util 纯函数 | `pnpm test` | `vitest.config.ts` | 141 |
-| 集成测试 | Controller + API 端点 | `pnpm test:integration` | `vitest.integration.config.ts` | 113 |
-| E2E 测试 | 完整用户流程 | `pnpm test:e2e` | Playwright | - |
+| 单元测试 | Service/Util 纯函数 | `pnpm test` | `vitest.config.ts` | 141+ |
+| 集成测试 | Controller + API 端点 | `pnpm test:integration` | `vitest.integration.config.ts` | 113+ |
+| E2E 测试 | 完整用户流程 | `pnpm test:e2e` | Playwright | — |
 
-### 1.2 后端测试覆盖范围
+### 1.2 集成测试覆盖范围
 
-后端集成测试覆盖以下模块：
-
-- **认证** (`b-02-auth-api-testing`) — 注册、登录、JWT、公钥加密
-- **文档** (`b-03-document-api-testing`) — 上传、CRUD、列表筛选
-- **知识库** (`b-04-knowledge-base-api-testing`) — 创建、删除、恢复、文件管理
-- **聊天** (`b-05-chat-api-testing`) — SSE 流式输出、超时、消息持久化
-- **文件夹/会话/设置** (`b-06-folder-session-settings-testing`) — CRUD 操作
-- **健康检查/中间件** (`b-07-health-and-middleware-testing`) — 异常过滤、限流、校验
-- **基础设施** (`i-01-testing-infra-setup`) — 数据库管理、认证夹具、应用工厂
+- **认证** — 注册、登录、JWT、公钥加密
+- **文档** — 上传、CRUD、列表筛选
+- **知识库** — 创建、删除、恢复、文件管理
+- **聊天** — SSE 流式输出、超时、消息持久化
+- **文件夹/会话/设置** — CRUD 操作
+- **健康检查/中间件** — 异常过滤、限流、校验
+- **基础设施** — 数据库管理、认证夹具、应用工厂
 
 ---
 
@@ -46,7 +44,7 @@
 | 服务 | Mock 行为 |
 |------|-----------|
 | `QueueService` (BullMQ) | 空实现，不连接 Redis |
-| `VectorService` (Milvus) | 空实现，不连接向量数据库 |
+| `VectorService` (pgvector) | 空实现，不连接向量数据库 |
 | `StorageService` (MinIO) | 返回固定 mock 值 |
 | `ThrottlerGuard` | 放行所有请求（NoOp） |
 
@@ -108,7 +106,7 @@ tests/integration/
 
 - 集成测试（真实数据库 + `app.inject`）放在 `tests/integration/`
 - 纯单元测试（vi.mock）放在 `tests/unit/server/`
-- 本指南覆盖的是集成测试，示例：`tests/integration/chat.spec.ts`
+- 示例：`tests/integration/chat.spec.ts`
 
 ### 4.2 文件头部
 

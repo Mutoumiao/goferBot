@@ -25,13 +25,16 @@ docs/
 │   └── overlay-conventions.md
 │
 ├── frontend/             # 前端开发指南
-│   ├── README.md
-│   └── unit-testing-guide.md
+│   └── README.md
 │
 ├── backend/              # 后端开发指南
-│   ├── README.md
-│   ├── api-testing-guide.md
-│   └── integration-testing-guide.md
+│   └── README.md
+│
+├── testing/              # 测试规范（按层级组织）
+│   ├── README.md         # 测试体系总览
+│   ├── unit-testing-guide.md
+│   ├── integration-testing-guide.md
+│   └── e2e-testing-guide.md
 │
 ├── prd/                  # 产品需求文档
 ├── issues/                  # 活跃 Issue（Issue-Centric 结构）
@@ -100,8 +103,10 @@ tests/unit/webui/TabBar.spec.ts
 | [writing-plans.md](writing-plans.md)           | Plan 模板、版本归档规则、步骤粒度                 |
 | [writing-reviews.md](writing-reviews.md)       | Review 类型、Scope 命名、Frontmatter 规范         |
 | [writing-test-cases.md](writing-test-cases.md) | 已废弃，测试用例改为 `.spec.ts` 文件              |
-| [frontend/unit-testing-guide.md](frontend/unit-testing-guide.md) | 前端单元测试完整指南（组件、Store、工具函数） |
-| [backend/integration-testing-guide.md](backend/integration-testing-guide.md) | 后端集成测试完整指南（环境、工具、模板、CI/CD） |
+| [testing/README.md](testing/README.md) | 测试体系总览：金字塔、命令速查、目录映射 |
+| [testing/unit-testing-guide.md](testing/unit-testing-guide.md) | 单元测试完整指南（前后端） |
+| [testing/integration-testing-guide.md](testing/integration-testing-guide.md) | 集成测试完整指南（NestJS API + 真实数据库） |
+| [testing/e2e-testing-guide.md](testing/e2e-testing-guide.md) | E2E 测试完整指南（Playwright） |
 
 ---
 

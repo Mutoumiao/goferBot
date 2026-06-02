@@ -41,12 +41,12 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 
 ### 测试文件位置
 
-| 类型         | 路径                                 |
-|--------------|--------------------------------------|
-| 前端单元测试 | `tests/unit/webui/*.spec.ts`        |
-| 后端单元测试 | `tests/unit/server/*.spec.ts`       |
-| 集成测试     | `tests/integration/**/*.spec.ts`     |
-| E2E 测试     | `tests/e2e/**/*.spec.ts`             |
+| 类型         | 路径                                 | 指南 |
+|--------------|--------------------------------------|------|
+| 前端单元测试 | `tests/unit/webui/*.spec.ts`        | [单元测试指南](testing/unit-testing-guide.md) |
+| 后端单元测试 | `tests/unit/server/*.spec.ts`       | [单元测试指南](testing/unit-testing-guide.md) |
+| 集成测试     | `tests/integration/**/*.spec.ts`     | [集成测试指南](testing/integration-testing-guide.md) |
+| E2E 测试     | `tests/e2e/**/*.spec.ts`             | [E2E 测试指南](testing/e2e-testing-guide.md) |
 
 ### 开发前检查清单（dev-orchestrator 执行）
 

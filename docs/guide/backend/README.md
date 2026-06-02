@@ -8,8 +8,10 @@
 
 | 文档 | 内容 |
 |------|------|
-| [api-testing-guide.md](./api-testing-guide.md) | API 自动化测试标准流程与模板 |
-| [integration-testing-guide.md](./integration-testing-guide.md) | 后端集成测试完整指南（环境、工具、模板、CI/CD） |
+| [测试体系总览](../testing/README.md) | 测试分层、命令速查、目录映射 |
+| [单元测试指南](../testing/unit-testing-guide.md) | 前后端单元测试完整指南（含后端 Service/Worker/DTO 测试） |
+| [集成测试指南](../testing/integration-testing-guide.md) | 后端 API 集成测试完整指南（环境、工具、模板、CI/CD） |
+| [E2E 测试指南](../testing/e2e-testing-guide.md) | Playwright 端到端测试完整指南 |
 
 ---
 
