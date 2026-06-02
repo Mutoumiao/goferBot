@@ -20,12 +20,18 @@ description: >
 4. **ADRs**: `docs/adrs/`
 5. **设计系统**: `docs/design/system/DESIGN.md`
 6. **命名规范**: `docs/guide/naming-convention.md`
-7. **测试指南**（按 issue track 选择）：
-   - `f-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（前端单元测试规范：组件/Store/工具测试模板、AC-XX 命名、fixtures 使用）
-   - `b-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（后端单元测试规范：Service/Worker/DTO 测试模板、mock 策略）
-   - `i-*` → [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)（集成测试规范：TestAppFactory、数据库生命周期、infra-check）
-   - `q-*` → [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)（E2E 测试规范：Playwright、Page Object、injectMockToken）
-   - **为什么读**：spec 中的"测试映射"表格必须与测试指南定义的基础设施和模板对齐。例如，若测试指南要求集成测试使用 `TestAppFactory.create(dbUrl, { realMode: true })`，spec 中的测试映射应体现这一点。
+7. **代码库规范**（按 issue track 选择，参考）：
+   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)（了解前端技术栈、组件目录结构，确保"涉及页面/组件"描述准确）
+   - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)（了解 Dialog/ContextMenu 的目录约束和类型规范）
+   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)（了解后端 API 开发流程，确保端点描述符合代码库模式）
+   - **为什么参考**：behavior-spec 中的"涉及页面/组件"和 api-spec 中的端点描述需要与代码库实际结构对齐。不需要全文阅读，重点了解目录结构和开发流程即可。
+
+8. **测试指南**（按 issue track 选择，参考）：
+   - `f-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（了解前端测试文件路径和命名规范）
+   - `b-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（了解后端测试文件路径和命名规范）
+   - `i-*` → [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)
+   - `q-*` → [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)
+   - **为什么参考**：spec 中的"测试映射"表格只需列出测试文件路径和用例名，不需要深入了解测试基础设施细节。测试映射应与测试指南的"文件位置"和"命名规范"章节对齐。
 
 ---
 

@@ -32,16 +32,40 @@ description: >
 
 ## 开发前必读文档
 
-根据 issue track 前缀，**必须**阅读对应的测试指南（了解测试基础设施、模板、规范）：
+根据 issue track 前缀，**必须**阅读以下文档（了解代码库实际模式、目录约束、测试基础设施）：
 
-| Issue Track | 必读测试指南 |
-|-------------|-------------|
-| `f-*`（前端） | [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) — 前端组件/Store/工具测试规范 |
-| `b-*`（后端） | [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) — 后端 Service/Worker/DTO 测试规范 |
-| `i-*`（基础设施） | [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md) — 集成测试规范 |
-| `q-*`（质量/E2E） | [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md) — E2E 测试规范 |
+### 前端开发（`f-*`）
 
-**为什么必须读**：测试指南定义了当前代码库的实际测试基础设施（`TestAppFactory`、`AuthFixtures`、`injectMockToken`、`cleanupDatabase` 等）、文件模板、命名规范和常见陷阱。不阅读直接写测试 = 大概率与现有模式冲突，导致审查返工。
+| 文档 | 用途 | 读取方式 |
+|------|------|----------|
+| [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md) | 前端开发流程、常用命令、技术栈 | 必读全文 |
+| [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md) | Dialog/ContextMenu 目录约束、类型安全（仅当涉及浮层组件时） | 按需阅读 |
+| [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) | 前端组件/Store/工具测试规范 | 必读第 5-6 章（组件/Store 测试） |
+
+### 后端开发（`b-*` / `d-*`）
+
+| 文档 | 用途 | 读取方式 |
+|------|------|----------|
+| [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md) | 后端开发流程、常用命令、新增 API 步骤 | 必读全文 |
+| [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) | 后端 Service/Worker/DTO 测试规范 | 必读第 7 章（Service/Worker/DTO 测试） |
+
+### 基础设施开发（`i-*`）
+
+| 文档 | 用途 | 读取方式 |
+|------|------|----------|
+| [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md) | 集成测试规范、TestAppFactory、数据库生命周期 | 必读全文 |
+
+### 质量/E2E 开发（`q-*`）
+
+| 文档 | 用途 | 读取方式 |
+|------|------|----------|
+| [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md) | Playwright 规范、Page Object、Fixtures | 必读全文 |
+
+**为什么必须读**：
+- **前后端规范**定义了代码库的实际目录结构、开发流程、目录约束（如 Dialog 必须放 `overlays/`）。不阅读 = 代码放错位置、使用错误模式。
+- **测试指南**定义了当前代码库的实际测试基础设施（`TestAppFactory`、`AuthFixtures`、`injectMockToken`、`cleanupDatabase` 等）、文件模板和常见陷阱。不阅读直接写测试 = 大概率与现有模式冲突，导致审查返工。
+
+**分层读取原则**：先读 README 了解全貌（5 分钟），再按需深入相关章节，避免全文加载。
 
 ---
 
