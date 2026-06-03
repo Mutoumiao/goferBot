@@ -24,36 +24,63 @@ test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
 
     await page.goto('/app/chat')
     await page.waitForLoadState('load')
-    await page.waitForSelector('[data-testid="chat-input"]', { timeout: 10000 })
+    // 等待 EmptySession 或 ChatInput 出现
+    await page.waitForSelector('[data-testid="empty-session-input"], [data-testid="chat-input"]', { timeout: 10000 })
   })
 
   test('AC-01: 聊天页面正常加载（输入框+发送按钮）', async ({ page }) => {
-    await expect(page.locator('[data-testid="chat-input"]')).toBeVisible()
+    // 页面可能是 EmptySession 或 ChatInput
+    const hasChatInput = await page.locator('[data-testid="chat-input"]').isVisible().catch(() => false)
+    if (hasChatInput) {
+      await expect(page.locator('[data-testid="chat-input"]')).toBeVisible()
+    } else {
+      await expect(page.locator('[data-testid="empty-session-input"]')).toBeVisible()
+    }
     await expect(page.locator('[data-testid="chat-send-btn"]')).toBeVisible()
   })
 
   test('AC-02: 发送消息显示在用户消息列表', async ({ page }) => {
-    await page.fill('[data-testid="chat-input"]', 'Hello SSE')
-    await page.click('[data-testid="chat-send-btn"]')
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
 
-    // 等待消息列表从 EmptySession 切换到 ChatMessageList
-    await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
-
-    const messages = page.locator('[data-testid="chat-message"]')
-    await expect(messages).toHaveCount(2)
-    await expect(messages.first()).toContainText('Hello SSE')
-  })
-
-  test('AC-03: SSE 流式响应显示 AI 回复', async ({ page }) => {
-    await page.fill('[data-testid="chat-input"]', 'Hello')
+    await page.locator('[data-testid="chat-input"] textarea').fill('Hello SSE')
     await page.click('[data-testid="chat-send-btn"]')
 
     // 等待消息列表出现
     await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
 
-    // 等待 AI 消息出现（第二条消息）
+    // 验证 Hello SSE 出现在消息列表中（不严格检查总数，因为 EmptySession 切换可能已有消息）
+    await expect(
+      page.locator('[data-testid="chat-message"]').filter({ hasText: 'Hello SSE' }),
+    ).toBeVisible()
+  })
+
+  test('AC-03: SSE 流式响应显示 AI 回复', async ({ page }) => {
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
+
+    await page.locator('[data-testid="chat-input"] textarea').fill('Hello')
+    await page.click('[data-testid="chat-send-btn"]')
+
+    // 等待消息列表出现
+    await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+
+    // 等待 AI 消息出现（最后一条消息）
     const messages = page.locator('[data-testid="chat-message"]')
-    await expect(messages).toHaveCount(2, { timeout: 10000 })
+    await expect.poll(async () => messages.count(), {
+      timeout: 10000,
+      message: '等待 AI 消息出现',
+    }).toBeGreaterThanOrEqual(2)
 
     // 检查是否有错误提示
     const errorToast = page.locator('text=未配置 LLM 提供商')
@@ -65,18 +92,21 @@ test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
     // 给 SSE 流式数据一些时间累积
     await page.waitForTimeout(2000)
 
-    // 验证 AI 消息最终内容（SSE mock 返回 "你好！"）
-    const aiMessage = messages.nth(1)
+    // 验证 AI 消息最终内容（SSE mock 返回 "你好！"）— 取最后一条消息
+    const allMessages = await messages.all()
+    const aiMessage = allMessages[allMessages.length - 1]
     await expect(aiMessage).toContainText('你好！', { timeout: 10000 })
   })
 
   test('AC-04: @ 触发知识库选择器下拉', async ({ page }) => {
-    // 先发送一条消息，让页面从 EmptySession 切换到 ChatInput
-    await page.fill('[data-testid="chat-input"]', 'Setup message')
-    await page.click('[data-testid="chat-send-btn"]')
-    await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
 
-    // 现在 ChatInput 已加载，测试 @ 触发
     const textarea = page.locator('[data-testid="chat-input"] [data-slot="textarea"]')
     await textarea.focus()
     await page.keyboard.type('@')
@@ -94,10 +124,13 @@ test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
   })
 
   test('AC-05: 选择知识库显示标签 pill', async ({ page }) => {
-    // 先发送一条消息切换到 ChatInput
-    await page.fill('[data-testid="chat-input"]', 'Setup')
-    await page.click('[data-testid="chat-send-btn"]')
-    await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
 
     const textarea = page.locator('[data-testid="chat-input"] [data-slot="textarea"]')
     await textarea.focus()
@@ -114,10 +147,13 @@ test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
   })
 
   test('AC-06: 多选知识库显示多个标签', async ({ page }) => {
-    // 先发送一条消息切换到 ChatInput
-    await page.fill('[data-testid="chat-input"]', 'Setup')
-    await page.click('[data-testid="chat-send-btn"]')
-    await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
 
     const textarea = page.locator('[data-testid="chat-input"] [data-slot="textarea"]')
     await textarea.focus()
@@ -135,10 +171,13 @@ test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
   })
 
   test('AC-07: 删除已选标签', async ({ page }) => {
-    // 先发送一条消息切换到 ChatInput
-    await page.fill('[data-testid="chat-input"]', 'Setup')
-    await page.click('[data-testid="chat-send-btn"]')
-    await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
 
     const textarea = page.locator('[data-testid="chat-input"] [data-slot="textarea"]')
     await textarea.focus()
@@ -181,10 +220,13 @@ test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
       }
     })
 
-    // 先发送一条消息切换到 ChatInput
-    await page.fill('[data-testid="chat-input"]', 'Setup')
-    await page.click('[data-testid="chat-send-btn"]')
-    await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
 
     const textarea = page.locator('[data-testid="chat-input"] [data-slot="textarea"]')
     await textarea.focus()
@@ -217,7 +259,15 @@ test.describe('聊天 SSE 流式响应与 @提及知识库 (q-18)', () => {
       }
     })
 
-    await page.fill('[data-testid="chat-input"]', 'Trigger error')
+    // 如果是 EmptySession，先发送消息切换到 ChatInput
+    const emptySession = page.locator('[data-testid="empty-session-input"]')
+    if (await emptySession.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="empty-session-input"] textarea').fill('Setup')
+      await page.click('[data-testid="chat-send-btn"]')
+      await page.waitForSelector('[data-testid="chat-message-list"]', { timeout: 10000 })
+    }
+
+    await page.locator('[data-testid="chat-input"] textarea').fill('Trigger error')
     await page.click('[data-testid="chat-send-btn"]')
 
     // 等待错误 toast 出现（ChatView 中的错误提示）

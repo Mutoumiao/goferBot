@@ -84,7 +84,6 @@ function sendQuick(content: string) {
         class="flex min-h-[150px] w-full flex-col gap-[18px] rounded-3xl border border-border-default bg-white px-5 py-[18px] shadow-[0_18px_42px_rgba(0,0,0,0.07)]"
       >
         <Textarea
-          data-testid="chat-input"
           v-model="input"
           :rows="2"
           class="resize-none border-0 bg-transparent text-base leading-relaxed text-text-primary placeholder:text-text-tertiary shadow-none ring-0 focus-visible:ring-0"

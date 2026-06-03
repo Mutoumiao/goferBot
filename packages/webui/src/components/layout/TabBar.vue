@@ -98,6 +98,7 @@ function handleBlur(tabId: string) {
         <!-- Normal state -->
         <span
           v-else
+          data-testid="tab-title"
           class="max-w-[140px] truncate"
           @dblclick.stop="startRename(tab)"
         >

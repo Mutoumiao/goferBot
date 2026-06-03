@@ -34,9 +34,10 @@ function handleAction(action: 'pin' | 'rename' | 'delete') {
 }
 
 function onClickOutside(event: MouseEvent) {
+  // 忽略右键点击（contextmenu 事件由调用方处理）
+  if (event.button !== 0) return
   const target = event.target as HTMLElement
-  const menuEl = document.querySelector('[data-testid="context-menu"]')
-  if (menuEl && !menuEl.contains(target)) {
+  if (menuRef.value && !menuRef.value.contains(target)) {
     close()
   }
 }
@@ -86,5 +87,4 @@ onUnmounted(() => {
       删除
     </button>
   </div>
-  <div data-testid="context-menu-overlay" class="fixed inset-0 z-40" @click="close" />
 </template>

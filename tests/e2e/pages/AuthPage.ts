@@ -12,7 +12,7 @@ export class LoginPage {
     this.page = page
     this.emailInput = page.locator('#email')
     this.passwordInput = page.locator('#password')
-    this.submitButton = page.locator('button:has-text("登录")')
+    this.submitButton = page.locator('button[type="submit"]')
     this.errorMessage = page.locator('[role="alert"]')
     this.registerLink = page.locator('text=立即注册')
   }
@@ -94,7 +94,7 @@ export class RegisterPage {
     this.emailInput = page.locator('#email')
     this.passwordInput = page.locator('#password')
     this.confirmPasswordInput = page.locator('#confirmPassword')
-    this.submitButton = page.locator('button:has-text("注册")')
+    this.submitButton = page.locator('button[type="submit"]')
     this.errorMessage = page.locator('[role="alert"]')
     this.loginLink = page.locator('text=去登录')
   }

@@ -15,21 +15,27 @@ test.describe('聊天功能', () => {
     await mockApiRoutes(page)
     await page.goto('/app/chat')
     await page.waitForLoadState('load')
-    await page.waitForSelector('[data-testid="chat-input"]', { timeout: 10000 })
+    // 等待 EmptySession 或 ChatInput 出现
+    await page.waitForSelector('[data-testid="empty-session-input"], [data-testid="chat-input"]', { timeout: 10000 })
   })
 
   test('聊天页面正常加载', async ({ page }) => {
-    await expect(page.locator('[data-testid="chat-input"]')).toBeVisible()
-    await expect(page.locator('[data-testid="chat-send-btn"]')).toBeVisible()
+    // 页面可能是 EmptySession 或 ChatInput
+    const hasChatInput = await page.locator('[data-testid="chat-input"]').isVisible().catch(() => false)
+    if (hasChatInput) {
+      await expect(page.locator('[data-testid="chat-input"]')).toBeVisible()
+      await expect(page.locator('[data-testid="chat-send-btn"]')).toBeVisible()
+    } else {
+      // EmptySession 状态
+      await expect(page.locator('[data-testid="empty-session-input"]')).toBeVisible()
+      await expect(page.locator('[data-testid="chat-send-btn"]')).toBeVisible()
+    }
   })
 
   test('输入框支持多行文本', async ({ page }) => {
-    const chatPage = new ChatPage(page)
-    // 找到 chat-input 内的 textarea
-    const textarea = page.locator('[data-testid="chat-input"] textarea')
-    if (await textarea.isVisible()) {
-      await textarea.fill('第一行\n第二行\n第三行')
-      await expect(textarea).toHaveValue('第一行\n第二行\n第三行')
-    }
+    // 找到 textarea（EmptySession 或 ChatInput 中都有）
+    const textarea = page.locator('textarea').first()
+    await textarea.fill('第一行\n第二行\n第三行')
+    await expect(textarea).toHaveValue('第一行\n第二行\n第三行')
   })
 })

@@ -24,10 +24,12 @@ export class KnowledgeBasePage {
   async openKbContextMenu(kbName: string) {
     const item = this.page.locator('[data-testid="kb-item"]').filter({ hasText: kbName })
     await item.click({ button: 'right' })
+    // 等待菜单出现
+    await this.contextMenu.waitFor({ state: 'visible', timeout: 5000 })
   }
 
   async clickContextMenuItem(label: string) {
-    await this.contextMenu.locator(`text=${label}`).click()
+    await this.contextMenu.locator(`button:has-text("${label}")`).click()
   }
 
   async createKnowledgeBase(name: string) {

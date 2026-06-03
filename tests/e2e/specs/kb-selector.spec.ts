@@ -5,9 +5,11 @@ import { injectMockToken } from '../fixtures/auth'
 test.describe('知识库选择器 (f-11)', () => {
   test.beforeEach(async ({ page }) => {
     await injectMockToken(page)
-    await mockApiRoutes(page)
 
-    // Mock 知识库列表（覆盖 mockApiRoutes 默认值以适配选择器测试）
+    // 只 mock 必要的路由
+    await page.route('**/api/auth/me', (route) => {
+      route.fulfill({ json: { data: { id: 'user-1', email: 'test@example.com', name: 'Test User' } } })
+    })
     await page.route('**/api/knowledge-bases', (route) => {
       if (route.request().method() === 'GET') {
         route.fulfill({
@@ -18,27 +20,49 @@ test.describe('知识库选择器 (f-11)', () => {
         })
       }
     })
-
-    // Mock 会话创建
     await page.route('**/api/sessions', (route) => {
       if (route.request().method() === 'POST') {
-        route.fulfill({
-          json: { id: 'session-1', title: '新会话', createdAt: new Date().toISOString() },
-        })
+        route.fulfill({ json: { id: 'session-1', title: '新会话', createdAt: new Date().toISOString() } })
+      } else if (route.request().method() === 'GET') {
+        route.fulfill({ json: { items: [] } })
       }
+    })
+    await page.route('**/api/sessions/*', (route) => {
+      route.fulfill({ json: { data: { session: { id: 'session-1', title: '新会话' }, messages: [] } } })
+    })
+    await page.route('**/api/chat', (route) => {
+      route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+        body: 'data: {"content":"AI 响应"}\n\n',
+      })
+    })
+    await page.route('**/api/settings', (route) => {
+      route.fulfill({
+        json: {
+          providers: { openai: { apiKey: '', model: 'gpt-4o' }, deepseek: { apiKey: 'fake', model: 'deepseek-chat' } },
+          temperature: 0.7,
+          defaultChatProvider: 'deepseek',
+        },
+      })
     })
 
     await page.goto('/app/chat')
-    await page.waitForLoadState('load')
-    await page.waitForSelector('[data-testid="chat-input"]', { timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+    // 等待 EmptySession 或 ChatInput 出现
+    await page.waitForSelector('[data-testid="empty-session-input"], [data-testid="chat-input"]', { timeout: 10000 })
   })
 
   async function ensureChatInputVisible(page: any) {
     // 检查是否显示 EmptySession
     const emptySession = page.locator('[data-testid="empty-session-input"]')
     if (await emptySession.isVisible()) {
-      // 需要新建会话才能看到 ChatInput
-      await page.locator('[data-testid="new-chat-btn"]').click()
+      // 需要发送一条消息创建会话，才能看到 ChatInput
+      // EmptySession 中 textarea 是唯一的 textbox
+      await page.locator('textarea').fill('Hello')
+      await page.locator('[data-testid="chat-send-btn"]').click()
+      // 等待消息发送完成，切换到 ChatInput
+      await page.waitForTimeout(500)
     }
     await page.waitForSelector('[data-testid="chat-input"]', { timeout: 10000 })
   }
@@ -129,7 +153,7 @@ test.describe('知识库选择器 (f-11)', () => {
     await expect(pills).toHaveCount(1)
 
     const removeBtn = page.locator('[data-testid="kb-mention-pill-remove"]')
-    await removeBtn.click({ force: true })
+    await removeBtn.click()
 
     pills = page.locator('[data-testid="kb-mention-pill"]')
     await expect(pills).toHaveCount(0)

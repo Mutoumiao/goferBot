@@ -10,6 +10,7 @@ interface Props extends PrimitiveProps {
   variant?: ButtonVariants['variant']
   size?: ButtonVariants['size']
   class?: HTMLAttributes['class']
+  type?: 'button' | 'submit' | 'reset'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -18,12 +19,24 @@ const props = withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
+  <button
+    v-if="as === 'button' && !asChild"
+    data-slot="button"
+    :data-variant="variant"
+    :data-size="size"
+    :type="type"
+    :class="cn(buttonVariants({ variant, size }), props.class)"
+  >
+    <slot />
+  </button>
   <Primitive
+    v-else
     data-slot="button"
     :data-variant="variant"
     :data-size="size"
     :as="as"
     :as-child="asChild"
+    :type="type"
     :class="cn(buttonVariants({ variant, size }), props.class)"
   >
     <slot />

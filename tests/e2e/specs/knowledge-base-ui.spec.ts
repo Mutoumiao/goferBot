@@ -2,7 +2,7 @@
  * @scope UI 行为测试（Mock API）
  * @purpose 验证知识库页面渲染、Overlay 交互（ContextMenu/Dialog）、路由跳转
  * @note 使用 Mock API，不验证后端契约。
- *       API 契约验证（创建 KB/上传文档/权限隔离）见 tests/integration/q-17-rev.spec.ts
+ *       API 契约验证（创建 KB/上传文档/权限隔离）见 tests/integration/auth-kb-document.spec.ts
  */
 import { test, expect } from '@playwright/test'
 import { mockApiRoutes } from '../mocks/http-routes'
@@ -12,7 +12,29 @@ import { KnowledgeBasePage } from '../pages/KnowledgeBasePage'
 test.describe('知识库管理', () => {
   test.beforeEach(async ({ page }) => {
     await injectMockToken(page)
-    await mockApiRoutes(page)
+
+    // 精简 mock：只拦截关键请求
+    await page.route('**/api/auth/me', (route) => {
+      route.fulfill({ json: { data: { id: 'user-1', email: 'test@example.com', name: 'Test User' } } })
+    })
+    await page.route('**/api/auth/refresh', (route) => {
+      route.fulfill({ json: { data: { accessToken: 'mock-token', refreshToken: 'mock-refresh' } } })
+    })
+    await page.route('**/api/knowledge-bases', (route) => {
+      if (route.request().method() === 'GET') {
+        route.fulfill({
+          json: { data: [{ id: 'kb-1', name: '技术文档', icon: 'mdi-database', isPinned: false, sortOrder: 0 }] },
+        })
+      }
+    })
+    await page.route('**/api/knowledge-bases/*', (route) => {
+      if (route.request().method() === 'DELETE') {
+        route.fulfill({ status: 204 })
+      } else {
+        route.fulfill({ json: { data: { success: true } } })
+      }
+    })
+
     await page.goto('/app/knowledge-base')
     await page.waitForLoadState('networkidle')
   })
@@ -22,7 +44,7 @@ test.describe('知识库管理', () => {
     await expect(page.locator('[data-testid="create-kb-btn"]')).toBeVisible()
   })
 
-  // ❌ "创建新知识库" — 已移除（API 创建行为由 q-17-rev 真实 API 覆盖）
+  // ❌ "创建新知识库" — 已移除（API 创建行为由 auth-kb-document 真实 API 覆盖）
 
   test('点击知识库进入详情', async ({ page }) => {
     await page.route('**/api/knowledge-bases', (route) => {
@@ -94,6 +116,10 @@ test.describe('知识库管理', () => {
     await kbPage.openKbContextMenu('技术文档')
     await kbPage.clickContextMenuItem('删除')
 
+    // 等待 ContextMenu 关闭
+    await expect(kbPage.contextMenu).not.toBeVisible()
+    // 等待 Dialog 出现
+    await page.waitForSelector('[data-testid="delete-dialog"]', { timeout: 5000 })
     await expect(page.locator('[data-testid="delete-dialog"]')).toBeVisible()
     await expect(page.locator('[data-testid="delete-confirm-btn"]')).toBeVisible()
     await expect(page.locator('[data-testid="delete-cancel-btn"]')).toBeVisible()
