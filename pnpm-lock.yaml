@@ -69,6 +69,9 @@ importers:
       happy-dom:
         specifier: ^20.9.0
         version: 20.9.0
+      kill-port:
+        specifier: ^2.0.1
+        version: 2.0.1
       lodash-es:
         specifier: ^4.17.23
         version: 4.17.23
@@ -160,6 +163,12 @@ importers:
       bullmq:
         specifier: ^5.1.0
         version: 5.76.8
+      class-transformer:
+        specifier: ^0.5.1
+        version: 0.5.1
+      class-validator:
+        specifier: ^0.15.1
+        version: 0.15.1
       fastify:
         specifier: 4.28.1
         version: 4.28.1
@@ -8821,8 +8830,7 @@ snapshots:
   '@types/trusted-types@2.0.7':
     optional: true
 
-  '@types/validator@13.15.10':
-    optional: true
+  '@types/validator@13.15.10': {}
 
   '@types/web-bluetooth@0.0.21': {}
 
@@ -9882,15 +9890,13 @@ snapshots:
 
   citty@0.2.2: {}
 
-  class-transformer@0.5.1:
-    optional: true
+  class-transformer@0.5.1: {}
 
   class-validator@0.15.1:
     dependencies:
       '@types/validator': 13.15.10
       libphonenumber-js: 1.13.2
       validator: 13.15.35
-    optional: true
 
   class-variance-authority@0.7.1:
     dependencies:
@@ -11540,8 +11546,7 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
-  libphonenumber-js@1.13.2:
-    optional: true
+  libphonenumber-js@1.13.2: {}
 
   light-my-request@5.14.0:
     dependencies:
@@ -13447,8 +13452,7 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
-  validator@13.15.35:
-    optional: true
+  validator@13.15.35: {}
 
   vary@1.1.2: {}
 
