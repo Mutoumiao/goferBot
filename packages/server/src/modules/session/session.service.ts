@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import type { Paginator } from '../../shared/interfaces/paginator.interface.js'
 import type { CreateSessionDto } from './dto/create-session.dto.js'
 import type { UpdateSessionDto } from './dto/update-session.dto.js'
 
@@ -11,8 +12,11 @@ import type { UpdateSessionDto } from './dto/update-session.dto.js'
 export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(userId: string): Promise<
-    Array<{
+  async list(
+    userId: string,
+    query: { page?: number; limit?: number } = {},
+  ): Promise<{
+    items: Array<{
       id: string
       userId: string
       title: string
@@ -22,27 +26,37 @@ export class SessionService {
       updatedAt: Date
       messageCount: number
     }>
-  > {
-    const sessions = await this.prisma.session.findMany({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        _count: {
-          select: { messages: true },
+    pagination: Paginator
+  }> {
+    const page = query.page ?? 1
+    const limit = query.limit ?? 50
+
+    const result = await (this.prisma.session as any).paginate(
+      {
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          _count: {
+            select: { messages: true },
+          },
         },
       },
-    })
+      { page, size: limit },
+    )
 
-    return sessions.map((session) => ({
-      id: session.id,
-      userId: session.userId,
-      title: session.title,
-      provider: session.provider,
-      model: session.model,
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-      messageCount: session._count.messages,
-    }))
+    return {
+      items: result.data.map((session: any) => ({
+        id: session.id,
+        userId: session.userId,
+        title: session.title,
+        provider: session.provider,
+        model: session.model,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+        messageCount: session._count.messages,
+      })),
+      pagination: result.pagination,
+    }
   }
 
   async findOne(userId: string, id: string) {
