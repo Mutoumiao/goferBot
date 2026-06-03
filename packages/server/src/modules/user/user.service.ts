@@ -46,6 +46,8 @@ export class UserService {
         email: true,
         name: true,
         avatar: true,
+        role: true,
+        isActive: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -77,6 +79,8 @@ export class UserService {
       email: user.email,
       name: user.name,
       avatar: user.avatar,
+      role: user.role,
+      isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { UserService } from '../modules/user/user.service.js'
@@ -37,6 +37,14 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.userService.validatePassword(email, password)
+
+    if (!user.isActive) {
+      throw new ForbiddenException({
+        code: 'ACCOUNT_DISABLED',
+        message: '账号已被禁用',
+      })
+    }
+
     const tokens = await this.generateTokens(user.id, user.email)
 
     return { user, ...tokens }
