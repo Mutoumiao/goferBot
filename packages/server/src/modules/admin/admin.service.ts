@@ -48,7 +48,10 @@ export class AdminService {
     })
 
     if (!user) {
-      throw new NotFoundException('用户不存在')
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: '用户不存在',
+      })
     }
 
     return this.prisma.user.update({

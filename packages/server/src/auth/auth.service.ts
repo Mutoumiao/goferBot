@@ -71,6 +71,13 @@ export class AuthService {
         })
       }
 
+      if (!user.isActive) {
+        throw new ForbiddenException({
+          code: 'ACCOUNT_DISABLED',
+          message: '账号已被禁用',
+        })
+      }
+
       return this.generateTokens(user.id, user.email)
     } catch (err) {
       if (err instanceof UnauthorizedException) {

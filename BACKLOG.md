@@ -14,6 +14,12 @@ _暂无_
 
 - q-21：E2E 骨架需更新（移除 Milvus 引用）
 
+## 技术债务（b-14 Admin 用户管理）
+
+- **验证管道不统一**：Admin 模块使用 `class-validator` + `@UsePipes(ValidationPipe)`，其他模块使用 `ZodValidationPipe`。长期应统一验证方案。
+- **PrismaService 代理模式可维护性**：手动代理每个模型方法，新增模型时需同步维护。未来可考虑 `Proxy` 自动代理或生成器脚本。
+- **Admin API 响应格式不一致**：`GET /admin/users` 返回 `{ data, pagination }`（绕过 ResponseInterceptor），`PATCH /admin/users/:id/status` 返回 `{ data: {...} }`。当前为兼容前端 Session 解析方式，后续应统一为 `{ data, pagination }` 或全部走 ResponseInterceptor 包装。
+
 ## 备注
 
 - RAG SDK 系列 issue（d-11 ~ d-15）已全部关闭
