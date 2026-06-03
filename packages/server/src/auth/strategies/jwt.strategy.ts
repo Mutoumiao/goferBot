@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import { Role } from '../enums/role.enum.js'
 
 export interface JwtPayload {
   sub: string
@@ -35,6 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         email: true,
         name: true,
         avatar: true,
+        role: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -44,6 +46,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('用户不存在')
     }
 
-    return user
+    return {
+      ...user,
+      role: user.role as Role,
+    }
   }
 }
