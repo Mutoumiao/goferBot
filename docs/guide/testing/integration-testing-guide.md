@@ -82,7 +82,7 @@ afterAll：
   2. TestDatabaseManager.dropDatabase()
 ```
 
-模式 B 适用于需要 Worker 异步处理、文件上传等跨多个 it() 的复杂场景（如 `q-17-rev.spec.ts`）。
+模式 B 适用于需要 Worker 异步处理、文件上传等跨多个 it() 的复杂场景（如 `auth-kb-document.spec.ts`）。
 
 ---
 

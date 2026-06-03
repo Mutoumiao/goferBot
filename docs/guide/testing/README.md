@@ -92,7 +92,7 @@ tests/
 | `f-XX` | 前端功能 | `tests/unit/webui/` | 单元 | `f-16-kb-selector` → `tests/unit/webui/kb-selector.spec.ts` |
 | `b-XX` | 后端功能 | `tests/unit/server/` 或 `tests/integration/` | 单元/集成 | `b-04-kb-crud` → `tests/integration/knowledge-base.spec.ts` |
 | `i-XX` | 基础设施 | `tests/integration/` | 集成 | `i-01-infra` → `tests/integration/infra.spec.ts` |
-| `q-XX` | 质量/测试 | `tests/e2e/` 或 `tests/integration/` | E2E / 集成 | `q-01-onboarding` → `tests/e2e/flows/onboarding.spec.ts`<br>`q-17-rev` → `tests/integration/q-17-rev.spec.ts` |
+| `q-XX` | 质量/测试 | `tests/e2e/` 或 `tests/integration/` | E2E / 集成 | `q-01-onboarding` → `tests/e2e/flows/onboarding.spec.ts`<br>`q-17-rev` → `tests/integration/auth-kb-document.spec.ts` |
 | `d-XX` | 设计 | — | — | 无测试代码 |
 
 ---

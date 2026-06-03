@@ -246,8 +246,8 @@ jobs:
 **验收标准**：
 - [ ] PR 时自动运行，失败阻断合并
 - [ ] 运行时间 ≤ 3 分钟
-- [ ] `rag-real.spec.ts` 通过（非跳过）
-- [ ] `q-17-rev.spec.ts` 通过（非跳过）
+- [ ] 纯集成测试全部通过（`auth.spec.ts` 等，仅依赖 PostgreSQL）
+- [ ] 真实模式测试在基础设施可用时通过，不可用时优雅跳过（`auth-kb-document.spec.ts`、`rag-real.spec.ts`、`rag-e2e.spec.ts`）
 
 ---
 
@@ -439,7 +439,8 @@ ci-e2e 失败
 
 - [ ] pgvector + Redis + MinIO 服务正常启动
 - [ ] Prisma 迁移成功执行
-- [ ] 集成测试（含 `rag-real.spec.ts`、`q-17-rev.spec.ts`）全部通过（非跳过）
+- [ ] 纯集成测试全部通过（非跳过）
+- [ ] 真实模式测试在基础设施可用时通过，不可用时优雅跳过
 - [ ] 运行时间 ≤ 3 分钟
 
 ### Phase 3 验收
