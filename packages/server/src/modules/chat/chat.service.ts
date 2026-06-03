@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { ChatDto } from './dto/chat.dto.js'
-import type { HybridRetriever, DefaultRetrievalPostprocessor } from '@goferbot/rag-sdk'
+import { HybridRetriever, DefaultRetrievalPostprocessor } from '@goferbot/rag-sdk'
 
 interface ChatChunk {
   chunk: string
