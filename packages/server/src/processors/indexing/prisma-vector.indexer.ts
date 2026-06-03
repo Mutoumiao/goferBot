@@ -15,7 +15,7 @@ export class PrismaVectorIndexer implements IIndexer {
 
     const tokenCounts = this.computeTokenCounts(chunks, usage)
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       for (let i = 0; i < chunks.length; i++) {
         await tx.$executeRaw`
           INSERT INTO chunks (id, document_id, kb_id, content, token_count, chunk_index, embedding)

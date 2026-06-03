@@ -137,15 +137,15 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.$disconnect()
   }
 
-  $queryRaw<T = any>(...args: Parameters<PrismaClient['$queryRaw']>) {
-    return (this.client as any).$queryRaw<T>(...args)
+  $queryRaw(...args: any[]) {
+    return (this.client as any).$queryRaw(...args)
   }
 
-  $executeRaw(...args: Parameters<PrismaClient['$executeRaw']>) {
+  $executeRaw(...args: any[]) {
     return (this.client as any).$executeRaw(...args)
   }
 
-  $transaction<T>(...args: Parameters<PrismaClient['$transaction']>): Promise<T> {
+  $transaction(...args: any[]) {
     return (this.client as any).$transaction(...args)
   }
 }

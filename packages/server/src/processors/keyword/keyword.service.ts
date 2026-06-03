@@ -16,9 +16,9 @@ export class KeywordService implements IKeywordStore {
 
   private async detectZhparser(): Promise<void> {
     try {
-      const result = await this.prisma.$queryRaw<Array<{ extname: string }>>`
+      const result = await this.prisma.$queryRaw`
         SELECT extname FROM pg_extension WHERE extname = 'zhparser'
-      `
+      ` as Array<{ extname: string }>
       this.useChineseConfig = result.length > 0
       if (this.useChineseConfig) {
         this.logger.log('zhparser detected, using chinese config')
@@ -41,14 +41,7 @@ export class KeywordService implements IKeywordStore {
     const limit = topK ?? 10
     const trimmedQuery = query.trim()
 
-    const results = await this.prisma.$queryRaw<Array<{
-      id: string
-      document_id: string
-      kb_id: string
-      content: string
-      chunk_index: number
-      rank: number
-    }>>`
+    const results = await this.prisma.$queryRaw`
       SELECT id, document_id, kb_id, content, chunk_index,
         ts_rank_cd(to_tsvector(${config}, content), plainto_tsquery(${config}, ${trimmedQuery})) as rank
       FROM chunks
@@ -56,7 +49,14 @@ export class KeywordService implements IKeywordStore {
         AND to_tsvector(${config}, content) @@ plainto_tsquery(${config}, ${trimmedQuery})
       ORDER BY rank DESC
       LIMIT ${limit}
-    `
+    ` as Array<{
+      id: string
+      document_id: string
+      kb_id: string
+      content: string
+      chunk_index: number
+      rank: number
+    }>
 
     return results.map(r => ({
       chunk: {

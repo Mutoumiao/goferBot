@@ -47,10 +47,7 @@ export class PgVectorStore implements IVectorStore {
 
     try {
       const results = kbId
-        ? await this.prisma.$queryRaw<Array<{
-            id: string
-            score: number
-          }>>`
+        ? await this.prisma.$queryRaw`
             SELECT
               id::text,
               1 - (embedding <=> ${queryVector}::vector) as score
@@ -59,11 +56,11 @@ export class PgVectorStore implements IVectorStore {
               AND embedding IS NOT NULL
             ORDER BY embedding <=> ${queryVector}::vector
             LIMIT ${topK}
-          `
-        : await this.prisma.$queryRaw<Array<{
+          ` as Array<{
             id: string
             score: number
-          }>>`
+          }>
+        : await this.prisma.$queryRaw`
             SELECT
               id::text,
               1 - (embedding <=> ${queryVector}::vector) as score
@@ -71,7 +68,10 @@ export class PgVectorStore implements IVectorStore {
             WHERE embedding IS NOT NULL
             ORDER BY embedding <=> ${queryVector}::vector
             LIMIT ${topK}
-          `
+          ` as Array<{
+            id: string
+            score: number
+          }>
 
       return results.map((r) => ({
         id: r.id,
