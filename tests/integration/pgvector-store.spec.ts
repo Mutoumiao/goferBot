@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { PgVectorStore } from '../../packages/server/src/vector/pgvector'
 import { VectorStoreError } from '../../packages/server/src/interfaces/errors'

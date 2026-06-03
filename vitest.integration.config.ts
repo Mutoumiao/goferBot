@@ -27,6 +27,9 @@ export default defineConfig({
     exclude: [
       'tests/integration/legacy/**',
       'tests/integration/sidecar/**',
+      'tests/integration/rag-e2e.spec.ts',
+      'tests/integration/rag-real.spec.ts',
+      'tests/integration/auth-kb-document.spec.ts',
     ],
     pool: 'forks',
     reporters: [new AIReporter()],

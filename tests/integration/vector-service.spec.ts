@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { VectorService } from '../../packages/server/src/processors/vector/vector.service'
 import { checkInfrastructure } from './helpers/infra-check.js'

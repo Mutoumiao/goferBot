@@ -1,18 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '@prisma/client'
 
-let prisma: PrismaClient | null = null
-
-export async function cleanupTestData(): Promise<void> {
-  if (!prisma) {
-    prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
-    })
-  }
-
+export async function cleanupTestData(prisma: PrismaClient): Promise<void> {
   // 按依赖顺序清理测试数据
   await prisma.$executeRaw`TRUNCATE TABLE messages CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE sessions CASCADE`
@@ -22,11 +10,4 @@ export async function cleanupTestData(): Promise<void> {
   await prisma.$executeRaw`TRUNCATE TABLE knowledge_bases CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE settings CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE users CASCADE`
-}
-
-export async function disconnectTeardown(): Promise<void> {
-  if (prisma) {
-    await prisma.$disconnect()
-    prisma = null
-  }
 }

@@ -2,6 +2,7 @@ import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { PrismaClient } from '@prisma/client'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 
 export let app: NestFastifyApplication
 export let prisma: PrismaClient
@@ -17,7 +18,7 @@ export async function setupE2E(): Promise<void> {
   dbName = new URL(dbUrl).pathname.slice(1)
 
   app = await TestAppFactory.create(dbUrl, { realMode: true })
-  prisma = app.get('PrismaService')
+  prisma = app.get(PrismaService)
 }
 
 export async function teardownE2E(): Promise<void> {

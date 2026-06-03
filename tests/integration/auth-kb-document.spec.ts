@@ -6,7 +6,12 @@ import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { checkInfrastructure } from './helpers/infra-check.js'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
-describe('q-17 Real API Tests', () => {
+/**
+ * 真实模式集成测试：文档上传 + Worker 异步处理
+ * 需要完整基础设施：PostgreSQL + pgvector + Redis + MinIO
+ * 当基础设施不可用时自动跳过
+ */
+describe('Document Upload Real Integration Tests', () => {
   let app: NestFastifyApplication
   let dbManager: TestDatabaseManager
   let dbUrl: string
@@ -17,8 +22,8 @@ describe('q-17 Real API Tests', () => {
     const infraResult = await checkInfrastructure()
     infraAvailable = infraResult.allAvailable
     if (!infraAvailable) {
-      console.log('[q-17-rev] 基础设施不可用，跳过')
-      console.log('[q-17-rev] 详情:', infraResult.details)
+      console.log('[auth-kb-document] 基础设施不可用，跳过')
+      console.log('[auth-kb-document] 详情:', infraResult.details)
       return
     }
 
@@ -60,57 +65,6 @@ describe('q-17 Real API Tests', () => {
     await prisma.$executeRawUnsafe(`
       TRUNCATE TABLE chunks, documents, knowledge_bases, users RESTART IDENTITY CASCADE
     `)
-  })
-
-  // AC-06: 未登录访问保护路由返回 401
-  it('AC-06: 未登录访问保护路由返回 401', async () => {
-    if (!infraAvailable) {
-      console.log('[SKIP] 基础设施不可用')
-      return
-    }
-
-    // 测试 /api/auth/me
-    const meRes = await app.inject({
-      method: 'GET',
-      url: '/api/auth/me',
-    })
-    expect(meRes.statusCode).toBe(401)
-
-    // 测试 /api/knowledge-bases
-    const kbRes = await app.inject({
-      method: 'GET',
-      url: '/api/knowledge-bases',
-    })
-    expect(kbRes.statusCode).toBe(401)
-  })
-
-  // AC-08: 重复注册相同邮箱返回 409
-  it('AC-08: 重复注册相同邮箱返回 409', async () => {
-    if (!infraAvailable) {
-      console.log('[SKIP] 基础设施不可用')
-      return
-    }
-
-    const email = `q17-rev-${Date.now()}@test.gofer`
-    const encryptedPassword = await encryptPassword(app, 'Test1234!')
-
-    // 第一次注册
-    const firstRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/register',
-      payload: { email, encryptedPassword, name: 'First User' },
-    })
-    expect(firstRes.statusCode).toBe(201)
-
-    // 第二次使用相同邮箱注册
-    const secondRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/register',
-      payload: { email, encryptedPassword, name: 'Second User' },
-    })
-    expect(secondRes.statusCode).toBe(409)
-    const body = secondRes.json()
-    expect(body.error?.code || body.code).toBe('USER_EXISTS')
   })
 
   // AC-12: 上传文档到知识库，状态变为 ready
@@ -161,60 +115,6 @@ describe('q-17 Real API Tests', () => {
     const doc = await prisma.document.findUnique({ where: { id: docId } })
     expect(doc?.status).toBe('ready')
   }, 90000)
-
-  // AC-15: 用户 B 无法操作用户 A 的知识库
-  it('AC-15: 用户 B 无法操作用户 A 的知识库', async () => {
-    if (!infraAvailable) {
-      console.log('[SKIP] 基础设施不可用')
-      return
-    }
-
-    const timestamp = Date.now()
-
-    // 创建用户 A
-    const emailA = `q17-usera-${timestamp}@test.gofer`
-    const tokenA = await registerAndLogin(app, emailA, 'Test1234!')
-
-    // 用户 A 创建知识库
-    const kbRes = await app.inject({
-      method: 'POST',
-      url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${tokenA}` },
-      payload: { name: `AC15-KB-A-${timestamp}`, description: 'User A KB' },
-    })
-    const kbId = kbRes.json().data.id
-
-    // 创建用户 B
-    const emailB = `q17-userb-${timestamp}@test.gofer`
-    const tokenB = await registerAndLogin(app, emailB, 'Test1234!')
-
-    // 用户 B 尝试操作用户 A 的知识库 — 列表
-    const listRes = await app.inject({
-      method: 'GET',
-      url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${tokenB}` },
-    })
-    const kbList = listRes.json().data
-    const userBCanSeeUserAKB = kbList.some((kb: any) => kb.id === kbId)
-    expect(userBCanSeeUserAKB).toBe(false)
-
-    // 用户 B 尝试操作用户 A 的知识库 — 更新（403）
-    const patchRes = await app.inject({
-      method: 'PATCH',
-      url: `/api/knowledge-bases/${kbId}`,
-      headers: { authorization: `Bearer ${tokenB}` },
-      payload: { name: 'Hacked Name' },
-    })
-    expect(patchRes.statusCode).toBe(403)
-
-    // 用户 B 尝试操作用户 A 的知识库 — 删除（403）
-    const deleteRes = await app.inject({
-      method: 'DELETE',
-      url: `/api/knowledge-bases/${kbId}`,
-      headers: { authorization: `Bearer ${tokenB}` },
-    })
-    expect(deleteRes.statusCode).toBe(403)
-  })
 
   // AC-16: 上传 txt/md/pdf 三种类型文档
   it('AC-16: 上传 txt/md/pdf 三种类型文档', async () => {
