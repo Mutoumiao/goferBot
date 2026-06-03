@@ -1,3 +1,6 @@
+-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS "vector";
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
@@ -18,7 +21,7 @@ CREATE TABLE "knowledge_bases" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "is_pinned" BOOLEAN NOT NULL DEFAULT false,
-    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "sort_order" SERIAL NOT NULL,
     "icon" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -33,6 +36,7 @@ CREATE TABLE "folders" (
     "parent_id" TEXT,
     "name" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "folders_pkey" PRIMARY KEY ("id")
 );
@@ -64,6 +68,7 @@ CREATE TABLE "chunks" (
     "content" TEXT NOT NULL,
     "token_count" INTEGER,
     "chunk_index" INTEGER NOT NULL,
+    "embedding" vector(1536),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "chunks_pkey" PRIMARY KEY ("id")
@@ -140,4 +145,3 @@ ALTER TABLE "messages" ADD CONSTRAINT "messages_session_id_fkey" FOREIGN KEY ("s
 
 -- AddForeignKey
 ALTER TABLE "settings" ADD CONSTRAINT "settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
