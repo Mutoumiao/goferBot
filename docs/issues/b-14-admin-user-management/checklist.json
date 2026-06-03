@@ -1,0 +1,56 @@
+{
+  "issue_id": "b-14",
+  "version": 1,
+  "updated_at": "2026-06-04T00:00:00Z",
+  "items": [
+    {
+      "id": "AC-01",
+      "desc": "Prisma Client 扩展实现 paginate() 和 exists()",
+      "status": "passed",
+      "test_file": "tests/unit/server/prisma-pagination.spec.ts",
+      "test_case": "AC-01: paginate returns correct data and pagination metadata"
+    },
+    {
+      "id": "AC-02",
+      "desc": "Session 列表接口返回 { items, pagination } 格式并支持分页参数",
+      "status": "passed",
+      "test_file": "tests/unit/server/session.service.spec.ts",
+      "test_case": "AC-02: list returns paginated result with items and pagination"
+    },
+    {
+      "id": "AC-03",
+      "desc": "User 表新增 role 和 isActive 字段，数据库迁移成功",
+      "status": "passed",
+      "test_file": "tests/integration/admin-user-management.spec.ts",
+      "test_case": "AC-03: schema migration adds role and isActive columns"
+    },
+    {
+      "id": "AC-04",
+      "desc": "RolesGuard 和 @Roles() 装饰器正确校验 ADMIN 权限",
+      "status": "passed",
+      "test_file": "tests/unit/server/roles.guard.spec.ts",
+      "test_case": "AC-04: RolesGuard allows ADMIN and rejects USER"
+    },
+    {
+      "id": "AC-05",
+      "desc": "GET /admin/users 支持分页、搜索、状态过滤，仅 ADMIN 可访问",
+      "status": "passed",
+      "test_file": "tests/integration/admin-user-management.spec.ts",
+      "test_case": "AC-05: admin users list with pagination search and filter"
+    },
+    {
+      "id": "AC-06",
+      "desc": "PATCH /admin/users/:id/status 可切换用户状态，仅 ADMIN 可访问",
+      "status": "passed",
+      "test_file": "tests/integration/admin-user-management.spec.ts",
+      "test_case": "AC-06: admin can toggle user active status"
+    },
+    {
+      "id": "AC-07",
+      "desc": "登录接口拒绝 isActive=false 的用户，返回 403",
+      "status": "passed",
+      "test_file": "tests/integration/auth.spec.ts",
+      "test_case": "AC-07: login rejects disabled user with 403"
+    }
+  ]
+}

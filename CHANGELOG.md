@@ -4,6 +4,14 @@
 
 ---
 
+## [2026-06-04]
+
+### backend
+
+- [closed] b-14 Admin 用户管理与基础设施规范化 — Prisma 分页封装（paginate + exists），Session 列表修复为 { items, pagination }，RBAC 权限（@Roles + RolesGuard），Admin API（GET /admin/users + PATCH /admin/users/:id/status），登录/refresh 校验 isActive — 单元测试 55/55 通过，集成测试 39/39 通过 [issue](docs/issues/b-14-admin-user-management/)
+
+---
+
 ## [2026-06-02]
 
 ### quality
