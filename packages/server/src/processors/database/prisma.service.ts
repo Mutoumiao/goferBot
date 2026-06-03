@@ -5,8 +5,8 @@ import type { PaginationResult } from '../../shared/interfaces/paginator.interfa
 // 扩展 PrismaClient 类型
 type ExtendedPrismaClient = ReturnType<typeof createExtendedPrismaClient>
 
-function createExtendedPrismaClient() {
-  const client = new PrismaClient()
+function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
+  const client = new PrismaClient(options)
 
   return client.$extends({
     model: {
@@ -38,7 +38,7 @@ function createExtendedPrismaClient() {
 
           const { page, size: perPage } = options
           const skip = page > 0 ? perPage * (page - 1) : 0
-          const countArgs = 'select' in x ? { where: (x as any).where } : {}
+          const countArgs = (x as any).where ? { where: (x as any).where } : {}
 
           const [total, data] = await Promise.all([
             (this as any).count(countArgs),
@@ -83,8 +83,8 @@ function createExtendedPrismaClient() {
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly client: ExtendedPrismaClient
 
-  constructor() {
-    this.client = createExtendedPrismaClient()
+  constructor(options?: Prisma.PrismaClientOptions) {
+    this.client = createExtendedPrismaClient(options)
   }
 
   async onModuleInit() {
