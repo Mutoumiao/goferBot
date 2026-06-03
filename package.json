@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"pnpm dev:server\" \"pnpm dev:web\" --names server,web --prefix-colors cyan,green",
+    "predev": "node scripts/kill-ports.cjs",
+    "dev": "pnpm -w run predev && concurrently -k \"pnpm dev:server\" \"pnpm dev:web\" --names server,web --prefix-colors cyan,green",
     "dev:web": "pnpm --filter @goferbot/webui dev",
     "dev:server": "pnpm --filter @goferbot/server dev",
     "build": "pnpm -r build",
@@ -44,6 +45,7 @@
     "dotenv-cli": "^11.0.0",
     "fastify": "4.28.1",
     "happy-dom": "^20.9.0",
+    "kill-port": "^2.0.1",
     "lodash-es": "^4.17.23",
     "nock": "^14.0.15",
     "pg": "^8.21.0",
