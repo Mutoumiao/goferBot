@@ -2,7 +2,7 @@
 
 ```markdown
 ---
-issue_id: b-02
+issue_id: {prefix}-{NN}
 type: api-spec
 status: draft
 summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
@@ -33,7 +33,7 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 
 #### 错误码
 | 码 | 场景 | 响应体 |
-|------|----------|---------------|
+|----|------|--------|
 | 400 | {场景} | `{ "error": "..." }` |
 | 409 | {场景} | `{ "error": "..." }` |
 
@@ -45,10 +45,10 @@ summary: {端点列表、核心 DTO、关键错误场景，2-3 句话}
 
 | 场景 | 测试文件 | 测试用例 |
 |------|----------|----------|
-| 正常创建 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-01: creates knowledge base with valid data` |
-| 重复名称 | `tests/unit/server/knowledge-base-crud.spec.ts` | `AC-02: returns 409 on duplicate name` |
+| 正常创建 | `tests/unit/server/{ResourceName}.spec.ts` | `AC-01: creates {resource} with valid data` |
+| 重复名称 | `tests/unit/server/{ResourceName}.spec.ts` | `AC-02: returns 409 on duplicate name` |
 
-> 测试映射必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)（单元测试）或 [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)（集成测试）中的规范对齐（TestAppFactory、AuthFixtures、AC-XX 命名、数据库生命周期）。
+> 测试映射必须与对应测试指南中的规范对齐（TestAppFactory、AuthFixtures、AC-XX 命名、数据库生命周期）。
 ```
 
 ---

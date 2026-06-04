@@ -322,7 +322,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 - [ ] docker-compose up 后所有服务健康
 - [ ] Prisma 迁移成功
 - [ ] MinIO 可上传/下载文件
-- [ ] Milvus 可创建 Collection
+- [ ] PostgreSQL pgvector 扩展已启用
 - [ ] Redis 可读写
 
 ## Phase 2 验收
@@ -350,7 +350,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 ## Phase 5 验收
 
 - [ ] 文档可自动解析/分块/向量化
-- [ ] Milvus 可检索向量
+- [ ] pgvector 可执行 ANN 检索
 - [ ] RAG 回答包含引用来源
 ```
 

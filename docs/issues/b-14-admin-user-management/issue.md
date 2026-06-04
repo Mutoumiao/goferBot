@@ -30,3 +30,4 @@ specs: specs/
 - 知识库/文件夹/文档列表暂不分页（前端需要全量数据做排序和树形展示）
 - 初始部署后需手动将至少一个现有用户提升为 `ADMIN`
 - 参考模板项目 `nest-http-prisma-zod` 的 `prisma.instance.ts` 实现分页扩展
+- 本次 issue 最初错误地使用了 class-validator，已于 2026-06-04 修复为统一使用 ZodValidationPipe

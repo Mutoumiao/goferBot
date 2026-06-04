@@ -2,7 +2,7 @@
 
 ```markdown
 ---
-issue_id: f-15
+issue_id: {prefix}-{NN}
 type: behavior-spec
 status: draft
 summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话}
@@ -22,7 +22,7 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 ## 交互状态
 
 | 状态 | 视觉 | 用户操作 | 系统响应 |
-|-------|--------|-------------|-----------------|
+|------|------|----------|----------|
 | loading | {描述} | {禁用/启用} | {发生什么} |
 | empty | {描述} | {可用操作} | {发生什么} |
 | error | {描述} | {重试/取消} | {发生什么} |
@@ -32,24 +32,24 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 ## 正常流程
 
 | 步骤 | 用户操作 | 系统响应 | 视觉状态 |
-|------|-------------|-----------------|--------------|
+|------|----------|----------|----------|
 | 1 | {操作} | {响应} | {状态} |
 | 2 | {操作} | {响应} | {状态} |
 
 ## 错误场景
 
 | 场景 | 触发 | 视觉 | 恢复 |
-|----------|---------|--------|----------|
+|------|------|------|------|
 | {错误 1} | {触发} | {视觉} | {如何恢复} |
 
 ## 测试映射
 
 | 场景 | 测试文件 | 测试用例 |
 |------|----------|----------|
-| loading 状态 | `tests/unit/webui/TabBar.spec.ts` | `AC-01: renders TabBar in AuthenticatedLayout header` |
-| 401 错误 | `tests/unit/webui/TabBar.spec.ts` | `AC-02: displays error on unauthorized` |
+| loading 状态 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-01: renders {ComponentName} in loading state` |
+| 401 错误 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-02: displays error on unauthorized` |
 
-> 测试映射必须与 [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md) 中的前端测试规范对齐（组件测试模板、Store mock 策略、AC-XX 命名）。
+> 测试映射必须与对应测试指南中的规范对齐（组件测试模板、Store mock 策略、AC-XX 命名）。
 ```
 
 ---

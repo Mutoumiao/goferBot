@@ -2,7 +2,9 @@
 
 > 版本：v2.0
 > 日期：2026-05-15
-> 架构：云原生（PostgreSQL + MinIO + Milvus + Redis + BullMQ）
+> 架构：云原生（PostgreSQL + MinIO + Redis + BullMQ）
+>
+> **注意**：向量存储使用 PostgreSQL pgvector 扩展（参见 ADR 0001）。本文档中部分历史描述仍保留 Milvus 引用，实际实现以 ADR 0001 为准。
 
 ---
 
@@ -28,7 +30,7 @@
 | NestJS API | API 路由、认证、业务编排、全局拦截器 | TS + NestJS 10 + Fastify |
 | PostgreSQL | 元数据：用户、知识库、文档、会话、消息 | PG 16 |
 | MinIO | 对象存储：文件内容 | MinIO |
-| Milvus | 向量索引与 ANN 搜索 | Milvus 2.4+ |
+| PostgreSQL pgvector | 向量索引与 ANN 搜索 | pgvector 扩展 |
 | Redis + BullMQ | 缓存、异步任务队列 | Redis 7 |
 | 前端 Vue | UI 渲染、状态管理、HTTP 调用 | Vue 3 + Pinia |
 | 本地 SQLite | 前端缓存：UI 状态、离线数据、Agent Memory | SQLite |
@@ -54,9 +56,8 @@ PostgreSQL 更新 status = ready
 ```yaml
 # docker-compose.dev.yml
 services:
-  postgres:     # 主数据库
+  postgres:     # 主数据库（含 pgvector 向量扩展）
   minio:        # 对象存储
-  milvus:       # 向量数据库
   redis:        # 缓存 + 队列
 ```
 
@@ -294,7 +295,7 @@ POST /settings     # 保存配置
 | ORM | Prisma 5 |
 | 数据库 | PostgreSQL 16 |
 | 对象存储 | MinIO |
-| 向量数据库 | Milvus 2.4+ |
+| 向量数据库 | PostgreSQL pgvector 扩展 |
 | 缓存/队列 | Redis 7 + BullMQ |
 | 认证 | JWT + bcrypt |
 | 验证 | Zod + nestjs-zod |

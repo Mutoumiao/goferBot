@@ -17,12 +17,7 @@ docs/
 │   ├── writing-specs.md     # Spec 编写规范
 │   ├── writing-plans.md     # Plan 编写规范
 │   ├── writing-reviews.md   # Review 归档规范
-│   ├── writing-test-cases.md# Test Case 规范（已废弃，仅历史参考）
 │   └── _templates/          # 所有模板集中存放
-│
-├── webui-guide/          # 前端专项规范（overlay、组件约定等）
-│   ├── README.md
-│   └── overlay-conventions.md
 │
 ├── frontend/             # 前端开发指南
 │   └── README.md
@@ -51,7 +46,7 @@ docs/
 ├── adrs/                 # 架构决策记录
 ├── design/               # 设计系统
 ├── reviews/              # 审查记录
-└── 99-archived/             # 历史归档
+└── archived/             # 历史归档
 
 tests/
 ├── unit/                    # 单元测试（按层次组织）
@@ -94,19 +89,18 @@ tests/unit/webui/TabBar.spec.ts
 
 ## 规范文件索引
 
-| 规范文件                                       | 说明                                              |
-|------------------------------------------------|---------------------------------------------------|
-| [workflow.md](workflow.md)                     | 开发流程阶段、TDD 强制规则、Skill 路由、常见陷阱  |
-| [naming-convention.md](naming-convention.md)   | 全文档命名规范、目录结构、禁止事项                |
-| [writing-issues.md](writing-issues.md)         | Issue 模板、frontmatter 规范、checklist.json 格式 |
-| [writing-specs.md](writing-specs.md)           | 三层规格模板、测试映射表、编写顺序                |
-| [writing-plans.md](writing-plans.md)           | Plan 模板、版本归档规则、步骤粒度                 |
-| [writing-reviews.md](writing-reviews.md)       | Review 类型、Scope 命名、Frontmatter 规范         |
-| [writing-test-cases.md](writing-test-cases.md) | 已废弃，测试用例改为 `.spec.ts` 文件              |
-| [testing/README.md](testing/README.md) | 测试体系总览：金字塔、命令速查、目录映射 |
-| [testing/unit-testing-guide.md](testing/unit-testing-guide.md) | 单元测试完整指南（前后端） |
-| [testing/integration-testing-guide.md](testing/integration-testing-guide.md) | 集成测试完整指南（NestJS API + 真实数据库） |
-| [testing/e2e-testing-guide.md](testing/e2e-testing-guide.md) | E2E 测试完整指南（Playwright） |
+| 规范文件                                                                     | 说明                                              |
+|------------------------------------------------------------------------------|---------------------------------------------------|
+| [workflow.md](workflow.md)                                                   | 开发流程阶段、TDD 强制规则、Skill 路由、常见陷阱  |
+| [naming-convention.md](naming-convention.md)                                 | 全文档命名规范、目录结构、禁止事项                |
+| [writing-issues.md](writing-issues.md)                                       | Issue 模板、frontmatter 规范、checklist.json 格式 |
+| [writing-specs.md](writing-specs.md)                                         | 三层规格模板、测试映射表、编写顺序                |
+| [writing-plans.md](writing-plans.md)                                         | Plan 模板、版本归档规则、步骤粒度                 |
+| [writing-reviews.md](writing-reviews.md)                                     | Review 类型、Scope 命名、Frontmatter 规范         |
+| [testing/README.md](testing/README.md)                                       | 测试体系总览：金字塔、命令速查、目录映射          |
+| [testing/unit-testing-guide.md](testing/unit-testing-guide.md)               | 单元测试完整指南（前后端）                        |
+| [testing/integration-testing-guide.md](testing/integration-testing-guide.md) | 集成测试完整指南（NestJS API + 真实数据库）       |
+| [testing/e2e-testing-guide.md](testing/e2e-testing-guide.md)                 | E2E 测试完整指南（Playwright）                    |
 
 ---
 
@@ -123,7 +117,7 @@ tests/unit/webui/TabBar.spec.ts
 | 执行计划   | `docs/issues/f-15-global-tab-bar/plan.md`                |
 | 历史计划   | `docs/issues/f-15-global-tab-bar/plans/v1.md`            |
 | 验收状态   | `docs/issues/f-15-global-tab-bar/checklist.json`         |
-| 单元测试   | `tests/unit/webui/*.spec.ts`                              |
+| 单元测试   | `tests/unit/webui/*.spec.ts`                             |
 
 已知审查范围 = `phase-3`：
 

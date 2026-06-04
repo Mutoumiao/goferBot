@@ -216,7 +216,7 @@ it('AC-01: user can create a knowledge base', async () => {
 |----------|----------|----------|----------|
 | PostgreSQL | ❌ Mock / 不使用 | ✅ 真实数据库（每个 it 隔离） | ✅ 共享测试数据库 |
 | Redis / BullMQ | ❌ Mock | ❌ Mock（空实现） | ✅ 真实（如需要） |
-| 向量数据库 | ❌ Mock | ❌ Mock（空实现） | ✅ 真实（如需要） |
+| 向量数据库 (pgvector) | ❌ Mock | ❌ Mock（空实现） | ✅ 真实（如需要） |
 | MinIO / S3 | ❌ Mock | ❌ Mock（固定返回值） | ✅ 真实（如需要） |
 | 外部 API（OpenAI） | ❌ Mock | ❌ Mock（vi.spyOn fetch） | ❌ Mock |
 | NestJS Service | ✅ 直接实例化 | ✅ 通过模块加载 | ✅ 黑盒，不直接调用 |

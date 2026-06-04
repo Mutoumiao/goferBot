@@ -2,10 +2,10 @@
 
 ```markdown
 ---
-scope: {phase-3 / f-15 / file-manager-group / project / security-baseline}
+scope: {phase-3 / {prefix}-{NN} / file-manager-group / project / security-baseline}
 type: {code / spec / security / acceptance}
 date: {YYYY-MM-DD}
-issues: [f-15, b-02]
+issues: [{prefix}-{NN}, {prefix}-{NN}]
 status: {completed / partial / failed}
 summary: {审查发现的核心问题与总体结论，2-3 句话}
 ---
@@ -13,7 +13,7 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 # {Scope} {Type} 审查报告
 
 > **审查类型**：{代码审查 / 规格对齐 / 安全审查 / 验收审查}
-> **审查范围**：{Phase 3 / f-15~f-18 / 全项目}
+> **审查范围**：{Phase 3 / {prefix}-{NN}~{prefix}-{NN} / 全项目}
 > **覆盖 Issue**：{issue 列表}
 > **审查日期**：{日期}
 > **总体结论**：{通过 / 有条件通过 / 不通过}
@@ -34,8 +34,8 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 
 ## 覆盖 Issue
 
-- [f-15](../issues/f-15-global-tab-bar/issue.md) — {功能描述}
-- [b-02](../issues/b-02-knowledge-base-crud-api/issue.md) — {功能描述}
+- [{prefix}-{NN}](../issues/{issue-dir}/issue.md) — {功能描述}
+- [{prefix}-{NN}](../issues/{issue-dir}/issue.md) — {功能描述}
 
 ---
 

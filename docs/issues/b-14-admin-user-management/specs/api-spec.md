@@ -166,27 +166,61 @@ Bearer Token（JwtAuthGuard + RolesGuard）+ Role = ADMIN
 
 ### PagerDto
 ```ts
-{
-  page?: number;   // default 1, min 1
-  size?: number;   // default 10, min 1, max 50
-}
+import { z } from 'zod';
+
+export const PagerSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  size: z.coerce.number().min(1).max(50).default(10),
+});
+
+export type PagerDto = z.infer<typeof PagerSchema>;
 ```
 
 ### AdminUserListQueryDto（extends PagerDto）
 ```ts
-{
-  page?: number;
-  size?: number;
-  search?: string;      // 邮箱模糊搜索
-  isActive?: boolean;   // 状态过滤
-}
+import { z } from 'zod';
+import { PagerSchema } from './pager.schema';
+
+export const AdminUserListQuerySchema = PagerSchema.extend({
+  search: z.string().optional(),
+  isActive: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
+});
+
+export type AdminUserListQueryDto = z.infer<typeof AdminUserListQuerySchema>;
 ```
 
 ### UpdateUserStatusDto
 ```ts
+import { z } from 'zod';
+
+export const UpdateUserStatusSchema = z.object({
+  isActive: z.boolean(),
+});
+
+export type UpdateUserStatusDto = z.infer<typeof UpdateUserStatusSchema>;
+```
+
+### 管道使用说明
+
+项目中 `ZodValidationPipe` 已在 `app.module.ts` 作为全局 `APP_PIPE` 注册，所有 Controller 自动生效，无需在 Controller 或方法上显式添加 `@UsePipes()`。
+
+```ts
+// app.module.ts 全局注册
 {
-  isActive: boolean;
+  provide: APP_PIPE,
+  useClass: ZodValidationPipe,
 }
+```
+
+DTO 通过 `createZodDto` 创建即可自动被校验：
+
+```ts
+import { createZodDto } from 'nestjs-zod';
+
+export class AdminUserListQueryDto extends createZodDto(adminUserListQuerySchema) {}
 ```
 
 ---

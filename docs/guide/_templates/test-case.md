@@ -39,17 +39,17 @@
 ### 示例
 
 ```typescript
-// tests/unit/webui/TabBar.spec.ts
+// tests/unit/webui/{ComponentName}.spec.ts
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import TabBar from '@/components/layout/TabBar.vue'
+import { ComponentName } from '@/components/{path}/{ComponentName}.vue'
 
-describe('TabBar', () => {
-  it('AC-01: renders TabBar in AuthenticatedLayout header', () => {
+describe('{ComponentName}', () => {
+  it('AC-01: renders {ComponentName} in {expected location}', () => {
     // ...
   })
 
-  it('AC-04: rejects closing home tab', () => {
+  it('AC-02: {behavior description}', () => {
     // ...
   })
 })

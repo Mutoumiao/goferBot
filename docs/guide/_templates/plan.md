@@ -2,7 +2,7 @@
 
 ```markdown
 ---
-id: f-15
+id: {prefix}-{NN}
 issue: issue.md
 version: 1
 ---
@@ -11,16 +11,15 @@ version: 1
 
 > **目标：** {一句话描述要做什么}
 > **架构：** {技术方案概述}
-> **技术栈：** {Vue 3 + Pinia + NestJS + Prisma 等}
+> **技术栈：** {关键技术栈，如 Vue 3 + Pinia / NestJS + Prisma 等}
 
 **Issue 引用：** `issue.md`
 **Spec 引用：** `specs/`
-**测试引用：** 按 track 前缀确定层级：`tests/unit/server/` (b-*,d-*)、`tests/unit/webui/` (f-*)、`tests/integration/` (i-*)、`tests/e2e/` (q-*)
-**测试指南**（开发前必读，确保测试代码与代码库实际基础设施对齐）：
-- `f-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)
-- `b-*` → [`docs/guide/testing/unit-testing-guide.md`](mdc:docs/guide/testing/unit-testing-guide.md)
-- `i-*` → [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md)
-- `q-*` → [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md)
+**测试引用：** 按 track 前缀确定层级：
+- `f-*` → `tests/unit/webui/`
+- `b-*` / `d-*` → `tests/unit/server/`
+- `i-*` → `tests/integration/`
+- `q-*` → `tests/e2e/`
 
 ---
 

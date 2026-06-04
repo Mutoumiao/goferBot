@@ -4,7 +4,7 @@
 > 日期：2026-06-01
 > 范围：将 `@goferbot/rag-sdk` 接入 NestJS server，替换现有 TODO 占位逻辑
 >
-> **v1.1 更新**：向量存储从 Milvus 迁移至 PostgreSQL pgvector（参见 ADR 0005）。本文档中所有 Milvus 相关描述已更新为 pgvector 方案。
+> **v1.1 更新**：向量存储使用 PostgreSQL pgvector 扩展（参见 ADR 0001）。本文档中所有 Milvus 相关描述已更新为 pgvector 方案。
 
 ---
 

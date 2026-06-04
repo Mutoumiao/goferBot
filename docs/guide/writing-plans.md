@@ -33,36 +33,7 @@ docs/issues/{prefix}-{NN}-{kebab-slug}/
 
 ## 模板
 
-```markdown
----
-id: f-15
-issue: issue.md
-version: 1
----
-
-## 任务 1: 迁移 TabBar 组件
-
-**文件**：
-- 修改：`packages/webui/src/layouts/AuthenticatedLayout.vue`
-- 修改：`packages/webui/src/views/ChatView.vue`
-- 测试：`tests/unit/webui/TabBar.spec.ts`
-
-**规格引用**：
-- behavior-spec.md 第 3.1 节
-
-- [ ] **步骤 1: 编写失败测试**
-
-```typescript
-it('AC-01: renders TabBar in AuthenticatedLayout header', () => {
-  const wrapper = mount(AuthenticatedLayout)
-  expect(wrapper.find('[data-testid="tab-bar"]').exists()).toBe(true)
-})
-```
-
-- [ ] **步骤 2: 运行测试确认失败**
-- [ ] **步骤 3: 编写最小实现**
-- [ ] **步骤 4: 运行测试确认通过**
-```
+模板文件：[`_templates/plan.md`](./_templates/plan.md)
 
 ---
 
@@ -99,4 +70,4 @@ it('AC-01: renders TabBar in AuthenticatedLayout header', () => {
 | 占位符 | "TODO: 实现登录逻辑" | 完整的登录逻辑代码 |
 | 模糊步骤 | "配置路由" | "在 `router/index.ts` 第 15 行添加 `{ path: '/login', component: LoginView }`" |
 | 无验证 | 任务结束无验证步骤 | "运行 `pnpm type-check`，预期 PASS" |
-| 跨 issue 编码 | 在 f-15 计划中修改 b-02 的代码 | 只修改 f-15 范围内的文件 |
+| 跨 issue 编码 | 在 {prefix}-{NN} 计划中修改其他 issue 的代码 | 只修改当前 issue 范围内的文件 |

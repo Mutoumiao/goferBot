@@ -2,10 +2,10 @@
 
 ```markdown
 ---
-id: f-15
+id: {prefix}-{NN}
 status: open
-track: frontend
-priority: p1
+track: {frontend / backend / design / infra / quality}
+priority: {p0 / p1 / p2}
 summary: {简洁描述功能目标与范围，2-3 句话，足够让 Agent 判断相关性}
 blocked_by: []
 checklist: checklist.json
