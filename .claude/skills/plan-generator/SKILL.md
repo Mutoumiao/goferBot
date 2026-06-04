@@ -218,12 +218,14 @@ git commit -m "feat(scope): add myFunction with tests"
 
 ---
 
-## ADR 影响评估（新增）
+## ADR 影响评估（由 `/architecture-guard` 执行扫描）
 
-生成计划前，评估本 issue 是否涉及或影响已有架构决策：
+生成计划前，评估本 issue 是否涉及或影响已有架构决策。
 
-**检查清单：**
-- [ ] **ADR 清单**：列出本 issue 涉及的所有 ADR（如 ADR 0004、ADR 0005）
+> **注意**：以下检查清单由 `/architecture-guard` skill 在 plan 生成后自动执行扫描。本章节保留作为上下文参考，用于在生成 plan 时保持架构意识。
+
+**自检清单（生成时参考）：**
+- [ ] **ADR 清单**：列出本 issue 涉及的所有 ADR（如 ADR 0001）
 - [ ] **验证方案**：是否需要新增/修改 DTO？→ 确认使用 Zod + `createZodDto`，禁止 class-validator
 - [ ] **响应格式**：是否新增 API 端点？→ 确认统一走 `ResponseInterceptor`，禁止无正当理由的 `@BypassResponse()`
 - [ ] **依赖引入**：是否计划引入新 npm 包？→ 确认不与现有技术栈冲突（如禁止引入 class-validator、class-transformer）
@@ -236,13 +238,25 @@ git commit -m "feat(scope): add myFunction with tests"
 
 | ADR | 涉及内容 | 符合/豁免 | 说明 |
 |-----|---------|----------|------|
-| ADR 0004 | 验证方案、响应格式 | ✅ 符合 | 使用 Zod + ResponseInterceptor |
-| ADR 0005 | 向量存储 | — | 本 issue 不涉及 |
+| ADR 0001 | 验证方案、响应格式、向量存储 | ✅ 符合 | 使用 Zod + ResponseInterceptor + pgvector |
+```
+
+**plan 生成后的强制扫描：**
+
+plan.md 保存前，**必须调用 `/architecture-guard`** 扫描 plan 中的所有代码块：
+
+```
+plan-generator 完成 plan 编写
+    ↓
+调用 /architecture-guard 扫描 plan.md
+    ↓
+❌ 发现 Critical → 修复违规代码块 → 重新扫描
+✅ 无违规 → 保存 plan.md
 ```
 
 **若发现冲突：**
-1. 不继续生成 plan
-2. 向用户说明冲突：「spec 中提议使用 X，但 ADR 0004 决策使用 Y」
+1. 不继续生成 plan（也不保存）
+2. 向用户说明冲突：「spec 中提议使用 X，但 ADR 0001 决策使用 Y」
 3. 提供选项：
    - 选项 A：修改 spec 以符合 ADR
    - 选项 B：申请 ADR 豁免（需说明理由和回归计划）

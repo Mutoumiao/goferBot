@@ -227,20 +227,35 @@ description: >
 
 ---
 
-## ADR 影响评估（新增）
+## ADR 影响评估（由 `/architecture-guard` 执行扫描）
 
-编写 spec 时，评估是否涉及或影响已有架构决策：
+编写 spec 时，评估是否涉及或影响已有架构决策。
 
-**检查清单：**
-- [ ] **ADR 清单**：列出本 issue 涉及的所有 ADR（如 ADR 0004、ADR 0005）
+> **注意**：以下检查清单由 `/architecture-guard` skill 在 spec 编写后自动执行扫描。本章节保留作为上下文参考，用于在编写 spec 时保持架构意识。
+
+**自检清单（编写时参考）：**
+- [ ] **ADR 清单**：列出本 issue 涉及的所有 ADR（如 ADR 0001）
 - [ ] **验证方案**：是否需要新增/修改 DTO？→ 确认使用 Zod + `createZodDto`，禁止 class-validator
 - [ ] **响应格式**：是否新增 API 端点？→ 确认统一走 `ResponseInterceptor`
 - [ ] **依赖引入**：是否提议引入新 npm 包？→ 确认不与现有技术栈冲突
 - [ ] **冲突声明**：若 spec 中的技术选型与 ADR 冲突，必须在 spec 中显式声明并申请豁免
 
+**spec 编写后的强制扫描：**
+
+api-spec.md 保存后，**必须调用 `/architecture-guard`** 扫描 spec 中的 DTO 定义和依赖声明：
+
+```
+spec-validator 完成 spec 编写
+    ↓
+调用 /architecture-guard 扫描 specs/*.md
+    ↓
+❌ 发现 class-validator 等 Critical 违规 → 修复 DTO 代码块 → 重新扫描
+✅ 无违规 → 进入用户审批流程
+```
+
 **若发现冲突：**
-1. 不继续编写 spec
-2. 向用户说明冲突：「你提议使用 X，但 ADR 0004 决策使用 Y」
+1. 不继续编写 spec（也不保存）
+2. 向用户说明冲突：「你提议使用 X，但 ADR 0001 决策使用 Y」
 3. 提供选项：
    - 选项 A：修改需求以符合 ADR
    - 选项 B：申请 ADR 豁免（需说明理由和回归计划）
