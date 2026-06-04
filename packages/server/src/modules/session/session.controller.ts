@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js'
 import { SessionService } from './session.service.js'
 import { PagerDto } from '../../shared/dto/pager.dto.js'
 import { CreateSessionDto, createSessionSchema } from './dto/create-session.dto.js'

@@ -1,6 +1,6 @@
-import { IsOptional, IsString, IsBoolean, Validate } from 'class-validator'
-import { Transform, Type } from 'class-transformer'
-import { PagerDto } from '../../../shared/dto/pager.dto.js'
+import { createZodDto } from 'nestjs-zod'
+import { z } from 'zod'
+import { pagerSchema } from '../../../shared/dto/pager.dto.js'
 
 function toBoolean(value: unknown): boolean | undefined {
   if (value === undefined || value === null) return undefined
@@ -14,13 +14,13 @@ function toBoolean(value: unknown): boolean | undefined {
   return undefined
 }
 
-export class AdminUserListQueryDto extends PagerDto {
-  @IsOptional()
-  @IsString()
-  search?: string
+export const adminUserListQuerySchema = pagerSchema.extend({
+  search: z.string().optional().describe('邮箱模糊搜索'),
+  isActive: z
+    .union([z.boolean(), z.string(), z.number()])
+    .transform((v) => toBoolean(v))
+    .optional()
+    .describe('按状态过滤'),
+})
 
-  @IsOptional()
-  @Transform(({ value }) => toBoolean(value))
-  @IsBoolean()
-  isActive?: boolean
-}
+export class AdminUserListQueryDto extends createZodDto(adminUserListQuerySchema) {}

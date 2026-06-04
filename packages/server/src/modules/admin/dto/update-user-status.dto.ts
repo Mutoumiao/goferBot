@@ -1,6 +1,8 @@
-import { IsBoolean } from 'class-validator'
+import { createZodDto } from 'nestjs-zod'
+import { z } from 'zod'
 
-export class UpdateUserStatusDto {
-  @IsBoolean()
-  isActive!: boolean
-}
+export const updateUserStatusSchema = z.object({
+  isActive: z.boolean({ message: 'isActive 必须是布尔值' }).describe('用户状态'),
+})
+
+export class UpdateUserStatusDto extends createZodDto(updateUserStatusSchema) {}

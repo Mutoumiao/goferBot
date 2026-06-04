@@ -1,9 +1,8 @@
 import { Controller, Get, Post, Body, UseGuards, HttpCode } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js'
 import { SettingsService } from './settings.service.js'
-import { SettingsDto, settingsSchema } from './dto/settings.dto.js'
+import { SettingsDto } from './dto/settings.dto.js'
 
 @Controller('settings')
 @UseGuards(JwtAuthGuard)

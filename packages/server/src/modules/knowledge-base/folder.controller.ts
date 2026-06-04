@@ -11,10 +11,9 @@ import {
 } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js'
 import { KnowledgeBaseService } from './knowledge-base.service.js'
-import { CreateFolderDto, createFolderSchema } from './dto/create-folder.dto.js'
-import { UpdateFolderDto, updateFolderSchema } from './dto/update-folder.dto.js'
+import { CreateFolderDto } from './dto/create-folder.dto.js'
+import { UpdateFolderDto } from './dto/update-folder.dto.js'
 
 @Controller('knowledge-bases/:kbId/folders')
 @UseGuards(JwtAuthGuard)

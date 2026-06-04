@@ -10,10 +10,9 @@ import {
 } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js'
 import { KnowledgeBaseService } from './knowledge-base.service.js'
-import { CreateKbDto, createKbSchema } from './dto/create-kb.dto.js'
-import { UpdateKbDto, updateKbSchema } from './dto/update-kb.dto.js'
+import { CreateKbDto } from './dto/create-kb.dto.js'
+import { UpdateKbDto } from './dto/update-kb.dto.js'
 
 @Controller('knowledge-bases')
 @UseGuards(JwtAuthGuard)

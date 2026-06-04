@@ -1,17 +1,9 @@
-import { IsOptional, IsInt, Min, Max } from 'class-validator'
-import { Type } from 'class-transformer'
+import { createZodDto } from 'nestjs-zod'
+import { z } from 'zod'
 
-export class PagerDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1
+export const pagerSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1).describe('页码，最小 1'),
+  size: z.coerce.number().int().min(1).max(50).default(10).describe('每页条数，最小 1，最大 50'),
+})
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  size?: number = 10
-}
+export class PagerDto extends createZodDto(pagerSchema) {}

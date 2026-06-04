@@ -10,10 +10,9 @@ import {
 import type { FastifyReply } from 'fastify'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js'
 import { BypassResponse } from '../../common/decorators/bypass-response.decorator.js'
 import { ChatService } from './chat.service.js'
-import { ChatDto, chatSchema } from './dto/chat.dto.js'
+import { ChatDto } from './dto/chat.dto.js'
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
