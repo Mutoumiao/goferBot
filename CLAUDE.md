@@ -148,8 +148,8 @@ Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 t
 | 不知道怎么开始/流程是什么/从哪开始     | `/project-workflow`     | 直接给建议而不走流程         |
 | 拆 issue/生成工单/任务拆分             | `/issue-generator`      | 直接创建文件而不验证命名规范 |
 | 审查 spec/写 behavior spec/写 API spec | `/spec-validator`       | 跳过 spec 直接写 plan        |
-| 写计划/生成实现方案                    | `/plan-generator`       | 计划中出现 TODO/TBD/稍后实现 |
-| 开始开发 issue/开发 f-XX/b-XX          | `/dev-orchestrator`     | 无 spec/plan/测试直接编码    |
+| 写计划/生成实现方案                    | `/plan-generator`       | 计划中出现 TODO/TBD/稍后实现；保存前未通过架构合规扫描 |
+| 开始开发 issue/开发 f-XX/b-XX          | `/dev-orchestrator`     | 无 spec/plan/测试/架构合规预审通过直接编码 |
 | 代码审查 / spec 对齐 / 安全审查 / 验收 | `/kb-review`            | 只审查代码不读 spec          |
 | 安全审计/漏洞检查/OWASP                | `/kb-review`            | 流于形式不逐项检查           |
 | 更新 issue 状态/标记完成               | `/issue-lifecycle`      | 未验证测试就标记完成         |

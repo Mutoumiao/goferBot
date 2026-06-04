@@ -39,45 +39,44 @@ description: >
 
 ## 扫描维度
 
+### 规范阅读协议（执行扫描前必读）
+
+**本 skill 不重复定义规范，所有规范定义以以下文档为唯一真相源：**
+
+| 文档 | 内容 | 读取方式 |
+|------|------|----------|
+| `docs/adrs/0001-cloud-native-architecture.md` | ADR 0001 架构决策（验证方案、响应格式、技术栈） | 扫描前必读 |
+| `docs/guide/backend/conventions.md` | 后端编码规范（DTO 模板、常见违规速查、检查清单） | 扫描前必读 |
+| `docs/guide/backend/architecture-compliance.md` | 架构合规审查记录模板 | 参考 |
+
+**扫描执行方式：**
+1. 阅读上述规范文档，建立检查标准
+2. 对照规范逐条检查扫描目标
+3. 输出违规列表，按 Critical/Major/Minor 分级
+
+---
+
 ### 维度 1：验证方案合规（最高优先级）
 
 **决策来源**：ADR 0001 — 所有 DTO 必须使用 Zod schema + `createZodDto`，禁止 class-validator/class-transformer
 
-#### 违规模式清单
+**检查标准（详见 `conventions.md` 验证方案章节）：**
+- 所有 DTO 必须继承 `createZodDto()`
+- 禁止 `class-validator` 装饰器（`@IsString`、`@IsInt` 等）
+- 禁止 `class-transformer` 装饰器（`@Type`、`@Transform` 等）
+- 禁止 `@UsePipes(new ValidationPipe(...))`
+- 查询参数使用 `z.coerce` 处理类型转换
 
-| 违规模式 | 严重级别 | 正则/关键词 | 正确做法 |
-|----------|----------|-------------|----------|
-| 使用 `@IsString()`、`@IsInt()`、`@IsBoolean()`、`@IsOptional()`、`@IsEmail()` 等 class-validator 装饰器 | 🔴 Critical | `@Is\w+\(` | 使用 `z.string()`、`z.coerce.number()`、`z.boolean()` |
-| 使用 `@Type(() => Number)`、`@Type(() => Boolean)` 等 class-transformer 装饰器 | 🔴 Critical | `@Type\(` | 使用 `z.coerce.number()`、`z.union` + `transform` |
-| 使用 `@Transform()` 装饰器 | 🔴 Critical | `@Transform` | 使用 Zod 的 `.transform()` |
-| 手动实例化 `ValidationPipe` 或 `@UsePipes(new ValidationPipe(...))` | 🔴 Critical | `ValidationPipe` | 移除，全局 `ZodValidationPipe` 自动生效 |
-| DTO 类不继承 `createZodDto()` | 🟠 Major | `class \w+Dto\s*(?!.*extends\s+createZodDto)` | 改为 `class XxxDto extends createZodDto(schema)` |
-| 查询参数未使用 `z.coerce` 处理类型转换 | 🟡 Minor | `@Query.*Dto` 且 DTO 中无 `z.coerce` | 使用 `z.coerce.number()` 处理 URL 参数 |
-| 布尔值查询参数未使用 `z.union` + `transform` 模式 | 🟡 Minor | `boolean` 查询参数且非标准模式 | 使用 `z.union([z.boolean(), z.string(), z.number()]).transform(...)` |
+**违规模式清单：**
 
-#### 自动修复能力
-
-对以下模式提供自动修复：
-
-```typescript
-// ❌ 违规：class-validator
-class PagerDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  page?: number = 1
-}
-
-// ✅ 自动修复为：
-import { createZodDto } from 'nestjs-zod'
-import { z } from 'zod'
-
-export const pagerSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1).describe('页码，最小 1'),
-})
-
-export class PagerDto extends createZodDto(pagerSchema) {}
-```
+| 违规模式 | 严重级别 | 关键词 |
+|----------|----------|--------|
+| 使用 `@IsString()`、`@IsInt()` 等 class-validator 装饰器 | 🔴 Critical | `@Is\w+\(` |
+| 使用 `@Type(() => Number)` 等 class-transformer 装饰器 | 🔴 Critical | `@Type\(` |
+| 使用 `@Transform()` 装饰器 | 🔴 Critical | `@Transform` |
+| 手动实例化 `ValidationPipe` | 🔴 Critical | `ValidationPipe` |
+| DTO 类不继承 `createZodDto()` | 🟠 Major | `class \w+Dto` 且无 `extends createZodDto` |
+| 查询参数未使用 `z.coerce` | 🟡 Minor | `@Query` 参数无 `z.coerce` |
 
 ---
 
@@ -85,19 +84,18 @@ export class PagerDto extends createZodDto(pagerSchema) {}
 
 **决策来源**：ADR 0001 — 所有 API 成功响应统一为 `{ data: T }` 格式，由 ResponseInterceptor 自动包装
 
-#### 违规模式清单
+**检查标准（详见 `conventions.md` 响应格式章节）：**
+- Controller 直接返回原始数据，禁止手动包装 `{ data: result }`
+- 禁止无正当理由的 `@BypassResponse()`
+- 唯一合法豁免：SSE 流式响应（`chat.controller.ts`）
 
-| 违规模式 | 严重级别 | 正则/关键词 | 正确做法 |
-|----------|----------|-------------|----------|
-| 无正当理由使用 `@BypassResponse()` | 🟠 Major | `@BypassResponse` | 移除，直接 `return result`，让 ResponseInterceptor 包装 |
-| Controller 中手动返回 `{ data: result }` | 🟠 Major | `return \{ data:` | 直接 `return result` |
-| 返回 `{ items, pagination }` 给前端（绕过拦截器） | 🟠 Major | `return \{ items:` | 让前端接收 `{ data: { items, pagination } }` |
-| SSE 流式响应外使用 `@BypassResponse()` | 🔴 Critical | `@BypassResponse` 且非 SSE | SSE 是唯一合法场景 |
+**违规模式清单：**
 
-#### 合法豁免场景
-
-- `chat.controller.ts` 的 SSE 流式端点 —— 唯一合法的 `@BypassResponse()` 使用场景
-- 文件下载/二进制响应 —— 需显式注释说明理由
+| 违规模式 | 严重级别 | 关键词 |
+|----------|----------|--------|
+| 无正当理由使用 `@BypassResponse()` | 🟠 Major | `@BypassResponse` |
+| Controller 中手动返回 `{ data: result }` | 🟠 Major | `return \{ data:` |
+| SSE 外使用 `@BypassResponse()` | 🔴 Critical | `@BypassResponse` 且非 SSE |
 
 ---
 
@@ -105,41 +103,50 @@ export class PagerDto extends createZodDto(pagerSchema) {}
 
 **决策来源**：ADR 0001 + 技术栈约束
 
-#### 禁止依赖清单
+**禁止依赖清单：**
 
 | 包名 | 严重级别 | 原因 |
 |------|----------|------|
-| `class-validator` | 🔴 Critical | ADR 0001 明确禁止，使用 Zod 替代 |
-| `class-transformer` | 🔴 Critical | ADR 0001 明确禁止，使用 Zod 替代 |
-| `@nestjs/class-validator` | 🔴 Critical | class-validator 的 NestJS 包装，同样禁止 |
-| `@nestjs/class-transformer` | 🔴 Critical | class-transformer 的 NestJS 包装，同样禁止 |
-
-#### 新依赖审查
-
-发现 `package.json` 或 `pnpm add` 引入新依赖时：
-
-| 检查项 | 操作 |
-|--------|------|
-| 是否在禁止清单？ | 立即标记 Critical |
-| 是否与现有技术栈冲突？ | 标记 Major，要求说明必要性 |
-| 是否已存在功能等价的包？ | 标记 Minor，建议复用 |
+| `class-validator` | 🔴 Critical | ADR 0001 明确禁止 |
+| `class-transformer` | 🔴 Critical | ADR 0001 明确禁止 |
+| `@nestjs/class-validator` | 🔴 Critical | class-validator 包装 |
+| `@nestjs/class-transformer` | 🔴 Critical | class-transformer 包装 |
 
 ---
 
 ### 维度 4：NestJS 规范合规
 
+**检查标准（详见 `conventions.md` 相关章节）：**
+- 通过 `PrismaService` 注入，禁止直接实例化 `PrismaClient`
+- Service 层抛出 NestJS 内置异常，禁止 Controller 手动构造错误响应
+- 敏感端点使用 `@UseGuards(JwtAuthGuard)`
+
+**违规模式清单：**
+
 | 违规模式 | 严重级别 | 正确做法 |
 |----------|----------|----------|
 | 直接实例化 `PrismaClient` | 🟠 Major | 通过 `PrismaService` 注入 |
-| Controller 中手动构造错误响应 | 🟠 Major | Service 层抛出 NestJS 内置异常，由 ExceptionFilter 处理 |
-| 未使用 `@UseGuards(JwtAuthGuard)` 保护敏感端点 | 🔴 Critical | 所有非公开端点必须加守卫 |
-| 认证端点未使用 `@CurrentUser()` 获取用户信息 | 🟡 Minor | 使用 `@CurrentUser()` 装饰器 |
+| Controller 手动构造错误响应 | 🟠 Major | Service 层抛出 NestJS 内置异常 |
+| 敏感端点无 `@UseGuards(JwtAuthGuard)` | 🔴 Critical | 所有非公开端点必须加守卫 |
 
 ---
 
 ## 扫描执行流程
 
-### 步骤 1：确定扫描范围
+### 步骤 1：阅读规范文档
+
+扫描前，先阅读规范建立检查标准：
+
+```
+architecture-guard 启动
+    ↓
+阅读 docs/adrs/0001-cloud-native-architecture.md（ADR 决策）
+阅读 docs/guide/backend/conventions.md（编码规范）
+    ↓
+建立检查标准 → 进入步骤 2
+```
+
+### 步骤 2：确定扫描范围
 
 ```
 用户指定文件/目录
@@ -159,35 +166,16 @@ export class PagerDto extends createZodDto(pagerSchema) {}
 | `packages/server/src/**/*.ts` | 同目录或上级 `package.json` | 检查是否引入禁止依赖 |
 | `git diff` | diff 中涉及的所有文件 | 变更可能跨多个文件 |
 
-**示例：**
-- 用户说"检查 `docs/issues/b-14-admin-user-management/plan.md`"
-- 自动扫描：`plan.md` + `specs/feature-spec.md` + `specs/api-spec.md`
-- 如 plan 中引用 `packages/server/src/shared/dto/pager.dto.ts`，一并扫描
+### 步骤 3：执行扫描
 
-### 步骤 2：执行扫描
+对照步骤 1 建立的检查标准，逐条检查扫描目标。
 
-对每个维度执行模式匹配：
+**扫描原则：**
+- 不依赖硬编码的 grep 命令
+- 基于已阅读的规范文档，逐行审查代码逻辑
+- 对疑似违规代码，追溯其是否符合 ADR 决策
 
-```
-维度 1：验证方案
-  - grep "@Is\w+\(" → 发现 class-validator 装饰器
-  - grep "@Type\(" → 发现 class-transformer 装饰器
-  - grep "ValidationPipe" → 发现原生验证管道
-  - grep "class \w+Dto" → 检查是否继承 createZodDto
-
-维度 2：响应格式
-  - grep "@BypassResponse" → 检查是否合法
-  - grep "return \{ data:" → 检查手动包装
-
-维度 3：依赖引入
-  - grep "class-validator\|class-transformer" → 检查 package.json / import 语句
-
-维度 4：NestJS 规范
-  - grep "new PrismaClient" → 检查直接实例化
-  - grep "@UseGuards" → 检查敏感端点保护
-```
-
-### 步骤 3：分级输出
+### 步骤 4：分级输出
 
 ```markdown
 ## 架构合规扫描报告
@@ -227,7 +215,7 @@ export class PagerDto extends createZodDto(pagerSchema) {}
 扫描通过后方可继续生成 plan / 进入开发 / 提交代码。
 ```
 
-### 步骤 4：阻断决策
+### 步骤 5：阻断决策
 
 | 发现级别 | 处理方式 |
 |----------|----------|

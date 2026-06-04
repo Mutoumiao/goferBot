@@ -15,7 +15,7 @@ description: >
 | 项目 | 内容 |
 |------|------|
 | **触发词** | "写计划"、"生成实现方案"、"基于 spec 生成 plan" |
-| **硬关卡** | 禁止占位符（"TODO"、"TBD"）；每个任务必须以测试开始 |
+| **硬关卡** | 禁止占位符（"TODO"、"TBD"）；每个任务必须以测试开始；保存前必须通过架构合规扫描 |
 | **核心输出** | `docs/issues/{dir}/plan.md` + `plans/v{N}.md` |
 | **禁止行为** | 写 TODO、任务不以测试开始、无验证命令 |
 | **下一步** | plan 生成后 → 用户确认 → 调用 dev-orchestrator |
@@ -95,46 +95,9 @@ description: >
 
 ---
 
-## 计划文档头部
+## 任务结构模板
 
-**每个 plan 必须以以下头部开始：**
-
-```markdown
----
-id: f-15
-issue: issue.md
-version: 1
----
-
-# [功能名称] 实现计划
-
-> **For agentic workers:** 必需子技能：superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans。步骤使用复选框（`- [ ]`）语法追踪。
-
-**目标：** [一句话描述构建什么]
-
-**架构：** [2-3 句话关于方法]
-
-**技术栈：** [关键技术/库]
-
-**Issue 引用：** [链接到 issue.md]
-**Spec 引用：** [链接到 specs/]
-
----
-```
-
----
-
-## TDD 执行细节
-
-**TDD 规则详情参见** [`_shared/references/tdd-rules.md`](mdc:.claude/skills/_shared/references/tdd-rules.md)。以下是 plan 中必须遵守的摘要：
-
-### 核心原则
-
-- **铁律**：没有先失败的测试，不写生产代码
-- **循环**：RED（失败测试）→ 验证失败 → GREEN（最小实现）→ 验证通过 → REFACTOR → 保持绿色
-- **每个任务**必须以测试开始，以测试通过结束
-
-### 任务结构模板
+每个任务必须以测试开始，以测试通过结束。
 
 ```markdown
 ### 任务 N: [组件/功能名称]
@@ -149,7 +112,6 @@ version: 1
 - API 规格：[端点 Z - 错误码 W]
 
 - [ ] **步骤 1: 编写失败测试**
-
 ```typescript
 // tests/{layer}/{name}.spec.ts
 import { describe, it, expect } from 'vitest'
@@ -192,6 +154,47 @@ git commit -m "feat(scope): add myFunction with tests"
 
 ---
 
+## 计划文档头部
+
+**每个 plan 必须以以下头部开始：**
+
+```markdown
+---
+id: f-15
+issue: issue.md
+version: 1
+---
+
+# [功能名称] 实现计划
+
+> **For agentic workers:** 必需子技能：superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans。步骤使用复选框（`- [ ]`）语法追踪。
+
+**目标：** [一句话描述构建什么]
+
+**架构：** [2-3 句话关于方法]
+
+**技术栈：** [关键技术/库]
+
+**Issue 引用：** [链接到 issue.md]
+**Spec 引用：** [链接到 specs/]
+
+---
+```
+
+---
+
+## TDD 执行细节
+
+**TDD 规则详情参见** [`_shared/references/tdd-rules.md`](mdc:.claude/skills/_shared/references/tdd-rules.md)。以下是 plan 中必须遵守的摘要：
+
+### 核心原则
+
+- **铁律**：没有先失败的测试，不写生产代码
+- **循环**：RED（失败测试）→ 验证失败 → GREEN（最小实现）→ 验证通过 → REFACTOR → 保持绿色
+- **每个任务**必须以测试开始，以测试通过结束
+
+---
+
 ## TDD 红线规则
 
 以下情况计划**必须打回重写**：
@@ -218,44 +221,53 @@ git commit -m "feat(scope): add myFunction with tests"
 
 ---
 
-## ADR 影响评估（由 `/architecture-guard` 执行扫描）
+## ADR 合规声明
 
-生成计划前，评估本 issue 是否涉及或影响已有架构决策。
+### plan 头部必填
 
-> **注意**：以下检查清单由 `/architecture-guard` skill 在 plan 生成后自动执行扫描。本章节保留作为上下文参考，用于在生成 plan 时保持架构意识。
-
-**自检清单（生成时参考）：**
-- [ ] **ADR 清单**：列出本 issue 涉及的所有 ADR（如 ADR 0001）
-- [ ] **验证方案**：是否需要新增/修改 DTO？→ 确认使用 Zod + `createZodDto`，禁止 class-validator
-- [ ] **响应格式**：是否新增 API 端点？→ 确认统一走 `ResponseInterceptor`，禁止无正当理由的 `@BypassResponse()`
-- [ ] **依赖引入**：是否计划引入新 npm 包？→ 确认不与现有技术栈冲突（如禁止引入 class-validator、class-transformer）
-- [ ] **冲突声明**：若 spec 中的技术选型与 ADR 冲突，必须在计划中显式声明并申请豁免
-
-**ADR 合规声明模板（plan 头部追加）：**
+每个 plan.md 必须在头部包含以下章节：
 
 ```markdown
 ## ADR 合规声明
 
 | ADR | 涉及内容 | 符合/豁免 | 说明 |
 |-----|---------|----------|------|
-| ADR 0001 | 验证方案、响应格式、向量存储 | ✅ 符合 | 使用 Zod + ResponseInterceptor + pgvector |
+| ADR 0001 | 验证方案、响应格式 | ✅ 符合 | 使用 Zod + ResponseInterceptor |
+| ADR 0001 | 依赖引入 | ✅ 符合 | 未引入禁止依赖 |
 ```
 
-**plan 生成后的强制扫描：**
+### 生成时自检（必须执行）
 
-plan.md 保存前，**必须调用 `/architecture-guard`** 扫描 plan 中的所有代码块：
+生成 plan 前，逐条确认以下检查项。任何一项未确认，plan 不得进入保存流程。
+
+| 检查项 | 确认内容 | 阻断规则 |
+|--------|---------|----------|
+| **ADR 清单** | 列出本 issue 涉及的所有 ADR | 未列出 → 阻断 |
+| **验证方案** | 是否新增/修改 DTO？→ 必须使用 Zod + `createZodDto` | 计划使用 class-validator → 阻断 |
+| **响应格式** | 是否新增 API 端点？→ 必须走 `ResponseInterceptor` | 计划使用 `@BypassResponse()`（非 SSE）→ 阻断 |
+| **依赖引入** | 是否计划引入新 npm 包？→ 检查禁止清单 | 计划引入 class-validator / class-transformer → 阻断 |
+| **冲突声明** | 若 spec 技术选型与 ADR 冲突 | 未声明冲突 → 阻断 |
+
+### plan 保存前审查流程
+
+plan.md 保存前，**必须调用 `/architecture-guard` 进行审查**：
 
 ```
 plan-generator 完成 plan 编写
     ↓
-调用 /architecture-guard 扫描 plan.md
+调用 /architecture-guard 审查 plan.md
     ↓
-❌ 发现 Critical → 修复违规代码块 → 重新扫描
+❌ 发现 Critical → 修复违规代码块 → 重新调用 /architecture-guard 审查
 ✅ 无违规 → 保存 plan.md
 ```
 
+**审查内容：**
+- plan.md 中的所有 TypeScript 代码块
+- specs/*.md 中的 DTO 定义和依赖声明
+- 与 ADR 0001 等架构决策的一致性
+
 **若发现冲突：**
-1. 不继续生成 plan（也不保存）
+1. 不保存 plan.md
 2. 向用户说明冲突：「spec 中提议使用 X，但 ADR 0001 决策使用 Y」
 3. 提供选项：
    - 选项 A：修改 spec 以符合 ADR

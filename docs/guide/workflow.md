@@ -161,7 +161,19 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 - 禁止占位符（"TODO"、"稍后实现"）
 - 必须包含具体代码示例和验证命令
 - **TDD 强制**：每个任务必须以"编写失败测试"开始，以"运行测试确认通过"结束
+- **架构合规声明**：plan 头部必须包含 ADR 合规声明表格
 - 自检：是否覆盖了 spec 中所有交互状态/端点？
+
+**保存前强制扫描**：
+
+```
+plan-generator 完成 plan 编写
+    ↓
+调用 /architecture-guard 审查 plan.md
+    ↓
+❌ 发现 Critical → 修复违规代码块 → 重新调用 /architecture-guard
+✅ 无违规 → 保存 plan.md
+```
 
 详细规范：[writing-plans.md](writing-plans.md)
 
@@ -174,6 +186,11 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 
 **使用 skill**：`/architecture-guard`
 
+**扫描范围**：
+- plan.md 中的所有代码块
+- specs/*.md 中的 DTO 定义和依赖声明
+- 已存在的相关实现文件（如有）
+
 **检查维度**：
 - 验证方案合规：Zod schema + `createZodDto`，无 class-validator
 - 响应格式合规：直接返回原始数据，无无正当理由的 `@BypassResponse()`
@@ -181,9 +198,10 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 - NestJS 规范合规：模块分层、RESTful 端点、认证守卫
 
 **规则**：
-- Critical 违规必须修复后才能进入阶段 4
-- Major 违规需评估影响，决定是否阻塞
+- **Critical 违规必须修复后才能进入阶段 4**（硬关卡）
+- Major 违规需评估影响，用户可申请豁免
 - 扫描结果写入审查记录
+- 未通过扫描的 plan 不得保存
 
 ---
 
@@ -202,6 +220,14 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 **后端 Agent**：
 - 读 API 规格 → 生成计划 → **先写测试**（`/test-scaffold`）→ 编码 → `/kb-review`
 - 编码后可用 `/kb-review` 做代码审查与安全检查
+
+**编码中架构合规检查（每个任务）**：
+
+每个任务编码完成后、提交前，调用 `/architecture-guard` 进行快速检查，确保本次变更未引入架构违规。
+
+**规则**：
+- 检查通过 → 继续提交
+- 检查失败 → **暂停当前任务**，修复违规后方可继续
 
 **TDD 执行检查点**：
 
@@ -262,9 +288,10 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
    - 确认类型检查通过
    - 确认审查记录已归档到 `docs/reviews/`
 2. 使用 `/integration-check` 确认无 Mock 残留、接口一致
-3. 运行 `sync-issue-status.js` 更新 issue 状态
-4. 运行 `issue-updater` 更新 `BACKLOG.md` + `CHANGELOG.md`
-5. 可选：归档到 `docs/99-archived/issues/`
+3. **架构合规后检**：调用 `/architecture-guard` 进行最终审查，确认无 Critical 违规
+4. 运行 `sync-issue-status.js` 更新 issue 状态
+5. 运行 `issue-updater` 更新 `BACKLOG.md` + `CHANGELOG.md`
+6. 可选：归档到 `docs/99-archived/issues/`
 
 **然后**：回到阶段 1，启动下一批功能。
 

@@ -17,7 +17,7 @@ description: >
 | 项目 | 内容 |
 |------|------|
 | **触发词** | "开发 issue"、"开始做 f-15"、"issue 怎么实现" |
-| **硬关卡** | spec 存在 → plan 存在 → 测试存在（缺一不可） |
+| **硬关卡** | spec 存在 → plan 存在 → 测试存在 → 架构合规预审通过（缺一不可） |
 | **核心输出** | 检查点 `[CHECKPOINT] ✅|🔍|⏳|🚨` |
 | **禁止行为** | 无 spec 写代码、无测试直接实现、跳过验证声明完成 |
 | **下一步** | spec 缺失 → 调用 spec-validator；plan 缺失 → 调用 plan-generator |
@@ -233,31 +233,38 @@ docs/issues/{dir}/specs/
 
 ---
 
-### 5c. 架构合规预审（由 `/architecture-guard` 执行）
+### 5c. 架构合规预审（执行前硬关卡）
 
-在引导进入开发前，**调用 `/architecture-guard` skill** 对 plan.md 和相关代码执行架构合规扫描。
+在引导进入开发前，**必须调用 `/architecture-guard` 进行架构合规预审**。这不是可选审查，而是进入编码阶段的硬关卡。
 
-> **注意**：以下检查清单由 `/architecture-guard` 自动执行。本章节保留作为上下文参考，说明检查覆盖的范围。
+**预审执行流程：**
 
-**扫描范围：**
-- `docs/issues/{dir}/plan.md` 中的所有代码块
-- `docs/issues/{dir}/specs/*.md` 中的 DTO 定义和依赖声明
-- 已存在的相关实现文件（如有）
+```
+dev-orchestrator 步骤 5c
+    ↓
+调用 /architecture-guard 审查以下内容：
+    - plan.md 中的代码块
+    - specs/*.md 中的 DTO 定义和依赖声明
+    - 已存在的相关实现文件（如有）
+    ↓
+❌ 发现 Critical 违规 → 阻断编码，输出违规详情 → 修复后重新调用 /architecture-guard
+✅ 审查通过 → 进入步骤 6
+```
 
-**检查维度：**
-- **验证方案**：是否使用 Zod schema + `createZodDto`？是否引入 class-validator/class-transformer？
-- **响应格式**：是否直接返回原始数据？是否有无正当理由的 `@BypassResponse()`？
-- **依赖引入**：是否引入与现有技术栈冲突的新依赖？
-- **NestJS 规范**：是否直接实例化 PrismaClient？敏感端点是否有守卫？
+**审查内容（由 /architecture-guard 执行）：**
+- 验证方案合规：Zod schema + `createZodDto`，无 class-validator
+- 响应格式合规：直接返回原始数据，无无正当理由的 `@BypassResponse()`
+- 依赖引入合规：无与现有技术栈冲突的新依赖
+- NestJS 规范合规：模块分层、RESTful 端点、认证守卫
 
-**`/architecture-guard` 输出处理后：**
+**预审结果处理：**
 
-| 结果 | 处理方式 |
-|------|----------|
-| 🔴 Critical 违规 | **阻断**：必须修复并重新扫描后才能继续 |
-| 🟠 Major 违规 | **警告**：建议修复，用户可申请豁免 |
-| 🟡 Minor 违规 | **提示**：可选修复，不阻断 |
-| ✅ 无违规 | 进入步骤 6 |
+| 检查结果 | 处理方式 |
+|----------|----------|
+| 🔴 发现 Critical 违规 | **阻断编码**：必须修复后才能继续。修复方式：<br>1. 若 plan 中存在违规代码 → 修改 plan.md → 重新调用 /architecture-guard<br>2. 若已有代码存在违规 → 先修复已有代码 → 重新调用 /architecture-guard |
+| 🟠 发现 Major 违规 | **警告**：建议修复，用户可申请豁免（需说明理由） |
+| 🟡 发现 Minor 违规 | **提示**：记录但不阻断 |
+| ✅ 审查通过 | 进入步骤 6，引导进入开发 |
 
 **禁止**：在未经确认的情况下，为了「局部简单」而绕过架构决策。
 
@@ -375,6 +382,16 @@ b-02 知识库 CRUD API
 
 **验证铁律**参见 [`_shared/references/verification-commands.md`](mdc:.claude/skills/_shared/references/verification-commands.md)。
 
+---
+
+### 方式二补充：编码中架构合规检查
+
+内联执行时，**每个任务完成编码后**，调用 `/architecture-guard` 进行快速检查，确保本次变更未引入架构违规。
+
+**检查时机：**
+- 每个任务编码完成后、提交前
+- 发现疑似违规时随时调用
+
 **何时停止并求助：**
 - 遇到阻塞（缺少依赖、测试失败、指令不清）
 - Plan 有关键缺口导致无法开始
@@ -395,7 +412,8 @@ b-02 知识库 CRUD API
 
 1. **按 track 运行对应测试全部通过**
 2. **类型检查通过**：`pnpm type-check`
-3. **全量回归无退化**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
+3. **架构合规后检通过**：调用 `/architecture-guard` 进行最终审查，确认无 Critical 违规
+4. **全量回归无退化**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
 
 ### 验证通过后
 
@@ -433,6 +451,7 @@ b-02 知识库 CRUD API
 | 用户仅"查看进度"                    | 仅展示当前状态                           |
 | Issue 状态为 `closed`               | 告知已完成，询问是否重新打开             |
 | 多 issue 中有前后端配对但后端未完成 | 前端 plan 中补充 Mock 方案               |
+| /architecture-guard 审查失败（含预审、编码中、后检） | **阻断/暂停**：修复违规后重新调用 /architecture-guard 审查通过方可继续 |
 
 ---
 
