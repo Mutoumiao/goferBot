@@ -33,7 +33,9 @@
 
 - [ ] NestJS 模块/控制器/服务分层是否清晰？
 - [ ] API 端点是否遵循 RESTful 规范？
-- [ ] DTO 是否使用 `nestjs-zod` 进行验证？
+- [ ] **DTO 是否使用 Zod schema + `createZodDto`？是否引入了 `class-validator`？**
+- [ ] **Controller 是否使用了 `@UsePipes(new ValidationPipe(...))` 或 `@BypassResponse()`？**
+- [ ] **响应格式是否统一走 `ResponseInterceptor`（直接 return 原始数据）？**
 - [ ] 错误响应是否统一格式 `{ error: string }`，不暴露内部信息？
 - [ ] 认证中间件是否正确注入 user/session？
 - [ ] 数据库操作是否使用 Prisma 事务（需要时）？

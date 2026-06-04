@@ -51,7 +51,7 @@ description: >
 | `f-*` | [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md) | 必读全文 |
 | `f-*`（浮层） | [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md) | 按需阅读 |
 | `f-*` | 前端测试规范 → `docs/guide/testing/unit-testing-guide.md` 第 5-6 章 | 必读 |
-| `b-*` / `d-*` | [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md) | 必读全文 |
+| `b-*` / `d-*` | [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md) | 必读全文（含规范索引，按需深入各规范） |
 | `b-*` / `d-*` | 后端测试规范 → `docs/guide/testing/unit-testing-guide.md` 第 7 章 | 必读 |
 | `i-*` | [`docs/guide/testing/integration-testing-guide.md`](mdc:docs/guide/testing/integration-testing-guide.md) | 必读全文 |
 | `q-*` | [`docs/guide/testing/e2e-testing-guide.md`](mdc:docs/guide/testing/e2e-testing-guide.md) | 必读全文 |
@@ -233,9 +233,31 @@ docs/issues/{dir}/specs/
 
 ---
 
+### 5c. 架构合规预审（新增）
+
+在引导进入开发前，强制进行架构合规检查：
+
+**检查清单：**
+- [ ] **ADR 合规**：本 issue 涉及哪些 ADR？是否违反任何已有决策？
+- [ ] **验证方案**：后端 issue 是否使用 Zod schema + `createZodDto`？是否计划引入 class-validator？
+- [ ] **响应格式**：是否计划直接返回原始数据（不手动包装 `{ data: ... }`）？是否需要 `@BypassResponse()`？
+- [ ] **依赖引入**：是否计划引入新 npm 包？是否与现有技术栈冲突？
+
+**若发现冲突：**
+1. 暂停编码，不继续实现
+2. 列出冲突：具体说明哪个 ADR 的哪条决策被违反
+3. 提出方案：
+   - 方案 A：修改实现以符合 ADR
+   - 方案 B：申请 ADR 豁免（需说明理由和回归计划）
+4. 等待用户确认后再继续
+
+**禁止**：在未经确认的情况下，为了「局部简单」而绕过架构决策。
+
+---
+
 ### 6. 引导进入开发
 
-spec、plan 和测试代码都就绪后，汇报状态：
+spec、plan、测试代码和架构合规检查都就绪后，汇报状态：
 
 **单 issue 模式：**
 

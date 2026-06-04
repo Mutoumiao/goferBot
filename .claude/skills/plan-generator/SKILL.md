@@ -45,9 +45,9 @@ description: >
    - `api-spec.md` — 后端：路由、DTO、错误码、异步行为
 
 3. **代码库规范**（按 track 选择，必读）：
-   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)
+   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)（含规范索引，按需深入）
    - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)
-   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)
+   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)（含规范索引，按需深入）
 
 4. **测试指南**（参考）：
    - 测试路径与命名 → [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)
@@ -218,6 +218,38 @@ git commit -m "feat(scope): add myFunction with tests"
 
 ---
 
+## ADR 影响评估（新增）
+
+生成计划前，评估本 issue 是否涉及或影响已有架构决策：
+
+**检查清单：**
+- [ ] **ADR 清单**：列出本 issue 涉及的所有 ADR（如 ADR 0004、ADR 0005）
+- [ ] **验证方案**：是否需要新增/修改 DTO？→ 确认使用 Zod + `createZodDto`，禁止 class-validator
+- [ ] **响应格式**：是否新增 API 端点？→ 确认统一走 `ResponseInterceptor`，禁止无正当理由的 `@BypassResponse()`
+- [ ] **依赖引入**：是否计划引入新 npm 包？→ 确认不与现有技术栈冲突（如禁止引入 class-validator、class-transformer）
+- [ ] **冲突声明**：若 spec 中的技术选型与 ADR 冲突，必须在计划中显式声明并申请豁免
+
+**ADR 合规声明模板（plan 头部追加）：**
+
+```markdown
+## ADR 合规声明
+
+| ADR | 涉及内容 | 符合/豁免 | 说明 |
+|-----|---------|----------|------|
+| ADR 0004 | 验证方案、响应格式 | ✅ 符合 | 使用 Zod + ResponseInterceptor |
+| ADR 0005 | 向量存储 | — | 本 issue 不涉及 |
+```
+
+**若发现冲突：**
+1. 不继续生成 plan
+2. 向用户说明冲突：「spec 中提议使用 X，但 ADR 0004 决策使用 Y」
+3. 提供选项：
+   - 选项 A：修改 spec 以符合 ADR
+   - 选项 B：申请 ADR 豁免（需说明理由和回归计划）
+4. 获得用户明确确认后再继续
+
+---
+
 ## 自检
 
 写完完整计划后，用 fresh eyes 对照 spec 检查：
@@ -240,6 +272,7 @@ git commit -m "feat(scope): add myFunction with tests"
 4. **测试覆盖**：每个任务都有对应的 `tests/{layer}/{name}.spec.ts` 文件？
 5. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
 6. **类型一致性**：后续任务中的类型、签名与早期任务一致？
+7. **ADR 合规**：计划中的技术选型是否与 ADR 合规声明一致？
 
 ---
 

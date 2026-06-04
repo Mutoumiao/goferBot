@@ -30,9 +30,9 @@ description: >
 4. **设计系统**: `docs/design/system/DESIGN.md`
 5. **命名规范**: `docs/guide/naming-convention.md`
 6. **代码库规范**（按 issue track 选择，参考）：
-   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)
+   - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)（含规范索引，按需深入）
    - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)
-   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)
+   - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)（含规范索引，按需深入）
 7. **测试指南**（按 issue track 选择，参考）：
    - 测试路径与命名规范 → [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)
    - 详细测试写法 → `docs/guide/testing/unit-testing-guide.md`（f/b）、`integration-testing-guide.md`（i）、`e2e-testing-guide.md`（q）
@@ -227,6 +227,27 @@ description: >
 
 ---
 
+## ADR 影响评估（新增）
+
+编写 spec 时，评估是否涉及或影响已有架构决策：
+
+**检查清单：**
+- [ ] **ADR 清单**：列出本 issue 涉及的所有 ADR（如 ADR 0004、ADR 0005）
+- [ ] **验证方案**：是否需要新增/修改 DTO？→ 确认使用 Zod + `createZodDto`，禁止 class-validator
+- [ ] **响应格式**：是否新增 API 端点？→ 确认统一走 `ResponseInterceptor`
+- [ ] **依赖引入**：是否提议引入新 npm 包？→ 确认不与现有技术栈冲突
+- [ ] **冲突声明**：若 spec 中的技术选型与 ADR 冲突，必须在 spec 中显式声明并申请豁免
+
+**若发现冲突：**
+1. 不继续编写 spec
+2. 向用户说明冲突：「你提议使用 X，但 ADR 0004 决策使用 Y」
+3. 提供选项：
+   - 选项 A：修改需求以符合 ADR
+   - 选项 B：申请 ADR 豁免（需说明理由和回归计划）
+4. 获得用户明确确认后再继续
+
+---
+
 ## 完成检查清单
 
 - [ ] 功能规格有清晰的用户故事和边界
@@ -240,3 +261,4 @@ description: >
 - [ ] 所有决策都有理由记录
 - [ ] Spec 文件放在 issue 目录下的 `specs/` 子目录中
 - [ ] 三个 spec 文件至少存在一个（按 issue 类型）
+- [ ] **ADR 影响评估已完成，无冲突或冲突已解决**
