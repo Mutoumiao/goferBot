@@ -45,7 +45,7 @@ describe('PgVectorStore', () => {
       console.log('[SKIP] 基础设施不可用')
       return
     }
-    // ADR 0005 后，向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）
+    // ADR 0001 决策：向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）
     // PgVectorStore.insertVectors 已废弃并抛错
     const record = {
       id: crypto.randomUUID(),

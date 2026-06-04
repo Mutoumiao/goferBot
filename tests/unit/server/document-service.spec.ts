@@ -16,7 +16,7 @@ describe('DocumentService.remove with vector deletion', () => {
     const service = new DocumentService(mockPrisma, mockStorage, mockVector)
     await service.remove('u1', 'kb1', 'd1')
 
-    // ADR 0005 后，deleteByFileId 已由数据库级 ON DELETE CASCADE 替代
+    // ADR 0001 决策：deleteByFileId 已由数据库级 ON DELETE CASCADE 替代
     // DocumentService 不再显式调用向量删除
     expect(mockVector.deleteByFileId).toBeUndefined()
     expect(mockPrisma.document.delete).toHaveBeenCalledWith({ where: { id: 'd1' } })

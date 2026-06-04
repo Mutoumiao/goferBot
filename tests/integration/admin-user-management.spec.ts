@@ -99,9 +99,9 @@ describe('Admin User Management API', () => {
 
       expect(response.statusCode).toBe(200)
       const body = response.json()
-      expect(body.data).toHaveLength(7)
-      expect(body.pagination.total).toBe(7) // admin + user + 5 users
-      expect(body.pagination.totalPage).toBe(1)
+      expect(body.data.data).toHaveLength(7)
+      expect(body.data.pagination.total).toBe(7) // admin + user + 5 users
+      expect(body.data.pagination.totalPage).toBe(1)
     })
 
     it('should support email search', async () => {
@@ -113,8 +113,8 @@ describe('Admin User Management API', () => {
 
       expect(response.statusCode).toBe(200)
       const body = response.json()
-      expect(body.data).toHaveLength(1)
-      expect(body.data[0].email).toBe('user@test.gofer')
+      expect(body.data.data).toHaveLength(1)
+      expect(body.data.data[0].email).toBe('user@test.gofer')
     })
 
     it('should support isActive filter', async () => {
@@ -133,8 +133,8 @@ describe('Admin User Management API', () => {
 
       expect(response.statusCode).toBe(200)
       const body = response.json()
-      expect(body.data.length).toBeGreaterThanOrEqual(1)
-      expect(body.data[0].isActive).toBe(false)
+      expect(body.data.data.length).toBeGreaterThanOrEqual(1)
+      expect(body.data.data[0].isActive).toBe(false)
     })
 
     it('should return 403 for non-admin user', async () => {

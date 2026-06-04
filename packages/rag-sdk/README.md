@@ -545,5 +545,5 @@ npx vitest run tests/unit/server/run-indexing-usage.spec.ts
 |------|------|
 | 模块设计详情 | `packages/rag-sdk/docs/01-07` |
 | Server 集成指南 | `packages/rag-sdk/docs/integration.md` |
-| ADR 0005 (pgvector) | `docs/adrs/0005-pgvector-replaces-milvus.md` |
+| ADR 0001 (云原生架构) | `docs/adrs/0001-cloud-native-architecture.md` |
 | PRD RAG Server 集成 | `docs/prd/rag-server-integration.md` |

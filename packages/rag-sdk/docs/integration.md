@@ -34,7 +34,7 @@ RAG SDK 采用**接口注入**模式：SDK 定义抽象接口，server 提供具
 | `IKeywordStore` | `KeywordService` | PostgreSQL FTS（zhparser） | `server/src/processors/keyword/keyword.service.ts` |
 | `IGenerator` | `ChatService` | OpenAI 兼容 LLM API | `server/src/modules/chat/chat.service.ts` |
 
-> **架构变更（ADR 0005）**：向量存储从 Milvus 独立服务迁移至 PostgreSQL pgvector 扩展。
+> **架构变更（ADR 0001）**：向量存储使用 PostgreSQL pgvector 扩展。
 > 元数据与向量同库同表，利用 PostgreSQL 原生 ACID 事务消除双写不一致。
 
 ---
@@ -58,7 +58,7 @@ export class PgVectorStore implements IVectorStore {
   }
 
   /**
-   * @deprecated ADR 0005 后，向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）。
+   * @deprecated ADR 0001 决策：向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）。
    * 本方法保留仅用于 IVectorStore 接口完整性，直接调用会丢失 content/tokenCount/chunkIndex。
    */
   async insertVectors(_records: VectorRecord[]): Promise<void> {
@@ -111,7 +111,7 @@ export class PgVectorStore implements IVectorStore {
 
 ## IIndexer 实现 — PrismaVectorIndexer
 
-**这是 ADR 0005 后的核心变更**：索引写入不再通过 `IVectorStore.insertVectors`，而是由 `PrismaVectorIndexer` 在单一 PostgreSQL 事务中同时写入 chunks 元数据和 embedding 向量。
+**这是 ADR 0001 决策的核心实现**：索引写入不由 `IVectorStore.insertVectors` 处理，而是由 `PrismaVectorIndexer` 在单一 PostgreSQL 事务中同时写入 chunks 元数据和 embedding 向量。
 
 ```typescript
 // packages/server/src/processors/indexing/prisma-vector.indexer.ts

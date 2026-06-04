@@ -22,7 +22,7 @@ export class PgVectorStore implements IVectorStore {
   }
 
   /**
-   * @deprecated ADR 0005 后，向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）。
+   * @deprecated ADR 0001 决策：向量插入由 PrismaVectorIndexer 处理（单事务写入元数据+向量）。
    * 本方法保留仅用于 IVectorStore 接口完整性，直接调用会丢失 content/tokenCount/chunkIndex。
    */
   async insertVectors(_records: VectorRecord[]): Promise<void> {

@@ -17,7 +17,7 @@
 
 ### 1. 完整的 RAG 检索增强系统
 
-- **混合搜索策略**：Milvus HNSW 向量索引（语义相似度）+ **全文索引**（关键词匹配），通过 RRF 融合排序提升召回率
+- **混合搜索策略**：pgvector HNSW 向量索引（语义相似度）+ **全文索引**（关键词匹配），通过 RRF 融合排序提升召回率
 - **细粒度检索控制**：支持 `@知识库名称` 提及触发 RAG，每条消息独立选择检索范围，非全局开关
 - **后台索引队列**：批量导入文件时自动排队处理，前端实时显示索引进度，避免卡死 UI
 
@@ -29,12 +29,11 @@
 | -- | ---- | -------- | ---- |
 | **Vue 3 前端** | UI 渲染、状态管理、HTTP API 调用 | Vue 3 + Pinia + Tailwind CSS v4 | `packages/webui/` |
 | **NestJS API** | API 路由、认证、业务编排、全局拦截器 | NestJS 10 + Fastify | `packages/server/` |
-| **PostgreSQL** | 元数据：用户、知识库、文档、会话、消息 | PG 16 + Prisma 5 | Docker |
+| **PostgreSQL + pgvector** | 元数据与向量统一存储 | PG 16 + pgvector 扩展 | Docker |
 | **MinIO** | 对象存储：文件内容 | MinIO | Docker |
-| **Milvus** | 向量索引与 ANN 搜索 | Milvus 2.4+ | Docker |
 | **Redis + BullMQ** | 缓存、异步任务队列 | Redis 7 | Docker |
 
-**文件导入链路设计**：前端通过 HTTP POST 到 NestJS Controller → MinIO 存储 → PostgreSQL 创建记录 → BullMQ 添加解析任务 → Worker 异步处理（解析 → 分块 → 向量化 → Milvus）。该设计解耦了上传与处理，避免阻塞用户操作。
+**文件导入链路设计**：前端通过 HTTP POST 到 NestJS Controller → MinIO 存储 → PostgreSQL 创建记录 → BullMQ 添加解析任务 → Worker 异步处理（解析 → 分块 → 向量化 → pgvector）。该设计解耦了上传与处理，避免阻塞用户操作。
 
 ### 3. 多 LLM 提供商与每会话模型切换
 
@@ -113,7 +112,7 @@
 |------|---------|------|
 | [Node.js](https://nodejs.org/) | LTS（≥20） | 运行时 |
 | [pnpm](https://pnpm.io/) | ≥9 | Monorepo 包管理 |
-| [Docker](https://www.docker.com/) | ≥24 | 运行 PostgreSQL + MinIO + Milvus + Redis |
+| [Docker](https://www.docker.com/) | ≥24 | 运行 PostgreSQL + MinIO + Redis |
 
 ### 首次运行（从头搭建）
 
@@ -123,7 +122,7 @@
 # 1. 安装依赖（Monorepo 全部包）
 pnpm install
 
-# 2. 启动 Docker 基础设施（PostgreSQL + MinIO + Milvus + Redis）
+# 2. 启动 Docker 基础设施（PostgreSQL + MinIO + Redis）
 docker compose -f docker-compose.dev.yml up -d
 
 # 3. 等待所有容器健康检查通过（约 30~60 秒）
@@ -159,7 +158,6 @@ pnpm dev:web      # 前端 → http://localhost:1420
 | **PostgreSQL** | `5432` | 元数据数据库 |
 | **MinIO** | `9000` | 对象存储 API |
 | **MinIO Console** | `9001` | MinIO Web 管理面板 |
-| **Milvus** | `19530` | 向量搜索引擎 |
 | **Redis** | `6379` | 缓存与任务队列 |
 
 **验证基础设施是否就绪：**
@@ -246,7 +244,7 @@ VITE_API_BASE_URL=http://localhost:3000
 ```bash
 # 查看具体容器日志
 docker compose -f docker-compose.dev.yml logs postgres
-docker compose -f docker-compose.dev.yml logs milvus
+docker compose -f docker-compose.dev.yml logs redis
 
 # 重启某个服务
 docker compose -f docker-compose.dev.yml restart minio
@@ -315,14 +313,17 @@ buckets/
   documents/     # 用户上传的原始文件
 ```
 
-### 向量存储（Milvus）
+### 向量存储（PostgreSQL pgvector）
 
 ```
-Collection: chunks
+Table: chunks
   - id (primary key)
-  - vector (embedding)
-  - document_id
   - content (text)
+  - embedding (vector(1536)) — pgvector 扩展
+  - document_id
+  - kb_id
+  - chunk_index
+  - token_count
 ```
 
 ***

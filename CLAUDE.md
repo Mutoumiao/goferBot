@@ -3,7 +3,7 @@
 GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的 Web 应用，支持文档管理、LLM 问答、RAG 检索增强。
 
 **架构定位**：云端优先、本地缓存、可扩展 SaaS、AI Native Infrastructure。
-**技术栈**：Vue 3 + NestJS 10 + Fastify + PostgreSQL + MinIO + Milvus + Redis + BullMQ。
+**技术栈**：Vue 3 + NestJS 10 + Fastify + PostgreSQL + MinIO + Redis + BullMQ。
 
 用户可导入文档进行管理，通过 LLM 进行问答，支持 RAG 检索增强。
 
@@ -75,7 +75,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 
 - **前端**：Vue 3 + TypeScript + Vite + Tailwind CSS v4 + Pinia
 - **后端**：NestJS 10 + Fastify + Prisma 5 + JWT + bcrypt
-- **数据库**：PostgreSQL 16（元数据）+ Milvus 2.4+（向量检索）
+- **数据库**：PostgreSQL 16 + pgvector 扩展（元数据与向量统一存储）
 - **对象存储**：MinIO（文件内容）
 - **缓存/队列**：Redis 7 + BullMQ
 - **测试**：Vitest + Playwright
@@ -143,13 +143,16 @@ Agent 读取项目文档时必须遵守分层读取，避免全文加载浪费 t
 
 ### 项目流程
 
-| 用户请求                               | 必须调用的 skill    | 禁止的行为                   |
-|----------------------------------------|---------------------|------------------------------|
-| 不知道怎么开始/流程是什么/从哪开始     | `/project-workflow` | 直接给建议而不走流程         |
-| 拆 issue/生成工单/任务拆分             | `/issue-generator`  | 直接创建文件而不验证命名规范 |
-| 审查 spec/写 behavior spec/写 API spec | `/spec-validator`   | 跳过 spec 直接写 plan        |
-| 写计划/生成实现方案                    | `/plan-generator`   | 计划中出现 TODO/TBD/稍后实现 |
-| 开始开发 issue/开发 f-XX/b-XX          | `/dev-orchestrator` | 无 spec/plan/测试直接编码    |
-| 代码审查 / spec 对齐 / 安全审查 / 验收 | `/kb-review`        | 只审查代码不读 spec          |
-| 安全审计/漏洞检查/OWASP                | `/kb-review`        | 流于形式不逐项检查           |
-| 更新 issue 状态/标记完成               | `/issue-lifecycle`  | 未验证测试就标记完成         |
+| 用户请求                               | 必须调用的 skill        | 禁止的行为                   |
+|----------------------------------------|-------------------------|------------------------------|
+| 不知道怎么开始/流程是什么/从哪开始     | `/project-workflow`     | 直接给建议而不走流程         |
+| 拆 issue/生成工单/任务拆分             | `/issue-generator`      | 直接创建文件而不验证命名规范 |
+| 审查 spec/写 behavior spec/写 API spec | `/spec-validator`       | 跳过 spec 直接写 plan        |
+| 写计划/生成实现方案                    | `/plan-generator`       | 计划中出现 TODO/TBD/稍后实现 |
+| 开始开发 issue/开发 f-XX/b-XX          | `/dev-orchestrator`     | 无 spec/plan/测试直接编码    |
+| 代码审查 / spec 对齐 / 安全审查 / 验收 | `/kb-review`            | 只审查代码不读 spec          |
+| 安全审计/漏洞检查/OWASP                | `/kb-review`            | 流于形式不逐项检查           |
+| 更新 issue 状态/标记完成               | `/issue-lifecycle`      | 未验证测试就标记完成         |
+| 检查 plan/spec/code 是否违反 ADR       | `/architecture-guard`   | 凭记忆判断而非逐项扫描       |
+| 生成测试骨架并验证 red 状态            | `/test-scaffold`        | 无测试直接编码或测试不先失败 |
+| 检查前后端接口一致性 / Mock 残留       | `/integration-check`    | 前后端分离审查不比对契约     |

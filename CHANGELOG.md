@@ -43,7 +43,7 @@
 
 ### docs
 
-- [docs] 重建计划制定 — 创建 6 个 issue 实施 ADR 0005（pgvector 替代 Milvus）
+- [docs] 重建计划制定 — 创建 6 个 issue 实施 ADR 0001 向量存储决策（pgvector 替代 Milvus）
 - [docs] BACKLOG.md & CHANGELOG.md 同步
 
 ---
