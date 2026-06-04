@@ -272,6 +272,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 | 发现 spec 错了硬改代码  | 代码和文档脱节             | 回溯更新 spec，再改代码                                     |
 | 审查后不保存记录        | 重复犯同样错误             | 必须归档到 `docs/reviews/`                                  |
 | 安全问题不分级          | 阻塞与非阻塞问题混淆       | 使用 `/kb-review` 四级分类                                  |
+| 混用验证方案            | 错误格式不一致、全局管道失效 | 统一使用 Zod + nestjs-zod，禁止引入 class-validator         |
 | 混淆设计审查与代码审查  | 视觉问题被代码审查遗漏     | 视觉审计用 `/gstack-design-review`，代码审查用 `/kb-review` |
 
 ---
