@@ -36,8 +36,8 @@
 
 ```bash
 # 运行全部后端集成测试
-export TEST_DATABASE_ADMIN_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres?schema=public"
-export DATABASE_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_test?schema=public"
+export TEST_DATABASE_ADMIN_URL="postgresql://{user}:{password}@{host}:{port}/postgres?schema=public"
+export DATABASE_URL="postgresql://{user}:{password}@{host}:{port}/{dbname}_test?schema=public"
 pnpm test:integration
 
 # 类型检查

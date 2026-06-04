@@ -8,15 +8,16 @@
 
 ## 阶段速查
 
-| 阶段          | 输入         | 输出                                 | Skill                                 | 规范文档                          |
-|---------------|--------------|--------------------------------------|---------------------------------------|-----------------------------------|
-| 0. PRD 稳定化 | 需求草案     | 功能批次                             | -                                     | -                                 |
-| 1. Issue 拆分 | PRD 批次     | `docs/issues/{prefix}-{NN}-{slug}/`  | `/issue-generator`                    | [Issue 规范](writing-issues.md)   |
-| 2. 契约编写   | Issue        | `specs/*.md`                         | `/spec-validator`                     | [Spec 规范](writing-specs.md)     |
-| 3. 执行计划   | Issue + Spec | `plan.md` + `plans/v{N}.md`          | `/plan-generator`                     | [Plan 规范](writing-plans.md)     |
-| 4. 并行开发   | Plan + Spec  | 代码 + `tests/{layer}/*.spec.ts`    | `/dev-orchestrator`                   | -                                 |
-| 5. 联调整合   | 代码         | 审查记录                             | `/kb-review`                          | [Review 规范](writing-reviews.md) |
-| 6. 关闭归档   | 已验证代码   | 关闭 issue + 更新 BACKLOG/CHANGELOG  | `/issue-lifecycle` + `/issue-updater` | -                                 |
+| 阶段 | 输入 | 输出 | Skill | 规范文档 |
+|------|------|------|-------|----------|
+| 0. PRD 稳定化 | 需求草案 | 功能批次 | - | - |
+| 1. Issue 拆分 | PRD 批次 | `docs/issues/{prefix}-{NN}-{slug}/` | `/issue-generator` | [Issue 规范](writing-issues.md) |
+| 2. 契约编写 | Issue | `specs/*.md` | `/spec-validator` | [Spec 规范](writing-specs.md) |
+| 3. 执行计划 | Issue + Spec | `plan.md` + `plans/v{N}.md` | `/plan-generator` | [Plan 规范](writing-plans.md) |
+| 3.5 架构审查 | Plan + Spec | 合规报告 | `/architecture-guard` | [后端规范](backend/conventions.md) |
+| 4. 并行开发 | Plan + Spec | 代码 + `tests/{layer}/*.spec.ts` | `/dev-orchestrator` + `/test-scaffold` | - |
+| 5. 联调整合 | 代码 | 审查记录 | `/kb-review` + `/integration-check` | [Review 规范](writing-reviews.md) |
+| 6. 关闭归档 | 已验证代码 | 关闭 issue + 更新 BACKLOG/CHANGELOG | `/issue-lifecycle` + `/issue-updater` | - |
 
 ---
 
@@ -41,19 +42,20 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 
 ### 测试文件位置
 
-| 类型         | 路径                                 | 指南 |
-|--------------|--------------------------------------|------|
-| 前端单元测试 | `tests/unit/webui/*.spec.ts`        | [单元测试指南](testing/unit-testing-guide.md) |
-| 后端单元测试 | `tests/unit/server/*.spec.ts`       | [单元测试指南](testing/unit-testing-guide.md) |
-| 集成测试     | `tests/integration/**/*.spec.ts`     | [集成测试指南](testing/integration-testing-guide.md) |
-| E2E 测试     | `tests/e2e/**/*.spec.ts`             | [E2E 测试指南](testing/e2e-testing-guide.md) |
+| 类型 | 路径 | 指南 |
+|------|------|------|
+| 前端单元测试 | `tests/unit/webui/*.spec.ts` | [单元测试指南](testing/unit-testing-guide.md) |
+| 后端单元测试 | `tests/unit/server/*.spec.ts` | [单元测试指南](testing/unit-testing-guide.md) |
+| 集成测试 | `tests/integration/**/*.spec.ts` | [集成测试指南](testing/integration-testing-guide.md) |
+| E2E 测试 | `tests/e2e/**/*.spec.ts` | [E2E 测试指南](testing/e2e-testing-guide.md) |
 
 ### 开发前检查清单（dev-orchestrator 执行）
 
 - [ ] spec 已编写且包含测试映射表格
 - [ ] plan 已生成且每个任务以测试开始
-- [ ] `.spec.ts` 测试骨架已创建
+- [ ] `.spec.ts` 测试骨架已创建（通过 `/test-scaffold`）
 - [ ] 运行测试确认失败（red 状态）
+- [ ] `/architecture-guard` 扫描通过，无 Critical 违规
 
 ---
 
@@ -78,11 +80,11 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 ```markdown
 ## 功能批次
 
-| 批次 | 功能       | 优先级 | 状态   |
-|------|------------|--------|--------|
-| 01   | 登录/注册  | P0     | 待启动 |
-| 02   | 知识库列表 | P0     | 待启动 |
-| 03   | 文件上传   | P1     | 待启动 |
+| 批次 | 功能 | 优先级 | 状态 |
+|------|------|--------|------|
+| 01 | {功能 A} | P0 | 待启动 |
+| 02 | {功能 B} | P0 | 待启动 |
+| 03 | {功能 C} | P1 | 待启动 |
 ```
 
 **原则**：一批不超过 3 个相关功能，确保 spec-validator 能深入每个交互状态。
@@ -132,10 +134,10 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 ```markdown
 ## 测试映射
 
-| 场景         | 测试文件                              | 测试用例                                              |
-|--------------|---------------------------------------|-------------------------------------------------------|
-| loading 状态 | `tests/unit/webui/TabBar.spec.ts`    | `AC-01: renders TabBar in AuthenticatedLayout header` |
-| 401 错误     | `tests/unit/webui/TabBar.spec.ts`    | `AC-02: displays error on unauthorized`               |
+| 场景 | 测试文件 | 测试用例 |
+|------|----------|----------|
+| loading 状态 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-01: renders {ComponentName} in loading state` |
+| 401 错误 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-02: displays error on unauthorized` |
 ```
 
 **关键规则**：
@@ -165,20 +167,40 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 
 ---
 
+### 阶段 3.5: 架构审查
+
+**输入**：Plan + Spec  
+**输出**：合规报告
+
+**使用 skill**：`/architecture-guard`
+
+**检查维度**：
+- 验证方案合规：Zod schema + `createZodDto`，无 class-validator
+- 响应格式合规：直接返回原始数据，无无正当理由的 `@BypassResponse()`
+- 依赖引入合规：无与现有技术栈冲突的新依赖
+- NestJS 规范合规：模块分层、RESTful 端点、认证守卫
+
+**规则**：
+- Critical 违规必须修复后才能进入阶段 4
+- Major 违规需评估影响，决定是否阻塞
+- 扫描结果写入审查记录
+
+---
+
 ### 阶段 4: 并行开发
 
 **输入**：Plan + Spec  
 **输出**：可运行的代码 + `.spec.ts` 测试
 
-**使用 skill**：`/dev-orchestrator`
+**使用 skill**：`/dev-orchestrator` + `/test-scaffold`
 
 **前端 Agent**：
-- 读行为规格 → 生成计划 → **先写测试** → 编码 → `/kb-review`
+- 读行为规格 → 生成计划 → **先写测试**（`/test-scaffold`）→ 编码 → `/kb-review`
 - 若后端 API 未完成，先用 Mock 数据，标记 `TODO: 联调`
 - 编码后可用 `/kb-review` 做代码审查与 spec 对齐
 
 **后端 Agent**：
-- 读 API 规格 → 生成计划 → **先写测试** → 编码 → `/kb-review`
+- 读 API 规格 → 生成计划 → **先写测试**（`/test-scaffold`）→ 编码 → `/kb-review`
 - 编码后可用 `/kb-review` 做代码审查与安全检查
 
 **TDD 执行检查点**：
@@ -189,7 +211,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 ```
 
 **测试**：
-- 使用 gstack `/tdd` 遵循 red-green-refactor 循环
+- 遵循 red-green-refactor 循环
 - 每完成一个任务运行测试，不要攒到最后
 - 频繁提交（每个任务一个 commit）
 
@@ -200,7 +222,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 **输入**：前后端代码  
 **输出**：通过端到端测试的完整功能
 
-**使用 skill**：`/kb-review`
+**使用 skill**：`/kb-review` + `/integration-check`
 
 **操作**：
 1. 前端移除 Mock，对接真实 API
@@ -210,11 +232,16 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
    - 规格对齐审查：验证交互状态是否按 behavior-spec 实现
    - **TDD 合规审查：验证 `.spec.ts` 存在且覆盖所有场景**
    - 安全审查：验证安全基线是否满足
-4. 审查记录归档到 `docs/reviews/`
+4. 使用 `/integration-check` 检查：
+   - 前端 API 调用与后端 api-spec 一致性
+   - 参数、响应格式、错误码匹配
+   - Mock 残留清理
+5. 审查记录归档到 `docs/reviews/`
 
 **问题处理**：
 - 前端问题 → 回到阶段 4 修复 f-XX
 - 后端问题 → 回到阶段 4 修复 b-XX
+- 接口不匹配 → 使用 `/integration-check` 定位差异
 - spec 问题 → 回到阶段 2 更新 spec（允许回溯）
 
 详细规范：[writing-reviews.md](writing-reviews.md)
@@ -234,9 +261,10 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
    - **确认 `.spec.ts` 测试全部通过**
    - 确认类型检查通过
    - 确认审查记录已归档到 `docs/reviews/`
-2. 运行 `sync-issue-status.js` 更新 issue 状态
-3. 运行 `issue-updater` 更新 `BACKLOG.md` + `CHANGELOG.md`
-4. 可选：归档到 `docs/99-archived/issues/`
+2. 使用 `/integration-check` 确认无 Mock 残留、接口一致
+3. 运行 `sync-issue-status.js` 更新 issue 状态
+4. 运行 `issue-updater` 更新 `BACKLOG.md` + `CHANGELOG.md`
+5. 可选：归档到 `docs/99-archived/issues/`
 
 **然后**：回到阶段 1，启动下一批功能。
 
@@ -248,32 +276,34 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 
 速查：
 
-| 目录            | 命名规则                                               | 示例                                 |
+| 目录 | 命名规则 | 示例 |
 |-----------------|--------------------------------------------------------|--------------------------------------|
-| `docs/issues/`  | `{prefix}-{NN}-{kebab-slug}/`                          | `f-15-global-tab-bar/`               |
-| `specs/`        | `feature-spec.md` / `behavior-spec.md` / `api-spec.md` | `specs/behavior-spec.md`             |
-| `plans/`        | `v{N}.md`                                              | `plans/v1.md`                        |
-| `tests/unit/` | `{layer}/{name}.spec.ts`                                  | `webui/TabBar.spec.ts`              |
-| `reviews/`      | `{scope}/{type}-v{N}.md`                               | `phase-3/code-v1.md`                 |
+| `docs/issues/` | `{prefix}-{NN}-{kebab-slug}/` | `f-15-{功能名称}/` |
+| `specs/` | `feature-spec.md` / `behavior-spec.md` / `api-spec.md` | `specs/behavior-spec.md` |
+| `plans/` | `v{N}.md` | `plans/v1.md` |
+| `tests/unit/` | `{layer}/{name}.spec.ts` | `webui/{ComponentName}.spec.ts` |
+| `reviews/` | `{scope}/{type}-v{N}.md` | `phase-3/code-v1.md` |
 
 ---
 
 ## 常见陷阱
 
-| 陷阱                    | 后果                       | 正确做法                                                    |
-|-------------------------|----------------------------|-------------------------------------------------------------|
-| 跳过 spec 直接写 plan   | plan 太粗，交互不符预期    | 必须先写 behavior-spec                                      |
-| 一次拆完 PRD 所有 issue | issue 质量低，后期大量返工 | 按批次拆分，做完一批再拆下一批                              |
-| 一个 issue 包含前后端   | 无法并行，plan 臃肿        | 拆成 f-XX + b-XX                                            |
-| plan 里写 "TODO"        | 工程师不知道怎么做         | 每个步骤给具体代码和命令                                    |
-| **不写测试先写实现**    | TDD 流于形式，质量不可控   | **每个任务必须以测试开始**                                  |
-| **测试只有 happy path** | 错误场景遗漏，线上崩溃     | **必须覆盖 error/empty/loading 状态**                       |
-| 前后端不联调直接关闭    | 接口不匹配                 | 必须联调验证后再关闭                                        |
-| 发现 spec 错了硬改代码  | 代码和文档脱节             | 回溯更新 spec，再改代码                                     |
-| 审查后不保存记录        | 重复犯同样错误             | 必须归档到 `docs/reviews/`                                  |
-| 安全问题不分级          | 阻塞与非阻塞问题混淆       | 使用 `/kb-review` 四级分类                                  |
-| 混用验证方案            | 错误格式不一致、全局管道失效 | 统一使用 Zod + nestjs-zod，禁止引入 class-validator         |
-| 混淆设计审查与代码审查  | 视觉问题被代码审查遗漏     | 视觉审计用 `/gstack-design-review`，代码审查用 `/kb-review` |
+| 陷阱 | 后果 | 正确做法 |
+|------|------|----------|
+| 跳过 spec 直接写 plan | plan 太粗，交互不符预期 | 必须先写 behavior-spec |
+| 一次拆完 PRD 所有 issue | issue 质量低，后期大量返工 | 按批次拆分，做完一批再拆下一批 |
+| 一个 issue 包含前后端 | 无法并行，plan 臃肿 | 拆成 f-XX + b-XX |
+| plan 里写 "TODO" | 工程师不知道怎么做 | 每个步骤给具体代码和命令 |
+| **不写测试先写实现** | TDD 流于形式，质量不可控 | **每个任务必须以测试开始** |
+| **测试只有 happy path** | 错误场景遗漏，线上崩溃 | **必须覆盖 error/empty/loading 状态** |
+| 前后端不联调直接关闭 | 接口不匹配 | 必须联调验证后再关闭 |
+| 发现 spec 错了硬改代码 | 代码和文档脱节 | 回溯更新 spec，再改代码 |
+| 审查后不保存记录 | 重复犯同样错误 | 必须归档到 `docs/reviews/` |
+| 安全问题不分级 | 阻塞与非阻塞问题混淆 | 使用 `/kb-review` 四级分类 |
+| 混用验证方案 | 错误格式不一致、全局管道失效 | 统一使用 Zod + nestjs-zod，禁止引入 class-validator |
+| 混淆设计审查与代码审查 | 视觉问题被代码审查遗漏 | 视觉审计用 `/gstack-design-review`，代码审查用 `/kb-review` |
+| 跳过架构审查直接编码 | 引入 ADR 违规，后期返工 | plan 生成后必须 `/architecture-guard` 扫描 |
+| 无 `/integration-check` 直接关闭 | Mock 残留、接口不一致 | 关闭前必须检查前后端契约一致性 |
 
 ---
 
@@ -295,7 +325,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 ### 联调机制
 
 ```
-前端 Agent 完成 F-15（TabBar 全局化）
+前端 Agent 完成 F-XX（{前端功能}）
     ↓
 检查后端 API Spec：B-XX 是否已完成？
     ↓
@@ -304,7 +334,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
     ↓
 后端 Agent 完成 B-XX
     ↓
-验收 Agent 执行联调测试
+验收 Agent 执行联调测试（/integration-check）
     ↓
 通过 → 关闭两个 Issue
 失败 → 分发 Bug 回各自 Agent
@@ -317,42 +347,15 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 每个 Phase 结束时的检查清单：
 
 ```markdown
-## Phase 1 验收
+## Phase {N} 验收
 
-- [ ] docker-compose up 后所有服务健康
-- [ ] Prisma 迁移成功
-- [ ] MinIO 可上传/下载文件
-- [ ] PostgreSQL pgvector 扩展已启用
-- [ ] Redis 可读写
-
-## Phase 2 验收
-
-- [ ] 可注册新用户
-- [ ] 可登录/登出
-- [ ] 未认证请求返回 401
-- [ ] 前端路由守卫正常
-
-## Phase 3 验收
-
-- [ ] 可创建/重命名/删除知识库
-- [ ] 可创建/重命名/删除虚拟文件夹
-- [ ] 可上传文件到指定文件夹
-- [ ] 文件状态正确流转
-- [ ] 可删除文档
-
-## Phase 4 验收
-
-- [ ] 可创建会话
-- [ ] 可发送消息并接收 SSE 流式回复
-- [ ] 可选择多个知识库
-- [ ] 可保存/读取设置
-
-## Phase 5 验收
-
-- [ ] 文档可自动解析/分块/向量化
-- [ ] pgvector 可执行 ANN 检索
-- [ ] RAG 回答包含引用来源
+- [ ] {基础设施/服务} 就绪
+- [ ] {核心功能 A} 可验证
+- [ ] {核心功能 B} 可验证
+- [ ] {安全/性能} 基线达标
 ```
+
+> 具体验收项根据 Phase 目标定义，参见对应 PRD 章节。
 
 ---
 

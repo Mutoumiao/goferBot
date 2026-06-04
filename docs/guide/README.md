@@ -106,17 +106,17 @@ tests/unit/webui/TabBar.spec.ts
 
 ## 快速定位
 
-已知 issue 目录名 = `f-15-global-tab-bar`：
+已知 issue 目录名 = `{prefix}-{NN}-{kebab-slug}`：
 
 | 文档类型   | 路径                                                     |
 |------------|----------------------------------------------------------|
-| Issue 原文 | `docs/issues/f-15-global-tab-bar/issue.md`               |
-| 功能规格   | `docs/issues/f-15-global-tab-bar/specs/feature-spec.md`  |
-| 行为规格   | `docs/issues/f-15-global-tab-bar/specs/behavior-spec.md` |
-| API 规格   | `docs/issues/f-15-global-tab-bar/specs/api-spec.md`      |
-| 执行计划   | `docs/issues/f-15-global-tab-bar/plan.md`                |
-| 历史计划   | `docs/issues/f-15-global-tab-bar/plans/v1.md`            |
-| 验收状态   | `docs/issues/f-15-global-tab-bar/checklist.json`         |
+| Issue 原文 | `docs/issues/{prefix}-{NN}-{kebab-slug}/issue.md`               |
+| 功能规格   | `docs/issues/{prefix}-{NN}-{kebab-slug}/specs/feature-spec.md`  |
+| 行为规格   | `docs/issues/{prefix}-{NN}-{kebab-slug}/specs/behavior-spec.md` |
+| API 规格   | `docs/issues/{prefix}-{NN}-{kebab-slug}/specs/api-spec.md`      |
+| 执行计划   | `docs/issues/{prefix}-{NN}-{kebab-slug}/plan.md`                |
+| 历史计划   | `docs/issues/{prefix}-{NN}-{kebab-slug}/plans/v1.md`            |
+| 验收状态   | `docs/issues/{prefix}-{NN}-{kebab-slug}/checklist.json`         |
 | 单元测试   | `tests/unit/webui/*.spec.ts`                             |
 
 已知审查范围 = `phase-3`：

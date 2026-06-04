@@ -1,6 +1,6 @@
 # 集成测试指南
 
-> 本文档定义 GoferBot 后端集成测试的完整流程、规范与最佳实践。
+> 本文档定义项目后端集成测试的完整流程、规范与最佳实践。
 > 适用于 NestJS API 的模块级集成测试，所有测试通过真实 HTTP 请求验证后端行为。
 
 ---
@@ -13,7 +13,7 @@
 |------|------|----------|----------|------|
 | 单元测试 | Service/Util 纯函数 | `pnpm test` | `vitest.config.ts` | 141+ |
 | 集成测试 | Controller + API 端点 | `pnpm test:integration` | `vitest.integration.config.ts` | 113+ |
-| E2E 测试 | 完整用户流程 | `pnpm test:e2e` | Playwright | — |
+| E2E 测试 | 完整用户流程 | `pnpm test:e2e` | `playwright.config.ts` | — |
 
 ### 1.2 集成测试覆盖范围
 
@@ -92,15 +92,15 @@ afterAll：
 
 ```bash
 # 数据库管理员连接（用于创建/删除测试数据库）
-export TEST_DATABASE_ADMIN_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres?schema=public"
+export TEST_DATABASE_ADMIN_URL="postgresql://{user}:{password}@{host}:{port}/postgres?schema=public"
 
-# 应用数据库连接（集成测试默认使用 goferbot_test）
-export DATABASE_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_test?schema=public"
+# 应用数据库连接（集成测试默认使用 {dbname}_test）
+export DATABASE_URL="postgresql://{user}:{password}@{host}:{port}/{dbname}_test?schema=public"
 ```
 
 > **注意**：`DATABASE_URL` 并非可选。部分集成测试（如 `rag-e2e.spec.ts`）直接使用 `DATABASE_URL` 连接现有数据库，而非通过 `TestDatabaseManager` 创建。`TestDatabaseManager` 仅用于需要数据库隔离的场景。
 >
-> **E2E 测试使用独立数据库**：`goferbot_e2e`，避免与集成测试冲突。详见 [E2E 测试指南](./e2e-testing-guide.md)。
+> **E2E 测试使用独立数据库**：`{dbname}_e2e`，避免与集成测试冲突。详见 [E2E 测试指南](./e2e-testing-guide.md)。
 
 ### 3.2 加载环境文件
 
@@ -154,7 +154,7 @@ import { TestDatabaseManager } from './helpers/test-database.manager.js'
 - 格式：`AC-XX: {行为描述} {预期结果}`
 
 ```typescript
-it('AC-01: POST /api/chat returns SSE stream with chunks', async () => {})
+it('AC-01: POST /api/{资源} returns SSE stream with chunks', async () => {})
 it('AC-02: returns 401 without valid JWT', async () => {})
 it('AC-03: returns error via SSE when LLM API fails', async () => {})
 ```
@@ -178,12 +178,12 @@ async function setupApp() {
   const dbUrl = await dbManager.createDatabase('b05_chat')
   const app = await TestAppFactory.create(dbUrl)
   const user = await AuthFixtures.createUser(app, {
-    email: 'test@gofer.bot',
+    email: 'test@example.com',
     password: 'Test1234!',
     name: 'Test',
   })
   const token = await AuthFixtures.loginAs(app, {
-    email: 'test@gofer.bot',
+    email: 'test@example.com',
     password: 'Test1234!',
   })
   return { app, dbManager, dbUrl, token, user }
@@ -199,7 +199,7 @@ async function teardownApp(
   await dbManager.dropDatabase(dbName)
 }
 
-describe('ChatController', () => {
+describe('XxxController', () => {
   it('AC-01: returns SSE stream for valid request', async () => {
     const { app, dbManager, dbUrl, token } = await setupApp()
 
@@ -209,12 +209,12 @@ describe('ChatController', () => {
     // Act
     const res = await app.inject({
       method: 'POST',
-      url: '/api/chat',
+      url: '/api/{资源}',
       headers: { authorization: `Bearer ${token}` },
       payload: {
         message: 'Hello, AI!',
         sessionId: '00000000-0000-0000-0000-000000000000',
-        config: { provider: 'openai', model: 'gpt-4', baseUrl: 'https://api.openai.com', apiKey: 'sk-test' },
+        config: { provider: '{provider}', model: '{model}', baseUrl: '{baseUrl}', apiKey: '{apiKey}' },
       },
     })
 
@@ -249,14 +249,14 @@ describe('HealthController', () => {
 
 ### 5.3 外部 API Mock（推荐：使用 nock）
 
-集成测试中 mock 外部 HTTP API（如 OpenAI Embedding）推荐使用 `nock`：
+集成测试中 mock 外部 HTTP API（如 Embedding 服务）推荐使用 `nock`：
 
 ```typescript
 import nock from 'nock'
 import { ExternalServiceMocker } from './helpers/external-service.mocker.js'
 
 // 方式 1：直接使用 nock
-nock('http://localhost:9999')
+nock('{externalApiBaseUrl}')
   .post('/v1/embeddings')
   .reply(200, () => ({
     data: [{ embedding: new Array(1536).fill(0.1).map((v, i) => v + i * 0.0001) }],
@@ -299,7 +299,7 @@ it('AC-01: uploads document and returns 201', async () => {
 
   const res = await app.inject({
     method: 'POST',
-    url: `/api/knowledge-bases/${kbId}/documents/upload`,
+    url: `/api/{资源}/${resourceId}/documents/upload`,
     headers: {
       'content-type': `multipart/form-data; boundary=${boundary}`,
       authorization: `Bearer ${token}`,
@@ -342,7 +342,7 @@ describe('Real Integration Tests', () => {
 或使用 `describe.skipIf`：
 
 ```typescript
-const infraAvailable = process.env.DATABASE_URL?.includes('goferbot_test') ?? false
+const infraAvailable = process.env.DATABASE_URL?.includes('{dbname}_test') ?? false
 describe.skipIf(!infraAvailable)('RAG E2E', () => {
   // 所有测试在基础设施不可用时自动跳过
 })
@@ -487,7 +487,7 @@ export default defineConfig({
 **解决**：
 
 ```bash
-export TEST_DATABASE_ADMIN_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres?schema=public"
+export TEST_DATABASE_ADMIN_URL="postgresql://{user}:{password}@{host}:{port}/postgres?schema=public"
 ```
 
 ### 9.2 数据库连接超时
@@ -526,7 +526,6 @@ lsof -ti:3000 | xargs kill -9
 # Windows (PowerShell)
 Get-NetTCPConnection -LocalPort 3000 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
 ```
-```
 
 ---
 
@@ -541,8 +540,8 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: gofer
-          POSTGRES_PASSWORD: gofer_dev_pass
+          POSTGRES_USER: {user}
+          POSTGRES_PASSWORD: {password}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -555,6 +554,6 @@ jobs:
       - run: pnpm --filter @goferbot/server prisma:generate
       - run: pnpm test:integration
         env:
-          TEST_DATABASE_ADMIN_URL: postgresql://gofer:gofer_dev_pass@localhost:5432/postgres?schema=public
-          DATABASE_URL: postgresql://gofer:gofer_dev_pass@localhost:5432/goferbot_test?schema=public
+          TEST_DATABASE_ADMIN_URL: postgresql://{user}:{password}@localhost:5432/postgres?schema=public
+          DATABASE_URL: postgresql://{user}:{password}@localhost:5432/{dbname}_test?schema=public
 ```

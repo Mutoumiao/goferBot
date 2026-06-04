@@ -65,11 +65,11 @@ Scope 使用**语义化名称**，反映审查覆盖的范围：
 
 ```markdown
 ---
-scope: phase-3
-type: code
-date: 2026-05-17
-issues: [f-15, f-16, b-02]
-status: completed
+scope: {phase-N / prefix-NN / group-name}
+type: {code / spec / security / acceptance}
+date: {YYYY-MM-DD}
+issues: [{prefix}-{NN}, {prefix}-{NN}]
+status: {completed / partial / failed}
 summary: {审查发现的核心问题与总体结论，2-3 句话}
 ---
 
@@ -188,8 +188,8 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 
 | 审查             | 日期       | 结论       | 报告                         |
 |------------------|------------|------------|------------------------------|
-| Phase 3 代码审查 | 2026-05-17 | 有条件通过 | `reviews/phase-3/code-v1.md` |
-| Phase 3 修复复查 | 2026-05-18 | 通过       | `reviews/phase-3/code-v2.md` |
+| {审查名称} | {YYYY-MM-DD} | {结论} | `reviews/{scope}/{type}-v{N}.md` |
+| {审查名称} | {YYYY-MM-DD} | {结论} | `reviews/{scope}/{type}-v{N}.md` |
 ```
 
 ### 在审查报告中引用 Issue
@@ -197,9 +197,9 @@ summary: {审查发现的核心问题与总体结论，2-3 句话}
 ```markdown
 ## 覆盖 Issue
 
-- [f-15](../issues/f-15-global-tab-bar/issue.md) — TabBar 全局化重构
-- [f-16](../issues/f-16-unified-tab-types/issue.md) — 统一 Tab 类型定义
-- [b-02](../issues/b-02-knowledge-base-crud-api/issue.md) — 知识库 CRUD API
+- [{prefix}-{NN}](../issues/{prefix}-{NN}-{kebab-slug}/issue.md) — {功能描述}
+- [{prefix}-{NN}](../issues/{prefix}-{NN}-{kebab-slug}/issue.md) — {功能描述}
+- [{prefix}-{NN}](../issues/{prefix}-{NN}-{kebab-slug}/issue.md) — {功能描述}
 ```
 
 ---

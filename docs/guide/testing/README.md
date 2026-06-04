@@ -37,7 +37,7 @@
 ### 集成测试（Integration）
 
 - **范围**：NestJS Controller + Service + 真实数据库，通过 HTTP 请求验证
-- **原则**：数据库真实，外部 IO（Redis/Milvus/MinIO/Queue）mock
+- **原则**：数据库真实，外部 IO（Redis/MinIO/Queue）mock
 - **速度**：秒级，每个 `it()` 创建独立数据库
 - **数量**：中等，覆盖核心 API 流程和错误场景
 

@@ -59,10 +59,10 @@ tests/
 ### 示例
 
 ```
-f-15-global-tab-bar/
-b-02-knowledge-base-crud-api/
-i-01-docker-compose-infra/
-q-03-v1-cleanup/
+f-15-{功能名称}/
+b-02-{资源}-crud-api/
+i-01-{基础设施名称}/
+q-03-{清理目标}/
 ```
 
 ### 编号规则
@@ -199,18 +199,18 @@ tests/
 
 ## 快速定位速查表
 
-已知 issue 目录名 = `f-15-global-tab-bar`：
+已知 issue 目录名 = `{prefix}-{NN}-{kebab-slug}`：
 
 | 文档类型   | 路径                                                     |
 |------------|----------------------------------------------------------|
-| Issue 原文 | `docs/issues/f-15-global-tab-bar/issue.md`               |
-| 功能规格   | `docs/issues/f-15-global-tab-bar/specs/feature-spec.md`  |
-| 行为规格   | `docs/issues/f-15-global-tab-bar/specs/behavior-spec.md` |
-| API 规格   | `docs/issues/f-15-global-tab-bar/specs/api-spec.md`      |
-| 执行计划   | `docs/issues/f-15-global-tab-bar/plan.md`                |
-| 历史计划   | `docs/issues/f-15-global-tab-bar/plans/v1.md`            |
-| 验收状态   | `docs/issues/f-15-global-tab-bar/checklist.json`         |
-| 单元测试   | `tests/unit/webui/TabBar.spec.ts`                          |
+| Issue 原文 | `docs/issues/{prefix}-{NN}-{kebab-slug}/issue.md`               |
+| 功能规格   | `docs/issues/{prefix}-{NN}-{kebab-slug}/specs/feature-spec.md`  |
+| 行为规格   | `docs/issues/{prefix}-{NN}-{kebab-slug}/specs/behavior-spec.md` |
+| API 规格   | `docs/issues/{prefix}-{NN}-{kebab-slug}/specs/api-spec.md`      |
+| 执行计划   | `docs/issues/{prefix}-{NN}-{kebab-slug}/plan.md`                |
+| 历史计划   | `docs/issues/{prefix}-{NN}-{kebab-slug}/plans/v1.md`            |
+| 验收状态   | `docs/issues/{prefix}-{NN}-{kebab-slug}/checklist.json`         |
+| 单元测试   | `tests/unit/webui/{ComponentName}.spec.ts`                          |
 
 已知审查范围 = `phase-3`：
 
@@ -226,7 +226,7 @@ tests/
 | 禁止                            | 错误示例                                   | 正确示例                            |
 |---------------------------------|--------------------------------------------|-------------------------------------|
 | 时间戳命名 plan                 | `plans/v2026-05-17.md`                     | `plans/v2.md`                       |
-| 用 feature-slug 命名 issue 目录 | `docs/issues/knowledge-base-file-manager/` | `docs/issues/f-15-global-tab-bar/`  |
+| 用 feature-slug 命名 issue 目录 | `docs/issues/{功能名称}/` | `docs/issues/{prefix}-{NN}-{kebab-slug}/`  |
 | 用 phase 名命名 plan 文件       | `plan-phase-3.md`                          | `plan.md`                           |
 | Review 用日期命名               | `reviews/phase-3/code-2026-05-17.md`       | `reviews/phase-3/code-v1.md`        |
 | 创建 `overall` 等模糊 scope     | `reviews/overall/`                         | `reviews/project/`                  |

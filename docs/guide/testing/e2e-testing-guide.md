@@ -1,6 +1,6 @@
 # E2E 测试指南
 
-> 本文档定义 GoferBot 项目 E2E 测试的完整流程、规范与最佳实践。
+> 本文档定义项目 E2E 测试的完整流程、规范与最佳实践。
 > 基于 Playwright，覆盖完整用户旅程，验证前后端联调。
 
 ---
@@ -48,7 +48,7 @@
 globalSetup (tests/e2e/playwright.global-setup.ts):
   1. pnpm infra:up → 启动 Docker 基础设施
   2. 等待 PostgreSQL 就绪
-  3. 创建 goferbot_e2e 数据库（若不存在）
+  3. 创建 {dbname}_e2e 数据库（若不存在）
   4. pnpm prisma:generate → 确保 Prisma Client 已生成
   5. prisma migrate deploy → 执行 schema 迁移
   6. 启动后端服务（若未运行）→ 等待 /health 就绪
@@ -90,11 +90,11 @@ E2E 测试通过 `dotenv -e .env.e2e` 加载 `.env.e2e` 文件：
 
 ```bash
 # .env.e2e
-TEST_DATABASE_ADMIN_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres?schema=public"
-DATABASE_URL="postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public"
+TEST_DATABASE_ADMIN_URL="postgresql://{user}:{password}@{host}:{port}/postgres?schema=public"
+DATABASE_URL="postgresql://{user}:{password}@{host}:{port}/{dbname}_e2e?schema=public"
 ```
 
-> **注意**：E2E 使用独立数据库 `goferbot_e2e`，避免与集成测试的 `goferbot_test` 冲突。
+> **注意**：E2E 使用独立数据库 `{dbname}_e2e`，避免与集成测试的 `{dbname}_test` 冲突。
 
 ### 3.3 前置构建
 
@@ -346,8 +346,8 @@ export async function injectMockToken(page: Page): Promise<void> {
   await page.addInitScript({
     content: `
       try {
-        localStorage.setItem('goferbot_access_token', 'mock-access-token-12345')
-        localStorage.setItem('goferbot_refresh_token', 'mock-refresh-token-67890')
+        localStorage.setItem('{tokenKey}_access_token', 'mock-access-token-12345')
+        localStorage.setItem('{tokenKey}_refresh_token', 'mock-refresh-token-67890')
       } catch (e) {}
     `,
   })
@@ -481,7 +481,7 @@ test.describe('新用户引导流程', () => {
 
     // Given: 用户注册
     await authPage.gotoRegister()
-    await authPage.register('newuser@gofer.bot', 'NewPass123!@#')
+    await authPage.register('newuser@example.com', 'NewPass123!@#')
 
     // When: 创建知识库
     await kbPage.goto()
@@ -681,8 +681,8 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: gofer
-          POSTGRES_PASSWORD: gofer_dev_pass
+          POSTGRES_USER: {user}
+          POSTGRES_PASSWORD: {password}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -695,6 +695,6 @@ jobs:
       - run: pnpm --filter @goferbot/server prisma:generate
       - run: pnpm test:e2e
         env:
-          TEST_DATABASE_ADMIN_URL: postgresql://gofer:gofer_dev_pass@localhost:5432/postgres?schema=public
-          DATABASE_URL: postgresql://gofer:gofer_dev_pass@localhost:5432/goferbot_e2e?schema=public
+          TEST_DATABASE_ADMIN_URL: postgresql://{user}:{password}@localhost:5432/postgres?schema=public
+          DATABASE_URL: postgresql://{user}:{password}@localhost:5432/{dbname}_e2e?schema=public
 ```

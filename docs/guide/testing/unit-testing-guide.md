@@ -1,6 +1,6 @@
 # 单元测试指南
 
-> 本文档定义 GoferBot 项目单元测试的完整流程、规范与最佳实践。
+> 本文档定义项目单元测试的完整流程、规范与最佳实践。
 > 涵盖前端（Vue 3 + Vitest）和后端（NestJS + Vitest）单元测试。
 
 ---
@@ -13,7 +13,7 @@
 |------|------|----------|----------|------|
 | 单元测试 | 组件/Store/工具/Service | `pnpm test` | `vitest.config.ts` | 141+ |
 | 集成测试 | API + 数据库 | `pnpm test:integration` | `vitest.integration.config.ts` | 113+ |
-| E2E 测试 | 完整用户流程 | `pnpm test:e2e` | Playwright | — |
+| E2E 测试 | 完整用户流程 | `pnpm test:e2e` | `playwright.config.ts` | — |
 
 ### 1.2 单元测试覆盖范围
 
@@ -144,11 +144,11 @@ tests/unit/
 
 ```typescript
 // 后端示例
-it('AC-01: POST /api/chat returns SSE stream with chunks', async () => {})
+it('AC-01: POST /api/{资源} returns SSE stream with chunks', async () => {})
 it('AC-02: returns 401 without valid JWT', async () => {})
 
 // 前端示例
-it('AC-01: renders knowledge base selector with options', () => {})
+it('AC-01: renders {ComponentName} with options', () => {})
 it('AC-02: emits select event on option click', async () => {})
 ```
 
@@ -163,8 +163,8 @@ it('renders user message with right alignment', () => {})
 it('emits edit event when edit button clicked', async () => {})
 
 // Store 测试
-it('has home tab by default', () => {})
-it('adds new tab when opening session', () => {})
+it('has default state', () => {})
+it('adds new item when opening session', () => {})
 
 // Service 测试
 it('parses markdown with code blocks', () => {})
@@ -199,7 +199,7 @@ describe('MyComponent', () => {
 
 ```typescript
 it('renders message content', () => {
-  const wrapper = mount(ChatMessage, {
+  const wrapper = mount(MyComponent, {
     props: {
       message: {
         id: '1',
@@ -218,7 +218,7 @@ it('renders message content', () => {
 
 ```typescript
 it('emits send event on button click', async () => {
-  const wrapper = mount(ChatInput)
+  const wrapper = mount(MyInput)
   const input = wrapper.find('textarea')
   await input.setValue('test message')
 
@@ -233,10 +233,10 @@ it('emits send event on button click', async () => {
 ### 5.4 使用 Stub 替代子组件
 
 ```typescript
-const wrapper = mount(KnowledgeBasePage, {
+const wrapper = mount(MyPage, {
   global: {
     stubs: {
-      FileManager: true,  // 自动 stub 为 <file-manager-stub>
+      ChildComponent: true,  // 自动 stub 为 <child-component-stub>
       Dialog: { template: '<div><slot /></div>' },
       Teleport: { template: '<div><slot /></div>' },
       Transition: { template: '<div><slot /></div>' },
@@ -268,17 +268,17 @@ it('switches tab on click', async () => {
 ```typescript
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useSessionStore } from '@/stores/session'
+import { useMyStore } from '@/stores/my'
 
-describe('useSessionStore', () => {
+describe('useMyStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
-  it('has home tab by default', () => {
-    const store = useSessionStore()
-    expect(store.tabs).toHaveLength(1)
-    expect(store.tabs[0].title).toBe('首页')
+  it('has default state', () => {
+    const store = useMyStore()
+    expect(store.items).toHaveLength(1)
+    expect(store.items[0].title).toBe('默认项')
   })
 })
 ```
@@ -316,8 +316,8 @@ const wrapper = mount(MyComponent, {
       createTestingPinia({
         stubActions: true,  // 自动 mock 所有 actions
         initialState: {
-          knowledgeBase: {
-            knowledgeBases: [{ id: '1', name: 'Test' }],
+          myStore: {
+            items: [{ id: '1', name: 'Test' }],
           },
         },
       }),
@@ -375,12 +375,12 @@ it('AC-02: throws error when entity not found', async () => {
 ```typescript
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
-import { CreateUserDto } from '@/dto/create-user.dto'
+import { CreateXxxDto } from '@/dto/create-xxx.dto'
 
-describe('CreateUserDto', () => {
+describe('CreateXxxDto', () => {
   it('validates correct input', () => {
-    const result = CreateUserDto.safeParse({
-      email: 'test@gofer.bot',
+    const result = CreateXxxDto.safeParse({
+      email: 'test@example.com',
       password: 'Test1234!',
       name: 'Test',
     })
@@ -388,7 +388,7 @@ describe('CreateUserDto', () => {
   })
 
   it('rejects invalid email', () => {
-    const result = CreateUserDto.safeParse({
+    const result = CreateXxxDto.safeParse({
       email: 'not-an-email',
       password: 'Test1234!',
     })
@@ -401,7 +401,7 @@ describe('CreateUserDto', () => {
 
 ```typescript
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { IndexingWorker } from '../../../packages/server/src/processors/queue/indexing.worker.js'
+import { MyWorker } from '../../../packages/server/src/processors/queue/my.worker.js'
 
 // Mock @goferbot/rag-sdk 模块 — 使用 vi.hoisted 确保变量在 vi.mock 提升前初始化
 const { mockRunIndexing } = vi.hoisted(() => ({
@@ -416,8 +416,8 @@ vi.mock('@goferbot/rag-sdk', async (importOriginal) => {
   }
 })
 
-describe('IndexingWorker', () => {
-  let worker: IndexingWorker
+describe('MyWorker', () => {
+  let worker: MyWorker
   let mockPrisma: any
   let mockStorage: any
   let mockParser: any
@@ -437,7 +437,7 @@ describe('IndexingWorker', () => {
     mockIndexer = {}
     mockConfig = { get: vi.fn().mockReturnValue('mock'), getOrThrow: vi.fn().mockReturnValue('mock') }
     // 构造函数签名：(prisma, storage, parser, indexer, config)
-    worker = new IndexingWorker(mockPrisma, mockStorage, mockParser, mockIndexer, mockConfig)
+    worker = new MyWorker(mockPrisma, mockStorage, mockParser, mockIndexer, mockConfig)
   })
 
   it('AC-01: processes document and sets status to ready', async () => {
@@ -516,9 +516,9 @@ export const createMessageFixture = (overrides?: Partial<Message>) => ({
 
 ```typescript
 // tests/unit/fixtures/store-state.fixture.ts
-export const createKbStoreState = (overrides?: Partial<KbState>) => ({
-  knowledgeBases: [],
-  currentKb: null,
+export const createStoreState = (overrides?: Partial<MyState>) => ({
+  items: [],
+  currentItem: null,
   loading: false,
   ...overrides,
 })
@@ -548,10 +548,10 @@ pnpm test
 
 ```bash
 # 前端
-pnpm vitest run tests/unit/components/ChatMessage.test.ts
+pnpm vitest run tests/unit/components/MyComponent.test.ts
 
 # 后端
-pnpm vitest run tests/unit/server/chat-rag.spec.ts
+pnpm vitest run tests/unit/server/my-service.spec.ts
 ```
 
 ### 10.3 按名称过滤
