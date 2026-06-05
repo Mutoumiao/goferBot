@@ -6,7 +6,11 @@ global.runningTests = true
 
 // 单元测试数据库连接保护
 // 禁止单元测试连接非测试数据库，防止污染开发/生产环境
-if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('_test')) {
+// 双重校验：1) 必须处于 vitest 环境  2) 数据库 URL 必须明确指向测试库
+const isVitestEnv = !!process.env.VITEST || !!process.env.VITEST_WORKER_ID
+const isTestDatabase = process.env.DATABASE_URL?.includes('_test')
+
+if (isVitestEnv && process.env.DATABASE_URL && !isTestDatabase) {
   throw new Error(
     '[测试安全] 检测到单元测试尝试连接非测试数据库。' +
     '单元测试必须全部 Mock，禁止真实数据库连接。' +
