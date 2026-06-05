@@ -26,7 +26,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const url = request.url
     const now = Date.now()
 
-    this.logger.debug(`+++ Request: ${method} ${url}`)
+    this.logger.debug(`+++ Request: ${method} ${url} (ip: ${request.ip ?? request.socket?.remoteAddress ?? 'unknown'})`)
 
     return next.handle().pipe(
       tap(() => {

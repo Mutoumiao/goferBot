@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, BadRequestException } from '@nestjs/common'
-import { Throttle, SkipThrottle } from '@nestjs/throttler'
+import { Throttle } from '@nestjs/throttler'
 import { AuthService } from './auth.service.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
 import { CurrentUser } from './decorators/current-user.decorator.js'
@@ -19,7 +19,7 @@ export class AuthController {
   ) {}
 
   @Get('public-key')
-  @SkipThrottle({ default: true, auth: true })
+  @Throttle({ default: { ttl: 60000, limit: 60 } })
   getPublicKey() {
     return {
       publicKey: this.passwordEncryption.getPublicKeyPem(),

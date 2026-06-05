@@ -37,11 +37,6 @@ import { SpiderGuard } from './common/guards/spider.guard.js'
         ttl: 60000,
         limit: 60,
       },
-      {
-        name: 'auth',
-        ttl: 60000,
-        limit: 5,
-      },
     ]),
     HealthModule,
     UserModule,
