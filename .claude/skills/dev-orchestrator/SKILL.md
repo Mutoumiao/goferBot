@@ -89,17 +89,23 @@ description: >
 ```markdown
 [CHECKPOINT] 任务完成验证
 - 测试文件：`tests/unit/server/xxx.spec.ts`
-- RED 证据：（粘贴测试失败输出，至少包含失败的断言信息）
+- RED 证据：（粘贴测试失败输出。模式 A：断言失败输出；模式 B：先贴编译错误输出，再贴二次断言失败输出）
 - 实现文件：`packages/server/src/xxx.ts`
 - GREEN 证据：（粘贴测试通过输出，包含 Tests: N passed）
 - 对应 spec：AC-XX 描述
 - 架构合规：`/architecture-guard` 扫描结果（无 Critical / N 个 Major）
 ```
 
-**RED 证据要求**：
-- 必须包含具体的失败断言（如 `expected 200 to be 401`）
-- 必须包含失败的测试用例名称
+**RED 证据要求（满足其一即可）：**
+
+| 类型 | 要求 | 适用场景 |
+|------|------|----------|
+| **断言失败 RED** | 必须包含具体的失败断言（如 `expected 200 to be 401`）和失败的测试用例名称 | 补测试、重构 |
+| **编译失败 RED + 二次断言失败 RED** | 必须包含两次运行输出：第一次显示 import/类型错误，第二次显示断言失败 | 新功能开发 |
+
+**两种 RED 的共同点：**
 - 禁止用"测试已失败"等文字描述代替实际输出
+- RED 和 GREEN 之间必须有实现代码变更（空壳不算实现代码）
 
 **GREEN 证据要求**：
 - 必须包含 `Tests: N passed` 或等价输出
@@ -108,7 +114,8 @@ description: >
 **违规判定**：
 - 无 CHECKPOINT → 任务视为未完成
 - 有 CHECKPOINT 但无 RED 证据 → 视为"后补测试"，需回退到 RED 阶段重新执行
-- RED 和 GREEN 之间无代码变更 → 视为伪造证据
+- RED 和 GREEN 之间无代码变更（空壳不计入） → 视为伪造证据
+- 模式 B 下只有一次运行输出（缺少二次断言失败 RED） → 视为未完成空壳步骤
 
 ---
 
@@ -531,6 +538,7 @@ b-02 知识库 CRUD API
 | /architecture-guard 审查失败（含预审、编码中、后检） | **阻断/暂停**：修复违规后重新调用 /architecture-guard 审查通过方可继续 |
 | 阶段 1 未完成就要求编码 | **阻断**：必须先完成 issue + spec + plan + 架构合规 |
 | Agent 输出 CHECKPOINT 但无 RED 证据 | **回退**：视为后补测试，需回到 RED 阶段重新执行 |
+| 模式 B 下缺少二次断言失败 RED | **回退**：视为未完成空壳步骤，需重新执行编译失败 → 空壳 → 二次 RED 流程 |
 
 ---
 

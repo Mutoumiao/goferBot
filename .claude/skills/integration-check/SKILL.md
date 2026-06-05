@@ -175,7 +175,18 @@ function mockApiCall() { ... }             // 🔴 Mock 函数
 if (process.env.NODE_ENV === 'development') {
   return mockData                          // 🟠 环境条件 Mock
 }
+
+// MOCK-LIFECYCLE 标记（参见 docs/guide/frontend/mock-conventions.md）
+// MOCK-LIFECYCLE: b-14 完成后移除         // 🔴 或 🟡（取决于关联 issue 是否已关闭）
 ```
+
+**MOCK-LIFECYCLE 标记处理：**
+
+| 标记状态 | 关联后端 issue 状态 | 当前标记级别 | 处理方式 |
+|---------|-------------------|------------|---------|
+| `// MOCK-LIFECYCLE: b-14 完成后移除` | b-14 已关闭 | 🔴 Critical | 必须移除 Mock handler 和数据文件 |
+| `// MOCK-LIFECYCLE: b-14 完成后移除` | b-14 进行中 | 🟡 Minor | 允许存在，提醒开发者 |
+| 无 `MOCK-LIFECYCLE` 标记 | 任意 | 🔴 Critical | 所有 Mock 必须标记生命周期 |
 
 **问题输出格式：**
 
@@ -189,10 +200,12 @@ if (process.env.NODE_ENV === 'development') {
 | `packages/webui/src/api/client.ts:12` | `mockApiCall()` | 🔴 需移除 | 使用 `apiClient.get()` 替代 |
 
 **建议移除顺序：**
-1. 替换 Mock 函数为真实 API 调用
-2. 删除 Mock 常量/数据
-3. 清理 TODO: 联调 标记
-4. 运行前端测试验证
+1. 检查 `MOCK-LIFECYCLE:` 标记，确认关联后端 issue 已关闭
+2. 替换 Mock 函数为真实 API 调用
+3. 删除 Mock 常量/数据
+4. 清理 `TODO: 联调` 和 `MOCK-LIFECYCLE:` 标记
+5. 运行前端测试验证
+6. 运行 `/integration-check` 重新扫描确认无残留
 ```
 
 ---

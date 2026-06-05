@@ -359,14 +359,63 @@ pnpm test:integration tests/integration/{name}.spec.ts
 pnpm test:e2e tests/e2e/specs/{name}.spec.ts
 ```
 
+**情况 A：测试编译通过，断言失败**
+
 **预期输出：**
 ```
 FAIL  tests/unit/server/{name}.spec.ts
   AC-01: ...
-    ✕ should ... (ReferenceError: MyService is not defined)
+    ✕ should ... (AssertionError: expected ...)
 
 Test Files  1 failed (1)
 ```
+
+- ✅ 这是干净的 RED（模式 A：断言失败 RED）
+- 记录失败输出作为 RED 证据
+- 进入步骤 5
+
+**情况 B：测试因 import/类型错误无法编译**
+
+**预期输出：**
+```
+FAIL  tests/unit/server/{name}.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module './my-service' from '...'
+```
+
+- 这是预期的"编译失败 RED"（模式 B）
+- **允许操作**：创建被 import 模块的最小空壳，仅消除编译错误
+
+```typescript
+// 示例：后端空壳
+// packages/server/src/my-service/my-service.service.ts
+export class MyService {
+  async myMethod() {
+    throw new Error('TDD: not implemented')
+  }
+}
+
+// 示例：前端空壳
+// packages/webui/src/components/MyComponent.vue
+<template>
+  <div data-testid="my-component"></div>
+</template>
+
+<script setup lang="ts">
+// 空壳：无 props、无逻辑、无方法
+</script>
+```
+
+- **必须操作**：重新运行测试
+- **预期结果**：测试编译通过，断言失败（`expected ... to be ...` 或 `Error: TDD: not implemented`）
+- ✅ 这才是有效的 RED 证据（模式 B 的二次 RED）
+- 进入步骤 5
+
+**情况 B 的禁止事项：**
+- 空壳实现包含业务逻辑（哪怕是一行）
+- 不重新运行测试就直接进入 GREEN
+- 将编译失败 RED 直接作为 RED 证据提交
 
 ### 步骤 5：输出状态报告
 
@@ -377,7 +426,8 @@ Test Files  1 failed (1)
 - **生成文件**：`tests/unit/server/{name}.spec.ts`
 - **AC 覆盖**：AC-01 ~ AC-05（5/5 全部覆盖）
 - **运行状态**：🔴 Red（预期失败）
-- **失败原因**：`MyService` 未定义（预期内）
+- **RED 模式**：模式 A（断言失败）/ 模式 B（编译失败 → 空壳 → 二次断言失败）
+- **失败原因**：`expected 200 to be 401`（模式 A）/ `MyService` 未定义 → 空壳创建后 `expected ... to be ...`（模式 B）
 
 ## 测试结构
 
@@ -434,6 +484,8 @@ plan-generator 生成 plan 时，为每个任务预声明测试文件路径：
 | 不运行 red 验证 | 测试本身有语法错误 | 必须运行并确认失败原因符合预期 |
 | 使用错误的测试基础设施 | 测试无法运行 | 读取对应测试指南，使用正确的 helper |
 | 生成测试后直接开始实现 | 违反 TDD 流程 | red 确认后才能进入 green |
+| **混淆编译失败与断言失败** | 将 import 错误误判为 RED，跳过空壳步骤 | 编译错误 → 创建空壳 → 重新运行 → 获得断言失败 RED |
+| **空壳包含业务逻辑** | 破坏 TDD 纯粹性，GREEN 阶段无法验证"最小实现" | 空壳只能是 `throw new Error('TDD: not implemented')` 或空模板 |
 
 ---
 

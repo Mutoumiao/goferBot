@@ -80,7 +80,8 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 - **缓存/队列**：Redis 7 + BullMQ
 - **测试**：Vitest + Playwright
 - **包管理**：pnpm
-- **图标**：lucide-vue-next
+
+> 详细技术选型约束参见 `.claude/rules/frontend-rules.md` 与 `.claude/rules/backend-rules.md`。
 
 ## 常用命令
 
@@ -94,21 +95,7 @@ pnpm type-check       # TypeScript 类型检查
 pnpm -r build         # 构建所有包
 ```
 
-## 开发规范
-
-### UI 组件
-
-- 使用 [shadcn-vue](https://www.shadcn-vue.com/)，位于 `packages/webui/src/components/ui/`
-- 引入：`cd packages/webui && npx shadcn-vue@latest add <component>`
-- 颜色使用 Pencil tokens（`bg-surface-1`, `text-text-primary`）
-- Class 管理统一使用 `cn()` + `class-variance-authority`
-
-### 后端规范
-
-- 所有 API 响应统一为 `{ data: T }` 格式（由 ResponseInterceptor 处理）
-- 异常统一由全局 ExceptionFilter 捕获并标准化
-- 认证使用 `@UseGuards(JwtAuthGuard)` + `@CurrentUser()` 装饰器
-- Prisma 查询通过 `PrismaService` 注入，禁止直接实例化 `PrismaClient`
+> 开发规范已迁移至 `.claude/rules/`（自动加载）与 `docs/guide/`（详细文档）。
 
 ## Agent文档读取协议
 
