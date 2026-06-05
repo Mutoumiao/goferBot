@@ -17,16 +17,18 @@ description: >
 | 项目 | 内容 |
 |------|------|
 | **触发词** | "开发 issue"、"开始做 f-15"、"issue 怎么实现" |
-| **硬关卡** | spec 存在 → plan 存在 → 测试存在 → 架构合规预审通过（缺一不可） |
-| **核心输出** | 检查点 `[CHECKPOINT] ✅|🔍|⏳|🚨` |
-| **禁止行为** | 无 spec 写代码、无测试直接实现、跳过验证声明完成 |
-| **下一步** | spec 缺失 → 调用 spec-validator；plan 缺失 → 调用 plan-generator |
+| **硬关卡** | 阶段 1 完成（issue + spec + plan + 架构合规）→ 测试存在 → 架构合规预审通过（缺一不可） |
+| **核心输出** | `[CHECKPOINT] 任务完成验证`（含 RED + GREEN 证据） |
+| **禁止行为** | 阶段 1 未完成就编码、无 RED 证据声明完成、跳过验证声明完成 |
+| **下一步** | 阶段 1 未完成 → 调用对应 skill 补全；阶段 1 已完成 → 进入编码 |
 
 协调 issue 分析、spec 读取、计划检查、测试检查和开发执行的完整工作流。
 
-**核心理念**：开发前必须先有 spec，有 spec 后必须先有计划，有计划后必须先有测试代码。不要在没有行为契约和验收标准的情况下直接写代码。
+**核心理念**：开发前必须先完成阶段 1（定义），即 issue + spec + plan + 架构合规全部就绪。不要在没有完整契约的情况下直接写代码。
 
-**开始时声明：** "正在使用 dev-orchestrator skill 协调开发流程。"
+**阶段归属**：本 skill 执行 **阶段 2（实现）**，前提是阶段 1（定义）已全部完成。
+
+**开始时声明：** "正在使用 dev-orchestrator skill 协调阶段 2（实现）开发流程。"
 
 ---
 
@@ -78,12 +80,35 @@ description: >
 
 ---
 
-## TDD 检查点格式
+## Agent CHECKPOINT 协议（阶段 2 核心机制）
 
-每个任务完成后必须输出：
+**目的**：解决 TDD 执行不到位的问题，要求每个编码任务提供 RED → GREEN 的可验证证据。
+
+**每个任务完成后必须输出**：
+
+```markdown
+[CHECKPOINT] 任务完成验证
+- 测试文件：`tests/unit/server/xxx.spec.ts`
+- RED 证据：（粘贴测试失败输出，至少包含失败的断言信息）
+- 实现文件：`packages/server/src/xxx.ts`
+- GREEN 证据：（粘贴测试通过输出，包含 Tests: N passed）
+- 对应 spec：AC-XX 描述
+- 架构合规：`/architecture-guard` 扫描结果（无 Critical / N 个 Major）
 ```
-[CHECKPOINT] ✅ 测试通过 | 🔍 已验证 | ⏳ 待办 | 🚨 阻塞
-```
+
+**RED 证据要求**：
+- 必须包含具体的失败断言（如 `expected 200 to be 401`）
+- 必须包含失败的测试用例名称
+- 禁止用"测试已失败"等文字描述代替实际输出
+
+**GREEN 证据要求**：
+- 必须包含 `Tests: N passed` 或等价输出
+- 如果是部分通过，需说明哪些 AC 尚未覆盖
+
+**违规判定**：
+- 无 CHECKPOINT → 任务视为未完成
+- 有 CHECKPOINT 但无 RED 证据 → 视为"后补测试"，需回退到 RED 阶段重新执行
+- RED 和 GREEN 之间无代码变更 → 视为伪造证据
 
 ---
 
@@ -122,13 +147,44 @@ description: >
 
 ---
 
-### 1. 解析 Issue 编号
+### 1. 阶段 1 完成度检查（进入编码前的硬关卡）
 
-支持格式：`f-15`、`b-02`、`issue f-15`、`f-15-global-tab-bar`
+在读取任何代码前，**必须先验证阶段 1（定义）是否全部完成**。这是进入阶段 2（实现）的硬关卡。
 
-可一次传入多个：`f-15 b-02`、`开发 f-15 和 b-02`
+**检查清单**：
 
-统一提取前缀 + 数字部分。
+| 检查项 | 验证内容 | 未通过的处理 |
+|--------|----------|-------------|
+| **issue 存在** | `docs/issues/{dir}/issue.md` 存在且 status 非 closed | 报错，列出所有 issue |
+| **spec 存在** | `docs/issues/{dir}/specs/` 下至少有一个 spec 文件 | 调用 `/spec-validator` 补全 |
+| **spec 完整** | feature-spec.md + behavior-spec.md（前端）/ api-spec.md（后端） | 提示补充 |
+| **plan 存在** | `docs/issues/{dir}/plan.md` 存在 | 调用 `/plan-generator` 补全 |
+| **plan 合规** | 每个任务以测试开始，无 TODO，含 ADR 合规声明 | 提示重写 |
+| **架构合规** | plan 已通过 `/architecture-guard` 扫描（无 Critical） | 调用 `/architecture-guard` 补扫 |
+
+**阶段 1 未完成的阻断逻辑**：
+
+```
+用户说"开发 f-15"
+    ↓
+检查 docs/issues/f-15-*/issue.md
+    ↓
+检查 specs/ 目录
+    ↓
+❌ spec 不存在 → "阶段 1 未完成：缺少 spec。调用 /spec-validator 补全？"
+    ↓
+检查 plan.md
+    ↓
+❌ plan 不存在 → "阶段 1 未完成：缺少 plan。调用 /plan-generator 补全？"
+    ↓
+检查 plan 是否通过 /architecture-guard
+    ↓
+❌ 未通过 → "阶段 1 未完成：plan 未通过架构审查。调用 /architecture-guard 扫描？"
+    ↓
+✅ 全部通过 → "阶段 1（定义）已完成，进入阶段 2（实现）"
+```
+
+**禁止**：在阶段 1 未完成时引导用户进入编码。即使用户催促，也必须先补全阶段 1。
 
 ---
 
@@ -155,15 +211,16 @@ docs/issues/{dir}/specs/
 └── api-spec.md           # 后端 issue 必须存在
 ```
 
-**若 spec 不存在：**
-1. 告知用户未找到行为契约
-2. 调用 `spec-validator` skill 创建 spec
-3. Spec 完成后进入步骤 4
+**若 spec 不存在或不全：**
+1. 告知用户阶段 1 未完成
+2. 调用 `/spec-validator` skill 创建 spec
+3. Spec 完成后回到步骤 1 重新检查
 
 **若 spec 存在：**
 1. 确认是否包含交互状态表格（前端）或 API 契约（后端）
-2. 若不完整，提示需补充
-3. 进入步骤 4
+2. 确认是否包含测试映射表格
+3. 若不完整，提示需补充
+4. 进入步骤 4
 
 ---
 
@@ -176,9 +233,9 @@ docs/issues/{dir}/specs/
 - 历史版本在 `plans/v{N}.md`
 
 **若不存在：**
-1. 告知用户未找到执行计划
-2. 调用 `plan-generator` skill 创建计划
-3. 计划完成后进入步骤 5
+1. 告知用户阶段 1 未完成
+2. 调用 `/plan-generator` skill 创建计划
+3. 计划完成后回到步骤 1 重新检查
 
 **若已存在：**
 1. 读取 `plan.md`
@@ -193,7 +250,7 @@ docs/issues/{dir}/specs/
 
 ---
 
-### 5. 检查测试代码（TDD 关卡）
+### 5a. 检查测试代码（TDD 关卡）
 
 **这是核心关卡。** 根据 issue 的 track 前缀确定测试层级目录，检查对应的 `.spec.ts` 文件。
 
@@ -270,22 +327,24 @@ dev-orchestrator 步骤 5c
 
 ---
 
-### 6. 引导进入开发
+### 6. 引导进入开发（阶段 2）
 
-spec、plan、测试代码和架构合规检查都就绪后，汇报状态：
+阶段 1（定义）全部完成后，汇报状态并进入阶段 2（实现）：
 
 **单 issue 模式：**
 
 ```
-f-15 文件上传组件 — 开发准备就绪
+阶段 1（定义）已完成 — 进入阶段 2（实现）
 
+f-15 文件上传组件
 - Issue 状态: open
 - 行为契约: docs/issues/f-15-global-tab-bar/specs/behavior-spec.md
 - 执行计划: docs/issues/f-15-global-tab-bar/plan.md (X 个任务)
 - 测试代码: tests/unit/webui/TabBar.spec.ts (Y 条测试用例)
 - TDD 状态: 🔴 测试已编写，运行失败（等待实现）
+- 架构合规: ✅ plan 已通过 /architecture-guard 扫描
 
-请选择开发执行方式：
+阶段 2 执行方式：
 1. /subagent-driven-development — 子代理并行开发（推荐）
 2. /executing-plans — 当前会话顺序执行
 3. 先 review spec 再决定
@@ -294,25 +353,27 @@ f-15 文件上传组件 — 开发准备就绪
 **多 issue 并行模式：**
 
 ```
-批次开发准备就绪 — 2 个 issue
+阶段 1（定义）已完成 — 2 个 issue 准备进入阶段 2（实现）
 
 f-15 TabBar 全局化
 - 状态: open
 - 计划: 5 个任务
 - 测试: TabBar.spec.ts (8 条用例)
+- 架构合规: ✅
 - 注意: 后端 b-02 未完成，将使用 Mock 数据
 
 b-02 知识库 CRUD API
 - 状态: open
 - 计划: 4 个任务
 - 测试: knowledgeBaseCrud.spec.ts (6 条用例)
+- 架构合规: ✅
 
 依赖关系: f-15 阻塞于 b-02（接口对接阶段）
 
-建议执行顺序：
+阶段 2 建议执行顺序：
 1. 先并行启动 b-02 + f-15（前端用 Mock）
 2. b-02 完成后，f-15 移除 Mock 联调
-3. 联调通过后再关闭两个 issue
+3. 联调通过后进入阶段 3（验收）
 
 请选择：
 1. 按建议顺序执行
@@ -384,19 +445,34 @@ b-02 知识库 CRUD API
 
 ---
 
-### 方式二补充：编码中架构合规检查
+### 方式二补充：编码中架构合规检查 + CHECKPOINT 输出
 
-内联执行时，**每个任务完成编码后**，调用 `/architecture-guard` 进行快速检查，确保本次变更未引入架构违规。
+内联执行时，**每个任务完成后**必须：
+1. 调用 `/architecture-guard` 进行快速检查，确保本次变更未引入架构违规
+2. 输出 `[CHECKPOINT] 任务完成验证`（含 RED + GREEN 证据）
 
 **检查时机：**
 - 每个任务编码完成后、提交前
 - 发现疑似违规时随时调用
+
+**每个任务的标准输出**：
+
+```markdown
+[CHECKPOINT] 任务完成验证
+- 测试文件：`tests/unit/server/xxx.spec.ts`
+- RED 证据：（粘贴测试失败输出）
+- 实现文件：`packages/server/src/xxx.ts`
+- GREEN 证据：（粘贴测试通过输出）
+- 对应 spec：AC-XX 描述
+- 架构合规：`/architecture-guard` 扫描结果
+```
 
 **何时停止并求助：**
 - 遇到阻塞（缺少依赖、测试失败、指令不清）
 - Plan 有关键缺口导致无法开始
 - 不理解某个指令
 - 验证反复失败
+- CHECKPOINT 无法提供 RED 证据（说明测试是后补的）
 
 **不要强行通过阻塞** —— 停下来询问。
 
@@ -410,10 +486,11 @@ b-02 知识库 CRUD API
 
 验证命令参见 [`_shared/references/verification-commands.md`](mdc:.claude/skills/_shared/references/verification-commands.md)。
 
-1. **按 track 运行对应测试全部通过**
-2. **类型检查通过**：`pnpm type-check`
-3. **架构合规后检通过**：调用 `/architecture-guard` 进行最终审查，确认无 Critical 违规
-4. **全量回归无退化**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
+1. **所有任务的 CHECKPOINT 已验证**（含 RED + GREEN 证据）
+2. **按 track 运行对应测试全部通过**
+3. **类型检查通过**：`pnpm type-check`
+4. **架构合规后检通过**：调用 `/architecture-guard` 进行最终审查，确认无 Critical 违规
+5. **全量回归无退化**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
 
 ### 验证通过后
 
@@ -442,7 +519,7 @@ b-02 知识库 CRUD API
 |-------------------------------------|------------------------------------------|
 | Issue 文件不存在                    | 报错，列出所有 issue 供核对              |
 | 多个 issue 匹配                     | 请用户确认                               |
-| Spec 不存在                         | 调用 `spec-validator` 生成               |
+| Spec 不存在                         | 调用 `/spec-validator` 补全，完成后回到步骤 1 重新检查阶段 1 完成度 |
 | Plan 存在但不完整                   | 提示需补充，询问是否重写                 |
 | Plan 不符合 TDD                     | 提示必须重写，每个任务以测试开始         |
 | 测试代码不存在                      | 根据 spec 生成测试骨架，确认失败后再开发 |
@@ -452,6 +529,8 @@ b-02 知识库 CRUD API
 | Issue 状态为 `closed`               | 告知已完成，询问是否重新打开             |
 | 多 issue 中有前后端配对但后端未完成 | 前端 plan 中补充 Mock 方案               |
 | /architecture-guard 审查失败（含预审、编码中、后检） | **阻断/暂停**：修复违规后重新调用 /architecture-guard 审查通过方可继续 |
+| 阶段 1 未完成就要求编码 | **阻断**：必须先完成 issue + spec + plan + 架构合规 |
+| Agent 输出 CHECKPOINT 但无 RED 证据 | **回退**：视为后补测试，需回到 RED 阶段重新执行 |
 
 ---
 

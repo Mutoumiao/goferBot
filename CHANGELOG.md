@@ -4,6 +4,15 @@
 
 ---
 
+## [2026-06-05]
+
+### docs
+
+- [docs] 开发流程精简与 CHECKPOINT 协议引入 — 解决 TDD 执行不到位、流程-执行鸿沟两大根本性问题。workflow.md 6 阶段精简为 3 阶段（定义/实现/验收）；引入 Agent CHECKPOINT 协议，要求每个编码任务提供 RED + GREEN 可验证证据；同步更新 4 个 skill（project-workflow / dev-orchestrator / plan-generator / spec-validator）确保阶段归属和调用链一致
+- [docs] 流程优化遗留修复 — workflow.md 删除旧版 CHECKPOINT 删除线段落；project-workflow skill 汇总表补充 `/test-scaffold` 和 `/architecture-guard`；dev-orchestrator 步骤编号统一为 5a/5b/5c；边界情况"Spec 不存在"改为回退到步骤 1 重新检查阶段 1 完成度
+
+---
+
 ## [2026-06-04]
 
 ### backend

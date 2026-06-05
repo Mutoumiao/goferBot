@@ -81,189 +81,125 @@ tests/
 
 ---
 
-## 阶段判断与下一步
+## 阶段判断与下一步（精简为 3 阶段）
 
-### 阶段 0：你只有一堆想法 / 一份大 PRD
-
-**状态**：刚头脑风暴完，或 PRD 里塞了太多功能，不知道从哪下手。
-
-**该做什么**：
-1. **稳定 PRD** — 明确本期要做的功能清单，标记优先级（P0/P1/P2）
-2. **划分批次** — 每批 1~3 个相关功能，相关功能放同一批（如"登录"批：登录页 + 认证 API）
-3. **在 PRD 中记录批次**：
-
-```markdown
-## 功能批次
-
-| 批次 | 功能       | 优先级 | 状态   |
-|------|------------|--------|--------|
-| 01   | 登录/注册  | P0     | 待启动 |
-| 02   | 知识库列表 | P0     | 待启动 |
-| 03   | 文件上传   | P1     | 待启动 |
-```
-
-**硬关卡（Hard Gate）：**
-> 在 PRD 未稳定、功能批次未划分前，**禁止**进入阶段 1 拆 issue。
-> 即使功能看起来"很简单"，也必须先明确边界和优先级。
-> 未批准的 PRD → issue 拆出来还是粗的 → spec 质量低 → 后期大量返工。
-
-**下一步**：进入阶段 1，选第一批启动。
+**流程已精简**：原 7 个阶段（0~6）合并为 3 个阶段，减少执行偏差空间。
+- 阶段 1「定义」= 原阶段 0+1+2+3.5（PRD 稳定 → Issue 拆分 → Spec 编写 → Plan 生成 → 架构审查）
+- 阶段 2「实现」= 原阶段 4（编码 + 测试 + CHECKPOINT）
+- 阶段 3「验收」= 原阶段 5+6（联调整合 + 关闭归档）
 
 ---
 
-### 阶段 1：选定一批功能，需要拆 issue
+### 阶段 1：定义 — 从想法到完整契约
 
-**状态**：已确定本期做哪 1~3 个功能。
+**状态**：有 PRD 或用户故事，需要产出可执行的契约文档。
 
-**使用 skill**：`/issue-generator`
+**该做什么**（按顺序执行，不可跳步）：
 
-**输入**：PRD 中该批功能的相关章节
+**1a. PRD 稳定化**（若 PRD 未稳定）
+- 明确本期要做的功能清单，标记优先级（P0/P1/P2）
+- 划分批次：每批 1~3 个相关功能
+- **硬关卡**：PRD 未稳定前禁止拆 issue
 
-**输出**：
-- `docs/issues/f-XX-*/issue.md`（前端 issue）
-- `docs/issues/b-XX-*/issue.md`（后端 issue）
-- `docs/issues/{dir}/specs/`（spec 占位目录）
-- `docs/issues/{dir}/checklist.json`（验收清单）
+**1b. Issue 拆分** — 使用 `/issue-generator`
+- 每个功能拆为 f-XX + b-XX 两个独立 issue
+- 输出：`docs/issues/{dir}/issue.md` + `checklist.json`
 
-**路径验证**：
-- issue 目录名必须符合 `{prefix}-{NN}-{kebab-slug}`
-- 全局编号，不分轨道
+**1c. 契约编写** — 使用 `/spec-validator`
+- 为每个 issue 编写三层 spec（feature-spec + behavior-spec + api-spec）
+- **硬关卡**：spec 须经用户批准后才能进入 1d
+- 输出：`docs/issues/{dir}/specs/*.md`
 
-**关键决策**：
-- 每个功能拆成 f-XX + b-XX 两个独立 issue
-- 若功能极简单（纯 UI 无 API），可只拆 f-XX
-- 若功能纯后端（如数据库迁移），可只拆 b-XX
+**1d. 执行计划** — 使用 `/plan-generator`
+- 将 spec 转化为可执行任务列表
+- **硬关卡**：plan 保存前必须通过 `/architecture-guard` 扫描（无 Critical 违规）
+- 输出：`docs/issues/{dir}/plan.md`
 
-**下一步**：进入阶段 2，为这批 issue 编写 spec。
+**阶段 1 完成标准**：
+- [ ] issue 目录创建完成
+- [ ] 三层 spec 编写完成且包含测试映射
+- [ ] plan.md 生成完成，无 TODO，含 ADR 合规声明
+- [ ] `/architecture-guard` 扫描通过（无 Critical）
 
----
-
-### 阶段 2：有 issue，需要写 behavior spec / api spec
-
-**状态**：issue 已创建，但缺少交互状态表格或 API 契约。
-
-**使用 skill**：`/spec-validator`
-
-**执行方式**：
-- **前端 issue (f-XX)**：重点编写 `behavior-spec.md`，必须包含 5 种交互状态（loading/empty/error/success/partial）
-- **后端 issue (b-XX)**：重点编写 `api-spec.md`，必须包含请求/响应示例和错误码场景
-
-**输入**：
-- issue 文件 `docs/issues/f-XX-*/issue.md`
-- PRD 相关章节
-- 现有代码（探索代码库确认当前状态）
-
-**输出**：
-- `docs/issues/{dir}/specs/feature-spec.md`
-- `docs/issues/{dir}/specs/behavior-spec.md`（前端）
-- `docs/issues/{dir}/specs/api-spec.md`（后端）
-
-**路径验证**：
-- spec 文件放在 issue 目录下的 `specs/` 子目录中
-
-**关键规则**：
-- 一次只处理一个 issue 的 spec，不要批量写
-- 交互状态表格必须具体到"按钮是否禁用"、"显示什么颜色"
-- 发现术语冲突时立即解决，不要留到编码阶段
-
-**下一步**：进入阶段 3，生成执行计划。
+**下一步**：进入阶段 2，调用 `/dev-orchestrator` 开始编码。
 
 ---
 
-### 阶段 3：有 spec，需要生成执行计划
+### 阶段 2：实现 — 编码与测试
 
-**状态**：spec 已完成，需要转化为可执行的任务列表。
-
-**使用 skill**：`/plan-generator`
-
-**输入**：
-- issue 文件 `docs/issues/{prefix}-{NN}-*/issue.md`
-- spec 文件 `docs/issues/{dir}/specs/`
-
-**输出**：
-- `docs/issues/{dir}/plan.md`（当前生效版本）
-- `docs/issues/{dir}/plans/v{N}.md`（历史归档）
-
-**路径验证**：
-- 当前生效版本固定为 `plan.md`
-- 历史版本归档在 `plans/v{N}.md`，N 从 1 开始递增
-
-**关键规则**：
-- 每个步骤 2~5 分钟，禁止占位符（"TODO"、"稍后实现"）
-- 必须包含具体代码示例和验证命令
-- 计划生成后自检：是否覆盖了 spec 中的所有交互状态/端点？
-
-**下一步**：进入阶段 4，开始编码。
-
----
-
-### 阶段 4：有计划，需要开发执行
-
-**状态**：plan 文件已生成，准备写代码。
+**状态**：阶段 1 全部完成，issue + spec + plan + 架构合规均已就绪。
 
 **使用 skill**：`/dev-orchestrator`
 
-**执行方式**：
-1. 读取 issue → 读取 spec → 读取 plan
-2. 检查测试代码（若无则创建 `tests/{layer}/{name}.spec.ts`）
-3. 引导选择执行方式：
+**核心要求**：
+1. **读取 issue → 读取 spec → 读取 plan**
+2. **检查测试代码**（若无则调用 `/test-scaffold` 创建）
+3. **每个任务必须输出 CHECKPOINT**（含 RED + GREEN 证据）
+4. **引导选择执行方式**：
    - **子代理驱动**（推荐）：`superpowers:subagent-driven-development`
    - **内联执行**：`superpowers:executing-plans`
 
-**前端开发额外步骤**：
-- 编码前可用 gstack `/plan-design-review` 审查设计
-- 编码后可用 gstack `/design-review` 做视觉审计
+**Agent CHECKPOINT 协议**（解决 TDD 执行不到位）：
+每个编码任务必须输出可验证的 CHECKPOINT，证明 RED → GREEN 真实发生：
 
-**后端开发额外步骤**：
-- 编码后可用 gstack `/review` 做代码审查
+```markdown
+[CHECKPOINT] 任务完成验证
+- 测试文件：`tests/unit/server/xxx.spec.ts`
+- RED 证据：（粘贴测试失败输出，至少包含失败的断言信息）
+- 实现文件：`packages/server/src/xxx.ts`
+- GREEN 证据：（粘贴测试通过输出，包含 Tests: N passed）
+- 对应 spec：AC-XX 描述
+- 架构合规：`/architecture-guard` 扫描结果
+```
+
+**违规判定**：
+- 无 CHECKPOINT → 任务视为未完成
+- 有 CHECKPOINT 但无 RED 证据 → 视为"后补测试"，需回退到 RED 阶段重新执行
+- RED 和 GREEN 之间无代码变更 → 视为伪造证据
 
 **关键规则**：
 - 前端若后端 API 未完成，先用 Mock 数据，标记 `TODO: 联调`
 - 每完成一个任务运行测试，不要攒到最后一起测
 - 频繁提交（每个任务一个 commit）
 
-**下一步**：进入阶段 5，联调整合。
+**下一步**：进入阶段 3，验收。
 
 ---
 
-### 阶段 5：前后端都完成，需要联调
+### 阶段 3：验收 — 联调与关闭
 
-**状态**：f-XX 和对应的 b-XX 都已编码完成。
+**状态**：f-XX 和对应的 b-XX 编码完成，所有任务 CHECKPOINT 已验证。
 
 **执行方式**：
 1. 前端移除 Mock，对接真实 API
 2. 运行端到端测试（Playwright）
-3. 验证交互状态是否按 behavior-spec 实现
-4. 验证 API 是否按 api-spec 返回正确错误码
+3. 使用 `/kb-review` 执行审查：
+   - 代码审查：验证代码质量、安全问题
+   - 规格对齐审查：验证交互状态是否按 behavior-spec 实现
+   - **TDD 合规审查：验证每个任务的 CHECKPOINT 存在且 RED → GREEN 真实发生**
+   - 安全审查：验证安全基线是否满足
+4. 使用 `/integration-check` 检查：
+   - 前端 API 调用与后端 api-spec 一致性
+   - 参数、响应格式、错误码匹配
+   - Mock 残留清理
+5. 审查记录归档到 `docs/reviews/`
+6. 使用 `/issue-lifecycle` 关闭 issue：
+   - 更新 issue 状态为 `closed`
+   - 更新 checklist.json 中 AC-XX 状态为 `passed`
+   - 更新 `BACKLOG.md` / `CHANGELOG.md`
 
 **发现问题**：
-- 前端问题 → 回到阶段 4 修复 f-XX
-- 后端问题 → 回到阶段 4 修复 b-XX
-- spec 问题 → 回到阶段 2 更新 spec（罕见但允许）
+- 前端问题 → 回到阶段 2 修复 f-XX
+- 后端问题 → 回到阶段 2 修复 b-XX
+- spec 问题 → 回到阶段 1 更新 spec（允许回溯）
 
-**下一步**：进入阶段 6，关闭 issue。
-
----
-
-### 阶段 6：功能完成，需要关闭 issue
-
-**状态**：代码已合并，测试通过。
-
-**使用 skill**：`/issue-lifecycle`
-
-**操作**：
-1. 更新 issue 状态为 `closed`
-2. 勾选验收标准 `[x]`
-3. 更新 checklist.json 中对应 AC-XX 状态为 `passed`
-4. 更新 `BACKLOG.md` / `CHANGELOG.md` 进度
-5. 确认审查记录已归档到 `docs/reviews/{scope}/{type}-v{N}.md`
-6. 确认测试代码存在于 `tests/{layer}/`
-7. 可选：归档到 `docs/archived/`
-
-**路径验证**：
-- 关闭前必须确认 `reviews/` 存在对应文件
-- 关闭前必须确认 checklist.json 中所有 AC-XX 为 `passed`
-- 禁止关闭无审查记录的 issue
+**阶段 3 完成标准**：
+- [ ] 所有 Critical/Major 问题已修复
+- [ ] 每个任务的 CHECKPOINT 已验证（含 RED + GREEN 证据）
+- [ ] `.spec.ts` 测试全部通过
+- [ ] 类型检查通过
+- [ ] 审查记录已归档到 `docs/reviews/`
+- [ ] BACKLOG.md + CHANGELOG.md 已更新
 
 **下一步**：回到阶段 1，启动下一批功能。
 
@@ -274,38 +210,24 @@ tests/
 ```
 你当前有什么？
 ├── 只有想法 / 大 PRD
-│   └── → 阶段 0：稳定 PRD + 划分批次
-├── 已选定一批功能
-│   └── → 阶段 1：/issue-generator 拆 issue
-├── 有 issue 无 spec
-│   └── → 阶段 2：/spec-validator 写 spec
-├── 有 spec 无 plan
-│   └── → 阶段 3：/plan-generator 生成计划
-├── 有 plan 未编码
-│   └── → 阶段 4：/dev-orchestrator 开发执行
-├── 前后端都完成
-│   └── → 阶段 5：联调整合
-└── 功能已验证
-    └── → 阶段 6：/issue-lifecycle 关闭
+│   └── → 阶段 1（定义）：稳定 PRD → /issue-generator 拆 issue → /spec-validator 写 spec → /plan-generator 生成计划
+├── 有完整契约（issue + spec + plan）
+│   └── → 阶段 2（实现）：/dev-orchestrator 编码 + 测试 + CHECKPOINT
+├── 编码完成
+│   └── → 阶段 3（验收）：联调 → /kb-review 审查 → /issue-lifecycle 关闭
 ```
 
 ---
 
 ## 各阶段使用的 skills 汇总
 
-| 阶段             | 自定义 skills       | gstack skills                                        |
-|------------------|---------------------|------------------------------------------------------|
-| 0 - PRD 稳定     | —                   | —                                                    |
-| 1 - 拆 issue     | `/issue-generator`  | —                                                    |
-| 2 - 写 spec      | `/spec-validator`   | `/grill-with-docs`（可选）                           |
-| 3 - 生成 plan    | `/plan-generator`   | —                                                    |
-| 4 - 开发执行     | `/dev-orchestrator` | `/subagent-driven-development` 或 `/executing-plans` |
-| 4 - 前端设计审查 | —                   | `/plan-design-review`                                |
-| 4 - 前端视觉审计 | —                   | `/design-review`                                     |
-| 4 - 后端代码审查 | —                   | `/review`                                            |
-| 4 - 测试         | —                   | `/tdd`                                               |
-| 5 - 联调         | —                   | —                                                    |
-| 6 - 关闭         | `/issue-lifecycle`  | —                                                    |
+| 阶段           | 目标           | 自定义 skills                              | gstack skills                                        |
+|----------------|----------------|-------------------------------------------|------------------------------------------------------|
+| 1 - 定义       | 产出完整契约   | `/issue-generator` → `/spec-validator` → `/plan-generator` → `/architecture-guard` | `/grill-with-docs`（可选）                           |
+| 2 - 实现       | 编码 + 测试    | `/dev-orchestrator` + `/test-scaffold` + `/architecture-guard` | `/subagent-driven-development` 或 `/executing-plans` |
+| 2 - 设计审查   | —              | —                                         | `/plan-design-review`                                |
+| 2 - 代码审查   | —              | —                                         | `/review`                                            |
+| 3 - 验收       | 联调 + 关闭    | `/kb-review` + `/integration-check` + `/issue-lifecycle` | —                                                    |
 
 ---
 
@@ -319,3 +241,5 @@ tests/
 | plan 里写 "TODO"        | 工程师不知道怎么做         | 每个步骤给具体代码和命令       |
 | 前后端不联调直接关闭    | 接口不匹配                 | 必须联调验证后再关闭           |
 | 发现 spec 错了硬改代码  | 代码和文档脱节             | 回溯更新 spec，再改代码        |
+| **Agent 输出 CHECKPOINT 但无 RED 证据** | 测试是后补的，TDD 流于形式 | **必须粘贴测试失败输出，禁止文字描述代替** |
+| **阶段 1 未完成就进入阶段 2** | 无契约编码 = 返工 | **必须确认 issue + spec + plan + 架构合规全部就绪** |

@@ -1,6 +1,6 @@
 # 待办事项
 
-> 自动生成于 2026-05-22，最后更新于 2026-06-01
+> 自动生成于 2026-05-22，最后更新于 2026-06-05
 
 ## 进行中
 
@@ -12,7 +12,38 @@ _暂无_
 
 ## 技术债务
 
+
+### 架构/设计
+
 - **PrismaService 代理模式可维护性**：手动代理每个模型方法，新增模型时需同步维护。未来可考虑 `Proxy` 自动代理或生成器脚本。
+
+### RAG 检索链路（2026-06-05 洞察挖掘发现）
+
+- **向量检索结果缺少 chunk content，导致语义检索被静默降级** — `packages/rag-sdk/src/runtime/hybrid-retriever.ts:52`
+  - 根因：`PgVectorStore.searchVectors()` 的 SQL 仅返回 `id` + `score`，不返回 `content`。`HybridRetriever` 用占位值填充 `content: ''`。
+  - 后果：`chat.service.ts:72` 的防御性过滤会将这些向量检索结果丢弃，RAG 实际主要依赖 `KeywordService` 的关键词匹配，语义检索优势被浪费。
+  - 建议：修改 `PgVectorStore.searchVectors` 的 SQL，通过 JOIN 或扩展 SELECT 同时返回 `content`、`document_id`、`kb_id`、`chunk_index` 列，使 `HybridRetriever` 能获得完整 chunk 信息。
+  - 影响范围：Chat RAG 回答质量（尤其需要语义理解的查询）。
+
+- **RAG SDK 接口与实现不匹配** — `packages/rag-sdk/src/vector-store.ts`
+  - 根因：`VectorSearchResult` 只定义 `chunkId: string`，但 `HybridRetriever.retrieve()` 需要完整 `chunk` 对象（含 content）。
+  - 后果：接口契约与实际需求脱节，迫使实现方（`PgVectorStore`）在 SQL 中做额外查询，或调用方（`HybridRetriever`）使用占位值。
+  - 建议：评估是否将 `VectorSearchResult` 扩展为包含完整 chunk 信息，或明确拆分"轻量检索"与"详情检索"两个接口。
+
+### 前端性能
+
+- **Session 列表无分页，存在性能隐患** — `packages/webui/src/stores/session.ts:47`
+  - 根因：前端调用 `GET /api/sessions` 时不传 `page`/`limit` 参数，依赖后端默认行为。
+  - 后果：若后端默认返回全部会话，用户会话数增长时前端一次性加载全部数据，渲染性能和内存占用线性下降。
+  - 建议：确认后端默认分页策略；若默认无限制，前端应立即添加默认 `limit` 参数（如 `?limit=50`）作为短期防护，同时推进分页 UI 实现。
+  - 关联待办：见上方"待启动"中的 f-XX Session 列表分页 UI。
+
+### 测试/E2E
+
+- **E2E 测试复杂度累积** — `tests/e2e/pages/ChatPage.ts`
+  - 根因：EmptySession/ChatInput 双模式导致测试需要 `ensureChatInputVisible()` 等适配逻辑。
+  - 后果：E2E 测试维护成本高于理想状态，新增测试需理解双模式切换逻辑。
+  - 建议：当前状态稳定（75/75 通过），暂不紧急处理。后续若重构聊天页面初始状态，同步简化测试逻辑。
 
 ## 已修复（2026-06-04）
 

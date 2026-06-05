@@ -16,7 +16,7 @@ description: >
 | **硬关卡** | spec 须经**用户批准**才能进入 plan-generator |
 | **核心输出** | `docs/issues/{dir}/specs/*.md` |
 | **禁止行为** | 未经用户确认自动生成 plan、批量写多个 spec |
-| **下一步** | 用户批准后 → 调用 plan-generator |
+| **下一步** | 用户批准后 → 调用 `/plan-generator` 继续阶段 1（定义） |
 
 为 issue 编写完整的三层规格文档，确保交互状态完整、API 契约清晰、术语一致。编写过程中通过质询澄清模糊需求。
 
@@ -219,7 +219,7 @@ description: >
 2. 向用户展示 spec 摘要
 3. **询问用户**："spec 已写入 `docs/issues/{dir}/specs/`。请审查并确认无修改后再生成 plan。"
 4. 用户要求修改 → 修改 → 重新自检 → 再次询问
-5. 用户批准 → 方可调用 `plan-generator`
+5. 用户批准 → 方可调用 `plan-generator` 继续阶段 1（定义）
 
 **禁止：**
 - 未经用户确认就自动生成 plan

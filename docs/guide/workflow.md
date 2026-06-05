@@ -6,18 +6,19 @@
 
 ---
 
-## 阶段速查
+## 阶段速查（精简为 3 阶段）
 
 | 阶段 | 输入 | 输出 | Skill | 规范文档 |
 |------|------|------|-------|----------|
-| 0. PRD 稳定化 | 需求草案 | 功能批次 | - | - |
-| 1. Issue 拆分 | PRD 批次 | `docs/issues/{prefix}-{NN}-{slug}/` | `/issue-generator` | [Issue 规范](writing-issues.md) |
-| 2. 契约编写 | Issue | `specs/*.md` | `/spec-validator` | [Spec 规范](writing-specs.md) |
-| 3. 执行计划 | Issue + Spec | `plan.md` + `plans/v{N}.md` | `/plan-generator` | [Plan 规范](writing-plans.md) |
-| 3.5 架构审查 | Plan + Spec | 合规报告 | `/architecture-guard` | [后端规范](backend/conventions.md) |
-| 4. 并行开发 | Plan + Spec | 代码 + `tests/{layer}/*.spec.ts` | `/dev-orchestrator` + `/test-scaffold` | - |
-| 5. 联调整合 | 代码 | 审查记录 | `/kb-review` + `/integration-check` | [Review 规范](writing-reviews.md) |
-| 6. 关闭归档 | 已验证代码 | 关闭 issue + 更新 BACKLOG/CHANGELOG | `/issue-lifecycle` + `/issue-updater` | - |
+| 1. 定义 | PRD 批次 | issue + specs + plan | `/issue-generator` + `/spec-validator` + `/plan-generator` | [Issue 规范](writing-issues.md) |
+| 2. 实现 | issue + specs + plan | 代码 + 测试 + CHECKPOINT | `/dev-orchestrator` + `/test-scaffold` | [Plan 规范](writing-plans.md) |
+| 3. 验收 | 代码 + 测试 | 审查记录 + 关闭 issue | `/kb-review` + `/integration-check` | [Review 规范](writing-reviews.md) |
+
+**精简说明**：
+- 原阶段 0（PRD 稳定化）并入阶段 1，作为 issue 拆分的前置输入
+- 原阶段 3.5（架构审查）并入阶段 2，作为 plan 保存前的强制检查点
+- 原阶段 5（联调整合）与阶段 6（关闭归档）合并为阶段 3，验收即归档
+- 阶段减少 → 跳跃步骤更醒目 → 执行偏差更容易被发现
 
 ---
 
@@ -49,6 +50,37 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 | 集成测试 | `tests/integration/**/*.spec.ts` | [集成测试指南](testing/integration-testing-guide.md) |
 | E2E 测试 | `tests/e2e/**/*.spec.ts` | [E2E 测试指南](testing/e2e-testing-guide.md) |
 
+### Agent CHECKPOINT 协议（解决 TDD 执行不到位）
+
+**问题**：口头要求"先写测试"无法验证实际执行顺序。
+**方案**：每个编码任务必须输出可验证的 CHECKPOINT，证明 RED → GREEN 的真实发生。
+
+**CHECKPOINT 格式**：
+
+```markdown
+[CHECKPOINT] 任务完成验证
+- 测试文件：`tests/unit/server/xxx.spec.ts`
+- RED 证据：（粘贴测试失败输出，至少包含失败的断言信息）
+- 实现文件：`packages/server/src/xxx.ts`
+- GREEN 证据：（粘贴测试通过输出，包含 Tests: N passed）
+- 对应 spec：AC-XX 描述
+- 架构合规：`/architecture-guard` 扫描结果（无 Critical / N 个 Major）
+```
+
+**RED 证据要求**：
+- 必须包含具体的失败断言（如 `expected 200 to be 401`）
+- 必须包含失败的测试用例名称
+- 禁止用"测试已失败"等文字描述代替实际输出
+
+**GREEN 证据要求**：
+- 必须包含 `Tests: N passed` 或等价输出
+- 如果是部分通过，需说明哪些 AC 尚未覆盖
+
+**违规判定**：
+- 无 CHECKPOINT → 任务视为未完成
+- 有 CHECKPOINT 但无 RED 证据 → 视为"后补测试"，需回退到 RED 阶段重新执行
+- RED 和 GREEN 之间无代码变更 → 视为伪造证据
+
 ### 开发前检查清单（dev-orchestrator 执行）
 
 - [ ] spec 已编写且包含测试映射表格
@@ -61,154 +93,32 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 
 ## 阶段详解
 
-### 阶段 0: PRD 稳定化
+### 阶段 1: 定义（原阶段 0+1+2+3.5 合并）
 
-**输入**：头脑风暴产物、谈话记录、大 PRD 草案  
-**输出**：稳定的 PRD + 功能批次划分
+**输入**：PRD 需求 / 用户故事  
+**输出**：issue + specs + plan（含架构合规声明）
 
-**为什么必须先稳定 PRD**：
-- 未经边界定义的 PRD → issue 拆出来还是粗的
-- 一次生成太多 spec → spec 质量低，交互状态漏掉
-- 中途发现 PRD 不合理 → 已生成的 plan/spec/issue 全作废
+**为什么合并**：原 4 个阶段（PRD → Issue → Spec → Plan → 架构审查）之间依赖紧密，拆分后容易产生"跳步"和"回溯成本"。合并为单阶段后，所有契约文档一次性产出，减少上下文切换。
 
 **操作**：
-1. 从 PRD 中提取确定要做的功能清单
-2. 标记优先级（P0/P1/P2）
-3. 明确本期不做的东西（防止范围蔓延）
-4. **划分批次**：每批 1~3 个相关功能
+1. **PRD 稳定化**：从 PRD 中提取当前批次（1~3 个相关功能），明确本期不做的东西
+2. **Issue 拆分**：每个功能拆为 f-XX + b-XX（极简单功能可只拆一端）
+3. **契约编写**：为每个 issue 编写三层 spec（feature-spec + behavior-spec + api-spec），底部必须包含测试映射表格
+4. **执行计划**：生成 plan.md，头部包含 ADR 合规声明表格，每个任务 2~5 分钟，禁止 TODO
+5. **架构审查**：plan 保存前强制调用 `/architecture-guard`，Critical 违规修复后方可进入阶段 2
 
-```markdown
-## 功能批次
-
-| 批次 | 功能 | 优先级 | 状态 |
-|------|------|--------|------|
-| 01 | {功能 A} | P0 | 待启动 |
-| 02 | {功能 B} | P0 | 待启动 |
-| 03 | {功能 C} | P1 | 待启动 |
-```
-
-**原则**：一批不超过 3 个相关功能，确保 spec-validator 能深入每个交互状态。
+**阶段 1 完成标准**：
+- [ ] issue 目录创建完成
+- [ ] 三层 spec 编写完成且包含测试映射
+- [ ] plan.md 生成完成，无 TODO，含 ADR 合规声明
+- [ ] `/architecture-guard` 扫描通过（无 Critical）
 
 ---
 
-### 阶段 1: Issue 拆分
-
-**输入**：PRD 中当前批次的功能描述  
-**输出**：`docs/issues/{prefix}-{NN}-{slug}/` 目录
-
-**使用 skill**：`/issue-generator`
-
-**轨道前缀**：
-- `f-XX`: 前端功能
-- `b-XX`: 后端接口
-- `d-XX`: 设计
-- `i-XX`: 基础设施
-- `q-XX`: 质量
-
-**规则**：
-- 每个功能拆成 f-XX + b-XX 两个独立 issue
-- 极简单功能（纯 UI 无 API）可只拆 f-XX
-- 纯后端功能（如数据库迁移）可只拆 b-XX
-- 按依赖顺序发布（阻塞者先发布）
-
-详细规范：[writing-issues.md](writing-issues.md)
-
----
-
-### 阶段 2: 契约编写（Spec）
-
-**输入**：Issue 文件 + PRD 相关章节  
-**输出**：`docs/issues/{dir}/specs/*.md`
-
-**使用 skill**：`/spec-validator`
-
-**三层规格**：
-1. **功能规格** (`feature-spec.md`)：用户故事、边界、涉及页面
-2. **行为规格** (`behavior-spec.md`)：前端交互状态表格（loading/empty/error/success/partial）
-3. **API 规格** (`api-spec.md`)：后端接口契约（路由、DTO、错误码）
-
-**测试映射表格**
-
-每个 behavior-spec 和 api-spec 底部必须包含：
-
-```markdown
-## 测试映射
-
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| loading 状态 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-01: renders {ComponentName} in loading state` |
-| 401 错误 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-02: displays error on unauthorized` |
-```
-
-**关键规则**：
-- 一次只处理一个 issue 的 spec
-- 交互状态必须具体到"按钮是否禁用"、"显示什么颜色"
-- 发现术语冲突立即解决，不留到编码阶段
-
-详细规范：[writing-specs.md](writing-specs.md)
-
----
-
-### 阶段 3: 执行计划
-
-**输入**：Issue + Spec  
-**输出**：`docs/issues/{dir}/plan.md` + `plans/v{N}.md`
-
-**使用 skill**：`/plan-generator`
-
-**关键规则**：
-- 每个步骤 2~5 分钟
-- 禁止占位符（"TODO"、"稍后实现"）
-- 必须包含具体代码示例和验证命令
-- **TDD 强制**：每个任务必须以"编写失败测试"开始，以"运行测试确认通过"结束
-- **架构合规声明**：plan 头部必须包含 ADR 合规声明表格
-- 自检：是否覆盖了 spec 中所有交互状态/端点？
-
-**保存前强制扫描**：
-
-```
-plan-generator 完成 plan 编写
-    ↓
-调用 /architecture-guard 审查 plan.md
-    ↓
-❌ 发现 Critical → 修复违规代码块 → 重新调用 /architecture-guard
-✅ 无违规 → 保存 plan.md
-```
-
-详细规范：[writing-plans.md](writing-plans.md)
-
----
-
-### 阶段 3.5: 架构审查
+### 阶段 2: 实现（原阶段 4，强化 CHECKPOINT）
 
 **输入**：Plan + Spec  
-**输出**：合规报告
-
-**使用 skill**：`/architecture-guard`
-
-**扫描范围**：
-- plan.md 中的所有代码块
-- specs/*.md 中的 DTO 定义和依赖声明
-- 已存在的相关实现文件（如有）
-
-**检查维度**：
-- 验证方案合规：Zod schema + `createZodDto`，无 class-validator
-- 响应格式合规：直接返回原始数据，无无正当理由的 `@BypassResponse()`
-- 依赖引入合规：无与现有技术栈冲突的新依赖
-- NestJS 规范合规：模块分层、RESTful 端点、认证守卫
-
-**规则**：
-- **Critical 违规必须修复后才能进入阶段 4**（硬关卡）
-- Major 违规需评估影响，用户可申请豁免
-- 扫描结果写入审查记录
-- 未通过扫描的 plan 不得保存
-
----
-
-### 阶段 4: 并行开发
-
-**输入**：Plan + Spec  
-**输出**：可运行的代码 + `.spec.ts` 测试
+**输出**：可运行的代码 + `.spec.ts` 测试 + 每个任务的 CHECKPOINT
 
 **使用 skill**：`/dev-orchestrator` + `/test-scaffold`
 
@@ -229,12 +139,11 @@ plan-generator 完成 plan 编写
 - 检查通过 → 继续提交
 - 检查失败 → **暂停当前任务**，修复违规后方可继续
 
-**TDD 执行检查点**：
-
-每个任务完成后必须输出：
-```
-[CHECKPOINT] ✅ 测试通过 | 🔍 已验证 | ⏳ 待办 | 🚨 阻塞
-```
+**新版 CHECKPOINT 协议**（见上方"Agent CHECKPOINT 协议"章节）：
+- 必须包含 RED 证据（测试失败输出）
+- 必须包含 GREEN 证据（测试通过输出）
+- 必须包含对应 spec 的 AC 编号
+- 无 CHECKPOINT 的任务视为未完成
 
 **测试**：
 - 遵循 red-green-refactor 循环
@@ -243,10 +152,10 @@ plan-generator 完成 plan 编写
 
 ---
 
-### 阶段 5: 联调整合与审查
+### 阶段 3: 验收（原阶段 5+6 合并）
 
-**输入**：前后端代码  
-**输出**：通过端到端测试的完整功能
+**输入**：前后端代码 + 测试  
+**输出**：审查记录 + 关闭的 issue + 更新的 BACKLOG/CHANGELOG
 
 **使用 skill**：`/kb-review` + `/integration-check`
 
@@ -256,44 +165,29 @@ plan-generator 完成 plan 编写
 3. 使用 `/kb-review` 执行审查：
    - 代码审查：验证代码质量、安全问题
    - 规格对齐审查：验证交互状态是否按 behavior-spec 实现
-   - **TDD 合规审查：验证 `.spec.ts` 存在且覆盖所有场景**
+   - **TDD 合规审查：验证每个任务的 CHECKPOINT 存在且 RED → GREEN 真实发生**
    - 安全审查：验证安全基线是否满足
 4. 使用 `/integration-check` 检查：
    - 前端 API 调用与后端 api-spec 一致性
    - 参数、响应格式、错误码匹配
    - Mock 残留清理
 5. 审查记录归档到 `docs/reviews/`
+6. 更新 issue 状态、BACKLOG.md、CHANGELOG.md
+7. 可选：归档到 `docs/99-archived/issues/`
 
 **问题处理**：
-- 前端问题 → 回到阶段 4 修复 f-XX
-- 后端问题 → 回到阶段 4 修复 b-XX
+- 前端问题 → 回到阶段 2 修复 f-XX
+- 后端问题 → 回到阶段 2 修复 b-XX
 - 接口不匹配 → 使用 `/integration-check` 定位差异
-- spec 问题 → 回到阶段 2 更新 spec（允许回溯）
+- spec 问题 → 回到阶段 1 更新 spec（允许回溯）
 
-详细规范：[writing-reviews.md](writing-reviews.md)
-
----
-
-### 阶段 6: 关闭与归档
-
-**输入**：已验证的代码  
-**输出**：关闭的 issue + 更新的进度
-
-**使用 skill**：`/issue-lifecycle` + `/issue-updater`
-
-**操作**：
-1. 使用 `/kb-review` 执行关闭前验收：
-   - 确认所有 Critical/Major 问题已修复
-   - **确认 `.spec.ts` 测试全部通过**
-   - 确认类型检查通过
-   - 确认审查记录已归档到 `docs/reviews/`
-2. 使用 `/integration-check` 确认无 Mock 残留、接口一致
-3. **架构合规后检**：调用 `/architecture-guard` 进行最终审查，确认无 Critical 违规
-4. 运行 `sync-issue-status.js` 更新 issue 状态
-5. 运行 `issue-updater` 更新 `BACKLOG.md` + `CHANGELOG.md`
-6. 可选：归档到 `docs/99-archived/issues/`
-
-**然后**：回到阶段 1，启动下一批功能。
+**阶段 3 完成标准**：
+- [ ] 所有 Critical/Major 问题已修复
+- [ ] 每个任务的 CHECKPOINT 已验证（含 RED + GREEN 证据）
+- [ ] `.spec.ts` 测试全部通过
+- [ ] 类型检查通过
+- [ ] 审查记录已归档到 `docs/reviews/`
+- [ ] BACKLOG.md + CHANGELOG.md 已更新
 
 ---
 
@@ -331,6 +225,7 @@ plan-generator 完成 plan 编写
 | 混淆设计审查与代码审查 | 视觉问题被代码审查遗漏 | 视觉审计用 `/gstack-design-review`，代码审查用 `/kb-review` |
 | 跳过架构审查直接编码 | 引入 ADR 违规，后期返工 | plan 生成后必须 `/architecture-guard` 扫描 |
 | 无 `/integration-check` 直接关闭 | Mock 残留、接口不一致 | 关闭前必须检查前后端契约一致性 |
+| **Agent 输出 CHECKPOINT 但无 RED 证据** | 测试是后补的，TDD 流于形式 | **必须粘贴测试失败输出，禁止文字描述代替** |
 
 ---
 
@@ -348,6 +243,7 @@ plan-generator 完成 plan 编写
 - 代码变更必须通过测试
 - 必须更新相关文档（如 API 变更同步到 Spec）
 - 禁止修改不属于自己的文件
+- **每个编码任务必须输出 CHECKPOINT（含 RED + GREEN 证据）**
 
 ### 联调机制
 
