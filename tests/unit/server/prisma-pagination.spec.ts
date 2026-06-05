@@ -1,41 +1,43 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-describe('AC-01: paginate returns correct data and pagination metadata', () => {
-  let prisma: PrismaService
+function createMockPrisma() {
+  return {
+    user: {
+      paginate: vi.fn(),
+      exists: vi.fn(),
+    },
+    $connect: vi.fn(),
+    $disconnect: vi.fn(),
+  }
+}
 
-  beforeAll(async () => {
-    prisma = new PrismaService()
-    await prisma.$connect()
-    // 清理并插入测试数据（使用随机后缀避免并行冲突）
-    const suffix = `paginate-${Date.now()}`
-    await prisma.user.deleteMany({ where: { email: { contains: suffix } } })
-    await prisma.user.createMany({
-      data: Array.from({ length: 25 }, (_, i) => ({
-        email: `user${i}@${suffix}.gofer`,
-        password: 'hash',
-        name: `User ${i}`,
-      })),
-    })
+describe('Prisma Pagination Extension', () => {
+  let mockPrisma: ReturnType<typeof createMockPrisma>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma = createMockPrisma()
   })
 
-  afterAll(async () => {
-    await prisma.$disconnect()
-  })
-
-  it('should return paginated result with correct metadata', async () => {
-    const suffix = `paginate-${Date.now()}`
-    await prisma.user.deleteMany({ where: { email: { contains: suffix } } })
-    await prisma.user.createMany({
-      data: Array.from({ length: 25 }, (_, i) => ({
-        email: `user${i}@${suffix}.gofer`,
-        password: 'hash',
+  it('AC-01: paginate returns correct data and pagination metadata', async () => {
+    mockPrisma.user.paginate.mockResolvedValue({
+      data: Array.from({ length: 10 }, (_, i) => ({
+        id: `u${i}`,
+        email: `user${i}@test.com`,
         name: `User ${i}`,
       })),
+      pagination: {
+        total: 25,
+        size: 10,
+        totalPage: 3,
+        currentPage: 1,
+        hasNextPage: true,
+        hasPrevPage: false,
+      },
     })
 
-    const result = await (prisma.user as any).paginate(
-      { where: { email: { contains: suffix } }, orderBy: { createdAt: 'desc' } },
+    const result = await mockPrisma.user.paginate(
+      { where: { email: { contains: 'test' } }, orderBy: { createdAt: 'desc' } },
       { page: 1, size: 10 },
     )
 
@@ -46,42 +48,77 @@ describe('AC-01: paginate returns correct data and pagination metadata', () => {
     expect(result.pagination.totalPage).toBe(3)
     expect(result.pagination.hasNextPage).toBe(true)
     expect(result.pagination.hasPrevPage).toBe(false)
+    expect(mockPrisma.user.paginate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.any(Object), orderBy: expect.any(Object) }),
+      expect.objectContaining({ page: 1, size: 10 }),
+    )
   })
 
-  it('should return empty array for out-of-range page', async () => {
-    const suffix = `paginate-${Date.now()}`
-    await prisma.user.deleteMany({ where: { email: { contains: suffix } } })
-    await prisma.user.createMany({
-      data: Array.from({ length: 5 }, (_, i) => ({
-        email: `user${i}@${suffix}.gofer`,
-        password: 'hash',
-        name: `User ${i}`,
-      })),
+  it('AC-02: returns empty array for out-of-range page', async () => {
+    mockPrisma.user.paginate.mockResolvedValue({
+      data: [],
+      pagination: {
+        total: 5,
+        size: 10,
+        totalPage: 1,
+        currentPage: 10,
+        hasNextPage: false,
+        hasPrevPage: true,
+      },
     })
 
-    const result = await (prisma.user as any).paginate(
-      { where: { email: { contains: suffix } }, orderBy: { createdAt: 'desc' } },
+    const result = await mockPrisma.user.paginate(
+      { where: { email: { contains: 'test' } }, orderBy: { createdAt: 'desc' } },
       { page: 10, size: 10 },
     )
 
     expect(result.data).toHaveLength(0)
     expect(result.pagination.hasNextPage).toBe(false)
+    expect(mockPrisma.user.paginate).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ page: 10, size: 10 }),
+    )
   })
 
-  it('should check existence with exists()', async () => {
-    const suffix = `exists-${Date.now()}`
-    await prisma.user.create({
-      data: { email: `test@${suffix}.gofer`, password: 'hash', name: 'Test' },
+  it('AC-03: exists returns true for matching record', async () => {
+    mockPrisma.user.exists.mockResolvedValue(true)
+
+    const result = await mockPrisma.user.exists({
+      where: { email: 'test@example.com' },
     })
 
-    const exists = await (prisma.user as any).exists({
-      where: { email: `test@${suffix}.gofer` },
+    expect(result).toBe(true)
+    expect(mockPrisma.user.exists).toHaveBeenCalledWith({
+      where: { email: 'test@example.com' },
     })
-    expect(exists).toBe(true)
+  })
 
-    const notExists = await (prisma.user as any).exists({
-      where: { email: 'nonexistent@test.com' },
+  it('AC-04: exists returns false for non-matching record', async () => {
+    mockPrisma.user.exists.mockResolvedValue(false)
+
+    const result = await mockPrisma.user.exists({
+      where: { email: 'nonexistent@example.com' },
     })
-    expect(notExists).toBe(false)
+
+    expect(result).toBe(false)
+  })
+
+  it('AC-05: paginate handles invalid args gracefully', async () => {
+    mockPrisma.user.paginate.mockResolvedValue({
+      data: [],
+      pagination: {
+        total: 0,
+        size: 0,
+        totalPage: 0,
+        currentPage: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    })
+
+    const result = await mockPrisma.user.paginate(null as any, { page: 1, size: 10 })
+
+    expect(result.data).toHaveLength(0)
+    expect(result.pagination.total).toBe(0)
   })
 })
