@@ -1,6 +1,6 @@
 ---
 id: q-24
-status: open
+status: closed
 track: quality
 priority: p0
 summary: 单元测试数据库隔离治理 — 阻断开发库污染

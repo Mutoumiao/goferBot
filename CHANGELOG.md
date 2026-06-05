@@ -6,6 +6,10 @@
 
 ## [2026-06-05]
 
+### quality
+
+- [closed] q-24 单元测试数据库隔离治理 — testglobals.ts 增加 vitest 环境双重校验数据库连接保护，prisma-pagination.spec.ts 和 session.service.spec.ts 改造为纯 Mock 模式（vi.fn()），清理开发数据库残留测试数据 — 单元测试 138/138 通过 [issue](docs/issues/q-24-unit-test-db-isolation/)
+
 ### docs
 
 - [docs] 开发流程精简与 CHECKPOINT 协议引入 — 解决 TDD 执行不到位、流程-执行鸿沟两大根本性问题。workflow.md 6 阶段精简为 3 阶段（定义/实现/验收）；引入 Agent CHECKPOINT 协议，要求每个编码任务提供 RED + GREEN 可验证证据；同步更新 4 个 skill（project-workflow / dev-orchestrator / plan-generator / spec-validator）确保阶段归属和调用链一致

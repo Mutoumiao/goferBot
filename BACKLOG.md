@@ -12,6 +12,27 @@ _暂无_
 
 ## 技术债务
 
+### 测试架构治理（2026-06-05 创建）
+
+- **q-24 单元测试数据库隔离治理** — `docs/issues/q-24-unit-test-db-isolation/`
+  - 修复单元测试直接连接真实数据库的问题，强制 Mock 模式
+  - 阻断开发库污染，清理残留测试数据
+  - 状态：closed，2026-06-05 完成
+
+- **q-25 集成测试数据库隔离统一化** — `docs/issues/q-25-integration-test-db-unify/`
+  - 统一所有集成测试使用 `TestDatabaseManager` 独立数据库
+  - 消除直接连接 `goferbot_test` 共享库的违规测试
+  - 状态：open，阻塞于 q-24
+
+- **q-26 E2E 测试数据库清理机制** — `docs/issues/q-26-e2e-db-cleanup/`
+  - 为 E2E 测试建立数据库清理机制，防止 `goferbot_e2e` 数据无限累积
+  - 改造 `playwright.global-teardown.ts` 和 `fixtures/auth.ts`
+  - 状态：open，阻塞于 q-25
+
+- **q-27 后端测试覆盖率门槛定义与核心模块测试补齐** — `docs/issues/q-27-backend-coverage-threshold/`
+  - 定义后端单元测试覆盖率门槛（渐进式实施）
+  - 为 AuthModule、KnowledgeBaseModule 建立单元测试骨架
+  - 状态：open，阻塞于 q-24、q-25
 
 ### 架构/设计
 
