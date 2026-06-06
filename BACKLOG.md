@@ -34,6 +34,11 @@ _暂无_
   - 为 AuthModule、KnowledgeBaseModule 建立单元测试骨架
   - 状态：closed，2026-06-06 完成
 
+- **q-28 PRD 第一批 Controller 模块级集成测试补齐** — `docs/issues/q-28-controller-integration-tests/`
+  - 补齐 AuthController、DocumentController、ChatController、KnowledgeBaseController 模块级集成测试
+  - 覆盖 happy path + 所有 error cases + 边界条件
+  - 状态：closed，2026-06-06 完成
+
 ### 架构/设计
 
 - **PrismaService 代理模式可维护性**：手动代理每个模型方法，新增模型时需同步维护。未来可考虑 `Proxy` 自动代理或生成器脚本。

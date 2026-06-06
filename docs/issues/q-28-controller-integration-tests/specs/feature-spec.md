@@ -71,7 +71,7 @@ q-27（后端测试覆盖率门槛定义与核心模块测试补齐）于 2026-0
 - DocumentController：upload / create / update / delete / list
 - ChatController：SSE 流式响应（POST /chat）
 - KnowledgeBaseController：list / create / update / delete
-- 6 类测试场景：happy path、Zod 验证失败、认证缺失/无效、资源不存在、唯一约束冲突、速率限制
+- 5 类测试场景：happy path、Zod 验证失败、认证缺失/无效、资源不存在、唯一约束冲突
 - 使用现有基础设施：`TestAppFactory`、`TestDatabaseManager`、`AuthFixtures`
 
 ### 范围外
@@ -80,6 +80,8 @@ q-27（后端测试覆盖率门槛定义与核心模块测试补齐）于 2026-0
 - HTTP E2E 测试（`tests/e2e/api/`）
 - Service 单元测试（q-27 已完成）
 - 真实模式测试（需要 MinIO/Milvus/Redis）— 使用 mock 模式（`realMode: false`）
+- **速率限制测试（429）**：当前 `TestAppFactory` 使用 `NoOpThrottlerGuard` 放行所有请求，速率限制场景在第三批全局中间件测试中覆盖
+- **MinIO 真实存储验证**：multipart 上传协议由 mock 模式覆盖，真实 MinIO 存储行为由 HTTP E2E 测试覆盖
 
 ## 涉及文件
 
@@ -112,6 +114,8 @@ q-27（后端测试覆盖率门槛定义与核心模块测试补齐）于 2026-0
 | 每个 Controller 独立 `.spec.ts` 文件 | 与 PRD 目录结构一致，便于并行开发和维护 | 是 |
 | 使用 `app.inject()` 发起请求 | PRD 明确要求，比 supertest 更贴合 Fastify 适配器 | 否，这是项目标准 |
 | 每个文件独立数据库 | q-25 已建立的标准模式，100% 隔离 | 否，这是项目标准 |
+| 速率限制测试移至第三批 | `TestAppFactory` 使用 `NoOpThrottlerGuard`，无法测试 429 场景 | 是，若未来修改 TestAppFactory 支持可选启用 ThrottlerGuard |
+| 采用扁平目录结构 | 与现有 `tests/integration/*.spec.ts` 保持一致，避免混合风格 | 是，第二批实施时统一迁移至 PRD 目录结构 |
 
 ## 验收标准
 

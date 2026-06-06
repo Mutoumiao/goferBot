@@ -39,10 +39,10 @@ summary: AuthController、DocumentController、ChatController、KnowledgeBaseCon
 | 429 | 请求过于频繁 | `{ "error": { "code": "THROTTLER", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常获取 | `tests/integration/auth.controller.spec.ts` | `AC-01: returns public key with RSA-OAEP info` |
-| 速率限制 | `tests/integration/auth.controller.spec.ts` | `AC-02: returns 429 when rate limit exceeded` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常获取 | `tests/integration/auth.controller.spec.ts` | `AC-01: returns public key with RSA-OAEP info` | ✅ 已实现 |
+| 速率限制 | — | `AC-02: returns 429 when rate limit exceeded` | ⏭️ 移至第三批（ThrottlerGuard 全局测试）|
 
 ---
 
@@ -83,16 +83,16 @@ summary: AuthController、DocumentController、ChatController、KnowledgeBaseCon
 | 429 | 请求过于频繁 | `{ "error": { "code": "THROTTLER", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常注册 | `tests/integration/auth.controller.spec.ts` | `AC-03: creates user with valid data` |
-| Zod 验证失败（email） | `tests/integration/auth.controller.spec.ts` | `AC-04: returns 400 for invalid email` |
-| Zod 验证失败（password 为空） | `tests/integration/auth.controller.spec.ts` | `AC-05: returns 400 for empty password` |
-| 密码解密失败 | `tests/integration/auth.controller.spec.ts` | `AC-06: returns 400 for decrypt failure` |
-| 密码长度不足 | `tests/integration/auth.controller.spec.ts` | `AC-07: returns 400 for short password` |
-| 密码格式错误 | `tests/integration/auth.controller.spec.ts` | `AC-08: returns 400 for password without letter/digit` |
-| 邮箱已存在 | `tests/integration/auth.controller.spec.ts` | `AC-09: returns 409 for duplicate email` |
-| 速率限制 | `tests/integration/auth.controller.spec.ts` | `AC-10: returns 429 when rate limit exceeded` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常注册 | `tests/integration/auth.controller.spec.ts` | `AC-03: creates user with valid data` | ✅ 已实现 |
+| Zod 验证失败（email） | `tests/integration/auth.controller.spec.ts` | `AC-04: returns 400 for invalid email` | ✅ 已实现 |
+| Zod 验证失败（password 为空） | `tests/integration/auth.controller.spec.ts` | `AC-05: returns 400 for empty password` | ⏳ plan 待补充 |
+| 密码解密失败 | `tests/integration/auth.controller.spec.ts` | `AC-06: returns 400 for decrypt failure` | ⏳ plan 待补充 |
+| 密码长度不足 | `tests/integration/auth.controller.spec.ts` | `AC-07: returns 400 for short password` | ⏳ plan 待补充 |
+| 密码格式错误 | `tests/integration/auth.controller.spec.ts` | `AC-08: returns 400 for password without letter/digit` | ⏳ plan 待补充 |
+| 邮箱已存在 | `tests/integration/auth.controller.spec.ts` | `AC-09: returns 409 for duplicate email` | ✅ 已实现 |
+| 速率限制 | — | `AC-10: returns 429 when rate limit exceeded` | ⏭️ 移至第三批 |
 
 ---
 
@@ -130,14 +130,14 @@ summary: AuthController、DocumentController、ChatController、KnowledgeBaseCon
 | 429 | 请求过于频繁 | `{ "error": { "code": "THROTTLER", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常登录 | `tests/integration/auth.controller.spec.ts` | `AC-11: returns tokens for valid credentials` |
-| Zod 验证失败 | `tests/integration/auth.controller.spec.ts` | `AC-12: returns 400 for invalid input` |
-| 用户不存在 | `tests/integration/auth.controller.spec.ts` | `AC-13: returns 401 for non-existent user` |
-| 密码错误 | `tests/integration/auth.controller.spec.ts` | `AC-14: returns 401 for wrong password` |
-| 账户被禁用 | `tests/integration/auth.controller.spec.ts` | `AC-15: returns 403 for disabled user` |
-| 速率限制 | `tests/integration/auth.controller.spec.ts` | `AC-16: returns 429 when rate limit exceeded` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常登录 | `tests/integration/auth.controller.spec.ts` | `AC-11: returns tokens for valid credentials` | ✅ 已实现 |
+| Zod 验证失败 | `tests/integration/auth.controller.spec.ts` | `AC-12: returns 400 for invalid input` | ⏳ plan 待补充 |
+| 用户不存在 | `tests/integration/auth.controller.spec.ts` | `AC-13: returns 401 for non-existent user` | ✅ 已实现 |
+| 密码错误 | `tests/integration/auth.controller.spec.ts` | `AC-14: returns 401 for wrong password` | ⏳ plan 待补充 |
+| 账户被禁用 | `tests/integration/auth.controller.spec.ts` | `AC-15: returns 403 for disabled user` | ⏳ plan 待补充（空壳需实现）|
+| 速率限制 | — | `AC-16: returns 429 when rate limit exceeded` | ⏭️ 移至第三批 |
 
 ---
 
@@ -163,11 +163,11 @@ Bearer Token
 | 401 | token 无效 | `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常登出 | `tests/integration/auth.controller.spec.ts` | `AC-17: returns success for valid token` |
-| 未认证 | `tests/integration/auth.controller.spec.ts` | `AC-18: returns 401 without token` |
-| 无效 token | `tests/integration/auth.controller.spec.ts` | `AC-19: returns 401 for invalid token` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常登出 | `tests/integration/auth.controller.spec.ts` | `AC-17: returns success for valid token` | ✅ 已实现 |
+| 未认证 | `tests/integration/auth.controller.spec.ts` | `AC-18: returns 401 without token` | ✅ 已实现 |
+| 无效 token | `tests/integration/auth.controller.spec.ts` | `AC-19: returns 401 for invalid token` | ⏳ plan 待补充 |
 
 ---
 
@@ -202,13 +202,13 @@ Bearer Token
 | 401 | 用户不存在 | `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常刷新 | `tests/integration/auth.controller.spec.ts` | `AC-20: returns new tokens for valid refresh token` |
-| Zod 验证失败 | `tests/integration/auth.controller.spec.ts` | `AC-21: returns 400 for empty refresh token` |
-| token 类型错误 | `tests/integration/auth.controller.spec.ts` | `AC-22: returns 401 for access token` |
-| token 过期 | `tests/integration/auth.controller.spec.ts` | `AC-23: returns 401 for expired token` |
-| 用户不存在 | `tests/integration/auth.controller.spec.ts` | `AC-24: returns 401 when user not found` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常刷新 | `tests/integration/auth.controller.spec.ts` | `AC-20: returns new tokens for valid refresh token` | ✅ 已实现 |
+| Zod 验证失败 | `tests/integration/auth.controller.spec.ts` | `AC-21: returns 400 for empty refresh token` | ⏳ plan 待补充 |
+| token 类型错误 | `tests/integration/auth.controller.spec.ts` | `AC-22: returns 401 for access token` | ⏳ plan 待补充 |
+| token 过期 | `tests/integration/auth.controller.spec.ts` | `AC-23: returns 401 for expired token` | ✅ 已实现 |
+| 用户不存在 | `tests/integration/auth.controller.spec.ts` | `AC-24: returns 401 when user not found` | ⏳ plan 待补充 |
 
 ---
 
@@ -240,12 +240,12 @@ Bearer Token
 | 401 | 用户不存在 | `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常获取 | `tests/integration/auth.controller.spec.ts` | `AC-25: returns user profile for valid token` |
-| 未认证 | `tests/integration/auth.controller.spec.ts` | `AC-26: returns 401 without token` |
-| 无效 token | `tests/integration/auth.controller.spec.ts` | `AC-27: returns 401 for invalid token` |
-| 用户不存在 | `tests/integration/auth.controller.spec.ts` | `AC-28: returns 401 when user not found` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常获取 | `tests/integration/auth.controller.spec.ts` | `AC-25: returns user profile for valid token` | ✅ 已实现 |
+| 未认证 | `tests/integration/auth.controller.spec.ts` | `AC-26: returns 401 without token` | ✅ 已实现 |
+| 无效 token | `tests/integration/auth.controller.spec.ts` | `AC-27: returns 401 for invalid token` | ⏳ plan 待补充 |
+| 用户不存在 | `tests/integration/auth.controller.spec.ts` | `AC-28: returns 401 when user not found` | ⏳ plan 待补充 |
 
 ---
 
@@ -276,12 +276,12 @@ Query: `?folderId={uuid}`
 | 403 | 非 KB 所有者 | `{ "error": { "code": "FORBIDDEN", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常列表 | `tests/integration/document.controller.spec.ts` | `AC-29: returns documents for KB owner` |
-| folderId 格式错误 | `tests/integration/document.controller.spec.ts` | `AC-30: returns 400 for invalid folderId` |
-| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-31: returns 401 without token` |
-| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-32: returns 403 for non-owner` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常列表 | `tests/integration/document.controller.spec.ts` | `AC-29: returns documents for KB owner` | ✅ 已实现 |
+| folderId 格式错误 | `tests/integration/document.controller.spec.ts` | `AC-30: returns 400 for invalid folderId` | ⏳ plan 待补充 |
+| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-31: returns 401 without token` | ✅ 已实现 |
+| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-32: returns 403 for non-owner` | ⏳ plan 待补充 |
 
 ---
 
@@ -319,17 +319,17 @@ Bearer Token
 | 415 | 文件名含非法字符 | `{ "error": { "code": "UNSUPPORTED_TYPE", "message": "文件名包含非法字符" } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常上传 txt | `tests/integration/document.controller.spec.ts` | `AC-33: uploads txt file for KB owner` |
-| 正常上传 md | `tests/integration/document.controller.spec.ts` | `AC-34: uploads md file for KB owner` |
-| 未提供文件 | `tests/integration/document.controller.spec.ts` | `AC-35: returns 400 without file` |
-| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-36: returns 401 without token` |
-| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-37: returns 403 for non-owner` |
-| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-38: returns 404 for non-existent KB` |
-| 文件过大 | `tests/integration/document.controller.spec.ts` | `AC-39: returns 413 for file > 50MB` |
-| 不支持的类型 | `tests/integration/document.controller.spec.ts` | `AC-40: returns 415 for unsupported type` |
-| 非法文件名 | `tests/integration/document.controller.spec.ts` | `AC-41: returns 415 for path traversal filename` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常上传 txt | `tests/integration/document.controller.spec.ts` | `AC-33: uploads txt file for KB owner` | ✅ 已实现 |
+| 正常上传 md | `tests/integration/document.controller.spec.ts` | `AC-34: uploads md file for KB owner` | ⏳ plan 待补充 |
+| 未提供文件 | `tests/integration/document.controller.spec.ts` | `AC-35: returns 400 without file` | ✅ 已实现 |
+| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-36: returns 401 without token` | ⏳ plan 待补充 |
+| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-37: returns 403 for non-owner` | ⏳ plan 待补充 |
+| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-38: returns 404 for non-existent KB` | ⏳ plan 待补充 |
+| 文件过大 | `tests/integration/document.controller.spec.ts` | `AC-39: returns 413 for file > 50MB` | ✅ 已实现（需验证 Fastify bodyLimit 影响）|
+| 不支持的类型 | `tests/integration/document.controller.spec.ts` | `AC-40: returns 415 for unsupported type` | ✅ 已实现 |
+| 非法文件名 | `tests/integration/document.controller.spec.ts` | `AC-41: returns 415 for path traversal filename` | ⏳ plan 待补充 |
 
 ---
 
@@ -367,14 +367,14 @@ Bearer Token
 | 404 | KB 不存在 | `{ "error": { "code": "NOT_FOUND", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常创建 | `tests/integration/document.controller.spec.ts` | `AC-42: creates document for KB owner` |
-| name 为空 | `tests/integration/document.controller.spec.ts` | `AC-43: returns 400 for empty name` |
-| folderId 格式错误 | `tests/integration/document.controller.spec.ts` | `AC-44: returns 400 for invalid folderId` |
-| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-45: returns 401 without token` |
-| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-46: returns 403 for non-owner` |
-| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-47: returns 404 for non-existent KB` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常创建 | `tests/integration/document.controller.spec.ts` | `AC-42: creates document for KB owner` | ✅ 已实现 |
+| name 为空 | `tests/integration/document.controller.spec.ts` | `AC-43: returns 400 for empty name` | ✅ 已实现 |
+| folderId 格式错误 | `tests/integration/document.controller.spec.ts` | `AC-44: returns 400 for invalid folderId` | ⏳ plan 待补充 |
+| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-45: returns 401 without token` | ⏳ plan 待补充 |
+| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-46: returns 403 for non-owner` | ⏳ plan 待补充 |
+| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-47: returns 404 for non-existent KB` | ⏳ plan 待补充 |
 
 ---
 
@@ -412,15 +412,15 @@ Bearer Token
 | 404 | 文档不在该 KB 中 | `{ "error": { "code": "NOT_FOUND", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常更新 | `tests/integration/document.controller.spec.ts` | `AC-48: updates document for KB owner` |
-| name 为空 | `tests/integration/document.controller.spec.ts` | `AC-49: returns 400 for empty name` |
-| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-50: returns 401 without token` |
-| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-51: returns 403 for non-owner` |
-| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-52: returns 404 for non-existent KB` |
-| 文档不存在 | `tests/integration/document.controller.spec.ts` | `AC-53: returns 404 for non-existent document` |
-| 文档不在 KB 中 | `tests/integration/document.controller.spec.ts` | `AC-54: returns 404 when document not in KB` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常更新 | `tests/integration/document.controller.spec.ts` | `AC-48: updates document for KB owner` | ✅ 已实现 |
+| name 为空 | `tests/integration/document.controller.spec.ts` | `AC-49: returns 400 for empty name` | ⏳ plan 待补充 |
+| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-50: returns 401 without token` | ⏳ plan 待补充 |
+| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-51: returns 403 for non-owner` | ⏳ plan 待补充 |
+| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-52: returns 404 for non-existent KB` | ⏳ plan 待补充 |
+| 文档不存在 | `tests/integration/document.controller.spec.ts` | `AC-53: returns 404 for non-existent document` | ✅ 已实现 |
+| 文档不在 KB 中 | `tests/integration/document.controller.spec.ts` | `AC-54: returns 404 when document not in KB` | ⏳ plan 待补充 |
 
 ---
 
@@ -448,13 +448,13 @@ Bearer Token
 | 404 | 文档不存在 | `{ "error": { "code": "NOT_FOUND", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常删除 | `tests/integration/document.controller.spec.ts` | `AC-55: deletes document for KB owner` |
-| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-56: returns 401 without token` |
-| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-57: returns 403 for non-owner` |
-| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-58: returns 404 for non-existent KB` |
-| 文档不存在 | `tests/integration/document.controller.spec.ts` | `AC-59: returns 404 for non-existent document` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常删除 | `tests/integration/document.controller.spec.ts` | `AC-55: deletes document for KB owner` | ✅ 已实现 |
+| 未认证 | `tests/integration/document.controller.spec.ts` | `AC-56: returns 401 without token` | ⏳ plan 待补充 |
+| 非所有者 | `tests/integration/document.controller.spec.ts` | `AC-57: returns 403 for non-owner` | ⏳ plan 待补充 |
+| KB 不存在 | `tests/integration/document.controller.spec.ts` | `AC-58: returns 404 for non-existent KB` | ⏳ plan 待补充 |
+| 文档不存在 | `tests/integration/document.controller.spec.ts` | `AC-59: returns 404 for non-existent document` | ⏳ plan 待补充 |
 
 ---
 
@@ -500,15 +500,15 @@ data: {"done":true}
 | 401 | 未认证 | `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常 SSE 流 | `tests/integration/chat.controller.spec.ts` | `AC-60: returns SSE stream for valid request` |
-| message 为空 | `tests/integration/chat.controller.spec.ts` | `AC-61: returns 400 for empty message` |
-| sessionId 格式错误 | `tests/integration/chat.controller.spec.ts` | `AC-62: returns 400 for invalid sessionId` |
-| provider 为空 | `tests/integration/chat.controller.spec.ts` | `AC-63: returns 400 for empty provider` |
-| baseUrl 不在白名单 | `tests/integration/chat.controller.spec.ts` | `AC-64: returns 400 for disallowed baseUrl` |
-| 未认证 | `tests/integration/chat.controller.spec.ts` | `AC-65: returns 401 without token` |
-| 客户端断开 | `tests/integration/chat.controller.spec.ts` | `AC-66: handles client disconnect gracefully` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常 SSE 流 | `tests/integration/chat.controller.spec.ts` | `AC-60: returns SSE stream for valid request` | ✅ 已实现 |
+| message 为空 | `tests/integration/chat.controller.spec.ts` | `AC-61: returns 400 for empty message` | ✅ 已实现 |
+| sessionId 格式错误 | `tests/integration/chat.controller.spec.ts` | `AC-62: returns 400 for invalid sessionId` | ✅ 已实现 |
+| provider 为空 | `tests/integration/chat.controller.spec.ts` | `AC-63: returns 400 for empty provider` | ⏳ plan 待补充 |
+| baseUrl 不在白名单 | `tests/integration/chat.controller.spec.ts` | `AC-64: returns 400 for disallowed baseUrl` | ⏳ plan 待补充 |
+| 未认证 | `tests/integration/chat.controller.spec.ts` | `AC-65: returns 401 without token` | ✅ 已实现 |
+| 客户端断开 | `tests/integration/chat.controller.spec.ts` | `AC-66: handles client disconnect gracefully` | ⏳ plan 待补充 |
 
 > **注意**：ChatController 使用 `@BypassResponse()`，SSE 流直接写入 `reply.raw`，不经过 `ResponseInterceptor`。测试需验证 `Content-Type: text/event-stream` 和流格式。
 
@@ -540,12 +540,12 @@ Bearer Token
 | 401 | token 无效 | `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常列表 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-67: returns KB list for authenticated user` |
-| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-68: returns 401 without token` |
-| 无效 token | `tests/integration/knowledge-base.controller.spec.ts` | `AC-69: returns 401 for invalid token` |
-| 权限隔离 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-70: does not return other user's KBs` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常列表 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-67: returns KB list for authenticated user` | ✅ 已实现 |
+| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-68: returns 401 without token` | ✅ 已实现 |
+| 无效 token | `tests/integration/knowledge-base.controller.spec.ts` | `AC-69: returns 401 for invalid token` | ⏳ plan 待补充 |
+| 权限隔离 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-70: does not return other user's KBs` | ✅ 已实现 |
 
 ---
 
@@ -584,13 +584,13 @@ Bearer Token
 | 401 | 未认证 | `{ "error": { "code": "UNAUTHORIZED", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常创建 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-71: creates KB with valid data` |
-| name 为空 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-72: returns 400 for empty name` |
-| name 过长 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-73: returns 400 for name > 100 chars` |
-| description 过长 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-74: returns 400 for description > 500 chars` |
-| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-75: returns 401 without token` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常创建 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-71: creates KB with valid data` | ✅ 已实现 |
+| name 为空 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-72: returns 400 for empty name` | ✅ 已实现 |
+| name 过长 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-73: returns 400 for name > 100 chars` | ⏳ plan 待补充 |
+| description 过长 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-74: returns 400 for description > 500 chars` | ⏳ plan 待补充 |
+| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-75: returns 401 without token` | ✅ 已实现 |
 
 ---
 
@@ -629,14 +629,14 @@ Bearer Token
 | 404 | KB 不存在 | `{ "error": { "code": "NOT_FOUND", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常更新 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-76: updates KB for owner` |
-| name 为空 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-77: returns 400 for empty name` |
-| sortOrder 负数 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-78: returns 400 for negative sortOrder` |
-| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-79: returns 401 without token` |
-| 非所有者 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-80: returns 403 for non-owner` |
-| KB 不存在 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-81: returns 404 for non-existent KB` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常更新 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-76: updates KB for owner` | ✅ 已实现 |
+| name 为空 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-77: returns 400 for empty name` | ⏳ plan 待补充 |
+| sortOrder 负数 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-78: returns 400 for negative sortOrder` | ⏳ plan 待补充 |
+| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-79: returns 401 without token` | ⏳ plan 待补充 |
+| 非所有者 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-80: returns 403 for non-owner` | ✅ 已实现 |
+| KB 不存在 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-81: returns 404 for non-existent KB` | ✅ 已实现 |
 
 ---
 
@@ -663,9 +663,9 @@ Bearer Token
 | 404 | KB 不存在 | `{ "error": { "code": "NOT_FOUND", "message": "..." } }` |
 
 #### 测试映射
-| 场景 | 测试文件 | 测试用例 |
-|------|----------|----------|
-| 正常删除 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-82: deletes KB for owner` |
-| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-83: returns 401 without token` |
-| 非所有者 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-84: returns 403 for non-owner` |
-| KB 不存在 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-85: returns 404 for non-existent KB` |
+| 场景 | 测试文件 | 测试用例 | 状态 |
+|------|----------|----------|------|
+| 正常删除 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-82: deletes KB for owner` | ✅ 已实现 |
+| 未认证 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-83: returns 401 without token` | ⏳ plan 待补充 |
+| 非所有者 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-84: returns 403 for non-owner` | ⏳ plan 待补充 |
+| KB 不存在 | `tests/integration/knowledge-base.controller.spec.ts` | `AC-85: returns 404 for non-existent KB` | ✅ 已实现 |

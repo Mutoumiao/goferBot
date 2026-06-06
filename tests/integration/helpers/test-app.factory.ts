@@ -5,7 +5,6 @@ import { PrismaService } from '../../../packages/server/src/processors/database/
 import { QueueService } from '../../../packages/server/src/processors/queue/queue.service.js'
 import { VectorService } from '../../../packages/server/src/processors/vector/vector.service.js'
 import { StorageService } from '../../../packages/server/src/processors/storage/storage.service.js'
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { AppModule } from '../../../packages/server/src/app.module.js'
 import { bootstrap } from '../../../packages/server/src/bootstrap.js'
 
@@ -68,13 +67,8 @@ export class TestAppFactory {
           datasources: { db: { url: dbUrl } },
         }),
       )
-      .overrideModule(ThrottlerModule)
-      .useModule(
-        ThrottlerModule.forRoot([
-          { name: 'default', ttl: 60000, limit: 9999 },
-          { name: 'auth', ttl: 60000, limit: 9999 },
-        ]),
-      )
+      // 注意：ThrottlerGuard 通过 APP_GUARD 全局注册，且 AuthController 使用 @Throttle 装饰器，
+      // 此处 overrideModule 无法覆盖 @Throttle 的独立配置。测试中通过 remoteAddress 绕过限流。
 
     if (!realMode) {
       moduleRef

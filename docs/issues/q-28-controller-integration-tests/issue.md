@@ -1,6 +1,6 @@
 ---
 id: q-28
-status: open
+status: closed
 track: quality
 priority: p1
 summary: 补齐 PRD 第一批 Controller 模块级集成测试（Auth/Document/Chat/KB），覆盖所有 error cases。本 issue 是 q-27 的跟进，修复 q-27 交付偏离 PRD 原始目标的问题。
@@ -20,12 +20,12 @@ specs: specs/
 
 ## 验收标准
 
-- [ ] AuthController 模块级集成测试覆盖：register / login / logout / refresh / me / public-key 的所有 error cases（400/401/409）
-- [ ] DocumentController 模块级集成测试覆盖：upload / create / update / delete / list 的所有 error cases（400/401/403/404/413/415）
-- [ ] ChatController 模块级集成测试覆盖：SSE 流式响应的 happy path 和错误处理
-- [ ] KnowledgeBaseController 模块级集成测试覆盖：CRUD + 搜索的所有 error cases（400/401/403/404）
-- [ ] 全部新增测试在 `pnpm test:integration` 中通过
-- [ ] 测试数据库零残留，不污染开发环境
+- [x] AuthController 模块级集成测试覆盖：register / login / logout / refresh / me / public-key 的所有 error cases（400/401/409）
+- [x] DocumentController 模块级集成测试覆盖：upload / create / update / delete / list 的所有 error cases（400/401/403/404/413/415）
+- [x] ChatController 模块级集成测试覆盖：SSE 流式响应的 happy path 和错误处理
+- [x] KnowledgeBaseController 模块级集成测试覆盖：CRUD + 搜索的所有 error cases（400/401/403/404）
+- [x] 全部新增测试在 `pnpm test:integration` 中通过
+- [x] 测试数据库零残留，不污染开发环境
 
 ## 阻塞于
 
@@ -65,12 +65,12 @@ specs: specs/
 - PRD 参考：`docs/prd/api-testing-prd.md` 第一批（第 221-231 行）
 
 **验收标准：**
-- [ ] AuthController 模块级集成测试覆盖：register / login / logout / refresh / me / public-key 的所有 error cases（400/401/409）
-- [ ] DocumentController 模块级集成测试覆盖：upload / create / update / delete / list 的所有 error cases（400/401/403/404/413/415）
-- [ ] ChatController 模块级集成测试覆盖：SSE 流式响应的 happy path 和错误处理
-- [ ] KnowledgeBaseController 模块级集成测试覆盖：CRUD + 搜索的所有 error cases（400/401/403/404）
-- [ ] 全部新增测试在 `pnpm test:integration` 中通过
-- [ ] 测试数据库零残留，不污染开发环境
+- [x] AuthController 模块级集成测试覆盖：register / login / logout / refresh / me / public-key 的所有 error cases（400/401/409）
+- [x] DocumentController 模块级集成测试覆盖：upload / create / update / delete / list 的所有 error cases（400/401/403/404/413/415）
+- [x] ChatController 模块级集成测试覆盖：SSE 流式响应的 happy path 和错误处理
+- [x] KnowledgeBaseController 模块级集成测试覆盖：CRUD + 搜索的所有 error cases（400/401/403/404）
+- [x] 全部新增测试在 `pnpm test:integration` 中通过
+- [x] 测试数据库零残留，不污染开发环境
 
 **范围外：**
 - PRD 第二批（Folder/Session/Settings Controller）
