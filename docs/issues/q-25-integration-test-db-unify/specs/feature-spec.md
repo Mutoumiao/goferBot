@@ -39,6 +39,16 @@ metadata:
 - E2E 测试改造（见 q-26）
 - 新增业务测试（见 q-27）
 
+## 边界场景
+
+| 场景 | 触发条件 | 预期行为 |
+|------|----------|----------|
+| TEST_DATABASE_ADMIN_URL 未设置 | 环境变量缺失 | `TestDatabaseManager.createDatabase()` 抛出明确错误 `'TEST_DATABASE_ADMIN_URL is not set'`，测试失败 |
+| 数据库创建失败 | PostgreSQL 连接数耗尽或权限不足 | `execSync('npx prisma migrate deploy')` 抛出错误，`createDatabase` 自动调用 `dropDatabase` 清理后重新抛出，测试失败 |
+| 测试进程被杀死 | Ctrl+C 或超时 | `afterAll` / `finally` 块可能未执行，残留数据库由 `TestDatabaseManager` 的随机命名机制隔离，不影响后续测试。非本 issue 范围，建议定期手动清理 `goferbot_test_*` 数据库 |
+| 并发命名冲突 | 高并发下两个 it 同时创建数据库 | `TestDatabaseManager` 使用 `Date.now() + Math.random()` 生成数据库名，冲突概率极低。若冲突发生，PostgreSQL `CREATE DATABASE` 会报错，测试失败 |
+| 模式 A 性能开销 | 每个 it 创建/迁移/销毁数据库 | 单个 it 增加 3-6 秒，20 个 it 预计增加 60-120 秒。可接受范围内，若未来成为瓶颈可迁移至模式 B |
+
 ## 验收标准
 
 | ID | 标准 | 验证方式 |

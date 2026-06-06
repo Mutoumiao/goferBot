@@ -1,11 +1,10 @@
 ---
 id: q-25
-status: open
+status: closed
 track: quality
 priority: p0
 summary: 集成测试数据库隔离统一化 — 消除共享库污染
-blocked_by:
-  - q-24
+blocked_by: []
 checklist: checklist.json
 plan: plan.md
 specs: specs/

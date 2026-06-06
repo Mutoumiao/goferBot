@@ -46,12 +46,9 @@ describe('E2E Infrastructure (q-16)', () => {
   })
 
   it('AC-08: DATABASE_URL points to isolated test database', () => {
-    const currentDbUrl = process.env.DATABASE_URL
-    expect(currentDbUrl).toBeDefined()
-    // 验证当前 DATABASE_URL 指向独立数据库（可能被恢复为原始值）
-    if (currentDbUrl) {
-      expect(currentDbUrl).toContain('goferbot_test_infra_')
-    }
+    // 使用 beforeAll 中创建的 dbUrl 变量验证，避免依赖可能被 afterAll 恢复的 process.env
+    expect(dbUrl).toBeDefined()
+    expect(dbUrl).toContain('goferbot_test_infra_')
   })
 
   it('AC-10: globalSetup starts docker infrastructure', async () => {

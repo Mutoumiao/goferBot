@@ -22,7 +22,7 @@ _暂无_
 - **q-25 集成测试数据库隔离统一化** — `docs/issues/q-25-integration-test-db-unify/`
   - 统一所有集成测试使用 `TestDatabaseManager` 独立数据库
   - 消除直接连接 `goferbot_test` 共享库的违规测试
-  - 状态：open，阻塞于 q-24
+  - 状态：closed，2026-06-06 完成
 
 - **q-26 E2E 测试数据库清理机制** — `docs/issues/q-26-e2e-db-cleanup/`
   - 为 E2E 测试建立数据库清理机制，防止 `goferbot_e2e` 数据无限累积

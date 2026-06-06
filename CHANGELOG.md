@@ -4,6 +4,12 @@
 
 ---
 
+## [2026-06-06]
+
+### quality
+
+- [closed] q-25 集成测试数据库隔离统一化 — 4 个违规测试文件改造为 TestDatabaseManager 独立数据库（prisma-vector-indexer/vector-service/pgvector-store 模式 A，infra 模式 B），修复 PrismaService 构造函数忽略 options 导致 TestAppFactory 隔离失效的隐藏 bug — 集成测试 39/39 通过，单元测试 138/138 通过 [issue](docs/issues/q-25-integration-test-db-unify/)
+
 ## [2026-06-05]
 
 ### quality
