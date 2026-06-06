@@ -1,6 +1,6 @@
 ---
 id: q-27
-status: open
+status: closed
 track: quality
 priority: p1
 summary: 后端测试覆盖率门槛定义与核心模块测试补齐

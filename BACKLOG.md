@@ -32,7 +32,7 @@ _暂无_
 - **q-27 后端测试覆盖率门槛定义与核心模块测试补齐** — `docs/issues/q-27-backend-coverage-threshold/`
   - 定义后端单元测试覆盖率门槛（渐进式实施）
   - 为 AuthModule、KnowledgeBaseModule 建立单元测试骨架
-  - 状态：open，阻塞已解除
+  - 状态：closed，2026-06-06 完成
 
 ### 架构/设计
 
