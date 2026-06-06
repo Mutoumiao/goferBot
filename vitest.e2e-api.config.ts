@@ -23,9 +23,6 @@ export default defineConfig({
   },
   test: {
     include: ['tests/e2e/api/**/*.spec.ts'],
-    // 当前无测试文件，允许空套件通过
-    // TODO: 添加第一批 API E2E 测试后移除此配置
-    passWithNoTests: true,
     pool: 'forks',
     testTimeout: 60000,
     hookTimeout: 30000,

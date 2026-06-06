@@ -7,7 +7,7 @@ version: 2
 # PRD 第一批 Controller 模块级集成测试补齐 实现计划
 
 > **目标：** 为 AuthController、DocumentController、ChatController、KnowledgeBaseController 建立模块级集成测试，覆盖所有端点和 error cases。
-> **架构：** `@nestjs/testing` + Fastify `app.inject()`，每文件独立数据库（TestDatabaseManager），mock 模式（不依赖 MinIO/Milvus/Redis）。
+> **架构：** `@nestjs/testing` + Fastify `app.inject()`，每文件独立数据库（TestDatabaseManager），mock 模式（不依赖 MinIO/pgvector/Redis）。
 > **技术栈：** Vitest + NestJS TestingModule + FastifyAdapter
 > **版本变更：** v2 补充 api-spec.md 中所有缺失的测试用例，明确速率限制测试移至第三批
 

@@ -19,5 +19,5 @@ pnpm test:e2e:api:watch
 
 - `vitest.e2e-api.config.ts` — 测试配置
 - 数据库：共享 `goferbot_test`，每例 TRUNCATE 清理
-- 外部依赖：PostgreSQL + MinIO + Milvus + Redis（真实实例）
+- 外部依赖：PostgreSQL + MinIO + pgvector + Redis（真实实例）
 - LLM/Embedding：mock（nock/msw）
