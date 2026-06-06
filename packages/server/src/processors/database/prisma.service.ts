@@ -83,8 +83,8 @@ function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly client: ExtendedPrismaClient
 
-  constructor() {
-    this.client = createExtendedPrismaClient()
+  constructor(options?: Prisma.PrismaClientOptions) {
+    this.client = createExtendedPrismaClient(options)
   }
 
   async onModuleInit() {
