@@ -11,6 +11,8 @@ blocked_by: []
 checklist: checklist.json
 plan: plan.md
 specs: specs/
+prd: {PRD 文件路径，如 docs/prd/api-testing-prd.md}
+prd_section: {PRD 中对应章节，如 "第一批核心目标 / AuthController 模块级集成测试"}
 ---
 
 ## 要构建的内容
@@ -22,6 +24,13 @@ specs: specs/
 - 功能规格: specs/feature-spec.md
 - 行为规格: specs/behavior-spec.md
 - API 规格: specs/api-spec.md
+
+## PRD 引用
+
+- **来源 PRD**: {PRD 文件路径}
+- **对应章节**: {PRD 章节标题}
+- **核心目标**: {从 PRD 复制的关键目标，2-3 句话}
+- **验收标准**: {从 PRD 复制的对应验收项}
 
 ## 验收标准
 
@@ -75,6 +84,8 @@ specs: specs/
 | `checklist` | 指向 checklist.json 的相对路径 | ✅ |
 | `plan` | 指向 plan.md 的相对路径 | ✅ |
 | `specs` | 指向 specs 目录的相对路径 | ✅ |
+| `prd` | 指向来源 PRD 的相对路径 | 可选（有 PRD 时必填） |
+| `prd_section` | PRD 中对应章节 | 可选（有 PRD 时必填） |
 
 ## 正文字段说明
 
@@ -82,6 +93,7 @@ specs: specs/
 |------|------|
 | `要构建的内容` | 垂直切片描述 |
 | `规格引用` | 生成 issue 时先留空，spec 编写后回填 |
+| `PRD 引用` | 来源 PRD、对应章节、核心目标、验收标准 |
 | `验收标准` | 可验证的完成条件，每条必须能回答"怎么验证" |
 | `阻塞于` | 必须先完成的 issue，没有则写 "无" |
 | `范围外` | 明确排除的内容，防止范围蔓延 |

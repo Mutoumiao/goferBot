@@ -15,6 +15,7 @@ version: 1
 
 **Issue 引用：** `issue.md`
 **Spec 引用：** `specs/`
+**PRD 引用：** {PRD 文件路径} — {对应章节}
 **测试引用：** 按 track 前缀确定层级：
 - `f-*` → `tests/unit/webui/`
 - `b-*` / `d-*` → `tests/unit/server/`
@@ -101,6 +102,15 @@ git commit -m "feat(scope): add myFunction with tests"
 ### 任务 2: {任务名称}
 
 ...
+
+---
+
+## PRD 一致性声明
+
+| PRD 目标 | Plan 覆盖情况 | 说明 |
+|----------|--------------|------|
+| {PRD 中的目标 1} | ✅ 已覆盖 / ❌ 未覆盖 | {任务编号或原因} |
+| {PRD 中的目标 2} | ✅ 已覆盖 / ⚠️ 部分覆盖 | {任务编号或偏差说明} |
 
 ---
 

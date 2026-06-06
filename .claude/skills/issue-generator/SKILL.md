@@ -44,9 +44,19 @@ description: >
 2. 每个子项目走独立的 issue → spec → plan → dev 循环
 3. 先 brainstorm 第一个子项目
 
-### 2. 收集上下文
+### 2. 收集上下文（含 PRD 读取）
 
 基于对话上下文工作。如用户传入了 issue 引用，获取并阅读完整内容。
+
+**如果用户指令引用 PRD（如"按 api-testing-prd.md 拆 issue"）：**
+1. **必须先读取完整 PRD 文档**，理解全部目标、优先级、验收标准
+2. 拆分时每个 issue 必须标注来源 PRD 和对应章节
+3. issue.md 中必须嵌入 PRD 关键内容（核心目标 + 验收标准），不能只写一句话
+
+**如果用户指令未引用 PRD（如"把测试架构治理拆成 issue"）：**
+1. 询问用户是否有对应的 PRD
+2. 如有，要求提供 PRD 路径，然后按上述流程执行
+3. 如没有 PRD，在 issue.md 中标注 `prd: null`，并在补充说明中记录"无 PRD，基于口头需求生成"
 
 ### 3. 探索代码库（可选）
 
@@ -122,6 +132,8 @@ blocked_by: []
 checklist: checklist.json
 plan: plan.md
 specs: specs/
+prd: {PRD 文件路径，如 docs/prd/api-testing-prd.md}
+prd_section: {PRD 中对应章节，如 "第一批核心目标 / AuthController 模块级集成测试"}
 ---
 
 ## 要构建的内容
@@ -133,6 +145,13 @@ specs: specs/
 - 功能规格: specs/feature-spec.md
 - 行为规格: specs/behavior-spec.md（前端 issue）
 - API 规格: specs/api-spec.md（后端 issue）
+
+## PRD 引用
+
+- **来源 PRD**: {PRD 文件路径}
+- **对应章节**: {PRD 章节标题}
+- **核心目标**: {从 PRD 复制的关键目标，2-3 句话}
+- **验收标准**: {从 PRD 复制的对应验收项}
 
 ## 补充说明
 
@@ -153,6 +172,8 @@ specs: specs/
 }
 ```
 
+**checklist 中的验收项必须来源于 PRD 或 issue 中明确的验收标准，不能凭空创造。**
+
 ### 6. 创建 Spec 占位符
 
 **路径验证：**
@@ -168,7 +189,13 @@ specs: specs/
 创建完成后，验证：
 - [ ] Issue 目录名符合 `{prefix}-{NN}-{slug}`
 - [ ] 编号全局唯一
-- [ ] issue.md frontmatter 包含必要字段
-- [ ] checklist.json 已创建
+- [ ] issue.md frontmatter 包含必要字段（含 `prd` 和 `prd_section`）
+- [ ] issue.md 正文中"PRD 引用"章节已填写（如有 PRD）
+- [ ] checklist.json 已创建，验收项与 PRD 或 issue 目标一致
 - [ ] specs/ 目录和占位文件已创建
 - [ ] 阻塞引用的 issue 已存在
+
+**PRD 一致性检查：**
+- [ ] 每个 issue 的核心目标能从 PRD 中找到对应来源
+- [ ] issue 的验收标准与 PRD 的验收标准不矛盾
+- [ ] 如有偏差，在 issue.md 补充说明中记录原因

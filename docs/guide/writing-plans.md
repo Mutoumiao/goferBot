@@ -63,6 +63,19 @@ docs/issues/{prefix}-{NN}-{kebab-slug}/
 - 验证命令必须有**预期输出**
 - 优先使用自动化验证（类型检查、测试）
 
+### PRD 一致性
+
+如果 issue 引用了 PRD，plan 必须包含 "PRD 一致性声明"：
+
+| PRD 目标 | Plan 覆盖情况 | 说明 |
+|----------|--------------|------|
+| {PRD 目标 1} | ✅ 已覆盖 | {任务编号} |
+| {PRD 目标 2} | ⚠️ 部分覆盖 | {偏差说明} |
+
+- 优先以 PRD 目标为准
+- 如有偏差，必须显式说明原因
+- 禁止悄悄偏离 PRD 而不留痕迹
+
 ### 禁止事项
 
 | 禁止 | 错误示例 | 正确示例 |
@@ -71,3 +84,4 @@ docs/issues/{prefix}-{NN}-{kebab-slug}/
 | 模糊步骤 | "配置路由" | "在 `router/index.ts` 第 15 行添加 `{ path: '/login', component: LoginView }`" |
 | 无验证 | 任务结束无验证步骤 | "运行 `pnpm type-check`，预期 PASS" |
 | 跨 issue 编码 | 在 {prefix}-{NN} 计划中修改其他 issue 的代码 | 只修改当前 issue 范围内的文件 |
+| PRD 偏离 | plan 与 PRD 目标不一致且无说明 | 在 PRD 一致性声明中记录偏差 |

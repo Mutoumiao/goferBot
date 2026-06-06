@@ -38,26 +38,36 @@ description: >
 
 ## 计划前阅读
 
+**读取顺序（必须遵守）：先读 issue → 再读 issue 引用的 PRD → 再读 spec → 最后读规范**
+
 1. **Issue 文件**: `docs/issues/{dir}/issue.md`
    - 提取：id、status、track、priority、summary、blocked_by、checklist、plan、specs
+   - **必须检查 frontmatter 中的 `prd` 字段**
+   - **必须读取 issue 正文中的 "PRD 引用" 章节**，提取核心目标和验收标准
 
-2. **Spec 文件**: `docs/issues/{dir}/specs/`
+2. **PRD 文件**: 如果 issue frontmatter 中有 `prd` 字段
+   - **必须读取 PRD 中与 issue 相关的章节**
+   - 重点关注：目标、优先级、验收标准、边界条件
+   - 将 PRD 作为 plan 的**最高优先级输入**，确保 plan 不偏离 PRD 目标
+
+3. **Spec 文件**: `docs/issues/{dir}/specs/`
    - `feature-spec.md` — 用户故事、边界、涉及页面
    - `behavior-spec.md` — 前端：交互状态表、错误场景、动画
    - `api-spec.md` — 后端：路由、DTO、错误码、异步行为
+   - **对照 PRD 验证**：spec 中的目标是否与 PRD 一致？如有偏差，以 PRD 为准并在 plan 中标注
 
-3. **代码库规范**（按 track 选择，必读）：
+4. **代码库规范**（按 track 选择，必读）：
    - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)（含规范索引，按需深入）
    - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)
    - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)（含规范索引，按需深入）
 
-4. **测试指南**（参考）：
+5. **测试指南**（参考）：
    - 测试路径与命名 → [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)
    - TDD 规则详情 → [`_shared/references/tdd-rules.md`](mdc:.claude/skills/_shared/references/tdd-rules.md)
 
-5. **现有计划**（如有）: `docs/issues/{dir}/plan.md` 和 `plans/`
+6. **现有计划**（如有）: `docs/issues/{dir}/plan.md` 和 `plans/`
 
-6. **审查记录**（如有）: `docs/reviews/{scope}/`
+7. **审查记录**（如有）: `docs/reviews/{scope}/`
 
 ---
 
@@ -181,6 +191,16 @@ version: 1
 
 **Issue 引用：** [链接到 issue.md]
 **Spec 引用：** [链接到 specs/]
+**PRD 引用：** [链接到 PRD 文件及对应章节]
+
+---
+
+## PRD 一致性声明
+
+| PRD 目标 | Plan 覆盖情况 | 说明 |
+|----------|--------------|------|
+| {PRD 中的目标 1} | ✅ 已覆盖 / ❌ 未覆盖 | {任务编号或原因} |
+| {PRD 中的目标 2} | ✅ 已覆盖 / ⚠️ 部分覆盖 | {任务编号或偏差说明} |
 
 ---
 ```
@@ -282,11 +302,17 @@ plan-generator 完成 plan 编写
 
 ## 自检
 
-写完完整计划后，用 fresh eyes 对照 spec 检查：
+写完完整计划后，用 fresh eyes 对照 spec 和 PRD 检查：
 
-1. **规格覆盖**：浏览 spec 的每个章节/需求。能指出实现它的任务吗？列出遗漏。
-2. **占位符扫描**：搜索计划中的 red flags —— "禁止占位符" 中的任何模式。修复它们。
-3. **类型一致性**：后续任务中的类型、方法签名、属性名是否与早期任务一致？
+1. **PRD 一致性**：如果 issue 引用了 PRD，浏览 PRD 对应章节。plan 是否覆盖了 PRD 要求的所有目标？列出遗漏。
+2. **规格覆盖**：浏览 spec 的每个章节/需求。能指出实现它的任务吗？列出遗漏。
+3. **占位符扫描**：搜索计划中的 red flags —— "禁止占位符" 中的任何模式。修复它们。
+4. **类型一致性**：后续任务中的类型、方法签名、属性名是否与早期任务一致？
+
+**PRD 偏差处理：**
+- 如果发现 plan 与 PRD 目标不一致，优先以 PRD 为准
+- 在 plan 头部 "PRD 一致性声明" 中记录偏差及原因
+- 禁止在 plan 中悄悄偏离 PRD 而不留痕迹
 
 发现问题直接修复，无需重新审查。发现没有任务的规格需求，添加任务。
 
@@ -296,13 +322,14 @@ plan-generator 完成 plan 编写
 
 写完计划后验证：
 
-1. **功能规格覆盖**：每个用户故事都有对应任务？
-2. **行为规格覆盖**（前端）：所有交互状态、错误场景、动画都实现了？
-3. **API 规格覆盖**（后端）：所有路由、DTO、错误码都实现了？
-4. **测试覆盖**：每个任务都有对应的 `tests/{layer}/{name}.spec.ts` 文件？
-5. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
-6. **类型一致性**：后续任务中的类型、签名与早期任务一致？
-7. **ADR 合规**：计划中的技术选型是否与 ADR 合规声明一致？
+1. **PRD 覆盖**（如 issue 引用 PRD）：PRD 对应章节的所有目标都有对应任务？列出遗漏。
+2. **功能规格覆盖**：每个用户故事都有对应任务？
+3. **行为规格覆盖**（前端）：所有交互状态、错误场景、动画都实现了？
+4. **API 规格覆盖**（后端）：所有路由、DTO、错误码都实现了？
+5. **测试覆盖**：每个任务都有对应的 `tests/{layer}/{name}.spec.ts` 文件？
+6. **占位符扫描**：搜索 "禁止占位符" 中的模式并修复
+7. **类型一致性**：后续任务中的类型、签名与早期任务一致？
+8. **ADR 合规**：计划中的技术选型是否与 ADR 合规声明一致？
 
 ---
 
@@ -311,10 +338,14 @@ plan-generator 完成 plan 编写
 保存计划后，明确阶段 1（定义）已完成：
 
 **"计划已保存到 `docs/issues/{dir}/plan.md`。阶段 1（定义）已完成，包含：**
-- ✅ issue 已创建
+- ✅ issue 已创建（含 PRD 引用）
 - ✅ spec 已编写（feature-spec + behavior-spec/api-spec）
-- ✅ plan 已生成（含 ADR 合规声明）
+- ✅ plan 已生成（含 ADR 合规声明 + PRD 一致性声明）
 - ✅ `/architecture-guard` 扫描通过
+
+**PRD 一致性声明：**
+- PRD 目标覆盖：N/M（N 个目标已覆盖，共 M 个）
+- 偏差记录：{如有偏差，列出此处}
 
 **下一步进入阶段 2（实现），两种执行方式：**
 

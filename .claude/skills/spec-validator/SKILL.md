@@ -24,16 +24,33 @@ description: >
 
 ## 会前阅读
 
-1. **PRD**: `docs/prd/v2-cloud-native.md`
-2. **架构规格**: `docs/adrs/`
-3. **相关 Specs**: `docs/issues/{related-dir}/specs/`
-4. **设计系统**: `docs/design/system/DESIGN.md`
-5. **命名规范**: `docs/guide/naming-convention.md`
-6. **代码库规范**（按 issue track 选择，参考）：
+**读取顺序（必须遵守）：先读 issue → 再读 issue 引用的 PRD → 再读 spec → 最后读规范**
+
+1. **Issue 文件**: `docs/issues/{dir}/issue.md`
+   - **必须读取 frontmatter 中的 `prd` 字段**
+   - 如果 `prd` 存在 → 继续步骤 2
+   - 如果 `prd` 为 null 或不存在 → 跳过步骤 2，直接步骤 3
+   - **必须读取 issue 正文中的 "PRD 引用" 章节**，提取核心目标和验收标准
+
+2. **PRD 文件**: 读取 issue frontmatter 中 `prd` 字段指向的文件
+   - **必须完整读取 PRD 中与 issue 相关的章节**
+   - 重点关注：目标、优先级、验收标准、边界条件
+   - 将 PRD 关键内容作为 spec 编写的**最高优先级输入**
+
+3. **架构规格**: `docs/adrs/`
+
+4. **相关 Specs**: `docs/issues/{related-dir}/specs/`
+
+5. **设计系统**: `docs/design/system/DESIGN.md`
+
+6. **命名规范**: `docs/guide/naming-convention.md`
+
+7. **代码库规范**（按 issue track 选择，参考）：
    - `f-*` → [`docs/guide/frontend/README.md`](mdc:docs/guide/frontend/README.md)（含规范索引，按需深入）
    - `f-*`（涉及浮层）→ [`docs/guide/frontend/overlay-conventions.md`](mdc:docs/guide/frontend/overlay-conventions.md)
    - `b-*` / `d-*` → [`docs/guide/backend/README.md`](mdc:docs/guide/backend/README.md)（含规范索引，按需深入）
-7. **测试指南**（按 issue track 选择，参考）：
+
+8. **测试指南**（按 issue track 选择，参考）：
    - 测试路径与命名规范 → [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md)
    - 详细测试写法 → `docs/guide/testing/unit-testing-guide.md`（f/b）、`integration-testing-guide.md`（i）、`e2e-testing-guide.md`（q）
 
@@ -46,6 +63,11 @@ description: >
 当用户术语与 PRD 或架构规格冲突时，立即指出。
 
 > "你的 PRD 将 'knowledge base' 定义为 X，但你似乎指的是 Y —— 到底是哪个？"
+
+**如果 issue 引用了 PRD，spec 必须与 PRD 保持一致。** 若发现 spec 中的定义与 PRD 矛盾：
+1. 优先以 PRD 为准
+2. 如果 PRD 确实需要修改，在 spec 中显式标注 "PRD 偏差" 并说明原因
+3. 禁止在 spec 中悄悄修改 PRD 定义而不留痕迹
 
 ### 精炼模糊语言
 
@@ -277,3 +299,4 @@ spec-validator 完成 spec 编写
 - [ ] Spec 文件放在 issue 目录下的 `specs/` 子目录中
 - [ ] 三个 spec 文件至少存在一个（按 issue 类型）
 - [ ] **ADR 影响评估已完成，无冲突或冲突已解决**
+- [ ] **PRD 一致性检查**：spec 中的目标、边界、验收标准与 issue 引用的 PRD 章节一致。如有偏差，在 spec 中标注 "PRD 偏差" 并说明原因

@@ -40,7 +40,14 @@ docs/issues/{prefix}-{NN}-{kebab-slug}/specs/
 - 规格编写完成后，使用 `/kb-review` 执行 Spec 对齐审查
 - 检查是否覆盖所有交互状态、边界条件和错误场景
 
+**PRD 一致性**：
+- 如果 issue 引用了 PRD，spec 必须与 PRD 保持一致
+- 优先以 PRD 定义为准
+- 如有偏差，在 spec 中显式标注 "PRD 偏差" 并说明原因
+- 禁止在 spec 中悄悄修改 PRD 定义而不留痕迹
+
 **禁止**：
 - 不写规格直接写计划
 - 用 "TODO" 或 "TBD" 填充关键字段
 - 一个规格文件描述多个独立功能
+- PRD 偏离：spec 与 issue 引用的 PRD 目标不一致且无说明
