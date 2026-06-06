@@ -2,6 +2,7 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { cleanupDatabase } from './fixtures/database'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -24,6 +25,14 @@ export default async function globalTeardown() {
     } finally {
       fs.unlinkSync(PID_FILE)
     }
+  }
+
+  // 清理 E2E 数据库
+  try {
+    await cleanupDatabase()
+    console.log('[E2E] Database cleaned up')
+  } catch (err) {
+    console.error('[E2E] Database cleanup failed:', err)
   }
 
   if (process.env.CI) {
