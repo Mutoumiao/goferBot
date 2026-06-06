@@ -32,8 +32,13 @@ export default defineConfig({
         'packages/webui/src/**/*.ts',
         'packages/webui/src/**/*.vue',
         'packages/rag-sdk/src/**/*.ts',
+        'packages/server/src/**/*.ts',
       ],
-      exclude: ['packages/webui/src/main.ts', 'packages/rag-sdk/src/index.ts'],
+      exclude: [
+        'packages/webui/src/main.ts',
+        'packages/rag-sdk/src/index.ts',
+        'packages/server/src/main.ts',
+      ],
       thresholds: {
         lines: 70,
         functions: 60,
