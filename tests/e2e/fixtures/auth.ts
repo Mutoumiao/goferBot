@@ -1,5 +1,7 @@
 import { test as base } from '@playwright/test'
 import { publicEncrypt, constants } from 'node:crypto'
+import { Client } from 'pg'
+import { cleanupDatabase } from './database'
 
 export interface TestUser {
   email: string
@@ -26,7 +28,11 @@ const mockUsers: Record<string, TestUser> = {
 // ============================================================
 // Playwright test fixture 扩展
 // ============================================================
-export const test = base.extend<{ testUser: TestUser; authPage: { gotoLogin: () => Promise<void> } }>({
+export const test = base.extend<{
+  testUser: TestUser
+  authPage: { gotoLogin: () => Promise<void> }
+  autoCleanup: void
+}>({
   testUser: async ({ page }, use) => {
     const user = mockUsers.registered
     await use(user)
@@ -39,6 +45,21 @@ export const test = base.extend<{ testUser: TestUser; authPage: { gotoLogin: () 
       },
     })
   },
+
+  // 自动清理 fixture：每个测试后执行
+  // 策略：始终执行 cleanupDatabase，因为 Mock 模式下数据库仍可能有残留
+  // （如 globalSetup 创建的初始数据、或其他测试泄漏的数据）
+  autoCleanup: [
+    async ({}, use, testInfo) => {
+      await use()
+      try {
+        await cleanupDatabase()
+      } catch {
+        // 忽略清理失败，避免干扰测试失败判定
+      }
+    },
+    { auto: true },
+  ],
 })
 
 // ============================================================
@@ -164,6 +185,37 @@ export async function injectAuthToken(page: any, token?: string): Promise<void> 
       } catch (e) {}
     `,
   })
+}
+
+export interface DeleteTestUserOptions {
+  email?: string
+  id?: string
+}
+
+export async function deleteTestUser(options: DeleteTestUserOptions): Promise<void> {
+  const dbUrl = process.env.DATABASE_URL || 'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
+
+  const client = new Client({ connectionString: dbUrl })
+  await client.connect()
+
+  try {
+    if (options.id) {
+      await client.query('DELETE FROM users WHERE id = $1', [options.id])
+    } else if (options.email) {
+      await client.query('DELETE FROM users WHERE email = $1', [options.email])
+    }
+  } finally {
+    await client.end()
+  }
+
+  // 简化缓存清理：仅当删除的是当前缓存用户时才清空
+  if (cachedTestUser) {
+    const matchById = options.id && options.id === cachedTestUser.userId
+    const matchByEmail = options.email && options.email === cachedTestUser.email
+    if (matchById || matchByEmail) {
+      cachedTestUser = null
+    }
+  }
 }
 
 // Mock API 路由（保留现有功能）
