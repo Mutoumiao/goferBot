@@ -4,9 +4,7 @@ status: open
 track: quality
 priority: p1
 summary: 后端测试覆盖率门槛定义与核心模块测试补齐
-blocked_by:
-  - q-24
-  - q-25
+blocked_by: []
 checklist: checklist.json
 plan: plan.md
 specs: specs/

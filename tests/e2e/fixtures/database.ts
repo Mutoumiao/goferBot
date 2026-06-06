@@ -12,7 +12,7 @@ const TABLES_TO_TRUNCATE = [
 ]
 
 export async function cleanupDatabase(): Promise<void> {
-  const dbUrl = process.env.DATABASE_URL
+  const dbUrl = process.env.DATABASE_URL || 'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
   if (!dbUrl) throw new Error('DATABASE_URL is not set')
 
   const client = new Client({ connectionString: dbUrl })

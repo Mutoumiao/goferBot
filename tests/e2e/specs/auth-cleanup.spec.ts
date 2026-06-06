@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { createTestUser, deleteTestUser } from './auth'
+import { test, expect } from '@playwright/test'
+import { createTestUser, deleteTestUser } from '../fixtures/auth'
 
-describe('deleteTestUser', () => {
-  it('AC-02: 按 email 删除测试用户', async () => {
+test.describe('AC-02: deleteTestUser 删除测试用户', () => {
+  test('按 email 删除测试用户', async () => {
     const user = await createTestUser()
     await deleteTestUser({ email: user.email })
 
@@ -11,7 +11,7 @@ describe('deleteTestUser', () => {
     expect(newUser.email).not.toBe(user.email)
   })
 
-  it('AC-02: 按 id 删除测试用户', async () => {
+  test('按 id 删除测试用户', async () => {
     const user = await createTestUser()
     expect(user.userId).toBeTruthy()
     await deleteTestUser({ id: user.userId! })

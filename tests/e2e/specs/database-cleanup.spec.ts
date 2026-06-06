@@ -1,22 +1,27 @@
-import { describe, it, expect } from 'vitest'
-import { cleanupDatabase } from './database'
+import { test, expect } from '@playwright/test'
+import { cleanupDatabase } from '../fixtures/database'
 import { Client } from 'pg'
 
 const TEST_DB_URL =
-  process.env.DATABASE_URL ||
   'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
 
-describe('cleanupDatabase', () => {
-  it('AC-01: 清理后所有业务表记录数为 0', async () => {
+test.describe('AC-01: cleanupDatabase 清理所有业务表', () => {
+  test.beforeEach(async () => {
+    await cleanupDatabase()
+  })
+
+  test('清理后所有业务表记录数为 0', async () => {
     const client = new Client({ connectionString: TEST_DB_URL })
     await client.connect()
 
+    const ts = Date.now()
+
     // 先插入测试数据
     await client.query(
-      "INSERT INTO users (id, email, password, name) VALUES ('test-user-1', 'test1@example.com', 'pass', 'Test')",
+      `INSERT INTO users (id, email, password, name, updated_at) VALUES ('test-user-${ts}', 'test${ts}@example.com', 'pass', 'Test', NOW())`,
     )
     await client.query(
-      "INSERT INTO sessions (id, user_id, title) VALUES ('test-session-1', 'test-user-1', 'Test Session')",
+      `INSERT INTO sessions (id, user_id, title, updated_at) VALUES ('test-session-${ts}', 'test-user-${ts}', 'Test Session', NOW())`,
     )
 
     await cleanupDatabase()
@@ -39,7 +44,7 @@ describe('cleanupDatabase', () => {
     await client.end()
   })
 
-  it('AC-05: 连续运行两次 cleanupDatabase 不报错', async () => {
+  test('AC-05: 连续运行两次 cleanupDatabase 不报错', async () => {
     await cleanupDatabase()
     await expect(cleanupDatabase()).resolves.not.toThrow()
   })

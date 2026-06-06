@@ -4,8 +4,7 @@ status: open
 track: quality
 priority: p0
 summary: E2E 测试数据库清理机制 — 防止数据无限累积
-blocked_by:
-  - q-25
+blocked_by: []
 checklist: checklist.json
 plan: plan.md
 specs: specs/
