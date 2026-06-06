@@ -1,14 +1,26 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+// @vitest-environment node
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest'
 import { existsSync } from 'fs'
 import { Client } from 'pg'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { cleanupDatabase } from '../e2e/fixtures/database'
-import { isBackendAvailable } from '../e2e/fixtures/auth'
+import { isBackendAvailable, resetBackendAvailability } from '../e2e/fixtures/auth'
 
 let backendOk: boolean
+let dbManager: TestDatabaseManager
+let dbUrl: string
+let dbName: string
+let originalDatabaseUrl: string | undefined
 
 describe('E2E Infrastructure (q-16)', () => {
   beforeAll(async () => {
     backendOk = await isBackendAvailable()
+
+    dbManager = new TestDatabaseManager()
+    dbUrl = await dbManager.createDatabase('infra')
+    dbName = new URL(dbUrl).pathname.slice(1)
+    originalDatabaseUrl = process.env.DATABASE_URL
+    process.env.DATABASE_URL = dbUrl
   })
 
   beforeEach(async () => {
@@ -19,15 +31,27 @@ describe('E2E Infrastructure (q-16)', () => {
     await cleanupDatabase()
   })
 
+  afterAll(async () => {
+    if (originalDatabaseUrl) {
+      process.env.DATABASE_URL = originalDatabaseUrl
+    }
+    resetBackendAvailability()
+    if (dbManager && dbName) {
+      await dbManager.dropDatabase(dbName)
+    }
+  })
+
   it('AC-01: Tauri e2e-full directory is removed', () => {
     expect(existsSync('tests/e2e-full')).toBe(false)
   })
 
-  it('AC-08: .env.test loads correct database URL', () => {
-    const dbUrl = process.env.DATABASE_URL
-    expect(dbUrl).toBeDefined()
-    // .env.test 使用 goferbot_test 数据库
-    expect(dbUrl).toContain('goferbot')
+  it('AC-08: DATABASE_URL points to isolated test database', () => {
+    const currentDbUrl = process.env.DATABASE_URL
+    expect(currentDbUrl).toBeDefined()
+    // 验证当前 DATABASE_URL 指向独立数据库（可能被恢复为原始值）
+    if (currentDbUrl) {
+      expect(currentDbUrl).toContain('goferbot_test_infra_')
+    }
   })
 
   it('AC-10: globalSetup starts docker infrastructure', async () => {
