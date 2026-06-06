@@ -499,19 +499,48 @@ b-02 知识库 CRUD API
 4. **架构合规后检通过**：调用 `/architecture-guard` 进行最终审查，确认无 Critical 违规
 5. **全量回归无退化**：`npx vitest run && pnpm test:integration && pnpm test:e2e`
 
-### 验证通过后
+### 提交前统一审查（issue 完成后执行）
+
+所有任务验证通过后、提交前，必须执行统一审查：
+
+```bash
+# 1. 查看整体变更范围
+git diff --stat
+
+# 2. 逐项确认：
+#    - 变更文件与 plan 中声明的一致
+#    - 无意外修改（console.log、临时文件、无关格式变动）
+#    - 无敏感信息泄露
+```
+
+**审查通过标准**：
+- [ ] 变更范围与 plan 文件结构章节一致
+- [ ] 无未声明的新增文件
+- [ ] 无调试代码残留
+- [ ] commit message 已确定，包含 issue id
+
+### 验证与审查通过后
 
 向用户汇报并提供选项：
 
 ```
-开发完成，所有验证通过：
+开发完成，所有验证与审查通过：
 - 单元测试：✅ 全部通过
 - 类型检查：✅ 通过
+- 统一审查：✅ 变更范围与 plan 一致
 
 请选择下一步：
-1. 提交并继续下一个任务
+1. 执行统一提交（git add + git commit）
 2. 请求代码审查（/kb-review）
 3. 标记 issue 为完成（/issue-lifecycle）
+
+> **提交策略**：整个 issue 所有任务完成后，统一审查所有修改，再一次性提交。Issue 对应单一 commit，保持 `git log` 对 issue 的可追溯性。
+```
+
+**统一提交命令示例**：
+```bash
+git add .
+git commit -m "feat(scope): 功能描述 (#issue-id)"
 ```
 
 **禁止：**

@@ -20,7 +20,9 @@ description: >
 | **禁止行为** | 写 TODO、任务不以测试开始、无验证命令 |
 | **下一步** | plan 生成后 → 用户确认 → 调用 `/dev-orchestrator` 进入阶段 2（实现） |
 
-编写全面的实现计划，假设工程师对代码库零了解。记录一切：每个任务要碰哪些文件、写什么代码、测试、需查阅的文档、如何验证。DRY。YAGNI。**TDD 强制**。频繁提交。
+编写全面的实现计划，假设工程师对代码库零了解。记录一切：每个任务要碰哪些文件、写什么代码、测试、需查阅的文档、如何验证。DRY。YAGNI。**TDD 强制**。
+
+**提交策略**：整个 issue 完成后统一审查、统一提交，不在任务中途提交。Plan 中不写 `git commit` 步骤。
 
 **开始时声明：** "正在使用 plan-generator skill 创建实现计划。"
 
@@ -144,12 +146,14 @@ export function myFunction(input: string): string {
 运行：`npx vitest run tests/{layer}/{name}.spec.ts`
 预期：PASS（所有测试通过）
 
-- [ ] **步骤 5: 提交**
+- [ ] **步骤 5: 验证并标记完成**
 
+运行完整相关测试套件确认无回归：
 ```bash
-git add tests/{layer}/{name}.spec.ts file.ts
-git commit -m "feat(scope): add myFunction with tests"
+npx vitest run tests/{layer}/
 ```
+
+> **注意**：任务完成后不提交。所有任务完成后统一审查、统一提交。
 ```
 
 ---
