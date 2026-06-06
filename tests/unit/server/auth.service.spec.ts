@@ -115,6 +115,23 @@ describe('AuthService', () => {
     })
   })
 
+  describe('generateTokens', () => {
+    it('AC-03k: uses default expiresIn when config returns undefined', async () => {
+      mockConfigService.get.mockReturnValue(undefined)
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1', email: 'test@gofer.bot', isActive: true,
+      })
+
+      const result = await authService.login('test@gofer.bot', 'password123')
+
+      expect(result.accessToken).toBe('mock-token')
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ expiresIn: '15m' }),
+      )
+    })
+  })
+
   describe('me', () => {
     it('AC-03h: returns user profile for existing user', async () => {
       mockUserService.findById.mockResolvedValue({

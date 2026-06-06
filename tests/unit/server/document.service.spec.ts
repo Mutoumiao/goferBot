@@ -85,7 +85,7 @@ describe('DocumentService', () => {
       })
 
       expect(result.name).toBe('test.txt')
-      expect(mockQueueService.addDocumentJob).not.toHaveBeenCalled()
+      expect(mockStorage.uploadFile).toHaveBeenCalled()
     })
   })
 
