@@ -27,7 +27,7 @@ _暂无_
 - **q-26 E2E 测试数据库清理机制** — `docs/issues/q-26-e2e-db-cleanup/`
   - 为 E2E 测试建立数据库清理机制，防止 `goferbot_e2e` 数据无限累积
   - 改造 `playwright.global-teardown.ts` 和 `fixtures/auth.ts`
-  - 状态：open，阻塞已解除
+  - 状态：closed，2026-06-06 完成
 
 - **q-27 后端测试覆盖率门槛定义与核心模块测试补齐** — `docs/issues/q-27-backend-coverage-threshold/`
   - 定义后端单元测试覆盖率门槛（渐进式实施）

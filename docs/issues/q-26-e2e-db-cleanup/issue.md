@@ -1,6 +1,6 @@
 ---
 id: q-26
-status: open
+status: closed
 track: quality
 priority: p0
 summary: E2E 测试数据库清理机制 — 防止数据无限累积

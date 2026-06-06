@@ -56,14 +56,32 @@ globalSetup (tests/e2e/playwright.global-setup.ts):
      - Linux/macOS: 使用 pnpm + detached 模式
 
 globalTeardown (tests/e2e/playwright.global-teardown.ts):
-  1. 关闭后端服务（若由 setup 启动）
+  1. 调用 `cleanupDatabase()` 清理 E2E 数据库所有业务表
+  2. 关闭后端服务（若由 setup 启动）
      - Windows: taskkill /PID /T /F
      - Linux/macOS: process.kill(-pid, 'SIGTERM')
-  2. CI 模式下执行 pnpm infra:down
-  3. 本地模式保持 docker 运行以便复用
+  3. CI 模式下执行 pnpm infra:down
+  4. 本地模式保持 docker 运行以便复用
 ```
 
-### 2.3 两种测试模式
+### 2.3 数据库清理机制
+
+E2E 测试使用独立数据库 `goferbot_e2e`，每次运行后自动清理：
+
+| 层级 | 触发时机 | 清理方式 | 覆盖范围 |
+|------|---------|---------|---------|
+| globalTeardown | 全部测试结束后 | `cleanupDatabase()` TRUNCATE | 所有业务表 |
+| autoCleanup fixture | 每个测试后（使用 fixtures/auth.ts 的 test） | `cleanupDatabase()` TRUNCATE | 所有业务表 |
+| deleteTestUser | 按需 | `DELETE FROM users WHERE ...` | 指定用户 |
+
+### 业务表列表
+
+`cleanupDatabase()` 清理以下表（按依赖顺序）：
+`chunks`, `messages`, `sessions`, `documents`, `folders`, `knowledge_bases`, `settings`, `users`
+
+> 注意：`_prisma_migrations` 表不被清理，以保持 migrate 状态。
+
+### 2.4 两种测试模式
 
 | 模式 | 依赖 | 用途 | 典型场景 |
 |------|------|------|----------|

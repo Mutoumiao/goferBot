@@ -43,8 +43,8 @@ version: 1
 
 | 文件 | 职责 |
 |------|------|
-| `tests/e2e/fixtures/database.spec.ts` | 验证 `cleanupDatabase()` 正确清空所有表 |
-| `tests/e2e/fixtures/auth.spec.ts` | 验证 `deleteTestUser()` 按 email 和 id 删除用户 |
+| `tests/e2e/specs/database-cleanup.spec.ts` | 验证 `cleanupDatabase()` 正确清空所有表 |
+| `tests/e2e/specs/auth-cleanup.spec.ts` | 验证 `deleteTestUser()` 按 email 和 id 删除用户 |
 
 ---
 
@@ -54,7 +54,7 @@ version: 1
 
 **文件：**
 - 修改：`tests/e2e/fixtures/database.ts`
-- 测试：`tests/e2e/fixtures/database.spec.ts`（新建）
+- 测试：`tests/e2e/specs/database-cleanup.spec.ts`（新建）
 
 **规格引用：**
 - 功能规格：[AC-01 — globalTeardown 调用 cleanupDatabase() 清理所有业务表]
@@ -66,21 +66,29 @@ version: 1
 - [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// tests/e2e/fixtures/database.spec.ts
-import { describe, it, expect } from 'vitest'
-import { cleanupDatabase } from './database'
+// tests/e2e/specs/database-cleanup.spec.ts
+import { test, expect } from '@playwright/test'
+import { cleanupDatabase } from '../fixtures/database'
 import { Client } from 'pg'
 
-const TEST_DB_URL = process.env.DATABASE_URL || 'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
+const TEST_DB_URL = 'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
 
-describe('cleanupDatabase', () => {
-  it('AC-01: 清理后所有业务表记录数为 0', async () => {
+test.describe('AC-01: cleanupDatabase 清理所有业务表', () => {
+  test.beforeEach(async () => {
+    await cleanupDatabase()
+  })
+
+  test('清理后所有业务表记录数为 0', async () => {
     const client = new Client({ connectionString: TEST_DB_URL })
     await client.connect()
 
-    // 先插入测试数据
-    await client.query("INSERT INTO users (id, email, password, name) VALUES ('test-user-1', 'test1@example.com', 'pass', 'Test')")
-    await client.query("INSERT INTO sessions (id, user_id, title) VALUES ('test-session-1', 'test-user-1', 'Test Session')")
+    const ts = Date.now()
+    await client.query(
+      `INSERT INTO users (id, email, password, name, updated_at) VALUES ('test-user-${ts}', 'test${ts}@example.com', 'pass', 'Test', NOW())`,
+    )
+    await client.query(
+      `INSERT INTO sessions (id, user_id, title, updated_at) VALUES ('test-session-${ts}', 'test-user-${ts}', 'Test Session', NOW())`,
+    )
 
     await cleanupDatabase()
 
@@ -93,7 +101,7 @@ describe('cleanupDatabase', () => {
     await client.end()
   })
 
-  it('AC-05: 连续运行两次 cleanupDatabase 不报错', async () => {
+  test('AC-05: 连续运行两次 cleanupDatabase 不报错', async () => {
     await cleanupDatabase()
     await expect(cleanupDatabase()).resolves.not.toThrow()
   })
@@ -102,7 +110,7 @@ describe('cleanupDatabase', () => {
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`npx vitest run tests/e2e/fixtures/database.spec.ts`
+运行：`pnpm exec playwright test tests/e2e/specs/database-cleanup.spec.ts`
 预期：FAIL — 可能因 `DATABASE_URL` 未设置或数据库不可达而失败
 
 - [ ] **步骤 3: 确认 database.ts 表列表完整性**
@@ -119,13 +127,13 @@ describe('cleanupDatabase', () => {
 
 - [ ] **步骤 4: 运行测试验证通过**
 
-运行：`npx vitest run tests/e2e/fixtures/database.spec.ts`
+运行：`pnpm exec playwright test tests/e2e/specs/database-cleanup.spec.ts`
 预期：PASS（所有测试通过，需确保 E2E 数据库可访问）
 
 - [ ] **步骤 5: 提交**
 
 ```bash
-git add tests/e2e/fixtures/database.ts tests/e2e/fixtures/database.spec.ts
+git add tests/e2e/fixtures/database.ts tests/e2e/specs/database-cleanup.spec.ts
 git commit -m "test(q-26): 验证 cleanupDatabase 清空所有业务表"
 ```
 
@@ -192,7 +200,7 @@ export default async function globalTeardown() {
 - [ ] **步骤 5: 提交**
 
 ```bash
-git add tests/e2e/playwright.global-teardown.ts tests/e2e/playwright.global-teardown.spec.ts
+git add tests/e2e/playwright.global-teardown.ts
 git commit -m "test(q-26): globalTeardown 增加 cleanupDatabase 调用"
 ```
 
@@ -202,7 +210,7 @@ git commit -m "test(q-26): globalTeardown 增加 cleanupDatabase 调用"
 
 **文件：**
 - 修改：`tests/e2e/fixtures/auth.ts`
-- 测试：`tests/e2e/fixtures/auth.spec.ts`（新建）
+- 测试：`tests/e2e/specs/auth-cleanup.spec.ts`（新建）
 
 **规格引用：**
 - 功能规格：[AC-02 — fixtures/auth.ts 支持 deleteTestUser(email) 和 deleteTestUser(id)]
@@ -212,12 +220,12 @@ git commit -m "test(q-26): globalTeardown 增加 cleanupDatabase 调用"
 - [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// tests/e2e/fixtures/auth.spec.ts
-import { describe, it, expect } from 'vitest'
-import { createTestUser, deleteTestUser } from './auth'
+// tests/e2e/specs/auth-cleanup.spec.ts
+import { test, expect } from '@playwright/test'
+import { createTestUser, deleteTestUser } from '../fixtures/auth'
 
-describe('deleteTestUser', () => {
-  it('AC-02: 按 email 删除测试用户', async () => {
+test.describe('AC-02: deleteTestUser 删除测试用户', () => {
+  test('按 email 删除测试用户', async () => {
     const user = await createTestUser()
     await deleteTestUser({ email: user.email })
 
@@ -226,7 +234,7 @@ describe('deleteTestUser', () => {
     expect(newUser.email).not.toBe(user.email)
   })
 
-  it('AC-02: 按 id 删除测试用户', async () => {
+  test('按 id 删除测试用户', async () => {
     const user = await createTestUser()
     expect(user.userId).toBeTruthy()
     await deleteTestUser({ id: user.userId! })
@@ -239,7 +247,7 @@ describe('deleteTestUser', () => {
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`npx vitest run tests/e2e/fixtures/auth.spec.ts`
+运行：`pnpm exec playwright test tests/e2e/specs/auth-cleanup.spec.ts`
 预期：FAIL — "deleteTestUser is not defined" 或 "deleteTestUser is not exported"
 
 - [ ] **步骤 3: 实现 deleteTestUser**
@@ -255,8 +263,7 @@ export interface DeleteTestUserOptions {
 }
 
 export async function deleteTestUser(options: DeleteTestUserOptions): Promise<void> {
-  const dbUrl = process.env.DATABASE_URL
-  if (!dbUrl) throw new Error('DATABASE_URL is not set')
+  const dbUrl = process.env.DATABASE_URL || 'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
 
   const client = new Client({ connectionString: dbUrl })
   await client.connect()
@@ -271,9 +278,11 @@ export async function deleteTestUser(options: DeleteTestUserOptions): Promise<vo
     await client.end()
   }
 
-  // 如果删除的是缓存用户，清空缓存
+  // 简化缓存清理：仅当删除的是当前缓存用户时才清空
   if (cachedTestUser) {
-    if (options.id === cachedTestUser.userId || options.email === cachedTestUser.email) {
+    const matchById = options.id && options.id === cachedTestUser.userId
+    const matchByEmail = options.email && options.email === cachedTestUser.email
+    if (matchById || matchByEmail) {
       cachedTestUser = null
     }
   }
@@ -282,13 +291,13 @@ export async function deleteTestUser(options: DeleteTestUserOptions): Promise<vo
 
 - [ ] **步骤 4: 运行测试验证通过**
 
-运行：`npx vitest run tests/e2e/fixtures/auth.spec.ts`
+运行：`pnpm exec playwright test tests/e2e/specs/auth-cleanup.spec.ts`
 预期：PASS（需确保后端运行在 127.0.0.1:3000 且 E2E 数据库可访问）
 
 - [ ] **步骤 5: 提交**
 
 ```bash
-git add tests/e2e/fixtures/auth.ts tests/e2e/fixtures/auth.spec.ts
+git add tests/e2e/fixtures/auth.ts tests/e2e/specs/auth-cleanup.spec.ts
 git commit -m "test(q-26): fixtures/auth.ts 增加 deleteTestUser 方法"
 ```
 
@@ -310,12 +319,12 @@ git commit -m "test(q-26): fixtures/auth.ts 增加 deleteTestUser 方法"
 - [ ] **步骤 1: 编写失败测试**
 
 ```typescript
-// tests/e2e/fixtures/auth-cleanup.spec.ts
+// tests/e2e/specs/auth-cleanup.spec.ts
 import { test, expect } from '@playwright/test'
-import { cleanupDatabase } from './database'
+import { cleanupDatabase } from '../fixtures/database'
 
-describe('autoCleanup fixture', () => {
-  it('AC-03: cleanupDatabase 可被直接导入并调用', async () => {
+test.describe('AC-03: autoCleanup fixture', () => {
+  test('cleanupDatabase 可被直接导入并调用', async () => {
     await expect(cleanupDatabase()).resolves.not.toThrow()
   })
 })
@@ -323,7 +332,7 @@ describe('autoCleanup fixture', () => {
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`npx vitest run tests/e2e/fixtures/auth-cleanup.spec.ts`
+运行：`pnpm exec playwright test tests/e2e/specs/auth-cleanup.spec.ts`
 预期：FAIL — 文件不存在
 
 - [ ] **步骤 3: 在 auth.ts fixture 中增加 autoCleanup**
@@ -352,16 +361,15 @@ export const test = base.extend<{
   },
 
   // 自动清理 fixture：每个测试后执行
+  // 策略：始终执行 cleanupDatabase，因为 Mock 模式下数据库仍可能有残留
+  // （如 globalSetup 创建的初始数据、或其他测试泄漏的数据）
   autoCleanup: [
     async ({}, use, testInfo) => {
       await use()
-      // 仅在真实后端模式下清理（通过测试项目配置或环境变量判断）
-      if (process.env.E2E_REAL_BACKEND === 'true') {
-        try {
-          await cleanupDatabase()
-        } catch {
-          // 忽略清理失败，避免干扰测试失败判定
-        }
+      try {
+        await cleanupDatabase()
+      } catch {
+        // 忽略清理失败，避免干扰测试失败判定
       }
     },
     { auto: true },
@@ -371,13 +379,13 @@ export const test = base.extend<{
 
 - [ ] **步骤 4: 运行测试验证通过**
 
-运行：`npx vitest run tests/e2e/fixtures/auth-cleanup.spec.ts`
+运行：`pnpm exec playwright test tests/e2e/specs/auth-cleanup.spec.ts`
 预期：PASS
 
 - [ ] **步骤 5: 提交**
 
 ```bash
-git add tests/e2e/fixtures/auth.ts tests/e2e/fixtures/auth-cleanup.spec.ts
+git add tests/e2e/fixtures/auth.ts tests/e2e/specs/auth-cleanup.spec.ts
 git commit -m "test(q-26): auth fixture 增加 autoCleanup 自动清理"
 ```
 
@@ -491,8 +499,8 @@ git commit -m "test(q-26): E2E 全量通过，验证数据库清理机制有效"
 
 | 阶段 | 命令 | 预期结果 |
 |------|------|---------|
-| 单元测试 | `npx vitest run tests/e2e/fixtures/database.spec.ts` | PASS |
-| 单元测试 | `npx vitest run tests/e2e/fixtures/auth.spec.ts` | PASS |
+| E2E fixtures | `pnpm exec playwright test tests/e2e/specs/database-cleanup.spec.ts` | PASS |
+| E2E fixtures | `pnpm exec playwright test tests/e2e/specs/auth-cleanup.spec.ts` | PASS |
 | E2E 测试 | `pnpm test:e2e` | 全部通过 |
 | 数据验证 | 查询 `goferbot_e2e.users` count | 运行后为 0 |
 
