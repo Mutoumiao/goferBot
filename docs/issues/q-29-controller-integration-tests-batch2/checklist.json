@@ -1,0 +1,35 @@
+{
+  "issue_id": "q-29",
+  "version": 1,
+  "updated_at": "2026-06-06T21:30:00Z",
+  "items": [
+    {
+      "id": "AC-01",
+      "desc": "SessionController 模块级集成测试覆盖所有端点和 error cases",
+      "status": "pending",
+      "test_file": "tests/integration/session.controller.spec.ts"
+    },
+    {
+      "id": "AC-02",
+      "desc": "SettingsController 模块级集成测试覆盖所有端点和 error cases",
+      "status": "pending",
+      "test_file": "tests/integration/settings.controller.spec.ts"
+    },
+    {
+      "id": "AC-03",
+      "desc": "FolderController 模块级集成测试覆盖所有端点和 error cases",
+      "status": "pending",
+      "test_file": "tests/integration/folder.controller.spec.ts"
+    },
+    {
+      "id": "AC-04",
+      "desc": "全部新增测试在 pnpm test:integration 中通过",
+      "status": "pending"
+    },
+    {
+      "id": "AC-05",
+      "desc": "测试数据库零残留",
+      "status": "pending"
+    }
+  ]
+}

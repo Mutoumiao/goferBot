@@ -1,0 +1,47 @@
+{
+  "issue_id": "q-30",
+  "version": 1,
+  "updated_at": "2026-06-06T21:30:00Z",
+  "items": [
+    {
+      "id": "AC-01",
+      "desc": "HealthController 模块级集成测试覆盖存活检查",
+      "status": "pending",
+      "test_file": "tests/integration/health.controller.spec.ts"
+    },
+    {
+      "id": "AC-02",
+      "desc": "ResponseInterceptor 测试验证统一 { data: T } 格式",
+      "status": "pending",
+      "test_file": "tests/integration/response-interceptor.spec.ts"
+    },
+    {
+      "id": "AC-03",
+      "desc": "AllExceptionsFilter 测试验证统一 { error: { code, message } } 格式",
+      "status": "pending",
+      "test_file": "tests/integration/exceptions-filter.spec.ts"
+    },
+    {
+      "id": "AC-04",
+      "desc": "ZodValidationPipe 测试验证字段级错误返回",
+      "status": "pending",
+      "test_file": "tests/integration/zod-validation-pipe.spec.ts"
+    },
+    {
+      "id": "AC-05",
+      "desc": "ThrottlerGuard 测试验证 429 响应头和 Retry-After",
+      "status": "pending",
+      "test_file": "tests/integration/throttler-guard.spec.ts"
+    },
+    {
+      "id": "AC-06",
+      "desc": "全部新增测试在 pnpm test:integration 中通过",
+      "status": "pending"
+    },
+    {
+      "id": "AC-07",
+      "desc": "测试数据库零残留",
+      "status": "pending"
+    }
+  ]
+}

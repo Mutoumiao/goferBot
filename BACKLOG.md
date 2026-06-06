@@ -12,6 +12,23 @@ _暂无_
 
 ## 技术债务
 
+### 测试架构治理（2026-06-06 更新）
+
+- **q-29 PRD 第二批 Controller 模块级集成测试补齐** — `docs/issues/q-29-controller-integration-tests-batch2/`
+  - 补齐 SessionController、SettingsController、FolderController 模块级集成测试
+  - 覆盖 happy path + 所有 error cases + 边界条件
+  - 状态：open，待实施
+
+- **q-30 PRD 第三批全局中间件与 HealthController 集成测试** — `docs/issues/q-30-middleware-integration-tests/`
+  - 验证 ResponseInterceptor、AllExceptionsFilter、ZodValidationPipe、ThrottlerGuard 行为
+  - HealthController 存活检查
+  - 状态：open，待实施
+
+- **q-31 HTTP API E2E 测试** — `docs/issues/q-31-http-e2e-api-tests/`
+  - 建立 Auth/Chat/File/KB 四条核心链路的 HTTP E2E 测试
+  - 使用 axios + 真实 NestJS 进程验证协议行为
+  - 状态：open，待实施
+
 ### 测试架构治理（2026-06-05 创建）
 
 - **q-24 单元测试数据库隔离治理** — `docs/issues/q-24-unit-test-db-isolation/`
