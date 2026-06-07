@@ -31,7 +31,7 @@ prd_section: §5.7 阶段三深化
 
 ## 验收标准
 
-- [ ] `useSSE('/chat/stream', ...)` 在 ChatInput onSubmit 时触发
+- [ ] `useSSE('/chat', ...)` 在 ChatInput onSubmit 时触发
 - [ ] 流式 chunk 追加到 `chatStore.appendStreamContent`
 - [ ] 流式完成后 `chatStore.flushStreamContent` 生成完整 assistant message
 - [ ] 连接中断时显示错误提示 + 重连按钮
