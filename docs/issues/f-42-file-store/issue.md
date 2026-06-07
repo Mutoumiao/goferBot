@@ -1,6 +1,6 @@
 ---
 id: f-42
-status: open
+status: closed
 track: frontend
 priority: p0
 summary: 迁移 Pinia file.ts → Zustand file store — 文件上传队列、进度追踪、并发控制

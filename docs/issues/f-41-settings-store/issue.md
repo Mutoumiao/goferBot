@@ -1,6 +1,6 @@
 ---
 id: f-41
-status: open
+status: closed
 track: frontend
 priority: p0
 summary: 迁移 Pinia settings.ts → Zustand settings store — 用户配置持久化（语言/主题/通知偏好）、未保存状态追踪

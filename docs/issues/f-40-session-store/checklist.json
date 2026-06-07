@@ -1,1 +1,10 @@
-{"issue_id": "f-40", "version": 1, "updated_at": "2026-06-07T21:30:00Z", "items": []}
+{"issue_id": "f-40", "version": 2, "updated_at": "2026-06-08T00:00:00Z", "items": [
+  {"id": "AC-01", "desc": "扩展 sessions + isLoadingSessions + error 状态字段", "status": "passed"},
+  {"id": "AC-02", "desc": "实现 setSessions / addSession / removeSession / updateSession 同步 actions", "status": "passed"},
+  {"id": "AC-03", "desc": "实现 loadSessions 异步 action", "status": "passed"},
+  {"id": "AC-04", "desc": "实现 createSession 异步 action", "status": "passed"},
+  {"id": "AC-05", "desc": "实现 renameSession 异步 action", "status": "passed"},
+  {"id": "AC-06", "desc": "实现 deleteSession 异步 action", "status": "passed"},
+  {"id": "AC-07", "desc": "deleteSession 时若删除的是 activeSession，将 activeSession 置 null", "status": "passed"},
+  {"id": "AC-08", "desc": "已有 streaming 行为不受扩展影响（向后兼容）", "status": "passed"}
+]}

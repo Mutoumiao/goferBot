@@ -9,14 +9,14 @@ _暂无_
 ## 待启动 — 前端迁移：阶段二补全（P0）
 
 > PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.6
-> 当前迁移率 ~30%（3 closed / 15 open）
+> 当前迁移率 ~60%（7 closed / 15 total）
 
 | Issue | 优先级 | 阻塞于 | 摘要 |
 |-------|--------|--------|------|
-| [f-40](docs/issues/f-40-session-store/) | p0 | f-33 | Pinia session.ts → Zustand chat store 扩展（会话列表/CRUD） |
-| [f-41](docs/issues/f-41-settings-store/) | p0 | f-33 | Pinia settings.ts → Zustand（配置持久化 + dirty 追踪） |
-| [f-42](docs/issues/f-42-file-store/) | p0 | f-33 | Pinia file.ts → Zustand（上传队列 + 并发控制） |
-| [f-43](docs/issues/f-43-tabs-store/) | p0 | f-33 | Pinia tabs.ts → Zustand（标签页管理 + persist） |
+| ~~[f-40](docs/issues/f-40-session-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia session.ts → Zustand chat store 扩展（会话列表/CRUD） |
+| ~~[f-41](docs/issues/f-41-settings-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia settings.ts → Zustand（配置持久化 + dirty 追踪） |
+| ~~[f-42](docs/issues/f-42-file-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia file.ts → Zustand（上传队列 + 并发控制） |
+| ~~[f-43](docs/issues/f-43-tabs-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia tabs.ts → Zustand（标签页管理 + persist） |
 
 ## 待启动 — 前端迁移：阶段三深化（P1）
 

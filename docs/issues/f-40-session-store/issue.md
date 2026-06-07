@@ -1,6 +1,6 @@
 ---
 id: f-40
-status: open
+status: closed
 track: frontend
 priority: p0
 summary: 迁移 Pinia session.ts → Zustand chat store 扩展 — 会话列表、活跃会话管理、CRUD 操作状态

@@ -1,1 +1,11 @@
-{"issue_id": "f-41", "version": 1, "updated_at": "2026-06-07T21:30:00Z", "items": []}
+{"issue_id": "f-41", "version": 2, "updated_at": "2026-06-08T00:00:00Z", "items": [
+  {"id": "AC-01", "desc": "定义 AppConfig / SettingsState 类型，包含 5 个 provider + embedding + temperature", "status": "passed"},
+  {"id": "AC-02", "desc": "Zustand persist middleware 持久化 config 到 localStorage key goferbot-settings", "status": "passed"},
+  {"id": "AC-03", "desc": "updateConfig 仅更新内存 config，不修改 savedConfig", "status": "passed"},
+  {"id": "AC-04", "desc": "isDirty() 深度比较 config vs savedConfig", "status": "passed"},
+  {"id": "AC-05", "desc": "resetToSaved() 将 config 重置为 savedConfig 快照", "status": "passed"},
+  {"id": "AC-06", "desc": "saveConfig 调 API 保存 + 更新 savedConfig 快照", "status": "passed"},
+  {"id": "AC-07", "desc": "loadConfig 从 API 加载 + 同时更新 config 和 savedConfig", "status": "passed"},
+  {"id": "AC-08", "desc": "getLLMConfig 返回正确的 LLMConfig（含 ollama 特殊处理）", "status": "passed"},
+  {"id": "AC-09", "desc": "persist hydrate 恢复后，config 与默认值正确合并", "status": "passed"}
+]}

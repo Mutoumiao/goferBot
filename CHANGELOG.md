@@ -4,6 +4,15 @@
 
 ---
 
+## [2026-06-08]
+
+### frontend
+
+- [closed] f-40 session store → chat store 扩展 — sessions CRUD（load/create/rename/delete）+ renameSession API + 18 测试 [issue](docs/issues/f-40-session-store/)
+- [closed] f-41 settings store — Zustand persist + dirty 追踪 + LLM 配置 + 35 测试 [issue](docs/issues/f-41-settings-store/)
+- [closed] f-42 file store — 上传队列 + maxConcurrent=3 并发控制 + 文件浏览 CRUD + 37 测试 [issue](docs/issues/f-42-file-store/)
+- [closed] f-43 tabs store — persist + addTabByRoute 去重 + removeTab 规则 + home 常驻 + 29 测试 [issue](docs/issues/f-43-tabs-store/)
+
 ## [2026-06-07]
 
 ### frontend

@@ -1,6 +1,6 @@
 ---
 id: f-43
-status: open
+status: closed
 track: frontend
 priority: p0
 summary: 迁移 Pinia tabs.ts → Zustand tabs store — 标签页列表、切换、关闭、持久化
