@@ -58,10 +58,12 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 │   ├── unit/                     #   单元测试 (vitest)
 │   │   ├── server/               #     后端服务测试
 │   │   └── webui/                #     前端组件测试
-│   ├── integration/              #   真实后端集成测试
-│   └── e2e/                      #   E2E 浏览器测试 (Playwright)
-│       ├── specs/                #     单页面功能
-│       ├── flows/                #     跨模块旅程
+│   ├── integration/              #   模块级集成测试（@nestjs/testing + app.inject()）
+│   │   └── helpers/              #     TestAppFactory / TestDatabaseManager / AuthFixtures
+│   └── e2e/                      #   E2E 测试
+│       ├── api/                  #     HTTP API E2E（axios + 真实 NestJS 进程）
+│       ├── specs/                #     浏览器 E2E 单页面功能 (Playwright)
+│       ├── flows/                #     浏览器 E2E 跨模块旅程
 │       ├── pages/                #     Page Objects
 │       ├── fixtures/             #     测试夹具
 │       └── mocks/                #     Mock 路由
@@ -85,17 +87,45 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 
 ## 常用命令
 
+### 开发
+
 ```bash
 pnpm dev              # 同时启动前后端（webui + server）
 pnpm dev:web          # 只启动前端 Vite dev server
 pnpm dev:server       # 只启动后端 NestJS（watch 模式）
-pnpm test             # 单元测试
-pnpm test:e2e         # E2E 测试
 pnpm type-check       # TypeScript 类型检查
 pnpm -r build         # 构建所有包
 ```
 
-> 开发规范已迁移至 `.claude/rules/`（自动加载）与 `docs/guide/`（详细文档）。
+### 测试（按金字塔分层）
+
+```bash
+# 单元测试 — vitest，零外部依赖，Mock 模式
+pnpm test             # 运行全部单元测试（vitest run）
+
+# 模块级集成测试 — @nestjs/testing + Fastify app.inject()，真实 PostgreSQL 独立数据库
+pnpm test:integration        # 运行全部集成测试（178 测试，覆盖 9 个 Controller + 4 个中间件）
+pnpm test:integration:watch  # watch 模式，开发时使用
+
+# HTTP API E2E — axios + 真实 NestJS 进程，共享 goferbot_test 逐例清理
+pnpm test:e2e:api            # 运行 HTTP E2E 测试（15 测试，覆盖 Auth/KB/File+Chat 四条核心链路）
+pnpm test:e2e:api:watch      # watch 模式
+
+# 浏览器 E2E — Playwright，Mock 模式验证 UI 交互
+pnpm test:e2e                # 运行 Playwright E2E 测试
+pnpm test:e2e:ui             # Playwright UI 模式（可视化调试）
+pnpm test:e2e:debug          # Playwright debug 模式（断点调试）
+
+# 全量回归 — 按顺序执行所有层级
+pnpm test:all                # pnpm test && pnpm test:integration && pnpm test:e2e:api && pnpm test:e2e
+```
+
+| 测试层级 | 命令 | 技术 | 数据库 | 速度 |
+|---|---|---|---|---|
+| 单元测试 | `pnpm test` | vitest + Mock | 无 | 毫秒级 |
+| 模块级集成 | `pnpm test:integration` | `@nestjs/testing` + `app.inject()` | 真实 PG（每文件独立库） | 秒级 |
+| HTTP E2E | `pnpm test:e2e:api` | axios + 真实 NestJS 进程 | 共享 `goferbot_test`（逐例 DELETE） | 分钟级 |
+| 浏览器 E2E | `pnpm test:e2e` | Playwright + Mock | 无 | 分钟级 |
 
 ## Agent文档读取协议
 
