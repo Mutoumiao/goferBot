@@ -9,6 +9,8 @@
 ### quality
 
 - [closed] q-31 HTTP API E2E 测试 — 新建 auth-flow.spec.ts（6 测试）、kb-lifecycle.spec.ts（5 测试）、file-upload-chat.spec.ts（4 测试），覆盖 Auth/KB/File+Chat 四条核心链路；E2EClient 封装 axios + 随机 X-Forwarded-For 绕过限流；db-cleanup.ts 使用 DELETE + session_replication_role 清理共享库避免死锁；vitest.e2e-api.config.ts 配置 fileParallelism=false 强制串行执行消除测试间状态冲突；修复 PrismaService DI 问题（database.module.ts useFactory）和 Fastify trustProxy 使限流绕过生效 — E2E API 测试 15/15 通过 [issue](docs/issues/q-31-http-e2e-api-tests/)
+- [closed] q-30 PRD 第三批全局中间件与 HealthController 集成测试 — 新建 health.controller.spec.ts、response-interceptor.spec.ts、exceptions-filter.spec.ts、zod-validation-pipe.spec.ts、throttler-guard.spec.ts，验证全局中间件行为（统一响应格式/异常格式/Zod字段级错误/429限流）和 HealthController 存活检查 — 集成测试 187/187 通过 [issue](docs/issues/q-30-middleware-integration-tests/)
+- [closed] q-29 PRD 第二批 Controller 集成测试补齐 — 新建 session.controller.spec.ts、settings.controller.spec.ts、folder.controller.spec.ts，覆盖 Session/Settings/Folder 三个 Controller 的 CRUD + error cases + 边界条件 — 集成测试 187/187 通过 [issue](docs/issues/q-29-controller-integration-tests-batch2/)
 
 ## [2026-06-06]
 

@@ -17,12 +17,12 @@ _暂无_
 - **q-29 PRD 第二批 Controller 模块级集成测试补齐** — `docs/issues/q-29-controller-integration-tests-batch2/`
   - 补齐 SessionController、SettingsController、FolderController 模块级集成测试
   - 覆盖 happy path + 所有 error cases + 边界条件
-  - 状态：open，待实施
+  - 状态：closed，2026-06-07 完成
 
 - **q-30 PRD 第三批全局中间件与 HealthController 集成测试** — `docs/issues/q-30-middleware-integration-tests/`
   - 验证 ResponseInterceptor、AllExceptionsFilter、ZodValidationPipe、ThrottlerGuard 行为
   - HealthController 存活检查
-  - 状态：open，待实施
+  - 状态：closed，2026-06-07 完成
 
 - **q-31 HTTP API E2E 测试** — `docs/issues/q-31-http-e2e-api-tests/`
   - 建立 Auth/Chat/File/KB 四条核心链路的 HTTP E2E 测试

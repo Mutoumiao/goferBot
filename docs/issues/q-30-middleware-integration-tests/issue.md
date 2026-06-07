@@ -1,6 +1,6 @@
 ---
 id: q-30
-status: open
+status: closed
 track: quality
 priority: p1
 summary: 补齐 PRD 第三批全局中间件与 HealthController 模块级集成测试，验证统一响应格式、异常处理、限流等基础设施行为。
@@ -34,13 +34,13 @@ prd_section: 第三批（低优先级，基础设施验证）
 
 ## 验收标准
 
-- [ ] HealthController 模块级集成测试：`GET /api/health` 返回 200 和状态信息
-- [ ] ResponseInterceptor 测试：验证所有成功响应统一包装为 `{ data: T }` 格式
-- [ ] AllExceptionsFilter 测试：验证所有异常响应统一包装为 `{ error: { code, message } }` 格式
-- [ ] ZodValidationPipe 测试：验证 Zod 验证失败返回 400 和字段级错误信息
-- [ ] ThrottlerGuard 测试：验证速率限制返回 429 和 `Retry-After` 响应头
-- [ ] 全部新增测试在 `pnpm test:integration` 中通过
-- [ ] 测试数据库零残留
+- [x] HealthController 模块级集成测试：`GET /api/health` 返回 200 和状态信息
+- [x] ResponseInterceptor 测试：验证所有成功响应统一包装为 `{ data: T }` 格式
+- [x] AllExceptionsFilter 测试：验证所有异常响应统一包装为 `{ error: { code, message } }` 格式
+- [x] ZodValidationPipe 测试：验证 Zod 验证失败返回 400 和字段级错误信息
+- [x] ThrottlerGuard 测试：验证速率限制返回 429 和 `Retry-After` 响应头
+- [x] 全部新增测试在 `pnpm test:integration` 中通过
+- [x] 测试数据库零残留
 
 ## 阻塞于
 
@@ -74,13 +74,13 @@ prd_section: 第三批（低优先级，基础设施验证）
 - PRD 参考：`docs/prd/api-testing-prd.md` 第三批（第 239-246 行）
 
 **验收标准：**
-- [ ] HealthController 存活检查测试
-- [ ] ResponseInterceptor 统一响应格式测试
-- [ ] AllExceptionsFilter 统一异常格式测试
-- [ ] ZodValidationPipe 字段级错误测试
-- [ ] ThrottlerGuard 429 响应头测试
-- [ ] 全部新增测试在 `pnpm test:integration` 中通过
-- [ ] 测试数据库零残留
+- [x] HealthController 存活检查测试
+- [x] ResponseInterceptor 统一响应格式测试
+- [x] AllExceptionsFilter 统一异常格式测试
+- [x] ZodValidationPipe 字段级错误测试
+- [x] ThrottlerGuard 429 响应头测试
+- [x] 全部新增测试在 `pnpm test:integration` 中通过
+- [x] 测试数据库零残留
 
 **范围外：**
 - HTTP E2E 测试

@@ -1,6 +1,6 @@
 ---
 id: q-29
-status: open
+status: closed
 track: quality
 priority: p1
 summary: 补齐 PRD 第二批 Controller 模块级集成测试（Session/Settings/Folder），覆盖所有端点和 error cases。
@@ -34,11 +34,11 @@ prd_section: 第二批（中优先级，补充覆盖）
 
 ## 验收标准
 
-- [ ] SessionController 模块级集成测试覆盖：GET /api/sessions、GET /api/sessions/:id、POST /api/sessions、POST /api/sessions/:id/rename、DELETE /api/sessions/:id 的所有 error cases（400/401/403/404）
-- [ ] SettingsController 模块级集成测试覆盖：GET /api/settings、POST /api/settings 的所有 error cases（400/401）
-- [ ] FolderController 模块级集成测试覆盖：GET /api/knowledge-bases/:kbId/folders、POST /api/knowledge-bases/:kbId/folders、PATCH /api/knowledge-bases/:kbId/folders/:folderId、DELETE /api/knowledge-bases/:kbId/folders/:folderId 的所有 error cases（400/401/403/404）
-- [ ] 全部新增测试在 `pnpm test:integration` 中通过
-- [ ] 测试数据库零残留，不污染开发环境
+- [x] SessionController 模块级集成测试覆盖：GET /api/sessions、GET /api/sessions/:id、POST /api/sessions、POST /api/sessions/:id/rename、DELETE /api/sessions/:id 的所有 error cases（400/401/403/404）
+- [x] SettingsController 模块级集成测试覆盖：GET /api/settings、POST /api/settings 的所有 error cases（400/401）
+- [x] FolderController 模块级集成测试覆盖：GET /api/knowledge-bases/:kbId/folders、POST /api/knowledge-bases/:kbId/folders、PATCH /api/knowledge-bases/:kbId/folders/:folderId、DELETE /api/knowledge-bases/:kbId/folders/:folderId 的所有 error cases（400/401/403/404）
+- [x] 全部新增测试在 `pnpm test:integration` 中通过
+- [x] 测试数据库零残留，不污染开发环境
 
 ## 阻塞于
 
@@ -74,11 +74,11 @@ prd_section: 第二批（中优先级，补充覆盖）
 - PRD 参考：`docs/prd/api-testing-prd.md` 第二批（第 233-237 行）
 
 **验收标准：**
-- [ ] SessionController 模块级集成测试覆盖所有端点和 error cases（400/401/403/404）
-- [ ] SettingsController 模块级集成测试覆盖所有端点和 error cases（400/401）
-- [ ] FolderController 模块级集成测试覆盖所有端点和 error cases（400/401/403/404）
-- [ ] 全部新增测试在 `pnpm test:integration` 中通过
-- [ ] 测试数据库零残留
+- [x] SessionController 模块级集成测试覆盖所有端点和 error cases（400/401/403/404）
+- [x] SettingsController 模块级集成测试覆盖所有端点和 error cases（400/401）
+- [x] FolderController 模块级集成测试覆盖所有端点和 error cases（400/401/403/404）
+- [x] 全部新增测试在 `pnpm test:integration` 中通过
+- [x] 测试数据库零残留
 
 **范围外：**
 - PRD 第三批（Health/全局中间件）
