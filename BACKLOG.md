@@ -1,34 +1,34 @@
 # 待办事项
 
-> 最后更新：2026-06-07
+> 最后更新：2026-06-08
 
 ## 进行中
 
 _暂无_
 
-## 待启动 — 前端迁移：阶段二补全（P0）
+## 已完成 — 前端迁移：阶段二补全（P0）✅
 
 > PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.6
-> 当前迁移率 ~60%（7 closed / 15 total）
+> 全部 4 个 Store 迁移已完成，P0 阻塞全部解除。
 
-| Issue | 优先级 | 阻塞于 | 摘要 |
-|-------|--------|--------|------|
-| ~~[f-40](docs/issues/f-40-session-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia session.ts → Zustand chat store 扩展（会话列表/CRUD） |
-| ~~[f-41](docs/issues/f-41-settings-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia settings.ts → Zustand（配置持久化 + dirty 追踪） |
-| ~~[f-42](docs/issues/f-42-file-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia file.ts → Zustand（上传队列 + 并发控制） |
-| ~~[f-43](docs/issues/f-43-tabs-store/)~~ | ~~p0~~ | ~~f-33~~ | ✅ closed — Pinia tabs.ts → Zustand（标签页管理 + persist） |
+| Issue | 摘要 |
+|-------|------|
+| f-40 | session store → chat store 扩展（CRUD + 18 测试） |
+| f-41 | settings store（Zustand persist + dirty 追踪 + 35 测试） |
+| f-42 | file store（上传队列 + 并发控制 + 37 测试） |
+| f-43 | tabs store（persist + 去重 + home 常驻 + 29 测试） |
 
 ## 待启动 — 前端迁移：阶段三深化（P1）
 
 > PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.7
+> 当前进度：1/6 closed
 
 | Issue | 优先级 | 阻塞于 | 摘要 |
 |-------|--------|--------|------|
-| ~~[f-44](docs/issues/f-44-chat-sse-flow/)~~ | ~~p1~~ | ~~f-40~~ | ✅ closed — ChatView SSE 流式接收（useSSE + 重连 + 打字机动画） |
-| [f-45](docs/issues/f-45-chat-session-mgmt/) | p1 | f-40 | Chat 会话管理（新建/切换/删除/重命名 + KbSelector） |
-| [f-46](docs/issues/f-46-kb-file-upload/) | p1 | f-42 | KB 文件上传（拖拽 + FileManager + FileGridItem + BreadcrumbNav） |
+| [f-45](docs/issues/f-45-chat-session-mgmt/) | p1 | — | Chat 会话管理（新建/切换/删除/重命名 + KbSelector） |
+| [f-46](docs/issues/f-46-kb-file-upload/) | p1 | — | KB 文件上传（拖拽 + FileManager + FileGridItem + BreadcrumbNav） |
 | [f-47](docs/issues/f-47-kb-crud/) | p1 | f-46 | KB CRUD 完整交互（创建/编辑/删除 Dialog + 详情页） |
-| [f-48](docs/issues/f-48-settings-form/) | p1 | f-41 | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
+| [f-48](docs/issues/f-48-settings-form/) | p1 | — | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
 | [f-49](docs/issues/f-49-blocknote-editor/) | p1 | — | BlockNote 富文本编辑器替换纯文本输入 |
 
 ## 待启动 — 前端迁移：阶段四+五（P2）
