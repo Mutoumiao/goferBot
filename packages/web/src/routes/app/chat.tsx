@@ -1,7 +1,7 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useRequest } from 'alova/client'
-import { getHistory } from '@/api/chat'
+import { useRequest, useSSE } from 'alova/client'
+import { getHistory, streamChat } from '@/api/chat'
 import { useChatStore } from '@/stores/chat'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { MessageBubble } from '@/components/chat/MessageBubble'
@@ -11,7 +11,15 @@ export const Route = createFileRoute('/app/chat')({
   component: ChatViewPage,
 })
 
-function ChatViewPage() {
+/** 默认 LLM 配置（硬编码临时值，f-48 完成后替换为 settingsStore） */
+const DEFAULT_LLM_CONFIG = {
+  provider: 'openai',
+  model: 'gpt-4o',
+  baseUrl: 'https://api.openai.com/v1',
+  apiKey: '',
+}
+
+export function ChatViewPage() {
   const {
     activeSession,
     messages,
@@ -21,9 +29,17 @@ function ChatViewPage() {
     appendMessage,
     setIsLoadingHistory,
     isLoadingHistory,
+    setIsStreaming,
+    appendStreamContent,
+    flushStreamContent,
+    createSession,
   } = useChatStore()
 
-  // 加载历史消息（仅当有活跃 session 时）
+  // 错误状态
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [errorRetryMessage, setErrorRetryMessage] = useState<string | null>(null)
+
+  // 加载历史消息
   const { send: loadHistory } = useRequest(
     () => getHistory(activeSession?.id ?? ''),
     { immediate: false },
@@ -44,9 +60,53 @@ function ChatViewPage() {
     }
   }, [activeSession?.id])
 
+  // SSE hook
+  const { send: sseSend, close: sseClose, onMessage, onError } = useSSE(
+    (message: string, sessionId: string, config: typeof DEFAULT_LLM_CONFIG) =>
+      streamChat({
+        message,
+        sessionId,
+        knowledgeBaseIds: [],
+        config,
+      }),
+    {
+      interceptByGlobalResponded: false,
+      immediate: false,
+      reconnectionTime: 3000,
+    },
+  )
+
+  // 绑定 SSE 消息处理
+  onMessage((event: { data: string }) => {
+    try {
+      const parsed = JSON.parse(event.data) as { chunk: string; done: boolean; error?: string }
+      if (parsed.error) {
+        setErrorMessage(parsed.error)
+        setIsStreaming(false)
+        return
+      }
+      if (parsed.done) {
+        flushStreamContent()
+        setIsStreaming(false)
+      } else {
+        appendStreamContent(parsed.chunk)
+      }
+    } catch {
+      // 忽略无法解析的 chunk
+    }
+  })
+
+  onError((event: { error: Error }) => {
+    setErrorMessage(event.error?.message ?? '网络连接失败，请检查网络后重试')
+    setIsStreaming(false)
+  })
+
   const handleSend = useCallback(
-    (content: string) => {
+    async (content: string) => {
       if (!content.trim()) return
+
+      // 清除上一次错误
+      setErrorMessage(null)
 
       // 添加用户消息到列表
       const userMsg = {
@@ -58,11 +118,41 @@ function ChatViewPage() {
       }
       appendMessage(userMsg)
 
-      // TODO: SSE 流式调用（useSSE hook）— send content to backend
-      // 当前占位：模拟 AI 回复（后端就绪后替换为 useSSE）
+      // 保存最近一次发送的消息内容用于错误重试
+      setErrorRetryMessage(content)
+
+      // 清理上一次流式残留内容（如 onError 后未 flush 的旧 chunk）
+      if (streamingContent) {
+        useChatStore.setState({ streamingContent: '' })
+      }
+
+      // 进入流式状态
+      setIsStreaming(true)
+
+      // 若无活跃会话，先创建新会话再发送 SSE
+      let sessionId = activeSession?.id
+      if (!sessionId) {
+        const newSession = await createSession()
+        sessionId = newSession?.id
+      }
+
+      // 发起 SSE 请求
+      sseSend(content, sessionId ?? '', DEFAULT_LLM_CONFIG)
     },
-    [activeSession, appendMessage],
+    [activeSession, appendMessage, setIsStreaming, sseSend, createSession],
   )
+
+  const handleStop = useCallback(() => {
+    sseClose()
+    flushStreamContent()
+    setIsStreaming(false)
+  }, [sseClose, flushStreamContent, setIsStreaming])
+
+  const handleRetry = useCallback(() => {
+    if (!errorRetryMessage) return
+    setErrorMessage(null)
+    handleSend(errorRetryMessage)
+  }, [errorRetryMessage, handleSend])
 
   return (
     <div className="flex h-full flex-col">
@@ -81,7 +171,7 @@ function ChatViewPage() {
           </div>
         )}
 
-        {!isLoadingHistory && messages.length === 0 && !streamingContent && (
+        {!isLoadingHistory && messages.length === 0 && !streamingContent && !errorMessage && (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
               <h3 className="text-lg font-medium text-text-primary">开始新对话</h3>
@@ -110,7 +200,7 @@ function ChatViewPage() {
           />
         )}
 
-        {/* 流式加载指示器 */}
+        {/* 流式加载指示器（首 chunk 到达前） */}
         {isStreaming && !streamingContent && (
           <div className="flex items-center gap-2 px-4 py-3">
             <div className="h-8 w-8 rounded-full bg-surface-3" />
@@ -121,12 +211,26 @@ function ChatViewPage() {
             </div>
           </div>
         )}
+
+        {/* ErrorCard — SSE 连接失败 */}
+        {errorMessage && (
+          <div className="mx-4 my-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+            <p className="text-sm text-destructive-foreground">{errorMessage}</p>
+            <button
+              onClick={handleRetry}
+              className="mt-2 rounded-md bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive/90"
+            >
+              重试
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 输入框 */}
       <ChatInput
         onSend={handleSend}
-        disabled={isStreaming}
+        isStreaming={isStreaming}
+        onStop={handleStop}
         placeholder={activeSession ? '继续对话...' : '输入消息开始新对话...'}
       />
     </div>

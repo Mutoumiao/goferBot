@@ -11,9 +11,27 @@ import { alovaInstance } from '@/utils/server'
 export const sendMessage = (data: SendMessageRequest) =>
   alovaInstance.Post<{ message: unknown }>('/chat/message', data)
 
-/** SSE 流式聊天 */
-export const streamChat = (sessionId: string, content: string) =>
-  alovaInstance.Post('/chat/stream', { sessionId, content })
+/** SSE 流式聊天请求参数 */
+export interface StreamChatParams {
+  message: string
+  sessionId: string
+  knowledgeBaseIds?: string[]
+  config: {
+    provider: string
+    model: string
+    baseUrl: string
+    apiKey: string
+  }
+}
+
+/** SSE 流式聊天 — POST /api/chat（text/event-stream） */
+export const streamChat = (params: StreamChatParams) =>
+  alovaInstance.Post('/chat', {
+    message: params.message,
+    sessionId: params.sessionId,
+    knowledgeBaseIds: params.knowledgeBaseIds ?? [],
+    config: params.config,
+  })
 
 /** 获取消息历史 */
 export const getHistory = (sessionId: string, page = 1, limit = 50) =>
