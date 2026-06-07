@@ -34,3 +34,7 @@ export const createSession = (data?: CreateSessionRequest) =>
 /** 删除会话 */
 export const deleteSession = (sessionId: string) =>
   alovaInstance.Delete(`/chat/sessions/${sessionId}`)
+
+/** 重命名会话 */
+export const renameSession = (sessionId: string, title: string) =>
+  alovaInstance.Patch<Session>(`/chat/sessions/${sessionId}`, { title })
