@@ -8,6 +8,7 @@
 
 ### frontend
 
+- [closed] f-44 ChatView SSE 流式接收 — useSSE 集成 + streamChat API 修正 + ChatInput isStreaming/onStop + ErrorCard 错误重试 + reconnectionTime 自动重连 + 14 测试 [issue](docs/issues/f-44-chat-sse-flow/)
 - [closed] f-40 session store → chat store 扩展 — sessions CRUD（load/create/rename/delete）+ renameSession API + 18 测试 [issue](docs/issues/f-40-session-store/)
 - [closed] f-41 settings store — Zustand persist + dirty 追踪 + LLM 配置 + 35 测试 [issue](docs/issues/f-41-settings-store/)
 - [closed] f-42 file store — 上传队列 + maxConcurrent=3 并发控制 + 文件浏览 CRUD + 37 测试 [issue](docs/issues/f-42-file-store/)

@@ -1,6 +1,6 @@
 ---
 id: f-44
-status: open
+status: closed
 track: frontend
 priority: p1
 summary: ChatView SSE 流式接收 — useSSE hook 集成、流式内容渲染、错误重连、打字机动画
@@ -31,12 +31,12 @@ prd_section: §5.7 阶段三深化
 
 ## 验收标准
 
-- [ ] `useSSE('/chat', ...)` 在 ChatInput onSubmit 时触发
-- [ ] 流式 chunk 追加到 `chatStore.appendStreamContent`
-- [ ] 流式完成后 `chatStore.flushStreamContent` 生成完整 assistant message
-- [ ] 连接中断时显示错误提示 + 重连按钮
-- [ ] 流式传输中禁用 ChatInput（正在实现）
-- [ ] 停止生成按钮（AbortController）
+- [x] `useSSE('/chat', ...)` 在 ChatInput onSubmit 时触发
+- [x] 流式 chunk 追加到 `chatStore.appendStreamContent`
+- [x] 流式完成后 `chatStore.flushStreamContent` 生成完整 assistant message
+- [x] 连接中断时显示错误提示 + 重连按钮
+- [x] 流式传输中禁用 ChatInput（正在实现）
+- [x] 停止生成按钮（AbortController）
 
 ## 阻塞于
 

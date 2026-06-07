@@ -24,12 +24,12 @@ _暂无_
 
 | Issue | 优先级 | 阻塞于 | 摘要 |
 |-------|--------|--------|------|
-| [f-44](docs/issues/f-44-chat-sse-flow/) | p1 | f-40 | ChatView SSE 流式接收（useSSE + 重连 + 打字机动画） |
-| [f-45](docs/issues/f-45-chat-session-mgmt/) | p1 | f-40, f-44 | Chat 会话管理（新建/切换/删除/重命名 + KbSelector） |
+| ~~[f-44](docs/issues/f-44-chat-sse-flow/)~~ | ~~p1~~ | ~~f-40~~ | ✅ closed — ChatView SSE 流式接收（useSSE + 重连 + 打字机动画） |
+| [f-45](docs/issues/f-45-chat-session-mgmt/) | p1 | f-40 | Chat 会话管理（新建/切换/删除/重命名 + KbSelector） |
 | [f-46](docs/issues/f-46-kb-file-upload/) | p1 | f-42 | KB 文件上传（拖拽 + FileManager + FileGridItem + BreadcrumbNav） |
 | [f-47](docs/issues/f-47-kb-crud/) | p1 | f-46 | KB CRUD 完整交互（创建/编辑/删除 Dialog + 详情页） |
 | [f-48](docs/issues/f-48-settings-form/) | p1 | f-41 | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
-| [f-49](docs/issues/f-49-blocknote-editor/) | p1 | f-44 | BlockNote 富文本编辑器替换纯文本输入 |
+| [f-49](docs/issues/f-49-blocknote-editor/) | p1 | — | BlockNote 富文本编辑器替换纯文本输入 |
 
 ## 待启动 — 前端迁移：阶段四+五（P2）
 
