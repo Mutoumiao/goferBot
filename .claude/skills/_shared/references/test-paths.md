@@ -9,7 +9,8 @@
 
 | Issue Track | 测试层级 | 测试路径 | 运行命令 |
 |-------------|---------|---------|---------|
-| `f-*` | 前端单元 | `tests/unit/webui/{name}.spec.ts` | `npx vitest run tests/unit/webui/` |
+| `f-*`（Vue 旧项目 `packages/webui`） | 前端单元（Vue） | `tests/unit/webui/{name}.spec.ts` | `npx vitest run tests/unit/webui/` |
+| `f-*`（React 新项目 `apps/web`） | 前端单元（React） | `tests/unit/web/{name}.spec.tsx` | `npx vitest run tests/unit/web/` |
 | `b-*`, `d-*` | 后端单元 | `tests/unit/server/{name}.spec.ts` | `npx vitest run tests/unit/server/` |
 | `i-*` | 集成测试 | `tests/integration/{name}.spec.ts` | `pnpm test:integration` |
 | `q-*` | E2E 测试 | `tests/e2e/specs/` 或 `tests/e2e/flows/` | `pnpm test:e2e` |

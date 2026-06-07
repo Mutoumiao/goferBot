@@ -56,6 +56,7 @@ globs:
 | Vue → React 迁移 | `docs/reference/vue-to-react-patterns.md` |
 | shadcn/ui 组件 | `docs/reference/shadcn-ui-patterns.md` |
 | Zustand 状态管理 | `docs/reference/zustand-patterns.md` |
+| Alova 请求库 | `docs/reference/alova-react-guide.md` |
 | 迁移检查清单 | `docs/reference/migration-checklist.md` |
 
 ### Vue 项目参考
