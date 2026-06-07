@@ -20,16 +20,9 @@
 - [closed] i-32 packages/web 基建搭建 — TanStack Start + Vite 8 + SPA + Tailwind v4 + Pencil tokens（13 色板）+ cn()，构建✅ 类型检查✅ [issue](docs/issues/i-32-web-infra-setup/)
 - [closed] f-33 鉴权系统 — alova Token 刷新队列（isRefreshing + refreshSubscribers）+ packages/data/ 共享 Zod schemas（3 域）+ Zustand auth store（persist）+ login/register + beforeLoad 路由守卫 [issue](docs/issues/f-33-auth-flow-migration/)
 - [closed] f-34 Overlay + App Shell — React Portal 命令式 API（openDialog/openContextMenu 返回 Promise）+ Zustand OverlayStore + Sidebar（Link 导航）+ AuthenticatedLayout [issue](docs/issues/f-34-app-shell-overlay/)
-- [open] f-35 ChatView 骨架 — MessageBubble（react-markdown）+ ChatInput + chat store（消息/流式）+ SSE 占位 [issue](docs/issues/f-35-chatview-migration/)
-- [open] f-36 KB 页面骨架 — KbListPage（loading/empty/data 三态）+ kb store + api/kb.ts（5 方法） [issue](docs/issues/f-36-kb-page-migration/)
-- [open] f-37 辅页面骨架 — History（会话列表+删除）+ Settings（用户信息+登出）+ RecycleBin（软删除+永久删除），api/chat.ts + api/kb.ts 方法扩展 [issue](docs/issues/f-37-aux-pages-migration/)
-- [open] f-39 测试 — 13 单元测试（auth-store + cn-utility + overlay-store），tsc✅ build✅ [issue](docs/issues/f-39-test-cleanup/)
 
 ### docs
 
-- [open] f-40~f-43 Store 补全 issue — 4 个 Pinia→Zustand 迁移（session/settings/file/tabs），含 issue.md + checklist.json [issue](docs/issues/f-40-session-store/)
-- [open] f-44~f-49 功能深化 issue — 6 个阶段三深化（SSE/会话管理/文件上传/KB CRUD/Settings 表单/BlockNote），含 issue.md + checklist.json [issue](docs/issues/f-44-chat-sse-flow/)
-- [docs] PRD §5.0 进度总览 — 5 阶段完成度表 + 代码量对比 + 依赖图，i-32/f-33/f-34 → closed [PRD](docs/prd/v3-frontend-migration.md)
 - [docs] alova v3 参考手册 + frontend-rules.md 索引更新 [ref](docs/reference/alova-react-guide.md)
 
 ### quality
@@ -97,11 +90,6 @@
 - [closed] q-17 E2E 认证与知识库生命周期 — 16/16 AC 全部通过，q-17-rev 使用真实后端 API 完成 5 个 pending AC（AC-06/08/12/15/16） [issue](docs/issues/q-17-e2e-auth-kb-specs/)
 - [closed] q-23 集成测试层修复 — infra.spec.ts Playwright→vitest 转换，新建 setup.ts/teardown.ts，rag-real.spec.ts 适配 pgvector，清理 sidecar/ 遗留目录 [issue](docs/issues/q-23-integration-test-fix/)
 
-### docs
-
-- [docs] 重建计划制定 — 创建 6 个 issue 实施 ADR 0001 向量存储决策（pgvector 替代 Milvus）
-- [docs] BACKLOG.md & CHANGELOG.md 同步
-
 ---
 
 ## [2026-05-30]
@@ -113,10 +101,6 @@
 - [closed] q-19 E2E 设置持久化与跨模块用户旅程 — settings-persist.spec.ts（9 AC）+ onboarding-journey.spec.ts（6 AC） [issue](docs/archived/issues/q-19-e2e-settings-journey/)
 - [closed] q-18 E2E 聊天 SSE 流式响应与会话管理 — chat-with-rag.spec.ts（9 AC）+ session-management.spec.ts（11 AC） [issue](docs/archived/issues/q-18-e2e-chat-session-specs/)
 - [closed] q-16 E2E 基础设施重构 — 删除 Tauri E2E，建立真实 API Web E2E（globalSetup/globalTeardown/fixtures/.env.e2e） [issue](docs/archived/issues/q-16-e2e-infra-migration/)
-
-### docs
-
-- [docs] BACKLOG.md & CHANGELOG.md 同步
 
 ---
 
@@ -136,16 +120,6 @@
 ### docs
 
 - [closed] RAG Server 集成 PRD — server 端 RAG 集成需求全部实现，55 个测试通过 [PRD](docs/prd/rag-server-integration.md)
-- [docs] BACKLOG.md & CHANGELOG.md 同步
-
----
-
-## [2026-05-28]
-
-### docs
-
-- [open] RAG Server 集成 PRD — 定义 server 端 RAG 集成需求 [PRD](docs/prd/rag-server-integration.md)
-- [open] d-20 ~ q-21 — 7 个 RAG server 集成 issue 的 spec 和 plan 创建
 
 ---
 
