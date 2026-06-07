@@ -1,35 +1,35 @@
 {
   "issue_id": "q-31",
   "version": 1,
-  "updated_at": "2026-06-06T21:30:00Z",
+  "updated_at": "2026-06-07T15:15:00Z",
   "items": [
     {
       "id": "AC-01",
       "desc": "Auth 核心链路 E2E 测试：注册 → 登录 → 访问保护路由 → refresh → logout",
-      "status": "pending",
+      "status": "passed",
       "test_file": "tests/e2e/api/auth-flow.spec.ts"
     },
     {
       "id": "AC-02",
       "desc": "KB 生命周期 E2E 测试：创建 → 更新 → 删除 → 列表",
-      "status": "pending",
+      "status": "passed",
       "test_file": "tests/e2e/api/kb-lifecycle.spec.ts"
     },
     {
       "id": "AC-03",
       "desc": "文件上传 + Chat SSE E2E 测试：multipart 上传 → SSE 流式对话",
-      "status": "pending",
+      "status": "passed",
       "test_file": "tests/e2e/api/file-upload-chat.spec.ts"
     },
     {
       "id": "AC-04",
       "desc": "全部新增测试在 pnpm test:e2e:api 中通过",
-      "status": "pending"
+      "status": "passed"
     },
     {
       "id": "AC-05",
       "desc": "测试数据库零残留",
-      "status": "pending"
+      "status": "passed"
     }
   ]
 }

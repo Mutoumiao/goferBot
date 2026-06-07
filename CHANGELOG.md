@@ -4,6 +4,12 @@
 
 ---
 
+## [2026-06-07]
+
+### quality
+
+- [closed] q-31 HTTP API E2E 测试 — 新建 auth-flow.spec.ts（6 测试）、kb-lifecycle.spec.ts（5 测试）、file-upload-chat.spec.ts（4 测试），覆盖 Auth/KB/File+Chat 四条核心链路；E2EClient 封装 axios + 随机 X-Forwarded-For 绕过限流；db-cleanup.ts 使用 DELETE + session_replication_role 清理共享库避免死锁；vitest.e2e-api.config.ts 配置 fileParallelism=false 强制串行执行消除测试间状态冲突；修复 PrismaService DI 问题（database.module.ts useFactory）和 Fastify trustProxy 使限流绕过生效 — E2E API 测试 15/15 通过 [issue](docs/issues/q-31-http-e2e-api-tests/)
+
 ## [2026-06-06]
 
 ### quality

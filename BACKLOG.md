@@ -27,7 +27,7 @@ _暂无_
 - **q-31 HTTP API E2E 测试** — `docs/issues/q-31-http-e2e-api-tests/`
   - 建立 Auth/Chat/File/KB 四条核心链路的 HTTP E2E 测试
   - 使用 axios + 真实 NestJS 进程验证协议行为
-  - 状态：open，待实施
+  - 状态：closed，2026-06-07 完成
 
 ### 测试架构治理（2026-06-05 创建）
 

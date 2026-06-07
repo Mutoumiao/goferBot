@@ -24,6 +24,9 @@ export default defineConfig({
   test: {
     include: ['tests/e2e/api/**/*.spec.ts'],
     pool: 'forks',
+    maxForks: 1,
+    minForks: 1,
+    fileParallelism: false,
     testTimeout: 60000,
     hookTimeout: 30000,
     teardownTimeout: 30000,
