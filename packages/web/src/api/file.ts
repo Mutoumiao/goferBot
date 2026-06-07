@@ -1,0 +1,41 @@
+import { alovaInstance } from '@/utils/server'
+
+// ---- 文件夹 ----
+
+/** 获取文件夹列表 */
+export const getFolders = (kbId: string, parentId?: string | null) =>
+  alovaInstance.Get(`/knowledge-bases/${kbId}/folders`, {
+    params: { parentId: parentId ?? '' },
+  })
+
+/** 创建文件夹 */
+export const createFolder = (kbId: string, name: string, parentId?: string | null) =>
+  alovaInstance.Post(`/knowledge-bases/${kbId}/folders`, { name, parentId })
+
+/** 重命名文件夹 */
+export const renameFolder = (kbId: string, folderId: string, name: string) =>
+  alovaInstance.Patch(`/knowledge-bases/${kbId}/folders/${folderId}`, { name })
+
+/** 删除文件夹 */
+export const deleteFolder = (kbId: string, folderId: string) =>
+  alovaInstance.Delete(`/knowledge-bases/${kbId}/folders/${folderId}`)
+
+// ---- 文档 ----
+
+/** 获取文档列表 */
+export const getDocuments = (kbId: string, folderId?: string | null) =>
+  alovaInstance.Get(`/knowledge-bases/${kbId}/documents`, {
+    params: { folderId: folderId ?? '' },
+  })
+
+/** 删除文档 */
+export const deleteDocument = (kbId: string, docId: string) =>
+  alovaInstance.Delete(`/knowledge-bases/${kbId}/documents/${docId}`)
+
+/** 重命名文档 */
+export const renameDocument = (kbId: string, docId: string, name: string) =>
+  alovaInstance.Patch(`/knowledge-bases/${kbId}/documents/${docId}`, { name })
+
+/** 移动文档到指定文件夹 */
+export const moveDocument = (kbId: string, docId: string, targetFolderId: string | null) =>
+  alovaInstance.Patch(`/knowledge-bases/${kbId}/documents/${docId}`, { folderId: targetFolderId })

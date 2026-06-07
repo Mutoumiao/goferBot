@@ -1,4 +1,14 @@
 import { create } from 'zustand'
+import {
+  getFolders,
+  getDocuments,
+  deleteDocument as apiDeleteDocument,
+  renameDocument as apiRenameDocument,
+  moveDocument as apiMoveDocument,
+  createFolder as apiCreateFolder,
+  renameFolder as apiRenameFolder,
+  deleteFolder as apiDeleteFolder,
+} from '@/api/file'
 
 // ---- 类型定义 ----
 export interface Folder {
@@ -178,15 +188,13 @@ export const useFileStore = create<FileState>((set, get) => {
     loadItems: async (kbId, folderId = null) => {
       set({ currentKbId: kbId, currentFolderId: folderId, isLoading: true, error: null })
       try {
-        const [fRes, dRes] = await Promise.all([
-          fetch(`/api/knowledge-bases/${kbId}/folders?parentId=${folderId ?? ''}`),
-          fetch(`/api/knowledge-bases/${kbId}/documents?folderId=${folderId ?? ''}`),
+        const [folders, documents] = await Promise.all([
+          getFolders(kbId, folderId).send(),
+          getDocuments(kbId, folderId).send(),
         ])
-        const fJson = fRes.ok ? await fRes.json() : { data: [] }
-        const dJson = dRes.ok ? await dRes.json() : { data: [] }
         set({
-          folders: (fJson.data ?? fJson) ?? [],
-          documents: (dJson.data ?? dJson) ?? [],
+          folders: (folders as Folder[]) ?? [],
+          documents: (documents as DocumentItem[]) ?? [],
           isLoading: false,
         })
       } catch (e) {
@@ -202,7 +210,7 @@ export const useFileStore = create<FileState>((set, get) => {
       if (!currentKbId) return
       set({ isLoading: true, error: null })
       try {
-        await fetch(`/api/knowledge-bases/${currentKbId}/documents/${docId}`, { method: 'DELETE' })
+        await apiDeleteDocument(currentKbId, docId).send()
         set({
           documents: get().documents.filter((d) => d.id !== docId),
           isLoading: false,
@@ -220,15 +228,9 @@ export const useFileStore = create<FileState>((set, get) => {
       if (!currentKbId) return
       set({ isLoading: true, error: null })
       try {
-        const res = await fetch(`/api/knowledge-bases/${currentKbId}/documents/${docId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
-        })
-        const json = await res.json()
-        const updated = json.data ?? json
+        const updated = await apiRenameDocument(currentKbId, docId, name).send()
         set({
-          documents: get().documents.map((d) => (d.id === docId ? updated : d)),
+          documents: get().documents.map((d) => (d.id === docId ? (updated as DocumentItem) : d)),
           isLoading: false,
         })
       } catch (e) {
@@ -244,11 +246,7 @@ export const useFileStore = create<FileState>((set, get) => {
       if (!currentKbId) return
       set({ isLoading: true, error: null })
       try {
-        await fetch(`/api/knowledge-bases/${currentKbId}/documents/${docId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folderId: targetFolderId }),
-        })
+        await apiMoveDocument(currentKbId, docId, targetFolderId).send()
         set({
           documents: get().documents.filter((d) => d.id !== docId),
           isLoading: false,
@@ -262,29 +260,17 @@ export const useFileStore = create<FileState>((set, get) => {
     },
 
     createFolder: async (kbId, name, parentId = null) => {
-      const res = await fetch(`/api/knowledge-bases/${kbId}/folders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, parentId }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      return (json.data ?? json) as Folder
+      const updated = await apiCreateFolder(kbId, name, parentId).send()
+      return updated as Folder
     },
 
     renameFolder: async (kbId, folderId, name) => {
-      const res = await fetch(`/api/knowledge-bases/${kbId}/folders/${folderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      return (json.data ?? json) as Folder
+      const updated = await apiRenameFolder(kbId, folderId, name).send()
+      return updated as Folder
     },
 
     deleteFolder: async (kbId, folderId) => {
-      await fetch(`/api/knowledge-bases/${kbId}/folders/${folderId}`, { method: 'DELETE' })
+      await apiDeleteFolder(kbId, folderId).send()
     },
 
     clearError: () => set({ error: null }),

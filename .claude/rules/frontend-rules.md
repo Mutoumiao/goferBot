@@ -24,7 +24,7 @@ globs:
 ## 首次阅读
 
 - **Vue 项目**：阅读 `docs/guide/frontend/README.md`（Vue 版本）
-- **React 项目**：阅读 `docs/reference/` 下的迁移参考文档
+- **React 项目**：阅读 `packages/web/README.md`（项目开发指引）和 `.claude/rules/web-package-rules.md`（稳定规则）
 
 ## 核心约束（按项目）
 
@@ -32,10 +32,11 @@ globs:
 
 - 框架：TanStack Start + React + TypeScript + Vite
 - 状态管理：Zustand
+- HTTP 客户端：alova（`useSSE` / `useRequest`），禁止原生 `fetch`
 - UI 组件：shadcn/ui + Tailwind CSS v4
 - Class 管理：`cn()` + `class-variance-authority`
 - 图标：`lucide-react`
-- 数据获取：TanStack Query（服务端状态）+ Zustand（客户端状态）
+- 数据获取：alova Method → Zustand store → Component（单向流。详见 `.claude/rules/web-package-rules.md`）
 
 ### Vue 项目（packages/webui）
 
@@ -52,6 +53,8 @@ globs:
 
 | 场景 | 文档 |
 |------|------|
+| **开发前必读** | `packages/web/README.md` |
+| **强制规则** | `.claude/rules/web-package-rules.md` |
 | TanStack Start 框架 | `docs/reference/tanstack-start-guide.md` |
 | Vue → React 迁移 | `docs/reference/vue-to-react-patterns.md` |
 | shadcn/ui 组件 | `docs/reference/shadcn-ui-patterns.md` |

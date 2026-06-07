@@ -1,6 +1,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useFileStore } from '@/stores/file'
 
+// Mock @/api/file
+const mockApiSend = vi.fn()
+const mockApi = (returnValue?: unknown) => ({
+  send: mockApiSend.mockResolvedValue(returnValue),
+})
+
+vi.mock('@/api/file', () => ({
+  getFolders: vi.fn(() => mockApi([])),
+  getDocuments: vi.fn(() => mockApi([])),
+  deleteDocument: vi.fn(() => mockApi()),
+  renameDocument: vi.fn(() => mockApi()),
+  moveDocument: vi.fn(() => mockApi()),
+  createFolder: vi.fn(() => mockApi()),
+  renameFolder: vi.fn(() => mockApi()),
+  deleteFolder: vi.fn(() => mockApi()),
+}))
+
+import * as fileApi from '@/api/file'
+
 // Helper to create test task data
 const makeTask = (overrides: Record<string, unknown> = {}) => ({
   fileName: 'test.pdf',
@@ -10,9 +29,29 @@ const makeTask = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
+// Helper to reset API mocks
+function resetApiMocks() {
+  const defaults: Record<string, unknown> = {
+    getFolders: [],
+    getDocuments: [],
+    deleteDocument: undefined,
+    renameDocument: undefined,
+    moveDocument: undefined,
+    createFolder: undefined,
+    renameFolder: undefined,
+    deleteFolder: undefined,
+  }
+  for (const [key, val] of Object.entries(defaults)) {
+    const fn = (fileApi as Record<string, unknown>)[key] as ReturnType<typeof vi.fn>
+    if (fn?.mockReturnValue) {
+      fn.mockReturnValue({ send: vi.fn().mockResolvedValue(val) })
+    }
+  }
+}
+
 describe('FileStore — 类型 + 队列基础（任务 1-2）', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
     localStorage.clear()
     useFileStore.setState(useFileStore.getInitialState())
   })
@@ -57,14 +96,13 @@ describe('FileStore — 类型 + 队列基础（任务 1-2）', () => {
   it('AC-02: addTask 不自动启动上传（processQueue 手动调用）', () => {
     useFileStore.getState().addTask(makeTask())
     const tasks = useFileStore.getState().uploadTasks
-    // 未调用 processQueue，任务应保持 queued
     expect(tasks[0].status).toBe('queued')
   })
 })
 
 describe('FileStore — 上传状态管理（任务 3）', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
     localStorage.clear()
     useFileStore.setState(useFileStore.getInitialState())
   })
@@ -72,7 +110,7 @@ describe('FileStore — 上传状态管理（任务 3）', () => {
   it('AC-03: updateProgress 更新任务进度', () => {
     const store = useFileStore.getState()
     const taskId = store.addTask(makeTask())
-    store.processQueue() // start uploading
+    store.processQueue()
 
     store.updateProgress(taskId, 50)
     expect(useFileStore.getState().uploadTasks[0].progress).toBe(50)
@@ -100,7 +138,6 @@ describe('FileStore — 上传状态管理（任务 3）', () => {
     store.processQueue()
 
     store.markComplete(t1)
-    // t2 应被自动提升为 uploading
     const tasks = useFileStore.getState().uploadTasks
     const t2Task = tasks.find((t) => t.id === t2)
     expect(t2Task?.status).toBe('uploading')
@@ -117,7 +154,6 @@ describe('FileStore — 上传状态管理（任务 3）', () => {
     const t1Task = tasks.find((t) => t.id === t1)
     expect(t1Task?.status).toBe('failed')
     expect(t1Task?.error).toBe('网络错误')
-    // t2 应被自动提升
     const t2Task = tasks.find((t) => t.id === t2)
     expect(t2Task?.status).toBe('uploading')
   })
@@ -133,7 +169,7 @@ describe('FileStore — 上传状态管理（任务 3）', () => {
 
 describe('FileStore — 并发控制（任务 4）', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
     localStorage.clear()
     useFileStore.setState(useFileStore.getInitialState())
   })
@@ -165,7 +201,7 @@ describe('FileStore — 并发控制（任务 4）', () => {
     const store = useFileStore.getState()
     for (let i = 0; i < 3; i++) {
       const tid = store.addTask(makeTask({ fileName: `f${i}.pdf` }))
-      store.updateProgress(tid, 0) // 不影响 status
+      store.updateProgress(tid, 0)
     }
     store.processQueue()
     store.addTask(makeTask({ fileName: 'f4.pdf' }))
@@ -201,7 +237,7 @@ describe('FileStore — 并发控制（任务 4）', () => {
 
 describe('FileStore — 队列清理（任务 5）', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
     localStorage.clear()
     useFileStore.setState(useFileStore.getInitialState())
   })
@@ -224,14 +260,12 @@ describe('FileStore — 队列清理（任务 5）', () => {
 
     store.processQueue()
     store.markComplete(t1)
-    // t2 should be uploading now
     const t3 = store.addTask(makeTask({ fileName: 'c.pdf' }))
     store.processQueue()
     store.markFailed(t3, 'err')
 
     store.clearCompleted()
     const tasks = useFileStore.getState().uploadTasks
-    // Only uploading tasks remain
     expect(tasks.every((t) => t.status === 'uploading')).toBe(true)
     expect(tasks).toHaveLength(1)
   })
@@ -243,18 +277,21 @@ describe('FileStore — 队列清理（任务 5）', () => {
 
 describe('FileStore — 文件浏览（任务 6-8）', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
     localStorage.clear()
     useFileStore.setState(useFileStore.getInitialState())
+    resetApiMocks()
   })
 
   describe('loadItems', () => {
     it('AC-06: loadItems 成功 → folders + documents 更新', async () => {
       const folders = [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Docs', createdAt: '', updatedAt: '' }]
       const documents = [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'a.pdf', ext: 'pdf', mimeType: 'application/pdf', size: 100, status: 'ready' as const, createdAt: '', updatedAt: '' }]
-      const fetchSpy = vi.spyOn(globalThis, 'fetch')
-        .mockResolvedValueOnce(new Response(JSON.stringify({ data: folders }), { status: 200 }))
-        .mockResolvedValueOnce(new Response(JSON.stringify({ data: documents }), { status: 200 }))
+
+      const mockGetFolders = fileApi.getFolders as ReturnType<typeof vi.fn>
+      const mockGetDocs = fileApi.getDocuments as ReturnType<typeof vi.fn>
+      mockGetFolders.mockReturnValue({ send: vi.fn().mockResolvedValue(folders) })
+      mockGetDocs.mockReturnValue({ send: vi.fn().mockResolvedValue(documents) })
 
       await useFileStore.getState().loadItems('kb1')
 
@@ -263,13 +300,13 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
       expect(state.documents).toHaveLength(1)
       expect(state.currentKbId).toBe('kb1')
       expect(state.isLoading).toBe(false)
-      fetchSpy.mockRestore()
     })
 
     it('AC-06: loadItems 空目录 → folders + documents 均为 []', async () => {
-      vi.spyOn(globalThis, 'fetch')
-        .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
-        .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
+      const mockGetFolders = fileApi.getFolders as ReturnType<typeof vi.fn>
+      const mockGetDocs = fileApi.getDocuments as ReturnType<typeof vi.fn>
+      mockGetFolders.mockReturnValue({ send: vi.fn().mockResolvedValue([]) })
+      mockGetDocs.mockReturnValue({ send: vi.fn().mockResolvedValue([]) })
 
       await useFileStore.getState().loadItems('kb1', null)
 
@@ -279,7 +316,8 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
     })
 
     it('AC-06: loadItems 失败 → error 设置，isLoading=false', async () => {
-      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network error'))
+      const mockGetFolders = fileApi.getFolders as ReturnType<typeof vi.fn>
+      mockGetFolders.mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('Network error')) })
 
       await useFileStore.getState().loadItems('kb1')
 
@@ -293,7 +331,9 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
     it('AC-07: deleteDocument 成功 → documents 列表移除', async () => {
       const doc = { id: 'd1', kbId: 'kb1', folderId: null, name: 'a.pdf', ext: 'pdf', mimeType: 'application/pdf', size: 100, status: 'ready' as const, createdAt: '', updatedAt: '' }
       useFileStore.setState({ documents: [doc], currentKbId: 'kb1' })
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 204 }))
+
+      const mockDeleteDoc = fileApi.deleteDocument as ReturnType<typeof vi.fn>
+      mockDeleteDoc.mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) })
 
       await useFileStore.getState().deleteDocument('d1')
       expect(useFileStore.getState().documents).toHaveLength(0)
@@ -307,7 +347,9 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
       const doc = { id: 'd1', kbId: 'kb1', folderId: null, name: 'old.pdf', ext: 'pdf', mimeType: 'application/pdf', size: 100, status: 'ready' as const, createdAt: '', updatedAt: '' }
       useFileStore.setState({ documents: [doc], currentKbId: 'kb1' })
       const updated = { ...doc, name: 'new.pdf' }
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ data: updated }), { status: 200 }))
+
+      const mockRenameDoc = fileApi.renameDocument as ReturnType<typeof vi.fn>
+      mockRenameDoc.mockReturnValue({ send: vi.fn().mockResolvedValue(updated) })
 
       await useFileStore.getState().renameDocument('d1', 'new.pdf')
       expect(useFileStore.getState().documents[0].name).toBe('new.pdf')
@@ -316,7 +358,9 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
     it('AC-07: moveDocument 成功 → 文档从当前列表移除', async () => {
       const doc = { id: 'd1', kbId: 'kb1', folderId: null, name: 'a.pdf', ext: 'pdf', mimeType: 'application/pdf', size: 100, status: 'ready' as const, createdAt: '', updatedAt: '' }
       useFileStore.setState({ documents: [doc], currentKbId: 'kb1' })
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ data: {} }), { status: 200 }))
+
+      const mockMoveDoc = fileApi.moveDocument as ReturnType<typeof vi.fn>
+      mockMoveDoc.mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) })
 
       await useFileStore.getState().moveDocument('d1', 'folder-2')
       expect(useFileStore.getState().documents).toHaveLength(0)
@@ -326,7 +370,9 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
   describe('文件夹 CRUD', () => {
     it('AC-08: createFolder 返回创建的 Folder 对象', async () => {
       const newFolder = { id: 'nf1', kbId: 'kb1', parentId: null, name: 'NewFolder', createdAt: '', updatedAt: '' }
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ data: newFolder }), { status: 201 }))
+
+      const mockCreateFolder = fileApi.createFolder as ReturnType<typeof vi.fn>
+      mockCreateFolder.mockReturnValue({ send: vi.fn().mockResolvedValue(newFolder) })
 
       const result = await useFileStore.getState().createFolder('kb1', 'NewFolder')
       expect(result).toEqual(newFolder)
@@ -334,14 +380,17 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
 
     it('AC-08: renameFolder 返回更新后的 Folder', async () => {
       const updated = { id: 'f1', kbId: 'kb1', parentId: null, name: 'Renamed', createdAt: '', updatedAt: '' }
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ data: updated }), { status: 200 }))
+
+      const mockRenameFolder = fileApi.renameFolder as ReturnType<typeof vi.fn>
+      mockRenameFolder.mockReturnValue({ send: vi.fn().mockResolvedValue(updated) })
 
       const result = await useFileStore.getState().renameFolder('kb1', 'f1', 'Renamed')
       expect(result).toEqual(updated)
     })
 
     it('AC-08: deleteFolder 完成后无错误', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 204 }))
+      const mockDeleteFolder = fileApi.deleteFolder as ReturnType<typeof vi.fn>
+      mockDeleteFolder.mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) })
 
       await expect(useFileStore.getState().deleteFolder('kb1', 'f1')).resolves.toBeUndefined()
     })
@@ -350,7 +399,7 @@ describe('FileStore — 文件浏览（任务 6-8）', () => {
 
 describe('FileStore — 派生方法（任务 9）', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
     localStorage.clear()
     useFileStore.setState(useFileStore.getInitialState())
   })

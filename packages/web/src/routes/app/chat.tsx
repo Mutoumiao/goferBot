@@ -3,6 +3,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useRequest, useSSE } from 'alova/client'
 import { getHistory, streamChat } from '@/api/chat'
 import { useChatStore } from '@/stores/chat'
+import { useSettingsStore } from '@/stores/settings'
+import { getLLMConfig, type LLMConfig } from '@/utils/llm-config'
+import { parseSSEChunk } from '@/utils/sse-parser'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { MessageBubble } from '@/components/chat/MessageBubble'
 import { EditorPlaceholder } from '@/components/chat/EditorPlaceholder'
@@ -11,8 +14,8 @@ export const Route = createFileRoute('/app/chat')({
   component: ChatViewPage,
 })
 
-/** 默认 LLM 配置（硬编码临时值，f-48 完成后替换为 settingsStore） */
-const DEFAULT_LLM_CONFIG = {
+/** LLM 配置回退值 — settingsStore 未配置时使用 */
+const FALLBACK_LLM_CONFIG: LLMConfig = {
   provider: 'openai',
   model: 'gpt-4o',
   baseUrl: 'https://api.openai.com/v1',
@@ -34,6 +37,10 @@ export function ChatViewPage() {
     flushStreamContent,
     createSession,
   } = useChatStore()
+
+  // LLM 配置（从 settingsStore 读取，未配置时回退默认值）
+  const settingsConfig = useSettingsStore((s) => s.config)
+  const llmConfig = getLLMConfig(settingsConfig) ?? FALLBACK_LLM_CONFIG
 
   // 错误状态
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -62,7 +69,7 @@ export function ChatViewPage() {
 
   // SSE hook
   const { send: sseSend, close: sseClose, onMessage, onError } = useSSE(
-    (message: string, sessionId: string, config: typeof DEFAULT_LLM_CONFIG) =>
+    (message: string, sessionId: string, config: LLMConfig) =>
       streamChat({
         message,
         sessionId,
@@ -78,21 +85,19 @@ export function ChatViewPage() {
 
   // 绑定 SSE 消息处理
   onMessage((event: { data: string }) => {
-    try {
-      const parsed = JSON.parse(event.data) as { chunk: string; done: boolean; error?: string }
-      if (parsed.error) {
-        setErrorMessage(parsed.error)
-        setIsStreaming(false)
-        return
-      }
-      if (parsed.done) {
-        flushStreamContent()
-        setIsStreaming(false)
-      } else {
-        appendStreamContent(parsed.chunk)
-      }
-    } catch {
-      // 忽略无法解析的 chunk
+    const parsed = parseSSEChunk(event)
+    if (!parsed) return
+
+    if (parsed.error) {
+      setErrorMessage(parsed.error)
+      setIsStreaming(false)
+      return
+    }
+    if (parsed.done) {
+      flushStreamContent()
+      setIsStreaming(false)
+    } else {
+      appendStreamContent(parsed.chunk)
     }
   })
 
@@ -137,9 +142,9 @@ export function ChatViewPage() {
       }
 
       // 发起 SSE 请求
-      sseSend(content, sessionId ?? '', DEFAULT_LLM_CONFIG)
+      sseSend(content, sessionId ?? '', llmConfig)
     },
-    [activeSession, appendMessage, setIsStreaming, sseSend, createSession],
+    [activeSession, appendMessage, setIsStreaming, sseSend, createSession, llmConfig],
   )
 
   const handleStop = useCallback(() => {
