@@ -6,27 +6,45 @@
 
 _暂无_
 
-## ✅ 已完成 — 前端迁移：Vue 3 → React（v3-frontend-migration）
+## 待启动 — 前端迁移：阶段二补全（P0）
 
-> PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md)
-> 完成日期：2026-06-07 | 状态：**全部 8 个 issue 已实现并构建通过**
+> PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.6
+> 当前迁移率 ~30%（3 closed / 15 open）
 
-| Issue | 优先级 | 状态 | 摘要 |
-|-------|--------|------|------|
-| [i-32](docs/issues/i-32-web-infra-setup/) | p0 | ✅ done | packages/web 基建搭建（TanStack Start + SPA + Vite + Tailwind v4 + Pencil tokens） |
-| [f-33](docs/issues/f-33-auth-flow-migration/) | p0 | ✅ done | 鉴权流程（alova 实例 + Token 刷新队列 + packages/data/ + Zustand auth Store + login/register + beforeLoad 路由守卫） |
-| [f-34](docs/issues/f-34-app-shell-overlay/) | p0 | ✅ done | App Shell（Sidebar + TabBar） + Overlay 系统（React Portal + Zustand Store + openDialog/openContextMenu 命令式 API） |
-| [f-35](docs/issues/f-35-chatview-migration/) | p0 | ✅ done | ChatView 页面（MessageBubble + react-markdown + ChatInput + EditorPlaceholder + chat Store） |
-| [f-36](docs/issues/f-36-kb-page-migration/) | p1 | ✅ done | 知识库页面（kb schemas + api/kb.ts + kb Store + KbListPage） |
-| [f-37](docs/issues/f-37-aux-pages-migration/) | p1 | ✅ done | History/Settings/RecycleBin 页面（4 routes + auth logout） |
-| [f-38](docs/issues/f-38-ui-library-finalize/) | p2 | ✅ done | Tailwind v4 对齐 + cn() 8 files + packages/data/ 3 domains（auth/chat/kb schemas） |
-| [f-39](docs/issues/f-39-test-cleanup/) | p2 | ✅ done | 单元测试 13 passed（auth-store + cn-utility + overlay-store） + 构建通过 |
+| Issue | 优先级 | 阻塞于 | 摘要 |
+|-------|--------|--------|------|
+| [f-40](docs/issues/f-40-session-store/) | p0 | f-33 | Pinia session.ts → Zustand chat store 扩展（会话列表/CRUD） |
+| [f-41](docs/issues/f-41-settings-store/) | p0 | f-33 | Pinia settings.ts → Zustand（配置持久化 + dirty 追踪） |
+| [f-42](docs/issues/f-42-file-store/) | p0 | f-33 | Pinia file.ts → Zustand（上传队列 + 并发控制） |
+| [f-43](docs/issues/f-43-tabs-store/) | p0 | f-33 | Pinia tabs.ts → Zustand（标签页管理 + persist） |
+
+## 待启动 — 前端迁移：阶段三深化（P1）
+
+> PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.7
+
+| Issue | 优先级 | 阻塞于 | 摘要 |
+|-------|--------|--------|------|
+| [f-44](docs/issues/f-44-chat-sse-flow/) | p1 | f-40 | ChatView SSE 流式接收（useSSE + 重连 + 打字机动画） |
+| [f-45](docs/issues/f-45-chat-session-mgmt/) | p1 | f-40, f-44 | Chat 会话管理（新建/切换/删除/重命名 + KbSelector） |
+| [f-46](docs/issues/f-46-kb-file-upload/) | p1 | f-42 | KB 文件上传（拖拽 + FileManager + FileGridItem + BreadcrumbNav） |
+| [f-47](docs/issues/f-47-kb-crud/) | p1 | f-46 | KB CRUD 完整交互（创建/编辑/删除 Dialog + 详情页） |
+| [f-48](docs/issues/f-48-settings-form/) | p1 | f-41 | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
+| [f-49](docs/issues/f-49-blocknote-editor/) | p1 | f-44 | BlockNote 富文本编辑器替换纯文本输入 |
+
+## 待启动 — 前端迁移：阶段四+五（P2）
+
+> PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.4-§5.5
+
+| Issue | 优先级 | 阻塞于 | 摘要 |
+|-------|--------|--------|------|
+| [f-38](docs/issues/f-38-ui-library-finalize/) | p2 | P0+P1 完成后 | 84 个 shadcn-vue → shadcn/ui 组件替换 + 样式对齐 |
+| [f-39](docs/issues/f-39-test-cleanup/) | p2 | P0+P1 完成后 | 测试迁移（Vue→React）+ E2E 适配 + 删除 packages/webui |
 
 ## 待启动 — 其他
 
-- **f-XX Session 列表分页 UI** — 后端 b-14 已完成 Session 分页 API（`GET /api/sessions?page=&limit=`），当前前端仍一次性全量加载。需实现：分页组件、滚动加载或翻页、空状态处理。当前限制：会话超过 50 条时仅显示前 50 条，无翻页能力。（注：此功能可能在 f-37 中附带解决）
+- **Session 列表分页 UI** — 后端 b-14 已完成 Session 分页 API，前端需实现分页组件/滚动加载。当前限制：会话超过 50 条时仅显示前 50 条。
 
-## 技术债务（待处理）
+## 技术债务
 
 ### RAG 检索链路
 
@@ -37,21 +55,18 @@ _暂无_
 
 - **RAG SDK 接口与实现不匹配** — `packages/rag-sdk/src/vector-store.ts`
   - 根因：`VectorSearchResult` 只定义 `chunkId: string`，但 `HybridRetriever.retrieve()` 需要完整 `chunk` 对象（含 content）。
-  - 建议：评估将 `VectorSearchResult` 扩展为包含完整 chunk 信息，或明确拆分"轻量检索"与"详情检索"两个接口。
+  - 建议：将 `VectorSearchResult` 扩展为包含完整 chunk 信息，或拆分"轻量检索"与"详情检索"两个接口。
 
 ### 架构/设计
 
 - **PrismaService 代理模式可维护性**：手动代理每个模型方法，新增模型时需同步维护。未来可考虑 `Proxy` 自动代理或生成器脚本。
-
 - **packages/data/ 后端 DTO 迁移边界未定义**：PRD §6.6 提到"存量后端暂时不动已有 DTO，新接口强制走共享包"，但未设定后端 DTO 迁移的触发条件。
-
-- **BlockNote 完整集成时机**：f-35 仅放 `EditorPlaceholder` 占位，BlockNote 完整集成需单独 issue。
+- **BlockNote 完整集成时机**：当前 `EditorPlaceholder` 占位，完整集成见 [f-49](docs/issues/f-49-blocknote-editor/)。
 
 ### 前端性能
 
 - **Session 列表无分页，存在性能隐患** — `packages/webui/src/stores/session.ts:47`
   - 根因：前端调用 `GET /api/sessions` 时不传 `page`/`limit` 参数，依赖后端默认行为。
-  - 关联待办：见上方"待启动 — 其他"中的 f-XX Session 列表分页 UI。
 
 ### 测试/E2E
 
