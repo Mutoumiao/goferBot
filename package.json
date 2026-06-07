@@ -6,7 +6,7 @@
   "scripts": {
     "predev": "node scripts/kill-ports.cjs",
     "dev": "pnpm -w run predev && concurrently -k \"pnpm dev:server\" \"pnpm dev:web\" --names server,web --prefix-colors cyan,green",
-    "dev:web": "pnpm --filter @goferbot/webui dev",
+    "dev:web": "pnpm --filter @goferbot/web dev",
     "dev:server": "pnpm --filter @goferbot/server dev",
     "build": "pnpm -r build",
     "test": "vitest",
@@ -69,7 +69,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3",
-      "bcrypt"
+      "bcrypt",
+      "esbuild",
+      "lightningcss"
     ]
   }
 }

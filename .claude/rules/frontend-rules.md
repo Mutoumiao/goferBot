@@ -3,8 +3,8 @@ name: frontend-rules
 description: 前端编码规范导航与核心约束
 globs:
   - "packages/webui/**"
-  - "apps/web/**"
-  - "apps/admin/**"
+  - "packages/web/**"
+  - "packages/admin/**"
   - "tests/unit/webui/**"
   - "tests/unit/web/**"
 ---
@@ -18,8 +18,8 @@ globs:
 | 目录 | 技术栈 | 状态 |
 |------|--------|------|
 | `packages/webui/` | Vue 3 + Vite + Pinia + shadcn-vue | 维护中，逐步迁移 |
-| `apps/web/` | TanStack Start + React + Zustand + shadcn/ui | 新开发（推荐） |
-| `apps/admin/` | React + Ant Design Pro | 未来建设 |
+| `packages/web/` | TanStack Start + React + Zustand + shadcn/ui | 新开发（推荐） |
+| `packages/admin/` | React + Ant Design Pro | 未来建设 |
 
 ## 首次阅读
 
@@ -28,7 +28,7 @@ globs:
 
 ## 核心约束（按项目）
 
-### React 项目（apps/web）
+### React 项目（packages/web）
 
 - 框架：TanStack Start + React + TypeScript + Vite
 - 状态管理：Zustand
