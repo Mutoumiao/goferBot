@@ -14,7 +14,7 @@
 
 ### 2.1 shadcn/ui 组件替换
 
-1. 扫描 `apps/web/app/components/ui/` 目录，列出所有已使用的 shadcn 组件
+1. 扫描 `packages/web/app/components/ui/` 目录，列出所有已使用的 shadcn 组件
 2. 对比现有 `packages/webui/src/components/ui/` Vue 版本
 3. 用 `npx shadcn@latest add <component>` 安装缺失的 React 版组件
 4. 替换所有 import 路径（`@/components/ui/button` 等）

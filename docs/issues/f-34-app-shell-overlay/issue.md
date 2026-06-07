@@ -1,6 +1,6 @@
 ---
 id: f-34
-status: open
+status: closed
 track: frontend
 priority: p0
 summary: 迁移 App Shell（AuthenticatedLayout + Sidebar + TabBar）+ Overlay 系统（React Portal + Zustand、命令式 openDialog/openContextMenu），建立应用框架骨架和弹窗基础设施
@@ -15,7 +15,7 @@ prd_section: §5.2 阶段二 + §6.3 Overlay 系统
 
 ## 要构建的内容
 
-在鉴权链路就绪后，搭建 apps/web 的应用框架骨架：创建 `__root.tsx` 全局布局、`/app` 布局路由（AuthenticatedLayout — Sidebar + TabBar + `<Outlet />`）、迁移 Overlay 系统（React Portal + Zustand Store 替代 Vue Teleport + Provide/Inject，保持命令式 `openDialog()`/`openContextMenu()` 调用体验）。完成后用户登录后可看到完整的 App Shell，弹窗和右键菜单基础设施可用。
+在鉴权链路就绪后，搭建 packages/web 的应用框架骨架：创建 `__root.tsx` 全局布局、`/app` 布局路由（AuthenticatedLayout — Sidebar + TabBar + `<Outlet />`）、迁移 Overlay 系统（React Portal + Zustand Store 替代 Vue Teleport + Provide/Inject，保持命令式 `openDialog()`/`openContextMenu()` 调用体验）。完成后用户登录后可看到完整的 App Shell，弹窗和右键菜单基础设施可用。
 
 ## 规格引用
 

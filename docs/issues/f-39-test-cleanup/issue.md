@@ -51,5 +51,5 @@ prd_section: §5.5 阶段五：测试与打磨 + §6.7 alova 测试策略
 
 - 不新增后端测试
 - 不修改 Playwright 测试框架配置
-- 不删除 `apps/admin/`（预留目录）
+- 不删除 `packages/admin/`（预留目录）
 - 不修改 CI/CD 配置

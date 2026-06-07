@@ -9,10 +9,10 @@
 
 ### 项目初始化
 
-- [ ] 创建 `apps/web` 目录
+- [ ] 创建 `packages/web` 目录
 - [ ] 运行 `npm create @tanstack/start@latest --tailwind --add-ons shadcn`
 - [ ] 配置 `vite.config.ts`（代理、别名、Tailwind）
-- [ ] 更新 `pnpm-workspace.yaml` 包含 `apps/*`
+- [ ] 更新 `pnpm-workspace.yaml`（`packages/*` 已覆盖全部项目）
 - [ ] 安装额外依赖（zustand、@tanstack/react-query、lucide-react）
 - [ ] 配置路径别名 `@/` 指向 `app/`
 - [ ] 验证 `pnpm dev:web` 正常启动

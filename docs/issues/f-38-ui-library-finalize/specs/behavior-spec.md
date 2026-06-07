@@ -8,8 +8,8 @@
 
 | 检查项 | 验证方式 |
 |--------|----------|
-| shadcn 组件完整 | `ls apps/web/app/components/ui/` 列出所有组件，确认无缺失 |
-| `:deep()` 残留 | `rg ':deep\(' apps/web --include='*.tsx' --include='*.css'` 无结果 |
+| shadcn 组件完整 | `ls packages/web/app/components/ui/` 列出所有组件，确认无缺失 |
+| `:deep()` 残留 | `rg ':deep\(' packages/web --include='*.tsx' --include='*.css'` 无结果 |
 | Tailwind 变量 | 人工对比 `globals.css` 与 `packages/webui/src/styles/` |
 | schema 完整 | `ls packages/data/src/schemas/` 包含 auth/kb/chat/common |
 | 视觉走查 | 手动访问 /login、/app/chat、/app/kb、/app/settings |

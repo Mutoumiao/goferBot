@@ -1,13 +1,13 @@
 {
   "issue_id": "i-32",
-  "version": 1,
-  "updated_at": "2026-06-07T00:00:00Z",
+  "version": 2,
+  "updated_at": "2026-06-07T19:30:00Z",
   "items": [
-    {"id": "AC-01", "desc": "apps/web/ 目录结构符合 TanStack Start 标准骨架", "status": "pending", "manual": true},
-    {"id": "AC-02", "desc": "vite.config.ts 正确配置路径别名、API 代理、Tailwind v4", "status": "pending", "manual": true},
-    {"id": "AC-03", "desc": "pnpm-workspace.yaml 注册 apps/*", "status": "pending", "manual": true},
-    {"id": "AC-04", "desc": "依赖安装完整（Zustand、alova、lucide-react）", "status": "pending", "manual": true},
-    {"id": "AC-05", "desc": "pnpm dev:web 启动无报错，首页可访问", "status": "pending", "manual": true},
-    {"id": "AC-06", "desc": "pnpm build 产物无错误", "status": "pending", "manual": true}
+    {"id": "AC-01", "desc": "packages/web/ 目录结构符合 TanStack Start 标准骨架（src/routes/__root.tsx, router.tsx, globals.css）", "status": "completed", "manual": true},
+    {"id": "AC-02", "desc": "vite.config.ts 正确配置路径别名（@/ → ./src）、API 代理（/api → :3000）、Tailwind v4 plugin、SPA 模式", "status": "completed", "manual": true},
+    {"id": "AC-03", "desc": "pnpm-workspace.yaml 已包含 packages/*（web 目录位于 packages/web/）", "status": "completed", "manual": true},
+    {"id": "AC-04", "desc": "依赖安装完整（Zustand、alova、lucide-react、class-variance-authority、clsx、tailwind-merge）", "status": "completed", "manual": true},
+    {"id": "AC-05", "desc": "pnpm --filter @goferbot/web dev 启动无报错，首页返回 HTTP 200（SPA 模式，zh-CN + GoferBot 标题）", "status": "completed", "manual": true},
+    {"id": "AC-06", "desc": "pnpm --filter @goferbot/web build 产物无错误（client + SSR + Nitro 三步全部通过，SPA 预渲染 / 成功）", "status": "completed", "manual": true}
   ]
 }

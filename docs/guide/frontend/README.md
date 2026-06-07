@@ -11,14 +11,14 @@
 | 目录 | 技术栈 | 状态 | 适用场景 |
 |------|--------|------|----------|
 | `packages/webui/` | Vue 3 + Vite + Pinia + shadcn-vue | 维护中，逐步迁移 | 现有功能维护 |
-| `apps/web/` | TanStack Start + React + Zustand + shadcn/ui | 新开发（推荐） | 新功能开发 |
-| `apps/admin/` | React + Ant Design Pro | 未来建设 | 后台管理端 |
+| `packages/web/` | TanStack Start + React + Zustand + shadcn/ui | 新开发（推荐） | 新功能开发 |
+| `packages/admin/` | React + Ant Design Pro | 未来建设 | 后台管理端 |
 
 ---
 
 ## 规范索引
 
-### React 项目（apps/web）参考文档
+### React 项目（packages/web）参考文档
 
 > 迁移期间新创建的参考文档，覆盖 TanStack Start、shadcn/ui、Zustand 等。
 
@@ -44,11 +44,11 @@
 
 ## 快速参考
 
-### React 项目（apps/web）
+### React 项目（packages/web）
 
 #### 新增组件开发流程
 
-1. 在 `apps/web/app/components/` 创建组件
+1. 在 `packages/web/app/components/` 创建组件
 2. 在 `tests/unit/web/` 编写对应测试
 3. 运行 `pnpm test` 确认通过
 4. 提交代码
@@ -124,6 +124,6 @@ pnpm dev:web
 
 当前正在进行 Vue → React 迁移，详见 [迁移 PRD](../../prd/v3-frontend-migration.md)。
 
-- **新功能**请在 `apps/web/` 中开发（React）
+- **新功能**请在 `packages/web/` 中开发（React）
 - **Bug 修复**可在 `packages/webui/` 中继续（Vue），后续同步迁移
-- **共享代码**（类型、工具函数）优先放在 `apps/web/` 中，Vue 端引用时注意兼容性
+- **共享代码**（类型、工具函数）优先放在 `packages/web/` 中，Vue 端引用时注意兼容性

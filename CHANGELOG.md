@@ -6,6 +6,11 @@
 
 ## [2026-06-07]
 
+### docs
+
+- [docs] 前端迁移 PRD 完善与 Issue 体系建立 — PRD v3-frontend-migration.md 新增 §6.6 前后端类型共享（packages/data/ Zod 单源真相）、§6.7 alova 测试策略（两层：单元 mock + 集成 mock 适配器）、§6.1 扩展 Token 刷新机制（isRefreshing + refreshSubscribers 防并发队列）；新建 docs/reference/alova-react-guide.md（alova v3 完整参考手册）；.claude/rules/frontend-rules.md 添加 Alova 参考索引；_shared/references/test-paths.md 补充 apps/web React 测试路径映射
+- [open] 前端迁移 Issue 体系（i-32 ~ f-39 共 8 个） — 基于 PRD §5.1~§5.5 五个阶段拆分：i-32 基建搭建 → f-33 鉴权流程 → f-34 App Shell + Overlay → f-35 ChatView / f-36 知识库 / f-37 辅助页面（三页面并行）→ f-38 UI 组件收尾 → f-39 测试迁移与旧代码清理。每个 issue 含完整 feature-spec + behavior-spec + api-spec（按需）+ plan.md（TDD + ADR 合规 + PRD 一致性声明），已通过 kb-review 综合审查（0 Critical / 0 Major / 2 Minor 已修复）[PRD](docs/prd/v3-frontend-migration.md)
+
 ### quality
 
 - [closed] q-31 HTTP API E2E 测试 — 新建 auth-flow.spec.ts（6 测试）、kb-lifecycle.spec.ts（5 测试）、file-upload-chat.spec.ts（4 测试），覆盖 Auth/KB/File+Chat 四条核心链路；E2EClient 封装 axios + 随机 X-Forwarded-For 绕过限流；db-cleanup.ts 使用 DELETE + session_replication_role 清理共享库避免死锁；vitest.e2e-api.config.ts 配置 fileParallelism=false 强制串行执行消除测试间状态冲突；修复 PrismaService DI 问题（database.module.ts useFactory）和 Fastify trustProxy 使限流绕过生效 — E2E API 测试 15/15 通过 [issue](docs/issues/q-31-http-e2e-api-tests/)

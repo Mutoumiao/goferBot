@@ -8,7 +8,7 @@ version: 1
 
 > **For agentic workers:** 步骤使用复选框（`- [ ]`）语法追踪。
 
-**目标：** 建立 apps/web 完整鉴权链路 — alova 实例 + Token 刷新 + packages/data/ + auth Store + login/register + 路由守卫
+**目标：** 建立 packages/web 完整鉴权链路 — alova 实例 + Token 刷新 + packages/data/ + auth Store + login/register + 路由守卫
 
 **架构：** 自底向上：先创建基础设施（alova 实例 → packages/data/ → auth Store）→ 再实现页面（login/register）→ 最后挂载路由守卫。每个任务遵循 RED → GREEN 流程。
 
@@ -49,7 +49,7 @@ version: 1
 ### 任务 1: 创建 alova 实例（含 Token 刷新机制）
 
 **文件：**
-- 创建：`apps/web/app/utils/server.ts`
+- 创建：`packages/web/app/utils/server.ts`
 
 **规格引用：**
 - 功能规格：[§2.1 alova 实例]、[§2.2 Token 刷新机制]
@@ -85,7 +85,7 @@ describe('alova instance', () => {
 参考 `docs/reference/alova-react-guide.md` §4.2 完整配置 + §8.1 GoferBot 集成：
 
 ```typescript
-// apps/web/app/utils/server.ts
+// packages/web/app/utils/server.ts
 import { createAlova } from 'alova'
 import ReactHook from 'alova/react'
 import { createFetchAdapter } from 'alova/fetch'
@@ -248,13 +248,13 @@ pnpm type-check  # 确认 @goferbot/data 可被 workspace 解析
 ### 任务 3: 创建 api/auth.ts
 
 **文件：**
-- 创建：`apps/web/app/api/auth.ts`
-- 创建：`apps/web/app/api/types/auth.ts`（请求/响应类型，引用 @goferbot/data）
+- 创建：`packages/web/app/api/auth.ts`
+- 创建：`packages/web/app/api/types/auth.ts`（请求/响应类型，引用 @goferbot/data）
 
 - [ ] **步骤 1: RED → GREEN**
 
 ```typescript
-// apps/web/app/api/auth.ts
+// packages/web/app/api/auth.ts
 import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
@@ -275,7 +275,7 @@ export const getMe = () =>
 ### 任务 4: 创建 Zustand auth Store
 
 **文件：**
-- 创建：`apps/web/app/stores/auth.ts`
+- 创建：`packages/web/app/stores/auth.ts`
 
 - [ ] **步骤 1: RED（测试 Store 不存在）**
 - [ ] **步骤 2: 实现 auth Store**
@@ -289,7 +289,7 @@ export const getMe = () =>
 ### 任务 5: 实现 /login 页面
 
 **文件：**
-- 创建：`apps/web/app/routes/login.tsx`
+- 创建：`packages/web/app/routes/login.tsx`
 
 - [ ] **步骤 1: RED（页面不存在）**
 - [ ] **步骤 2: 实现 login 页面**
@@ -303,7 +303,7 @@ export const getMe = () =>
 ### 任务 6: 实现 /register 页面
 
 **文件：**
-- 创建：`apps/web/app/routes/register.tsx`
+- 创建：`packages/web/app/routes/register.tsx`
 
 - [ ] **步骤 1: RED → GREEN**
 
@@ -314,7 +314,7 @@ export const getMe = () =>
 ### 任务 7: 实现路由守卫
 
 **文件：**
-- 创建：`apps/web/app/routes/app/route.tsx`（布局路由 + beforeLoad 守卫）
+- 创建：`packages/web/app/routes/app/route.tsx`（布局路由 + beforeLoad 守卫）
 
 - [ ] **步骤 1: RED → GREEN**
 

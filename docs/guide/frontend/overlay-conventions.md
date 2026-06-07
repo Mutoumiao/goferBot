@@ -27,10 +27,10 @@ packages/webui/src/overlays/
   types/                # 类型定义
 ```
 
-### React 项目（apps/web）
+### React 项目（packages/web）
 
 ```
-apps/web/app/overlays/
+packages/web/app/overlays/
   dialogs/              # Dialog 组件
   context-menus/        # ContextMenu 组件
   host/                 # OverlayHost 渲染宿主（Portal）+ Zustand Store

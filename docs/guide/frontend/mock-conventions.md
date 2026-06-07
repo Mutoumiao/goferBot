@@ -2,7 +2,7 @@
 
 > 与 `docs/guide/workflow.md` 中的"联调整合"章节配套使用。
 >
-> ⚠️ **适用范围**：本文档以 `packages/webui/`（Vue）为例，目录结构原则同样适用于 `apps/web/`（React）。
+> ⚠️ **适用范围**：本文档以 `packages/webui/`（Vue）为例，目录结构原则同样适用于 `packages/web/`（React）。
 
 ---
 
@@ -94,7 +94,7 @@ export const handlers = [
 #### React 项目
 
 ```typescript
-// apps/web/app/mocks/index.ts
+// packages/web/app/mocks/index.ts
 import { sessionHandlers } from './handlers/session'
 
 export const mockEnabled = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'

@@ -4,11 +4,11 @@ issue: issue.md
 version: 1
 ---
 
-# apps/web 基建搭建 实现计划
+# packages/web 基建搭建 实现计划
 
 > **For agentic workers:** 必需子技能：superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans。步骤使用复选框（`- [ ]`）语法追踪。
 
-**目标：** 在 Monorepo 中建立 `apps/web/` 项目骨架，验证 dev/build 链路可用。
+**目标：** 在 Monorepo 中建立 `packages/web/` 项目骨架，验证 dev/build 链路可用。
 
 **架构：** 使用 TanStack Start CLI 初始化项目，手动调整 Vite 配置以对齐现有项目约定（代理、别名、端口），注册 pnpm workspace。不在此阶段编写业务代码。
 
@@ -25,7 +25,7 @@ version: 1
 | PRD 目标 | Plan 覆盖情况 | 说明 |
 |----------|--------------|------|
 | 建立新项目骨架，验证构建链路 | ✅ 已覆盖 | 任务 1-5 |
-| `apps/web` 可运行，显示默认首页 | ✅ 已覆盖 | 任务 5（最终验证） |
+| `packages/web` 可运行，显示默认首页 | ✅ 已覆盖 | 任务 5（最终验证） |
 | 复用现有 Vite 代理规则和 Tailwind 主题 | ✅ 已覆盖 | 任务 3（Vite 配置）+ 任务 2（复制 globals.css） |
 
 ---
@@ -46,7 +46,7 @@ version: 1
 
 ```
 新建：
-├── apps/web/                       # TanStack Start 项目（CLI 生成）
+├── packages/web/                       # TanStack Start 项目（CLI 生成）
 │   ├── app/
 │   │   ├── routes/
 │   │   │   ├── __root.tsx          # 根路由（CLI 生成，微调）
@@ -59,7 +59,7 @@ version: 1
 │   ├── package.json                # 依赖声明
 │   └── tsconfig.json               # TypeScript 配置
 修改：
-├── pnpm-workspace.yaml             # 添加 apps/*
+├── pnpm-workspace.yaml             # 添加 packages/*
 ├── package.json                    # 添加 dev:web 脚本
 ```
 
@@ -70,7 +70,7 @@ version: 1
 ### 任务 1: 使用 TanStack Start CLI 初始化项目骨架
 
 **文件：**
-- 创建：`apps/web/` 整个项目目录（CLI 生成）
+- 创建：`packages/web/` 整个项目目录（CLI 生成）
 - 验证：bash 命令检查目录结构
 
 **规格引用：**
@@ -79,20 +79,20 @@ version: 1
 - [ ] **步骤 1: 编写失败测试（验证目录不存在）**
 
 ```bash
-# 验证 apps/web 目录当前不存在
-test ! -d apps/web && echo "RED: apps/web does not exist yet" || (echo "FAIL: apps/web already exists" && exit 1)
+# 验证 packages/web 目录当前不存在
+test ! -d packages/web && echo "RED: packages/web does not exist yet" || (echo "FAIL: packages/web already exists" && exit 1)
 ```
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`test ! -d apps/web`
-预期：目录不存在（返回 0，因为没有 apps/web）
+运行：`test ! -d packages/web`
+预期：目录不存在（返回 0，因为没有 packages/web）
 
 - [ ] **步骤 3: 使用 CLI 初始化项目**
 
 ```bash
-cd apps
-npm create @tanstack/start@latest web -- --tailwind --add-ons shadcn
+cd packages
+npm create @tanstack/start@latest web -- --yes --framework React --no-examples --package-manager pnpm
 cd ..
 ```
 
@@ -102,18 +102,18 @@ cd ..
 
 ```bash
 # 验证核心文件已生成
-test -f apps/web/app/routes/__root.tsx && echo "GREEN: __root.tsx exists"
-test -f apps/web/app/router.tsx && echo "GREEN: router.tsx exists"
-test -f apps/web/app/client.tsx && echo "GREEN: client.tsx exists"
-test -f apps/web/vite.config.ts && echo "GREEN: vite.config.ts exists"
-test -f apps/web/package.json && echo "GREEN: package.json exists"
+test -f packages/web/app/routes/__root.tsx && echo "GREEN: __root.tsx exists"
+test -f packages/web/app/router.tsx && echo "GREEN: router.tsx exists"
+test -f packages/web/app/client.tsx && echo "GREEN: client.tsx exists"
+test -f packages/web/vite.config.ts && echo "GREEN: vite.config.ts exists"
+test -f packages/web/package.json && echo "GREEN: package.json exists"
 ```
 
 - [ ] **步骤 5: 验证并标记完成**
 
 ```bash
-ls -la apps/web/app/routes/
-ls -la apps/web/app/
+ls -la packages/web/app/routes/
+ls -la packages/web/app/
 ```
 
 ---
@@ -121,7 +121,7 @@ ls -la apps/web/app/
 ### 任务 2: 复制 Tailwind 主题变量（globals.css）
 
 **文件：**
-- 修改：`apps/web/app/globals.css`
+- 修改：`packages/web/app/globals.css`
 - 参考：`packages/webui/src/styles/`（Pencil tokens 定义）
 
 **规格引用：**
@@ -131,17 +131,17 @@ ls -la apps/web/app/
 
 ```bash
 # 检查当前 globals.css 是否缺少 Pencil tokens
-! grep -q "bg-surface-1" apps/web/app/globals.css && echo "RED: Pencil tokens not yet added" || (echo "FAIL: tokens already present" && exit 1)
+! grep -q "bg-surface-1" packages/web/app/globals.css && echo "RED: Pencil tokens not yet added" || (echo "FAIL: tokens already present" && exit 1)
 ```
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-运行：`grep -q "bg-surface-1" apps/web/app/globals.css`
+运行：`grep -q "bg-surface-1" packages/web/app/globals.css`
 预期：退出码 1（未找到）
 
 - [ ] **步骤 3: 复制主题变量**
 
-从 `packages/webui/src/styles/` 复制 CSS 变量定义（`:root` 块中的 `--color-*`、`--spacing-*` 等 Pencil tokens），追加到 `apps/web/app/globals.css` 的 `@tailwind` 指令之后。
+从 `packages/webui/src/styles/` 复制 CSS 变量定义（`:root` 块中的 `--color-*`、`--spacing-*` 等 Pencil tokens），追加到 `packages/web/app/globals.css` 的 `@tailwind` 指令之后。
 
 确保包含：
 - `@import "tailwindcss"` 指令
@@ -151,8 +151,8 @@ ls -la apps/web/app/
 - [ ] **步骤 4: 运行测试验证通过**
 
 ```bash
-grep -q "bg-surface-1" apps/web/app/globals.css && echo "GREEN: Pencil tokens present"
-grep -q "text-text-primary" apps/web/app/globals.css && echo "GREEN: text tokens present"
+grep -q "bg-surface-1" packages/web/app/globals.css && echo "GREEN: Pencil tokens present"
+grep -q "text-text-primary" packages/web/app/globals.css && echo "GREEN: text tokens present"
 ```
 
 - [ ] **步骤 5: 验证并标记完成**
@@ -164,7 +164,7 @@ grep -q "text-text-primary" apps/web/app/globals.css && echo "GREEN: text tokens
 ### 任务 3: 配置 Vite（别名、代理、Tailwind v4 plugin）
 
 **文件：**
-- 修改：`apps/web/vite.config.ts`
+- 修改：`packages/web/vite.config.ts`
 - 参考：`docs/reference/tanstack-start-guide.md` §6 Vite 配置
 
 **规格引用：**
@@ -174,8 +174,8 @@ grep -q "text-text-primary" apps/web/app/globals.css && echo "GREEN: text tokens
 
 ```bash
 # 验证当前 vite.config.ts 缺少 @ 别名和 /api 代理
-! grep -q "'@'" apps/web/vite.config.ts && echo "RED: @ alias not configured" || echo "PARTIAL"
-! grep -q "'/api'" apps/web/vite.config.ts && echo "RED: /api proxy not configured" || echo "PARTIAL"
+! grep -q "'@'" packages/web/vite.config.ts && echo "RED: @ alias not configured" || echo "PARTIAL"
+! grep -q "'/api'" packages/web/vite.config.ts && echo "RED: /api proxy not configured" || echo "PARTIAL"
 ```
 
 - [ ] **步骤 2: 运行测试验证失败**
@@ -185,7 +185,7 @@ grep -q "text-text-primary" apps/web/app/globals.css && echo "GREEN: text tokens
 - [ ] **步骤 3: 修改 vite.config.ts**
 
 ```typescript
-// apps/web/vite.config.ts
+// packages/web/vite.config.ts
 import { defineConfig } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
@@ -223,16 +223,16 @@ export default defineConfig({
 - [ ] **步骤 4: 运行测试验证通过**
 
 ```bash
-grep -q "'@'" apps/web/vite.config.ts && echo "GREEN: @ alias configured"
-grep -q "'/api'" apps/web/vite.config.ts && echo "GREEN: /api proxy configured"
-grep -q "tailwindcss" apps/web/vite.config.ts && echo "GREEN: Tailwind v4 plugin configured"
-grep -q "1420" apps/web/vite.config.ts && echo "GREEN: port 1420 configured"
+grep -q "'@'" packages/web/vite.config.ts && echo "GREEN: @ alias configured"
+grep -q "'/api'" packages/web/vite.config.ts && echo "GREEN: /api proxy configured"
+grep -q "tailwindcss" packages/web/vite.config.ts && echo "GREEN: Tailwind v4 plugin configured"
+grep -q "1420" packages/web/vite.config.ts && echo "GREEN: port 1420 configured"
 ```
 
 - [ ] **步骤 5: 验证并标记完成**
 
 ```bash
-cat apps/web/vite.config.ts
+cat packages/web/vite.config.ts
 ```
 
 ---
@@ -240,8 +240,8 @@ cat apps/web/vite.config.ts
 ### 任务 4: 注册 pnpm workspace 并安装依赖
 
 **文件：**
-- 修改：`pnpm-workspace.yaml`（添加 `apps/*`）
-- 修改：`apps/web/package.json`（确保 name 为 `@goferbot/web`）
+- 修改：`pnpm-workspace.yaml`（`packages/*` 已覆盖 web 项目）
+- 修改：`packages/web/package.json`（确保 name 为 `@goferbot/web`）
 - 修改（可选）：根 `package.json`（添加 `dev:web` 脚本）
 
 **规格引用：**
@@ -250,13 +250,13 @@ cat apps/web/vite.config.ts
 - [ ] **步骤 1: 编写失败测试（workspace 未注册）**
 
 ```bash
-# 验证 pnpm-workspace.yaml 当前不含 apps/*
-! grep -q "apps/" pnpm-workspace.yaml && echo "RED: apps/* not in workspace config" || (echo "FAIL: apps/* already in workspace config" && exit 1)
+# 验证 pnpm-workspace.yaml 当前不含 packages/*
+! grep -q "apps/" pnpm-workspace.yaml && echo "RED: packages/* not in workspace config" || (echo "FAIL: packages/* already in workspace config" && exit 1)
 ```
 
 - [ ] **步骤 2: 运行测试验证失败**
 
-预期：`pnpm-workspace.yaml` 不含 `apps/` 引用
+预期：`pnpm-workspace.yaml` 不含额外配置（packages/* 已覆盖）
 
 - [ ] **步骤 3: 修改配置并安装依赖**
 
@@ -265,10 +265,10 @@ cat apps/web/vite.config.ts
 ```yaml
 packages:
   - "packages/*"
-  - "apps/*"
+  - "packages/*"
 ```
 
-**3b. 确认 `apps/web/package.json` 中的包名**：
+**3b. 确认 `packages/web/package.json` 中的包名**：
 
 ```json
 {
@@ -280,7 +280,7 @@ packages:
 **3c. 安装新增依赖**：
 
 ```bash
-cd apps/web
+cd packages/web
 pnpm add zustand alova lucide-react class-variance-authority clsx tailwind-merge
 cd ../..
 ```
@@ -303,15 +303,15 @@ pnpm install
 
 ```bash
 # 验证 workspace 注册
-grep -q "apps/" pnpm-workspace.yaml && echo "GREEN: apps/* in workspace config"
+grep -q "apps/" pnpm-workspace.yaml && echo "GREEN: packages/* in workspace config"
 
 # 验证包名
-grep -q "@goferbot/web" apps/web/package.json && echo "GREEN: package name correct"
+grep -q "@goferbot/web" packages/web/package.json && echo "GREEN: package name correct"
 
 # 验证依赖已安装
-test -d apps/web/node_modules/zustand && echo "GREEN: zustand installed"
-test -d apps/web/node_modules/alova && echo "GREEN: alova installed"
-test -d apps/web/node_modules/lucide-react && echo "GREEN: lucide-react installed"
+test -d packages/web/node_modules/zustand && echo "GREEN: zustand installed"
+test -d packages/web/node_modules/alova && echo "GREEN: alova installed"
+test -d packages/web/node_modules/lucide-react && echo "GREEN: lucide-react installed"
 ```
 
 - [ ] **步骤 5: 验证并标记完成**
@@ -373,12 +373,12 @@ kill $DEV_PID 2>/dev/null
 ```bash
 echo "=== i-32 最终验证 ==="
 echo "1. 目录结构:"
-ls apps/web/app/routes/__root.tsx apps/web/app/router.tsx apps/web/app/client.tsx && echo "  ✅ 核心文件存在"
+ls packages/web/app/routes/__root.tsx packages/web/app/router.tsx packages/web/app/client.tsx && echo "  ✅ 核心文件存在"
 echo "2. Vite 配置:"
-grep -c "'@'" apps/web/vite.config.ts > /dev/null && echo "  ✅ @ 别名" || echo "  ❌ 缺少 @ 别名"
-grep -c "'/api'" apps/web/vite.config.ts > /dev/null && echo "  ✅ /api 代理" || echo "  ❌ 缺少代理"
+grep -c "'@'" packages/web/vite.config.ts > /dev/null && echo "  ✅ @ 别名" || echo "  ❌ 缺少 @ 别名"
+grep -c "'/api'" packages/web/vite.config.ts > /dev/null && echo "  ✅ /api 代理" || echo "  ❌ 缺少代理"
 echo "3. Workspace:"
-grep -c "apps/" pnpm-workspace.yaml > /dev/null && echo "  ✅ apps/* 已注册" || echo "  ❌ 未注册"
+grep -c "apps/" pnpm-workspace.yaml > /dev/null && echo "  ✅ packages/* 已注册" || echo "  ❌ 未注册"
 echo "4. Build:"
 pnpm --filter @goferbot/web build > /dev/null 2>&1 && echo "  ✅ 构建成功" || echo "  ❌ 构建失败"
 ```

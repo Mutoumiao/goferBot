@@ -1,4 +1,4 @@
-# 功能规格：apps/web 基建搭建
+# 功能规格：packages/web 基建搭建
 
 > 状态：draft | 关联 issue：i-32 | PRD：docs/prd/v3-frontend-migration.md §5.1
 
@@ -6,7 +6,7 @@
 
 ## 1. 目标
 
-在 GoferBot Monorepo 中建立 `apps/web/` 项目骨架，使用 TanStack Start + React + Tailwind v4 + shadcn/ui 技术栈，复用现有 Vite 代理规则和 Tailwind 主题变量，验证 `pnpm dev:web` 和 `pnpm build` 链路可用。
+在 GoferBot Monorepo 中建立 `packages/web/` 项目骨架，使用 TanStack Start + React + Tailwind v4 + shadcn/ui 技术栈，复用现有 Vite 代理规则和 Tailwind 主题变量，验证 `pnpm dev:web` 和 `pnpm build` 链路可用。
 
 ---
 
@@ -14,11 +14,11 @@
 
 ### 2.1 项目初始化
 
-使用 `npm create @tanstack/start@latest --tailwind --add-ons shadcn` 在 `apps/web/` 创建项目骨架，生成标准 TanStack Start 文件结构。
+使用 `npm create @tanstack/start@latest --tailwind --add-ons shadcn` 在 `packages/web/` 创建项目骨架，生成标准 TanStack Start 文件结构。
 
 ### 2.2 Vite 配置
 
-在 `apps/web/vite.config.ts` 中配置：
+在 `packages/web/vite.config.ts` 中配置：
 
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
@@ -30,11 +30,11 @@
 
 ### 2.3 pnpm workspace 注册
 
-更新根 `pnpm-workspace.yaml`，在已有 `packages/*` 基础上添加 `apps/*`。若使用目录过滤（如 `packages/webui`、`packages/server`），改为 `packages/*` + `apps/*` 模式。
+项目统一放在 `packages/` 目录下，`pnpm-workspace.yaml` 已配置 `packages/*`，无需额外修改。
 
 ### 2.4 依赖安装
 
-`apps/web/package.json` 需包含：
+`packages/web/package.json` 需包含：
 
 | 依赖 | 用途 | 版本 |
 |------|------|------|
@@ -50,14 +50,14 @@
 
 ### 2.5 全局样式
 
-从 `packages/webui/src/styles/` 复制 Tailwind 主题变量到 `apps/web/app/globals.css`，保留 Pencil tokens（`bg-surface-1`、`text-text-primary` 等）的 CSS 变量定义。
+从 `packages/webui/src/styles/` 复制 Tailwind 主题变量到 `packages/web/app/globals.css`，保留 Pencil tokens（`bg-surface-1`、`text-text-primary` 等）的 CSS 变量定义。
 
 ---
 
 ## 3. 目录结构
 
 ```
-apps/web/
+packages/web/
 ├── app/
 │   ├── routes/
 │   │   ├── __root.tsx           # 根路由（全局 HeadContent + Outlet + Scripts）
@@ -100,9 +100,9 @@ apps/web/
 
 | AC | 验收项 | 验证方式 |
 |----|--------|----------|
-| AC-01 | `apps/web/` 目录存在，包含 TanStack Start 标准文件结构 | `ls apps/web/app/routes/__root.tsx` |
-| AC-02 | `vite.config.ts` 配置正确（别名、代理、Tailwind v4） | 检查 `resolve.alias`、`server.proxy`、`plugins` |
-| AC-03 | `pnpm-workspace.yaml` 注册 `apps/*` | `grep "apps" pnpm-workspace.yaml` |
+| AC-01 | `packages/web/` 目录存在，包含 TanStack Start 标准文件结构 | `ls packages/web/src/routes/__root.tsx` |
+| AC-02 | `vite.config.ts` 配置正确（别名、代理、Tailwind v4、SPA） | 检查 `resolve.alias`、`server.proxy`、`plugins` |
+| AC-03 | `pnpm-workspace.yaml` 包含 `packages/*` | `grep "packages" pnpm-workspace.yaml` |
 | AC-04 | 依赖安装完整 | `pnpm --filter @goferbot/web ls`（或检查 `node_modules`） |
 | AC-05 | `pnpm dev:web` 启动无报错，首页可访问 | `curl http://localhost:1420` 返回 200 |
 | AC-06 | `pnpm build` 产物无错误 | `pnpm --filter @goferbot/web build` 退出码 0 |

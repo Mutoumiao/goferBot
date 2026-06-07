@@ -6,7 +6,7 @@
 
 ## 1. 目标
 
-建立 apps/web 的完整鉴权基础设施：alova 实例（含 Token 刷新）、packages/data/ 共享包（auth 域 Zod schema）、Zustand auth Store、login/register 页面、TanStack Router 路由守卫。完成后可独立验证完整的登录→鉴权→Token 刷新闭环。
+建立 packages/web 的完整鉴权基础设施：alova 实例（含 Token 刷新）、packages/data/ 共享包（auth 域 Zod schema）、Zustand auth Store、login/register 页面、TanStack Router 路由守卫。完成后可独立验证完整的登录→鉴权→Token 刷新闭环。
 
 ---
 
@@ -14,7 +14,7 @@
 
 ### 2.1 alova 实例（utils/server.ts）
 
-创建 `apps/web/app/utils/server.ts`，导出 `alovaInstance`：
+创建 `packages/web/app/utils/server.ts`，导出 `alovaInstance`：
 
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
@@ -88,7 +88,7 @@ export const authResponseSchema = z.object({
 ### 2.4 API 方法（api/auth.ts）
 
 ```typescript
-// apps/web/app/api/auth.ts
+// packages/web/app/api/auth.ts
 import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
@@ -105,7 +105,7 @@ export const getMe = () =>
 ### 2.5 Zustand auth Store
 
 ```typescript
-// apps/web/app/stores/auth.ts
+// packages/web/app/stores/auth.ts
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
