@@ -164,14 +164,33 @@ issue 中通常有两处验收标准：
 
 ---
 
-### 7. 更新进度文档（可选）
+### 7. 更新进度文档（必须）
 
-如用户明确要求更新进度文档：
-1. **更新 BACKLOG.md**：检查该 issue 对应行的状态是否已标记为 `closed`。若未标记，询问是否同步更新
-2. **更新 CHANGELOG.md**（如需要）：新增变更记录
+关闭 issue 时，**必须**同步更新 BACKLOG.md 和 CHANGELOG.md。
+
+#### 两个文件的范围定义
+
+| 文件 | 定位 | 写入内容 | 禁止写入 |
+|------|------|----------|----------|
+| **BACKLOG.md** | 待办清单 | 待办事项、进行中、技术债务等**未完成**内容 | 已 closed 的 issue、纯管理动作记录 |
+| **CHANGELOG.md** | 产品变更日志（如同 GitHub Release Notes） | 已完成的**实际交付物**：功能实现、Bug 修复、性能优化、测试补齐、有实质内容变更的文档更新 | `open`/`in-progress` 状态条目、纯管理动作（issue 创建/补全、spec/plan 编写、进度统计、BACKLOG.md/CHANGELOG.md 自身同步记录） |
+
+#### CHANGELOG.md 准入标准
+
+只有满足以下条件的条目才能写入 CHANGELOG.md：
+- ✅ 功能实现、Bug 修复、性能优化、测试补齐
+- ✅ 有实际文件变更的文档更新（如新增参考手册、流程规范重构）
+- ❌ issue 创建/补全文档（仅产出 issue.md/spec/plan，无实现代码）
+- ❌ 进度统计、进度总览更新
+- ❌ BACKLOG.md 或 CHANGELOG.md 自身的同步记录
+
+#### 更新操作
+
+1. **更新 BACKLOG.md**：将该 issue 从"待启动"或"进行中"表中移除；检查是否有被该 issue 阻塞的其他 issue，解除其 `blocked_by` 引用
+2. **更新 CHANGELOG.md**：先通过准入标准校验 → 在对应日期段下新增 `[closed]` 条目，格式：`- [closed] {id} {summary} [issue](docs/issues/{dir}/)`
 3. **避免意外删除**：仅修改状态相关文本，不删除章节标题或内容区块
 
-> **注意**：系统性的进度文档更新应使用 `/issue-updater` skill。本 skill 仅在关闭 issue 时做最小化同步。
+> 系统性的全量进度重扫使用 `/issue-updater` skill。本 skill 在关闭 issue 时做增量同步。
 
 ---
 

@@ -109,6 +109,17 @@ For newly closed issues (not already in CHANGELOG):
 - Each entry format: `- [closed] {summary} [issue]({archive_path}/)`
 - Archive path: `docs/archived/issues/{dir}/`
 
+**CHANGELOG.md 准入标准**（如同 GitHub Release Notes，只记录实际产品变更）：
+
+| 允许 ✅ | 禁止 ❌ |
+|---------|---------|
+| 功能实现、Bug 修复、性能优化 | `open`/`in-progress` 状态的条目 |
+| 测试补齐（有实际测试代码产出） | issue 创建/补全（仅产出 issue.md/spec/plan，无实现代码） |
+| 有实际文件变更的文档更新（如新增参考手册、流程规范重构） | 进度统计、进度总览更新 |
+| | BACKLOG.md 或 CHANGELOG.md 自身的同步记录 |
+
+不符合准入标准的 closed issue **不应写入 CHANGELOG.md**。
+
 ### Step 5: Write Files
 
 Write both files to project root. Output summary:
