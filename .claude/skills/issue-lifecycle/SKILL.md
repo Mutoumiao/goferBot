@@ -10,13 +10,13 @@ description: >
 
 ## 执行摘要
 
-| 项目 | 内容 |
-|------|------|
-| **触发词** | "更新 issue 状态"、"标记完成"、"issue f-05 已完成" |
-| **硬关卡** | 关闭前必须通过全部测试 + 类型检查 + 全量回归 |
-| **核心输出** | 更新后的 issue.md、checklist.json、进度文档 |
-| **禁止行为** | 测试未通过就关闭、不验证就声明完成 |
-| **下一步** | 验证通过后 → 更新 BACKLOG.md/CHANGELOG.md |
+| 项目         | 内容                                               |
+|--------------|----------------------------------------------------|
+| **触发词**   | "更新 issue 状态"、"标记完成"、"issue f-05 已完成" |
+| **硬关卡**   | 关闭前必须通过全部测试 + 类型检查 + 全量回归       |
+| **核心输出** | 更新后的 issue.md、checklist.json、进度文档        |
+| **禁止行为** | 测试未通过就关闭、不验证就声明完成                 |
+| **下一步**   | 验证通过后 → 更新 BACKLOG.md/CHANGELOG.md          |
 
 根据 issue 编号，自动更新对应的 issue Markdown 文件、`checklist.json` 和进度文档。
 
@@ -36,15 +36,15 @@ description: >
 
 ## 路径约定
 
-| 文档类型  | 路径                                        | 验证规则                    |
-|-----------|---------------------------------------------|-----------------------------|
-| Issue     | `docs/issues/{prefix}-{NN}-{slug}/issue.md` | 目录名必须符合格式          |
-| Spec      | `docs/issues/{dir}/specs/`                  | 目录在 issue 目录下         |
-| Plan      | `docs/issues/{dir}/plan.md`                 | 当前生效版本                |
+| 文档类型  | 路径                                        | 验证规则                                                                                       |
+|-----------|---------------------------------------------|------------------------------------------------------------------------------------------------|
+| Issue     | `docs/issues/{prefix}-{NN}-{slug}/issue.md` | 目录名必须符合格式                                                                             |
+| Spec      | `docs/issues/{dir}/specs/`                  | 目录在 issue 目录下                                                                            |
+| Plan      | `docs/issues/{dir}/plan.md`                 | 当前生效版本                                                                                   |
 | 测试代码  | `tests/{layer}/{name}.spec.ts`              | 参见 [`_shared/references/test-paths.md`](mdc:.claude/skills/_shared/references/test-paths.md) |
-| checklist | `docs/issues/{dir}/checklist.json`          | 机器管理，AC-XX 条目        |
-| 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md`       | scope 语义化，type 限定枚举 |
-| 进度文档  | `BACKLOG.md` / `CHANGELOG.md`（根目录）     |                             |
+| checklist | `docs/issues/{dir}/checklist.json`          | 机器管理，AC-XX 条目                                                                           |
+| 审查记录  | `docs/reviews/{scope}/{type}-v{N}.md`       | scope 语义化，type 限定枚举                                                                    |
+| 进度文档  | `BACKLOG.md` / `CHANGELOG.md`（根目录）     |                                                                                                |
 
 **轨道前缀**参见 [`_shared/references/track-prefixes.md`](mdc:.claude/skills/_shared/references/track-prefixes.md)。
 
@@ -170,9 +170,9 @@ issue 中通常有两处验收标准：
 
 #### 两个文件的范围定义
 
-| 文件 | 定位 | 写入内容 | 禁止写入 |
-|------|------|----------|----------|
-| **BACKLOG.md** | 待办清单 | 待办事项、进行中、技术债务等**未完成**内容 | 已 closed 的 issue、纯管理动作记录 |
+| 文件             | 定位                                      | 写入内容                                                                                 | 禁止写入                                                                                                                     |
+|------------------|-------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| **BACKLOG.md**   | 待办清单                                  | 待办事项、进行中、技术债务等**未完成**内容                                               | 已 closed 的 issue、纯管理动作记录                                                                                           |
 | **CHANGELOG.md** | 产品变更日志（如同 GitHub Release Notes） | 已完成的**实际交付物**：功能实现、Bug 修复、性能优化、测试补齐、有实质内容变更的文档更新 | `open`/`in-progress` 状态条目、纯管理动作（issue 创建/补全、spec/plan 编写、进度统计、BACKLOG.md/CHANGELOG.md 自身同步记录） |
 
 #### CHANGELOG.md 准入标准
@@ -186,7 +186,7 @@ issue 中通常有两处验收标准：
 
 #### 更新操作
 
-1. **更新 BACKLOG.md**：将该 issue 从"待启动"或"进行中"表中移除；检查是否有被该 issue 阻塞的其他 issue，解除其 `blocked_by` 引用
+1. **更新 BACKLOG.md**：将该 issue 从"待启动"或"进行中"表中删除（注意是彻底清除不是采用~~线删除）；检查是否有被该 issue 阻塞的其他 issue，解除其 `blocked_by` 引用
 2. **更新 CHANGELOG.md**：先通过准入标准校验 → 在对应日期段下新增 `[closed]` 条目，格式：`- [closed] {id} {summary} [issue](docs/issues/{dir}/)`
 3. **避免意外删除**：仅修改状态相关文本，不删除章节标题或内容区块
 
