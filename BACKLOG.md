@@ -21,11 +21,10 @@ _暂无_
 ## 待启动 — 前端迁移：阶段三深化（P1）
 
 > PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.7
-> 当前进度：1/6 closed
+> 当前进度：2/6 closed
 
 | Issue | 优先级 | 阻塞于 | 摘要 |
 |-------|--------|--------|------|
-| [f-45](docs/issues/f-45-chat-session-mgmt/) | p1 | — | Chat 会话管理（新建/切换/删除/重命名 + KbSelector） |
 | [f-46](docs/issues/f-46-kb-file-upload/) | p1 | — | KB 文件上传（拖拽 + FileManager + FileGridItem + BreadcrumbNav） |
 | [f-47](docs/issues/f-47-kb-crud/) | p1 | f-46 | KB CRUD 完整交互（创建/编辑/删除 Dialog + 详情页） |
 | [f-48](docs/issues/f-48-settings-form/) | p1 | — | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |

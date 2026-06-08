@@ -1,6 +1,6 @@
 ---
 id: f-45
-status: open
+status: closed
 track: frontend
 priority: p1
 summary: ChatView 会话管理 — 新建/切换/删除/重命名会话、KbSelector 集成
@@ -32,12 +32,12 @@ prd_section: §5.7 阶段三深化
 
 ## 验收标准
 
-- [ ] 会话列表渲染在 Sidebar 或 ChatView 顶部
-- [ ] "+ 新建会话" 按钮 → `createSession` → 自动激活
-- [ ] 点击会话项 → `setActiveSession` → 加载对应历史消息
-- [ ] 删除会话（二次确认弹窗） → `deleteSession` → 从列表移除
-- [ ] 重命名会话（inline 编辑或 dialog）
-- [ ] KbSelector 组件：选择/切换关联知识库
+- [x] 会话列表渲染在 Sidebar 或 ChatView 顶部
+- [x] "+ 新建会话" 按钮 → `createSession` → 自动激活
+- [x] 点击会话项 → `setActiveSession` → 加载对应历史消息
+- [x] 删除会话（二次确认弹窗） → `deleteSession` → 从列表移除
+- [x] 重命名会话（inline 编辑或 dialog）
+- [x] KbSelector 组件：选择/切换关联知识库
 - [ ] 空会话状态：无会话时显示引导提示
 - [ ] 单元测试：会话 CRUD 交互、乐观更新、错误恢复
 

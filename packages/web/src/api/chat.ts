@@ -35,24 +35,24 @@ export const streamChat = (params: StreamChatParams) =>
 
 /** 获取消息历史 */
 export const getHistory = (sessionId: string, page = 1, limit = 50) =>
-  alovaInstance.Get<MessageListResponse>(`/chat/sessions/${sessionId}/messages`, {
+  alovaInstance.Get<MessageListResponse>(`/sessions/${sessionId}/messages`, {
     params: { page, limit },
   })
 
 /** 获取会话列表 */
 export const getSessions = (page = 1, limit = 20) =>
-  alovaInstance.Get<SessionListResponse>('/chat/sessions', {
+  alovaInstance.Get<SessionListResponse>('/sessions', {
     params: { page, limit },
   })
 
 /** 创建新会话 */
 export const createSession = (data?: CreateSessionRequest) =>
-  alovaInstance.Post<Session>('/chat/sessions', data ?? {})
+  alovaInstance.Post<Session>('/sessions', data ?? {})
 
 /** 删除会话 */
 export const deleteSession = (sessionId: string) =>
-  alovaInstance.Delete(`/chat/sessions/${sessionId}`)
+  alovaInstance.Delete(`/sessions/${sessionId}`)
 
 /** 重命名会话 */
 export const renameSession = (sessionId: string, title: string) =>
-  alovaInstance.Patch<Session>(`/chat/sessions/${sessionId}`, { title })
+  alovaInstance.Post<Session>(`/sessions/${sessionId}/rename`, { title })

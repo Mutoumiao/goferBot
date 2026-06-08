@@ -1,49 +1,49 @@
 {
   "issue_id": "f-45",
   "version": 2,
-  "updated_at": "2026-06-07T21:30:00Z",
+  "updated_at": "2026-06-08T22:15:00Z",
   "items": [
     {
       "id": "task-1",
-      "title": "api/chat.ts — 新增 renameSession 方法",
-      "status": "pending",
-      "description": "在 deleteSession 之后新增 renameSession API 方法（PATCH /chat/sessions/:id），注意 trim 逻辑保留在 UI 层",
-      "test_file": "tests/unit/web/chatApi.spec.ts"
+      "title": "api/chat.ts — renameSession 方法",
+      "status": "passed",
+      "description": "renameSession API 方法已存在（POST /sessions/:id/rename），前端路径已适配后端",
+      "test_file": "tests/chat-api.spec.ts"
     },
     {
       "id": "task-2",
       "title": "KbSelector 组件",
-      "status": "pending",
-      "description": "知识库下拉多选组件：loading/empty/error 状态、键盘导航（ArrowUp/ArrowDown/Enter/Esc）、alova 数据解包兼容",
-      "test_file": "tests/unit/web/KbSelector.spec.tsx"
+      "status": "passed",
+      "description": "知识库下拉多选组件：loading/empty/error 状态、点击外部关闭、Escape 关闭、alova 数据解包兼容",
+      "test_file": "tests/kb-selector.spec.tsx"
     },
     {
       "id": "task-3",
       "title": "DeleteSessionDialog 组件",
-      "status": "pending",
-      "description": "删除确认弹窗。OverlayHost 提供遮罩+容器，组件只渲染内部内容（标题+描述+按钮），通过 onClose('confirm'|'cancel') 通信",
-      "test_file": "tests/unit/web/DeleteSessionDialog.spec.tsx"
+      "status": "passed",
+      "description": "删除确认弹窗。通过 onClose('confirm'|'cancel') 通信，支持 loading 状态",
+      "test_file": "tests/delete-session-dialog.spec.tsx"
     },
     {
       "id": "task-4",
       "title": "SessionList 组件",
-      "status": "pending",
-      "description": "会话列表：时间显示（date-fns formatDistanceToNow）、悬停显示'...'按钮、新建/切换/重试交互",
-      "test_file": "tests/unit/web/SessionList.spec.tsx"
+      "status": "passed",
+      "description": "会话列表：时间显示（toLocaleDateString）、悬停显示'...'按钮（inline 菜单）、新建/切换/重试交互",
+      "test_file": "tests/session-list.spec.tsx"
     },
     {
       "id": "task-5",
       "title": "ChatInput 集成 KbSelector",
-      "status": "pending",
+      "status": "passed",
       "description": "ChatInput 集成 KbSelector，透传 knowledgeBaseIds。onSend 签名变更：新增可选第二个参数",
-      "test_file": "tests/unit/web/ChatInput.spec.tsx"
+      "test_file": "tests/chat-input-kb.spec.tsx"
     },
     {
       "id": "task-6",
       "title": "ChatView 集成会话管理 + 错误处理",
-      "status": "pending",
+      "status": "passed",
       "description": "ChatView 集成 SessionList、DeleteSessionDialog、inline 重命名、error toast。页面挂载时调用 loadSessions()",
-      "test_file": "tests/unit/web/ChatView.spec.tsx"
+      "test_file": "tests/chat-view-session-mgmt.spec.tsx"
     }
   ]
 }

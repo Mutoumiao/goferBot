@@ -8,6 +8,7 @@
 
 ### frontend
 
+- [closed] f-45 ChatView 会话管理 — SessionList（新建/切换/删除/inline 重命名）+ DeleteSessionDialog + KbSelector（多选知识库）+ ChatInput 集成 + error toast + API 路径适配后端（/sessions）+ 182 测试 [issue](docs/issues/f-45-chat-session-mgmt/)
 - [closed] f-44 ChatView SSE 流式接收 — useSSE 集成 + streamChat API 修正 + ChatInput isStreaming/onStop + ErrorCard 错误重试 + reconnectionTime 自动重连 + 14 测试 [issue](docs/issues/f-44-chat-sse-flow/)
 - [closed] f-40 session store → chat store 扩展 — sessions CRUD（load/create/rename/delete）+ renameSession API + 18 测试 [issue](docs/issues/f-40-session-store/)
 - [closed] f-41 settings store — Zustand persist + dirty 追踪 + LLM 配置 + 35 测试 [issue](docs/issues/f-41-settings-store/)

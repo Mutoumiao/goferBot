@@ -27,6 +27,7 @@ export const sendMessageRequestSchema = z.object({
   sessionId: z.string(),
   content: z.string(),
   fileIds: z.array(z.string()).optional(),
+  knowledgeBaseIds: z.array(z.string()).optional(),
 })
 
 export const createSessionRequestSchema = z.object({
