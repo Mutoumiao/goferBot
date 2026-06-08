@@ -9,7 +9,13 @@
     ".": "./src/types/index.ts",
     "./schemas": "./src/schemas/index.ts"
   },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
   "dependencies": {
     "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
