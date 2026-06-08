@@ -7,6 +7,12 @@
       "skillPath": "plugins/developer-essentials/skills/e2e-testing-patterns/SKILL.md",
       "computedHash": "37ea37e42a81c926ebd81924691a15fb657df7c8a52b863c34967e5ab99cdc22"
     },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "ac9d0d69caac7de1d1e5647f3db3bcd2f13af355d6b3a78780fbf7fc80e8dca0"
+    },
     "shadcn-vue": {
       "source": "unovue/shadcn-vue",
       "sourceType": "github",
