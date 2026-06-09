@@ -1,9 +1,17 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { configResponsive } from 'ahooks'
 
 import { OverlayHost } from '@/overlays/host/OverlayHost'
 import appCss from '../globals.css?url'
+
+/* ========== ahooks 响应式断点全局配置 ========== */
+configResponsive({
+  small: 0,
+  middle: 800,
+  large: 1024,
+})
 
 export const Route = createRootRoute({
   head: () => ({

@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -85,6 +86,9 @@ export default function CreateKbDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{isEditMode ? '编辑知识库' : '创建知识库'}</DialogTitle>
+          <DialogDescription>
+            {isEditMode ? '修改知识库的名称和描述信息。' : '填写知识库的名称和描述，创建一个新的知识库。'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

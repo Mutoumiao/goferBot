@@ -1,60 +1,53 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { cn } from '@/utils/cn'
+import { MessageCircle, BookOpen, Clock, Settings, Trash2 } from 'lucide-react'
 
-interface SidebarProps {
-  className?: string
-}
+const navItems = [
+  { to: '/app/chat', icon: MessageCircle, label: '聊天' },
+  { to: '/app/kb', icon: BookOpen, label: '知识库' },
+  { to: '/app/history', icon: Clock, label: '历史' },
+  { to: '/app/settings', icon: Settings, label: '设置' },
+  { to: '/app/recycle-bin', icon: Trash2, label: '回收站' },
+]
 
-export function Sidebar({ className }: SidebarProps) {
+export function IconSidebar({ className }: { className?: string }) {
+  const location = useLocation()
+
   return (
     <aside
       className={cn(
-        'flex h-full w-60 flex-col border-r border-border-default bg-surface-1',
+        'flex w-[60px] flex-col items-center border-r border-border-default bg-surface-1 py-5',
         className,
       )}
     >
-      {/* Logo / Brand */}
-      <div className="flex h-14 items-center border-b border-border-subtle px-4">
-        <h2 className="text-lg font-semibold text-text-primary">GoferBot</h2>
+      {/* Logo */}
+      <div className="mb-6 flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-3">
-        <NavItem to="/app" icon="💬" label="聊天" />
-        <NavItem to="/app/kb" icon="📚" label="知识库" />
-        <NavItem to="/app/history" icon="🕐" label="历史" />
-        <NavItem to="/app/settings" icon="⚙️" label="设置" />
-        <NavItem to="/app/recycle-bin" icon="🗑️" label="回收站" />
+      {/* 导航图标 */}
+      <nav className="flex flex-1 flex-col items-center gap-3">
+        {navItems.map(({ to, icon: Icon, label }) => {
+          const isActive = location.pathname.startsWith(to)
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-xl transition-colors',
+                isActive
+                  ? 'bg-brand-primary/10 text-brand-primary'
+                  : 'text-text-tertiary hover:bg-surface-2 hover:text-text-primary',
+              )}
+              title={label}
+            >
+              <Icon className="h-5 w-5" />
+            </Link>
+          )
+        })}
       </nav>
-
-      {/* User footer */}
-      <div className="border-t border-border-subtle p-3">
-        <div className="text-xs text-text-tertiary">GoferBot v0.1.0</div>
-      </div>
     </aside>
-  )
-}
-
-function NavItem({
-  to,
-  icon,
-  label,
-}: {
-  to: string
-  icon: string
-  label: string
-}) {
-  return (
-    <Link
-      to={to}
-      className={cn(
-        'flex items-center gap-2 rounded-md px-3 py-2 text-sm',
-        'text-text-secondary transition-colors',
-        'hover:bg-surface-2 hover:text-text-primary',
-      )}
-    >
-      <span className="text-base">{icon}</span>
-      <span>{label}</span>
-    </Link>
   )
 }

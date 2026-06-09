@@ -5,48 +5,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ===== Pencil Design Tokens ===== */
-@theme {
-  /* Surface */
-  --color-surface-1: #ffffff;
-  --color-surface-2: #f8f9fa;
-  --color-surface-3: #f1f3f5;
 
-  /* Text */
-  --color-text-primary: #1a1a2e;
-  --color-text-secondary: #6c757d;
-  --color-text-tertiary: #adb5bd;
-
-  /* Brand */
-  --color-brand-primary: #4f46e5;
-  --color-brand-secondary: #7c3aed;
-
-  /* Border */
-  --color-border-default: #dee2e6;
-  --color-border-subtle: #e9ecef;
-
-  /* Status */
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#app {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  background-color: var(--color-surface-1);
-  color: var(--color-text-primary);
-}
 
 @theme inline {
   --font-heading: var(--font-sans);
@@ -173,4 +132,47 @@ body {
   html {
     @apply font-sans;
   }
+}
+
+/* ===== Pencil Design Tokens ===== */
+@theme {
+  /* Surface */
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f8f9fa;
+  --color-surface-3: #f1f3f5;
+
+  /* Text */
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #6c757d;
+  --color-text-tertiary: #adb5bd;
+
+  /* Brand */
+  --color-brand-primary: #4f46e5;
+  --color-brand-secondary: #7c3aed;
+
+  /* Border */
+  --color-border-default: #dee2e6;
+  --color-border-subtle: #e9ecef;
+
+  /* Status */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-surface-1);
+  color: var(--color-text-primary);
 }

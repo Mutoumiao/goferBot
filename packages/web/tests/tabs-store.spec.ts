@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useTabsStore } from '@/stores/tabs'
 
 // Helper to get a fresh store import
 async function getFreshState() {
@@ -14,7 +13,7 @@ describe('TabsStore — 类型 + 基础操作（任务 1-2）', () => {
   })
 
   it('AC-01: store 导出 useTabsStore', async () => {
-    await getFreshState()
+    const { useTabsStore } = await import('@/stores/tabs')
     expect(useTabsStore).toBeDefined()
   })
 
@@ -26,34 +25,48 @@ describe('TabsStore — 类型 + 基础操作（任务 1-2）', () => {
     expect(store.activeTabId).toBe('home')
   })
 
-  it('AC-02: addTab 添加标签到列表末尾并激活', async () => {
+  it('AC-02: addTab 添加多页面标签到列表末尾并激活', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
-    const tab = useTabsStore.getState().addTab('chat', 's1', 'Chat 1', '/app/chat/s1')
+    const tab = useTabsStore.getState().addTab('chat-session', 's1', 'Chat 1', '/app/chat?session=s1')
 
+    expect(tab).not.toBeNull()
     const state = useTabsStore.getState()
     expect(state.tabs).toHaveLength(2)
-    expect(state.tabs[1].id).toBe(tab.id)
-    expect(state.tabs[1].type).toBe('chat')
-    expect(state.activeTabId).toBe(tab.id)
+    expect(state.tabs[1].id).toBe(tab!.id)
+    expect(state.tabs[1].type).toBe('chat-session')
+    expect(state.activeTabId).toBe(tab!.id)
   })
 
-  it('AC-02: addTab 空 title 使用 type 作为默认标题', async () => {
+  it('AC-02: addTab 空 title 使用 type 映射默认标题', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
-    const tab = useTabsStore.getState().addTab('history')
+    const tab = useTabsStore.getState().addTab('chat-session', 's1')
 
-    expect(tab.title).toBe('history')
+    expect(tab).not.toBeNull()
+    expect(tab!.title).toBe('新对话')
+  })
+
+  it('AC-02: addTab 单页面标签已存在时复用并激活', async () => {
+    const { useTabsStore } = await import('@/stores/tabs')
+    const store = useTabsStore.getState()
+    const first = store.addTab('history', undefined, 'History')
+    expect(first).not.toBeNull()
+
+    const second = store.addTab('history', undefined, 'History 2')
+    expect(second).toBeNull() // 复用已有
+    expect(useTabsStore.getState().tabs).toHaveLength(2) // home + 1 history
+    expect(useTabsStore.getState().activeTabId).toBe(first!.id)
   })
 
   it('AC-05: activateTab 切换活跃标签', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const tab = store.addTab('kb', undefined, 'KB')
+    const tab = store.addTab('chat-session', 's1', 'Chat 1')
 
     store.activateTab('home')
     expect(useTabsStore.getState().activeTabId).toBe('home')
 
-    store.activateTab(tab.id)
-    expect(useTabsStore.getState().activeTabId).toBe(tab.id)
+    store.activateTab(tab!.id)
+    expect(useTabsStore.getState().activeTabId).toBe(tab!.id)
   })
 
   it('AC-05: activateTab 传入不存在的 tabId 静默忽略', async () => {
@@ -72,7 +85,7 @@ describe('TabsStore — addTabByRoute 去重（任务 3）', () => {
 
   it('AC-03: addTabByRoute 无同 route 标签时创建新标签', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
-    const result = useTabsStore.getState().addTabByRoute('/app/history', 'History', 'history')
+    const result = useTabsStore.getState().addTabByRoute('/app/history', 'History')
 
     expect(result).not.toBeNull()
     expect(result!.type).toBe('history')
@@ -80,34 +93,38 @@ describe('TabsStore — addTabByRoute 去重（任务 3）', () => {
     expect(useTabsStore.getState().activeTabId).toBe(result!.id)
   })
 
-  it('AC-03: addTabByRoute 有同 route 标签时激活已有标签，返回 null', async () => {
+  it('AC-03: addTabByRoute 单页面类型同 type 时复用已有标签', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const first = store.addTabByRoute('/app/history', 'History', 'history')
+    const first = store.addTabByRoute('/app/history', 'History')
     expect(first).not.toBeNull()
 
-    // 第二次调用同 route
-    const second = useTabsStore.getState().addTabByRoute('/app/history', 'History', 'history')
+    // 第二次调用同 type 单页面
+    const second = useTabsStore.getState().addTabByRoute('/app/history', 'History')
     expect(second).toBeNull()
-    expect(useTabsStore.getState().tabs).toHaveLength(2) // 仍然只有 home + 1
+    expect(useTabsStore.getState().tabs).toHaveLength(2)
     expect(useTabsStore.getState().activeTabId).toBe(first!.id)
   })
 
-  it('AC-03: addTabByRoute 空 route 返回 null', async () => {
-    const { useTabsStore } = await import('@/stores/tabs')
-    const result = useTabsStore.getState().addTabByRoute('', 'Empty', 'chat')
-    expect(result).toBeNull()
-    expect(useTabsStore.getState().tabs).toHaveLength(1) // 只有 home
-  })
-
-  it('AC-03: addTabByRoute 同 type 不同 route 可共存', async () => {
+  it('AC-03: addTabByRoute 多页面标签同 sessionId 时复用', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    store.addTabByRoute('/app/chat/s1', 'Chat 1', 'chat')
-    store.addTabByRoute('/app/chat/s2', 'Chat 2', 'chat')
+    const first = store.addTabByRoute('/app/chat?session=s1', 'Chat 1', 's1')
+    expect(first).not.toBeNull()
 
-    // 同 type 不同 route 应各自创建
-    expect(useTabsStore.getState().tabs).toHaveLength(3) // home + 2 chats
+    const second = store.addTabByRoute('/app/chat?session=s1', 'Chat 1', 's1')
+    expect(second).toBeNull()
+    expect(useTabsStore.getState().tabs).toHaveLength(2)
+    expect(useTabsStore.getState().activeTabId).toBe(first!.id)
+  })
+
+  it('AC-03: addTabByRoute 不同 sessionId 创建不同标签', async () => {
+    const { useTabsStore } = await import('@/stores/tabs')
+    const store = useTabsStore.getState()
+    store.addTabByRoute('/app/chat?session=s1', 'Chat 1', 's1')
+    store.addTabByRoute('/app/chat?session=s2', 'Chat 2', 's2')
+
+    expect(useTabsStore.getState().tabs).toHaveLength(3)
   })
 })
 
@@ -128,8 +145,8 @@ describe('TabsStore — removeTab + 关闭规则（任务 4-7）', () => {
   it('AC-04: 关闭活跃标签 → 激活左侧相邻标签', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const t1 = store.addTab('chat', 's1', 'Chat 1')
-    const t2 = store.addTab('history', undefined, 'History')
+    const t1 = store.addTab('chat-session', 's1', 'Chat 1')!
+    const t2 = store.addTab('chat-session', 's2', 'Chat 2')!
     // activeTabId = t2 (last added)
 
     store.removeTab(t2.id)
@@ -138,10 +155,10 @@ describe('TabsStore — removeTab + 关闭规则（任务 4-7）', () => {
     expect(state.activeTabId).toBe(t1.id)
   })
 
-  it('AC-04: 关闭时左侧无标签 → 创建 home', async () => {
+  it('AC-04: 关闭时左侧无标签 → 切换到 home', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const t1 = store.addTab('kb', undefined, 'KB')
+    const t1 = store.addTab('chat-session', 's1', 'Chat 1')!
     // tabs = [home, t1], activeTabId = t1
 
     store.removeTab(t1.id)
@@ -154,8 +171,8 @@ describe('TabsStore — removeTab + 关闭规则（任务 4-7）', () => {
   it('AC-04: 关闭不在 active 位置的标签 → activeTabId 不变', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    store.addTab('chat', 's1', 'Chat')
-    const t2 = store.addTab('history', undefined, 'History')
+    store.addTab('chat-session', 's1', 'Chat 1')
+    const t2 = store.addTab('chat-session', 's2', 'Chat 2')!
     store.activateTab('home')
 
     store.removeTab(t2.id)
@@ -166,8 +183,8 @@ describe('TabsStore — removeTab + 关闭规则（任务 4-7）', () => {
   it('AC-06: closeAllTabs 关闭所有可关闭标签 → 只剩 home', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    store.addTab('chat', 's1', 'Chat')
-    store.addTab('history', undefined, 'History')
+    store.addTab('chat-session', 's1', 'Chat 1')
+    store.addTab('chat-session', 's2', 'Chat 2')
     store.addTab('kb', undefined, 'KB')
 
     store.closeAllTabs()
@@ -180,9 +197,9 @@ describe('TabsStore — removeTab + 关闭规则（任务 4-7）', () => {
   it('AC-06: closeOtherTabs 关闭除指定标签外的所有可关闭标签', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    store.addTab('chat', 's1', 'Chat')
-    store.addTab('history', undefined, 'History')
-    const t3 = store.addTab('kb', undefined, 'KB')
+    store.addTab('chat-session', 's1', 'Chat 1')
+    store.addTab('chat-session', 's2', 'Chat 2')
+    const t3 = store.addTab('chat-session', 's3', 'Chat 3')!
 
     store.closeOtherTabs(t3.id)
     const state = useTabsStore.getState()
@@ -194,20 +211,19 @@ describe('TabsStore — removeTab + 关闭规则（任务 4-7）', () => {
   it('AC-06: closeOtherTabs 传入不存在的 tabId → 无操作', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    store.addTab('chat', 's1', 'Chat')
-    store.addTab('history', undefined, 'History')
+    store.addTab('chat-session', 's1', 'Chat 1')
+    store.addTab('chat-session', 's2', 'Chat 2')
     const before = useTabsStore.getState().tabs.length
 
     store.closeOtherTabs('nonexistent')
     const after = useTabsStore.getState()
-    expect(after.tabs).toHaveLength(before) // 无变化
+    expect(after.tabs).toHaveLength(before)
   })
 
   it('AC-07: 关闭后无标签时自动创建 home', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const t1 = store.addTab('chat', 's1', 'Chat')
-    // 尝试移除非 home 的最后一个标签
+    const t1 = store.addTab('chat-session', 's1', 'Chat 1')!
     store.removeTab(t1.id)
 
     expect(useTabsStore.getState().tabs).toHaveLength(1)
@@ -223,12 +239,12 @@ describe('TabsStore — persist（任务 8-9）', () => {
 
   it('AC-08: persist 配置 name 为 goferbot-tabs', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
-    useTabsStore.getState().addTab('chat', 's1', 'Test')
+    useTabsStore.getState().addTab('chat-session', 's1', 'Test')
 
     const stored = localStorage.getItem('goferbot-tabs')
     expect(stored).toBeTruthy()
     const parsed = JSON.parse(stored!)
-    expect(parsed.state.tabs).toHaveLength(2) // home + chat
+    expect(parsed.state.tabs).toHaveLength(2)
     expect(parsed.state).toHaveProperty('activeTabId')
   })
 
@@ -236,7 +252,7 @@ describe('TabsStore — persist（任务 8-9）', () => {
     const storedData = {
       state: {
         tabs: [
-          { id: 'custom', type: 'chat', title: 'Custom', isDirty: false, closable: true },
+          { id: 'custom', type: 'chat-session', title: 'Custom', route: '/app/chat?session=c1', isDirty: false, closable: true },
         ],
         activeTabId: 'custom',
       },
@@ -259,7 +275,7 @@ describe('TabsStore — persist（任务 8-9）', () => {
   it('AC-09: hydrate 恢复后 activeTabId 指向不存在的标签 → 重置为 home', async () => {
     const storedData = {
       state: {
-        tabs: [{ id: 'home', type: 'chat', title: '首页', isDirty: false, closable: false }],
+        tabs: [{ id: 'home', type: 'chat', title: '问答首页', route: '/app/chat', isDirty: false, closable: false }],
         activeTabId: 'nonexistent',
       },
       version: 0,
@@ -315,7 +331,7 @@ describe('TabsStore — 辅助方法（任务 10）', () => {
   it('AC-10: renameTab 更新标签标题', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const tab = store.addTab('chat', 's1', 'Old Title')
+    const tab = store.addTab('chat-session', 's1', 'Old Title')!
 
     store.renameTab(tab.id, 'New Title')
     expect(useTabsStore.getState().tabs.find((t) => t.id === tab.id)?.title).toBe('New Title')
@@ -329,7 +345,7 @@ describe('TabsStore — 辅助方法（任务 10）', () => {
   it('AC-10: setTabDirty 设置标签 dirty 标记', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const tab = store.addTab('chat', 's1', 'Chat')
+    const tab = store.addTab('chat-session', 's1', 'Chat')!
 
     store.setTabDirty(tab.id, true)
     expect(useTabsStore.getState().tabs.find((t) => t.id === tab.id)?.isDirty).toBe(true)
@@ -351,8 +367,7 @@ describe('TabsStore — 辅助方法（任务 10）', () => {
   it('AC-10: updateActiveTabSession 更新当前活跃标签 session 信息', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const tab = store.addTab('chat', undefined, 'Chat')
-    // tab 已激活
+    const tab = store.addTab('chat-session', 's1', 'Chat')!
 
     store.updateActiveTabSession('s-abc', 'Renamed')
     const updated = useTabsStore.getState().tabs.find((t) => t.id === tab.id)
@@ -363,10 +378,19 @@ describe('TabsStore — 辅助方法（任务 10）', () => {
   it('AC-10: activeTab 派生返回当前活跃标签对象', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const tab = store.addTab('chat', 's1', 'Chat')
+    const tab = store.addTab('chat-session', 's1', 'Chat')!
 
     expect(useTabsStore.getState().activeTab()).toEqual(tab)
     store.activateTab('home')
     expect(useTabsStore.getState().activeTab()?.id).toBe('home')
+  })
+
+  it('AC-10: findTabByRoute 根据路由查找标签', async () => {
+    const { useTabsStore } = await import('@/stores/tabs')
+    const store = useTabsStore.getState()
+    store.addTab('kb', undefined, 'KB', '/app/kb')
+
+    expect(store.findTabByRoute('/app/kb')).not.toBeNull()
+    expect(store.findTabByRoute('/app/not-exist')).toBeNull()
   })
 })

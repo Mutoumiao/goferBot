@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useSearch } from '@tanstack/react-router'
 import { useRequest, useSSE } from 'alova/client'
 import { getHistory, streamChat } from '@/api/chat'
 import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
+import { useTabsStore } from '@/stores/tabs'
 import { getLLMConfig, type LLMConfig } from '@/utils/llm-config'
 import { parseSSEChunk } from '@/utils/sse-parser'
 import { ChatInput } from '@/components/chat/ChatInput'
@@ -29,8 +30,14 @@ const FALLBACK_LLM_CONFIG: LLMConfig = {
 }
 
 export function ChatViewPage() {
+  const search = useSearch({ from: '/app/chat' })
+  const sessionIdFromUrl = typeof search === 'object' && search !== null
+    ? (search as Record<string, unknown>).session as string | undefined
+    : undefined
+
   const {
     activeSession,
+    sessions,
     messages,
     streamingContent,
     isStreaming,
@@ -47,7 +54,11 @@ export function ChatViewPage() {
     deleteSession,
     clearError,
     loadSessions,
+    setActiveSession,
   } = useChatStore()
+
+  const renameTab = useTabsStore((s) => s.renameTab)
+  const updateActiveTabSession = useTabsStore((s) => s.updateActiveTabSession)
 
   // LLM 配置（从 settingsStore 读取，未配置时回退默认值）
   const settingsConfig = useSettingsStore((s) => s.config)
@@ -65,6 +76,38 @@ export function ChatViewPage() {
   useEffect(() => {
     loadSessions()
   }, [loadSessions])
+
+  // 根据 URL session 参数设置活跃会话
+  useEffect(() => {
+    if (!sessionIdFromUrl) {
+      // URL 无 session 参数，清空活跃会话（首页状态）
+      setActiveSession(null)
+      return
+    }
+    if (sessionIdFromUrl === 'new') {
+      // 新建会话模式
+      createSession().then((newSession) => {
+        if (newSession) {
+          setActiveSession(newSession)
+          updateActiveTabSession(newSession.id, newSession.title)
+        }
+      })
+      return
+    }
+    // 已有会话模式：从 sessions 中查找
+    const target = sessions.find((s) => s.id === sessionIdFromUrl)
+    if (target) {
+      setActiveSession(target)
+    } else {
+      // 会话不在列表中，尝试加载后查找
+      loadSessions().then(() => {
+        const refreshed = useChatStore.getState().sessions.find((s) => s.id === sessionIdFromUrl)
+        if (refreshed) {
+          setActiveSession(refreshed)
+        }
+      })
+    }
+  }, [sessionIdFromUrl, sessions, setActiveSession, createSession, loadSessions])
 
   // Error toast 自动消失
   useEffect(() => {
@@ -166,12 +209,15 @@ export function ChatViewPage() {
       if (!sessionId) {
         const newSession = await createSession()
         sessionId = newSession?.id
+        if (newSession) {
+          updateActiveTabSession(newSession.id, newSession.title)
+        }
       }
 
       // 发起 SSE 请求
       sseSend(content, sessionId ?? '', llmConfig, knowledgeBaseIds)
     },
-    [activeSession, appendMessage, setIsStreaming, sseSend, createSession, llmConfig, streamingContent],
+    [activeSession, appendMessage, setIsStreaming, sseSend, createSession, llmConfig, streamingContent, updateActiveTabSession],
   )
 
   const handleStop = useCallback(() => {
@@ -216,9 +262,11 @@ export function ChatViewPage() {
     }
     if (trimmed !== activeSession.title) {
       await renameSession(activeSession.id, trimmed)
+      // 同步更新标签标题
+      renameTab(activeSession.id, trimmed)
     }
     setIsRenaming(false)
-  }, [renameValue, activeSession, renameSession])
+  }, [renameValue, activeSession, renameSession, renameTab])
 
   // 取消重命名
   const handleCancelRename = useCallback(() => {
