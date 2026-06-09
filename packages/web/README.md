@@ -104,32 +104,32 @@ tests/                      # [测试] vitest + happy-dom + @testing-library/rea
 
 ### Utils
 
-| 文件 | 导出 | 用途 |
-|------|------|------|
-| `utils/server.ts` | `alovaInstance` | HTTP 客户端，建新 API 必用 |
-| `utils/llm-config.ts` | `getLLMConfig()` / `mergeAppConfig()` / `DEFAULT_CONFIG` / `configuredProviders()` | LLM 配置读取/合并 |
-| `utils/sse-parser.ts` | `parseSSEChunk()` / `SSEChunk` | SSE 流式 chunk 解析 |
-| `utils/cn.ts` | `cn()` | Tailwind class 合并 |
+| 文件                  | 导出                                                                               | 用途                       |
+|-----------------------|------------------------------------------------------------------------------------|----------------------------|
+| `utils/server.ts`     | `alovaInstance`                                                                    | HTTP 客户端，建新 API 必用 |
+| `utils/llm-config.ts` | `getLLMConfig()` / `mergeAppConfig()` / `DEFAULT_CONFIG` / `configuredProviders()` | LLM 配置读取/合并          |
+| `utils/sse-parser.ts` | `parseSSEChunk()` / `SSEChunk`                                                     | SSE 流式 chunk 解析        |
+| `lib/utils.ts`        | `cn()`                                                                             | Tailwind class 合并        |
 
 ### API 方法
 
-| 文件 | 方法 |
-|------|------|
-| `api/auth.ts` | `login` / `register` / `getMe` / `refresh` |
-| `api/chat.ts` | `sendMessage` / `streamChat` / `getHistory` / `getSessions` / `createSession` / `deleteSession` / `renameSession` |
-| `api/kb.ts` | `getKbList` / `createKb` / `deleteKb` / `getKbDetail` / `uploadFile` |
+| 文件          | 方法                                                                                                                                    |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `api/auth.ts` | `login` / `register` / `getMe` / `refresh`                                                                                              |
+| `api/chat.ts` | `sendMessage` / `streamChat` / `getHistory` / `getSessions` / `createSession` / `deleteSession` / `renameSession`                       |
+| `api/kb.ts`   | `getKbList` / `createKb` / `deleteKb` / `getKbDetail` / `uploadFile`                                                                    |
 | `api/file.ts` | `getFolders` / `createFolder` / `renameFolder` / `deleteFolder` / `getDocuments` / `deleteDocument` / `renameDocument` / `moveDocument` |
 
 ### Stores
 
-| Store | 类型 | 核心字段 | 核心 actions |
-|-------|------|---------|-------------|
-| `useAuthStore` | persist | `token`, `user`, `isAuthenticated` | `setAuth()` / `clearAuth()` |
-| `useSettingsStore` | persist | `config: AppConfig`, `savedConfig`, `isLoading`, `error` | `updateConfig()` / `loadConfig()` / `saveConfig()` / `getLLMConfig()` / `isDirty()` / `resetToSaved()` |
-| `useTabsStore` | persist | `tabs: Tab[]`, `activeTabId` | `addTab()` / `addTabByRoute()` / `removeTab()` / `closeAllTabs()` / `closeOtherTabs()` / `activeTab()` |
-| `useChatStore` | plain | `sessions`, `messages`, `isStreaming`, `streamingContent`, `activeSession` | `loadSessions()` / `createSession()` / `deleteSession()` / `appendStreamContent()` / `flushStreamContent()` / `sendMessage()` |
-| `useKbStore` | plain | `entries`, `isLoading`, `selectedId` | `setEntries()` / `addEntry()` / `removeEntry()` / `setSelectedId()` |
-| `useFileStore` | plain | `uploadTasks`, `folders`, `documents`, `currentKbId` | `addTask()` / `processQueue()` / `loadItems()` / `deleteDocument()` / `createFolder()` / `breadcrumb()` |
+| Store              | 类型    | 核心字段                                                                   | 核心 actions                                                                                                                  |
+|--------------------|---------|----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `useAuthStore`     | persist | `token`, `user`, `isAuthenticated`                                         | `setAuth()` / `clearAuth()`                                                                                                   |
+| `useSettingsStore` | persist | `config: AppConfig`, `savedConfig`, `isLoading`, `error`                   | `updateConfig()` / `loadConfig()` / `saveConfig()` / `getLLMConfig()` / `isDirty()` / `resetToSaved()`                        |
+| `useTabsStore`     | persist | `tabs: Tab[]`, `activeTabId`                                               | `addTab()` / `addTabByRoute()` / `removeTab()` / `closeAllTabs()` / `closeOtherTabs()` / `activeTab()`                        |
+| `useChatStore`     | plain   | `sessions`, `messages`, `isStreaming`, `streamingContent`, `activeSession` | `loadSessions()` / `createSession()` / `deleteSession()` / `appendStreamContent()` / `flushStreamContent()` / `sendMessage()` |
+| `useKbStore`       | plain   | `entries`, `isLoading`, `selectedId`                                       | `setEntries()` / `addEntry()` / `removeEntry()` / `setSelectedId()`                                                           |
+| `useFileStore`     | plain   | `uploadTasks`, `folders`, `documents`, `currentKbId`                       | `addTask()` / `processQueue()` / `loadItems()` / `deleteDocument()` / `createFolder()` / `breadcrumb()`                       |
 
 ---
 
@@ -210,12 +210,12 @@ it('should show stop button when streaming', () => {
 
 ## 技术栈
 
-| 类别 | 技术 |
-|------|------|
-| 框架 | TanStack Start + TanStack Router |
-| UI | React 19 + Tailwind CSS v4 + shadcn/ui |
-| 状态管理 | Zustand 5（persist / plain） |
-| HTTP | alova 3（`alovaInstance` + `useSSE` / `useRequest`） |
-| 测试 | Vitest 4 + happy-dom + @testing-library/react |
-| 类型 | TypeScript 5（strict / verbatimModuleSyntax） |
-| 别名 | `@/` → `./src/`，`@goferbot/data` → `../data/src/types/index.ts` |
+| 类别     | 技术                                                             |
+|----------|------------------------------------------------------------------|
+| 框架     | TanStack Start + TanStack Router                                 |
+| UI       | React 19 + Tailwind CSS v4 + shadcn/ui                           |
+| 状态管理 | Zustand 5（persist / plain）                                     |
+| HTTP     | alova 3（`alovaInstance` + `useSSE` / `useRequest`）             |
+| 测试     | Vitest 4 + happy-dom + @testing-library/react                    |
+| 类型     | TypeScript 5（strict / verbatimModuleSyntax）                    |
+| 别名     | `@/` → `./src/`，`@goferbot/data` → `../data/src/types/index.ts` |
