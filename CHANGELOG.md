@@ -4,6 +4,13 @@
 
 ---
 
+## [2026-06-09]
+
+### frontend
+
+- [closed] f-47 KB CRUD 完整交互 — CreateKbDialog/EditKbDialog/DeleteKbDialog（shadcn Dialog/AlertDialog + react-hook-form + zodResolver）+ KB 列表页骨架屏/空态/错误态/卡片网格 + 编辑/删除悬停按钮 + CRUD 后自动刷新 + Schema 修复（`title` → `name`）+ 246 测试 [issue](docs/issues/f-47-kb-crud/)
+- [closed] f-46 KB 文件上传 — 拖拽上传 + FileManager + FileGridItem + BreadcrumbNav + UploadProgressBar [issue](docs/issues/f-46-kb-file-upload/)
+
 ## [2026-06-08]
 
 ### frontend

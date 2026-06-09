@@ -1,32 +1,18 @@
 # 待办事项
 
-> 最后更新：2026-06-08
+> 最后更新：2026-06-09
 
 ## 进行中
 
 _暂无_
 
-## 已完成 — 前端迁移：阶段二补全（P0）✅
-
-> PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.6
-> 全部 4 个 Store 迁移已完成，P0 阻塞全部解除。
-
-| Issue | 摘要 |
-|-------|------|
-| f-40 | session store → chat store 扩展（CRUD + 18 测试） |
-| f-41 | settings store（Zustand persist + dirty 追踪 + 35 测试） |
-| f-42 | file store（上传队列 + 并发控制 + 37 测试） |
-| f-43 | tabs store（persist + 去重 + home 常驻 + 29 测试） |
-
 ## 待启动 — 前端迁移：阶段三深化（P1）
 
 > PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.7
-> 当前进度：2/6 closed
 
 | Issue | 优先级 | 阻塞于 | 摘要 |
 |-------|--------|--------|------|
-| [f-46](docs/issues/f-46-kb-file-upload/) | p1 | — | KB 文件上传（拖拽 + FileManager + FileGridItem + BreadcrumbNav） |
-| [f-47](docs/issues/f-47-kb-crud/) | p1 | f-46 | KB CRUD 完整交互（创建/编辑/删除 Dialog + 详情页） |
+| [f-48](docs/issues/f-48-settings-form/) | p1 | — | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
 | [f-48](docs/issues/f-48-settings-form/) | p1 | — | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
 | [f-49](docs/issues/f-49-blocknote-editor/) | p1 | — | BlockNote 富文本编辑器替换纯文本输入 |
 

@@ -14,5 +14,6 @@
   },
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "prisma.pinToPrisma6": true
+  "prisma.pinToPrisma6": true,
+  "cSpell.words": ["alova", "goferbot"]
 }
