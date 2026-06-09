@@ -12,6 +12,8 @@ import { EditorPlaceholder } from '@/components/chat/EditorPlaceholder'
 import { SessionList } from '@/components/chat/SessionList'
 import { openDialog } from '@/overlays/services/overlay-service'
 import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { AlertCircleIcon, XIcon } from 'lucide-react'
 
 export const Route = createFileRoute('/app/chat')({
@@ -243,7 +245,7 @@ export function ChatViewPage() {
         {/* 会话标题栏 */}
         <div className="flex h-12 items-center border-b border-border-default bg-surface-1 px-4">
           {isRenaming && activeSession ? (
-            <input
+            <Input
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               onBlur={handleConfirmRename}
@@ -251,7 +253,8 @@ export function ChatViewPage() {
                 if (e.key === 'Enter') handleConfirmRename()
                 if (e.key === 'Escape') handleCancelRename()
               }}
-              className="rounded border border-brand-primary px-2 py-0.5 text-sm font-medium text-text-primary outline-none"
+              className="h-7 w-64 text-sm font-medium"
+              autoFocus
             />
           ) : (
             <h2
@@ -317,12 +320,15 @@ export function ChatViewPage() {
           {errorMessage && (
             <div className="mx-4 my-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
               <p className="text-sm text-destructive-foreground">{errorMessage}</p>
-              <button
+              <Button
+                data-testid="error-retry-btn"
+                variant="destructive"
+                size="sm"
                 onClick={handleRetry}
-                className="mt-2 rounded-md bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive/90"
+                className="mt-2"
               >
                 重试
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -340,13 +346,14 @@ export function ChatViewPage() {
           <div className="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-600/20 bg-white px-4 py-2.5 text-sm text-danger-600 shadow-xl">
             <AlertCircleIcon className="size-4" />
             <span>{error}</span>
-            <button
+            <Button
               data-testid="error-toast-close"
+              variant="ghost"
+              size="icon-xs"
               onClick={clearError}
-              className="ml-1 rounded p-0.5 hover:bg-surface-2"
             >
               <XIcon className="size-3.5" />
-            </button>
+            </Button>
           </div>
         )}
       </div>

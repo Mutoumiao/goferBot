@@ -3,6 +3,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useRequest } from 'alova/client'
 import { getSessions, deleteSession } from '@/api/chat'
 import { useChatStore } from '@/stores/chat'
+import { Button } from '@/components/ui/button'
+import { Trash2Icon } from 'lucide-react'
 import type { Session } from '@goferbot/data'
 
 export const Route = createFileRoute('/app/history')({
@@ -27,7 +29,6 @@ function HistoryPage() {
     { immediate: false },
   )
 
-  // alova onSuccess 已解包 { data: T } → 直接访问 sessions
   const response = data as { sessions?: Session[] } | undefined
   const sessions = response?.sessions ?? []
 
@@ -49,13 +50,14 @@ function HistoryPage() {
           <h1 className="text-xl font-bold text-text-primary">历史会话</h1>
           <p className="mt-1 text-sm text-text-secondary">查看和管理你的历史对话记录</p>
         </div>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => reload()}
           disabled={loading}
-          className="rounded-md px-3 py-1.5 text-xs text-text-secondary hover:bg-surface-2 disabled:opacity-50"
         >
           {loading ? '刷新中...' : '刷新'}
-        </button>
+        </Button>
       </div>
 
       {/* Loading */}
@@ -67,12 +69,9 @@ function HistoryPage() {
       {!loading && error && (
         <div className="mt-8 text-center">
           <p className="text-sm text-error">加载失败：{error.message || '未知错误'}</p>
-          <button
-            onClick={() => reload()}
-            className="mt-3 text-sm text-brand-primary hover:underline"
-          >
+          <Button variant="link" onClick={() => reload()} className="mt-3">
             重试
-          </button>
+          </Button>
         </div>
       )}
 
@@ -111,41 +110,19 @@ function HistoryPage() {
                   )}
                 </p>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={(e) => handleDelete(session.id, e)}
                 disabled={deletingId === session.id}
-                className="ml-3 shrink-0 rounded p-1 text-text-tertiary hover:text-error hover:bg-surface-2 disabled:opacity-50"
                 title="删除会话"
               >
-                <TrashIcon />
-              </button>
+                <Trash2Icon className="size-4" />
+              </Button>
             </div>
           ))}
         </div>
       )}
     </div>
-  )
-}
-
-/** 内联 SVG 垃圾桶图标 */
-function TrashIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 6h18" />
-      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-      <line x1="10" y1="11" x2="10" y2="17" />
-      <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
   )
 }

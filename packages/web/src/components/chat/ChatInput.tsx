@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
-import { cn } from '@/utils/cn'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { KbSelector } from './KbSelector'
 
 interface ChatInputProps {
@@ -58,7 +59,7 @@ export function ChatInput({
         )}
       </div>
       <div className="flex items-end gap-2">
-        <textarea
+        <Textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -66,35 +67,19 @@ export function ChatInput({
           disabled={disabled || isStreaming}
           placeholder={placeholder}
           rows={2}
-          className={cn(
-            'flex-1 resize-none rounded-md border px-3 py-2 text-sm',
-            'border-border-default bg-surface-1 text-text-primary',
-            'focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-          )}
+          className="flex-1 resize-none"
         />
         {isStreaming ? (
-          <button
-            onClick={onStop}
-            className={cn(
-              'rounded-md px-4 py-2 text-sm font-medium text-white',
-              'bg-destructive hover:bg-destructive/90',
-            )}
-          >
+          <Button variant="destructive" onClick={onStop}>
             停止
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             onClick={handleSend}
             disabled={disabled || !value.trim()}
-            className={cn(
-              'rounded-md px-4 py-2 text-sm font-medium text-white',
-              'bg-brand-primary hover:bg-brand-secondary',
-              'disabled:cursor-not-allowed disabled:opacity-50',
-            )}
           >
             发送
-          </button>
+          </Button>
         )}
       </div>
     </div>

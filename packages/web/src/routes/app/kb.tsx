@@ -7,6 +7,7 @@ import { BreadcrumbNav } from '@/components/kb/BreadcrumbNav'
 import { FileManager } from '@/components/kb/FileManager'
 import { UploadDropZone } from '@/components/kb/UploadDropZone'
 import { UploadProgressBar } from '@/components/kb/UploadProgressBar'
+import { Card, CardContent } from '@/components/ui/card'
 import type { Folder, DocumentItem } from '@/stores/file'
 
 type ViewMode = 'grid' | 'list'
@@ -172,19 +173,21 @@ export function KbListPage() {
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {entries.map((entry) => (
-              <div
+              <Card
                 key={entry.id}
-                className="rounded-lg border border-border-default bg-surface-1 p-4 hover:shadow-sm transition-shadow cursor-pointer"
+                className="cursor-pointer hover:shadow-sm transition-shadow"
                 onClick={() => setSelectedId(entry.id)}
               >
-                <h3 className="font-medium text-text-primary">{entry.title}</h3>
-                {entry.description && (
-                  <p className="mt-1 text-xs text-text-secondary line-clamp-2">{entry.description}</p>
-                )}
-                <div className="mt-3 flex items-center gap-2 text-xs text-text-tertiary">
-                  <span>📄 {entry.fileCount ?? 0} 个文件</span>
-                </div>
-              </div>
+                <CardContent className="pt-6">
+                  <h3 className="font-medium text-text-primary">{entry.title}</h3>
+                  {entry.description && (
+                    <p className="mt-1 text-xs text-text-secondary line-clamp-2">{entry.description}</p>
+                  )}
+                  <div className="mt-3 flex items-center gap-2 text-xs text-text-tertiary">
+                    <span>📄 {entry.fileCount ?? 0} 个文件</span>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

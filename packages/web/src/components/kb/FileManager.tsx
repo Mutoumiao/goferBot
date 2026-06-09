@@ -2,6 +2,21 @@ import { FolderIcon } from 'lucide-react'
 import type { Folder, DocumentItem } from '@/stores/file'
 import { FileGridItem } from './FileGridItem'
 import { FileListItem } from './FileListItem'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface FileManagerProps {
   folders: Folder[]
@@ -86,12 +101,9 @@ export function FileManager({
       <div className="p-4">
         <div className="bg-error/10 border border-error rounded-lg p-4">
           <p className="text-error text-sm">{error}</p>
-          <button
-            onClick={onRetry}
-            className="mt-2 px-3 py-1 bg-primary text-white text-sm rounded hover:bg-primary/90"
-          >
+          <Button variant="destructive" size="sm" onClick={onRetry} className="mt-2">
             重试
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -113,49 +125,54 @@ export function FileManager({
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <select
-            data-testid="sort-select"
+          <Select
             value={`${sortBy}-${sortOrder}`}
-            onChange={(e) => {
-              const [newSortBy, newSortOrder] = e.target.value.split('-') as [string, 'asc' | 'desc']
-              onSortChange(`${newSortBy}-${newSortOrder}`)
-            }}
-            className="text-sm border border-border-default rounded px-2 py-1 bg-surface-1"
+            onValueChange={onSortChange}
           >
-            <option value="name-asc">名称（升序）</option>
-            <option value="name-desc">名称（降序）</option>
-            <option value="date-desc">日期（最新）</option>
-            <option value="date-asc">日期（最早）</option>
-            <option value="size-desc">大小（最大）</option>
-            <option value="size-asc">大小（最小）</option>
-          </select>
-          <select
-            data-testid="filter-select"
+            <SelectTrigger data-testid="sort-select" className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name-asc">名称（升序）</SelectItem>
+              <SelectItem value="name-desc">名称（降序）</SelectItem>
+              <SelectItem value="date-desc">日期（最新）</SelectItem>
+              <SelectItem value="date-asc">日期（最早）</SelectItem>
+              <SelectItem value="size-desc">大小（最大）</SelectItem>
+              <SelectItem value="size-asc">大小（最小）</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
             value={filterType}
-            onChange={(e) => onFilterChange(e.target.value)}
-            className="text-sm border border-border-default rounded px-2 py-1 bg-surface-1"
+            onValueChange={onFilterChange}
           >
-            <option value="all">全部</option>
-            <option value="image">图片</option>
-            <option value="document">文档</option>
-            <option value="spreadsheet">表格</option>
-          </select>
+            <SelectTrigger data-testid="filter-select" className="w-[100px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部</SelectItem>
+              <SelectItem value="image">图片</SelectItem>
+              <SelectItem value="document">文档</SelectItem>
+              <SelectItem value="spreadsheet">表格</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-1">
-          <button
+          <Button
             data-testid="view-mode-grid"
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => onViewModeChange('grid')}
-            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-surface-2 text-primary' : 'text-text-secondary'}`}
           >
             网格
-          </button>
-          <button
+          </Button>
+          <Button
             data-testid="view-mode-list"
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => onViewModeChange('list')}
-            className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-surface-2 text-primary' : 'text-text-secondary'}`}
           >
             列表
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -180,17 +197,17 @@ export function FileManager({
           ))}
         </div>
       ) : (
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border-default text-left text-xs text-text-tertiary">
-              <th className="py-2 px-3 w-8"></th>
-              <th className="py-2 px-3">名称</th>
-              <th className="py-2 px-3">类型</th>
-              <th className="py-2 px-3 text-right">大小</th>
-              <th className="py-2 px-3 text-right">日期</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8"></TableHead>
+              <TableHead>名称</TableHead>
+              <TableHead>类型</TableHead>
+              <TableHead className="text-right">大小</TableHead>
+              <TableHead className="text-right">日期</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {sortedFolders.map((folder) => (
               <FileListItem
                 key={folder.id}
@@ -207,8 +224,8 @@ export function FileManager({
                 onClick={() => onDocumentClick(doc)}
               />
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </div>
   )

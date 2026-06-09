@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react'
 import { Cloud } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB，与后端限制对齐
 
@@ -150,13 +151,13 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
               <span className="shrink-0 font-medium">不支持的文件类型</span>
             </div>
           ))}
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => setRejectedFiles([])}
-            className="text-xs text-text-tertiary hover:text-text-secondary underline"
           >
             清除
-          </button>
+          </Button>
         </div>
       )}
     </div>

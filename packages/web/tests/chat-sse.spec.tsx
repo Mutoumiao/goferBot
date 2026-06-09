@@ -109,8 +109,9 @@ describe('ChatViewPage SSE streaming', () => {
     })
 
     expect(screen.getByText(/网络连接失败/)).toBeDefined()
-    // SessionList 中也有"重试"按钮，使用更具体的选择器
-    expect(document.querySelector('.bg-destructive')?.textContent).toContain('重试')
+    // ErrorCard 中的重试按钮使用 shadcn Button variant="destructive"
+    const retryBtn = document.querySelector('[data-testid="error-retry-btn"]') as HTMLElement
+    expect(retryBtn?.textContent).toContain('重试')
   })
 
   it('AC-08: 点击重试按钮后清除错误并重新发送', async () => {
