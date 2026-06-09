@@ -29,7 +29,7 @@
 
 ### 单元测试（Unit）
 
-- **范围**：单一函数、Vue 组件、Pinia Store、NestJS Service、纯工具函数
+- **范围**：单一函数、React 组件、Zustand Store、NestJS Service、纯工具函数
 - **原则**：无外部依赖（数据库、网络、文件系统），全部 mock
 - **速度**：毫秒级，可频繁运行
 - **数量**：最多，覆盖所有业务逻辑分支
@@ -56,10 +56,11 @@
 tests/
 ├── unit/
 │   ├── server/        # 后端单元测试（Service/Util/Worker）— .spec.ts
-│   ├── webui/         # 前端 Issue 验收测试 — .spec.ts
-│   ├── components/    # Vue 组件测试 — .test.ts
-│   ├── stores/        # Pinia Store 测试 — .test.ts
-│   ├── composables/   # 组合式函数测试 — .test.ts
+│   ├── web/           # 前端 Issue 验收测试 — .spec.tsx
+│   │   └── (已迁移至 packages/web/tests/)
+│   ├── components/    # 历史 Vue 组件测试 — .test.ts（已冻结）
+│   ├── stores/        # 历史 Pinia Store 测试 — .test.ts（已冻结）
+│   ├── composables/   # 历史组合式函数测试 — .test.ts（已冻结）
 │   └── utils/         # 工具函数测试 — .test.ts
 ├── integration/       # 后端 API 集成测试 — .spec.ts
 │   └── helpers/
@@ -89,7 +90,7 @@ tests/
 
 | Issue 前缀 | 轨道 | 测试目录 | 测试层级 | 示例 |
 |------------|------|----------|----------|------|
-| `f-XX` | 前端功能 | `tests/unit/webui/` | 单元 | `f-16-kb-selector` → `tests/unit/webui/kb-selector.spec.ts` |
+| `f-XX` | 前端功能 | `packages/web/tests/` | 单元 | `f-16-kb-selector` → `packages/web/tests/kb-selector.spec.tsx` |
 | `b-XX` | 后端功能 | `tests/unit/server/` 或 `tests/integration/` | 单元/集成 | `b-04-kb-crud` → `tests/integration/knowledge-base.spec.ts` |
 | `i-XX` | 基础设施 | `tests/integration/` | 集成 | `i-01-infra` → `tests/integration/infra.spec.ts` |
 | `q-XX` | 质量/测试 | `tests/e2e/` 或 `tests/integration/` | E2E / 集成 | `q-01-onboarding` → `tests/e2e/flows/onboarding.spec.ts`<br>`q-17-rev` → `tests/integration/auth-kb-document.spec.ts` |
@@ -101,7 +102,7 @@ tests/
 
 | 后缀 | 用途 | 位置 | 用例命名 |
 |------|------|------|----------|
-| `.spec.ts` | **Issue 验收测试**（TDD，与 checklist.json 对齐） | `tests/unit/webui/`、`tests/unit/server/`、`tests/integration/`、`tests/e2e/` | 必须以 `AC-XX:` 开头 |
+| `.spec.ts` / `.spec.tsx` | **Issue 验收测试**（TDD，与 checklist.json 对齐） | `packages/web/tests/`、`tests/unit/server/`、`tests/integration/`、`tests/e2e/` | 必须以 `AC-XX:` 开头 |
 | `.test.ts` | 通用单元测试（组件、Store、工具函数） | `tests/unit/components/`、`tests/unit/stores/`、`tests/unit/composables/`、`tests/unit/utils/` | 描述式，无 AC-XX 要求 |
 
 ---
@@ -225,7 +226,7 @@ it('AC-01: user can create a knowledge base', async () => {
 | MinIO / S3 | ❌ Mock | ❌ Mock（固定返回值） | ✅ 真实（如需要） |
 | 外部 API（OpenAI） | ❌ Mock | ❌ Mock（vi.spyOn fetch） | ❌ Mock |
 | NestJS Service | ✅ 直接实例化 | ✅ 通过模块加载 | ✅ 黑盒，不直接调用 |
-| Vue 组件子组件 | ✅ Stub | — | — |
+| React 组件子组件 | ✅ Mock / 直接渲染 | — | — |
 
 ---
 

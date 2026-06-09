@@ -1,7 +1,7 @@
 # GoferBot
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs" alt="Vue 3">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" alt="React 19">
   <img src="https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs" alt="NestJS 10">
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
@@ -27,7 +27,7 @@
 
 | 层 | 职责 | 技术选型 | 路径 |
 | -- | ---- | -------- | ---- |
-| **Vue 3 前端** | UI 渲染、状态管理、HTTP API 调用 | Vue 3 + Pinia + Tailwind CSS v4 | `packages/webui/` |
+| **React 前端** | UI 渲染、状态管理、HTTP API 调用 | React 19 + TanStack Start + Zustand + shadcn/ui | `packages/web/` |
 | **NestJS API** | API 路由、认证、业务编排、全局拦截器 | NestJS 10 + Fastify | `packages/server/` |
 | **PostgreSQL + pgvector** | 元数据与向量统一存储 | PG 16 + pgvector 扩展 | Docker |
 | **MinIO** | 对象存储：文件内容 | MinIO | Docker |
@@ -92,14 +92,15 @@
 
 | 层级         | 技术                                                | 说明                                 |
 | ---------- | ------------------------------------------------- | ---------------------------------- |
-| 前端框架       | Vue 3 + TypeScript + Vite                         | Composition API、响应式状态管理            |
+| 前端框架       | React 19 + TypeScript + Vite + TanStack Start     | SPA、文件系统路由、SSR-ready               |
 | 后端框架       | NestJS 10 + Fastify                               | 模块化架构、依赖注入、拦截器、守卫模式              |
 | ORM        | Prisma 5                                          | PostgreSQL 数据库访问层                    |
 | 认证         | JWT + bcrypt + Passport                           | Access/Refresh Token 双令牌机制            |
-| 状态管理       | Pinia                                             | 会话、知识库、标签页、设置等模块状态                 |
+| 状态管理       | Zustand                                           | 会话、知识库、标签页、设置等模块状态                 |
 | CSS 框架     | Tailwind CSS v4                                   | 原子化样式、自定义主题                        |
-| 图标方案       | lucide-vue-next                                   | 统一图标体系                             |
-| 测试框架       | Vitest + @vue/test-utils                          | 组件测试、Store 测试、工具函数测试               |
+| UI 组件      | shadcn/ui + Radix UI                              | 无障碍、可组合的基础组件                       |
+| 图标方案       | lucide-react                                      | 统一图标体系                             |
+| 测试框架       | Vitest + @testing-library/react                   | 组件测试、Store 测试、工具函数测试               |
 | 包管理器       | pnpm workspace                                    | Monorepo 依赖管理、跨包引用               |
 
 ***
@@ -153,7 +154,7 @@ pnpm dev:web      # 前端 → http://localhost:1420
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| **WebUI** | `1420` | Vite dev server（前端 SPA） |
+| **Web** | `1420` | Vite dev server（前端 SPA） |
 | **NestJS API** | `3000` | 后端 HTTP 接口 |
 | **PostgreSQL** | `5432` | 元数据数据库 |
 | **MinIO** | `9000` | 对象存储 API |
@@ -184,13 +185,15 @@ goferbot/
 │   ├── milvus/
 │   └── redis/
 ├── packages/
-│   ├── server/
+│   ├── web/                      # React 前端（@goferbot/web）
+│   │   ├── .env                  # 前端变量（VITE_API_BASE_URL）
+│   │   └── src/                  # React + TanStack Start 源码
+│   ├── server/                   # NestJS API 服务端
 │   │   ├── .env                  # 后端变量（DB URL、JWT、CORS 等）
 │   │   ├── prisma/               # 数据库 schema 与迁移
 │   │   └── src/main.ts           # NestJS 入口
-│   └── webui/
-│       ├── .env                  # 前端变量（VITE_API_BASE_URL）
-│       └── src/                  # Vue 3 源码
+│   ├── data/                     # 共享数据契约（Zod schemas + types）
+│   └── rag-sdk/                  # RAG 工具库
 ```
 
 ### 配置文件说明
@@ -229,10 +232,10 @@ MINIO_SECRET_KEY=minioadmin
 MILVUS_HOST=localhost
 MILVUS_PORT=19530
 JWT_SECRET=...               # 生产环境务必更换
-CORS_ORIGIN=http://localhost:5173
+CORS_ORIGIN=http://localhost:1420
 ```
 
-**`packages/webui/.env`** — 前端构建时注入，指定后端地址：
+**`packages/web/.env`** — 前端构建时注入，指定后端地址：
 
 ```bash
 VITE_API_BASE_URL=http://localhost:3000

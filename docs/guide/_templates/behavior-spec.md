@@ -46,8 +46,8 @@ summary: {覆盖的交互状态、核心流程、关键错误场景，2-3 句话
 
 | 场景 | 测试文件 | 测试用例 |
 |------|----------|----------|
-| loading 状态 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-01: renders {ComponentName} in loading state` |
-| 401 错误 | `tests/unit/webui/{ComponentName}.spec.ts` | `AC-02: displays error on unauthorized` |
+| loading 状态 | `packages/web/tests/{ComponentName}.spec.tsx` | `AC-01: renders {ComponentName} in loading state` |
+| 401 错误 | `packages/web/tests/{ComponentName}.spec.tsx` | `AC-02: displays error on unauthorized` |
 
 > 测试映射必须与对应测试指南中的规范对齐（组件测试模板、Store mock 策略、AC-XX 命名）。
 ```

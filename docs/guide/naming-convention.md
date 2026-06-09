@@ -31,7 +31,7 @@ tests/
 ├── unit/                                # 单元测试（按层次组织）
 │   ├── server/                          # 后端 Service/Util 测试
 │   │   └── *.spec.ts
-│   └── webui/                           # 前端组件/Store/工具测试
+│   └── web/                           # 前端组件/Store/工具测试
 │       └── *.spec.ts
 ├── integration/                         # 集成测试（API + DB）
 │   └── *.spec.ts
@@ -169,7 +169,7 @@ docs/reviews/{scope}/
 tests/
 ├── unit/
 │   ├── server/        # 后端单元测试（Service/Util）
-│   └── webui/         # 前端单元测试（组件/Store/工具）
+│   └── web/         # 前端单元测试（组件/Store/工具）
 ├── integration/       # 集成测试（API + DB）
 └── e2e/
     ├── specs/         # E2E 单页面功能测试（Playwright）
@@ -190,7 +190,7 @@ tests/
 | 后缀 | 用途 | 目录 |
 |------|------|------|
 | `.test.ts` | 通用单元测试（组件/Store/工具函数） | `tests/unit/components/` `tests/unit/stores/` `tests/unit/composables/` `tests/unit/utils/` |
-| `.spec.ts` | Issue 验收测试（TDD，含 AC-XX 用例） | `tests/unit/server/` `tests/unit/webui/` `tests/integration/` `tests/e2e/specs/` `tests/e2e/flows/` |
+| `.spec.ts` | Issue 验收测试（TDD，含 AC-XX 用例） | `tests/unit/server/` `tests/unit/web/` `tests/integration/` `tests/e2e/specs/` `tests/e2e/flows/` |
 
 > `.spec.ts` 文件是 Issue-Centric 流程的核心产物，对应 `checklist.json` 中的验收标准。
 > `.test.ts` 文件是传统单元测试，不绑定特定 issue。
@@ -210,7 +210,7 @@ tests/
 | 执行计划   | `docs/issues/{prefix}-{NN}-{kebab-slug}/plan.md`                |
 | 历史计划   | `docs/issues/{prefix}-{NN}-{kebab-slug}/plans/v1.md`            |
 | 验收状态   | `docs/issues/{prefix}-{NN}-{kebab-slug}/checklist.json`         |
-| 单元测试   | `tests/unit/webui/{ComponentName}.spec.ts`                          |
+| 单元测试   | `tests/unit/web/{ComponentName}.spec.ts`                          |
 
 已知审查范围 = `phase-3`：
 

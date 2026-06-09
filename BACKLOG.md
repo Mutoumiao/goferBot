@@ -50,7 +50,7 @@ _暂无_
 
 ### 前端性能
 
-- **Session 列表无分页，存在性能隐患** — `packages/webui/src/stores/session.ts:47`
+- **Session 列表无分页，存在性能隐患** — `packages/web/src/stores/chat.ts`
   - 根因：前端调用 `GET /api/sessions` 时不传 `page`/`limit` 参数，依赖后端默认行为。
 
 ### 测试/E2E

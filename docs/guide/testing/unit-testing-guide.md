@@ -1,7 +1,7 @@
 # 单元测试指南
 
 > 本文档定义项目单元测试的完整流程、规范与最佳实践。
-> 涵盖前端（Vue 3 + Vitest）和后端（NestJS + Vitest）单元测试。
+> 涵盖前端（React + Vitest）和后端（NestJS + Vitest）单元测试。
 
 ---
 
@@ -19,11 +19,10 @@
 
 **前端单元测试：**
 
-- **组件** (`tests/unit/components/`) — Vue 组件渲染、交互、事件
-- **Store** (`tests/unit/stores/`) — Pinia 状态管理
-- **组合式函数** (`tests/unit/composables/`) — Vue 组合式逻辑
-- **工具函数** (`tests/unit/utils/`) — 纯函数
-- **前端 Issue 验收测试** (`tests/unit/webui/`) — 按功能模块组织的 TDD 验收测试
+- **组件** (`packages/web/tests/`) — React 组件渲染、交互、事件
+- **Store** (`packages/web/tests/`) — Zustand 状态管理
+- **工具函数** (`packages/web/tests/`) — 纯函数
+- **前端 Issue 验收测试** (`packages/web/tests/`) — 按功能模块组织的 TDD 验收测试（`.spec.tsx`）
 
 **后端单元测试：**
 
@@ -42,31 +41,29 @@
 |--------|-----|------|
 | 测试框架 | Vitest | Vite 原生测试框架 |
 | 前端浏览器环境 | happy-dom | 轻量级 DOM 实现，无真实浏览器 |
-| Vue 插件 | `@vitejs/plugin-vue` | 编译 `.vue` 单文件组件 |
-| 全局状态 | `@pinia/testing` | Pinia 测试辅助工具 |
+| React 插件 | `@vitejs/plugin-react` | 编译 JSX |
+| 全局状态 | Zustand `setState` | Store 测试辅助 |
 | 后端编译 | `unplugin-swc` | SWC 编译 NestJS TypeScript |
 
 ### 2.2 路径别名
 
-**前端：**
+**前端（`packages/web/vitest.config.ts`）：**
 
 ```typescript
-// vitest.config.ts
+// packages/web/vitest.config.ts
 resolve: {
   alias: {
-    '@': fileURLToPath(new URL('./packages/webui/src', import.meta.url)),
-    '@goferbot/rag-sdk': fileURLToPath(new URL('./packages/rag-sdk/dist/index.js', import.meta.url)),
+    '@': path.resolve(__dirname, './src'),
   },
 }
 ```
 
-**实际配置（前后端共用 `vitest.config.ts`）：**
+**根目录（`vitest.config.ts`，前后端共用）：**
 
 ```typescript
 // vitest.config.ts
 resolve: {
   alias: {
-    '@': fileURLToPath(new URL('./packages/webui/src', import.meta.url)),
     '@goferbot/rag-sdk': fileURLToPath(new URL('./packages/rag-sdk/src/index.ts', import.meta.url)),
   },
 }
@@ -79,8 +76,6 @@ resolve: {
 `tests/setup/testglobals.ts` 在每个测试文件前执行：
 
 ```typescript
-import { installPinia } from './install-pinia'
-installPinia({ stubActions: false })
 global.runningTests = true
 ```
 
@@ -113,16 +108,18 @@ pnpm -r build
 ### 4.1 文件位置
 
 ```
+packages/web/tests/
+  *.spec.tsx     # 前端 Issue 验收测试（React）
+  *.test.ts      # 通用组件/Store/工具测试
+
 tests/unit/
   server/        # 后端单元测试（Service/Worker/DTO）
     *.spec.ts    # Issue 验收测试
-  webui/         # 前端 Issue 验收测试
-    *.spec.ts
-  components/    # Vue 组件测试
+  components/    # 历史 Vue 组件测试（已冻结）
     *.test.ts
-  stores/        # Pinia Store 测试
+  stores/        # 历史 Pinia Store 测试（已冻结）
     *.test.ts
-  composables/   # 组合式函数测试
+  composables/   # 历史组合式函数测试（已冻结）
     *.test.ts
   utils/         # 工具函数测试
     *.test.ts
@@ -132,8 +129,8 @@ tests/unit/
 
 | 后缀 | 用途 | 位置 |
 |------|------|------|
-| `.spec.ts` | Issue 验收测试（TDD） | `tests/unit/server/`、`tests/unit/webui/` |
-| `.test.ts` | 通用单元测试 | `tests/unit/components/`、`tests/unit/stores/`、`tests/unit/composables/`、`tests/unit/utils/` |
+| `.spec.ts` / `.spec.tsx` | Issue 验收测试（TDD） | `tests/unit/server/`、`packages/web/tests/` |
+| `.test.ts` | 通用单元测试 | `packages/web/tests/`、`tests/unit/utils/` |
 
 ### 4.3 用例命名规范
 
@@ -173,24 +170,19 @@ it('returns empty array for invalid input', () => {})
 
 ---
 
-## 5. 前端组件测试
+## 5. 前端组件测试（React）
 
 ### 5.1 基础模板
 
 ```typescript
 import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { setActivePinia, createPinia } from 'pinia'
-import MyComponent from '@/components/MyComponent.vue'
+import { render, screen } from '@testing-library/react'
+import MyComponent from '@/components/MyComponent'
 
 describe('MyComponent', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('renders correctly with default props', () => {
-    const wrapper = mount(MyComponent)
-    expect(wrapper.text()).toContain('预期文本')
+    render(<MyComponent />)
+    expect(screen.getByText('预期文本')).toBeDefined()
   })
 })
 ```
@@ -199,86 +191,68 @@ describe('MyComponent', () => {
 
 ```typescript
 it('renders message content', () => {
-  const wrapper = mount(MyComponent, {
-    props: {
-      message: {
-        id: '1',
-        session_id: 's1',
-        role: 'user',
-        content: 'hello',
-        created_at: 1,
-      },
-    },
-  })
-  expect(wrapper.text()).toContain('hello')
+  render(<MessageBubble message={{ id: '1', role: 'user', content: 'hello' }} />)
+  expect(screen.getByText('hello')).toBeDefined()
 })
 ```
 
 ### 5.3 模拟用户交互
 
 ```typescript
-it('emits send event on button click', async () => {
-  const wrapper = mount(MyInput)
-  const input = wrapper.find('textarea')
-  await input.setValue('test message')
+import { fireEvent } from '@testing-library/react'
 
-  const btn = wrapper.find('[data-testid="send-btn"]')
-  await btn.trigger('click')
+it('calls onSend when button clicked', async () => {
+  const onSend = vi.fn()
+  render(<ChatInput onSend={onSend} />)
 
-  expect(wrapper.emitted('send')).toHaveLength(1)
-  expect(wrapper.emitted('send')![0]).toEqual(['test message'])
+  const input = screen.getByPlaceholderText('输入消息')
+  fireEvent.change(input, { target: { value: 'test message' } })
+
+  const btn = screen.getByRole('button', { name: /发送/ })
+  fireEvent.click(btn)
+
+  expect(onSend).toHaveBeenCalledWith('test message')
 })
 ```
 
-### 5.4 使用 Stub 替代子组件
+### 5.4 Mock 子组件
 
 ```typescript
-const wrapper = mount(MyPage, {
-  global: {
-    stubs: {
-      ChildComponent: true,  // 自动 stub 为 <child-component-stub>
-      Dialog: { template: '<div><slot /></div>' },
-      Teleport: { template: '<div><slot /></div>' },
-      Transition: { template: '<div><slot /></div>' },
-    },
-  },
-})
+vi.mock('@/components/Dialog', () => ({
+  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
 ```
 
-### 5.5 测试 shadcn-vue 组件
+### 5.5 测试 shadcn/ui 组件
 
-shadcn-vue 组件（如 `Tabs`、`Dialog`、`Select`）在 happy-dom 中会正常渲染，但部分交互行为可能与真实浏览器有差异：
+shadcn/ui 组件基于 Radix UI，在 happy-dom 中可正常渲染：
 
 ```typescript
-// Tabs 组件测试示例
-it('switches tab on click', async () => {
-  const wrapper = mount(SettingsPage)
-  const tabs = wrapper.findAll('[role="tab"]')
-  await tabs[1].trigger('click')
-  expect(wrapper.text()).toContain('账户设置')
+it('opens dialog on button click', async () => {
+  render(<DeleteKbDialog kbId="1" kbName="测试" onClose={vi.fn()} onConfirm={vi.fn()} />)
+  expect(screen.getByText(/测试/)).toBeDefined()
+  expect(screen.getByRole('button', { name: /删除/ })).toBeDefined()
 })
 ```
 
 ---
 
-## 6. 前端 Store 测试
+## 6. 前端 Store 测试（Zustand）
 
 ### 6.1 基础模板
 
 ```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useMyStore } from '@/stores/my'
 
 describe('useMyStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    useMyStore.setState(useMyStore.getInitialState())
   })
 
   it('has default state', () => {
-    const store = useMyStore()
-    expect(store.items).toHaveLength(1)
-    expect(store.items[0].title).toBe('默认项')
+    const state = useMyStore.getState()
+    expect(state.items).toHaveLength(0)
   })
 })
 ```
@@ -290,39 +264,26 @@ Store 中的 API 调用通过 `vi.mock` 或 `vi.fn()` 进行 mock：
 ```typescript
 import { vi } from 'vitest'
 
-// Mock API 模块
-vi.mock('@/api/client', () => ({
-  apiClient: {
-    get: vi.fn().mockResolvedValue({ data: [] }),
-    post: vi.fn().mockResolvedValue({ data: { id: '1' } }),
-  },
+// Mock API 模块（必须放在文件最顶部）
+vi.mock('@/api/chat', () => ({
+  getSessions: vi.fn(() => ({ send: vi.fn().mockResolvedValue({ sessions: [] }) })),
+  createSession: vi.fn(() => ({ send: vi.fn().mockResolvedValue({ id: '1' }) })),
 }))
 
 beforeEach(() => {
-  setActivePinia(createPinia())
+  useMyStore.setState(useMyStore.getInitialState())
   vi.clearAllMocks()
 })
 ```
 
-### 6.3 使用 createTestingPinia
+### 6.3 Persist Store 测试
 
 ```typescript
-import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
-
-const wrapper = mount(MyComponent, {
-  global: {
-    plugins: [
-      createTestingPinia({
-        stubActions: true,  // 自动 mock 所有 actions
-        initialState: {
-          myStore: {
-            items: [{ id: '1', name: 'Test' }],
-          },
-        },
-      }),
-    ],
-  },
+beforeEach(async () => {
+  vi.resetModules()
+  localStorage.clear()
+  const { useAuthStore } = await import('@/stores/auth')
+  useAuthStore.setState({ token: null, user: null })
 })
 ```
 
@@ -501,21 +462,21 @@ describe('renderMarkdown', () => {
 **组件 Props Fixture：**
 
 ```typescript
-// tests/unit/fixtures/message.fixture.ts
+// packages/web/tests/fixtures/message.fixture.ts
 export const createMessageFixture = (overrides?: Partial<Message>) => ({
   id: '1',
-  session_id: 's1',
+  sessionId: 's1',
   role: 'user' as const,
   content: 'hello',
-  created_at: Date.now(),
+  createdAt: Date.now(),
   ...overrides,
 })
 ```
 
-**Pinia 初始状态 Fixture：**
+**Zustand 初始状态 Fixture：**
 
 ```typescript
-// tests/unit/fixtures/store-state.fixture.ts
+// packages/web/tests/fixtures/store-state.fixture.ts
 export const createStoreState = (overrides?: Partial<MyState>) => ({
   items: [],
   currentItem: null,
@@ -547,8 +508,8 @@ pnpm test
 ### 10.2 单个文件
 
 ```bash
-# 前端
-pnpm vitest run tests/unit/components/MyComponent.test.ts
+# 前端（packages/web）
+cd packages/web && pnpm vitest run tests/kb-crud.spec.tsx
 
 # 后端
 pnpm vitest run tests/unit/server/my-service.spec.ts
@@ -580,15 +541,12 @@ pnpm vitest --ui
 
 ```typescript
 import { defineConfig } from 'vitest/config'
-import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import AIReporter from 'vitest-ai-reporter'
 
 export default defineConfig({
-  plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./packages/webui/src', import.meta.url)),
       '@goferbot/rag-sdk': fileURLToPath(new URL('./packages/rag-sdk/src/index.ts', import.meta.url)),
     },
   },
@@ -599,7 +557,7 @@ export default defineConfig({
       'tests/e2e/**',
       'tests/e2e-full/**',
       'tests/integration/**',
-      'packages/webui/**',
+      'packages/webui/**'  # 已冻结，不纳入测试,
       'packages/server/**',
     ],
     environment: 'happy-dom',
@@ -609,11 +567,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary'],
       include: [
-        'packages/webui/src/**/*.ts',
-        'packages/webui/src/**/*.vue',
         'packages/rag-sdk/src/**/*.ts',
       ],
-      exclude: ['packages/webui/src/main.ts', 'packages/rag-sdk/src/index.ts'],
+      exclude: ['packages/rag-sdk/src/index.ts'],
       thresholds: {
         lines: 70,
         functions: 60,
@@ -641,12 +597,12 @@ export default defineConfig({
 ### 12.1 Cannot find module '@/components/...'
 
 **原因**：路径别名未解析。
-**解决**：确认 `vitest.config.ts` 中的 `resolve.alias` 配置正确。
+**解决**：确认 `packages/web/vitest.config.ts` 中的 `resolve.alias` 配置正确（`@` → `./src`）。
 
-### 12.2 组件测试找不到 Pinia
+### 12.2 组件测试找不到 Zustand Store
 
-**原因**：未在测试前初始化 Pinia。
-**解决**：在 `beforeEach` 中调用 `setActivePinia(createPinia())`，或使用 `createTestingPinia`。
+**原因**：未在测试前重置 Store 状态。
+**解决**：在 `beforeEach` 中调用 `useStore.setState(useStore.getInitialState())`。对于 persist store，使用 `vi.resetModules() + await import()` 模式。
 
 ### 12.3 Mock 未重置导致测试间污染
 

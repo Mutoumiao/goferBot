@@ -15,7 +15,7 @@
 
 | 类型 | 路径 |
 |------|------|
-| 单元测试（前端） | `tests/unit/webui/*.spec.ts` |
+| 单元测试（前端） | `packages/web/tests/*.spec.ts` |
 | 单元测试（后端） | `tests/unit/server/*.spec.ts` |
 | 集成测试 | `tests/integration/**/*.spec.ts` |
 | E2E 测试 | `tests/e2e/**/*.spec.ts` |
@@ -39,7 +39,7 @@
 ### 示例
 
 ```typescript
-// tests/unit/webui/{ComponentName}.spec.ts
+// packages/web/tests/{ComponentName}.spec.tsx
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ComponentName } from '@/components/{path}/{ComponentName}.vue'

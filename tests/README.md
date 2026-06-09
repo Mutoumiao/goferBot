@@ -79,26 +79,15 @@
 
 ---
 
-## 单元测试 — 前端 (`unit/webui/`)
+## 单元测试 — 前端 (`unit/web/`)
 
-| 文件 | 关联 Issue | 覆盖范围 |
-|------|-----------|---------|
-| `KbSelector.spec.ts` | f-16 | 组件渲染、骨架、空状态、错误/重试、键盘导航 |
-| `ChatView.spec.ts` | f-16 | 会话切换清除 KB 选择 |
-| `ChatInput.spec.ts` | f-16 | KB 选择开关、发送带 KB ID、删除标签 |
+> 前端单元测试已迁移至 `packages/web/tests/`（与源码同目录）。以下历史文件位于 `tests/unit/webui/`，已冻结不再维护。
 
----
-
-## 传统单元测试 — 组件/Store/工具函数 (`unit/components/` `unit/stores/` `unit/composables/` `unit/utils/`)
-
-> 以下文件使用 `.test.ts` 后缀，不绑定特定 issue，无 AC-XX 前缀。
-
-| 目录 | 文件数 | 覆盖范围 |
-|------|--------|---------|
-| `tests/unit/components/` | 24 | ChatMessage, ChatMessageList, ChatInput, EmptySession, KnowledgeBasePage, FileExplorer, SettingsPage, EditKbDialog, MoveCopyDialog, ContextMenu 等 |
-| `tests/unit/stores/` | 6 | session, knowledgeBase, settings stores |
-| `tests/unit/composables/` | 1 | useSidecarStatus |
-| `tests/unit/utils/` | 2 | markdown, confirm |
+| 文件 | 关联 Issue | 覆盖范围 | 状态 |
+|------|-----------|---------|------|
+| `KbSelector.spec.ts` | f-16 | 组件渲染、骨架、空状态、错误/重试、键盘导航 | 已冻结 |
+| `ChatView.spec.ts` | f-16 | 会话切换清除 KB 选择 | 已冻结 |
+| `ChatInput.spec.ts` | f-16 | KB 选择开关、发送带 KB ID、删除标签 | 已冻结 |
 
 ---
 
@@ -112,4 +101,4 @@
 | `e2e/flows/` | Playwright 跨模块旅程，mock 模式下无后端依赖 |
 | `integration/` | 真实后端集成测试，通过 `checkInfrastructure()` 优雅跳过 |
 | `unit/server/` | vitest 后端 issue 验收测试（`.spec.ts`），零外部依赖 |
-| `unit/webui/` | vitest 前端 issue 验收测试（`.spec.ts`），零外部依赖 |
+| `packages/web/tests/` | vitest 前端 issue 验收测试（React），零外部依赖 |

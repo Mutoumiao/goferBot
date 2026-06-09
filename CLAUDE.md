@@ -1,9 +1,9 @@
 # GoferBot
 
-GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的 Web 应用，支持文档管理、LLM 问答、RAG 检索增强。
+GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的 Web 应用，支持文档管理、LLM 问答、RAG 检索增强。
 
 **架构定位**：云端优先、本地缓存、可扩展 SaaS、AI Native Infrastructure。
-**技术栈**：Vue 3 + NestJS 10 + Fastify + PostgreSQL + MinIO + Redis + BullMQ。
+**技术栈**：React 19 + TanStack Start + NestJS 10 + Fastify + PostgreSQL + MinIO + Redis + BullMQ。
 
 用户可导入文档进行管理，通过 LLM 进行问答，支持 RAG 检索增强。
 
@@ -40,8 +40,10 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 
 ```
 ├── packages/
-│   ├── webui/                    # Vue 3 前端（@goferbot/webui）
+│   ├── web/                      # React 前端（@goferbot/web）— 当前主前端
+│   ├── webui/                    # Vue 3 前端（@goferbot/webui）— 冻结，待删除
 │   ├── server/                   # NestJS API 服务端（@goferbot/server）
+│   ├── data/                     # 共享数据契约（@goferbot/data）— Zod schemas + types
 │   └── rag-sdk/                  # RAG 工具库
 ├── src-tauri/                    # Tauri Rust 后端（冻结，Phase 6 扩展）
 ├── docs/                         # 文档
@@ -57,7 +59,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 ├── tests/                        # 测试（按金字塔分层）
 │   ├── unit/                     #   单元测试 (vitest)
 │   │   ├── server/               #     后端服务测试
-│   │   └── webui/                #     前端组件测试
+│   │   └── web/                  #     前端组件测试（React）
 │   ├── integration/              #   模块级集成测试（@nestjs/testing + app.inject()）
 │   │   └── helpers/              #     TestAppFactory / TestDatabaseManager / AuthFixtures
 │   └── e2e/                      #   E2E 测试
@@ -75,7 +77,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 
 ## 技术栈
 
-- **前端**：Vue 3 + TypeScript + Vite + Tailwind CSS v4 + Pinia
+- **前端**：React 19 + TypeScript + Vite + Tailwind CSS v4 + Zustand + TanStack Start
 - **后端**：NestJS 10 + Fastify + Prisma 5 + JWT + bcrypt
 - **数据库**：PostgreSQL 16 + pgvector 扩展（元数据与向量统一存储）
 - **对象存储**：MinIO（文件内容）
@@ -90,8 +92,8 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 Vue 3 + NestJS 的
 ### 开发
 
 ```bash
-pnpm dev              # 同时启动前后端（webui + server）
-pnpm dev:web          # 只启动前端 Vite dev server
+pnpm dev              # 同时启动前后端（web + server）
+pnpm dev:web          # 只启动前端 Vite dev server（packages/web）
 pnpm dev:server       # 只启动后端 NestJS（watch 模式）
 pnpm type-check       # TypeScript 类型检查
 pnpm -r build         # 构建所有包

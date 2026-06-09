@@ -22,6 +22,14 @@ Node >= 22，依赖由 pnpm workspace 统一管理。
 ## 目录结构
 
 ```
+public/                     # [静态资源] 不经过构建打包，直接复制到 dist
+├── images/                 #   图片资源（插图、背景图等）
+│   └── login-illustration.png
+├── favicon.ico             #   网站图标
+├── logo192.png / logo512.png #  PWA 图标
+├── manifest.json           #   PWA 配置
+└── robots.txt              #   搜索引擎爬虫规则
+
 src/
 ├── api/                    # [API 层] alova Method 封装 — 所有 HTTP 请求的唯一出口
 │   ├── auth.ts             #   login / register / getMe / refresh
@@ -218,4 +226,4 @@ it('should show stop button when streaming', () => {
 | HTTP     | alova 3（`alovaInstance` + `useSSE` / `useRequest`）             |
 | 测试     | Vitest 4 + happy-dom + @testing-library/react                    |
 | 类型     | TypeScript 5（strict / verbatimModuleSyntax）                    |
-| 别名     | `@/` → `./src/`，`@goferbot/data` → `../data/src/types/index.ts` |
+| 别名     | `@/` → `./src/`，`@goferbot/data` → workspace 子包（类型 + 运行时 schema）|

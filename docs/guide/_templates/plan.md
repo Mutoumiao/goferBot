@@ -17,7 +17,7 @@ version: 1
 **Spec 引用：** `specs/`
 **PRD 引用：** {PRD 文件路径} — {对应章节}
 **测试引用：** 按 track 前缀确定层级：
-- `f-*` → `tests/unit/webui/`
+- `f-*` → `packages/web/tests/`
 - `b-*` / `d-*` → `tests/unit/server/`
 - `i-*` → `tests/integration/`
 - `q-*` → `tests/e2e/`

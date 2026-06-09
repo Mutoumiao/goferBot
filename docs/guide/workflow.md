@@ -45,7 +45,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 
 | 类型 | 路径 | 指南 |
 |------|------|------|
-| 前端单元测试 | `tests/unit/webui/*.spec.ts` | [单元测试指南](testing/unit-testing-guide.md) |
+| 前端单元测试 | `packages/web/tests/*.spec.tsx` | [单元测试指南](testing/unit-testing-guide.md) |
 | 后端单元测试 | `tests/unit/server/*.spec.ts` | [单元测试指南](testing/unit-testing-guide.md) |
 | 集成测试 | `tests/integration/**/*.spec.ts` | [集成测试指南](testing/integration-testing-guide.md) |
 | E2E 测试 | `tests/e2e/**/*.spec.ts` | [E2E 测试指南](testing/e2e-testing-guide.md) |
@@ -202,7 +202,7 @@ prd/ → docs/issues/{dir}/ → 代码 + tests/{layer}/*.spec.ts → reviews/
 | `docs/issues/` | `{prefix}-{NN}-{kebab-slug}/` | `f-15-{功能名称}/` |
 | `specs/` | `feature-spec.md` / `behavior-spec.md` / `api-spec.md` | `specs/behavior-spec.md` |
 | `plans/` | `v{N}.md` | `plans/v1.md` |
-| `tests/unit/` | `{layer}/{name}.spec.ts` | `webui/{ComponentName}.spec.ts` |
+| `tests/unit/` | `{layer}/{name}.spec.ts` | `web/{ComponentName}.spec.tsx` |
 | `reviews/` | `{scope}/{type}-v{N}.md` | `phase-3/code-v1.md` |
 
 ---
