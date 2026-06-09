@@ -1,6 +1,6 @@
 ---
 id: f-47
-status: open
+status: closed
 track: frontend
 priority: p1
 summary: KB CRUD 完整交互 — 创建知识库 dialog、编辑/删除操作、详情页

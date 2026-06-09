@@ -1,4 +1,4 @@
-import type { CreateKbRequest } from '@goferbot/data'
+import type { CreateKbRequest, UpdateKbRequest } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
 export const getKbList = () =>
@@ -6,6 +6,9 @@ export const getKbList = () =>
 
 export const createKb = (data: CreateKbRequest) =>
   alovaInstance.Post('/knowledge-bases', data)
+
+export const updateKb = (id: string, data: UpdateKbRequest) =>
+  alovaInstance.Patch(`/knowledge-bases/${id}`, data)
 
 export const deleteKb = (id: string) =>
   alovaInstance.Delete(`/knowledge-bases/${id}`)

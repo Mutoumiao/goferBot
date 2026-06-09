@@ -128,7 +128,7 @@ export function KbSelector({ selectedIds, onToggle, disabled = false }: KbSelect
                 readOnly
               />
               <DatabaseIcon className="size-4 text-text-secondary" />
-              <span className="truncate">{kb.title}</span>
+              <span className="truncate">{kb.name}</span>
               <span className="ml-auto text-xs text-text-tertiary">
                 {kb.fileCount ?? 0} 文档
               </span>

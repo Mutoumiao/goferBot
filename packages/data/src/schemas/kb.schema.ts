@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const kbEntrySchema = z.object({
   id: z.string(),
-  title: z.string(),
+  name: z.string(),
   description: z.string().optional(),
   fileCount: z.number().optional().default(0),
   createdAt: z.string(),
@@ -10,7 +10,12 @@ export const kbEntrySchema = z.object({
 })
 
 export const createKbRequestSchema = z.object({
-  title: z.string().min(1, '标题不能为空').max(200),
+  name: z.string().min(1, '名称不能为空').max(100, '名称最长100字符'),
+  description: z.string().optional(),
+})
+
+export const updateKbRequestSchema = z.object({
+  name: z.string().min(1, '名称不能为空').max(100, '名称最长100字符'),
   description: z.string().optional(),
 })
 

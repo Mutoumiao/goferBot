@@ -39,7 +39,7 @@ function RecycleBinPage() {
         .filter((e) => (e as Record<string, unknown>).isDeleted === true)
         .map((e) => ({
           id: e.id,
-          title: e.title,
+          title: e.name,
           description: e.description ?? null,
           type: 'kb' as const,
           deletedAt: (e as Record<string, unknown>).deletedAt as string ?? new Date().toISOString(),

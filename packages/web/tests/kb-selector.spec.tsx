@@ -30,8 +30,8 @@ describe('KbSelector', () => {
   it('AC-07: opens dropdown on trigger click and renders KB items', () => {
     vi.mocked(useRequest).mockReturnValue({
       data: { data: [
-        { id: 'kb-1', title: 'Docs', fileCount: 5 },
-        { id: 'kb-2', title: 'Code', fileCount: 3 },
+        { id: 'kb-1', name: 'Docs', fileCount: 5 },
+        { id: 'kb-2', name: 'Code', fileCount: 3 },
       ] },
       loading: false,
       error: undefined,
@@ -98,7 +98,7 @@ describe('KbSelector', () => {
   it('AC-07: toggles KB selection on item click', () => {
     const onToggle = vi.fn()
     vi.mocked(useRequest).mockReturnValue({
-      data: { data: [{ id: 'kb-1', title: 'Docs', fileCount: 5 }] },
+      data: { data: [{ id: 'kb-1', name: 'Docs', fileCount: 5 }] },
       loading: false,
       error: undefined,
       send: vi.fn(),
@@ -115,7 +115,7 @@ describe('KbSelector', () => {
   it('AC-07: shows checked state for selected KBs', () => {
     const onToggle = vi.fn()
     vi.mocked(useRequest).mockReturnValue({
-      data: { data: [{ id: 'kb-1', title: 'Docs', fileCount: 5 }] },
+      data: { data: [{ id: 'kb-1', name: 'Docs', fileCount: 5 }] },
       loading: false,
       error: undefined,
       send: vi.fn(),
@@ -131,7 +131,7 @@ describe('KbSelector', () => {
 
   it('AC-07: closes dropdown on Escape key', () => {
     vi.mocked(useRequest).mockReturnValue({
-      data: { data: [{ id: 'kb-1', title: 'Docs', fileCount: 5 }] },
+      data: { data: [{ id: 'kb-1', name: 'Docs', fileCount: 5 }] },
       loading: false,
       error: undefined,
       send: vi.fn(),
@@ -149,7 +149,7 @@ describe('KbSelector', () => {
 
   it('AC-07: closes dropdown on outside click', () => {
     vi.mocked(useRequest).mockReturnValue({
-      data: { data: [{ id: 'kb-1', title: 'Docs', fileCount: 5 }] },
+      data: { data: [{ id: 'kb-1', name: 'Docs', fileCount: 5 }] },
       loading: false,
       error: undefined,
       send: vi.fn(),

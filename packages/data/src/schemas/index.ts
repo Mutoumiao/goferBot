@@ -17,5 +17,6 @@ export {
 export {
   kbEntrySchema,
   createKbRequestSchema,
+  updateKbRequestSchema,
   kbListResponseSchema,
 } from './kb.schema'
