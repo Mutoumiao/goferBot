@@ -159,6 +159,9 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #3b82f6;
+
+  /* Surface Secondary — 次级背景色（sidebar、tab-bar、页面背景等） */
+  --color-surface-secondary: #f0f1f5;
 }
 
 * {

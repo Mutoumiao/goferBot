@@ -109,10 +109,10 @@ describe('TabsStore — addTabByRoute 去重（任务 3）', () => {
   it('AC-03: addTabByRoute 多页面标签同 sessionId 时复用', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    const first = store.addTabByRoute('/app/chat?session=s1', 'Chat 1', 's1')
+    const first = store.addTabByRoute('/app/chat/s1', 'Chat 1', 's1')
     expect(first).not.toBeNull()
 
-    const second = store.addTabByRoute('/app/chat?session=s1', 'Chat 1', 's1')
+    const second = store.addTabByRoute('/app/chat/s1', 'Chat 1', 's1')
     expect(second).toBeNull()
     expect(useTabsStore.getState().tabs).toHaveLength(2)
     expect(useTabsStore.getState().activeTabId).toBe(first!.id)
@@ -121,10 +121,18 @@ describe('TabsStore — addTabByRoute 去重（任务 3）', () => {
   it('AC-03: addTabByRoute 不同 sessionId 创建不同标签', async () => {
     const { useTabsStore } = await import('@/stores/tabs')
     const store = useTabsStore.getState()
-    store.addTabByRoute('/app/chat?session=s1', 'Chat 1', 's1')
-    store.addTabByRoute('/app/chat?session=s2', 'Chat 2', 's2')
+    store.addTabByRoute('/app/chat/s1', 'Chat 1', 's1')
+    store.addTabByRoute('/app/chat/s2', 'Chat 2', 's2')
 
     expect(useTabsStore.getState().tabs).toHaveLength(3)
+  })
+
+  it('AC-03: addTabByRoute 兼容旧的 query 参数格式', async () => {
+    const { useTabsStore } = await import('@/stores/tabs')
+    const store = useTabsStore.getState()
+    const first = store.addTabByRoute('/app/chat?session=s1', 'Chat 1', 's1')
+    expect(first).not.toBeNull()
+    expect(first!.type).toBe('chat-session')
   })
 })
 

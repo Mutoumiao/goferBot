@@ -13,6 +13,15 @@ configResponsive({
   large: 1024,
 })
 
+function NotFound() {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center gap-4">
+      <h1 className="text-2xl font-semibold text-[#1F2328]">页面未找到</h1>
+      <p className="text-sm text-[#9AA3AF]">请求的页面不存在或已被移除</p>
+    </div>
+  )
+}
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -22,6 +31,7 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: 'stylesheet', href: appCss }],
   }),
+  notFoundComponent: NotFound,
   shellComponent: RootDocument,
 })
 

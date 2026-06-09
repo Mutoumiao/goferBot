@@ -77,7 +77,7 @@ interface TabsState {
 
 function getRouteFromType(type: TabType, sessionId?: string): string {
   if (type === 'chat-session' && sessionId) {
-    return `/app/chat?session=${sessionId}`
+    return `/app/chat/${sessionId}`
   }
   const routeMap: Record<TabType, string> = {
     chat: '/app/chat',
@@ -91,12 +91,17 @@ function getRouteFromType(type: TabType, sessionId?: string): string {
 }
 
 function getTypeFromRoute(route: string): TabType {
-  // 处理带 query 的路由
+  // 处理路径参数和 query 参数
   const path = route.split('?')[0]
+
+  // /app/chat/:sessionId 格式是多页面标签
+  if (path.startsWith('/app/chat/') && path.length > '/app/chat/'.length) {
+    return 'chat-session'
+  }
+
+  // 兼容旧的 query 参数格式（带 session 参数）
   const search = route.includes('?') ? route.split('?')[1] : ''
   const params = new URLSearchParams(search)
-
-  // 带 session 参数的 chat 路由是多页面标签
   if (path === '/app/chat' && params.has('session')) {
     return 'chat-session'
   }

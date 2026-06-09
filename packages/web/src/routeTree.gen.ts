@@ -19,6 +19,7 @@ import { Route as AppRecycleBinRouteImport } from './routes/app/recycle-bin'
 import { Route as AppKbRouteImport } from './routes/app/kb'
 import { Route as AppHistoryRouteImport } from './routes/app/history'
 import { Route as AppChatRouteImport } from './routes/app/chat'
+import { Route as AppChatSessionIdRouteImport } from './routes/app/chat/$sessionId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -70,29 +71,36 @@ const AppChatRoute = AppChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppChatSessionIdRoute = AppChatSessionIdRouteImport.update({
+  id: '/$sessionId',
+  path: '/$sessionId',
+  getParentRoute: () => AppChatRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/app/chat': typeof AppChatRoute
+  '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
   '/app/recycle-bin': typeof AppRecycleBinRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
+  '/app/chat/$sessionId': typeof AppChatSessionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/app/chat': typeof AppChatRoute
+  '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
   '/app/recycle-bin': typeof AppRecycleBinRoute
   '/app/settings': typeof AppSettingsRoute
   '/app': typeof AppIndexRoute
+  '/app/chat/$sessionId': typeof AppChatSessionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -100,12 +108,13 @@ export interface FileRoutesById {
   '/app': typeof AppRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/app/chat': typeof AppChatRoute
+  '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
   '/app/recycle-bin': typeof AppRecycleBinRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
+  '/app/chat/$sessionId': typeof AppChatSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/app/recycle-bin'
     | '/app/settings'
     | '/app/'
+    | '/app/chat/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/app/recycle-bin'
     | '/app/settings'
     | '/app'
+    | '/app/chat/$sessionId'
   id:
     | '__root__'
     | '/'
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/app/recycle-bin'
     | '/app/settings'
     | '/app/'
+    | '/app/chat/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -224,11 +236,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChatRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/chat/$sessionId': {
+      id: '/app/chat/$sessionId'
+      path: '/$sessionId'
+      fullPath: '/app/chat/$sessionId'
+      preLoaderRoute: typeof AppChatSessionIdRouteImport
+      parentRoute: typeof AppChatRoute
+    }
   }
 }
 
+interface AppChatRouteChildren {
+  AppChatSessionIdRoute: typeof AppChatSessionIdRoute
+}
+
+const AppChatRouteChildren: AppChatRouteChildren = {
+  AppChatSessionIdRoute: AppChatSessionIdRoute,
+}
+
+const AppChatRouteWithChildren =
+  AppChatRoute._addFileChildren(AppChatRouteChildren)
+
 interface AppRouteRouteChildren {
-  AppChatRoute: typeof AppChatRoute
+  AppChatRoute: typeof AppChatRouteWithChildren
   AppHistoryRoute: typeof AppHistoryRoute
   AppKbRoute: typeof AppKbRoute
   AppRecycleBinRoute: typeof AppRecycleBinRoute
@@ -237,7 +267,7 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
-  AppChatRoute: AppChatRoute,
+  AppChatRoute: AppChatRouteWithChildren,
   AppHistoryRoute: AppHistoryRoute,
   AppKbRoute: AppKbRoute,
   AppRecycleBinRoute: AppRecycleBinRoute,

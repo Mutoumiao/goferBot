@@ -5,7 +5,7 @@ import {
   createKbRequestSchema,
   updateKbRequestSchema,
 } from '@goferbot/data'
-import { KbListPage } from '@/routes/app/kb'
+import { KbListPage } from '@/routes/app/kb/page'
 import CreateKbDialog from '@/overlays/dialogs/CreateKbDialog'
 import EditKbDialog from '@/overlays/dialogs/EditKbDialog'
 import DeleteKbDialog from '@/overlays/dialogs/DeleteKbDialog'

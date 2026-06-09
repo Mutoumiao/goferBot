@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { ChatViewPage } from '@/routes/app/chat'
+import { ChatSession } from '@/routes/app/chat/ChatSession'
 
 // Mock 依赖
 const mockStore = {
@@ -20,7 +20,7 @@ const mockStore = {
   flushStreamContent: vi.fn(),
   clearChat: vi.fn(),
   setActiveSession: vi.fn(),
-  loadSessions: vi.fn(),
+  loadSessions: vi.fn().mockResolvedValue(undefined),
   createSession: vi.fn(),
   deleteSession: vi.fn(),
   renameSession: vi.fn(),
@@ -28,10 +28,15 @@ const mockStore = {
 }
 
 vi.mock('@/stores/chat', () => ({
-  useChatStore: (selector: any) => {
-    if (typeof selector === 'function') return selector(mockStore)
-    return mockStore
-  },
+  useChatStore: Object.assign(
+    (selector: any) => {
+      if (typeof selector === 'function') return selector(mockStore)
+      return mockStore
+    },
+    {
+      getState: () => mockStore,
+    }
+  ),
 }))
 
 vi.mock('alova/client', () => ({
@@ -54,6 +59,7 @@ vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => () => ({
     component: (c: any) => c,
   }),
+  useSearch: () => ({}),
 }))
 
 describe('ChatView session management', () => {
@@ -75,7 +81,7 @@ describe('ChatView session management', () => {
     mockStore.sessions = []
     mockStore.activeSession = null
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     expect(screen.getByText('开始新对话')).toBeDefined()
     expect(screen.getByText(/在下方输入消息，开始与 AI 对话/)).toBeDefined()
@@ -86,7 +92,7 @@ describe('ChatView session management', () => {
       { id: 's1', title: 'Chat 1', messageCount: 5, createdAt: '2026-06-01T00:00:00Z' },
     ]
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     expect(screen.getByText('Chat 1')).toBeDefined()
   })
@@ -94,7 +100,7 @@ describe('ChatView session management', () => {
   it('AC-06: double-click title enters inline rename mode', () => {
     mockStore.activeSession = { id: 's1', title: 'Old Title', messageCount: 5, createdAt: '2026-06-01T00:00:00Z' }
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     const title = screen.getByText('Old Title')
     fireEvent.doubleClick(title)
@@ -109,7 +115,7 @@ describe('ChatView session management', () => {
     mockStore.activeSession = { id: 's1', title: 'Old Title', messageCount: 5, createdAt: '2026-06-01T00:00:00Z' }
     mockStore.renameSession = vi.fn().mockResolvedValue(undefined)
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     fireEvent.doubleClick(screen.getByText('Old Title'))
 
@@ -123,7 +129,7 @@ describe('ChatView session management', () => {
   it('AC-06: Escape cancels rename', () => {
     mockStore.activeSession = { id: 's1', title: 'Old Title', messageCount: 5, createdAt: '2026-06-01T00:00:00Z' }
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     fireEvent.doubleClick(screen.getByText('Old Title'))
 
@@ -138,7 +144,7 @@ describe('ChatView session management', () => {
   it('AC-09: shows error toast when error exists', () => {
     mockStore.error = '操作失败'
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     expect(screen.getByTestId('error-toast-close')).toBeDefined()
   })
@@ -146,7 +152,7 @@ describe('ChatView session management', () => {
   it('AC-09: dismisses error toast on close button click', () => {
     mockStore.error = '操作失败'
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     fireEvent.click(screen.getByTestId('error-toast-close'))
     expect(mockStore.clearError).toHaveBeenCalledTimes(1)
@@ -159,7 +165,7 @@ describe('ChatView session management', () => {
       { id: 's2', title: 'Remaining', messageCount: 1, createdAt: '2026-06-02T00:00:00Z' },
     ]
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     expect(screen.getByText('开始新对话')).toBeDefined()
   })

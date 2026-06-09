@@ -24,6 +24,12 @@ vi.mock('alova/client', () => ({
   })),
 }))
 
+// Mock @tanstack/react-router
+let mockSearchValue: Record<string, unknown> = {}
+vi.mock('@tanstack/react-router', () => ({
+  useSearch: () => mockSearchValue,
+}))
+
 // Mock @/api/chat — 提供所有 chatStore 依赖的 API 函数
 vi.mock('@/api/chat', () => ({
   streamChat: vi.fn(() => ({ __type: 'method' })),
@@ -35,11 +41,12 @@ vi.mock('@/api/chat', () => ({
 }))
 
 import { useSSE } from 'alova/client'
-import { ChatViewPage } from '@/routes/app/chat'
+import { ChatSession } from '@/routes/app/chat/ChatSession'
 import { useChatStore } from '@/stores/chat'
 
 describe('ChatViewPage SSE streaming', () => {
   beforeEach(() => {
+    mockSearchValue = {}
     useChatStore.setState({
       activeSession: null,
       messages: [],
@@ -57,7 +64,7 @@ describe('ChatViewPage SSE streaming', () => {
   it('AC-03: streaming 时 ChatInput 禁用并显示停止按钮', () => {
     useChatStore.setState({ isStreaming: true })
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     const textarea = screen.getByPlaceholderText(/输入/) as HTMLTextAreaElement
     expect(textarea.disabled).toBe(true)
@@ -70,7 +77,7 @@ describe('ChatViewPage SSE streaming', () => {
       streamingContent: '你好，这是流式回复',
     })
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     expect(screen.getByText('你好，这是流式回复')).toBeDefined()
   })
@@ -78,7 +85,7 @@ describe('ChatViewPage SSE streaming', () => {
   it('AC-05: 首 chunk 到达前显示三点跳动 loading', () => {
     useChatStore.setState({ isStreaming: true, streamingContent: '' })
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     const dots = document.querySelectorAll('.animate-bounce')
     expect(dots.length).toBe(3)
@@ -101,7 +108,7 @@ describe('ChatViewPage SSE streaming', () => {
   })
 
   it('AC-07: SSE 连接失败时显示 ErrorCard + 重试按钮', async () => {
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     // 模拟 onError 触发（无需先设置消息，ErrorCard 独立渲染）
     await act(async () => {
@@ -132,7 +139,7 @@ describe('ChatViewPage SSE streaming', () => {
       ),
     })
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     // 在 ChatInput 输入消息并点击发送
     const textarea = screen.getByPlaceholderText(/输入/)
@@ -151,8 +158,8 @@ describe('ChatViewPage SSE streaming', () => {
 
     expect(screen.getByText(/服务器内部错误/)).toBeDefined()
 
-    // 点击重试
-    const retryBtn = screen.getByRole('button', { name: /重试/i })
+    // 点击重试 — 使用 data-testid 精确匹配 ErrorCard 中的重试按钮
+    const retryBtn = screen.getByTestId('error-retry-btn')
     await act(async () => {
       fireEvent.click(retryBtn)
     })
@@ -168,7 +175,7 @@ describe('ChatViewPage SSE streaming', () => {
       messages: [],
     })
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     fireEvent.click(screen.getByRole('button', { name: /停止/i }))
 
@@ -182,7 +189,7 @@ describe('ChatViewPage SSE streaming', () => {
   })
 
   it('AC-10: useSSE 配置了 reconnectionTime: 3000', () => {
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     const useSSEMock = useSSE as Mock
     const calls = useSSEMock.mock.calls
@@ -194,6 +201,7 @@ describe('ChatViewPage SSE streaming', () => {
 
 describe('ChatViewPage idle/empty state', () => {
   beforeEach(() => {
+    mockSearchValue = {}
     useChatStore.setState({
       activeSession: null,
       messages: [],
@@ -209,13 +217,14 @@ describe('ChatViewPage idle/empty state', () => {
   })
 
   it('AC-01: 无活跃 session 时显示空态引导', () => {
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
 
     expect(screen.getByText('开始新对话')).toBeDefined()
     expect(screen.getByText(/在下方输入消息/)).toBeDefined()
   })
 
-  it('AC-02: 有活跃 session 时显示会话标题', () => {
+  it('AC-02: 有活跃 session 时显示会话标题', async () => {
+    mockSearchValue = { session: 's1' }
     useChatStore.setState({
       activeSession: {
         id: 's1',
@@ -226,9 +235,25 @@ describe('ChatViewPage idle/empty state', () => {
         createdAt: '',
         updatedAt: '',
       } as never,
+      sessions: [
+        {
+          id: 's1',
+          title: '测试会话',
+          provider: 'openai',
+          model: 'gpt-4',
+          messageCount: 0,
+          createdAt: '',
+          updatedAt: '',
+        } as never,
+      ],
     })
 
-    render(<ChatViewPage />)
+    render(<ChatSession sessionId="s1" />)
+
+    // 等待 loadSessions 的异步操作完成
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50))
+    })
 
     expect(screen.getByText('测试会话')).toBeDefined()
   })

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import { KbListPage } from '@/routes/app/kb'
+import { KbListPage } from '@/routes/app/kb/page'
 import type { Folder, DocumentItem } from '@/stores/file'
 
 const mockFolder: Folder = {
