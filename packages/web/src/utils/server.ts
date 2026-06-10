@@ -6,15 +6,16 @@ import adapterFetch from 'alova/fetch'
 let isRefreshing = false
 let refreshSubscribers: Array<(token: string) => void> = []
 
+const refreshAlova = createAlova({
+  statesHook: ReactHook,
+  requestAdapter: adapterFetch(),
+  baseURL: '/api',
+})
+
 async function refreshToken(): Promise<string | null> {
   try {
-    const res = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    })
-    if (!res.ok) throw new Error('refresh failed')
-    const json = await res.json()
-    const token = json.data?.accessToken
+    const res = await refreshAlova.Post<{ accessToken?: string }>('/auth/refresh').send()
+    const token = res.accessToken
     if (token) localStorage.setItem('goferbot_access_token', token)
     return token ?? null
   } catch {

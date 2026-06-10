@@ -1,14 +1,15 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { ConfigProvider } from '@/components/ConfigProvider'
 import { TabBar } from '@/components/tab-bar/TabBar'
 import { IconSidebar } from '@/components/sidebar/Sidebar'
+import { useAuthStore } from '@/stores/auth'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
-    // const token = useAuthStore.getState().token
-    // if (!token) {
-    //   throw redirect({ to: '/login' })
-    // }
+    const token = useAuthStore.getState().token
+    if (!token) {
+      throw redirect({ to: '/login' })
+    }
   },
   component: AppLayout,
 })
