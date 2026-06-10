@@ -29,6 +29,7 @@ export interface UploadTask {
   error?: string
   kbId: string
   folderId?: string | null
+  file?: File
 }
 
 export type ViewMode = 'grid' | 'list'

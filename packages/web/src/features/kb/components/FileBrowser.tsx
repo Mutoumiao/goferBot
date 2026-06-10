@@ -9,13 +9,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useKbStore } from '../store'
-import { loadKbItems, uploadFiles } from '../services'
+import { loadKbItems, uploadFiles, renameItem, removeItem, addFolder } from '../services'
 import { KnowledgeBaseToolbar } from './KnowledgeBaseToolbar'
 import { FileGridItem } from './FileGridItem'
 import { FileListItem } from './FileListItem'
 import { UploadDropZone } from './UploadDropZone'
 import { UploadProgressBar } from './UploadProgressBar'
 import { FileContextMenu } from './FileContextMenu'
+import { openDialog } from '@/overlays/services/overlay-service'
 import type { Folder, DocumentItem, ViewMode, SortOption } from '../types'
 
 interface FileBrowserProps {
@@ -74,17 +75,37 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     }
   }, [setCurrentFolderId])
 
-  const handleRenameItem = useCallback((_item: Folder | DocumentItem) => {
-    // TODO: f-48 重命名功能
+  const handleRenameItem = useCallback(async (item: Folder | DocumentItem) => {
+    const RenameItemDialog = (await import('@/overlays/dialogs/RenameItemDialog')).default
+    await openDialog(RenameItemDialog, {
+      itemName: item.name,
+      isFolder: !('status' in item),
+      onConfirm: async (newName: string) => {
+        await renameItem(item, newName)
+      },
+    })
   }, [])
 
-  const handleDeleteItem = useCallback((_item: Folder | DocumentItem) => {
-    // TODO: f-48 删除功能
+  const handleDeleteItem = useCallback(async (item: Folder | DocumentItem) => {
+    const DeleteItemDialog = (await import('@/overlays/dialogs/DeleteItemDialog')).default
+    await openDialog(DeleteItemDialog, {
+      itemName: item.name,
+      isFolder: !('status' in item),
+      onConfirm: async () => {
+        await removeItem(item)
+      },
+    })
   }, [])
 
-  const handleCreateFolder = useCallback(() => {
-    // TODO: f-48 新建文件夹功能
-  }, [])
+  const handleCreateFolder = useCallback(async () => {
+    if (!currentKbId) return
+    const CreateFolderDialog = (await import('@/overlays/dialogs/CreateFolderDialog')).default
+    await openDialog(CreateFolderDialog, {
+      onConfirm: async (name: string) => {
+        await addFolder(currentKbId, name, currentFolderId)
+      },
+    })
+  }, [currentKbId, currentFolderId])
 
   const handleRetry = useCallback(() => {
     if (currentKbId) {
@@ -113,10 +134,9 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
 
   const handleRetryUpload = useCallback((taskId: string) => {
     const task = uploadTasks.find((t) => t.id === taskId)
-    if (!task || !currentKbId) return
+    if (!task || !currentKbId || !task.file) return
     removeUploadTask(taskId)
-    // 由于原始 File 对象无法从 task 恢复，重试功能需要用户重新选择文件
-    // #adjacent-fix: 恢复文件对象后实现真正重试
+    uploadFiles(currentKbId, [task.file], task.folderId)
   }, [uploadTasks, currentKbId, removeUploadTask])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -245,20 +265,33 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
           </TableHeader>
           <TableBody>
             {sortedFolders.map((folder) => (
-              <FileListItem
+              <FileContextMenu
                 key={folder.id}
                 item={folder}
-                isFolder
-                onClick={() => handleFolderClick(folder)}
-              />
+                onOpen={handleOpenItem}
+                onRename={handleRenameItem}
+                onDelete={handleDeleteItem}
+              >
+                <FileListItem
+                  item={folder}
+                  isFolder
+                  onClick={() => handleFolderClick(folder)}
+                />
+              </FileContextMenu>
             ))}
             {sortedDocuments.map((doc) => (
-              <FileListItem
+              <FileContextMenu
                 key={doc.id}
                 item={doc}
-                isFolder={false}
-                onClick={() => handleDocumentClick(doc)}
-              />
+                onRename={handleRenameItem}
+                onDelete={handleDeleteItem}
+              >
+                <FileListItem
+                  item={doc}
+                  isFolder={false}
+                  onClick={() => handleDocumentClick(doc)}
+                />
+              </FileContextMenu>
             ))}
           </TableBody>
         </Table>

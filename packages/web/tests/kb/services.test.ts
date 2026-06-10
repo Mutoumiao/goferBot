@@ -37,6 +37,9 @@ import {
   createFolder as svcCreateFolder,
   renameFolder as svcRenameFolder,
   removeFolder as svcRemoveFolder,
+  removeItem,
+  renameItem,
+  addFolder,
   uploadFiles,
   navigateToFolder,
 } from '@/features/kb/services'
@@ -257,6 +260,107 @@ describe('kb services', () => {
       useKbStore.setState({ currentKbId: null })
       navigateToFolder('f1')
       expect(useKbStore.getState().currentFolderId).toBeNull()
+    })
+  })
+
+  describe('removeItem', () => {
+    it('removes folder from store after api success', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        folders: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' },
+          { id: 'f2', kbId: 'kb1', parentId: null, name: 'B', createdAt: '', updatedAt: '' },
+        ],
+      })
+      vi.mocked(deleteFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+
+      await removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
+
+      expect(useKbStore.getState().folders).toHaveLength(1)
+      expect(useKbStore.getState().folders[0].id).toBe('f2')
+    })
+
+    it('removes document from store after api success', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        documents: [
+          { id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
+        ],
+      })
+      vi.mocked(deleteDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+
+      await removeItem({ id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' })
+
+      expect(useKbStore.getState().documents).toHaveLength(0)
+    })
+
+    it('does nothing when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null, folders: [{ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' }] })
+      await removeItem({ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
+      expect(deleteFolder).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('renameItem', () => {
+    it('renames folder in store after api success', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }],
+      })
+      const updated: Folder = { id: 'f1', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }
+      vi.mocked(renameFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(updated) } as any)
+
+      await renameItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'New')
+
+      expect(useKbStore.getState().folders[0].name).toBe('New')
+    })
+
+    it('renames document in store after api success', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'old', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+      })
+      const updated: DocumentItem = { id: 'd1', kbId: 'kb1', folderId: null, name: 'new', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }
+      vi.mocked(renameDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(updated) } as any)
+
+      await renameItem({ id: 'd1', kbId: 'kb1', folderId: null, name: 'old', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }, 'new')
+
+      expect(useKbStore.getState().documents[0].name).toBe('new')
+    })
+  })
+
+  describe('addFolder', () => {
+    it('adds folder to store after api success', async () => {
+      useKbStore.setState({ currentKbId: 'kb1', folders: [] })
+      const folder: Folder = { id: 'f1', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }
+      vi.mocked(createFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(folder) } as any)
+
+      const result = await addFolder('kb1', 'New')
+
+      expect(result).toEqual(folder)
+      expect(useKbStore.getState().folders).toHaveLength(1)
+    })
+
+    it('sets fileError on api failure', async () => {
+      useKbStore.setState({ currentKbId: 'kb1', folders: [] })
+      vi.mocked(createFolder).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
+
+      await expect(addFolder('kb1', 'New')).rejects.toThrow('fail')
+      expect(useKbStore.getState().fileError).toBe('fail')
+    })
+  })
+
+  describe('uploadFiles', () => {
+    it('saves file object in task for retry', async () => {
+      vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
+      vi.mocked(uploadFile).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+
+      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' })
+      await uploadFiles('kb1', [file])
+
+      const task = useKbStore.getState().uploadTasks[0]
+      expect(task.file).toBe(file)
+      vi.unstubAllGlobals()
     })
   })
 })

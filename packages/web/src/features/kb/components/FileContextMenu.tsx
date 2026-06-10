@@ -47,7 +47,9 @@ export function FileContextMenu({
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuTrigger asChild>
+        {children}
+      </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
         {item ? (
           <>

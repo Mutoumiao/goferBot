@@ -122,6 +122,66 @@ export async function removeFolder(kbId: string, folderId: string) {
   await apiDeleteFolder(kbId, folderId).send()
 }
 
+export async function removeItem(item: Folder | DocumentItem) {
+  const { currentKbId, folders, documents, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  if (!currentKbId) return
+
+  const isFolderItem = !('status' in item)
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    if (isFolderItem) {
+      await apiDeleteFolder(currentKbId, item.id).send()
+      setFolders(folders.filter((f) => f.id !== item.id))
+    } else {
+      await apiDeleteDocument(currentKbId, item.id).send()
+      setDocuments(documents.filter((d) => d.id !== item.id))
+    }
+  } catch (e) {
+    setFileError(e instanceof Error ? e.message : '删除失败')
+  } finally {
+    setFileLoading(false)
+  }
+}
+
+export async function renameItem(item: Folder | DocumentItem, name: string) {
+  const { currentKbId, folders, documents, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  if (!currentKbId) return
+
+  const isFolderItem = !('status' in item)
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    if (isFolderItem) {
+      const updated = await apiRenameFolder(currentKbId, item.id, name).send()
+      setFolders(folders.map((f) => (f.id === item.id ? (updated as Folder) : f)))
+    } else {
+      const updated = await apiRenameDocument(currentKbId, item.id, name).send()
+      setDocuments(documents.map((d) => (d.id === item.id ? (updated as DocumentItem) : d)))
+    }
+  } catch (e) {
+    setFileError(e instanceof Error ? e.message : '重命名失败')
+  } finally {
+    setFileLoading(false)
+  }
+}
+
+export async function addFolder(kbId: string, name: string, parentId?: string | null) {
+  const { folders, setFolders, setFileLoading, setFileError } = useKbStore.getState()
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    const created = await apiCreateFolder(kbId, name, parentId).send()
+    setFolders([...folders, created as Folder])
+    return created as Folder
+  } catch (e) {
+    setFileError(e instanceof Error ? e.message : '创建文件夹失败')
+    throw e
+  } finally {
+    setFileLoading(false)
+  }
+}
+
 export async function uploadFiles(kbId: string, files: File[], folderId?: string | null) {
   const { addUploadTask, startUploadTask, updateUploadProgress, markUploadComplete, markUploadFailed } = useKbStore.getState()
 
@@ -132,6 +192,7 @@ export async function uploadFiles(kbId: string, files: File[], folderId?: string
       fileSize: file.size,
       kbId,
       folderId,
+      file,
     })
     taskIds.push(taskId)
 
