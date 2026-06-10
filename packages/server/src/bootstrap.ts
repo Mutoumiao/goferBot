@@ -1,6 +1,7 @@
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { ConfigService } from '@nestjs/config'
 import helmet from '@fastify/helmet'
+import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 import { SpiderGuard } from './common/guards/spider.guard.js'
@@ -36,7 +37,7 @@ export async function bootstrap(app: NestFastifyApplication) {
         ...(envOrigin ? [envOrigin] : []),
       ]
 
-  app.enableCors({
+  await app.register(cors, {
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true)
@@ -44,8 +45,8 @@ export async function bootstrap(app: NestFastifyApplication) {
       }
       callback(new Error('Not allowed by CORS'), false)
     },
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
     credentials: true,
   })
 

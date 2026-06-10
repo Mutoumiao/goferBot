@@ -6,10 +6,12 @@ import adapterFetch from 'alova/fetch'
 let isRefreshing = false
 let refreshSubscribers: Array<(token: string) => void> = []
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
+
 const refreshAlova = createAlova({
   statesHook: ReactHook,
   requestAdapter: adapterFetch(),
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
 })
 
 async function refreshToken(): Promise<string | null> {
@@ -44,7 +46,7 @@ export const alovaInstance = createAlova({
   id: 'goferbot',
   statesHook: ReactHook,
   requestAdapter: adapterFetch(),
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   timeout: 30_000,
   shareRequest: true,
   cacheFor: {
@@ -72,11 +74,14 @@ export const alovaInstance = createAlova({
       if (error.status === 401 || error.status === 403) {
         if (!isRefreshing) {
           isRefreshing = true
-          const newToken = await refreshToken()
-          isRefreshing = false
-          if (newToken) {
-            onRefreshed(newToken)
-            return method.send()
+          try {
+            const newToken = await refreshToken()
+            if (newToken) {
+              onRefreshed(newToken)
+              return method.send()
+            }
+          } finally {
+            isRefreshing = false
           }
           // refresh 失败 → 清除状态 → 跳登录
           localStorage.removeItem('goferbot_access_token')
