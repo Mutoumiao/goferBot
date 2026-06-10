@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB，与后端限制对齐
 
-// 客户端文件类型白名单 — 仅允许上传以下格式
 const ALLOWED_EXTENSIONS = ['.md', '.txt', '.pdf']
 const ALLOWED_MIME_TYPES = ['text/markdown', 'text/plain', 'application/pdf']
 
@@ -27,13 +26,11 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
       const rejected: { name: string; reason: string }[] = []
 
       for (const file of files) {
-        // 1. 文件类型预过滤（客户端白名单）
         const ext = '.' + file.name.split('.').pop()?.toLowerCase()
         if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_MIME_TYPES.includes(file.type)) {
           rejected.push({ name: file.name, reason: '不支持的文件类型' })
           continue
         }
-        // 2. 文件大小检查
         if (file.size > MAX_FILE_SIZE) {
           skipped.push(`${file.name} 超过 50MB 限制`)
           continue
@@ -41,9 +38,8 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
         valid.push(file)
       }
 
-      // 更新被拒绝文件列表（红色标记渲染）
       if (rejected.length > 0) {
-        setRejectedFiles(prev => [...prev, ...rejected])
+        setRejectedFiles((prev) => [...prev, ...rejected])
       }
 
       if (skipped.length > 0) {
@@ -56,7 +52,7 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
         onFilesSelected(valid)
       }
     },
-    [onFilesSelected]
+    [onFilesSelected],
   )
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -87,7 +83,6 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFiles(e.target.files)
-      // Reset input so the same file can be re-selected
       e.target.value = ''
     }
   }
@@ -105,14 +100,14 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
               : 'border-border-default bg-surface-1 hover:border-text-tertiary'
           }`}
         onDragOver={handleDragOver}
-        onDragEnter={e => {
+        onDragEnter={(e) => {
           e.preventDefault()
           setIsDragOver(true)
         }}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
-        onKeyDown={e => {
+        onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') handleClick()
         }}
       >
@@ -138,7 +133,6 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
         </div>
       )}
 
-      {/* Rejected files — 不支持的文件类型 */}
       {rejectedFiles.length > 0 && (
         <div className="mt-2 space-y-1">
           {rejectedFiles.map((item, idx) => (
@@ -151,11 +145,7 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
               <span className="shrink-0 font-medium">不支持的文件类型</span>
             </div>
           ))}
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => setRejectedFiles([])}
-          >
+          <Button variant="link" size="sm" onClick={() => setRejectedFiles([])}>
             清除
           </Button>
         </div>

@@ -1,5 +1,5 @@
 import { X, AlertCircle, RefreshCw } from 'lucide-react'
-import type { UploadTask } from '@/stores/file'
+import type { UploadTask } from '../types'
 
 interface UploadProgressBarProps {
   tasks: UploadTask[]
@@ -29,7 +29,6 @@ export function UploadProgressBar({ tasks, activeUploadCount, onRetry, onClear }
         </button>
       </div>
 
-      {/* Aggregate progress bar */}
       <div className="w-full h-1.5 bg-surface-2 rounded-full overflow-hidden mb-3">
         <div
           data-testid="progress-fill"
@@ -38,9 +37,8 @@ export function UploadProgressBar({ tasks, activeUploadCount, onRetry, onClear }
         />
       </div>
 
-      {/* Individual tasks */}
       <ul className="space-y-1">
-        {tasks.map(task => (
+        {tasks.map((task) => (
           <li key={task.id} className="flex items-center gap-2 text-xs">
             {task.status === 'failed' ? (
               <AlertCircle className="h-3 w-3 text-red-500 shrink-0" />

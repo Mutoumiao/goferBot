@@ -1,7 +1,7 @@
 import { FolderIcon } from 'lucide-react'
-import type { Folder, DocumentItem } from '@/stores/file'
 import { formatFileSize } from '@/utils/file'
 import { cn } from '@/utils/cn'
+import type { Folder, DocumentItem } from '../types'
 
 interface FileGridItemProps {
   item: Folder | DocumentItem

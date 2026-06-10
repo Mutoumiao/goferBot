@@ -4,7 +4,7 @@ import { cn } from '@/utils/cn'
 import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTabsStore } from '@/stores/tabs'
-import { useChatStore } from '@/stores/chat'
+import { createChatSession } from '@/features/chat/services'
 import type { Tab } from '@/stores/tabs'
 
 export function TabBar({ className }: { className?: string }) {
@@ -18,9 +18,6 @@ export function TabBar({ className }: { className?: string }) {
   const addTabByRoute = useTabsStore(s => s.addTabByRoute)
   const activateTab = useTabsStore(s => s.activateTab)
   const removeTab = useTabsStore(s => s.removeTab)
-
-  // Chat store
-  const createSession = useChatStore(s => s.createSession)
 
   // 路由同步：监听 href 变化，自动同步标签状态
   const href = useRouterState({ select: s => s.location.href })
@@ -112,13 +109,13 @@ export function TabBar({ className }: { className?: string }) {
 
   // 新建标签 — 创建新会话
   const handleNewTab = useCallback(async () => {
-    const newSession = await createSession()
+    const newSession = await createChatSession()
     if (newSession?.id) {
       const route = `/app/chat/${newSession.id}`
       addTabByRoute(route, newSession.title || '新对话', newSession.id)
       router.navigate({ to: route })
     }
-  }, [createSession, addTabByRoute, router])
+  }, [createChatSession, addTabByRoute, router])
 
   return (
     <div className={cn('flex h-[52px] items-center gap-2 bg-surface-secondary px-3.5', className)}>

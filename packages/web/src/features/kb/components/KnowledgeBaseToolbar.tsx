@@ -18,22 +18,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Search, LayoutGrid, List, ArrowUpDown, Upload, ChevronLeft, ChevronRight } from 'lucide-react'
-import type { Folder } from '@/stores/file'
+import type { Folder } from '../types'
+import type { ViewMode, SortOption } from '../types'
 
-type ViewMode = 'grid' | 'list'
-type SortOption = 'name-asc' | 'name-desc' | 'date-desc' | 'date-asc'
-
-interface HeaderProps {
+interface KnowledgeBaseToolbarProps {
   kbName: string
-  breadcrumb: Folder[] | (() => Folder[])
+  breadcrumb: Folder[]
   onNavigate: (folderId: string | null) => void
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   sortOption: SortOption
   onSortChange: (option: SortOption) => void
+  onUpload?: () => void
 }
 
-export function Header({
+export function KnowledgeBaseToolbar({
   kbName,
   breadcrumb,
   onNavigate,
@@ -41,9 +40,9 @@ export function Header({
   onViewModeChange,
   sortOption,
   onSortChange,
-}: HeaderProps) {
+  onUpload,
+}: KnowledgeBaseToolbarProps) {
   const [searchOpen, setSearchOpen] = useState(false)
-  const items = typeof breadcrumb === 'function' ? breadcrumb() : breadcrumb
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -74,11 +73,11 @@ export function Header({
                 {kbName}
               </BreadcrumbLink>
             </BreadcrumbItem>
-            {items.map((folder, index) => (
+            {breadcrumb.map((folder, index) => (
               <div key={folder.id} className="flex items-center">
                 <BreadcrumbSeparator className="text-[#9AA3AF]" />
                 <BreadcrumbItem>
-                  {index === items.length - 1 ? (
+                  {index === breadcrumb.length - 1 ? (
                     <BreadcrumbPage className="text-[#1F2328]">{folder.name}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink
@@ -139,7 +138,7 @@ export function Header({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuRadioGroup value={sortOption} onValueChange={v => onSortChange(v as SortOption)}>
+            <DropdownMenuRadioGroup value={sortOption} onValueChange={(v) => onSortChange(v as SortOption)}>
               <DropdownMenuRadioItem value="date-desc">按更新时间</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="date-asc">按更新时间</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="name-asc">按名称</DropdownMenuRadioItem>
@@ -152,6 +151,7 @@ export function Header({
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-lg bg-[#F4F5F7] text-[#5E6673] hover:bg-[#EBECF0]"
+          onClick={onUpload}
         >
           <Upload className="h-4 w-4" />
         </Button>
