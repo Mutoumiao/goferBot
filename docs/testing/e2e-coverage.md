@@ -195,5 +195,6 @@ status: current
 ## 相关文档
 
 - `docs/guide/testing/e2e-testing-guide.md` — E2E 测试规范
+- `docs/guide/testing/README.md` — 测试体系总览（含目录结构与路径别名配置）
 - `tests/e2e/pages/` — Page Object 目录
 - `tests/e2e/mocks/http-routes.ts` — Mock API 路由定义
