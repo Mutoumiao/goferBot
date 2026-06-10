@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { KnowledgeBaseService } from '../../../packages/server/src/modules/knowledge-base/knowledge-base.service.js'
+import { KnowledgeBaseService } from '@/modules/knowledge-base/knowledge-base.service.js'
 import { NotFoundException, ForbiddenException } from '@nestjs/common'
 
 describe('KnowledgeBaseService', () => {

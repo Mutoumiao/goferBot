@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { PrismaVectorIndexer } from '../../packages/server/src/processors/indexing/prisma-vector.indexer'
-import { ValidationError } from '@goferbot/rag-sdk'
+import { ValidationError } from '@rag-sdk'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { checkInfrastructure } from './helpers/infra-check.js'
 

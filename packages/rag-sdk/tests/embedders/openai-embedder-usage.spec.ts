@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { OpenAIEmbedder } from '../../../packages/rag-sdk/src/embedders/openai.embedder.js'
-import { ValidationError, EmbeddingError } from '../../../packages/rag-sdk/src/errors.js'
+import { OpenAIEmbedder } from '@/embedders/openai.embedder.js'
+import { ValidationError, EmbeddingError } from '@/errors.js'
 
 const config = {
   provider: 'openai' as const,

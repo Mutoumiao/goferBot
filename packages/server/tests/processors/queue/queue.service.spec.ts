@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { QueueService } from '../../../packages/server/src/processors/queue/queue.service.js'
+import { QueueService } from '@/processors/queue/queue.service.js'
 
 describe('QueueService', () => {
   it('AC-06: addDocumentJob creates job with type index', async () => {

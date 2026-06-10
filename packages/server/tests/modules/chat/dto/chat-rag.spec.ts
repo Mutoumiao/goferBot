@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
-import { chatSchema } from '../../../packages/server/src/modules/chat/dto/chat.dto.js'
+import { chatSchema } from '@/modules/chat/dto/chat.dto.js'
 
 const originalFetch = globalThis.fetch
 
@@ -64,7 +64,7 @@ describe('ChatService RAG retrieval', () => {
   }
 
   it('AC-03: injects retrieved chunks into system message', async () => {
-    const { ChatService } = await import('../../../packages/server/src/modules/chat/chat.service.js')
+    const { ChatService } = await import('@/modules/chat/chat.service.js')
     const service = new ChatService(mockPrisma as any, {} as any, mockRetriever as any, mockPostprocessor as any)
 
     const dto = {
@@ -88,7 +88,7 @@ describe('ChatService RAG retrieval', () => {
     mockRetriever.retrieve.mockClear()
     mockPostprocessor.process.mockClear()
 
-    const { ChatService } = await import('../../../packages/server/src/modules/chat/chat.service.js')
+    const { ChatService } = await import('@/modules/chat/chat.service.js')
     const service = new ChatService(mockPrisma as any, {} as any, mockRetriever as any, mockPostprocessor as any)
 
     const dto = {
@@ -107,7 +107,7 @@ describe('ChatService RAG retrieval', () => {
     mockRetriever.retrieve.mockClear()
     mockPostprocessor.process.mockClear()
 
-    const { ChatService } = await import('../../../packages/server/src/modules/chat/chat.service.js')
+    const { ChatService } = await import('@/modules/chat/chat.service.js')
     const service = new ChatService(mockPrisma as any, {} as any, mockRetriever as any, mockPostprocessor as any)
 
     const dto = {
@@ -127,7 +127,7 @@ describe('ChatService RAG retrieval', () => {
     mockRetriever.retrieve.mockResolvedValue([])
     mockPostprocessor.process.mockReturnValue({ candidates: [], trace: {} })
 
-    const { ChatService } = await import('../../../packages/server/src/modules/chat/chat.service.js')
+    const { ChatService } = await import('@/modules/chat/chat.service.js')
     const service = new ChatService(mockPrisma as any, {} as any, mockRetriever as any, mockPostprocessor as any)
 
     const dto = {
@@ -146,7 +146,7 @@ describe('ChatService RAG retrieval', () => {
   it('AC-07: falls back to plain LLM when retrieval throws', async () => {
     mockRetriever.retrieve.mockRejectedValue(new Error('Vector store down'))
 
-    const { ChatService } = await import('../../../packages/server/src/modules/chat/chat.service.js')
+    const { ChatService } = await import('@/modules/chat/chat.service.js')
     const service = new ChatService(mockPrisma as any, {} as any, mockRetriever as any, mockPostprocessor as any)
 
     const dto = {

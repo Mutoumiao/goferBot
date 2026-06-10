@@ -115,7 +115,7 @@ export async function removeFolder(kbId: string, folderId: string) {
 }
 
 export async function uploadFiles(kbId: string, files: File[], folderId?: string | null) {
-  const { addUploadTask, markUploadComplete, markUploadFailed } = useKbStore.getState()
+  const { addUploadTask, startUploadTask, updateUploadProgress, markUploadComplete, markUploadFailed } = useKbStore.getState()
 
   const taskIds: string[] = []
   for (const file of files) {
@@ -131,7 +131,11 @@ export async function uploadFiles(kbId: string, files: File[], folderId?: string
     formData.append('file', file)
     if (folderId) formData.append('folderId', folderId)
 
+    startUploadTask(taskId)
+
     try {
+      // 模拟上传进度（实际应由 API 进度回调驱动）
+      updateUploadProgress(taskId, 50)
       await apiUploadFile(kbId, formData).send()
       markUploadComplete(taskId)
     } catch (e) {

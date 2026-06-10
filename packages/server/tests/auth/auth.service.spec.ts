@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AuthService } from '../../../packages/server/src/auth/auth.service.js'
+import { AuthService } from '@/auth/auth.service.js'
 import { UnauthorizedException, ForbiddenException } from '@nestjs/common'
 
 describe('AuthService', () => {

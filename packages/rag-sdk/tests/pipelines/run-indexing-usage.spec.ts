@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runIndexing } from '../../../packages/rag-sdk/src/pipelines/run-indexing.js'
-import type { IChunker, IEmbedder, IIndexer } from '../../../packages/rag-sdk/src/interfaces.js'
-import type { DocumentSource, Chunk, TokenUsage } from '../../../packages/rag-sdk/src/types.js'
+import { runIndexing } from '@/pipelines/run-indexing.js'
+import type { IChunker, IEmbedder, IIndexer } from '@/interfaces.js'
+import type { DocumentSource, Chunk, TokenUsage } from '@/types.js'
 
 const document: DocumentSource = {
   documentId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',

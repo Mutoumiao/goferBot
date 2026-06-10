@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Test } from '@nestjs/testing'
-import { DatabaseModule } from '../../../packages/server/src/processors/database/database.module.js'
-import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
+import { DatabaseModule } from '@/processors/database/database.module.js'
+import { PrismaService } from '@/processors/database/prisma.service.js'
 
 /**
  * AC-20: DI 编译冒烟测试

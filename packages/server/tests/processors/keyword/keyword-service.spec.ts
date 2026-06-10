@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { KeywordService } from '../../../packages/server/src/processors/keyword/keyword.service.js'
-import { KeywordModule } from '../../../packages/server/src/processors/keyword/keyword.module.js'
+import { KeywordService } from '@/processors/keyword/keyword.service.js'
+import { KeywordModule } from '@/processors/keyword/keyword.module.js'
 
 describe('KeywordService', () => {
   let keywordService: KeywordService

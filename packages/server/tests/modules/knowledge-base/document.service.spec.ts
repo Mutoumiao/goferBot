@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { DocumentService } from '../../../packages/server/src/modules/knowledge-base/document.service.js'
+import { DocumentService } from '@/modules/knowledge-base/document.service.js'
 import { NotFoundException, ForbiddenException } from '@nestjs/common'
 
 describe('DocumentService', () => {

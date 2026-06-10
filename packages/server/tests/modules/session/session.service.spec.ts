@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { SessionService } from '../../../packages/server/src/modules/session/session.service.js'
+import { SessionService } from '@/modules/session/session.service.js'
 
 function createMockPrisma(overrides = {}) {
   return {

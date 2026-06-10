@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DocumentService } from '../../../packages/server/src/modules/knowledge-base/document.service.js'
+import { DocumentService } from '@/modules/knowledge-base/document.service.js'
 
 describe('DocumentService.remove with vector deletion', () => {
   it('AC-08: remove deletes document and relies on ON DELETE CASCADE for chunks', async () => {

@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import type { IEmbedder, IIndexer } from '../../../packages/rag-sdk/src/interfaces.js'
-import type { TokenUsage, EmbedWithUsageResult, Chunk } from '../../../packages/rag-sdk/src/types.js'
+import type { IEmbedder, IIndexer } from '@/interfaces.js'
+import type { TokenUsage, EmbedWithUsageResult, Chunk } from '@/types.js'
 
 describe('TokenUsage types', () => {
   it('AC-01: TokenUsage type has promptTokens and totalTokens', () => {
     // 编译期检查：确保类型存在且可导入
     // 运行时用一个符合结构的对象验证
-    const usage: import('../../../packages/rag-sdk/src/types.js').TokenUsage = {
+    const usage: import('@/types.js').TokenUsage = {
       promptTokens: 10,
       totalTokens: 10,
     }
@@ -15,7 +15,7 @@ describe('TokenUsage types', () => {
   })
 
   it('AC-02: EmbedWithUsageResult type has vectors and usage arrays', () => {
-    const result: import('../../../packages/rag-sdk/src/types.js').EmbedWithUsageResult = {
+    const result: import('@/types.js').EmbedWithUsageResult = {
       vectors: [[0.1, 0.2]],
       usage: [{ promptTokens: 5, totalTokens: 5 }],
     }

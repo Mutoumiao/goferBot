@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { QueueModule } from '../../../packages/server/src/processors/queue/queue.module.js'
-import { IndexingWorker } from '../../../packages/server/src/processors/queue/indexing.worker.js'
+import { QueueModule } from '@/processors/queue/queue.module.js'
+import { IndexingWorker } from '@/processors/queue/indexing.worker.js'
 
 describe('QueueModule', () => {
   it('AC-08: QueueModule registers DOCUMENT_JOB_HANDLER bound to IndexingWorker', () => {

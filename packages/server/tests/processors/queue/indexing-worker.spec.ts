@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { IndexingWorker } from '../../../packages/server/src/processors/queue/indexing.worker.js'
+import { IndexingWorker } from '@/processors/queue/indexing.worker.js'
 
 // Mock @goferbot/rag-sdk 模块 — 使用 vi.hoisted 确保变量在 vi.mock 提升前初始化
 const { mockRunIndexing } = vi.hoisted(() => ({

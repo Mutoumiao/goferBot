@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DocumentParser } from '../../../packages/server/src/processors/parser/document.parser.js'
+import { DocumentParser } from '@/processors/parser/document.parser.js'
 
 describe('DocumentParser', () => {
   const parser = new DocumentParser()

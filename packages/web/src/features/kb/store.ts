@@ -33,6 +33,7 @@ interface KbState {
   setFileError: (error: string | null) => void
 
   addUploadTask: (task: Omit<UploadTask, 'id' | 'progress' | 'status'>) => string
+  startUploadTask: (taskId: string) => void
   updateUploadProgress: (taskId: string, progress: number) => void
   markUploadComplete: (taskId: string) => void
   markUploadFailed: (taskId: string, error: string) => void
@@ -79,6 +80,14 @@ export const useKbStore = create<KbState>((set, get) => ({
     const newTask: UploadTask = { ...task, id, progress: 0, status: 'queued' }
     set({ uploadTasks: [...get().uploadTasks, newTask] })
     return id
+  },
+
+  startUploadTask: (taskId) => {
+    set({
+      uploadTasks: get().uploadTasks.map((t) =>
+        t.id === taskId && t.status === 'queued' ? { ...t, status: 'uploading' as const } : t,
+      ),
+    })
   },
 
   updateUploadProgress: (taskId, progress) => {
