@@ -61,7 +61,7 @@ export function LoginForm() {
     const result = await loginUser(email, password, rememberMe)
     setLoading(false)
     if (result.success) {
-      navigate({ to: '/app' })
+      navigate({ to: '/app/chat' })
     } else {
       setError(result.error ?? '登录失败')
     }
