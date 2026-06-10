@@ -7,6 +7,8 @@ import {
   getHistory,
 } from '@/api/chat'
 import { useChatStore } from './store'
+import { openDialog } from '@/overlays/services/overlay-service'
+import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
 
 export async function loadChatSessions() {
   const { setSessions, setIsLoadingSessions, setError } = useChatStore.getState()
@@ -101,4 +103,33 @@ export async function resolveSessionById(sessionId: string) {
     return refreshed
   }
   return undefined
+}
+
+export async function deleteChatSessionWithReload(
+  id: string,
+  options?: { onReload?: () => void },
+) {
+  await deleteChatSession(id)
+  options?.onReload?.()
+}
+
+export async function confirmDeleteChatSession(
+  session: { id: string; title?: string },
+  options?: {
+    onBefore?: () => void
+    onAfter?: () => void
+    onReload?: () => void
+  },
+): Promise<boolean> {
+  const result = await openDialog<'confirm' | undefined>(DeleteSessionDialog, {
+    sessionTitle: session.title || '未命名会话',
+  })
+  if (result !== 'confirm') return false
+  options?.onBefore?.()
+  try {
+    await deleteChatSessionWithReload(session.id, { onReload: options?.onReload })
+    return true
+  } finally {
+    options?.onAfter?.()
+  }
 }

@@ -149,6 +149,9 @@
   /* Brand */
   --color-brand-primary: #4f46e5;
   --color-brand-secondary: #7c3aed;
+  --color-brand-blue: #5074fa;
+  --color-brand-blue-soft: #eef1fe;
+  --color-brand-blue-ring: #dde5ff;
 
   /* Border */
   --color-border-default: #dee2e6;
