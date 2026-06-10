@@ -4,27 +4,6 @@
 
 ## 进行中
 
-_暂无_
-
-## 待启动 — 前端迁移：阶段三深化（P1）
-
-> PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.7
-
-| Issue | 优先级 | 阻塞于 | 摘要 |
-|-------|--------|--------|------|
-| [f-48](docs/issues/f-48-settings-form/) | p1 | — | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
-| [f-48](docs/issues/f-48-settings-form/) | p1 | — | Settings 配置表单（Zod 验证 + 未保存提示 + beforeunload） |
-| [f-49](docs/issues/f-49-blocknote-editor/) | p1 | — | BlockNote 富文本编辑器替换纯文本输入 |
-
-## 待启动 — 前端迁移：阶段四+五（P2）
-
-> PRD：[docs/prd/v3-frontend-migration.md](docs/prd/v3-frontend-migration.md) §5.4-§5.5
-
-| Issue | 优先级 | 阻塞于 | 摘要 |
-|-------|--------|--------|------|
-| [f-38](docs/issues/f-38-ui-library-finalize/) | p2 | P0+P1 完成后 | 84 个 shadcn-vue → shadcn/ui 组件替换 + 样式对齐 |
-| [f-39](docs/issues/f-39-test-cleanup/) | p2 | P0+P1 完成后 | 测试迁移（Vue→React）+ E2E 适配 + 删除 packages/webui |
-
 ## 待启动 — 其他
 
 - **Session 列表分页 UI** — 后端 b-14 已完成 Session 分页 API，前端需实现分页组件/滚动加载。当前限制：会话超过 50 条时仅显示前 50 条。
