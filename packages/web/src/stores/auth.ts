@@ -6,10 +6,12 @@ interface AuthState {
   user: User | null
   token: string | null
   isAuthenticated: boolean
+  isInitialized: boolean
 
   setAuth: (token: string, user: User) => void
   clearAuth: () => void
   setUser: (user: User) => void
+  setInitialized: (value: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -18,6 +20,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      isInitialized: false,
 
       setAuth: (token: string, user: User) =>
         set({
@@ -28,6 +31,7 @@ export const useAuthStore = create<AuthState>()(
 
       clearAuth: () => {
         localStorage.removeItem('goferbot_access_token')
+        localStorage.removeItem('goferbot_refresh_token')
         set({
           token: null,
           user: null,
@@ -36,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setUser: (user: User) => set({ user }),
+      setInitialized: (value: boolean) => set({ isInitialized: value }),
     }),
     {
       name: 'goferbot-auth',

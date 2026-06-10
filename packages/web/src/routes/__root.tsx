@@ -2,8 +2,11 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { configResponsive } from 'ahooks'
+import { useEffect } from 'react'
 
 import { OverlayHost } from '@/overlays/host/OverlayHost'
+import { useAuthStore } from '@/stores/auth'
+import { fetchCurrentUser } from '@/features/auth/services'
 import appCss from '../globals.css?url'
 
 /* ========== ahooks 响应式断点全局配置 ========== */
@@ -35,6 +38,24 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
+function AuthInitializer({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const state = useAuthStore.getState()
+    if (state.isInitialized) return
+
+    const token = localStorage.getItem('goferbot_access_token')
+    if (token) {
+      fetchCurrentUser().then(() => {
+        useAuthStore.getState().setInitialized(true)
+      })
+    } else {
+      useAuthStore.getState().setInitialized(true)
+    }
+  }, [])
+
+  return <>{children}</>
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
@@ -42,7 +63,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <AuthInitializer>
+          {children}
+        </AuthInitializer>
         {/* Overlay Portal 系统 — 所有 Dialog/ContextMenu 渲染在此 */}
         <OverlayHost />
         <TanStackDevtools

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', () => ({
@@ -9,21 +9,29 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@/features/auth/services', () => ({
   loginUser: vi.fn(),
   registerUser: vi.fn(),
+  getRememberedEmail: vi.fn(() => null),
 }))
 
-import { loginUser, registerUser } from '@/features/auth/services'
+import { loginUser, registerUser, getRememberedEmail } from '@/features/auth/services'
 import { useAuthStore } from '@/stores/auth'
 import { AuthContainer } from '@/features/auth/components/AuthContainer'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { useAuthPageStore } from '@/features/auth/store'
 
+/** 设置受控 input 的值并触发 React onChange */
+function setInputValue(element: HTMLElement, value: string) {
+  const input = element as HTMLInputElement
+  fireEvent.change(input, { target: { value } })
+}
+
 describe('auth components', () => {
   beforeEach(() => {
-    useAuthStore.setState({ user: null, token: null, isAuthenticated: false })
+    useAuthStore.setState({ user: null, token: null, isAuthenticated: false, isInitialized: false })
     useAuthPageStore.setState({ tab: 'login', rememberEmail: null })
     localStorage.clear()
     vi.clearAllMocks()
+    vi.mocked(getRememberedEmail).mockReturnValue(null)
   })
 
   describe('LoginForm', () => {
@@ -44,15 +52,51 @@ describe('auth components', () => {
       expect(passwordInput.type).toBe('text')
     })
 
+    it('fills remembered email on mount', () => {
+      vi.mocked(getRememberedEmail).mockReturnValue('remembered@example.com')
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址') as HTMLInputElement
+      expect(emailInput.value).toBe('remembered@example.com')
+    })
+
+    it('shows email validation error for invalid email', async () => {
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'invalid')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
+      })
+      expect(loginUser).not.toHaveBeenCalled()
+    })
+
+    it('shows password validation error for short password', async () => {
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), '123')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
+      })
+      expect(loginUser).not.toHaveBeenCalled()
+    })
+
     it('submits login with credentials', async () => {
       vi.mocked(loginUser).mockResolvedValue({ success: true })
 
       render(<LoginForm />)
-      fireEvent.change(screen.getByPlaceholderText('请输入邮箱地址'), { target: { value: 'user@example.com' } })
-      fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'password' } })
-      fireEvent.click(screen.getByRole('button', { name: '登录' }))
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
 
-      await vi.waitFor(() => {
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
         expect(loginUser).toHaveBeenCalledWith('user@example.com', 'password', false)
       })
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/app' })
@@ -62,13 +106,43 @@ describe('auth components', () => {
       vi.mocked(loginUser).mockResolvedValue({ success: false, error: 'invalid credentials' })
 
       render(<LoginForm />)
-      fireEvent.change(screen.getByPlaceholderText('请输入邮箱地址'), { target: { value: 'user@example.com' } })
-      fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'password' } })
-      fireEvent.click(screen.getByRole('button', { name: '登录' }))
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
 
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(screen.getByText('invalid credentials')).toBeDefined()
       })
+    })
+
+    it('disables submit button while loading', async () => {
+      vi.mocked(loginUser).mockImplementation(() => new Promise(() => {}))
+
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '登录中...' })).toBeDefined()
+      })
+      expect((screen.getByRole('button', { name: '登录中...' }) as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('clears email error when user starts typing', async () => {
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'invalid')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
+      })
+
+      setInputValue(emailInput, 'invalid-changed')
+      expect(screen.queryByText('请输入有效的邮箱地址')).toBeNull()
     })
   })
 
@@ -81,19 +155,127 @@ describe('auth components', () => {
       expect(screen.getByRole('button', { name: '注册' })).toBeDefined()
     })
 
+    it('shows name validation error for empty name', async () => {
+      render(<RegisterForm />)
+      const emailInput = screen.getByPlaceholderText('you@example.com')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password123')
+
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('请输入用户名')).toBeDefined()
+      })
+      expect(registerUser).not.toHaveBeenCalled()
+    })
+
+    it('shows email validation error for invalid email', async () => {
+      render(<RegisterForm />)
+      const emailInput = screen.getByPlaceholderText('you@example.com')
+      setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
+      setInputValue(emailInput, 'invalid')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password123')
+
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
+      })
+      expect(registerUser).not.toHaveBeenCalled()
+    })
+
+    it('shows password validation error for weak password', async () => {
+      render(<RegisterForm />)
+      const emailInput = screen.getByPlaceholderText('you@example.com')
+      setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'weak')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'weak')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
+      })
+      expect(registerUser).not.toHaveBeenCalled()
+    })
+
+    it('shows confirm password validation error for mismatch', async () => {
+      render(<RegisterForm />)
+      const emailInput = screen.getByPlaceholderText('you@example.com')
+      setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'different')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('两次输入的密码不一致')).toBeDefined()
+      })
+      expect(registerUser).not.toHaveBeenCalled()
+    })
+
     it('submits registration with credentials', async () => {
       vi.mocked(registerUser).mockResolvedValue({ success: true })
 
       render(<RegisterForm />)
-      fireEvent.change(screen.getByPlaceholderText('你的名字'), { target: { value: 'User' } })
-      fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'user@example.com' } })
-      fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'password' } })
-      fireEvent.click(screen.getByRole('button', { name: '注册' }))
+      const emailInput = screen.getByPlaceholderText('you@example.com')
+      setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password123')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
 
-      await vi.waitFor(() => {
-        expect(registerUser).toHaveBeenCalledWith('User', 'user@example.com', 'password')
+      await waitFor(() => {
+        expect(registerUser).toHaveBeenCalledWith('User', 'user@example.com', 'password123')
       })
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/app' })
+    })
+
+    it('toggles confirm password visibility', () => {
+      render(<RegisterForm />)
+      const confirmInput = screen.getByPlaceholderText('请再次输入密码') as HTMLInputElement
+      // Find the toggle button next to confirm password input
+      const confirmWrapper = confirmInput.closest('div')!
+      const confirmToggle = confirmWrapper.querySelector('button')!
+
+      expect(confirmInput.type).toBe('password')
+      fireEvent.click(confirmToggle)
+      expect(confirmInput.type).toBe('text')
+    })
+
+    it('shows password validation error for password without number', async () => {
+      render(<RegisterForm />)
+      const emailInput = screen.getByPlaceholderText('you@example.com')
+      setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('密码需同时包含字母和数字')).toBeDefined()
+      })
+      expect(registerUser).not.toHaveBeenCalled()
+    })
+
+    it('clears password error when user starts typing', async () => {
+      render(<RegisterForm />)
+      const emailInput = screen.getByPlaceholderText('you@example.com')
+      setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'weak')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'weak')
+      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+
+      await waitFor(() => {
+        expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
+      })
+
+      const passwordInput = screen.getByPlaceholderText('请输入密码')
+      setInputValue(passwordInput, 'weak-changed')
+      expect(screen.queryByText('密码长度不能少于 6 位')).toBeNull()
     })
   })
 

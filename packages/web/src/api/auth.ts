@@ -1,6 +1,12 @@
 import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
+interface PublicKeyResponse {
+  publicKey: string
+  algorithm: string
+  hash: string
+}
+
 /**
  * 登录 — 返回 accessToken + user
  */
@@ -24,3 +30,9 @@ export const getMe = () =>
  */
 export const refresh = () =>
   alovaInstance.Post<AuthResponse>('/auth/refresh')
+
+/**
+ * 获取 RSA 公钥（用于密码加密）
+ */
+export const getPublicKey = () =>
+  alovaInstance.Get<PublicKeyResponse>('/auth/public-key')

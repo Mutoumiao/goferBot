@@ -13,10 +13,18 @@ const refreshAlova = createAlova({
 })
 
 async function refreshToken(): Promise<string | null> {
+  const refreshTokenValue = localStorage.getItem('goferbot_refresh_token')
+  if (!refreshTokenValue) {
+    return null
+  }
   try {
-    const res = await refreshAlova.Post<{ accessToken?: string }>('/auth/refresh').send()
+    const res = await refreshAlova.Post<{ accessToken?: string; refreshToken?: string }>('/auth/refresh', {
+      refreshToken: refreshTokenValue,
+    }).send()
     const token = res.accessToken
+    const newRefreshToken = res.refreshToken
     if (token) localStorage.setItem('goferbot_access_token', token)
+    if (newRefreshToken) localStorage.setItem('goferbot_refresh_token', newRefreshToken)
     return token ?? null
   } catch {
     return null
@@ -61,7 +69,7 @@ export const alovaInstance = createAlova({
       return json.data ?? json
     },
     onError: async (error, method) => {
-      if (error.status === 401) {
+      if (error.status === 401 || error.status === 403) {
         if (!isRefreshing) {
           isRefreshing = true
           const newToken = await refreshToken()
@@ -71,9 +79,8 @@ export const alovaInstance = createAlova({
             return method.send()
           }
           // refresh 失败 → 清除状态 → 跳登录
-          // TODO: 替换为 router.navigate() 避免整页重载丢失未保存状态
-          // 需要将 TanStack Router 实例注入到 alova 模块（可能需要依赖注入或全局引用）
           localStorage.removeItem('goferbot_access_token')
+          localStorage.removeItem('goferbot_refresh_token')
           window.location.href = '/login'
           throw error
         }
