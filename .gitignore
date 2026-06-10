@@ -75,3 +75,5 @@ docs/design/pen/*
 .cursor/
 
 .claude/skills/
+
+.archived/
