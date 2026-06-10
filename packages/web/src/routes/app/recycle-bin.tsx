@@ -6,6 +6,13 @@ import type { KbEntry } from '@goferbot/data'
 
 export const Route = createFileRoute('/app/recycle-bin')({
   component: RecycleBinPage,
+  staticData: {
+    tabMeta: {
+      title: '回收站',
+      singleton: true,
+      closable: true,
+    },
+  },
 })
 
 interface TrashItem {

@@ -1,48 +1,28 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type TabType = 'chat' | 'chat-session' | 'kb' | 'history' | 'settings' | 'recycle-bin'
+/** 路由元数据 — 由路由文件 staticData.tabMeta 提供 */
+export interface TabMeta {
+  title: string
+  singleton: boolean
+  closable: boolean
+}
 
 export interface Tab {
   id: string
-  type: TabType
-  title: string
   route: string
+  title: string
+  closable: boolean
   sessionId?: string
   isDirty: boolean
-  closable: boolean
 }
 
 const HOME_TAB: Tab = {
   id: 'home',
-  type: 'chat',
-  title: '问答首页',
   route: '/app/chat',
-  isDirty: false,
+  title: '问答首页',
   closable: false,
-}
-
-/** 单页面标签（singleton）— 同一类型只存在一个标签 */
-const SINGLETON_TYPES: TabType[] = ['chat', 'kb', 'history', 'settings', 'recycle-bin']
-
-/** 路由 → 标签类型映射 */
-const ROUTE_TYPE_MAP: Record<string, TabType> = {
-  '/app': 'chat',
-  '/app/chat': 'chat',
-  '/app/kb': 'kb',
-  '/app/history': 'history',
-  '/app/settings': 'settings',
-  '/app/recycle-bin': 'recycle-bin',
-}
-
-/** 标签类型 → 默认标题映射 */
-const TYPE_TITLE_MAP: Record<TabType, string> = {
-  chat: '问答首页',
-  'chat-session': '新对话',
-  kb: '知识库',
-  history: '会话管理',
-  settings: '设置',
-  'recycle-bin': '回收站',
+  isDirty: false,
 }
 
 interface TabsState {
@@ -51,10 +31,8 @@ interface TabsState {
 
   activeTab: () => Tab | null
 
-  /** 添加标签（自动处理单页面复用） */
-  addTab: (type: TabType, sessionId?: string, title?: string, route?: string) => Tab | null
-  /** 通过路由添加/激活标签 */
-  addTabByRoute: (route: string, title?: string, sessionId?: string) => Tab | null
+  /** 通过路由添加/激活标签（自动处理单页面复用） */
+  openRoute: (route: string, meta: TabMeta, sessionId?: string) => Tab | null
   /** 移除标签 */
   removeTab: (tabId: string) => string | null
   /** 激活标签 */
@@ -65,48 +43,12 @@ interface TabsState {
   closeOtherTabs: (tabId: string) => void
   /** 重命名标签 */
   renameTab: (tabId: string, title: string) => void
-  /** 更新首页标签会话 */
-  updateHomeTabSession: (sessionId: string, title: string) => void
   /** 更新活跃标签会话 */
   updateActiveTabSession: (sessionId: string, title: string) => void
   /** 设置标签脏状态 */
   setTabDirty: (tabId: string, isDirty: boolean) => void
   /** 根据路由查找标签 */
   findTabByRoute: (route: string) => Tab | null
-}
-
-function getRouteFromType(type: TabType, sessionId?: string): string {
-  if (type === 'chat-session' && sessionId) {
-    return `/app/chat/${sessionId}`
-  }
-  const routeMap: Record<TabType, string> = {
-    chat: '/app/chat',
-    'chat-session': '/app/chat',
-    kb: '/app/kb',
-    history: '/app/history',
-    settings: '/app/settings',
-    'recycle-bin': '/app/recycle-bin',
-  }
-  return routeMap[type]
-}
-
-function getTypeFromRoute(route: string): TabType {
-  // 处理路径参数和 query 参数
-  const path = route.split('?')[0]
-
-  // /app/chat/:sessionId 格式是多页面标签
-  if (path.startsWith('/app/chat/') && path.length > '/app/chat/'.length) {
-    return 'chat-session'
-  }
-
-  // 兼容旧的 query 参数格式（带 session 参数）
-  const search = route.includes('?') ? route.split('?')[1] : ''
-  const params = new URLSearchParams(search)
-  if (path === '/app/chat' && params.has('session')) {
-    return 'chat-session'
-  }
-
-  return ROUTE_TYPE_MAP[path] ?? 'chat'
 }
 
 export const useTabsStore = create<TabsState>()(
@@ -120,12 +62,12 @@ export const useTabsStore = create<TabsState>()(
         return tabs.find((t) => t.id === activeTabId) ?? null
       },
 
-      addTab: (type, sessionId, title, route): Tab | null => {
+      openRoute: (route, meta, sessionId): Tab | null => {
         const { tabs } = get()
 
-        // 单页面标签：若已存在则激活，不新建
-        if (SINGLETON_TYPES.includes(type)) {
-          const existing = tabs.find((t) => t.type === type)
+        // 单页面标签：若已存在同 route 的标签则激活，不新建
+        if (meta.singleton) {
+          const existing = tabs.find((t) => t.route === route)
           if (existing) {
             set({ activeTabId: existing.id })
             return null
@@ -133,50 +75,24 @@ export const useTabsStore = create<TabsState>()(
         }
 
         // 多页面标签（chat-session）：若同一 sessionId 已存在则激活
-        if (type === 'chat-session') {
-          if (!sessionId) {
-            // chat-session 必须有 sessionId，否则降级为 chat 首页
-            const existing = tabs.find((t) => t.type === 'chat')
-            if (existing) {
-              set({ activeTabId: existing.id })
-              return null
-            }
-            // 创建 chat 首页标签
-            const homeTab: Tab = {
-              id: crypto.randomUUID(),
-              type: 'chat',
-              title: title || TYPE_TITLE_MAP['chat'],
-              route: route || '/app/chat',
-              isDirty: false,
-              closable: false,
-            }
-            set({ tabs: [...tabs, homeTab], activeTabId: homeTab.id })
-            return homeTab
-          }
-          const existing = tabs.find((t) => t.type === 'chat-session' && t.sessionId === sessionId)
+        if (sessionId) {
+          const existing = tabs.find((t) => t.sessionId === sessionId)
           if (existing) {
             set({ activeTabId: existing.id })
             return null
           }
         }
 
-        const tabRoute = route || getRouteFromType(type, sessionId)
         const tab: Tab = {
           id: crypto.randomUUID(),
-          type,
-          title: title || TYPE_TITLE_MAP[type],
-          route: tabRoute,
+          route,
+          title: meta.title,
+          closable: meta.closable,
           sessionId,
           isDirty: false,
-          closable: type !== 'chat',
         }
         set({ tabs: [...tabs, tab], activeTabId: tab.id })
         return tab
-      },
-
-      addTabByRoute: (route, title, sessionId): Tab | null => {
-        const type = getTypeFromRoute(route)
-        return get().addTab(type, sessionId, title, route)
       },
 
       removeTab: (tabId): string | null => {
@@ -221,14 +137,6 @@ export const useTabsStore = create<TabsState>()(
       renameTab: (tabId, title) => {
         set({
           tabs: get().tabs.map((t) => (t.id === tabId ? { ...t, title } : t)),
-        })
-      },
-
-      updateHomeTabSession: (sessionId, title) => {
-        set({
-          tabs: get().tabs.map((t) =>
-            t.id === 'home' ? { ...t, sessionId, title } : t,
-          ),
         })
       },
 

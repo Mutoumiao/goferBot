@@ -5,7 +5,33 @@ import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTabsStore } from '@/stores/tabs'
 import { createChatSession } from '@/features/chat/services'
-import type { Tab } from '@/stores/tabs'
+import type { Tab, TabMeta } from '@/stores/tabs'
+
+function getTabMetaFromRoute(pathname: string) {
+  const router = useRouter()
+
+  // 1. 精确匹配
+  const match = router.state.matches.find((m) => m.pathname === pathname)
+  const meta = (match?.staticData as { tabMeta?: TabMeta } | undefined)?.tabMeta
+  if (meta) return meta
+
+  // 2. fallback：寻找最长前缀匹配的父路由（支持任意动态路由）
+  let bestMatch: typeof router.state.matches[number] | undefined
+  let bestLen = 0
+  for (const m of router.state.matches) {
+    const mMeta = (m.staticData as { tabMeta?: TabMeta } | undefined)?.tabMeta
+    if (!mMeta) continue
+    if (pathname.startsWith(m.pathname) && m.pathname.length > bestLen) {
+      bestLen = m.pathname.length
+      bestMatch = m
+    }
+  }
+  if (bestMatch) {
+    return (bestMatch.staticData as { tabMeta?: TabMeta }).tabMeta!
+  }
+
+  return null
+}
 
 export function TabBar({ className }: { className?: string }) {
   const router = useRouter()
@@ -15,7 +41,7 @@ export function TabBar({ className }: { className?: string }) {
   // Tabs store
   const tabs = useTabsStore(s => s.tabs)
   const activeTabId = useTabsStore(s => s.activeTabId)
-  const addTabByRoute = useTabsStore(s => s.addTabByRoute)
+  const openRoute = useTabsStore(s => s.openRoute)
   const activateTab = useTabsStore(s => s.activateTab)
   const removeTab = useTabsStore(s => s.removeTab)
 
@@ -46,25 +72,28 @@ export function TabBar({ className }: { className?: string }) {
 
     // 2. 对于 /app/chat（无路径参数），匹配 chat 类型的单页面标签（home tab）
     if (pathname === '/app/chat') {
-      const homeTab = useTabsStore.getState().tabs.find(t => t.type === 'chat')
+      const homeTab = useTabsStore.getState().tabs.find(t => t.route === '/app/chat')
       if (homeTab) {
         activateTab(homeTab.id)
         return
       }
     }
 
-    // 3. 对于 /app/chat/:sessionId，匹配同 sessionId 的 chat-session 标签
+    // 3. 对于 /app/chat/:sessionId，匹配同 sessionId 的标签
     if (sessionId) {
-      const sessionTab = useTabsStore.getState().tabs.find(t => t.type === 'chat-session' && t.sessionId === sessionId)
+      const sessionTab = useTabsStore.getState().tabs.find(t => t.sessionId === sessionId)
       if (sessionTab) {
         activateTab(sessionTab.id)
         return
       }
     }
 
-    // 4. 没有匹配到，创建新标签
-    addTabByRoute(currentPath, undefined, sessionId)
-  }, [href, pathname, activateTab, addTabByRoute])
+    // 4. 没有匹配到，从路由元数据创建新标签
+    const meta = getTabMetaFromRoute(pathname)
+    if (meta) {
+      openRoute(currentPath, meta, sessionId)
+    }
+  }, [href, pathname, activateTab, openRoute])
 
   // active tab 变化时自动滚动到可视区域
   useEffect(() => {
@@ -112,10 +141,13 @@ export function TabBar({ className }: { className?: string }) {
     const newSession = await createChatSession()
     if (newSession?.id) {
       const route = `/app/chat/${newSession.id}`
-      addTabByRoute(route, newSession.title || '新对话', newSession.id)
-      router.navigate({ to: route })
+      const meta = getTabMetaFromRoute('/app/chat/$sessionId')
+      if (meta) {
+        openRoute(route, { ...meta, title: newSession.title || meta.title }, newSession.id)
+        router.navigate({ to: route })
+      }
     }
-  }, [createChatSession, addTabByRoute, router])
+  }, [openRoute, router])
 
   return (
     <div className={cn('flex h-[52px] items-center gap-2 bg-surface-secondary px-3.5', className)}>
@@ -128,6 +160,7 @@ export function TabBar({ className }: { className?: string }) {
         {tabs.map(tab => {
           const isActive = tab.id === activeTabId
           const isHovered = tab.id === hoveredTabId
+          const isChatSession = tab.sessionId != null
 
           return (
             <div
@@ -144,7 +177,7 @@ export function TabBar({ className }: { className?: string }) {
               onMouseLeave={() => setHoveredTabId(null)}
             >
               {/* 活跃标签的小圆点 */}
-              {isActive && tab.type === 'chat-session' && (
+              {isActive && isChatSession && (
                 <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#5B7CFA]" />
               )}
 

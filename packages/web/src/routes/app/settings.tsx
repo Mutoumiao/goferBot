@@ -5,6 +5,13 @@ import { Card, CardContent } from '@/components/ui/card'
 
 export const Route = createFileRoute('/app/settings')({
   component: SettingsPage,
+  staticData: {
+    tabMeta: {
+      title: '设置',
+      singleton: true,
+      closable: true,
+    },
+  },
 })
 
 function SettingsPage() {

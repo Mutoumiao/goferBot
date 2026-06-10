@@ -184,7 +184,7 @@ src/
 |--------------------|---------|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | `useAuthStore`     | persist | `token`, `user`, `isAuthenticated`                       | `setAuth()` / `clearAuth()`                                                                                                   |
 | `useSettingsStore` | persist | `config: AppConfig`, `savedConfig`, `isLoading`, `error` | `updateConfig()` / `loadConfig()` / `saveConfig()` / `getLLMConfig()` / `isDirty()` / `resetToSaved()`                        |
-| `useTabsStore`     | persist | `tabs: Tab[]`, `activeTabId`                             | `addTab()` / `addTabByRoute()` / `removeTab()` / `closeAllTabs()` / `closeOtherTabs()` / `activeTab()`                        |
+| `useTabsStore`     | persist | `tabs: Tab[]`, `activeTabId`                             | `openRoute()` / `removeTab()` / `activateTab()` / `closeAllTabs()` / `closeOtherTabs()` / `renameTab()` / `updateActiveTabSession()` / `setTabDirty()` / `findTabByRoute()` |
 
 ### Feature Services
 
