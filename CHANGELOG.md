@@ -4,31 +4,54 @@
 
 ---
 
+## [2026-06-10]
+
+### frontend
+
+- [closed] 登录注册认证模块重构 — AuthContainer + LoginForm/RegisterForm + services + auth store，302 测试
+- [closed] 会话历史页面 — ChatHistoryList（分页/删除/恢复）+ ChatHistoryPage + hook，218 测试
+- [closed] Feature First 架构重构 — chat/kb 模块迁移至 features/ 目录，删除旧 stores 与 components
+- [closed] shadcn/ui 全面替换 — 新增 30+ 基础组件，全局样式变量适配设计系统
+- [closed] 路由重构与多会话聊天 — RESTful 路由（/$sessionId）+ ChatHome + TabBar 路由同步
+
+### quality
+
+- [closed] q-32 测试体系重构 — 删除冗余旧测试，新建各包测试套件，独立 vitest.config.ts
+
+### docs
+
+- [docs] 前端规范 v1/v2 — architecture.md / web-package-rules.md / frontend-rules.md 重写
+- [docs] 测试体系文档重构 — 四层指南精简统一
+
+### chore
+
+- [chore] 清理废弃 issue 文档（f-38/39/48/49）、.claude/skills/、旧版静态资源
+
 ## [2026-06-09]
 
 ### frontend
 
-- [closed] f-47 KB CRUD 完整交互 — CreateKbDialog/EditKbDialog/DeleteKbDialog（shadcn Dialog/AlertDialog + react-hook-form + zodResolver）+ KB 列表页骨架屏/空态/错误态/卡片网格 + 编辑/删除悬停按钮 + CRUD 后自动刷新 + Schema 修复（`title` → `name`）+ 246 测试 [issue](docs/issues/f-47-kb-crud/)
+- [closed] f-47 KB CRUD 完整交互 — CreateKbDialog/EditKbDialog/DeleteKbDialog + 骨架屏/空态/错误态 + 246 测试 [issue](docs/issues/f-47-kb-crud/)
 - [closed] f-46 KB 文件上传 — 拖拽上传 + FileManager + FileGridItem + BreadcrumbNav + UploadProgressBar [issue](docs/issues/f-46-kb-file-upload/)
 
 ## [2026-06-08]
 
 ### frontend
 
-- [closed] f-45 ChatView 会话管理 — SessionList（新建/切换/删除/inline 重命名）+ DeleteSessionDialog + KbSelector（多选知识库）+ ChatInput 集成 + error toast + API 路径适配后端（/sessions）+ 182 测试 [issue](docs/issues/f-45-chat-session-mgmt/)
-- [closed] f-44 ChatView SSE 流式接收 — useSSE 集成 + streamChat API 修正 + ChatInput isStreaming/onStop + ErrorCard 错误重试 + reconnectionTime 自动重连 + 14 测试 [issue](docs/issues/f-44-chat-sse-flow/)
-- [closed] f-40 session store → chat store 扩展 — sessions CRUD（load/create/rename/delete）+ renameSession API + 18 测试 [issue](docs/issues/f-40-session-store/)
+- [closed] f-45 ChatView 会话管理 — SessionList（新建/切换/删除/inline 重命名）+ DeleteSessionDialog + KbSelector + 182 测试 [issue](docs/issues/f-45-chat-session-mgmt/)
+- [closed] f-44 ChatView SSE 流式接收 — useSSE + streamChat + isStreaming/onStop + ErrorCard + 14 测试 [issue](docs/issues/f-44-chat-sse-flow/)
+- [closed] f-40 session store → chat store 扩展 — sessions CRUD + renameSession API + 18 测试 [issue](docs/issues/f-40-session-store/)
 - [closed] f-41 settings store — Zustand persist + dirty 追踪 + LLM 配置 + 35 测试 [issue](docs/issues/f-41-settings-store/)
-- [closed] f-42 file store — 上传队列 + maxConcurrent=3 并发控制 + 文件浏览 CRUD + 37 测试 [issue](docs/issues/f-42-file-store/)
+- [closed] f-42 file store — 上传队列 + maxConcurrent=3 + 文件浏览 CRUD + 37 测试 [issue](docs/issues/f-42-file-store/)
 - [closed] f-43 tabs store — persist + addTabByRoute 去重 + removeTab 规则 + home 常驻 + 29 测试 [issue](docs/issues/f-43-tabs-store/)
 
 ## [2026-06-07]
 
 ### frontend
 
-- [closed] i-32 packages/web 基建搭建 — TanStack Start + Vite 8 + SPA + Tailwind v4 + Pencil tokens（13 色板）+ cn()，构建✅ 类型检查✅ [issue](docs/issues/i-32-web-infra-setup/)
-- [closed] f-33 鉴权系统 — alova Token 刷新队列（isRefreshing + refreshSubscribers）+ packages/data/ 共享 Zod schemas（3 域）+ Zustand auth store（persist）+ login/register + beforeLoad 路由守卫 [issue](docs/issues/f-33-auth-flow-migration/)
-- [closed] f-34 Overlay + App Shell — React Portal 命令式 API（openDialog/openContextMenu 返回 Promise）+ Zustand OverlayStore + Sidebar（Link 导航）+ AuthenticatedLayout [issue](docs/issues/f-34-app-shell-overlay/)
+- [closed] i-32 packages/web 基建搭建 — TanStack Start + Vite 8 + SPA + Tailwind v4 + Pencil tokens + cn() [issue](docs/issues/i-32-web-infra-setup/)
+- [closed] f-33 鉴权系统 — alova Token 刷新队列 + packages/data/ Zod schemas + Zustand auth store + beforeLoad 路由守卫 [issue](docs/issues/f-33-auth-flow-migration/)
+- [closed] f-34 Overlay + App Shell — React Portal 命令式 API + OverlayStore + Sidebar + AuthenticatedLayout [issue](docs/issues/f-34-app-shell-overlay/)
 
 ### docs
 
@@ -44,74 +67,64 @@
 
 ### quality
 
-- [closed] q-28 PRD 第一批 Controller 模块级集成测试补齐 — 新建 auth.controller.spec.ts（25 测试）、document.controller.spec.ts（31 测试）、chat.controller.spec.ts（7 测试）、knowledge-base.controller.spec.ts（19 测试），覆盖 4 个 Controller 所有端点的 happy path + error cases + 边界条件，提取 createIpGenerator 共享工具消除 remoteAddress 重复代码，修复 TestAppFactory 中未生效的 ThrottlerModule 覆盖并添加注释 — 集成测试 121/121 通过，单元测试 164/164 通过 [issue](docs/issues/q-28-controller-integration-tests/)
-- [closed] q-27 后端测试覆盖率门槛定义与核心模块测试补齐 — vitest.config.ts 纳入 packages/server/src/**/*.ts，定义后端门槛（行 60%/函数 50%/分支 40%）渐进式实施，新增 auth.service.spec.ts（11 测试）、knowledge-base.service.spec.ts（9 测试）、document.service.spec.ts（8 测试）— 单元测试 164/164 通过 [issue](docs/issues/q-27-backend-coverage-threshold/)
-- [closed] q-26 E2E 测试数据库清理机制 — globalTeardown 调用 cleanupDatabase() 清理所有业务表，fixtures/auth.ts 新增 deleteTestUser() 支持按 email/id 删除，新增 autoCleanup fixture 自动清理，更新 e2e-testing-guide.md 文档 — 新增 5 个 E2E 测试全部通过，users 表 count = 0 验证无累积 [issue](docs/issues/q-26-e2e-db-cleanup/)
-- [closed] q-25 集成测试数据库隔离统一化 — 4 个违规测试文件改造为 TestDatabaseManager 独立数据库（prisma-vector-indexer/vector-service/pgvector-store 模式 A，infra 模式 B），修复 PrismaService 构造函数忽略 options 导致 TestAppFactory 隔离失效的隐藏 bug — 集成测试 39/39 通过，单元测试 138/138 通过 [issue](docs/issues/q-25-integration-test-db-unify/)
+- [closed] q-28 Controller 集成测试补齐（batch1）— auth/document/chat/knowledge-base 4 个 Controller，happy path + error cases + 边界条件，121 集成测试通过 [issue](docs/issues/q-28-controller-integration-tests/)
+- [closed] q-27 后端测试覆盖率门槛定义 — vitest.config.ts 纳入 server/src，门槛（行 60%/函数 50%/分支 40%），新增 auth/kb/document service 测试，164 单元测试通过 [issue](docs/issues/q-27-backend-coverage-threshold/)
+- [closed] q-26 E2E 测试数据库清理机制 — globalTeardown + deleteTestUser + autoCleanup fixture，users 表 count = 0 验证无累积 [issue](docs/issues/q-26-e2e-db-cleanup/)
+- [closed] q-25 集成测试数据库隔离统一化 — 4 个违规文件改造为 TestDatabaseManager，修复 PrismaService 构造函数忽略 options 的隐藏 bug [issue](docs/issues/q-25-integration-test-db-unify/)
 
 ## [2026-06-05]
 
 ### quality
 
-- [closed] q-24 单元测试数据库隔离治理 — testglobals.ts 增加 vitest 环境双重校验数据库连接保护，prisma-pagination.spec.ts 和 session.service.spec.ts 改造为纯 Mock 模式（vi.fn()），清理开发数据库残留测试数据 — 单元测试 138/138 通过 [issue](docs/issues/q-24-unit-test-db-isolation/)
+- [closed] q-24 单元测试数据库隔离治理 — testglobals.ts 双重校验，prisma-pagination/session.service 改造为纯 Mock，138 单元测试通过 [issue](docs/issues/q-24-unit-test-db-isolation/)
 
 ### docs
 
-- [docs] 开发流程精简与 CHECKPOINT 协议引入 — 解决 TDD 执行不到位、流程-执行鸿沟两大根本性问题。workflow.md 6 阶段精简为 3 阶段（定义/实现/验收）；引入 Agent CHECKPOINT 协议，要求每个编码任务提供 RED + GREEN 可验证证据；同步更新 4 个 skill（project-workflow / dev-orchestrator / plan-generator / spec-validator）确保阶段归属和调用链一致
-- [docs] 流程优化遗留修复 — workflow.md 删除旧版 CHECKPOINT 删除线段落；project-workflow skill 汇总表补充 `/test-scaffold` 和 `/architecture-guard`；dev-orchestrator 步骤编号统一为 5a/5b/5c；边界情况"Spec 不存在"改为回退到步骤 1 重新检查阶段 1 完成度
-
----
+- [docs] 开发流程精简与 CHECKPOINT 协议引入 — workflow.md 6 阶段→3 阶段，Agent CHECKPOINT 协议（RED + GREEN 可验证证据）
+- [docs] 流程优化遗留修复 — skill 汇总表补充，步骤编号统一，边界情况回退逻辑
 
 ## [2026-06-04]
 
 ### backend
 
-- [closed] b-14 Admin 用户管理与基础设施规范化 — Prisma 分页封装（paginate + exists），Session 列表修复为 { items, pagination }，RBAC 权限（@Roles + RolesGuard），Admin API（GET /admin/users + PATCH /admin/users/:id/status），登录/refresh 校验 isActive — 单元测试 55/55 通过，集成测试 39/39 通过 [issue](docs/issues/b-14-admin-user-management/)
-
----
+- [closed] b-14 Admin 用户管理与基础设施规范化 — Prisma 分页封装（paginate + exists），RBAC（@Roles + RolesGuard），Admin API，登录校验 isActive — 55 单元测试 + 39 集成测试通过 [issue](docs/issues/b-14-admin-user-management/)
 
 ## [2026-06-02]
 
 ### quality
 
-- [closed] 测试架构清理 — 删除 16 个 V1 遗留测试文件（引用不存在模块），删除 3 个临时 vitest 配置，修复 pgvector/IndexingWorker/DocumentService 测试，3 个需真实 DB 的测试移至集成层，集成测试添加 infra-check 优雅跳过机制 — 单元测试 125/125 通过，集成测试 16/16 通过 [handoff](docs/handoff/handoff-2026-06-02-test-cleanup.md)
+- [closed] 测试架构清理 — 删除 16 个 V1 遗留测试文件，修复 pgvector/IndexingWorker/DocumentService 测试，3 个测试移至集成层 — 125 单元测试 + 16 集成测试通过 [handoff](docs/handoff/handoff-2026-06-02-test-cleanup.md)
 
 ### docs
 
-- [docs] 测试架构诊断 handoff — 创建 `docs/handoff/handoff-2026-06-02-test-cleanup.md`，记录问题发现、修复方案和执行记录
-
----
+- [docs] 测试架构诊断 handoff — `docs/handoff/handoff-2026-06-02-test-cleanup.md`
 
 ## [2026-06-01]
 
 ### infra
 
-- [closed] i-02 pgvector 基础设施迁移 — Docker Compose 移除 milvus，postgres 改用 pgvector:pg16，Prisma Schema 添加 embedding 列，生成迁移文件 [issue](docs/issues/i-02-pgvector-infra-migration/)
-- [closed] i-03 Milvus 代码清理 — 删除 MilvusVectorStore/PrismaMilvusIndexer，移除 @zilliz/milvus2-sdk-node 依赖，清理 MILVUS_ 环境变量 [issue](docs/issues/i-03-cleanup-milvus-code/)
+- [closed] i-02 pgvector 基础设施迁移 — Docker Compose 移除 milvus，postgres 改用 pgvector:pg16，Prisma Schema 添加 embedding 列 [issue](docs/issues/i-02-pgvector-infra-migration/)
+- [closed] i-03 Milvus 代码清理 — 删除 MilvusVectorStore/PrismaMilvusIndexer，移除 @zilliz/milvus2-sdk-node 依赖 [issue](docs/issues/i-03-cleanup-milvus-code/)
 
 ### backend
 
-- [closed] b-12 PgVectorStore + VectorService 切换 — 新建 PgVectorStore（SDK IVectorStore 实现），VectorService 切换，移除 deleteByFileId/deleteByKbId（ON DELETE CASCADE 处理） [issue](docs/issues/b-12-pgvector-store-service/)
-- [closed] b-13 PrismaVectorIndexer 重写 — 单事务写入 chunks + embedding，computeTokenCounts 三级策略，ON CONFLICT 支持重试，IndexingWorker/QueueModule 适配 [issue](docs/issues/b-13-prisma-vector-indexer/)
+- [closed] b-12 PgVectorStore + VectorService 切换 — 新建 PgVectorStore（IVectorStore 实现），移除 deleteByFileId/deleteByKbId（ON DELETE CASCADE 处理） [issue](docs/issues/b-12-pgvector-store-service/)
+- [closed] b-13 PrismaVectorIndexer 重写 — 单事务写入 chunks + embedding，computeTokenCounts 三级策略，ON CONFLICT 支持重试 [issue](docs/issues/b-13-prisma-vector-indexer/)
 
 ### quality
 
-- [closed] q-17 E2E 认证与知识库生命周期 — 16/16 AC 全部通过，q-17-rev 使用真实后端 API 完成 5 个 pending AC（AC-06/08/12/15/16） [issue](docs/issues/q-17-e2e-auth-kb-specs/)
-- [closed] q-23 集成测试层修复 — infra.spec.ts Playwright→vitest 转换，新建 setup.ts/teardown.ts，rag-real.spec.ts 适配 pgvector，清理 sidecar/ 遗留目录 [issue](docs/issues/q-23-integration-test-fix/)
-
----
+- [closed] q-17 E2E 认证与知识库生命周期 — 16/16 AC 全部通过 [issue](docs/issues/q-17-e2e-auth-kb-specs/)
+- [closed] q-23 集成测试层修复 — infra.spec.ts Playwright→vitest 转换，rag-real.spec.ts 适配 pgvector [issue](docs/issues/q-23-integration-test-fix/)
 
 ## [2026-05-30]
 
 ### quality
 
-- [closed] q-22 RAG 真实集成测试 — rag-real.spec.ts 验证索引链路（AC-03）和检索链路（AC-04），含失败降级（AC-05），基础设施不可用时优雅跳过 [issue](docs/issues/q-22-rag-real-integration-tests/)
+- [closed] q-22 RAG 真实集成测试 — rag-real.spec.ts 验证索引链路（AC-03）和检索链路（AC-04），含失败降级（AC-05） [issue](docs/issues/q-22-rag-real-integration-tests/)
 - [closed] q-21 RAG Server E2E — 测试骨架（setup/teardown/mock servers/4 AC），infraAvailable 环境检测自动跳过 [issue](docs/issues/q-21-rag-server-integration-e2e/)
-- [closed] q-19 E2E 设置持久化与跨模块用户旅程 — settings-persist.spec.ts（9 AC）+ onboarding-journey.spec.ts（6 AC） [issue](docs/archived/issues/q-19-e2e-settings-journey/)
-- [closed] q-18 E2E 聊天 SSE 流式响应与会话管理 — chat-with-rag.spec.ts（9 AC）+ session-management.spec.ts（11 AC） [issue](docs/archived/issues/q-18-e2e-chat-session-specs/)
-- [closed] q-16 E2E 基础设施重构 — 删除 Tauri E2E，建立真实 API Web E2E（globalSetup/globalTeardown/fixtures/.env.e2e） [issue](docs/archived/issues/q-16-e2e-infra-migration/)
-
----
+- [closed] q-19 E2E 设置持久化与跨模块用户旅程 — settings-persist.spec.ts（9 AC）+ onboarding-journey.spec.ts（6 AC） [归档](docs/archived/issues/q-19-e2e-settings-journey/)
+- [closed] q-18 E2E 聊天 SSE 流式响应与会话管理 — chat-with-rag.spec.ts（9 AC）+ session-management.spec.ts（11 AC） [归档](docs/archived/issues/q-18-e2e-chat-session-specs/)
+- [closed] q-16 E2E 基础设施重构 — 删除 Tauri E2E，建立真实 API Web E2E（globalSetup/globalTeardown/fixtures/.env.e2e） [归档](docs/archived/issues/q-16-e2e-infra-migration/)
 
 ## [2026-05-29]
 
@@ -124,41 +137,35 @@
 
 ### frontend
 
-- [closed] f-16 前端 Chat KB 选择器 — KbSelector 扩展 error 状态，ChatInput 常驻 KB 按钮，ChatView :key 自动重置，12 个测试通过 [issue](docs/issues/f-16-chat-kb-selector/)
+- [closed] f-16 前端 Chat KB 选择器 — KbSelector 扩展 error 状态，ChatInput 常驻 KB 按钮，ChatView :key 自动重置，12 个测试通过 [issue](docs/archived/issues/f-16-chat-kb-selector/)
 
 ### docs
 
 - [closed] RAG Server 集成 PRD — server 端 RAG 集成需求全部实现，55 个测试通过 [PRD](docs/prd/rag-server-integration.md)
 
----
-
 ## [2026-05-27]
 
 ### design
 
-- [closed] d-15 RAG SDK 集成验证 — 5 AC（最小闭环 demo / server 集成点文档 / 覆盖率 97.44%），修复 RecursiveCharacterChunker 无限循环 [issue](docs/archived/issues/d-15-rag-sdk-integration/)
-- [closed] d-11 RAG SDK Core 契约层 — 9 AC（types/schema/interfaces/errors/pipeline/vector-store/index），Zod v4 类型推导，12 个测试通过 [issue](docs/archived/issues/d-11-rag-sdk-core-contracts/)
-- [closed] d-12 RAG SDK 索引构建模块 — 7 AC（RecursiveCharacterChunker / OpenAIEmbedder / MilvusIndexer / runIndexing），15 个测试通过 [issue](docs/archived/issues/d-12-rag-sdk-indexing-module/)
-- [closed] d-13 RAG SDK 在线检索模块 — 9 AC（HybridRetriever / RRF / DefaultRetrievalPostprocessor / SelectionTrace / runRetrievalPipeline），20 个测试通过 [issue](docs/archived/issues/d-13-rag-sdk-runtime-module/)
-- [closed] d-14 RAG SDK 可观测性模块 — 6 AC（RAGTracer / consoleObserver / 类型定义），7 个测试通过 [issue](docs/archived/issues/d-14-rag-sdk-observability/)
-
----
+- [closed] d-15 RAG SDK 集成验证 — 5 AC（最小闭环 demo / server 集成点文档 / 覆盖率 97.44%），修复 RecursiveCharacterChunker 无限循环 [归档](docs/archived/issues/d-15-rag-sdk-integration/)
+- [closed] d-11 RAG SDK Core 契约层 — 9 AC（types/schema/interfaces/errors/pipeline/vector-store/index），Zod v4 类型推导，12 个测试通过 [归档](docs/archived/issues/d-11-rag-sdk-core-contracts/)
+- [closed] d-12 RAG SDK 索引构建模块 — 7 AC（RecursiveCharacterChunker / OpenAIEmbedder / MilvusIndexer / runIndexing），15 个测试通过 [归档](docs/archived/issues/d-12-rag-sdk-indexing-module/)
+- [closed] d-13 RAG SDK 在线检索模块 — 9 AC（HybridRetriever / RRF / DefaultRetrievalPostprocessor / SelectionTrace / runRetrievalPipeline），20 个测试通过 [归档](docs/archived/issues/d-13-rag-sdk-runtime-module/)
+- [closed] d-14 RAG SDK 可观测性模块 — 6 AC（RAGTracer / consoleObserver / 类型定义），7 个测试通过 [归档](docs/archived/issues/d-14-rag-sdk-observability/)
 
 ## [2026-05-23]
 
 ### backend
 
-- [closed] b-05 ChatController 测试 — 17 AC（SSE 流式响应/abort/持久化/DTO 校验/LLM 异常/E2E 链路），修复 controller 错误提取 [issue](docs/archived/issues/b-05-chat-api-testing/)
-- [closed] b-04 KnowledgeBaseController 测试 — 15 AC（list/create/update/delete + DTO 校验 + 多用户隔离） [issue](docs/archived/issues/b-04-knowledge-base-api-testing/)
-- [closed] b-03 DocumentController 测试 — 21 AC（upload/create/update/delete/list + DTO 校验 + 文件上传边界 + 权限控制） [issue](docs/archived/issues/b-03-document-api-testing/)
-- [closed] b-02 AuthController 测试 — AC-01~AC-15 + E2E 链路 AC-16（public-key/register/login/refresh/logout/me） [issue](docs/archived/issues/b-02-auth-api-testing/)
+- [closed] b-05 ChatController 测试 — 17 AC（SSE 流式响应/abort/持久化/DTO 校验/LLM 异常/E2E 链路），修复 controller 错误提取 [归档](docs/archived/issues/b-05-chat-api-testing/)
+- [closed] b-04 KnowledgeBaseController 测试 — 15 AC（list/create/update/delete + DTO 校验 + 多用户隔离） [归档](docs/archived/issues/b-04-knowledge-base-api-testing/)
+- [closed] b-03 DocumentController 测试 — 21 AC（upload/create/update/delete/list + DTO 校验 + 文件上传边界 + 权限控制） [归档](docs/archived/issues/b-03-document-api-testing/)
+- [closed] b-02 AuthController 测试 — AC-01~AC-15 + E2E 链路 AC-16（public-key/register/login/refresh/logout/me） [归档](docs/archived/issues/b-02-auth-api-testing/)
 
 ### frontend
 
-- [closed] f-10 ContextMenu 迁移 — FileManager/FileExplorer/KnowledgeBasePage 内联 ContextMenu 迁移至 overlays/，建立前端 overlay 规范 [issue](docs/archived/issues/f-10-context-menu-and-conventions/)
-- [closed] f-09 Dialog 迁移 — FileManager 内联 Dialog + 独立组件迁移至 overlays/ [issue](docs/archived/issues/f-09-dialog-migration/)
-
----
+- [closed] f-10 ContextMenu 迁移 — FileManager/FileExplorer/KnowledgeBasePage 内联 ContextMenu 迁移至 overlays/，建立前端 overlay 规范 [归档](docs/archived/issues/f-10-context-menu-and-conventions/)
+- [closed] f-09 Dialog 迁移 — FileManager 内联 Dialog + 独立组件迁移至 overlays/ [归档](docs/archived/issues/f-09-dialog-migration/)
 
 ## [2026-05-22]
 
@@ -170,8 +177,6 @@
 
 - [closed] f-08 Overlay 核心机制 — Dialog/ContextMenu 函数式调用基础设施 [issue](docs/issues/f-08-overlay-core/)
 
----
-
 ## [2026-05-20]
 
 ### frontend（已归档）
@@ -182,8 +187,6 @@
 - [closed] f-17 路由单例标签 [归档](docs/archived/issues/f-17-route-singleton-tabs/)
 - [closed] f-18 清理 ChatPage 遗留组件 [归档](docs/archived/issues/f-18-cleanup-chatpage/)
 
----
-
 ## [2026-05-19]
 
 ### quality（已归档）
@@ -191,16 +194,12 @@
 - [closed] q-04 密码传输加密 [归档](docs/archived/issues/q-04-password-transport-encryption/)
 - [closed] q-01 安全基线 [归档](docs/archived/issues/q-01-security-baseline/)
 
----
-
 ## [2026-05-18]
 
 ### quality/infra（已归档）
 
 - [closed] q-03 V1 清理 [归档](docs/archived/issues/q-03-v1-cleanup/)
 - [closed] i-06 数据迁移工具 [归档](docs/archived/issues/i-06-data-migration/)
-
----
 
 ## [2026-05-17]
 
@@ -210,8 +209,6 @@
 - [closed] b-05 设置 API [归档](docs/archived/issues/b-05-settings-api/)
 - [closed] b-03 会话 API [归档](docs/archived/issues/b-03-session-api/)
 - [closed] b-04 SSE 流式对话 API [归档](docs/archived/issues/b-04-chat-sse-api/)
-
----
 
 ## [2026-05-16]
 
@@ -228,8 +225,6 @@
 - [closed] i-13 BullMQ 服务 [归档](docs/archived/issues/i-13-bullmq-service/)
 - [closed] i-14 JWT API 客户端 [归档](docs/archived/issues/i-14-jwt-api-client/)
 - [closed] d-01 RAG SDK 合约 [归档](docs/archived/issues/d-01-rag-sdk-contracts/)
-
----
 
 ## [2026-05-15]
 
