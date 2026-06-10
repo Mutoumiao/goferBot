@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { FolderIcon } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { FolderIcon, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -9,10 +9,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useKbStore } from '../store'
-import { loadKbItems } from '../services'
+import { loadKbItems, uploadFiles } from '../services'
 import { KnowledgeBaseToolbar } from './KnowledgeBaseToolbar'
 import { FileGridItem } from './FileGridItem'
 import { FileListItem } from './FileListItem'
+import { UploadDropZone } from './UploadDropZone'
+import { UploadProgressBar } from './UploadProgressBar'
+import { FileContextMenu } from './FileContextMenu'
 import type { Folder, DocumentItem, ViewMode, SortOption } from '../types'
 
 interface FileBrowserProps {
@@ -27,6 +30,8 @@ function parseSortOption(option: SortOption): { sortBy: 'name' | 'date' | 'size'
 export function FileBrowser({ kbName }: FileBrowserProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortOption, setSortOption] = useState<SortOption>('date-desc')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const {
     folders,
@@ -37,9 +42,19 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     setCurrentFolderId,
     currentKbId,
     currentFolderId,
+    uploadTasks,
+    activeUploadCount,
+    clearCompletedUploads,
+    removeUploadTask,
   } = useKbStore()
 
   const { sortOrder } = parseSortOption(sortOption)
+
+  useEffect(() => {
+    if (currentKbId) {
+      loadKbItems(currentKbId, currentFolderId)
+    }
+  }, [currentKbId, currentFolderId])
 
   const handleFolderClick = useCallback((folder: Folder) => {
     setCurrentFolderId(folder.id)
@@ -53,19 +68,90 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     setCurrentFolderId(folderId)
   }, [setCurrentFolderId])
 
+  const handleOpenItem = useCallback((item: Folder | DocumentItem) => {
+    if (!('status' in item)) {
+      setCurrentFolderId(item.id)
+    }
+  }, [setCurrentFolderId])
+
+  const handleRenameItem = useCallback((_item: Folder | DocumentItem) => {
+    // TODO: f-48 重命名功能
+  }, [])
+
+  const handleDeleteItem = useCallback((_item: Folder | DocumentItem) => {
+    // TODO: f-48 删除功能
+  }, [])
+
+  const handleCreateFolder = useCallback(() => {
+    // TODO: f-48 新建文件夹功能
+  }, [])
+
   const handleRetry = useCallback(() => {
     if (currentKbId) {
       loadKbItems(currentKbId, currentFolderId)
     }
   }, [currentKbId, currentFolderId])
 
-  const sortedFolders = [...folders].sort((a, b) => {
+  const handleUpload = useCallback(() => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.multiple = true
+    input.onchange = (e) => {
+      const files = (e.target as HTMLInputElement).files
+      if (files && currentKbId) {
+        uploadFiles(currentKbId, Array.from(files), currentFolderId)
+      }
+    }
+    input.click()
+  }, [currentKbId, currentFolderId])
+
+  const handleDropFiles = useCallback((files: File[]) => {
+    if (currentKbId) {
+      uploadFiles(currentKbId, files, currentFolderId)
+    }
+  }, [currentKbId, currentFolderId])
+
+  const handleRetryUpload = useCallback((taskId: string) => {
+    const task = uploadTasks.find((t) => t.id === taskId)
+    if (!task || !currentKbId) return
+    removeUploadTask(taskId)
+    // 由于原始 File 对象无法从 task 恢复，重试功能需要用户重新选择文件
+    // #adjacent-fix: 恢复文件对象后实现真正重试
+  }, [uploadTasks, currentKbId, removeUploadTask])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    if (e.dataTransfer.files.length > 0 && currentKbId) {
+      uploadFiles(currentKbId, Array.from(e.dataTransfer.files), currentFolderId)
+    }
+  }, [currentKbId, currentFolderId])
+
+  const filteredFolders = searchQuery.trim()
+    ? folders.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : folders
+
+  const filteredDocuments = searchQuery.trim()
+    ? documents.filter((d) => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : documents
+
+  const sortedFolders = [...filteredFolders].sort((a, b) => {
     const aName = a.name.toLowerCase()
     const bName = b.name.toLowerCase()
     return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName)
   })
 
-  const sortedDocuments = [...documents].sort((a, b) => {
+  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     const aName = a.name.toLowerCase()
     const bName = b.name.toLowerCase()
     return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName)
@@ -110,10 +196,34 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-4 gap-3">
             {sortedFolders.map((folder) => (
-              <FileGridItem key={folder.id} item={folder} isFolder onClick={() => handleFolderClick(folder)} />
+              <FileContextMenu
+                key={folder.id}
+                item={folder}
+                onOpen={handleOpenItem}
+                onRename={handleRenameItem}
+                onDelete={handleDeleteItem}
+              >
+                <div>
+                  <FileGridItem
+                    item={folder}
+                    isFolder
+                    documentCount={sortedDocuments.filter((d) => d.folderId === folder.id).length}
+                    onClick={() => handleFolderClick(folder)}
+                  />
+                </div>
+              </FileContextMenu>
             ))}
             {sortedDocuments.map((doc) => (
-              <FileGridItem key={doc.id} item={doc} isFolder={false} onClick={() => handleDocumentClick(doc)} />
+              <FileContextMenu
+                key={doc.id}
+                item={doc}
+                onRename={handleRenameItem}
+                onDelete={handleDeleteItem}
+              >
+                <div>
+                  <FileGridItem item={doc} isFolder={false} onClick={() => handleDocumentClick(doc)} />
+                </div>
+              </FileContextMenu>
             ))}
           </div>
           <div className="flex justify-center py-2 text-sm text-[#9AA3AF]">共 {totalCount} 项</div>
@@ -135,10 +245,20 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
           </TableHeader>
           <TableBody>
             {sortedFolders.map((folder) => (
-              <FileListItem key={folder.id} item={folder} isFolder onClick={() => handleFolderClick(folder)} />
+              <FileListItem
+                key={folder.id}
+                item={folder}
+                isFolder
+                onClick={() => handleFolderClick(folder)}
+              />
             ))}
             {sortedDocuments.map((doc) => (
-              <FileListItem key={doc.id} item={doc} isFolder={false} onClick={() => handleDocumentClick(doc)} />
+              <FileListItem
+                key={doc.id}
+                item={doc}
+                isFolder={false}
+                onClick={() => handleDocumentClick(doc)}
+              />
             ))}
           </TableBody>
         </Table>
@@ -148,7 +268,12 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_2px_8px_rgba(160,158,158,0.25)]">
+    <div
+      className="relative flex flex-1 flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_2px_8px_rgba(160,158,158,0.25)]"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <KnowledgeBaseToolbar
         kbName={kbName}
         breadcrumb={breadcrumb()}
@@ -157,9 +282,34 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
         onViewModeChange={setViewMode}
         sortOption={sortOption}
         onSortChange={setSortOption}
+        onUpload={handleUpload}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
-      <div className="flex-1 overflow-auto p-6">{renderContent()}</div>
+      {isDragOver && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#5B7CFA]/10">
+          <div className="rounded-2xl border-2 border-dashed border-[#5B7CFA] bg-white px-8 py-6 text-center shadow-lg">
+            <Upload className="mx-auto h-10 w-10 text-[#5B7CFA]" />
+            <p className="mt-2 text-sm font-medium text-[#1F2328]">释放文件以上传</p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-auto p-6">
+        {currentKbId && (
+          <UploadDropZone kbId={currentKbId} onFilesSelected={handleDropFiles} />
+        )}
+        <UploadProgressBar
+          tasks={uploadTasks}
+          activeUploadCount={activeUploadCount()}
+          onRetry={handleRetryUpload}
+          onClear={clearCompletedUploads}
+        />
+        <FileContextMenu item={null} onCreateFolder={handleCreateFolder}>
+          <div className="min-h-[200px]">{renderContent()}</div>
+        </FileContextMenu>
+      </div>
     </div>
   )
 }

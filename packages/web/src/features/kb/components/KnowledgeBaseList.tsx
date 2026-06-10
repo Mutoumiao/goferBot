@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Plus, RefreshCw, BookOpen, Search, PanelLeftClose } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useKbStore } from '../store'
+import { fetchKbList } from '../services'
 import { openDialog } from '@/overlays/services/overlay-service'
 import type { KbEntry } from '@goferbot/data'
 
@@ -30,8 +31,8 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
   const handleCreate = useCallback(async () => {
     const CreateKbDialog = (await import('@/overlays/dialogs/CreateKbDialog')).default
     await openDialog(CreateKbDialog, {
-      onConfirm: () => {
-        // 创建成功后刷新列表 — 由 Service 层处理
+      onConfirm: async () => {
+        await fetchKbList()
       },
     })
   }, [])

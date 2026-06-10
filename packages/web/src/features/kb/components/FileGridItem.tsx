@@ -6,6 +6,7 @@ import type { Folder, DocumentItem } from '../types'
 interface FileGridItemProps {
   item: Folder | DocumentItem
   isFolder: boolean
+  documentCount?: number
   onClick: () => void
 }
 
@@ -30,7 +31,22 @@ const FILE_ICON_BG: Record<string, string> = {
   md: 'bg-[#9E9E9E]',
 }
 
-function FolderCard({ item, onClick }: { item: Folder; onClick: () => void }) {
+const DOCUMENT_STATUS_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
+  uploaded: { bg: 'bg-[#9E9E9E]', text: 'text-white', label: '已上传' },
+  parsing: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '解析中' },
+  chunking: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '分块中' },
+  indexing: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '索引中' },
+  ready: { bg: 'bg-[#4CAF50]', text: 'text-white', label: '就绪' },
+  failed: { bg: 'bg-[#F44336]', text: 'text-white', label: '失败' },
+}
+
+interface FolderCardProps {
+  item: Folder
+  documentCount: number
+  onClick: () => void
+}
+
+function FolderCard({ item, documentCount, onClick }: FolderCardProps) {
   const colors = FOLDER_ICON_COLORS[item.name] || { bg: 'bg-[#E3F2FD]', icon: 'text-[#2196F3]' }
   const date = new Date(item.updatedAt)
   const dateStr = `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
@@ -55,7 +71,7 @@ function FolderCard({ item, onClick }: { item: Folder; onClick: () => void }) {
       </div>
       <div className="flex flex-col gap-0.5">
         <span className="text-sm font-medium text-[#1F2328]">{item.name}</span>
-        <span className="text-xs text-[#9AA3AF]">7 个文件</span>
+        <span className="text-xs text-[#9AA3AF]">{documentCount} 个文件</span>
         <span className="text-xs text-[#9AA3AF]">{dateStr}</span>
       </div>
     </div>
@@ -69,12 +85,18 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
   const date = new Date(item.updatedAt)
   const dateStr = `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
   const firstLetter = item.name.charAt(0).toUpperCase()
+  const statusConfig = DOCUMENT_STATUS_CONFIG[item.status] || null
 
   return (
     <div
       onClick={onClick}
-      className="flex h-[150px] cursor-pointer flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA]"
+      className="relative flex h-[150px] cursor-pointer flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA]"
     >
+      {statusConfig && (
+        <span className={cn('absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[10px] font-medium', statusConfig.bg, statusConfig.text)}>
+          {statusConfig.label}
+        </span>
+      )}
       <div className="flex items-center justify-between">
         <div className={cn('flex h-10 w-10 items-center justify-center rounded-[10px]', iconBg)}>
           <span className="text-base font-bold text-white">{firstLetter}</span>
@@ -102,9 +124,9 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
   )
 }
 
-export function FileGridItem({ item, isFolder, onClick }: FileGridItemProps) {
+export function FileGridItem({ item, isFolder, documentCount = 0, onClick }: FileGridItemProps) {
   if (isFolder) {
-    return <FolderCard item={item as Folder} onClick={onClick} />
+    return <FolderCard item={item as Folder} documentCount={documentCount} onClick={onClick} />
   }
   return <DocumentCard item={item as DocumentItem} onClick={onClick} />
 }

@@ -79,7 +79,6 @@ vi.mock('@/components/ui/pagination', () => ({
 
 import { useChatHistory } from '@/features/chat/hooks'
 import { ChatHistoryPage } from '@/features/chat/components/ChatHistoryPage'
-import { confirmDeleteChatSession } from '@/features/chat/services'
 
 describe('ChatHistoryPage', () => {
   beforeEach(() => {

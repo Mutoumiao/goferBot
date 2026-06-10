@@ -29,9 +29,13 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
 
 import type { KbEntry } from '@goferbot/data'
 
+let currentLoadId = 0
+
 export async function loadKbItems(kbId: string, folderId: string | null = null) {
   const { setFolders, setDocuments, setCurrentKbId, setCurrentFolderId, setFileLoading, setFileError } =
     useKbStore.getState()
+
+  const thisLoadId = ++currentLoadId
 
   setCurrentKbId(kbId)
   setCurrentFolderId(folderId)
@@ -43,12 +47,16 @@ export async function loadKbItems(kbId: string, folderId: string | null = null) 
       apiGetFolders(kbId, folderId).send(),
       apiGetDocuments(kbId, folderId).send(),
     ])
+    if (thisLoadId !== currentLoadId) return
     setFolders((folders as Folder[]) ?? [])
     setDocuments((documents as DocumentItem[]) ?? [])
   } catch (e) {
+    if (thisLoadId !== currentLoadId) return
     setFileError(e instanceof Error ? e.message : '加载失败')
   } finally {
-    setFileLoading(false)
+    if (thisLoadId === currentLoadId) {
+      setFileLoading(false)
+    }
   }
 }
 

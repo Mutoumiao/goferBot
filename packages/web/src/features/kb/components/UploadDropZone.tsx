@@ -7,6 +7,8 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB，与后端限制对齐
 const ALLOWED_EXTENSIONS = ['.md', '.txt', '.pdf']
 const ALLOWED_MIME_TYPES = ['text/markdown', 'text/plain', 'application/pdf']
 
+const ILLEGAL_FILENAME_PATTERN = /[\x00-\x1f\x7f]|\.\.|\/|\\/
+
 interface UploadDropZoneProps {
   kbId: string
   onFilesSelected: (files: File[]) => void
@@ -33,6 +35,10 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
         }
         if (file.size > MAX_FILE_SIZE) {
           skipped.push(`${file.name} 超过 50MB 限制`)
+          continue
+        }
+        if (ILLEGAL_FILENAME_PATTERN.test(file.name)) {
+          rejected.push({ name: file.name, reason: '文件名包含非法字符' })
           continue
         }
         valid.push(file)

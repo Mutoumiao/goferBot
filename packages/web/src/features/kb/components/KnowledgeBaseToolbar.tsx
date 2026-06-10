@@ -30,6 +30,8 @@ interface KnowledgeBaseToolbarProps {
   sortOption: SortOption
   onSortChange: (option: SortOption) => void
   onUpload?: () => void
+  searchQuery?: string
+  onSearchChange?: (query: string) => void
 }
 
 export function KnowledgeBaseToolbar({
@@ -41,6 +43,8 @@ export function KnowledgeBaseToolbar({
   sortOption,
   onSortChange,
   onUpload,
+  searchQuery = '',
+  onSearchChange,
 }: KnowledgeBaseToolbarProps) {
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -103,7 +107,11 @@ export function KnowledgeBaseToolbar({
               placeholder="搜索当前知识库..."
               className="h-auto w-44 border-0 bg-transparent p-0 text-sm text-[#1F2328] shadow-none placeholder:text-[#9AA3AF] focus-visible:ring-0"
               autoFocus
-              onBlur={() => setSearchOpen(false)}
+              value={searchQuery}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              onBlur={() => {
+                if (!searchQuery) setSearchOpen(false)
+              }}
             />
             <Kbd>⌘K</Kbd>
           </div>
