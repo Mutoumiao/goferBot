@@ -71,3 +71,7 @@ docs/design/pen/*
 .trae/
 
 .codegraph/
+
+.cursor/
+
+.claude/skills/

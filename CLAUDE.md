@@ -15,16 +15,20 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的
 
 **禁止行为**：不修改 BACKLOG.md/CHANGELOG.md / 不提交 console.log / 不全文加载文档 / 不并行未声明优先级的 skill
 
+## 语言要求
+
+- 所有回复内容（包括解释、代码注释、思考过程、错误提示、补充说明等）必须**全程使用简体中文**。
+
 ## 必读文档（按顺序）
 
-| 阶段 | 文档 |
-|------|------|
-| 了解流程 | `docs/guide/workflow.md` |
-| 了解产品 | `docs/prd/v2-cloud-native.md` |
+| 阶段     | 文档                                                                           |
+|----------|--------------------------------------------------------------------------------|
+| 了解流程 | `docs/guide/workflow.md`                                                       |
+| 了解产品 | `docs/prd/v2-cloud-native.md`                                                  |
 | 前端规范 | `.claude/rules/frontend-rules.md` → `web-package-rules.md` → `architecture.md` |
-| 后端规范 | `.claude/rules/backend-rules.md` |
-| 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md` |
-| 编码前 | `docs/issues/{prefix}-{NN}-{slug}/specs/` |
+| 后端规范 | `.claude/rules/backend-rules.md`                                               |
+| 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md`                                    |
+| 编码前   | `docs/issues/{prefix}-{NN}-{slug}/specs/`                                      |
 
 ## 项目结构
 
@@ -69,15 +73,15 @@ pnpm test:all         # 全量回归
 
 ### 项目流程路由
 
-| 用户请求 | 必须调用的 skill |
-|----------|------------------|
-| 不知道怎么开始/流程是什么 | `/project-workflow` |
-| 拆 issue/生成工单 | `/issue-generator` |
-| 审查 spec/写 behavior spec | `/spec-validator` |
-| 写计划/生成实现方案 | `/plan-generator` |
-| 开始开发 issue | `/dev-orchestrator` |
-| 代码审查 / spec 对齐 / 安全审查 | `/kb-review` |
-| 更新 issue 状态/标记完成 | `/issue-lifecycle` |
+| 用户请求                         | 必须调用的 skill      |
+|----------------------------------|-----------------------|
+| 不知道怎么开始/流程是什么        | `/project-workflow`   |
+| 拆 issue/生成工单                | `/issue-generator`    |
+| 审查 spec/写 behavior spec       | `/spec-validator`     |
+| 写计划/生成实现方案              | `/plan-generator`     |
+| 开始开发 issue                   | `/dev-orchestrator`   |
+| 代码审查 / spec 对齐 / 安全审查  | `/kb-review`          |
+| 更新 issue 状态/标记完成         | `/issue-lifecycle`    |
 | 检查 plan/spec/code 是否违反 ADR | `/architecture-guard` |
-| 生成测试骨架 | `/test-scaffold` |
-| 检查前后端接口一致性 | `/integration-check` |
+| 生成测试骨架                     | `/test-scaffold`      |
+| 检查前后端接口一致性             | `/integration-check`  |
