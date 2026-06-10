@@ -1,31 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
-import { AlertCircleIcon, XIcon } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { Bubble, Sender, XProvider } from '@ant-design/x'
+import { useXChat } from '@ant-design/x-sdk'
+import { createGoferProvider } from '../services'
+import type { GoferMessage, GoferInput } from '../providers/GoferChatProvider'
+import { useChatStore } from '../store'
+import { createChatSession, loadChatHistory, renameChatSession, confirmDeleteChatSession } from '../services'
+import { useTabsStore } from '@/stores/tabs'
+import { useSettingsStore } from '@/stores/settings'
+import { getLLMConfig } from '@/utils/llm-config'
+import { ChatSessionList } from './ChatSessionList'
+import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
+import { ChatMarkdown } from './ChatMarkdown'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useSettingsStore } from '@/stores/settings'
-import { useTabsStore } from '@/stores/tabs'
-import { getLLMConfig, type LLMConfig } from '@/utils/llm-config'
-import { useChatStore } from '../store'
-import {
-  loadChatSessions,
-  resolveSessionById,
-  createChatSession,
-  renameChatSession,
-  deleteChatSession,
-  loadChatHistory,
-} from '../services'
-import { useChatStream } from '../hooks/useChatStream'
-import { ChatInput } from './ChatInput'
-import { ChatMessage } from './ChatMessage'
-import { EditorPlaceholder } from './EditorPlaceholder'
-import { ChatSessionList } from './ChatSessionList'
-import { openDialog } from '@/overlays/services/overlay-service'
-import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
+import { AlertCircleIcon, XIcon } from 'lucide-react'
 
-const FALLBACK_LLM_CONFIG: LLMConfig = {
+const FALLBACK_LLM_CONFIG = {
   provider: 'openai',
-  model: 'gpt-4o',
-  baseUrl: 'https://api.openai.com/v1',
+  model: 'gpt-3.5-turbo',
+  baseUrl: 'https://api.openai.com',
   apiKey: '',
 }
 
@@ -37,13 +30,9 @@ export function ChatSessionPage({ sessionId }: ChatSessionPageProps) {
   const {
     activeSession,
     sessions,
-    messages,
-    streamingContent,
-    isStreaming,
     isLoadingHistory,
     error,
     setActiveSession,
-    appendMessage,
     clearError,
   } = useChatStore()
 
@@ -52,19 +41,41 @@ export function ChatSessionPage({ sessionId }: ChatSessionPageProps) {
   const llmConfig = getLLMConfig(settingsConfig) ?? FALLBACK_LLM_CONFIG
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [errorRetryMessage, setErrorRetryMessage] = useState<string | null>(null)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
+  const [selectedKbIds, setSelectedKbIds] = useState<string[]>([])
 
-  const { start: startStream, stop: stopStream } = useChatStream({
-    llmConfig,
-    onError: (msg) => {
-      setErrorMessage(msg)
+  const providerRef = useState(() => createGoferProvider())[0]
+
+  const {
+    messages,
+    onRequest,
+    isRequesting,
+    abort,
+  } = useXChat<GoferMessage, GoferMessage, GoferInput>({
+    provider: providerRef,
+    requestPlaceholder: () => ({
+      content: '正在思考中...',
+      role: 'assistant',
+    }),
+    requestFallback: (_, { error: err, messageInfo }) => {
+      if (err.name === 'AbortError') {
+        return {
+          content: messageInfo?.message?.content || '已取消回复',
+          role: 'assistant',
+        }
+      }
+      return {
+        content: '网络异常，请稍后重试',
+        role: 'assistant',
+      }
     },
   })
 
   useEffect(() => {
-    loadChatSessions()
+    import('../services').then(({ loadChatSessions }) => {
+      loadChatSessions()
+    })
   }, [])
 
   useEffect(() => {
@@ -81,13 +92,15 @@ export function ChatSessionPage({ sessionId }: ChatSessionPageProps) {
       })
       return
     }
-    resolveSessionById(sessionId).catch(() => {
-      // 加载失败时静默处理
+    import('../services').then(({ resolveSessionById }) => {
+      resolveSessionById(sessionId).catch(() => {})
     })
-  }, [sessionId, sessions, setActiveSession])
+  }, [sessionId, sessions, setActiveSession, renameTab])
 
   useEffect(() => {
     if (!activeSession?.id) return
+    loadChatHistory(activeSession.id)
+
     const pendingKey = `pending_message_${activeSession.id}`
     const pendingMessage = sessionStorage.getItem(pendingKey)
     if (pendingMessage) {
@@ -105,31 +118,10 @@ export function ChatSessionPage({ sessionId }: ChatSessionPageProps) {
     return () => clearTimeout(timer)
   }, [error, clearError])
 
-  useEffect(() => {
-    if (activeSession?.id) {
-      loadChatHistory(activeSession.id)
-    }
-  }, [activeSession?.id])
-
   const handleSend = useCallback(
-    async (content: string, knowledgeBaseIds?: string[]) => {
+    async (content: string) => {
       if (!content.trim()) return
-
       setErrorMessage(null)
-
-      const userMsg = {
-        id: `msg-${Date.now()}`,
-        sessionId: activeSession?.id ?? '',
-        role: 'user' as const,
-        content,
-        createdAt: new Date().toISOString(),
-      }
-      appendMessage(userMsg)
-      setErrorRetryMessage(content)
-
-      if (streamingContent) {
-        useChatStore.setState({ streamingContent: '' })
-      }
 
       let sid = activeSession?.id
       if (!sid) {
@@ -140,32 +132,44 @@ export function ChatSessionPage({ sessionId }: ChatSessionPageProps) {
         }
       }
 
-      if (sid) {
-        await startStream(content, sid, knowledgeBaseIds)
+      if (!sid) {
+        setErrorMessage('创建会话失败')
+        return
       }
+
+      onRequest({
+        message: content,
+        sessionId: sid,
+        knowledgeBaseIds: selectedKbIds,
+        config: {
+          provider: llmConfig.provider,
+          model: llmConfig.model,
+          baseUrl: llmConfig.baseUrl,
+        },
+      })
     },
-    [activeSession, appendMessage, startStream, streamingContent],
+    [activeSession?.id, llmConfig, onRequest, renameTab, selectedKbIds],
   )
 
   const handleStop = useCallback(() => {
-    stopStream()
-  }, [stopStream])
+    abort()
+  }, [abort])
 
   const handleRetry = useCallback(() => {
-    if (!errorRetryMessage) return
-    setErrorMessage(null)
-    handleSend(errorRetryMessage)
-  }, [errorRetryMessage, handleSend])
-
-  const handleDeleteSession = useCallback(
-    async (sid: string, sessionTitle: string) => {
-      const result = await openDialog<'confirm' | undefined>(DeleteSessionDialog, { sessionTitle })
-      if (result === 'confirm') {
-        await deleteChatSession(sid)
-      }
-    },
-    [],
-  )
+    const lastUserMsg = [...messages].reverse().find((m) => m.message.role === 'user')
+    if (lastUserMsg) {
+      setErrorMessage(null)
+      onRequest({
+        message: lastUserMsg.message.content,
+        sessionId: activeSession?.id ?? sessionId ?? '',
+        config: {
+          provider: llmConfig.provider,
+          model: llmConfig.model,
+          baseUrl: llmConfig.baseUrl,
+        },
+      })
+    }
+  }, [messages, activeSession?.id, sessionId, llmConfig, onRequest])
 
   const handleStartRename = useCallback(() => {
     if (!activeSession) return
@@ -191,122 +195,152 @@ export function ChatSessionPage({ sessionId }: ChatSessionPageProps) {
     setRenameValue('')
   }, [])
 
-  return (
-    <div className="flex h-full">
-      <div className="w-64 shrink-0">
-        <ChatSessionList
-          onRenameClick={() => {}}
-          onDeleteClick={(session) => handleDeleteSession(session.id, session.title)}
-        />
-      </div>
+  const handleToggleKb = useCallback((kbId: string) => {
+    setSelectedKbIds((prev) =>
+      prev.includes(kbId) ? prev.filter((id) => id !== kbId) : [...prev, kbId],
+    )
+  }, [])
 
-      <div className="flex flex-1 flex-col">
-        <div className="flex h-12 items-center border-b border-border-default bg-surface-1 px-4">
-          {isRenaming && activeSession ? (
-            <Input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onBlur={handleConfirmRename}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleConfirmRename()
-                if (e.key === 'Escape') handleCancelRename()
-              }}
-              className="h-7 w-64 text-sm font-medium"
-              autoFocus
-            />
-          ) : (
-            <h2
-              className="cursor-pointer text-sm font-medium text-text-primary hover:text-brand-primary"
-              onDoubleClick={handleStartRename}
-              title="双击重命名"
-            >
-              {activeSession?.title ?? '新对话'}
-            </h2>
-          )}
+  const bubbleItems = messages.map(({ id, message, status }) => ({
+    key: id,
+    role: message.role,
+    content: message.content,
+    loading: status === 'loading',
+  }))
+
+  return (
+    <XProvider>
+      <div className="flex h-full">
+        <div className="w-64 shrink-0">
+          <ChatSessionList
+            onRenameClick={() => {}}
+            onDeleteClick={(session) =>
+              confirmDeleteChatSession(session, {
+                onReload: () => {
+                  import('../services').then(({ loadChatSessions }) => {
+                    loadChatSessions()
+                  })
+                },
+              })
+            }
+          />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {isLoadingHistory && (
-            <div className="flex items-center justify-center py-8 text-sm text-text-secondary">
-              加载中...
-            </div>
-          )}
-
-          {!isLoadingHistory && messages.length === 0 && !streamingContent && !errorMessage && (
-            <div className="flex h-full items-center justify-center">
-              <div className="text-center">
-                <h3 className="text-lg font-medium text-text-primary">开始新对话</h3>
-                <p className="mt-2 text-sm text-text-secondary">在下方输入消息，开始与 AI 对话</p>
-                <EditorPlaceholder className="mt-6 mx-4" />
-              </div>
-            </div>
-          )}
-
-          {messages.map((msg) => (
-            <ChatMessage key={msg.id} message={msg} />
-          ))}
-
-          {isStreaming && streamingContent && (
-            <ChatMessage
-              message={{
-                id: 'streaming',
-                sessionId: activeSession?.id ?? '',
-                role: 'assistant',
-                content: streamingContent,
-                createdAt: new Date().toISOString(),
-              }}
-            />
-          )}
-
-          {isStreaming && !streamingContent && (
-            <div className="flex items-center gap-2 px-4 py-3">
-              <div className="h-8 w-8 rounded-full bg-surface-3" />
-              <div className="flex gap-1">
-                <span className="h-2 w-2 animate-bounce rounded-full bg-text-tertiary" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-text-tertiary [animation-delay:0.15s]" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-text-tertiary [animation-delay:0.3s]" />
-              </div>
-            </div>
-          )}
-
-          {errorMessage && (
-            <div className="mx-4 my-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-              <p className="text-sm text-destructive-foreground">{errorMessage}</p>
-              <Button
-                data-testid="error-retry-btn"
-                variant="destructive"
-                size="sm"
-                onClick={handleRetry}
-                className="mt-2"
+        <div className="flex flex-1 flex-col">
+          <div className="flex h-12 items-center border-b border-border-default bg-surface-1 px-4">
+            {isRenaming && activeSession ? (
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={handleConfirmRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleConfirmRename()
+                  if (e.key === 'Escape') handleCancelRename()
+                }}
+                className="h-7 w-64 text-sm font-medium"
+                autoFocus
+              />
+            ) : (
+              <h2
+                className="cursor-pointer text-sm font-medium text-text-primary hover:text-brand-primary"
+                onDoubleClick={handleStartRename}
+                title="双击重命名"
               >
-                重试
+                {activeSession?.title ?? '新对话'}
+              </h2>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {isLoadingHistory && (
+              <div className="flex items-center justify-center py-8 text-sm text-text-secondary">
+                加载中...
+              </div>
+            )}
+
+            {!isLoadingHistory && messages.length === 0 && (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center">
+                  <h3 className="text-lg font-medium text-text-primary">开始新对话</h3>
+                  <p className="mt-2 text-sm text-text-secondary">在下方输入消息，开始与 AI 对话</p>
+                </div>
+              </div>
+            )}
+
+            <Bubble.List
+              role={{
+                user: {
+                  placement: 'end',
+                  contentRender: (content) => (
+                    <div className="max-w-[75%] rounded-lg bg-brand-primary px-4 py-3 text-sm leading-relaxed text-white">
+                      {content}
+                    </div>
+                  ),
+                },
+                assistant: {
+                  placement: 'start',
+                  contentRender: (content) => (
+                    <div className="max-w-[75%] rounded-lg bg-surface-2 px-4 py-3 text-sm leading-relaxed text-text-primary">
+                      <ChatMarkdown content={String(content)} />
+                    </div>
+                  ),
+                },
+              }}
+              items={bubbleItems}
+            />
+
+            {errorMessage && (
+              <div className="mx-4 my-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                <p className="text-sm text-destructive-foreground">{errorMessage}</p>
+                <Button
+                  data-testid="error-retry-btn"
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleRetry}
+                  className="mt-2"
+                >
+                  重试
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-border-default bg-surface-1 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <KnowledgeBaseSelector
+                selectedIds={selectedKbIds}
+                onToggle={handleToggleKb}
+                disabled={isRequesting}
+              />
+              {selectedKbIds.length > 0 && (
+                <span className="text-xs text-text-tertiary">已选 {selectedKbIds.length} 个知识库</span>
+              )}
+            </div>
+            <Sender
+              loading={isRequesting}
+              onSubmit={(content) => handleSend(content)}
+              onCancel={handleStop}
+              placeholder={activeSession ? '继续对话...' : '输入消息开始新对话...'}
+              className="rounded-lg border border-border-default bg-white"
+            />
+          </div>
+
+          {error && (
+            <div className="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-600/20 bg-white px-4 py-2.5 text-sm text-danger-600 shadow-xl">
+              <AlertCircleIcon className="size-4" />
+              <span>{error}</span>
+              <Button
+                data-testid="error-toast-close"
+                variant="ghost"
+                size="icon-xs"
+                onClick={clearError}
+              >
+                <XIcon className="size-3.5" />
               </Button>
             </div>
           )}
         </div>
-
-        <ChatInput
-          onSend={handleSend}
-          isStreaming={isStreaming}
-          onStop={handleStop}
-          placeholder={activeSession ? '继续对话...' : '输入消息开始新对话...'}
-        />
-
-        {error && (
-          <div className="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-600/20 bg-white px-4 py-2.5 text-sm text-danger-600 shadow-xl">
-            <AlertCircleIcon className="size-4" />
-            <span>{error}</span>
-            <Button
-              data-testid="error-toast-close"
-              variant="ghost"
-              size="icon-xs"
-              onClick={clearError}
-            >
-              <XIcon className="size-3.5" />
-            </Button>
-          </div>
-        )}
       </div>
-    </div>
+    </XProvider>
   )
 }
