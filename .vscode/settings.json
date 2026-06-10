@@ -15,5 +15,8 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prisma.pinToPrisma6": true,
-  "cSpell.words": ["ahooks", "alova", "goferbot", "partialize"]
+  "cSpell.words": ["ahooks", "alova", "goferbot", "partialize"],
+  "[xml]": {
+    "editor.defaultFormatter": "redhat.vscode-xml"
+  }
 }
