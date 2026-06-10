@@ -1,11 +1,10 @@
 import { cn } from '@/utils/cn'
 
-/**
- * BlockNote 编辑器占位 — 后续完整集成 BlockNote 时替换
- *
- * @see docs/issues/f-35-chatview-migration/specs/feature-spec.md §2.6
- */
-export function EditorPlaceholder({ className }: { className?: string }) {
+interface EditorPlaceholderProps {
+  className?: string
+}
+
+export function EditorPlaceholder({ className }: EditorPlaceholderProps) {
   return (
     <div
       className={cn(

@@ -1,22 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useRequest, useSSE } from 'alova/client'
-import { getHistory, streamChat } from '@/api/chat'
-import { useChatStore } from '@/stores/chat'
+import { AlertCircleIcon, XIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useSettingsStore } from '@/stores/settings'
 import { useTabsStore } from '@/stores/tabs'
 import { getLLMConfig, type LLMConfig } from '@/utils/llm-config'
-import { parseSSEChunk } from '@/utils/sse-parser'
-import { ChatInput } from '@/components/chat/ChatInput'
-import { MessageBubble } from '@/components/chat/MessageBubble'
-import { EditorPlaceholder } from '@/components/chat/EditorPlaceholder'
-import { SessionList } from '@/components/chat/SessionList'
+import { useChatStore } from '../store'
+import {
+  loadChatSessions,
+  resolveSessionById,
+  createChatSession,
+  renameChatSession,
+  deleteChatSession,
+  loadChatHistory,
+} from '../services'
+import { useChatStream } from '../hooks/useChatStream'
+import { ChatInput } from './ChatInput'
+import { ChatMessage } from './ChatMessage'
+import { EditorPlaceholder } from './EditorPlaceholder'
+import { ChatSessionList } from './ChatSessionList'
 import { openDialog } from '@/overlays/services/overlay-service'
 import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { AlertCircleIcon, XIcon } from 'lucide-react'
 
-/** LLM 配置回退值 — settingsStore 未配置时使用 */
 const FALLBACK_LLM_CONFIG: LLMConfig = {
   provider: 'openai',
   model: 'gpt-4o',
@@ -24,84 +29,63 @@ const FALLBACK_LLM_CONFIG: LLMConfig = {
   apiKey: '',
 }
 
-interface ChatSessionProps {
+interface ChatSessionPageProps {
   sessionId: string
 }
 
-export function ChatSession({ sessionId }: ChatSessionProps) {
+export function ChatSessionPage({ sessionId }: ChatSessionPageProps) {
   const {
     activeSession,
     sessions,
     messages,
     streamingContent,
     isStreaming,
-    setMessages,
-    appendMessage,
-    setIsLoadingHistory,
     isLoadingHistory,
-    setIsStreaming,
-    appendStreamContent,
-    flushStreamContent,
-    createSession,
     error,
-    renameSession,
-    deleteSession,
-    clearError,
-    loadSessions,
     setActiveSession,
+    appendMessage,
+    clearError,
   } = useChatStore()
 
   const renameTab = useTabsStore((s) => s.renameTab)
-  const updateActiveTabSession = useTabsStore((s) => s.updateActiveTabSession)
-
-  // LLM 配置（从 settingsStore 读取，未配置时回退默认值）
   const settingsConfig = useSettingsStore((s) => s.config)
   const llmConfig = getLLMConfig(settingsConfig) ?? FALLBACK_LLM_CONFIG
 
-  // 错误状态
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [errorRetryMessage, setErrorRetryMessage] = useState<string | null>(null)
-
-  // 重命名 inline 编辑状态
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
 
-  // 首次加载会话列表
-  useEffect(() => {
-    loadSessions()
-  }, [loadSessions])
+  const { start: startStream, stop: stopStream } = useChatStream({
+    llmConfig,
+    onError: (msg) => {
+      setErrorMessage(msg)
+    },
+  })
 
-  // 根据 URL sessionId 参数设置活跃会话
+  useEffect(() => {
+    loadChatSessions()
+  }, [])
+
   useEffect(() => {
     if (!sessionId) {
       setActiveSession(null)
       return
     }
     if (sessionId === 'new') {
-      createSession().then((newSession) => {
+      createChatSession().then((newSession) => {
         if (newSession) {
           setActiveSession(newSession)
-          updateActiveTabSession(newSession.id, newSession.title)
+          renameTab(newSession.id, newSession.title)
         }
       })
       return
     }
-    const target = sessions.find((s) => s.id === sessionId)
-    if (target) {
-      setActiveSession(target)
-    } else {
-      loadSessions().then(() => {
-        const refreshed = useChatStore.getState().sessions.find((s) => s.id === sessionId)
-        if (refreshed) {
-          setActiveSession(refreshed)
-        }
-      }).catch(() => {
-        // 加载失败时静默处理，避免未捕获的 Promise rejection
-      })
-    }
-  }, [sessionId, sessions, setActiveSession, createSession, loadSessions])
+    resolveSessionById(sessionId).catch(() => {
+      // 加载失败时静默处理
+    })
+  }, [sessionId, sessions, setActiveSession])
 
-  // 检查是否有待发送的初始消息（从问答首页跳转过来）
   useEffect(() => {
     if (!activeSession?.id) return
     const pendingKey = `pending_message_${activeSession.id}`
@@ -115,72 +99,17 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
     }
   }, [activeSession?.id])
 
-  // Error toast 自动消失
   useEffect(() => {
     if (!error) return
     const timer = setTimeout(() => clearError(), 5000)
     return () => clearTimeout(timer)
   }, [error, clearError])
 
-  // 加载历史消息
-  const { send: loadHistory } = useRequest(
-    () => getHistory(activeSession?.id ?? ''),
-    { immediate: false },
-  )
-
   useEffect(() => {
     if (activeSession?.id) {
-      setIsLoadingHistory(true)
-      loadHistory().then((res) => {
-        const data = (res as { data?: { messages?: unknown[] } })?.data
-        if (data?.messages) {
-          setMessages(data.messages as never[])
-        }
-        setIsLoadingHistory(false)
-      }).catch(() => {
-        setIsLoadingHistory(false)
-      })
+      loadChatHistory(activeSession.id)
     }
   }, [activeSession?.id])
-
-  // SSE hook
-  const { send: sseSend, close: sseClose, onMessage, onError } = useSSE(
-    (message: string, sid: string, config: LLMConfig, knowledgeBaseIds?: string[]) =>
-      streamChat({
-        message,
-        sessionId: sid,
-        knowledgeBaseIds: knowledgeBaseIds ?? [],
-        config,
-      }),
-    {
-      interceptByGlobalResponded: false,
-      immediate: false,
-      reconnectionTime: 3000,
-    },
-  )
-
-  // 绑定 SSE 消息处理
-  onMessage((event: { data: string }) => {
-    const parsed = parseSSEChunk(event)
-    if (!parsed) return
-
-    if (parsed.error) {
-      setErrorMessage(parsed.error)
-      setIsStreaming(false)
-      return
-    }
-    if (parsed.done) {
-      flushStreamContent()
-      setIsStreaming(false)
-    } else {
-      appendStreamContent(parsed.chunk)
-    }
-  })
-
-  onError((event: { error: Error }) => {
-    setErrorMessage(event.error?.message ?? '网络连接失败，请检查网络后重试')
-    setIsStreaming(false)
-  })
 
   const handleSend = useCallback(
     async (content: string, knowledgeBaseIds?: string[]) => {
@@ -196,34 +125,31 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
         createdAt: new Date().toISOString(),
       }
       appendMessage(userMsg)
-
       setErrorRetryMessage(content)
 
       if (streamingContent) {
         useChatStore.setState({ streamingContent: '' })
       }
 
-      setIsStreaming(true)
-
       let sid = activeSession?.id
       if (!sid) {
-        const newSession = await createSession()
+        const newSession = await createChatSession()
         sid = newSession?.id
         if (newSession) {
-          updateActiveTabSession(newSession.id, newSession.title)
+          renameTab(newSession.id, newSession.title)
         }
       }
 
-      sseSend(content, sid ?? '', llmConfig, knowledgeBaseIds)
+      if (sid) {
+        await startStream(content, sid, knowledgeBaseIds)
+      }
     },
-    [activeSession, appendMessage, setIsStreaming, sseSend, createSession, llmConfig, streamingContent, updateActiveTabSession],
+    [activeSession, appendMessage, startStream, streamingContent],
   )
 
   const handleStop = useCallback(() => {
-    sseClose()
-    flushStreamContent()
-    setIsStreaming(false)
-  }, [sseClose, flushStreamContent, setIsStreaming])
+    stopStream()
+  }, [stopStream])
 
   const handleRetry = useCallback(() => {
     if (!errorRetryMessage) return
@@ -233,15 +159,12 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
 
   const handleDeleteSession = useCallback(
     async (sid: string, sessionTitle: string) => {
-      const result = await openDialog<'confirm' | undefined>(
-        DeleteSessionDialog,
-        { sessionTitle },
-      )
+      const result = await openDialog<'confirm' | undefined>(DeleteSessionDialog, { sessionTitle })
       if (result === 'confirm') {
-        await deleteSession(sid)
+        await deleteChatSession(sid)
       }
     },
-    [deleteSession],
+    [],
   )
 
   const handleStartRename = useCallback(() => {
@@ -257,11 +180,11 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
       return
     }
     if (trimmed !== activeSession.title) {
-      await renameSession(activeSession.id, trimmed)
+      await renameChatSession(activeSession.id, trimmed)
       renameTab(activeSession.id, trimmed)
     }
     setIsRenaming(false)
-  }, [renameValue, activeSession, renameSession, renameTab])
+  }, [renameValue, activeSession, renameTab])
 
   const handleCancelRename = useCallback(() => {
     setIsRenaming(false)
@@ -270,19 +193,14 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
 
   return (
     <div className="flex h-full">
-      {/* 左侧会话列表 */}
       <div className="w-64 shrink-0">
-        <SessionList
+        <ChatSessionList
           onRenameClick={() => {}}
-          onDeleteClick={(session) => {
-            handleDeleteSession(session.id, session.title)
-          }}
+          onDeleteClick={(session) => handleDeleteSession(session.id, session.title)}
         />
       </div>
 
-      {/* 右侧聊天区 */}
       <div className="flex flex-1 flex-col">
-        {/* 会话标题栏 */}
         <div className="flex h-12 items-center border-b border-border-default bg-surface-1 px-4">
           {isRenaming && activeSession ? (
             <Input
@@ -307,7 +225,6 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
           )}
         </div>
 
-        {/* 消息列表 */}
         <div className="flex-1 overflow-y-auto">
           {isLoadingHistory && (
             <div className="flex items-center justify-center py-8 text-sm text-text-secondary">
@@ -319,20 +236,18 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
                 <h3 className="text-lg font-medium text-text-primary">开始新对话</h3>
-                <p className="mt-2 text-sm text-text-secondary">
-                  在下方输入消息，开始与 AI 对话
-                </p>
+                <p className="mt-2 text-sm text-text-secondary">在下方输入消息，开始与 AI 对话</p>
                 <EditorPlaceholder className="mt-6 mx-4" />
               </div>
             </div>
           )}
 
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
+            <ChatMessage key={msg.id} message={msg} />
           ))}
 
           {isStreaming && streamingContent && (
-            <MessageBubble
+            <ChatMessage
               message={{
                 id: 'streaming',
                 sessionId: activeSession?.id ?? '',
@@ -370,7 +285,6 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
           )}
         </div>
 
-        {/* 输入框 */}
         <ChatInput
           onSend={handleSend}
           isStreaming={isStreaming}
@@ -378,7 +292,6 @@ export function ChatSession({ sessionId }: ChatSessionProps) {
           placeholder={activeSession ? '继续对话...' : '输入消息开始新对话...'}
         />
 
-        {/* Error toast */}
         {error && (
           <div className="absolute bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-danger-600/20 bg-white px-4 py-2.5 text-sm text-danger-600 shadow-xl">
             <AlertCircleIcon className="size-4" />

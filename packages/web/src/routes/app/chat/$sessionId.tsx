@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ChatSession } from './ChatSession'
+import { ChatSessionPage } from '@/features/chat/components/ChatSessionPage'
 
 export const Route = createFileRoute('/app/chat/$sessionId')({
-  component: ChatSessionPage,
+  component: ChatSessionPageWrapper,
 })
 
-function ChatSessionPage() {
+function ChatSessionPageWrapper() {
   const { sessionId } = Route.useParams()
-  return <ChatSession sessionId={sessionId} />
+  return <ChatSessionPage sessionId={sessionId} />
 }

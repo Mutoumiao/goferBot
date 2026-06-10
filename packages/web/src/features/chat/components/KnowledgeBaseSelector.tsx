@@ -5,22 +5,19 @@ import type { KbEntry } from '@goferbot/data'
 import { DatabaseIcon, HashIcon } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
-interface KbSelectorProps {
+interface KnowledgeBaseSelectorProps {
   selectedIds: string[]
   onToggle: (kbId: string) => void
   disabled?: boolean
 }
 
-export function KbSelector({ selectedIds, onToggle, disabled = false }: KbSelectorProps) {
+export function KnowledgeBaseSelector({ selectedIds, onToggle, disabled = false }: KnowledgeBaseSelectorProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const { data, loading, error, send } = useRequest(
-    () => getKbList(),
-    { immediate: false },
-  )
+  const { data, loading, error, send } = useRequest(() => getKbList(), { immediate: false })
 
-  const rawData = (data as any)
+  const rawData = data as any
   const kbList: KbEntry[] = Array.isArray(rawData) ? rawData : (rawData?.data ?? [])
 
   const handleOpen = useCallback(() => {
@@ -34,10 +31,7 @@ export function KbSelector({ selectedIds, onToggle, disabled = false }: KbSelect
   useEffect(() => {
     if (!open) return
     function onMouseDown(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         handleClose()
       }
     }
@@ -103,37 +97,35 @@ export function KbSelector({ selectedIds, onToggle, disabled = false }: KbSelect
           )}
 
           {!loading && !error && kbList.length === 0 && (
-            <div className="p-4 text-center text-sm text-text-secondary">
-              请先创建知识库
-            </div>
+            <div className="p-4 text-center text-sm text-text-secondary">请先创建知识库</div>
           )}
 
-          {!loading && !error && kbList.map((kb) => (
-            <div
-              key={kb.id}
-              data-testid="kb-selector-item"
-              className={cn(
-                'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors',
-                'text-text-primary hover:bg-surface-2',
-              )}
-              onClick={(e) => {
-                e.preventDefault()
-                onToggle(kb.id)
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(kb.id)}
-                className="pointer-events-none size-4 rounded border-border-default text-brand-primary focus:ring-brand-primary"
-                readOnly
-              />
-              <DatabaseIcon className="size-4 text-text-secondary" />
-              <span className="truncate">{kb.name}</span>
-              <span className="ml-auto text-xs text-text-tertiary">
-                {kb.fileCount ?? 0} 文档
-              </span>
-            </div>
-          ))}
+          {!loading &&
+            !error &&
+            kbList.map((kb) => (
+              <div
+                key={kb.id}
+                data-testid="kb-selector-item"
+                className={cn(
+                  'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors',
+                  'text-text-primary hover:bg-surface-2',
+                )}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onToggle(kb.id)
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(kb.id)}
+                  className="pointer-events-none size-4 rounded border-border-default text-brand-primary focus:ring-brand-primary"
+                  readOnly
+                />
+                <DatabaseIcon className="size-4 text-text-secondary" />
+                <span className="truncate">{kb.name}</span>
+                <span className="ml-auto text-xs text-text-tertiary">{kb.fileCount ?? 0} 文档</span>
+              </div>
+            ))}
         </div>
       )}
     </div>

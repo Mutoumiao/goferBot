@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { KbSelector } from './KbSelector'
+import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
 
 interface ChatInputProps {
   onSend: (content: string, knowledgeBaseIds?: string[]) => void
@@ -47,15 +47,13 @@ export function ChatInput({
   return (
     <div className="border-t border-border-default bg-surface-1 p-4">
       <div className="mb-2 flex items-center gap-2">
-        <KbSelector
+        <KnowledgeBaseSelector
           selectedIds={selectedKbIds}
           onToggle={handleToggleKb}
           disabled={disabled || isStreaming}
         />
         {selectedKbIds.length > 0 && (
-          <span className="text-xs text-text-tertiary">
-            已选 {selectedKbIds.length} 个知识库
-          </span>
+          <span className="text-xs text-text-tertiary">已选 {selectedKbIds.length} 个知识库</span>
         )}
       </div>
       <div className="flex items-end gap-2">
@@ -74,10 +72,7 @@ export function ChatInput({
             停止
           </Button>
         ) : (
-          <Button
-            onClick={handleSend}
-            disabled={disabled || !value.trim()}
-          >
+          <Button onClick={handleSend} disabled={disabled || !value.trim()}>
             发送
           </Button>
         )}
