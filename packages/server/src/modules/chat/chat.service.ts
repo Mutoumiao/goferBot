@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { ChatDto } from './dto/chat.dto.js'
 import { RagService } from './rag.service.js'
+import { SettingsService } from '../settings/settings.service.js'
 import { ChatOpenAI } from '@langchain/openai'
 import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages'
 import type { BaseMessage } from '@langchain/core/messages'
@@ -17,51 +18,66 @@ interface ChatChunk {
   done: boolean
 }
 
-/** 从环境变量读取的 LLM 配置 */
-interface LlmConfig {
-  apiKey: string
-  baseUrl: string
-  model: string
-}
-
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name)
   private readonly llmTimeoutMs: number
-  private readonly llmConfig: LlmConfig
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly ragService: RagService,
+    private readonly settingsService: SettingsService,
   ) {
     const envTimeout = process.env.LLM_TIMEOUT_MS
     const parsed = envTimeout ? parseInt(envTimeout, 10) : 300000
     this.llmTimeoutMs = Number.isNaN(parsed) ? 300000 : parsed
-
-    this.llmConfig = this.loadLlmConfig()
   }
 
-  private loadLlmConfig(): LlmConfig {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY')
-    const baseUrl = this.configService.get<string>('OPENAI_BASE_URL') ?? 'https://api.openai.com'
-    const model = this.configService.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
+  private async createChatModel(userId: string): Promise<ChatOpenAI> {
+    const settings = await this.settingsService.getSettings(userId)
+    const providers = settings.providers as Record<string, { name: string; apiKey: string; model: string; baseUrl: string }>
+    const defaultProvider = settings.defaultChatProvider as string
+    const provider = providers[defaultProvider]
 
-    if (!apiKey) {
-      this.logger.warn('OPENAI_API_KEY 未配置，LLM 请求将失败')
+    // 内置模型：从环境变量读取
+    const builtInKeys = ['openai', 'claude', 'deepseek']
+    if (builtInKeys.includes(defaultProvider)) {
+      const envApiKey = this.configService.get<string>(`${defaultProvider.toUpperCase()}_API_KEY`)
+      const envBaseUrl = this.configService.get<string>(`${defaultProvider.toUpperCase()}_BASE_URL`)
+      const envModel = this.configService.get<string>(`${defaultProvider.toUpperCase()}_MODEL`)
+
+      const apiKey = envApiKey || provider?.apiKey || ''
+      const baseUrl = envBaseUrl || provider?.baseUrl || 'https://api.openai.com'
+      const model = envModel || provider?.model || 'gpt-3.5-turbo'
+
+      if (!apiKey) {
+        throw new BadRequestException({ code: 'LLM_NOT_CONFIGURED', message: '未配置 LLM API Key' })
+      }
+
+      return new ChatOpenAI({
+        apiKey,
+        model,
+        streaming: true,
+        timeout: this.llmTimeoutMs,
+        configuration: {
+          baseURL: baseUrl,
+        },
+      })
     }
 
-    return { apiKey: apiKey ?? '', baseUrl, model }
-  }
+    // 自定义模型：从用户设置读取
+    if (!provider?.apiKey) {
+      throw new BadRequestException({ code: 'LLM_NOT_CONFIGURED', message: '未配置 LLM API Key' })
+    }
 
-  private createChatModel(): ChatOpenAI {
     return new ChatOpenAI({
-      apiKey: this.llmConfig.apiKey,
-      model: this.llmConfig.model,
+      apiKey: provider.apiKey,
+      model: provider.model,
       streaming: true,
       timeout: this.llmTimeoutMs,
       configuration: {
-        baseURL: this.llmConfig.baseUrl,
+        baseURL: provider.baseUrl || undefined,
       },
     })
   }
@@ -117,7 +133,7 @@ export class ChatService {
 
     historyMessages.forEach((m) => llmMessages.push({ role: m.role, content: m.content }))
 
-    const chat = this.createChatModel()
+    const chat = await this.createChatModel(userId)
 
     // 将 messages 数组转换为 LangChain BaseMessage 格式
     const createMessage = (role: string, content: string): BaseMessage => {
