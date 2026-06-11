@@ -1,8 +1,18 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { ConfigProvider } from '@/components/ConfigProvider'
 import { TabBar } from '@/components/tab-bar/TabBar'
 import { IconSidebar } from '@/components/sidebar/Sidebar'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
+
+const FONT_SIZE_MAP: Record<number, string> = {
+  1: '12px',
+  2: '13px',
+  3: '14px',
+  4: '15px',
+  5: '16px',
+}
 
 function waitForInit(maxMs = 2000): Promise<void> {
   return new Promise((resolve) => {
@@ -33,7 +43,30 @@ export const Route = createFileRoute('/app')({
   component: AppLayout,
 })
 
+function useAppearanceEffect() {
+  const appearance = useSettingsStore((s) => s.config.appearance)
+  const fontSizeLevel = useSettingsStore((s) => s.config.fontSizeLevel)
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.remove('light', 'dark')
+
+    if (appearance === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      root.classList.add(prefersDark ? 'dark' : 'light')
+    } else {
+      root.classList.add(appearance)
+    }
+  }, [appearance])
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = FONT_SIZE_MAP[fontSizeLevel] || '14px'
+  }, [fontSizeLevel])
+}
+
 function AppLayout() {
+  useAppearanceEffect()
+
   return (
     <ConfigProvider>
       <div className="flex h-screen bg-surface-2">
