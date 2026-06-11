@@ -1,14 +1,9 @@
 // ---- 类型定义 ----
-export interface ChatProviderConfig {
+export interface ProviderConfig {
+  name: string
   apiKey: string
   model: string
   baseUrl: string
-}
-
-export interface OllamaConfig {
-  enabled: boolean
-  url: string
-  model: string
 }
 
 export interface EmbeddingProviderConfig {
@@ -19,16 +14,12 @@ export interface EmbeddingProviderConfig {
 }
 
 export interface AppConfig {
-  providers: {
-    openai: ChatProviderConfig
-    claude: ChatProviderConfig
-    deepseek: ChatProviderConfig
-    custom: ChatProviderConfig
-    ollama: OllamaConfig
-  }
+  providers: Record<string, ProviderConfig>
   embeddingProvider: EmbeddingProviderConfig
   temperature: number
   defaultChatProvider: string
+  appearance: 'light' | 'dark' | 'system'
+  fontSizeLevel: 1 | 2 | 3 | 4 | 5
 }
 
 export interface LLMConfig {
@@ -41,11 +32,9 @@ export interface LLMConfig {
 // ---- 常量 ----
 export const DEFAULT_CONFIG: AppConfig = {
   providers: {
-    openai: { apiKey: '', model: 'gpt-4o', baseUrl: '' },
-    claude: { apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
-    deepseek: { apiKey: '', model: 'deepseek-chat', baseUrl: '' },
-    custom: { apiKey: '', model: '', baseUrl: '' },
-    ollama: { enabled: false, url: 'http://localhost:11434', model: '' },
+    openai: { name: 'OpenAI', apiKey: '', model: 'gpt-4o', baseUrl: '' },
+    claude: { name: 'Claude', apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
+    deepseek: { name: 'DeepSeek', apiKey: '', model: 'deepseek-chat', baseUrl: '' },
   },
   embeddingProvider: {
     provider: 'openai',
@@ -55,14 +44,14 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   temperature: 0.7,
   defaultChatProvider: 'deepseek',
+  appearance: 'light',
+  fontSizeLevel: 3,
 }
 
 const PROVIDER_NAMES: Record<string, string> = {
   openai: 'OpenAI',
   claude: 'Claude',
   deepseek: 'DeepSeek',
-  custom: '自定义',
-  ollama: 'Ollama',
 }
 
 // ---- 纯函数工具 ----
@@ -70,37 +59,19 @@ const PROVIDER_NAMES: Record<string, string> = {
 /** 获取 LLM 调用所需的 provider/model/baseUrl/apiKey */
 export function getLLMConfig(config: AppConfig, providerKey?: string): LLMConfig | null {
   const key = providerKey || config.defaultChatProvider
-
-  const providers = config.providers as Record<string, ChatProviderConfig | OllamaConfig>
-  const pc = providers[key]
+  const pc = config.providers[key]
   if (!pc) return null
-
-  if (key === 'ollama') {
-    const oc = pc as OllamaConfig
-    if (!oc.enabled) return null
-    return { provider: 'ollama', model: oc.model, baseUrl: oc.url, apiKey: '' }
-  }
-
-  const cc = pc as ChatProviderConfig
-  return { provider: key, model: cc.model, baseUrl: cc.baseUrl, apiKey: cc.apiKey }
+  return { provider: key, model: pc.model, baseUrl: pc.baseUrl, apiKey: pc.apiKey }
 }
 
-/** 获取已配置的 provider 列表（apiKey 非空或 ollama enabled） */
+/** 获取已配置的 provider 列表（apiKey 非空） */
 export function configuredProviders(config: AppConfig): { key: string; name: string; model: string }[] {
   const list: { key: string; name: string; model: string }[] = []
-
   for (const [key, p] of Object.entries(config.providers)) {
-    if (key === 'ollama') {
-      if ((p as OllamaConfig).enabled) {
-        list.push({ key, name: PROVIDER_NAMES[key] || key, model: (p as OllamaConfig).model })
-      }
-    } else {
-      if ((p as ChatProviderConfig).apiKey) {
-        list.push({ key, name: PROVIDER_NAMES[key] || key, model: (p as ChatProviderConfig).model })
-      }
+    if (p.apiKey) {
+      list.push({ key, name: p.name || PROVIDER_NAMES[key] || key, model: p.model })
     }
   }
-
   return list
 }
 
