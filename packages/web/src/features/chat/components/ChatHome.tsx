@@ -41,7 +41,7 @@ export function ChatHome() {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const addTabByRoute = useTabsStore((s) => s.addTabByRoute)
+  const openRoute = useTabsStore((s) => s.openRoute)
 
   const startChat = useCallback(
     async (initialMessage?: string) => {
@@ -56,7 +56,7 @@ export function ChatHome() {
         }
 
         const route = `/app/chat/${newSession.id}`
-        addTabByRoute(route, newSession.title || '新对话', newSession.id)
+        openRoute(route, { title: newSession.title || '新对话', singleton: false, closable: true }, newSession.id)
 
         if (initialMessage?.trim()) {
           sessionStorage.setItem(`pending_message_${newSession.id}`, initialMessage.trim())
@@ -67,7 +67,7 @@ export function ChatHome() {
         setIsLoading(false)
       }
     },
-    [addTabByRoute, navigate, isLoading],
+    [openRoute, navigate, isLoading],
   )
 
   const handleSend = useCallback(() => {

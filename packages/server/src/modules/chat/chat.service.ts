@@ -7,27 +7,63 @@ import {
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { ChatDto } from './dto/chat.dto.js'
-import { HybridRetriever, DefaultRetrievalPostprocessor } from '@goferbot/rag-sdk'
+import { RagService } from './rag.service.js'
+import { ChatOpenAI } from '@langchain/openai'
+import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages'
+import type { BaseMessage } from '@langchain/core/messages'
 
 interface ChatChunk {
   chunk: string
   done: boolean
 }
 
+/** 从环境变量读取的 LLM 配置 */
+interface LlmConfig {
+  apiKey: string
+  baseUrl: string
+  model: string
+}
+
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name)
   private readonly llmTimeoutMs: number
+  private readonly llmConfig: LlmConfig
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-    private readonly retriever: HybridRetriever,
-    private readonly postprocessor: DefaultRetrievalPostprocessor,
+    private readonly ragService: RagService,
   ) {
     const envTimeout = process.env.LLM_TIMEOUT_MS
     const parsed = envTimeout ? parseInt(envTimeout, 10) : 300000
     this.llmTimeoutMs = Number.isNaN(parsed) ? 300000 : parsed
+
+    this.llmConfig = this.loadLlmConfig()
+  }
+
+  private loadLlmConfig(): LlmConfig {
+    const apiKey = this.configService.get<string>('OPENAI_API_KEY')
+    const baseUrl = this.configService.get<string>('OPENAI_BASE_URL') ?? 'https://api.openai.com'
+    const model = this.configService.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
+
+    if (!apiKey) {
+      this.logger.warn('OPENAI_API_KEY 未配置，LLM 请求将失败')
+    }
+
+    return { apiKey: apiKey ?? '', baseUrl, model }
+  }
+
+  private createChatModel(): ChatOpenAI {
+    return new ChatOpenAI({
+      apiKey: this.llmConfig.apiKey,
+      model: this.llmConfig.model,
+      streaming: true,
+      timeout: this.llmTimeoutMs,
+      configuration: {
+        baseURL: this.llmConfig.baseUrl,
+      },
+    })
   }
 
   async *streamChat(
@@ -35,16 +71,17 @@ export class ChatService {
     dto: ChatDto,
     onAbortController?: (ac: AbortController) => void,
   ): AsyncGenerator<ChatChunk> {
-    const { message, sessionId, config } = dto
+    const { input, sessionId, lastMessageId } = dto
 
     await this.ensureSessionOwnership(userId, sessionId)
 
+    // 保存用户输入
     await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
           sessionId,
           role: 'user',
-          content: message,
+          content: input,
         },
       }),
       this.prisma.session.update({
@@ -54,8 +91,13 @@ export class ChatService {
     ])
 
     // 加载历史消息用于多轮对话上下文
+    const historyWhere: { sessionId: string; id?: { lte: string } } = { sessionId }
+    if (lastMessageId) {
+      historyWhere.id = { lte: lastMessageId }
+    }
+
     const historyMessages = await this.prisma.message.findMany({
-      where: { sessionId },
+      where: historyWhere,
       orderBy: { createdAt: 'asc' },
       select: { role: true, content: true },
     })
@@ -64,105 +106,51 @@ export class ChatService {
 
     // RAG 检索：当 knowledgeBaseIds 存在时检索相关 chunks 并注入 system message
     if (dto.knowledgeBaseIds && dto.knowledgeBaseIds.length > 0) {
-      try {
-        const query = { original: message, kbIds: dto.knowledgeBaseIds }
-        const candidates = await this.retriever.retrieve(query, 10)
-        const processed = await this.postprocessor.process(candidates, query)
-        // 过滤掉 content 为空的候选（向量检索结果可能缺少 content，需反查补全）
-        const validCandidates = processed.candidates.filter((c) => c.chunk.content && c.chunk.content.trim().length > 0)
-        if (validCandidates.length > 0) {
-          const context = validCandidates.map((c) => c.chunk.content).join('\n---\n')
-          llmMessages.push({ role: 'system', content: `基于以下上下文回答问题：\n${context}` })
-        }
-      } catch (err) {
-        this.logger.warn(`Retrieval failed: ${err instanceof Error ? err.message : String(err)}`)
+      const result = await this.ragService.retrieveContext({
+        original: input,
+        kbIds: dto.knowledgeBaseIds,
+      })
+      if (result.context) {
+        llmMessages.push({ role: 'system', content: `基于以下上下文回答问题：\n${result.context}` })
       }
     }
 
     historyMessages.forEach((m) => llmMessages.push({ role: m.role, content: m.content }))
 
+    const chat = this.createChatModel()
+
+    // 将 messages 数组转换为 LangChain BaseMessage 格式
+    const createMessage = (role: string, content: string): BaseMessage => {
+      switch (role) {
+        case 'system':
+          return new SystemMessage(content)
+        case 'user':
+          return new HumanMessage(content)
+        case 'assistant':
+          return new AIMessage(content)
+        default:
+          return new HumanMessage(content)
+      }
+    }
+    const lcMessages: BaseMessage[] = llmMessages.map((m) => createMessage(m.role, m.content))
+
     let fullReply = ''
     const abortController = new AbortController()
     onAbortController?.(abortController)
-    const timeout = setTimeout(() => {
-      abortController.abort()
-    }, this.llmTimeoutMs)
 
     try {
-      const response = await fetch(`${config.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: config.model,
-          messages: llmMessages,
-          stream: true,
-        }),
+      const stream = await chat.stream(lcMessages, {
         signal: abortController.signal,
       })
 
-      if (!response.ok) {
-        const body = await response.text().catch(() => '')
-        throw new ServiceUnavailableException({
-          code: 'LLM_ERROR',
-          message: `LLM 请求失败: ${response.status} ${body.slice(0, 200)}`,
-        })
-      }
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new ServiceUnavailableException({
-          code: 'LLM_ERROR',
-          message: 'LLM 响应为空',
-        })
-      }
-
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
-
-        for (const line of lines) {
-          const trimmed = line.trim()
-          if (!trimmed.startsWith('data: ')) continue
-          const data = trimmed.slice(6)
-          if (data === '[DONE]') continue
-
-          try {
-            const parsed = JSON.parse(data)
-            const delta = parsed.choices?.[0]?.delta?.content
-            if (typeof delta === 'string') {
-              fullReply += delta
-              yield { chunk: delta, done: false }
-            }
-          } catch {
-            // 忽略无法解析的行
-          }
-        }
-      }
-
-      // 处理剩余 buffer
-      if (buffer.trim().startsWith('data: ')) {
-        const data = buffer.trim().slice(6)
-        if (data !== '[DONE]') {
-          try {
-            const parsed = JSON.parse(data)
-            const delta = parsed.choices?.[0]?.delta?.content
-            if (typeof delta === 'string') {
-              fullReply += delta
-              yield { chunk: delta, done: false }
-            }
-          } catch {
-            // 忽略
-          }
+      for await (const chunk of stream) {
+        const content = chunk?.content
+        const text = Array.isArray(content)
+          ? content.map((c) => (typeof c === 'string' ? c : c.text ?? '')).join('')
+          : (content ?? '')
+        if (text) {
+          fullReply += text
+          yield { chunk: text, done: false }
         }
       }
     } catch (err: unknown) {
@@ -173,8 +161,6 @@ export class ChatService {
         })
       }
       throw err
-    } finally {
-      clearTimeout(timeout)
     }
 
     await this.prisma.$transaction([

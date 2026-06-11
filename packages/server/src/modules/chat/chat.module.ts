@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { ChatController } from './chat.controller.js'
 import { ChatService } from './chat.service.js'
+import { RagService } from './rag.service.js'
 import { HybridRetriever, DefaultRetrievalPostprocessor, OpenAIEmbedder } from '@goferbot/rag-sdk'
 import { VectorService } from '../../processors/vector/vector.service.js'
 import { KeywordService } from '../../processors/keyword/keyword.service.js'
@@ -10,6 +11,7 @@ import { KeywordService } from '../../processors/keyword/keyword.service.js'
   controllers: [ChatController],
   providers: [
     ChatService,
+    RagService,
     {
       provide: HybridRetriever,
       useFactory: (vectorService: VectorService, keywordService: KeywordService, config: ConfigService) => {

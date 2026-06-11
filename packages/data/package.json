@@ -3,13 +3,21 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "./src/types/index.ts",
-  "types": "./src/types/index.ts",
+  "main": "./dist/types/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
-    ".": "./src/types/index.ts",
-    "./schemas": "./src/schemas/index.ts"
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js"
+    }
   },
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

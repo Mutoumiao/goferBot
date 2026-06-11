@@ -1,16 +1,9 @@
 import { AbstractChatProvider } from '@ant-design/x-sdk'
 import type { TransformMessage, XRequestOptions, SSEOutput } from '@ant-design/x-sdk'
 
-export interface GoferInput {
-  message: string
-  sessionId: string
-  knowledgeBaseIds?: string[]
-  config: {
-    provider: string
-    model: string
-    baseUrl: string
-  }
-}
+import type { StreamChatRequest } from '@goferbot/data'
+
+export type GoferInput = StreamChatRequest
 
 export interface GoferOutput {
   chunk: string
@@ -29,16 +22,16 @@ export class GoferChatProvider extends AbstractChatProvider<GoferMessage, GoferI
     _options: XRequestOptions<GoferInput, SSEOutput, GoferMessage>,
   ): GoferInput {
     return {
-      message: requestParams.message || '',
+      input: requestParams.input || '',
       sessionId: requestParams.sessionId || '',
       knowledgeBaseIds: requestParams.knowledgeBaseIds ?? [],
-      config: requestParams.config ?? { provider: '', model: '', baseUrl: '' },
+      lastMessageId: requestParams.lastMessageId,
     }
   }
 
   transformLocalMessage(requestParams: Partial<GoferInput>): GoferMessage {
     return {
-      content: requestParams.message || '',
+      content: requestParams.input || '',
       role: 'user',
     }
   }

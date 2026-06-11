@@ -6,18 +6,10 @@
  */
 import { XRequest } from '@ant-design/x-sdk'
 import type { SSEOutput } from '@ant-design/x-sdk'
+import type { StreamChatRequest } from '@goferbot/data'
 
-/** 流式聊天输入参数（前端只传 provider/model/baseUrl，不传 apiKey） */
-export interface XChatInput {
-  message: string
-  sessionId: string
-  knowledgeBaseIds?: string[]
-  config: {
-    provider: string
-    model: string
-    baseUrl: string
-  }
-}
+/** 流式聊天输入参数（复用 data 包共享类型，LLM 配置由后端管理） */
+export type XChatInput = StreamChatRequest
 
 /** 后端 SSE chunk 格式 */
 export interface XChatOutput {

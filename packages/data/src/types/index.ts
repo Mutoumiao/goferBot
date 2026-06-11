@@ -5,13 +5,14 @@ import {
   registerRequestSchema,
   userSchema,
   authResponseSchema,
-} from '../schemas/auth.schema'
+} from '../schemas/auth.schema.js'
 import {
   kbEntrySchema,
   createKbRequestSchema,
   updateKbRequestSchema,
   kbListResponseSchema,
-} from '../schemas/kb.schema'
+} from '../schemas/kb.schema.js'
+import { streamChatRequestSchema } from '../schemas/chat.schema.js'
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>
 export type RegisterRequest = z.infer<typeof registerRequestSchema>
@@ -28,11 +29,12 @@ export type KbListResponse = z.infer<typeof kbListResponseSchema>
 export type {
   Message,
   Session,
+  StreamChatRequest,
   SendMessageRequest,
   CreateSessionRequest,
   MessageListResponse,
   SessionListResponse,
-} from './chat'
+} from './chat.js'
 
 // Re-export schemas for runtime usage
 export {
@@ -44,4 +46,5 @@ export {
   createKbRequestSchema,
   updateKbRequestSchema,
   kbListResponseSchema,
+  streamChatRequestSchema,
 }

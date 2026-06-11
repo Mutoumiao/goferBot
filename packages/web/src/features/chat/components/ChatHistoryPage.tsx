@@ -18,7 +18,7 @@ const PAGE_SIZE = 10
 
 export function ChatHistoryPage() {
   const router = useRouter()
-  const addTab = useTabsStore((s) => s.addTab)
+  const openRoute = useTabsStore((s) => s.openRoute)
 
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -31,10 +31,10 @@ export function ChatHistoryPage() {
   const handleResume = useCallback(
     (session: Session) => {
       const route = `/app/chat/${session.id}`
-      addTab('chat-session', session.id, session.title || '未命名会话', route)
+      openRoute(route, { title: session.title || '未命名会话', singleton: false, closable: true }, session.id)
       router.navigate({ to: route })
     },
-    [addTab, router],
+    [openRoute, router],
   )
 
   const handleDelete = useCallback(

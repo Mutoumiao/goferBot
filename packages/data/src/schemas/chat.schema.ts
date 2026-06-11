@@ -23,6 +23,14 @@ export const sessionSchema = z.object({
   messageCount: z.number().optional().default(0),
 })
 
+/** SSE 流式聊天请求 Schema — 前后端共享 */
+export const streamChatRequestSchema = z.object({
+  input: z.string().min(1, '输入不能为空').max(4000, '输入过长，最多 4000 字符'),
+  sessionId: z.string().uuid('sessionId 格式不正确'),
+  knowledgeBaseIds: z.array(z.string().uuid()).optional(),
+  lastMessageId: z.string().uuid().optional(),
+})
+
 export const sendMessageRequestSchema = z.object({
   sessionId: z.string(),
   content: z.string(),
