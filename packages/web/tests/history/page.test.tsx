@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 const mockNavigate = vi.fn()
-const mockAddTab = vi.fn()
+const mockOpenRoute = vi.fn()
 const mockOpenDialog = vi.fn()
 const mockDeleteChatSessionWithReload = vi.fn()
 
@@ -14,10 +14,10 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@/stores/tabs', () => ({
   useTabsStore: Object.assign(
     (selector?: (s: any) => any) => {
-      const state = { addTab: mockAddTab }
+      const state = { openRoute: mockOpenRoute }
       return selector ? selector(state) : state
     },
-    { getState: () => ({ addTab: mockAddTab }) },
+    { getState: () => ({ openRoute: mockOpenRoute }) },
   ),
 }))
 
@@ -134,11 +134,10 @@ describe('ChatHistoryPage', () => {
     expect(screen.getByText('测试会话')).toBeDefined()
 
     fireEvent.click(screen.getByText('测试会话'))
-    expect(mockAddTab).toHaveBeenCalledWith(
-      'chat-session',
-      's1',
-      '测试会话',
+    expect(mockOpenRoute).toHaveBeenCalledWith(
       '/app/chat/s1',
+      { title: '测试会话', singleton: false, closable: true },
+      's1',
     )
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/app/chat/s1' })
   })
