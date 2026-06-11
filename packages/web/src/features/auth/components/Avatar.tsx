@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { cn } from '@/utils/cn'
+import { User } from 'lucide-react'
 
 export interface AvatarProps {
   src?: string | null
@@ -10,7 +11,7 @@ export interface AvatarProps {
 
 /** 提取首字母作为占位文字，最多取两个字符（中英文均取第一个） */
 function getInitials(name?: string): string {
-  if (!name) return '?'
+  if (!name) return ''
   return name.trim().slice(0, 1).toUpperCase()
 }
 
@@ -37,12 +38,16 @@ export function Avatar({ src, fallback, size = 40, className }: AvatarProps) {
           onError={() => setImgError(true)}
           loading="lazy"
         />
-      ) : (
+      ) : initials ? (
         <span
           className="flex h-full w-full items-center justify-center font-medium text-white"
           style={{ fontSize: Math.max(size * 0.4, 12) }}
         >
           {initials}
+        </span>
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-white">
+          <User className="h-[55%] w-[55%]" />
         </span>
       )}
     </div>

@@ -1,7 +1,9 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common'
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { UserService } from '../modules/user/user.service.js'
+import { StorageService } from '../processors/storage/storage.service.js'
+import { UpdateProfileDto } from './dto/update-profile.dto.js'
 
 export interface TokenPair {
   accessToken: string
@@ -26,6 +28,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
+    private readonly storageService: StorageService,
   ) {}
 
   async register(email: string, password: string, name?: string) {
@@ -99,6 +102,92 @@ export class AuthService {
       })
     }
     return user
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.userService.updateName(userId, dto.name)
+    if (!user) {
+      throw new UnauthorizedException({
+        code: 'USER_NOT_FOUND',
+        message: '用户不存在',
+      })
+    }
+    return user
+  }
+
+  async uploadAvatar(userId: string, file: { buffer: Buffer; mimetype: string; size: number }) {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    const extMap: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+    }
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: '仅支持 JPEG、PNG、GIF、WebP 格式的图片',
+      })
+    }
+
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: '头像文件大小不能超过 5MB',
+      })
+    }
+
+    const ext = extMap[file.mimetype]
+    const key = `avatars/${userId}/${Date.now()}.${ext}`
+
+    const currentUser = await this.userService.findById(userId)
+    if (!currentUser) {
+      throw new UnauthorizedException({
+        code: 'USER_NOT_FOUND',
+        message: '用户不存在',
+      })
+    }
+
+    await this.storageService.uploadFile(file.buffer, key, file.mimetype)
+    const avatarUrl = this.storageService.getUrl(key)
+
+    const user = await this.userService.updateAvatar(userId, avatarUrl)
+    if (!user) {
+      throw new UnauthorizedException({
+        code: 'USER_NOT_FOUND',
+        message: '用户不存在',
+      })
+    }
+
+    // 上传新头像成功后，删除旧头像文件
+    if (currentUser.avatar) {
+      try {
+        const oldKey = this.extractKeyFromUrl(currentUser.avatar)
+        if (oldKey) {
+          await this.storageService.deleteFile(oldKey)
+        }
+      } catch {
+        // 旧头像删除失败不影响新头像更新结果
+      }
+    }
+
+    return { avatarUrl }
+  }
+
+  private extractKeyFromUrl(url: string): string | null {
+    try {
+      const parsed = new URL(url)
+      // MinIO URL 格式：{endpoint}/{bucket}/{key}
+      const parts = parsed.pathname.split('/').filter(Boolean)
+      if (parts.length >= 2) {
+        return parts.slice(1).join('/')
+      }
+      return null
+    } catch {
+      return null
+    }
   }
 
   private async generateTokens(userId: string, email: string): Promise<TokenPair> {

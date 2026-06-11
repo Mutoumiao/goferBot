@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -22,11 +21,6 @@ import { Route as AppHistoryRouteImport } from './routes/app/history'
 import { Route as AppChatRouteImport } from './routes/app/chat'
 import { Route as AppChatSessionIdRouteImport } from './routes/app/chat/$sessionId'
 
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -87,7 +81,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
@@ -100,7 +93,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
@@ -115,7 +107,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
@@ -131,7 +122,6 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/login'
-    | '/register'
     | '/app/chat'
     | '/app/history'
     | '/app/kb'
@@ -144,7 +134,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/register'
     | '/app/chat'
     | '/app/history'
     | '/app/kb'
@@ -158,7 +147,6 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/login'
-    | '/register'
     | '/app/chat'
     | '/app/history'
     | '/app/kb'
@@ -173,18 +161,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
-  RegisterRoute: typeof RegisterRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -304,7 +284,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
   LoginRoute: LoginRoute,
-  RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -7,9 +7,7 @@ import { useTabsStore } from '@/stores/tabs'
 import { createChatSession } from '@/features/chat/services'
 import type { Tab, TabMeta } from '@/stores/tabs'
 
-function getTabMetaFromRoute(pathname: string) {
-  const router = useRouter()
-
+function getTabMetaFromRoute(router: ReturnType<typeof useRouter>, pathname: string) {
   // 1. 精确匹配
   const match = router.state.matches.find((m) => m.pathname === pathname)
   const meta = (match?.staticData as { tabMeta?: TabMeta } | undefined)?.tabMeta
@@ -89,7 +87,7 @@ export function TabBar({ className }: { className?: string }) {
     }
 
     // 4. 没有匹配到，从路由元数据创建新标签
-    const meta = getTabMetaFromRoute(pathname)
+    const meta = getTabMetaFromRoute(router, pathname)
     if (meta) {
       openRoute(currentPath, meta, sessionId)
     }
@@ -141,7 +139,7 @@ export function TabBar({ className }: { className?: string }) {
     const newSession = await createChatSession()
     if (newSession?.id) {
       const route = `/app/chat/${newSession.id}`
-      const meta = getTabMetaFromRoute('/app/chat/$sessionId')
+      const meta = getTabMetaFromRoute(router, '/app/chat/$sessionId')
       if (meta) {
         openRoute(route, { ...meta, title: newSession.title || meta.title }, newSession.id)
         router.navigate({ to: route })

@@ -1,6 +1,8 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import { cn } from '@/utils/cn'
 import { MessageCircle, BookOpen, Clock, Settings, Trash2 } from 'lucide-react'
+import { Avatar } from '@/features/auth/components/Avatar'
+import { useAuthStore } from '@/stores/auth'
 
 const primaryNavItems = [
   { to: '/app/chat', icon: MessageCircle, label: '聊天' },
@@ -14,14 +16,24 @@ const secondaryNavItems = [
 ]
 
 export function IconSidebar({ className }: { className?: string }) {
+  const user = useAuthStore((s) => s.user)
+  const router = useRouter()
+
+  const handleOpenProfile = () => {
+    router.navigate({ to: '/app/profile' })
+  }
+
   return (
     <aside className={cn('flex w-[60px] flex-col items-center bg-surface-secondary py-5', className)}>
-      {/* Logo */}
-      <div className="mb-6 flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-        </svg>
-      </div>
+      {/* 用户头像 */}
+      <button
+        type="button"
+        className="mb-6 cursor-pointer transition-opacity hover:opacity-80"
+        onClick={handleOpenProfile}
+        title="个人资料"
+      >
+        <Avatar src={user?.avatarUrl} fallback={user?.name} size={40} />
+      </button>
 
       {/* 主导航图标 */}
       <nav className="flex flex-1 flex-col items-center gap-3">

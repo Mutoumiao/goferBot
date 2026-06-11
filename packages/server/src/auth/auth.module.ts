@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { JwtStrategy } from './strategies/jwt.strategy.js'
 import { UserModule } from '../modules/user/user.module.js'
+import { StorageModule } from '../processors/storage/storage.module.js'
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UserModule } from '../modules/user/user.module.js'
       inject: [ConfigService],
     }),
     UserModule,
+    StorageModule,
   ],
   providers: [AuthService, PasswordEncryptionService, JwtStrategy],
   controllers: [AuthController],

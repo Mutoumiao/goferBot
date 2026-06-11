@@ -11,6 +11,7 @@ import {
 } from '@/api/file'
 import { useKbStore } from './store'
 import type { Folder, DocumentItem } from './types'
+import type { KbEntry } from '@goferbot/data'
 
 export async function fetchKbList(): Promise<{ success: boolean; error?: string }> {
   const { setEntries, setKbLoading } = useKbStore.getState()
@@ -18,7 +19,7 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
   try {
     const res = await apiGetKbList().send()
     const data = res as { entries?: KbEntry[] }
-    if (data?.entries) setEntries(data.entries)
+    setEntries(data.entries ?? [])
     return { success: true }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '加载知识库列表失败' }
@@ -26,8 +27,6 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
     setKbLoading(false)
   }
 }
-
-import type { KbEntry } from '@goferbot/data'
 
 let currentLoadId = 0
 

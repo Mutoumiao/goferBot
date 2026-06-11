@@ -165,12 +165,13 @@ export interface UpdateProfileData {
 export interface UpdateProfileResult {
   success: boolean
   error?: string
+  avatarError?: string
 }
 
 /**
  * 更新用户资料（昵称 + 头像上传的业务编排）
  * - 头像上传失败不阻塞昵称更新
- * - 昵称更新失败 toast 提示并保持旧值
+ * - 昵称更新失败返回错误并保持旧值
  */
 export async function updateProfile(data: UpdateProfileData): Promise<UpdateProfileResult> {
   const { name, avatarFile } = data
@@ -185,18 +186,23 @@ export async function updateProfile(data: UpdateProfileData): Promise<UpdateProf
     }
 
     // 上传头像（独立于昵称更新，失败不中断）
+    let avatarError: string | undefined
     if (avatarFile) {
       try {
         const res = await uploadAvatar(avatarFile).send()
-        const updatedUser = { ...useAuthStore.getState().user!, avatarUrl: res.avatarUrl } as User
-        useAuthStore.getState().setUser(updatedUser)
+        const currentUser = useAuthStore.getState().user
+        if (currentUser) {
+          const updatedUser = { ...currentUser, avatarUrl: res.avatarUrl } as User
+          useAuthStore.getState().setUser(updatedUser)
+        }
         toast.success('头像已更新')
-      } catch {
-        toast.error('头像上传失败，请稍后重试')
+      } catch (err) {
+        avatarError = mapAuthError(err)
+        toast.error(avatarError || '头像上传失败，请稍后重试')
       }
     }
 
-    return { success: true }
+    return { success: true, avatarError }
   } catch (err) {
     const msg = err instanceof Error ? err.message : '更新失败，请稍后重试'
     return { success: false, error: msg }

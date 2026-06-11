@@ -21,7 +21,8 @@ export class KnowledgeBaseController {
 
   @Get()
   async list(@CurrentUser('id') userId: string) {
-    return this.kbService.list(userId)
+    const entries = await this.kbService.list(userId)
+    return { entries, total: entries.length }
   }
 
   @Post()

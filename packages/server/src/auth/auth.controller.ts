@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, BadRequestException } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Body, HttpCode, HttpStatus, UseGuards, BadRequestException, Req } from '@nestjs/common'
+import type { FastifyRequest } from 'fastify'
 import { Throttle } from '@nestjs/throttler'
 import { AuthService } from './auth.service.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
@@ -6,6 +7,7 @@ import { CurrentUser } from './decorators/current-user.decorator.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
+import { UpdateProfileDto } from './dto/update-profile.dto.js'
 
 const PASSWORD_MIN = 6
 const PASSWORD_MAX = 100
@@ -89,5 +91,36 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async me(@CurrentUser('id') userId: string) {
     return this.authService.me(userId)
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  async updateMe(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(userId, dto)
+  }
+
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async uploadAvatar(@CurrentUser('id') userId: string, @Req() req: FastifyRequest) {
+    const data = await req.file()
+    if (!data) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: '请上传头像文件',
+      })
+    }
+
+    const chunks: Buffer[] = []
+    for await (const chunk of data.file) {
+      chunks.push(chunk as Buffer)
+    }
+    const buffer = Buffer.concat(chunks)
+
+    return this.authService.uploadAvatar(userId, {
+      buffer,
+      mimetype: data.mimetype,
+      size: buffer.length,
+    })
   }
 }
