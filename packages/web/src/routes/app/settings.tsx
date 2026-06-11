@@ -1,7 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/auth'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { useEffect, useState } from 'react'
+import { useSettingsServices } from '@/features/settings/services'
+import { SettingsSection } from '@/features/settings/components/SettingsSection'
+import { SettingsRow } from '@/features/settings/components/SettingsRow'
+import { AppearanceSelect } from '@/features/settings/components/AppearanceSelect'
+import { FontSizeSlider } from '@/features/settings/components/FontSizeSlider'
+import { ProviderSelect } from '@/features/settings/components/ProviderSelect'
+import { CustomProviderList } from '@/features/settings/components/CustomProviderList'
+import { ProviderDialog } from '@/features/settings/components/ProviderDialog'
+import { configuredProviders } from '@/utils/llm-config'
+import type { ProviderConfig } from '@/utils/llm-config'
 
 export const Route = createFileRoute('/app/settings')({
   component: SettingsPage,
@@ -15,42 +23,93 @@ export const Route = createFileRoute('/app/settings')({
 })
 
 function SettingsPage() {
-  const user = useAuthStore((s) => s.user)
-  const clearAuth = useAuthStore((s) => s.clearAuth)
+  const svc = useSettingsServices()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingKey, setEditingKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    svc.loadSettings()
+  }, [])
+
+  const providerOptions = configuredProviders(svc.config)
+  const editingProvider = editingKey ? svc.config.providers[editingKey] : undefined
+
+  const handleAdd = () => {
+    setEditingKey(null)
+    setDialogOpen(true)
+  }
+
+  const handleEdit = (key: string) => {
+    setEditingKey(key)
+    setDialogOpen(true)
+  }
+
+  const handleDelete = (key: string) => {
+    if (confirm('确定删除该模型吗？')) {
+      svc.removeCustomProvider(key)
+    }
+  }
+
+  const handleSubmit = (data: ProviderConfig) => {
+    if (editingKey) {
+      svc.updateCustomProvider(editingKey, data)
+    } else {
+      svc.addCustomProvider(data)
+    }
+  }
 
   return (
-    <div className="h-full p-6">
-      <h1 className="text-xl font-bold text-text-primary">设置</h1>
+    <div className="h-full p-6 max-w-3xl mx-auto">
+      <h1 className="text-xl font-bold text-foreground mb-6">设置</h1>
 
-      <div className="mt-6 space-y-6">
-        {/* 用户信息 */}
-        <section>
-          <h2 className="text-sm font-medium text-text-secondary">个人信息</h2>
-          <Card className="mt-3">
-            <CardContent className="space-y-2 text-sm pt-6">
-              <p><span className="text-text-secondary">用户名：</span><span className="text-text-primary">{user?.name ?? '—'}</span></p>
-              <p><span className="text-text-secondary">邮箱：</span><span className="text-text-primary">{user?.email ?? '—'}</span></p>
-            </CardContent>
-          </Card>
-        </section>
+      <div className="space-y-6">
+        <SettingsSection title="通用设置">
+          <SettingsRow label="界面显示">
+            <AppearanceSelect
+              value={svc.config.appearance}
+              onChange={svc.saveAppearance}
+            />
+          </SettingsRow>
+          <SettingsRow label="字体大小" showDivider={false}>
+            <FontSizeSlider
+              value={svc.config.fontSizeLevel}
+              onChange={svc.saveFontSizeLevel}
+            />
+          </SettingsRow>
+        </SettingsSection>
 
-        {/* 操作 */}
-        <section>
-          <h2 className="text-sm font-medium text-text-secondary">账号操作</h2>
-          <div className="mt-3">
-            <Button
-              variant="destructive"
-              onClick={() => {
-                clearAuth()
-                localStorage.removeItem('goferbot_access_token')
-                window.location.href = '/login'
-              }}
-            >
-              退出登录
-            </Button>
-          </div>
-        </section>
+        <SettingsSection title="首选模型">
+          <SettingsRow label="默认模型" showDivider={false}>
+            <ProviderSelect
+              value={svc.config.defaultChatProvider}
+              options={providerOptions}
+              onChange={svc.saveDefaultProvider}
+            />
+          </SettingsRow>
+        </SettingsSection>
+
+        <SettingsSection title="自定义模型">
+          <CustomProviderList
+            providers={svc.config.providers}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onAdd={handleAdd}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="关于">
+          <SettingsRow label="版本号" showDivider={false}>
+            <span className="text-sm text-muted-foreground">1.0.0</span>
+          </SettingsRow>
+        </SettingsSection>
       </div>
+
+      <ProviderDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        initialData={editingProvider}
+        onSubmit={handleSubmit}
+      />
     </div>
   )
 }
