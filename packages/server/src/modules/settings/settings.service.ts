@@ -8,15 +8,15 @@ const CONFIG_KEY = 'app_config'
 
 const DEFAULT_CONFIG = {
   providers: {
-    openai: { apiKey: '', model: 'gpt-4o', baseUrl: '' },
-    claude: { apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
-    deepseek: { apiKey: '', model: 'deepseek-chat', baseUrl: '' },
-    custom: { apiKey: '', model: '', baseUrl: '' },
-    ollama: { enabled: false, url: 'http://localhost:11434', model: '' },
+    openai: { name: 'OpenAI', apiKey: '', model: 'gpt-4o', baseUrl: '' },
+    claude: { name: 'Claude', apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
+    deepseek: { name: 'DeepSeek', apiKey: '', model: 'deepseek-chat', baseUrl: '' },
   },
   embeddingProvider: { provider: 'openai', apiKey: '', model: 'text-embedding-3-small', baseUrl: '' },
   temperature: 0.7,
   defaultChatProvider: 'deepseek',
+  appearance: 'light',
+  fontSizeLevel: 3,
 }
 
 function maskApiKey(key: string): string {
@@ -66,7 +66,6 @@ export class SettingsService {
     const result = JSON.parse(JSON.stringify(config))
     const providers = result.providers as Record<string, Record<string, unknown>>
     for (const key of Object.keys(providers)) {
-      if (key === 'ollama') continue
       const apiKey = providers[key].apiKey as string
       if (apiKey) {
         providers[key].apiKey = maskApiKey(apiKey)
@@ -83,7 +82,6 @@ export class SettingsService {
     const result = JSON.parse(JSON.stringify(config))
     const providers = result.providers as Record<string, Record<string, unknown>>
     for (const key of Object.keys(providers)) {
-      if (key === 'ollama') continue
       const apiKey = providers[key].apiKey as string
       if (apiKey && !isMask(apiKey)) {
         providers[key].apiKey = this.encrypt(apiKey)
@@ -100,7 +98,6 @@ export class SettingsService {
     const result = JSON.parse(JSON.stringify(config))
     const providers = result.providers as Record<string, Record<string, unknown>>
     for (const key of Object.keys(providers)) {
-      if (key === 'ollama') continue
       const apiKey = providers[key].apiKey as string
       if (apiKey && !isMask(apiKey)) {
         try {
@@ -152,7 +149,6 @@ export class SettingsService {
       const existingProviders = decrypted.providers as Record<string, Record<string, unknown>>
 
       for (const key of Object.keys(mergedProviders)) {
-        if (key === 'ollama') continue
         const newApiKey = mergedProviders[key].apiKey as string
         if (isMask(newApiKey)) {
           mergedProviders[key].apiKey = existingProviders[key]?.apiKey ?? ''
