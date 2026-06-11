@@ -6,8 +6,10 @@ import { RagService } from './rag.service.js'
 import { HybridRetriever, DefaultRetrievalPostprocessor, OpenAIEmbedder } from '@goferbot/rag-sdk'
 import { VectorService } from '../../processors/vector/vector.service.js'
 import { KeywordService } from '../../processors/keyword/keyword.service.js'
+import { SettingsModule } from '../settings/settings.module.js'
 
 @Module({
+  imports: [SettingsModule],
   controllers: [ChatController],
   providers: [
     ChatService,

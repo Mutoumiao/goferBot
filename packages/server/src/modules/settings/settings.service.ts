@@ -19,13 +19,15 @@ const DEFAULT_CONFIG = {
   fontSizeLevel: 3,
 }
 
+const MASK_PREFIX = 'MASKED:'
+
 function maskApiKey(key: string): string {
-  if (!key || key.length <= 6) return '****'
-  return key.slice(0, 3) + '****'
+  if (!key || key.length <= 6) return MASK_PREFIX
+  return MASK_PREFIX + key.slice(0, 3)
 }
 
 function isMask(value: string): boolean {
-  return value.endsWith('****')
+  return value.startsWith(MASK_PREFIX)
 }
 
 @Injectable()

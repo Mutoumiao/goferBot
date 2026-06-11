@@ -17,8 +17,8 @@ export function CustomProviderList({ providers, onEdit, onDelete, onAdd }: Custo
 
   return (
     <>
-      {customEntries.map(([key, provider]) => (
-        <SettingsRow key={key} label={provider.name || '未命名模型'}>
+      {customEntries.map(([key, provider], index) => (
+        <SettingsRow key={key} label={provider.name || '未命名模型'} showDivider={index < customEntries.length - 1}>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => onEdit(key)}>
               编辑

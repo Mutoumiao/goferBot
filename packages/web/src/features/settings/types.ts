@@ -1,5 +1,3 @@
-import type { ProviderConfig } from '@/utils/llm-config'
-
 export interface ProviderFormData {
   name: string
   baseUrl: string
@@ -19,5 +17,5 @@ export function isCustomProviderKey(key: string): boolean {
 }
 
 export function generateCustomProviderKey(): string {
-  return `custom_${Date.now()}`
+  return `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
 }

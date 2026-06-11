@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -18,10 +18,14 @@ interface ProviderDialogProps {
   onSubmit: (data: ProviderConfig) => void
 }
 
+const EMPTY_FORM: ProviderConfig = { name: '', apiKey: '', model: '', baseUrl: '' }
+
 export function ProviderDialog({ open, onOpenChange, initialData, onSubmit }: ProviderDialogProps) {
-  const [form, setForm] = useState<ProviderConfig>(
-    initialData ?? { name: '', apiKey: '', model: '', baseUrl: '' }
-  )
+  const [form, setForm] = useState<ProviderConfig>(EMPTY_FORM)
+
+  useEffect(() => {
+    setForm(initialData ?? EMPTY_FORM)
+  }, [initialData, open])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

@@ -77,8 +77,8 @@ export const useSettingsStore = create<SettingsState>()(
           const data = await alovaInstance.Get<AppConfig>('/settings').send()
           const merged = mergeAppConfig(DEFAULT_CONFIG, data)
           set({ config: merged, savedConfig: merged, isLoading: false })
-        } catch {
-          set({ isLoading: false })
+        } catch (e) {
+          set({ isLoading: false, error: e instanceof Error ? e.message : '加载设置失败' })
         }
       },
 

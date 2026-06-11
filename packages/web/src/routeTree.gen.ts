@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppRecycleBinRouteImport } from './routes/app/recycle-bin'
+import { Route as AppProfileRouteImport } from './routes/app/profile'
 import { Route as AppKbRouteImport } from './routes/app/kb'
 import { Route as AppHistoryRouteImport } from './routes/app/history'
 import { Route as AppChatRouteImport } from './routes/app/chat'
@@ -56,6 +57,11 @@ const AppRecycleBinRoute = AppRecycleBinRouteImport.update({
   path: '/recycle-bin',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppKbRoute = AppKbRouteImport.update({
   id: '/kb',
   path: '/kb',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/recycle-bin': typeof AppRecycleBinRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/recycle-bin': typeof AppRecycleBinRoute
   '/app/settings': typeof AppSettingsRoute
   '/app': typeof AppIndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/history': typeof AppHistoryRoute
   '/app/kb': typeof AppKbRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/recycle-bin': typeof AppRecycleBinRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/app/chat'
     | '/app/history'
     | '/app/kb'
+    | '/app/profile'
     | '/app/recycle-bin'
     | '/app/settings'
     | '/app/'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/app/chat'
     | '/app/history'
     | '/app/kb'
+    | '/app/profile'
     | '/app/recycle-bin'
     | '/app/settings'
     | '/app'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/app/chat'
     | '/app/history'
     | '/app/kb'
+    | '/app/profile'
     | '/app/recycle-bin'
     | '/app/settings'
     | '/app/'
@@ -215,6 +227,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRecycleBinRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/kb': {
       id: '/app/kb'
       path: '/kb'
@@ -261,6 +280,7 @@ interface AppRouteRouteChildren {
   AppChatRoute: typeof AppChatRouteWithChildren
   AppHistoryRoute: typeof AppHistoryRoute
   AppKbRoute: typeof AppKbRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppRecycleBinRoute: typeof AppRecycleBinRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -270,6 +290,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppChatRoute: AppChatRouteWithChildren,
   AppHistoryRoute: AppHistoryRoute,
   AppKbRoute: AppKbRoute,
+  AppProfileRoute: AppProfileRoute,
   AppRecycleBinRoute: AppRecycleBinRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
