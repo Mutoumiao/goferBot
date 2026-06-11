@@ -36,3 +36,18 @@ export const refresh = () =>
  */
 export const getPublicKey = () =>
   alovaInstance.Get<PublicKeyResponse>('/auth/public-key')
+
+/**
+ * 更新当前用户信息（昵称等）
+ */
+export const updateMe = (data: { name?: string }) =>
+  alovaInstance.Patch<User>('/auth/me', data)
+
+/**
+ * 上传用户头像（multipart/form-data）
+ */
+export const uploadAvatar = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return alovaInstance.Post<{ avatarUrl: string }>('/auth/avatar', formData)
+}

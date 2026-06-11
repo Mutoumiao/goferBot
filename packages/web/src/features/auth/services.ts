@@ -1,4 +1,5 @@
-import { login, register, getMe, refresh } from '@/api/auth'
+import type { User } from '@goferbot/data'
+import { login, register, getMe, refresh, updateMe, uploadAvatar } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { encryptPassword, clearPublicKeyCache } from '@/utils/password-encryption'
 import { toast } from 'sonner'
@@ -154,4 +155,50 @@ export function logoutUser(): void {
 
 export function getRememberedEmail(): string | null {
   return localStorage.getItem(REMEMBER_EMAIL_KEY)
+}
+
+export interface UpdateProfileData {
+  name?: string
+  avatarFile?: File
+}
+
+export interface UpdateProfileResult {
+  success: boolean
+  error?: string
+}
+
+/**
+ * 更新用户资料（昵称 + 头像上传的业务编排）
+ * - 头像上传失败不阻塞昵称更新
+ * - 昵称更新失败 toast 提示并保持旧值
+ */
+export async function updateProfile(data: UpdateProfileData): Promise<UpdateProfileResult> {
+  const { name, avatarFile } = data
+  const store = useAuthStore.getState()
+
+  try {
+    // 更新昵称
+    if (name !== undefined && name !== store.user?.name) {
+      const user = await updateMe({ name }).send()
+      useAuthStore.getState().setUser(user)
+      toast.success('昵称已更新')
+    }
+
+    // 上传头像（独立于昵称更新，失败不中断）
+    if (avatarFile) {
+      try {
+        const res = await uploadAvatar(avatarFile).send()
+        const updatedUser = { ...useAuthStore.getState().user!, avatarUrl: res.avatarUrl } as User
+        useAuthStore.getState().setUser(updatedUser)
+        toast.success('头像已更新')
+      } catch {
+        toast.error('头像上传失败，请稍后重试')
+      }
+    }
+
+    return { success: true }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '更新失败，请稍后重试'
+    return { success: false, error: msg }
+  }
 }
