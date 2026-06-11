@@ -3,16 +3,17 @@ import { persist } from 'zustand/middleware'
 import {
   type AppConfig,
   type LLMConfig,
+  type ProviderConfig,
   DEFAULT_CONFIG,
   getLLMConfig as resolveLLMConfig,
   configuredProviders as resolveProviders,
   mergeAppConfig,
 } from '@/utils/llm-config'
+import { alovaInstance } from '@/utils/server'
 
 // 向下兼容 — 类型重导出
 export type {
-  ChatProviderConfig,
-  OllamaConfig,
+  ProviderConfig,
   EmbeddingProviderConfig,
   AppConfig,
   LLMConfig,
@@ -30,10 +31,20 @@ interface SettingsState {
   resetToSaved: () => void
   clearError: () => void
   loadConfig: () => Promise<void>
-  saveConfig: (updates: Partial<AppConfig>) => Promise<boolean>
+  saveConfig: (updates?: Partial<AppConfig>) => Promise<boolean>
   isDirty: () => boolean
   getLLMConfig: (providerKey?: string) => LLMConfig | null
   configuredProviders: () => { key: string; name: string; model: string }[]
+
+  // 自定义模型 CRUD
+  addCustomProvider: (key: string, config: ProviderConfig) => void
+  updateCustomProvider: (key: string, config: Partial<ProviderConfig>) => void
+  removeCustomProvider: (key: string) => void
+
+  // 快捷设置
+  setAppearance: (value: 'light' | 'dark' | 'system') => void
+  setFontSizeLevel: (value: 1 | 2 | 3 | 4 | 5) => void
+  setDefaultChatProvider: (value: string) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -63,14 +74,8 @@ export const useSettingsStore = create<SettingsState>()(
       loadConfig: async () => {
         set({ isLoading: true, error: null })
         try {
-          const res = await fetch('/api/settings', {
-            headers: { 'Content-Type': 'application/json' },
-          })
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          const json = await res.json()
-          const serverConfig = json.data ?? json
-
-          const merged = mergeAppConfig(DEFAULT_CONFIG, serverConfig)
+          const data = await alovaInstance.Get<AppConfig>('/settings').send()
+          const merged = mergeAppConfig(DEFAULT_CONFIG, data)
           set({ config: merged, savedConfig: merged, isLoading: false })
         } catch {
           set({ isLoading: false })
@@ -79,16 +84,10 @@ export const useSettingsStore = create<SettingsState>()(
 
       saveConfig: async (updates) => {
         set({ isLoading: true, error: null })
-        const body = mergeAppConfig(get().config, updates)
+        const body = updates ? mergeAppConfig(get().config, updates) : get().config
 
         try {
-          const res = await fetch('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          })
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
+          await alovaInstance.Post<AppConfig>('/settings', body).send()
           set({ config: body, savedConfig: body, isLoading: false })
           return true
         } catch (e) {
@@ -106,6 +105,56 @@ export const useSettingsStore = create<SettingsState>()(
 
       configuredProviders: () => {
         return resolveProviders(get().config)
+      },
+
+      addCustomProvider: (key, config) => {
+        set((state) => ({
+          config: {
+            ...state.config,
+            providers: { ...state.config.providers, [key]: config },
+          },
+        }))
+      },
+
+      updateCustomProvider: (key, config) => {
+        set((state) => ({
+          config: {
+            ...state.config,
+            providers: {
+              ...state.config.providers,
+              [key]: { ...state.config.providers[key], ...config },
+            },
+          },
+        }))
+      },
+
+      removeCustomProvider: (key) => {
+        set((state) => {
+          const { [key]: _, ...rest } = state.config.providers
+          const updates: Partial<AppConfig> = { providers: rest }
+          if (state.config.defaultChatProvider === key) {
+            updates.defaultChatProvider = 'deepseek'
+          }
+          return { config: { ...state.config, ...updates } }
+        })
+      },
+
+      setAppearance: (value) => {
+        set((state) => ({
+          config: { ...state.config, appearance: value },
+        }))
+      },
+
+      setFontSizeLevel: (value) => {
+        set((state) => ({
+          config: { ...state.config, fontSizeLevel: value },
+        }))
+      },
+
+      setDefaultChatProvider: (value) => {
+        set((state) => ({
+          config: { ...state.config, defaultChatProvider: value },
+        }))
       },
     }),
     {
