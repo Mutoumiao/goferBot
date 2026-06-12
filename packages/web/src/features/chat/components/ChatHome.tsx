@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Sparkles, Paperclip, Database, Send, FileText, FolderSearch, WandSparkles } from 'lucide-react'
-import { useTabsStore } from '@/stores/tabs'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { createChatSession } from '../services'
+import { ROUTES_REGISTER } from '@/router-register'
 
 const QUICK_ACTIONS = [
   {
@@ -41,8 +41,6 @@ export function ChatHome() {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const openRoute = useTabsStore(s => s.openRoute)
-
   const startChat = useCallback(
     async (initialMessage?: string) => {
       if (isLoading) return
@@ -55,8 +53,7 @@ export function ChatHome() {
           return
         }
 
-        const route = `/app/chat/${newSession.id}`
-        // openRoute(route, { title: newSession.title || '新对话', singleton: false, closable: true }, newSession.id)
+        const route = ROUTES_REGISTER.chat.bindTo?.(newSession.id)
 
         if (initialMessage?.trim()) {
           sessionStorage.setItem(`pending_message_${newSession.id}`, initialMessage.trim())
@@ -67,7 +64,7 @@ export function ChatHome() {
         setIsLoading(false)
       }
     },
-    [openRoute, navigate, isLoading]
+    [navigate, isLoading]
   )
 
   const handleSend = useCallback(() => {

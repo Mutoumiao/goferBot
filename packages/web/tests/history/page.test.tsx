@@ -2,23 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 const mockNavigate = vi.fn()
-const mockOpenRoute = vi.fn()
 const mockOpenDialog = vi.fn()
 const mockDeleteChatSessionWithReload = vi.fn()
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => () => ({ component: () => null }),
   useRouter: () => ({ navigate: mockNavigate }),
-}))
-
-vi.mock('@/stores/tabs', () => ({
-  useTabsStore: Object.assign(
-    (selector?: (s: any) => any) => {
-      const state = { openRoute: mockOpenRoute }
-      return selector ? selector(state) : state
-    },
-    { getState: () => ({ openRoute: mockOpenRoute }) },
-  ),
 }))
 
 vi.mock('@/features/chat/hooks', () => ({
@@ -112,7 +101,7 @@ describe('ChatHistoryPage', () => {
     expect(screen.getByText('暂无历史会话')).toBeDefined()
   })
 
-  it('renders session list and opens chat session on click', () => {
+  it('renders session list and navigates to chat session on click', () => {
     const sessions = [
       {
         id: 's1',
@@ -134,12 +123,7 @@ describe('ChatHistoryPage', () => {
     expect(screen.getByText('测试会话')).toBeDefined()
 
     fireEvent.click(screen.getByText('测试会话'))
-    expect(mockOpenRoute).toHaveBeenCalledWith(
-      '/app/chat/s1',
-      { title: '测试会话', singleton: false, closable: true },
-      's1',
-    )
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/app/chat/s1' })
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/chat/s1' })
   })
 
   it('deletes session after confirmation', async () => {

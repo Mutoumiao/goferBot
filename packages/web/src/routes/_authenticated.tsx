@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { ConfigProvider } from '@/components/ConfigProvider'
 import { TabBar } from '@/components/tab-bar/TabBar'
+import { TabRouteSync } from '@/components/tab-bar/TabRouteSync'
 import { IconSidebar } from '@/components/sidebar/Sidebar'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
@@ -72,6 +73,7 @@ function AppLayout() {
       <div className="flex h-screen bg-surface-2">
         <IconSidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
+          <TabRouteSync />
           <TabBar />
           <main className="flex-1 overflow-auto">
             <Outlet />

@@ -1,10 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ChatHome } from '@/features/chat/components/ChatHome'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ROUTES_REGISTER } from '@/router-register'
 
 export const Route = createFileRoute('/_authenticated/chat')({
-  component: ChatHome,
-  staticData: {
-    meta: ROUTES_REGISTER.chat,
+  beforeLoad: () => {
+    const tempId = `temp_${crypto.randomUUID()}`
+    const chatPath = ROUTES_REGISTER.chat.bindTo?.(tempId) ?? `/chat/${tempId}`
+    throw redirect({ to: chatPath })
   },
+  component: () => null,
 })

@@ -9,6 +9,13 @@ export interface Tab {
   closable: boolean
   sessionId?: string
   isDirty: boolean
+  isTemp?: boolean
+}
+
+export interface RouteInfo {
+  pathname: string
+  params: Record<string, string>
+  tabMeta?: RouteMeta | null
 }
 
 interface TabsState {
@@ -17,8 +24,8 @@ interface TabsState {
 
   activeTab: () => Tab | null
 
-  /** 通过路由添加/激活标签（自动处理单页面复用） */
-  openRoute: (route: string, meta: RouteMeta, sessionId?: string) => Tab | null
+  /** 根据路由信息同步标签（路由驱动入口） */
+  syncRoute: (routeInfo: RouteInfo) => Tab | null
   /** 移除标签 */
   removeTab: (tabId: string) => string | null
   /** 激活标签 */
@@ -48,36 +55,78 @@ export const useTabsStore = create<TabsState>()(
         return tabs.find((t) => t.id === activeTabId) ?? null
       },
 
-      openRoute: (route, meta, sessionId): Tab | null => {
-        const { tabs } = get()
+      syncRoute: (routeInfo): Tab | null => {
+        const { tabs, activeTabId } = get()
+        const { pathname, params, tabMeta } = routeInfo
 
-        // 单页面标签：若已存在同 route 的标签则激活，不新建
-        if (meta.singleton) {
-          const existing = tabs.find((t) => t.route === route)
+        // 没有 tabMeta 的路由不创建标签（如登录页、404等）
+        if (!tabMeta) return null
+
+        const sessionId = params.sessionId
+
+        // 单例页面：若已存在同 route 的标签则激活，不新建
+        if (tabMeta.singleton) {
+          const existing = tabs.find((t) => t.route === pathname)
           if (existing) {
-            set({ activeTabId: existing.id })
+            if (existing.id !== activeTabId) {
+              set({ activeTabId: existing.id })
+            }
             return null
           }
         }
 
-        // 多页面标签（chat-session）：若同一 sessionId 已存在则激活
+        // 如果当前活跃标签是临时标签，且新路由是真实会话路由，则更新而非创建
+        const activeTab = tabs.find((t) => t.id === activeTabId)
+        if (activeTab?.isTemp && sessionId && !sessionId.startsWith('temp_')) {
+          // 检查当前活跃标签的路由是否是 chat 临时路由
+          const isChatTempRoute = activeTab.route.match(/^\/chat\/temp_/)
+          if (isChatTempRoute) {
+            set({
+              tabs: tabs.map((t) =>
+                t.id === activeTabId
+                  ? { ...t, route: pathname, isTemp: false, sessionId }
+                  : t,
+              ),
+            })
+            return null
+          }
+        }
+
+        // 多实例页面（如 chat session）：根据 params 中的标识符查找
         if (sessionId) {
           const existing = tabs.find((t) => t.sessionId === sessionId)
           if (existing) {
-            set({ activeTabId: existing.id })
+            // 如果路由路径变了（比如参数顺序不同），更新 route
+            if (existing.route !== pathname) {
+              set({
+                tabs: tabs.map((t) =>
+                  t.id === existing.id ? { ...t, route: pathname } : t,
+                ),
+                activeTabId: existing.id,
+              })
+            } else if (existing.id !== activeTabId) {
+              set({ activeTabId: existing.id })
+            }
             return null
           }
         }
 
+        // 清理过期的临时标签：如果新路由是真实会话，且存在对应的临时标签，移除临时标签
+        const cleanedTabs = sessionId && !sessionId.startsWith('temp_')
+          ? tabs.filter((t) => !(t.isTemp && t.route.startsWith('/chat/temp_')))
+          : tabs
+
+        // 创建新标签
         const tab: Tab = {
           id: crypto.randomUUID(),
-          route,
-          title: meta.title,
-          closable: meta.closable,
+          route: pathname,
+          title: tabMeta.title,
+          closable: tabMeta.closable,
           sessionId,
           isDirty: false,
+          isTemp: sessionId ? sessionId.startsWith('temp_') : false,
         }
-        set({ tabs: [...tabs, tab], activeTabId: tab.id })
+        set({ tabs: [...cleanedTabs, tab], activeTabId: tab.id })
         return tab
       },
 

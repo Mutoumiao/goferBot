@@ -25,7 +25,9 @@ export const Route = createFileRoute('/')({
     await waitForInit()
     const isAuthenticated = useAuthStore.getState().isAuthenticated
     if (isAuthenticated) {
-      throw redirect({ to: ROUTES_REGISTER.chat.path })
+      const tempId = `temp_${crypto.randomUUID()}`
+      const chatPath = ROUTES_REGISTER.chat.bindTo?.(tempId) ?? `/chat/${tempId}`
+      throw redirect({ to: chatPath })
     }
     throw redirect({ to: ROUTES_REGISTER.login.path })
   },

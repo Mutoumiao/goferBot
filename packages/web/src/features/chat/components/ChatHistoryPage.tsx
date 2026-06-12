@@ -3,17 +3,16 @@ import { useRouter } from '@tanstack/react-router'
 import { Clock3Icon, ChevronDownIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { useTabsStore } from '@/stores/tabs'
 import { confirmDeleteChatSession } from '@/features/chat/services'
 import { useChatHistory } from '@/features/chat/hooks'
 import { ChatHistoryList } from './ChatHistoryList'
 import type { Session } from '@goferbot/data'
+import { ROUTES_REGISTER } from '@/router-register'
 
 const PAGE_SIZE = 10
 
 export function ChatHistoryPage() {
   const router = useRouter()
-  const openRoute = useTabsStore(s => s.openRoute)
 
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -22,11 +21,9 @@ export function ChatHistoryPage() {
 
   const handleResume = useCallback(
     (session: Session) => {
-      // const route = `/app/chat/${session.id}`
-      // openRoute(route, { title: session.title || '未命名会话', singleton: false, closable: true }, session.id)
-      // router.navigate({ to: route })
+      router.navigate({ to: ROUTES_REGISTER.chat.bindTo?.(session.id) })
     },
-    [openRoute, router]
+    [router]
   )
 
   const handleDelete = useCallback(

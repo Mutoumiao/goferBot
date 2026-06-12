@@ -1,5 +1,5 @@
 import type { FileRoutesByFullPath, } from '@/routeTree.gen'
-import { MessageCircle, MessageCircleCodeIcon, BookOpen, Clock, Settings, Trash2, User, type LucideIcon } from 'lucide-react'
+import { MessageCircle, BookOpen, Clock, Settings, Trash2, User, type LucideIcon } from 'lucide-react'
 
 type RoutePath = keyof FileRoutesByFullPath
 
@@ -29,17 +29,18 @@ export const ROUTES_REGISTER: Record<string, RouteMeta> = {
   chat: {
     key: 'chat',
     title: '会话页',
-    singleton: true,
-    closable: false,
-    path: '/chat',
+    singleton: false,
+    closable: true,
+    path: '/chat/$sessionId',
     icon: MessageCircle,
-    navSection: 'primary',
+    navSection: null,
+    bindTo: (sessionId) => `/chat/${sessionId}`
   },
   knowledgeBase: {
     key: 'knowledgeBase',
     title: '知识库',
     singleton: true,
-    closable: false,
+    closable: true,
     path: '/knowledgeBase',
     icon: BookOpen,
     navSection: 'primary',
@@ -48,7 +49,7 @@ export const ROUTES_REGISTER: Record<string, RouteMeta> = {
     key: 'history',
     title: '历史记录',
     singleton: true,
-    closable: false,
+    closable: true,
     path: '/history',
     icon: Clock,
     navSection: 'primary',
@@ -57,7 +58,7 @@ export const ROUTES_REGISTER: Record<string, RouteMeta> = {
     key: 'settings',
     title: '设置',
     singleton: true,
-    closable: false,
+    closable: true,
     path: '/settings',
     icon: Settings,
     navSection: 'secondary',
@@ -75,19 +76,9 @@ export const ROUTES_REGISTER: Record<string, RouteMeta> = {
     key: 'profile',
     title: '基础信息',
     singleton: true,
-    closable: false,
+    closable: true,
     path: '/profile',
     icon: User,
     navSection: null,
-  },
-  session: {
-    key: 'session',
-    title: '会话页',
-    singleton: true,
-    closable: false,
-    path: '/chat/$sessionId',
-    icon: MessageCircleCodeIcon,
-    navSection: null,
-    bindTo: (sessionId) => `/chat/${sessionId}`,
   },
 } as const

@@ -1,35 +1,17 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { useRouter, useRouterState } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 import { cn } from '@/utils/cn'
 import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTabsStore } from '@/stores/tabs'
-// import { createChatSession } from '@/features/chat/services'
 import type { Tab } from '@/stores/tabs'
-import type { RouteMeta } from '@/router-register'
+import { ROUTES_REGISTER } from '@/router-register'
 
-function getTabMetaFromRoute(router: ReturnType<typeof useRouter>, pathname: string) {
-  // 1. 精确匹配
-  const match = router.state.matches.find(m => m.pathname === pathname)
-  const meta = (match?.staticData as { meta?: RouteMeta } | undefined)?.meta
-  if (meta) return meta
-
-  // 2. fallback：寻找最长前缀匹配的父路由（支持任意动态路由）
-  let bestMatch: (typeof router.state.matches)[number] | undefined
-  let bestLen = 0
-  for (const m of router.state.matches) {
-    const mMeta = (m.staticData as { meta?: RouteMeta } | undefined)?.meta
-    if (!mMeta) continue
-    if (pathname.startsWith(m.pathname) && m.pathname.length > bestLen) {
-      bestLen = m.pathname.length
-      bestMatch = m
-    }
-  }
-  if (bestMatch) {
-    return (bestMatch.staticData as { meta?: RouteMeta }).meta!
-  }
-
-  return null
+/** 创建临时聊天标签并导航到对应路由 */
+function navigateToNewChatTab(router: ReturnType<typeof useRouter>) {
+  const tempId = `temp_${crypto.randomUUID()}`
+  const chatPath = ROUTES_REGISTER.chat.bindTo?.(tempId) ?? `/chat/${tempId}`
+  router.navigate({ to: chatPath })
 }
 
 export function TabBar({ className }: { className?: string }) {
@@ -37,46 +19,10 @@ export function TabBar({ className }: { className?: string }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hoveredTabId, setHoveredTabId] = useState<string | null>(null)
 
-  // Tabs store
+  // Tabs store — 只读取状态和关闭操作
   const tabs = useTabsStore(s => s.tabs)
   const activeTabId = useTabsStore(s => s.activeTabId)
-  const openRoute = useTabsStore(s => s.openRoute)
-  const activateTab = useTabsStore(s => s.activateTab)
   const removeTab = useTabsStore(s => s.removeTab)
-
-  // 路由同步：只监听 pathname，路由变化时自动同步标签状态
-  const pathname = useRouterState({ select: s => s.location.pathname })
-
-  useEffect(() => {
-    // 从路径中提取 sessionId（支持 /app/chat/:sessionId 动态路由）
-    let sessionId: string | undefined
-    const chatPathMatch = pathname.match(/^\/app\/chat\/(.+)$/)
-    if (chatPathMatch) {
-      sessionId = chatPathMatch[1]
-    }
-
-    // 1. 按 pathname 精确匹配已有标签（不含 query string）
-    const existing = useTabsStore.getState().findTabByRoute(pathname)
-    if (existing) {
-      activateTab(existing.id)
-      return
-    }
-
-    // 2. 按 sessionId 匹配（chat session 标签可跨路由复用）
-    if (sessionId) {
-      const sessionTab = useTabsStore.getState().tabs.find(t => t.sessionId === sessionId)
-      if (sessionTab) {
-        activateTab(sessionTab.id)
-        return
-      }
-    }
-
-    // 3. 没有匹配到，从路由元数据创建新标签
-    const meta = getTabMetaFromRoute(router, pathname)
-    if (meta) {
-      openRoute(pathname, meta, sessionId)
-    }
-  }, [pathname, activateTab, openRoute])
 
   // active tab 变化时自动滚动到可视区域
   useEffect(() => {
@@ -114,24 +60,18 @@ export function TabBar({ className }: { className?: string }) {
         if (tab) {
           router.navigate({ to: tab.route })
         }
+      } else {
+        // 删除最后一个标签，自动生成新的临时标签页
+        navigateToNewChatTab(router)
       }
     },
     [removeTab, router]
   )
 
-  // 新建标签 — 创建新会话
-  const handleNewTab = useCallback(async () => {
-    // const newSession = await createChatSession()
-    // if (newSession?.id) {
-    //   const route = `/app/chat/${newSession.id}`
-    //   openRoute(
-    //     route,
-    //     { title: newSession.title || '新对话', singleton: false, closable: true },
-    //     newSession.id,
-    //   )
-    //   router.navigate({ to: route })
-    // }
-  }, [openRoute, router])
+  // 新建标签 — 生成临时ID并导航到临时首页
+  const handleNewTab = useCallback(() => {
+    navigateToNewChatTab(router)
+  }, [router])
 
   return (
     <div className={cn('flex h-[52px] items-center gap-2 bg-surface-secondary px-3.5', className)}>
