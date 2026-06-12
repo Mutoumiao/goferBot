@@ -26,7 +26,7 @@ export function ProviderSelect({ value, options, onChange }: ProviderSelectProps
       </SelectTrigger>
       <SelectContent>
         {options.length === 0 && (
-          <SelectItem value="" disabled>
+          <SelectItem value="_empty" disabled>
             暂无可用模型
           </SelectItem>
         )}

@@ -39,19 +39,28 @@ export const Route = createRootRoute({
 })
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    const state = useAuthStore.getState()
-    if (state.isInitialized) return
+  const hydrated = useAuthStore((s) => s._hydrated)
 
-    const token = localStorage.getItem('goferbot_access_token')
+  useEffect(() => {
+    if (!hydrated || useAuthStore.getState().isInitialized) return
+
+    const token = useAuthStore.getState().token
     if (token) {
-      fetchCurrentUser().then(() => {
+      fetchCurrentUser().then((ok) => {
+        if (!ok) {
+          useAuthStore.getState().clearAuth()
+          window.location.replace('/login')
+          return
+        }
         useAuthStore.getState().setInitialized(true)
       })
     } else {
       useAuthStore.getState().setInitialized(true)
     }
-  }, [])
+  }, [hydrated])
+
+  const isInitialized = useAuthStore((s) => s.isInitialized)
+  if (!hydrated || !isInitialized) return null
 
   return <>{children}</>
 }

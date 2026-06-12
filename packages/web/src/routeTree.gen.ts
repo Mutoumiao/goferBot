@@ -10,25 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppIndexRouteImport } from './routes/app/index'
-import { Route as AppSettingsRouteImport } from './routes/app/settings'
-import { Route as AppRecycleBinRouteImport } from './routes/app/recycle-bin'
-import { Route as AppProfileRouteImport } from './routes/app/profile'
-import { Route as AppKbRouteImport } from './routes/app/kb'
-import { Route as AppHistoryRouteImport } from './routes/app/history'
-import { Route as AppChatRouteImport } from './routes/app/chat'
-import { Route as AppChatSessionIdRouteImport } from './routes/app/chat/$sessionId'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedRecycleRouteImport } from './routes/_authenticated/recycle'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedKnowledgeBaseRouteImport } from './routes/_authenticated/knowledgeBase'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedChatSessionIdRouteImport } from './routes/_authenticated/chat/$sessionId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRouteRoute = AppRouteRouteImport.update({
-  id: '/app',
-  path: '/app',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -36,130 +34,119 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => AppRouteRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AppRecycleBinRoute = AppRecycleBinRouteImport.update({
-  id: '/recycle-bin',
-  path: '/recycle-bin',
-  getParentRoute: () => AppRouteRoute,
+const AuthenticatedRecycleRoute = AuthenticatedRecycleRouteImport.update({
+  id: '/recycle',
+  path: '/recycle',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AppProfileRoute = AppProfileRouteImport.update({
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => AppRouteRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AppKbRoute = AppKbRouteImport.update({
-  id: '/kb',
-  path: '/kb',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppHistoryRoute = AppHistoryRouteImport.update({
+const AuthenticatedKnowledgeBaseRoute =
+  AuthenticatedKnowledgeBaseRouteImport.update({
+    id: '/knowledgeBase',
+    path: '/knowledgeBase',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => AppRouteRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AppChatRoute = AppChatRouteImport.update({
+const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
   path: '/chat',
-  getParentRoute: () => AppRouteRoute,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AppChatSessionIdRoute = AppChatSessionIdRouteImport.update({
-  id: '/$sessionId',
-  path: '/$sessionId',
-  getParentRoute: () => AppChatRoute,
-} as any)
+const AuthenticatedChatSessionIdRoute =
+  AuthenticatedChatSessionIdRouteImport.update({
+    id: '/$sessionId',
+    path: '/$sessionId',
+    getParentRoute: () => AuthenticatedChatRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRouteRouteWithChildren
   '/login': typeof LoginRoute
-  '/app/chat': typeof AppChatRouteWithChildren
-  '/app/history': typeof AppHistoryRoute
-  '/app/kb': typeof AppKbRoute
-  '/app/profile': typeof AppProfileRoute
-  '/app/recycle-bin': typeof AppRecycleBinRoute
-  '/app/settings': typeof AppSettingsRoute
-  '/app/': typeof AppIndexRoute
-  '/app/chat/$sessionId': typeof AppChatSessionIdRoute
+  '/chat': typeof AuthenticatedChatRouteWithChildren
+  '/history': typeof AuthenticatedHistoryRoute
+  '/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/recycle': typeof AuthenticatedRecycleRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/chat/$sessionId': typeof AuthenticatedChatSessionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/app/chat': typeof AppChatRouteWithChildren
-  '/app/history': typeof AppHistoryRoute
-  '/app/kb': typeof AppKbRoute
-  '/app/profile': typeof AppProfileRoute
-  '/app/recycle-bin': typeof AppRecycleBinRoute
-  '/app/settings': typeof AppSettingsRoute
-  '/app': typeof AppIndexRoute
-  '/app/chat/$sessionId': typeof AppChatSessionIdRoute
+  '/chat': typeof AuthenticatedChatRouteWithChildren
+  '/history': typeof AuthenticatedHistoryRoute
+  '/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/recycle': typeof AuthenticatedRecycleRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/chat/$sessionId': typeof AuthenticatedChatSessionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/app': typeof AppRouteRouteWithChildren
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/app/chat': typeof AppChatRouteWithChildren
-  '/app/history': typeof AppHistoryRoute
-  '/app/kb': typeof AppKbRoute
-  '/app/profile': typeof AppProfileRoute
-  '/app/recycle-bin': typeof AppRecycleBinRoute
-  '/app/settings': typeof AppSettingsRoute
-  '/app/': typeof AppIndexRoute
-  '/app/chat/$sessionId': typeof AppChatSessionIdRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/recycle': typeof AuthenticatedRecycleRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/chat/$sessionId': typeof AuthenticatedChatSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/app'
     | '/login'
-    | '/app/chat'
-    | '/app/history'
-    | '/app/kb'
-    | '/app/profile'
-    | '/app/recycle-bin'
-    | '/app/settings'
-    | '/app/'
-    | '/app/chat/$sessionId'
+    | '/chat'
+    | '/history'
+    | '/knowledgeBase'
+    | '/profile'
+    | '/recycle'
+    | '/settings'
+    | '/chat/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/app/chat'
-    | '/app/history'
-    | '/app/kb'
-    | '/app/profile'
-    | '/app/recycle-bin'
-    | '/app/settings'
-    | '/app'
-    | '/app/chat/$sessionId'
+    | '/chat'
+    | '/history'
+    | '/knowledgeBase'
+    | '/profile'
+    | '/recycle'
+    | '/settings'
+    | '/chat/$sessionId'
   id:
     | '__root__'
     | '/'
-    | '/app'
+    | '/_authenticated'
     | '/login'
-    | '/app/chat'
-    | '/app/history'
-    | '/app/kb'
-    | '/app/profile'
-    | '/app/recycle-bin'
-    | '/app/settings'
-    | '/app/'
-    | '/app/chat/$sessionId'
+    | '/_authenticated/chat'
+    | '/_authenticated/history'
+    | '/_authenticated/knowledgeBase'
+    | '/_authenticated/profile'
+    | '/_authenticated/recycle'
+    | '/_authenticated/settings'
+    | '/_authenticated/chat/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppRouteRoute: typeof AppRouteRouteWithChildren
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
 }
 
@@ -172,11 +159,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -186,103 +173,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/': {
-      id: '/app/'
-      path: '/'
-      fullPath: '/app/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/app/settings': {
-      id: '/app/settings'
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
       path: '/settings'
-      fullPath: '/app/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRouteRoute
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/app/recycle-bin': {
-      id: '/app/recycle-bin'
-      path: '/recycle-bin'
-      fullPath: '/app/recycle-bin'
-      preLoaderRoute: typeof AppRecycleBinRouteImport
-      parentRoute: typeof AppRouteRoute
+    '/_authenticated/recycle': {
+      id: '/_authenticated/recycle'
+      path: '/recycle'
+      fullPath: '/recycle'
+      preLoaderRoute: typeof AuthenticatedRecycleRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/app/profile': {
-      id: '/app/profile'
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
       path: '/profile'
-      fullPath: '/app/profile'
-      preLoaderRoute: typeof AppProfileRouteImport
-      parentRoute: typeof AppRouteRoute
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/app/kb': {
-      id: '/app/kb'
-      path: '/kb'
-      fullPath: '/app/kb'
-      preLoaderRoute: typeof AppKbRouteImport
-      parentRoute: typeof AppRouteRoute
+    '/_authenticated/knowledgeBase': {
+      id: '/_authenticated/knowledgeBase'
+      path: '/knowledgeBase'
+      fullPath: '/knowledgeBase'
+      preLoaderRoute: typeof AuthenticatedKnowledgeBaseRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/app/history': {
-      id: '/app/history'
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
       path: '/history'
-      fullPath: '/app/history'
-      preLoaderRoute: typeof AppHistoryRouteImport
-      parentRoute: typeof AppRouteRoute
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/app/chat': {
-      id: '/app/chat'
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
       path: '/chat'
-      fullPath: '/app/chat'
-      preLoaderRoute: typeof AppChatRouteImport
-      parentRoute: typeof AppRouteRoute
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/app/chat/$sessionId': {
-      id: '/app/chat/$sessionId'
+    '/_authenticated/chat/$sessionId': {
+      id: '/_authenticated/chat/$sessionId'
       path: '/$sessionId'
-      fullPath: '/app/chat/$sessionId'
-      preLoaderRoute: typeof AppChatSessionIdRouteImport
-      parentRoute: typeof AppChatRoute
+      fullPath: '/chat/$sessionId'
+      preLoaderRoute: typeof AuthenticatedChatSessionIdRouteImport
+      parentRoute: typeof AuthenticatedChatRoute
     }
   }
 }
 
-interface AppChatRouteChildren {
-  AppChatSessionIdRoute: typeof AppChatSessionIdRoute
+interface AuthenticatedChatRouteChildren {
+  AuthenticatedChatSessionIdRoute: typeof AuthenticatedChatSessionIdRoute
 }
 
-const AppChatRouteChildren: AppChatRouteChildren = {
-  AppChatSessionIdRoute: AppChatSessionIdRoute,
+const AuthenticatedChatRouteChildren: AuthenticatedChatRouteChildren = {
+  AuthenticatedChatSessionIdRoute: AuthenticatedChatSessionIdRoute,
 }
 
-const AppChatRouteWithChildren =
-  AppChatRoute._addFileChildren(AppChatRouteChildren)
+const AuthenticatedChatRouteWithChildren =
+  AuthenticatedChatRoute._addFileChildren(AuthenticatedChatRouteChildren)
 
-interface AppRouteRouteChildren {
-  AppChatRoute: typeof AppChatRouteWithChildren
-  AppHistoryRoute: typeof AppHistoryRoute
-  AppKbRoute: typeof AppKbRoute
-  AppProfileRoute: typeof AppProfileRoute
-  AppRecycleBinRoute: typeof AppRecycleBinRoute
-  AppSettingsRoute: typeof AppSettingsRoute
-  AppIndexRoute: typeof AppIndexRoute
+interface AuthenticatedRouteChildren {
+  AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedKnowledgeBaseRoute: typeof AuthenticatedKnowledgeBaseRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedRecycleRoute: typeof AuthenticatedRecycleRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
-const AppRouteRouteChildren: AppRouteRouteChildren = {
-  AppChatRoute: AppChatRouteWithChildren,
-  AppHistoryRoute: AppHistoryRoute,
-  AppKbRoute: AppKbRoute,
-  AppProfileRoute: AppProfileRoute,
-  AppRecycleBinRoute: AppRecycleBinRoute,
-  AppSettingsRoute: AppSettingsRoute,
-  AppIndexRoute: AppIndexRoute,
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedKnowledgeBaseRoute: AuthenticatedKnowledgeBaseRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedRecycleRoute: AuthenticatedRecycleRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 
-const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
-  AppRouteRouteChildren,
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppRouteRoute: AppRouteRouteWithChildren,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport

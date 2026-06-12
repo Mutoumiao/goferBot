@@ -11,13 +11,15 @@ import { ProviderDialog } from '@/features/settings/components/ProviderDialog'
 import { configuredProviders } from '@/utils/llm-config'
 import type { ProviderConfig } from '@/utils/llm-config'
 
-export const Route = createFileRoute('/app/settings')({
+export const Route = createFileRoute('/_authenticated/settings')({
   component: SettingsPage,
   staticData: {
     tabMeta: {
       title: '设置',
       singleton: true,
       closable: true,
+      icon: 'Settings',
+      navSection: 'secondary',
     },
   },
 })

@@ -141,7 +141,12 @@ export async function fetchCurrentUser(): Promise<boolean> {
     const user = await getMe().send()
     useAuthStore.getState().setUser(user)
     return true
-  } catch {
+  } catch (err) {
+    // 若是认证失败（401/403），清空登录态避免游离态
+    const status = (err as { status?: number }).status
+    if (status === 401 || status === 403) {
+      useAuthStore.getState().clearAuth()
+    }
     return false
   }
 }

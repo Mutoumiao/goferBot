@@ -1,8 +1,9 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/auth'
+import { ROUTES_REGISTER } from '../router-register'
 
 function waitForInit(maxMs = 2000): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const start = Date.now()
     const check = () => {
       if (useAuthStore.getState().isInitialized) {
@@ -24,9 +25,9 @@ export const Route = createFileRoute('/')({
     await waitForInit()
     const isAuthenticated = useAuthStore.getState().isAuthenticated
     if (isAuthenticated) {
-      throw redirect({ to: '/app/chat' })
+      throw redirect({ to: ROUTES_REGISTER.chat.path })
     }
-    throw redirect({ to: '/login' })
+    throw redirect({ to: ROUTES_REGISTER.login.path })
   },
   component: IndexPage,
 })

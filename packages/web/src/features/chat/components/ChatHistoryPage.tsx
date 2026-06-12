@@ -2,12 +2,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { Clock3Icon, ChevronDownIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useTabsStore } from '@/stores/tabs'
 import { confirmDeleteChatSession } from '@/features/chat/services'
 import { useChatHistory } from '@/features/chat/hooks'
@@ -18,23 +13,20 @@ const PAGE_SIZE = 10
 
 export function ChatHistoryPage() {
   const router = useRouter()
-  const openRoute = useTabsStore((s) => s.openRoute)
+  const openRoute = useTabsStore(s => s.openRoute)
 
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const { sessions, total, loading, error, reload } = useChatHistory(
-    page,
-    PAGE_SIZE,
-  )
+  const { sessions, total, loading, error, reload } = useChatHistory(page, PAGE_SIZE)
 
   const handleResume = useCallback(
     (session: Session) => {
-      const route = `/app/chat/${session.id}`
-      openRoute(route, { title: session.title || '未命名会话', singleton: false, closable: true }, session.id)
-      router.navigate({ to: route })
+      // const route = `/app/chat/${session.id}`
+      // openRoute(route, { title: session.title || '未命名会话', singleton: false, closable: true }, session.id)
+      // router.navigate({ to: route })
     },
-    [openRoute, router],
+    [openRoute, router]
   )
 
   const handleDelete = useCallback(
@@ -46,7 +38,7 @@ export function ChatHistoryPage() {
         onReload: () => reload(),
       })
     },
-    [reload],
+    [reload]
   )
 
   return (
@@ -54,9 +46,7 @@ export function ChatHistoryPage() {
       <div className="mx-auto max-w-[880px]">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-[28px] font-medium leading-tight text-text-primary">
-              会话历史
-            </h1>
+            <h1 className="text-[28px] font-medium leading-tight text-text-primary">会话历史</h1>
             <p className="mt-1.5 text-sm text-text-secondary">
               点击任意记录即可恢复到对应会话，继续追问、整理或查看引用来源。
             </p>
@@ -82,19 +72,14 @@ export function ChatHistoryPage() {
         {loading && (
           <div className="mt-6 space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-[76px] w-full animate-pulse rounded-lg bg-surface-3"
-              />
+              <div key={i} className="h-[76px] w-full animate-pulse rounded-lg bg-surface-3" />
             ))}
           </div>
         )}
 
         {!loading && error && (
           <div className="mt-8 text-center">
-            <p className="text-sm text-error">
-              加载失败：{error.message || '未知错误'}
-            </p>
+            <p className="text-sm text-error">加载失败：{error.message || '未知错误'}</p>
             <Button variant="link" onClick={() => reload()} className="mt-2">
               重试
             </Button>

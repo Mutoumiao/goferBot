@@ -1,12 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
-/** 路由元数据 — 由路由文件 staticData.tabMeta 提供 */
-export interface TabMeta {
-  title: string
-  singleton: boolean
-  closable: boolean
-}
+import type { RouteMeta } from '@/router-register'
 
 export interface Tab {
   id: string
@@ -17,14 +11,6 @@ export interface Tab {
   isDirty: boolean
 }
 
-const HOME_TAB: Tab = {
-  id: 'home',
-  route: '/app/chat',
-  title: '问答首页',
-  closable: false,
-  isDirty: false,
-}
-
 interface TabsState {
   tabs: Tab[]
   activeTabId: string
@@ -32,7 +18,7 @@ interface TabsState {
   activeTab: () => Tab | null
 
   /** 通过路由添加/激活标签（自动处理单页面复用） */
-  openRoute: (route: string, meta: TabMeta, sessionId?: string) => Tab | null
+  openRoute: (route: string, meta: RouteMeta, sessionId?: string) => Tab | null
   /** 移除标签 */
   removeTab: (tabId: string) => string | null
   /** 激活标签 */
@@ -54,8 +40,8 @@ interface TabsState {
 export const useTabsStore = create<TabsState>()(
   persist(
     (set, get) => ({
-      tabs: [{ ...HOME_TAB }],
-      activeTabId: 'home',
+      tabs: [],
+      activeTabId: '',
 
       activeTab: (): Tab | null => {
         const { tabs, activeTabId } = get()
@@ -102,19 +88,18 @@ export const useTabsStore = create<TabsState>()(
 
         const newTabs = tabs.filter((t) => t.id !== tabId)
         if (newTabs.length === 0) {
-          set({ tabs: [{ ...HOME_TAB }], activeTabId: 'home' })
-          return 'home'
+          set({ tabs: [], activeTabId: '' })
+          return null
         }
 
-        let newActiveId = activeTabId
+        let newActiveId: string | null = null
         if (activeTabId === tabId) {
-          // 激活左侧相邻标签
           const removedIndex = tabs.findIndex((t) => t.id === tabId)
           const leftIndex = Math.max(0, removedIndex - 1)
-          newActiveId = newTabs[Math.min(leftIndex, newTabs.length - 1)]?.id ?? 'home'
+          newActiveId = newTabs[Math.min(leftIndex, newTabs.length - 1)]?.id ?? null
         }
 
-        set({ tabs: newTabs, activeTabId: newActiveId })
+        set({ tabs: newTabs, activeTabId: newActiveId ?? activeTabId })
         return newActiveId
       },
 
@@ -124,13 +109,13 @@ export const useTabsStore = create<TabsState>()(
       },
 
       closeAllTabs: () => {
-        set({ tabs: [{ ...HOME_TAB }], activeTabId: 'home' })
+        set({ tabs: [], activeTabId: '' })
       },
 
       closeOtherTabs: (tabId) => {
         const { tabs } = get()
         if (!tabs.some((t) => t.id === tabId && t.closable)) return
-        const kept = tabs.filter((t) => t.id === tabId || t.id === 'home')
+        const kept = tabs.filter((t) => t.id === tabId)
         set({ tabs: kept, activeTabId: tabId })
       },
 
@@ -169,19 +154,10 @@ export const useTabsStore = create<TabsState>()(
       onRehydrateStorage: () => {
         return (state) => {
           if (!state) return
-          // 1. 确保 home 标签存在
-          const hasHome = state.tabs.some((t) => t.id === 'home')
-          if (!hasHome) {
-            state.tabs.unshift({ ...HOME_TAB })
-          }
-          // 2. home 标签 closable 强制设为 false
-          state.tabs = state.tabs.map((t) =>
-            t.id === 'home' ? { ...t, closable: false } : t,
-          )
-          // 3. 确保 activeTabId 指向存在的标签
+          // 确保 activeTabId 指向存在的标签
           const exists = state.tabs.some((t) => t.id === state.activeTabId)
           if (!exists) {
-            state.activeTabId = 'home'
+            state.activeTabId = state.tabs[0]?.id ?? ''
           }
         }
       },

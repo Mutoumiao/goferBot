@@ -1,6 +1,7 @@
 import { createAlova } from 'alova'
 import ReactHook from 'alova/react'
 import adapterFetch from 'alova/fetch'
+import { useAuthStore } from '@/stores/auth'
 
 // Token 刷新状态管理
 let isRefreshing = false
@@ -8,23 +9,22 @@ let refreshSubscribers: Array<(token: string) => void> = []
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
-const refreshAlova = createAlova({
-  statesHook: ReactHook,
-  requestAdapter: adapterFetch(),
-  baseURL: API_BASE_URL,
-})
-
 async function refreshToken(): Promise<string | null> {
   const refreshTokenValue = localStorage.getItem('goferbot_refresh_token')
-  if (!refreshTokenValue) {
-    return null
-  }
+  if (!refreshTokenValue) return null
   try {
-    const res = await refreshAlova.Post<{ accessToken?: string; refreshToken?: string }>('/auth/refresh', {
-      refreshToken: refreshTokenValue,
-    }).send()
-    const token = res.accessToken
-    const newRefreshToken = res.refreshToken
+    // 直接使用 fetch 避免 alova 的 responded 链处理
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: refreshTokenValue }),
+    })
+    if (!response.ok) return null
+    const json = await response.json() as { data?: { accessToken?: string; refreshToken?: string } }
+    // 解包 NestJS ResponseInterceptor: { data: T }
+    const payload = json.data ?? json
+    const token = (payload as { accessToken?: string }).accessToken
+    const newRefreshToken = (payload as { refreshToken?: string }).refreshToken
     if (token) localStorage.setItem('goferbot_access_token', token)
     if (newRefreshToken) localStorage.setItem('goferbot_refresh_token', newRefreshToken)
     return token ?? null
@@ -42,7 +42,57 @@ function addSubscriber(cb: (token: string) => void) {
   refreshSubscribers.push(cb)
 }
 
+/** 处理 401/403：尝试刷新 token，失败则清空登录态 */
+async function doRefreshAndRetry(method: { send: () => unknown; config: { headers: Record<string, string> } }) {
+  if (!isRefreshing) {
+    isRefreshing = true
+    try {
+      const newToken = await refreshToken()
+      if (newToken) {
+        onRefreshed(newToken)
+        return method.send()
+      }
+    } finally {
+      isRefreshing = false
+    }
+    useAuthStore.getState().clearAuth()
+    window.location.replace('/login')
+    throw new Error('Auth refresh failed')
+  }
+  // 已有刷新进行中，等刷新完成后用新 token 重试
+  return new Promise<void>((resolve) => {
+    addSubscriber((token: string) => {
+      method.config.headers.Authorization = `Bearer ${token}`
+      resolve(method.send() as unknown as void)
+    })
+  })
+}
+
+/** 检查 HTTP 响应状态，401/403 则触发刷新流程 */
+function isUnauthorized(status: number) {
+  return status === 401 || status === 403
+}
+
+const responded = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSuccess(response: Response, method: any) {
+    if (isUnauthorized(response.status)) {
+      return doRefreshAndRetry(method)
+    }
+    return response.json().then((json: Record<string, unknown>) => json.data ?? json)
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onError(error: { status?: number }, method: any) {
+    if (error.status && isUnauthorized(error.status)) {
+      return doRefreshAndRetry(method)
+    }
+    throw error
+  },
+}
+
 export const alovaInstance = createAlova({
+  // @ts-expect-error: 自定义 responded handler 签名
+  responded,
   id: 'goferbot',
   statesHook: ReactHook,
   requestAdapter: adapterFetch(),
@@ -61,43 +111,5 @@ export const alovaInstance = createAlova({
     if (token) {
       method.config.headers.Authorization = `Bearer ${token}`
     }
-  },
-
-  responded: {
-    onSuccess: async (response) => {
-      const json = await response.json()
-      // NestJS ResponseInterceptor 包装格式: { data: T }
-      // 解包 data 字段，使业务代码直接访问 res.accessToken 而非 res.data.accessToken
-      return json.data ?? json
-    },
-    onError: async (error, method) => {
-      if (error.status === 401 || error.status === 403) {
-        if (!isRefreshing) {
-          isRefreshing = true
-          try {
-            const newToken = await refreshToken()
-            if (newToken) {
-              onRefreshed(newToken)
-              return method.send()
-            }
-          } finally {
-            isRefreshing = false
-          }
-          // refresh 失败 → 清除状态 → 跳登录
-          localStorage.removeItem('goferbot_access_token')
-          localStorage.removeItem('goferbot_refresh_token')
-          window.location.href = '/login'
-          throw error
-        }
-        // 已有刷新进行中，加入队列等待
-        return new Promise<void>((resolve) => {
-          addSubscriber((newToken: string) => {
-            method.config.headers.Authorization = `Bearer ${newToken}`
-            resolve(method.send())
-          })
-        })
-      }
-      throw error
-    },
   },
 })

@@ -7,6 +7,8 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   isInitialized: boolean
+  /** 标记 Zustand persist rehydration 是否已完成（不持久化） */
+  _hydrated: boolean
 
   setAuth: (token: string, user: User) => void
   clearAuth: () => void
@@ -21,6 +23,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       isInitialized: false,
+      _hydrated: false,
 
       setAuth: (token: string, user: User) =>
         set({
@@ -49,6 +52,19 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      /** rehydrate 后同步 raw localStorage + 标记 hydration 完成 */
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (!state) return
+          const rawToken = localStorage.getItem('goferbot_access_token')
+          // raw localStorage 无 token → 登录态已被清理，同步清除 Zustand 持久化数据
+          if (!rawToken && state.token) {
+            state.token = null
+            state.isAuthenticated = false
+          }
+          state._hydrated = true
+        }
+      },
     },
   ),
 )

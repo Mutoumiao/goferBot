@@ -15,7 +15,7 @@ const FONT_SIZE_MAP: Record<number, string> = {
 }
 
 function waitForInit(maxMs = 2000): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const start = Date.now()
     const check = () => {
       if (useAuthStore.getState().isInitialized) {
@@ -32,7 +32,7 @@ function waitForInit(maxMs = 2000): Promise<void> {
   })
 }
 
-export const Route = createFileRoute('/app')({
+export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async () => {
     await waitForInit()
     const token = useAuthStore.getState().token
@@ -44,8 +44,8 @@ export const Route = createFileRoute('/app')({
 })
 
 function useAppearanceEffect() {
-  const appearance = useSettingsStore((s) => s.config.appearance)
-  const fontSizeLevel = useSettingsStore((s) => s.config.fontSizeLevel)
+  const appearance = useSettingsStore(s => s.config.appearance)
+  const fontSizeLevel = useSettingsStore(s => s.config.fontSizeLevel)
 
   useEffect(() => {
     const root = document.documentElement

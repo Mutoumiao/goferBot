@@ -41,7 +41,7 @@ export function ChatHome() {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const openRoute = useTabsStore((s) => s.openRoute)
+  const openRoute = useTabsStore(s => s.openRoute)
 
   const startChat = useCallback(
     async (initialMessage?: string) => {
@@ -56,7 +56,7 @@ export function ChatHome() {
         }
 
         const route = `/app/chat/${newSession.id}`
-        openRoute(route, { title: newSession.title || '新对话', singleton: false, closable: true }, newSession.id)
+        // openRoute(route, { title: newSession.title || '新对话', singleton: false, closable: true }, newSession.id)
 
         if (initialMessage?.trim()) {
           sessionStorage.setItem(`pending_message_${newSession.id}`, initialMessage.trim())
@@ -67,7 +67,7 @@ export function ChatHome() {
         setIsLoading(false)
       }
     },
-    [openRoute, navigate, isLoading],
+    [openRoute, navigate, isLoading]
   )
 
   const handleSend = useCallback(() => {
@@ -80,7 +80,7 @@ export function ChatHome() {
     (prompt: string) => {
       startChat(prompt)
     },
-    [startChat],
+    [startChat]
   )
 
   const handleKeyDown = useCallback(
@@ -90,7 +90,7 @@ export function ChatHome() {
         handleSend()
       }
     },
-    [handleSend],
+    [handleSend]
   )
 
   return (
@@ -107,7 +107,7 @@ export function ChatHome() {
         <div className="flex w-full flex-col gap-[18px] rounded-3xl border border-[#E7EAF0] bg-white p-5 shadow-[0_18px_42px_rgba(0,0,0,0.07)]">
           <Textarea
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={e => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="询问、总结或让 AI 帮你整理桌面资料..."
             className="min-h-[60px] resize-none border-0 bg-transparent text-base text-[#1F2328] placeholder:text-[#9AA3AF] shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -153,7 +153,7 @@ export function ChatHome() {
         </div>
 
         <div className="flex w-full gap-[18px]">
-          {QUICK_ACTIONS.map((action) => (
+          {QUICK_ACTIONS.map(action => (
             <Button
               key={action.id}
               variant="ghost"

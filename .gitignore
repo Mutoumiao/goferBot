@@ -77,3 +77,5 @@ docs/design/pen/*
 .claude/skills/
 
 .archived/
+
+.playwright-cli/

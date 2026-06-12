@@ -1,26 +1,51 @@
 import { Link, useRouter } from '@tanstack/react-router'
 import { cn } from '@/utils/cn'
-import { MessageCircle, BookOpen, Clock, Settings, Trash2 } from 'lucide-react'
 import { Avatar } from '@/features/auth/components/Avatar'
 import { useAuthStore } from '@/stores/auth'
+import { ROUTES_REGISTER } from '@/router-register'
 
-const primaryNavItems = [
-  { to: '/app/chat', icon: MessageCircle, label: '聊天' },
-  { to: '/app/kb', icon: BookOpen, label: '知识库' },
-  { to: '/app/history', icon: Clock, label: '历史' },
-]
+interface NavItem {
+  to: string
+  icon: React.ReactNode
+  label: string
+}
 
-const secondaryNavItems = [
-  { to: '/app/settings', icon: Settings, label: '设置' },
-  { to: '/app/recycle-bin', icon: Trash2, label: '回收站' },
-]
+/**
+ * 从路由 staticData 提取 Sidebar 导航项。
+ * 直接导入各路由文件读取 tabMeta，避免依赖 router.state.matches（仅含当前 URL 匹配）。
+ */
+function useSidebarNav(): { primary: NavItem[]; secondary: NavItem[] } {
+  const entries = Object.entries(ROUTES_REGISTER).map(([, meta]) => ({ meta, fullPath: meta.path }))
+
+  const primary: NavItem[] = []
+  const secondary: NavItem[] = []
+
+  for (const { meta, fullPath } of entries) {
+    if (!meta?.icon || !meta.navSection) continue
+
+    const item: NavItem = {
+      to: fullPath,
+      icon: <meta.icon className="h-5 w-5" />,
+      label: meta.title,
+    }
+
+    if (meta.navSection === 'primary') {
+      primary.push(item)
+    } else {
+      secondary.push(item)
+    }
+  }
+
+  return { primary, secondary }
+}
 
 export function IconSidebar({ className }: { className?: string }) {
-  const user = useAuthStore((s) => s.user)
+  const user = useAuthStore(s => s.user)
   const router = useRouter()
+  const { primary, secondary } = useSidebarNav()
 
   const handleOpenProfile = () => {
-    router.navigate({ to: '/app/profile' })
+    router.navigate({ to: ROUTES_REGISTER.profile.path })
   }
 
   return (
@@ -35,9 +60,9 @@ export function IconSidebar({ className }: { className?: string }) {
         <Avatar src={user?.avatarUrl} fallback={user?.name} size={40} />
       </button>
 
-      {/* 主导航图标 */}
+      {/* 主导航图标 — 从路由 tabMeta 动态生成 */}
       <nav className="flex flex-1 flex-col items-center gap-3">
-        {primaryNavItems.map(({ to, icon: Icon, label }) => (
+        {primary.map(({ to, icon, label }) => (
           <Link
             key={to}
             to={to}
@@ -46,14 +71,14 @@ export function IconSidebar({ className }: { className?: string }) {
             )}
             title={label}
           >
-            <Icon className="h-5 w-5" />
+            {icon}
           </Link>
         ))}
       </nav>
 
-      {/* 次级导航图标 — 设置和回收站 */}
+      {/* 次级导航图标 — 从路由 tabMeta 动态生成 */}
       <nav className="flex flex-col items-center gap-3">
-        {secondaryNavItems.map(({ to, icon: Icon, label }) => (
+        {secondary.map(({ to, icon, label }) => (
           <Link
             key={to}
             to={to}
@@ -62,7 +87,7 @@ export function IconSidebar({ className }: { className?: string }) {
             )}
             title={label}
           >
-            <Icon className="h-5 w-5" />
+            {icon}
           </Link>
         ))}
       </nav>

@@ -4,20 +4,21 @@ import { cn } from '@/utils/cn'
 import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTabsStore } from '@/stores/tabs'
-import { createChatSession } from '@/features/chat/services'
-import type { Tab, TabMeta } from '@/stores/tabs'
+// import { createChatSession } from '@/features/chat/services'
+import type { Tab } from '@/stores/tabs'
+import type { RouteMeta } from '@/router-register'
 
 function getTabMetaFromRoute(router: ReturnType<typeof useRouter>, pathname: string) {
   // 1. 精确匹配
-  const match = router.state.matches.find((m) => m.pathname === pathname)
-  const meta = (match?.staticData as { tabMeta?: TabMeta } | undefined)?.tabMeta
+  const match = router.state.matches.find(m => m.pathname === pathname)
+  const meta = (match?.staticData as { meta?: RouteMeta } | undefined)?.meta
   if (meta) return meta
 
   // 2. fallback：寻找最长前缀匹配的父路由（支持任意动态路由）
-  let bestMatch: typeof router.state.matches[number] | undefined
+  let bestMatch: (typeof router.state.matches)[number] | undefined
   let bestLen = 0
   for (const m of router.state.matches) {
-    const mMeta = (m.staticData as { tabMeta?: TabMeta } | undefined)?.tabMeta
+    const mMeta = (m.staticData as { meta?: RouteMeta } | undefined)?.meta
     if (!mMeta) continue
     if (pathname.startsWith(m.pathname) && m.pathname.length > bestLen) {
       bestLen = m.pathname.length
@@ -25,7 +26,7 @@ function getTabMetaFromRoute(router: ReturnType<typeof useRouter>, pathname: str
     }
   }
   if (bestMatch) {
-    return (bestMatch.staticData as { tabMeta?: TabMeta }).tabMeta!
+    return (bestMatch.staticData as { meta?: RouteMeta }).meta!
   }
 
   return null
@@ -43,41 +44,25 @@ export function TabBar({ className }: { className?: string }) {
   const activateTab = useTabsStore(s => s.activateTab)
   const removeTab = useTabsStore(s => s.removeTab)
 
-  // 路由同步：监听 href 变化，自动同步标签状态
-  const href = useRouterState({ select: s => s.location.href })
+  // 路由同步：只监听 pathname，路由变化时自动同步标签状态
   const pathname = useRouterState({ select: s => s.location.pathname })
 
   useEffect(() => {
-    const searchStr = typeof window !== 'undefined' ? window.location.search : ''
-    const currentPath = pathname + searchStr
-
-    // 从路径中提取 sessionId（支持 /app/chat/:sessionId 格式）
+    // 从路径中提取 sessionId（支持 /app/chat/:sessionId 动态路由）
     let sessionId: string | undefined
     const chatPathMatch = pathname.match(/^\/app\/chat\/(.+)$/)
     if (chatPathMatch) {
       sessionId = chatPathMatch[1]
-    } else {
-      // 兼容旧的 query 参数格式
-      sessionId = new URLSearchParams(searchStr).get('session') || undefined
     }
 
-    // 1. 先精确匹配路由
-    const existing = useTabsStore.getState().findTabByRoute(currentPath)
+    // 1. 按 pathname 精确匹配已有标签（不含 query string）
+    const existing = useTabsStore.getState().findTabByRoute(pathname)
     if (existing) {
       activateTab(existing.id)
       return
     }
 
-    // 2. 对于 /app/chat（无路径参数），匹配 chat 类型的单页面标签（home tab）
-    if (pathname === '/app/chat') {
-      const homeTab = useTabsStore.getState().tabs.find(t => t.route === '/app/chat')
-      if (homeTab) {
-        activateTab(homeTab.id)
-        return
-      }
-    }
-
-    // 3. 对于 /app/chat/:sessionId，匹配同 sessionId 的标签
+    // 2. 按 sessionId 匹配（chat session 标签可跨路由复用）
     if (sessionId) {
       const sessionTab = useTabsStore.getState().tabs.find(t => t.sessionId === sessionId)
       if (sessionTab) {
@@ -86,12 +71,12 @@ export function TabBar({ className }: { className?: string }) {
       }
     }
 
-    // 4. 没有匹配到，从路由元数据创建新标签
+    // 3. 没有匹配到，从路由元数据创建新标签
     const meta = getTabMetaFromRoute(router, pathname)
     if (meta) {
-      openRoute(currentPath, meta, sessionId)
+      openRoute(pathname, meta, sessionId)
     }
-  }, [href, pathname, activateTab, openRoute])
+  }, [pathname, activateTab, openRoute])
 
   // active tab 变化时自动滚动到可视区域
   useEffect(() => {
@@ -136,15 +121,16 @@ export function TabBar({ className }: { className?: string }) {
 
   // 新建标签 — 创建新会话
   const handleNewTab = useCallback(async () => {
-    const newSession = await createChatSession()
-    if (newSession?.id) {
-      const route = `/app/chat/${newSession.id}`
-      const meta = getTabMetaFromRoute(router, '/app/chat/$sessionId')
-      if (meta) {
-        openRoute(route, { ...meta, title: newSession.title || meta.title }, newSession.id)
-        router.navigate({ to: route })
-      }
-    }
+    // const newSession = await createChatSession()
+    // if (newSession?.id) {
+    //   const route = `/app/chat/${newSession.id}`
+    //   openRoute(
+    //     route,
+    //     { title: newSession.title || '新对话', singleton: false, closable: true },
+    //     newSession.id,
+    //   )
+    //   router.navigate({ to: route })
+    // }
   }, [openRoute, router])
 
   return (
@@ -175,9 +161,7 @@ export function TabBar({ className }: { className?: string }) {
               onMouseLeave={() => setHoveredTabId(null)}
             >
               {/* 活跃标签的小圆点 */}
-              {isActive && isChatSession && (
-                <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#5B7CFA]" />
-              )}
+              {isActive && isChatSession && <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#5B7CFA]" />}
 
               <span className="w-[120px] truncate">{tab.title}</span>
 
