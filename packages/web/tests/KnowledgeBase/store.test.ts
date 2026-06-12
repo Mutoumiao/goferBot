@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useKbStore } from '@/features/kb/store'
+import { useKbStore } from '@/features/KnowledgeBase/store'
 import type { KbEntry } from '@goferbot/data'
-import type { Folder, DocumentItem } from '@/features/kb/types'
+import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
 
 describe('useKbStore', () => {
   beforeEach(() => {

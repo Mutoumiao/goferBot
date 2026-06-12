@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { deleteKb } from '@/api/kb'
+import { deleteKb } from '@/api/KnowledgeBase'
 import { Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -21,12 +21,7 @@ interface DeleteKbDialogProps {
   onConfirm?: () => void | Promise<void>
 }
 
-export default function DeleteKbDialog({
-  kbId,
-  kbName,
-  onClose,
-  onConfirm,
-}: DeleteKbDialogProps) {
+export default function DeleteKbDialog({ kbId, kbName, onClose, onConfirm }: DeleteKbDialogProps) {
   const [loading, setLoading] = useState(false)
 
   const handleDelete = async () => {
@@ -74,11 +69,7 @@ export default function DeleteKbDialog({
             取消
           </AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button
-              variant="destructive"
-              disabled={loading}
-              onClick={handleDelete}
-            >
+            <Button variant="destructive" disabled={loading} onClick={handleDelete}>
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? '删除中...' : '删除'}
             </Button>

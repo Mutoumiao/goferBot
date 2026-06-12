@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRequest } from 'alova/client'
-import { getKbList } from '@/api/kb'
+import { getKbList } from '@/api/KnowledgeBase'
 import type { KbEntry } from '@goferbot/data'
 import { DatabaseIcon, HashIcon } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -58,7 +58,7 @@ export function KnowledgeBaseSelector({ selectedIds, onToggle, disabled = false 
         className={cn(
           'inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs',
           'text-text-secondary hover:bg-surface-2 hover:text-text-primary',
-          'disabled:cursor-not-allowed disabled:opacity-50',
+          'disabled:cursor-not-allowed disabled:opacity-50'
         )}
       >
         <HashIcon className="size-3.5" />
@@ -77,7 +77,7 @@ export function KnowledgeBaseSelector({ selectedIds, onToggle, disabled = false 
         >
           {loading && (
             <div className="space-y-2 p-3">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3].map(i => (
                 <div key={i} className="h-8 w-full animate-pulse rounded bg-surface-2" />
               ))}
             </div>
@@ -102,15 +102,15 @@ export function KnowledgeBaseSelector({ selectedIds, onToggle, disabled = false 
 
           {!loading &&
             !error &&
-            kbList.map((kb) => (
+            kbList.map(kb => (
               <div
                 key={kb.id}
                 data-testid="kb-selector-item"
                 className={cn(
                   'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors',
-                  'text-text-primary hover:bg-surface-2',
+                  'text-text-primary hover:bg-surface-2'
                 )}
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault()
                   onToggle(kb.id)
                 }}

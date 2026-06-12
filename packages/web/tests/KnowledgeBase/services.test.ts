@@ -16,7 +16,7 @@ vi.mock('@/api/file', () => ({
   deleteFolder: vi.fn(() => ({ send: vi.fn() })),
 }))
 
-import { getKbList, uploadFile } from '@/api/kb'
+import { getKbList, uploadFile } from '@/api/KnowledgeBase'
 import {
   getFolders,
   getDocuments,
@@ -27,7 +27,7 @@ import {
   renameFolder,
   deleteFolder,
 } from '@/api/file'
-import { useKbStore } from '@/features/kb/store'
+import { useKbStore } from '@/features/KnowledgeBase/store'
 import {
   fetchKbList,
   loadKbItems,
@@ -42,9 +42,9 @@ import {
   addFolder,
   uploadFiles,
   navigateToFolder,
-} from '@/features/kb/services'
+} from '@/features/KnowledgeBase/services'
 import type { KbEntry } from '@goferbot/data'
-import type { Folder, DocumentItem } from '@/features/kb/types'
+import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
 
 describe('kb services', () => {
   beforeEach(() => {

@@ -1,4 +1,4 @@
-import { getKbList as apiGetKbList, uploadFile as apiUploadFile } from '@/api/kb'
+import { getKbList as apiGetKbList, uploadFile as apiUploadFile } from '@/api/KnowledgeBase'
 import {
   getFolders as apiGetFolders,
   getDocuments as apiGetDocuments,

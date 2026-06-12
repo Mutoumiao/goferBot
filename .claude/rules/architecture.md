@@ -44,7 +44,7 @@ src/
 每个 feature 是一个独立业务领域，内部结构：
 
 ```txt
-features/kb/
+features/chat/
 ├── store.ts              # 状态拥有者：currentKbId / currentFolderId / selectedFileIds
 ├── services.ts           # 业务编排：removeKnowledgeBase() = API → 刷新 → 更新状态 → Toast
 ├── types.ts              # KB 相关类型定义
@@ -62,13 +62,13 @@ features/kb/
 
 ## 职责边界
 
-| 层级 | 职责 | 示例 | 禁止 |
-|------|------|------|------|
-| **API** | HTTP 请求 | `alovaInstance.Get('/kb')` | Toast、Store 更新、跳转 |
-| **Store** | 保存状态 | `currentKbId: string` | `createKnowledgeBase()` |
-| **Service** | 业务编排 | `removeKnowledgeBase()` | — |
-| **Component** | 展示 UI、触发动作 | `<Button onClick={removeKnowledgeBase}>` | async 组合超过 3 步 |
-| **Page** | 组装组件、连接状态 | `KbPage = <KbToolbar /> + <FolderTree />` | 复杂业务流程 |
+| 层级          | 职责               | 示例                                      | 禁止                    |
+|---------------|--------------------|-------------------------------------------|-------------------------|
+| **API**       | HTTP 请求          | `alovaInstance.Get('/kb')`                | Toast、Store 更新、跳转 |
+| **Store**     | 保存状态           | `currentKbId: string`                     | `createKnowledgeBase()` |
+| **Service**   | 业务编排           | `removeKnowledgeBase()`                   | —                       |
+| **Component** | 展示 UI、触发动作  | `<Button onClick={removeKnowledgeBase}>`  | async 组合超过 3 步     |
+| **Page**      | 组装组件、连接状态 | `KbPage = <KbToolbar /> + <FolderTree />` | 复杂业务流程            |
 
 ## 决策标准
 

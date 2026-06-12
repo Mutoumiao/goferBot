@@ -1,5 +1,5 @@
 import CreateKbDialog from './CreateKbDialog'
-import { updateKb } from '@/api/kb'
+import { updateKb } from '@/api/KnowledgeBase'
 import type { CreateKbRequest, KbEntry } from '@goferbot/data'
 
 interface EditKbDialogProps {
