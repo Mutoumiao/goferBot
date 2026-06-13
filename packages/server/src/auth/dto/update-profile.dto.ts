@@ -1,8 +1,6 @@
 import { createZodDto } from 'nestjs-zod'
-import { z } from 'zod'
+import { updateProfileRequestSchema } from '@goferbot/data/schemas'
 
-export const updateProfileSchema = z.object({
-  name: z.string().min(1, '昵称不能为空').max(50, '昵称过长').describe('用户昵称'),
-})
-
-export class UpdateProfileDto extends createZodDto(updateProfileSchema) {}
+export class UpdateProfileDto extends createZodDto(updateProfileRequestSchema) {
+  declare name: string
+}

@@ -1,18 +1,29 @@
 export {
+  pagerRequestSchema,
+  paginationSchema,
+  createPagedResponseSchema,
+} from './common.schema.js'
+
+export {
   loginRequestSchema,
   registerRequestSchema,
+  updateProfileRequestSchema,
   userSchema,
   authResponseSchema,
+  publicKeyResponseSchema,
 } from './auth.schema.js'
 
 export {
   messageSchema,
-  sessionSchema,
   streamChatRequestSchema,
   sendMessageRequestSchema,
-  createSessionRequestSchema,
   messageListResponseSchema,
   sessionListResponseSchema,
+  chatInitResponseSchema,
+  chatProvidersResponseSchema,
+  chatMessagesRequestSchema,
+  chatMessagesChunkSchema,
+  messageListQuerySchema,
 } from './chat.schema.js'
 
 export {
@@ -21,3 +32,35 @@ export {
   updateKbRequestSchema,
   kbListResponseSchema,
 } from './kb.schema.js'
+
+export {
+  createSessionRequestSchema,
+  updateSessionRequestSchema,
+  sessionSchema,
+} from './session.schema.js'
+
+export {
+  createDocumentRequestSchema,
+  updateDocumentRequestSchema,
+  documentSchema,
+} from './document.schema.js'
+
+export {
+  createFolderRequestSchema,
+  updateFolderRequestSchema,
+  folderSchema,
+} from './folder.schema.js'
+
+export {
+  adminUserListQuerySchema,
+  updateUserStatusRequestSchema,
+  adminUserSchema,
+  adminUserListResponseSchema,
+} from './admin.schema.js'
+
+export {
+  providerSchema,
+  embeddingProviderSchema,
+  settingsSchema,
+  settingsResponseSchema,
+} from './settings.schema.js'

@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-// ===== Auth Schemas =====
-
 export const loginRequestSchema = z.object({
   email: z.string().email('Invalid email format'),
   encryptedPassword: z.string().min(1, 'Password cannot be empty').max(4096, 'Password data anomaly'),
@@ -10,7 +8,11 @@ export const loginRequestSchema = z.object({
 export const registerRequestSchema = z.object({
   email: z.string().email('Invalid email format'),
   encryptedPassword: z.string().min(1, 'Password cannot be empty').max(4096, 'Password data anomaly'),
-  name: z.string().min(1, 'Name is required').max(100),
+  name: z.string().min(1, 'Name is required').max(100).optional(),
+})
+
+export const updateProfileRequestSchema = z.object({
+  name: z.string().min(1, '昵称不能为空').max(50, '昵称过长').describe('用户昵称'),
 })
 
 export const userSchema = z.object({
@@ -25,4 +27,10 @@ export const userSchema = z.object({
 export const authResponseSchema = z.object({
   accessToken: z.string(),
   user: userSchema,
+})
+
+export const publicKeyResponseSchema = z.object({
+  publicKey: z.string(),
+  algorithm: z.string(),
+  hash: z.string(),
 })
