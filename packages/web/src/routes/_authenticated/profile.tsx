@@ -1,13 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ProfilePage } from '@/features/auth/components/ProfilePage'
+import { ROUTES_REGISTER } from '@/router-register'
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
   staticData: {
-    tabMeta: {
-      title: '基础信息',
-      singleton: true,
-      closable: true,
-    },
+    meta: ROUTES_REGISTER.profile,
   },
 })

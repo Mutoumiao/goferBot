@@ -2,6 +2,10 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { User } from '@goferbot/data'
 
+import { ROUTES_REGISTER } from '@/router-register'
+import { getAccessToken, clearTokens } from '@/utils/auth-token'
+
+
 interface AuthState {
   user: User | null
   token: string | null
@@ -33,13 +37,13 @@ export const useAuthStore = create<AuthState>()(
         }),
 
       clearAuth: () => {
-        localStorage.removeItem('goferbot_access_token')
-        localStorage.removeItem('goferbot_refresh_token')
+        clearTokens()
         set({
           token: null,
           user: null,
           isAuthenticated: false,
         })
+        window.location.href = ROUTES_REGISTER.login.path
       },
 
       setUser: (user: User) => set({ user }),
@@ -56,7 +60,7 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => {
         return (state) => {
           if (!state) return
-          const rawToken = localStorage.getItem('goferbot_access_token')
+          const rawToken = getAccessToken()
           // raw localStorage 无 token → 登录态已被清理，同步清除 Zustand 持久化数据
           if (!rawToken && state.token) {
             state.token = null

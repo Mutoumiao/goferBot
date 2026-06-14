@@ -1,15 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ChatHistoryPage } from '@/features/chat/components/ChatHistoryPage'
+import { ROUTES_REGISTER } from '@/router-register'
 
 export const Route = createFileRoute('/_authenticated/history')({
   component: ChatHistoryPage,
   staticData: {
-    tabMeta: {
-      title: '会话管理',
-      singleton: true,
-      closable: true,
-      icon: 'Clock',
-      navSection: 'primary',
-    },
+    meta: ROUTES_REGISTER.history,
   },
 })

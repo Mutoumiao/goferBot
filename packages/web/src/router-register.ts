@@ -1,22 +1,24 @@
-import type { FileRoutesByFullPath, } from '@/routeTree.gen'
+import type { FileRoutesByFullPath } from '@/routeTree.gen'
 import { MessageCircle, BookOpen, Clock, Settings, Trash2, User, type LucideIcon } from 'lucide-react'
 
 type RoutePath = keyof FileRoutesByFullPath
 
+type RouteKey = 'login' | 'chat' | 'knowledgeBase' | 'history' | 'settings' | 'recycle' | 'profile'
+
 export interface RouteMeta {
-  key: string
+  key: RouteKey
   title: string
   path: RoutePath
   singleton: boolean
   closable: boolean
-  /** lucide-react 图标名，用于 Sidebar 导航项（如 "MessageCircle"） */
+  /** lucide-react 图标名，用于 Sidebar 导航项 */
   icon?: LucideIcon | null
   /** Sidebar 分区：'primary' 为主导航，'secondary' 为底部导航，不设置则不显示在 Sidebar */
   navSection?: 'primary' | 'secondary' | null
-  bindTo?: (...args: any[string]) => string
+  bindTo?: (...args: string[]) => string
 }
 
-export const ROUTES_REGISTER: Record<string, RouteMeta> = {
+export const ROUTES_REGISTER = {
   login: {
     key: 'login',
     title: '登录',
@@ -34,7 +36,7 @@ export const ROUTES_REGISTER: Record<string, RouteMeta> = {
     path: '/chat/$sessionId',
     icon: MessageCircle,
     navSection: null,
-    bindTo: (sessionId) => `/chat/${sessionId}`
+    bindTo: (sessionId: string) => `/chat/${sessionId}`,
   },
   knowledgeBase: {
     key: 'knowledgeBase',
@@ -47,7 +49,7 @@ export const ROUTES_REGISTER: Record<string, RouteMeta> = {
   },
   history: {
     key: 'history',
-    title: '历史记录',
+    title: '会话历史',
     singleton: true,
     closable: true,
     path: '/history',
@@ -81,4 +83,4 @@ export const ROUTES_REGISTER: Record<string, RouteMeta> = {
     icon: User,
     navSection: null,
   },
-} as const
+} as const satisfies Record<RouteKey, RouteMeta>

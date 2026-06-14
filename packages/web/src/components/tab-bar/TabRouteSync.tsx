@@ -4,13 +4,7 @@ import { useTabsStore } from '@/stores/tabs'
 import type { RouteMeta } from '@/router-register'
 
 function isRouteMeta(value: unknown): value is RouteMeta {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'title' in value &&
-    'singleton' in value &&
-    'closable' in value
-  )
+  return value !== null && typeof value === 'object' && 'title' in value && 'singleton' in value && 'closable' in value
 }
 
 /**
@@ -24,10 +18,10 @@ function isRouteMeta(value: unknown): value is RouteMeta {
  */
 export function TabRouteSync() {
   const matches = useRouterState({
-    select: (s) => s.matches,
+    select: s => s.matches,
   })
 
-  const syncRoute = useTabsStore((s) => s.syncRoute)
+  const syncRoute = useTabsStore(s => s.syncRoute)
 
   useEffect(() => {
     if (!matches.length) return
@@ -35,9 +29,7 @@ export function TabRouteSync() {
     const leaf = matches[matches.length - 1]
     if (!leaf) return
 
-    const rawMeta =
-      (leaf.staticData as { tabMeta?: unknown } | undefined)?.tabMeta ??
-      (leaf.staticData as { meta?: unknown } | undefined)?.meta
+    const rawMeta = (leaf.staticData as { meta?: unknown } | undefined)?.meta
 
     syncRoute({
       pathname: leaf.pathname,

@@ -10,17 +10,12 @@ import { CustomProviderList } from '@/features/settings/components/CustomProvide
 import { ProviderDialog } from '@/features/settings/components/ProviderDialog'
 import { configuredProviders } from '@/utils/llm-config'
 import type { ProviderConfig } from '@/utils/llm-config'
+import { ROUTES_REGISTER } from '@/router-register'
 
 export const Route = createFileRoute('/_authenticated/settings')({
   component: SettingsPage,
   staticData: {
-    tabMeta: {
-      title: '设置',
-      singleton: true,
-      closable: true,
-      icon: 'Settings',
-      navSection: 'secondary',
-    },
+    meta: ROUTES_REGISTER.settings,
   },
 })
 
@@ -67,16 +62,10 @@ function SettingsPage() {
       <div className="space-y-6">
         <SettingsSection title="通用设置">
           <SettingsRow label="界面显示">
-            <AppearanceSelect
-              value={svc.config.appearance}
-              onChange={svc.saveAppearance}
-            />
+            <AppearanceSelect value={svc.config.appearance} onChange={svc.saveAppearance} />
           </SettingsRow>
           <SettingsRow label="字体大小" showDivider={false}>
-            <FontSizeSlider
-              value={svc.config.fontSizeLevel}
-              onChange={svc.saveFontSizeLevel}
-            />
+            <FontSizeSlider value={svc.config.fontSizeLevel} onChange={svc.saveFontSizeLevel} />
           </SettingsRow>
         </SettingsSection>
 

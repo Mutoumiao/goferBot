@@ -3,17 +3,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useRequest } from 'alova/client'
 import { getKbList, deleteKb } from '@/api/KnowledgeBase'
 import type { KbEntry } from '@goferbot/data'
+import { ROUTES_REGISTER } from '@/router-register'
 
 export const Route = createFileRoute('/_authenticated/recycle')({
   component: RecycleBinPage,
   staticData: {
-    tabMeta: {
-      title: '回收站',
-      singleton: true,
-      closable: true,
-      icon: 'Trash2',
-      navSection: 'secondary',
-    },
+    meta: ROUTES_REGISTER.recycle,
   },
 })
 

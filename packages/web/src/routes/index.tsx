@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/auth'
-import { ROUTES_REGISTER } from '../router-register'
+import { useTabsStore } from '@/stores/tabs'
 
 function waitForInit(maxMs = 2000): Promise<void> {
   return new Promise(resolve => {
@@ -23,13 +23,17 @@ function waitForInit(maxMs = 2000): Promise<void> {
 export const Route = createFileRoute('/')({
   beforeLoad: async () => {
     await waitForInit()
-    const isAuthenticated = useAuthStore.getState().isAuthenticated
-    if (isAuthenticated) {
-      const tempId = `temp_${crypto.randomUUID()}`
-      const chatPath = ROUTES_REGISTER.chat.bindTo?.(tempId) ?? `/chat/${tempId}`
-      throw redirect({ to: chatPath })
+    if (!useAuthStore.getState().isAuthenticated) {
+      throw redirect({ to: '/login' })
     }
-    throw redirect({ to: ROUTES_REGISTER.login.path })
+
+    const sessionId = crypto.randomUUID()
+    useTabsStore.getState().addTempTab(sessionId)
+
+    throw redirect({
+      to: '/chat/$sessionId',
+      params: { sessionId },
+    })
   },
   component: IndexPage,
 })

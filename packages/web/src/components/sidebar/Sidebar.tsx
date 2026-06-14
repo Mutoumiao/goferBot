@@ -10,10 +10,6 @@ interface NavItem {
   label: string
 }
 
-/**
- * 从路由 staticData 提取 Sidebar 导航项。
- * 直接导入各路由文件读取 tabMeta，避免依赖 router.state.matches（仅含当前 URL 匹配）。
- */
 function useSidebarNav(): { primary: NavItem[]; secondary: NavItem[] } {
   const entries = Object.entries(ROUTES_REGISTER).map(([, meta]) => ({ meta, fullPath: meta.path }))
 
@@ -60,7 +56,7 @@ export function IconSidebar({ className }: { className?: string }) {
         <Avatar src={user?.avatarUrl} fallback={user?.name} size={40} />
       </button>
 
-      {/* 主导航图标 — 从路由 tabMeta 动态生成 */}
+      {/* 主导航图标 — 从路由 meta 动态生成 */}
       <nav className="flex flex-1 flex-col items-center gap-3">
         {primary.map(({ to, icon, label }) => (
           <Link
@@ -76,7 +72,7 @@ export function IconSidebar({ className }: { className?: string }) {
         ))}
       </nav>
 
-      {/* 次级导航图标 — 从路由 tabMeta 动态生成 */}
+      {/* 次级导航图标 — 从路由 meta 动态生成 */}
       <nav className="flex flex-col items-center gap-3">
         {secondary.map(({ to, icon, label }) => (
           <Link

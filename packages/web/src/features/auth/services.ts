@@ -2,6 +2,7 @@ import type { User } from '@goferbot/data'
 import { login, register, getMe, refresh, updateMe, uploadAvatar } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { encryptPassword, clearPublicKeyCache } from '@/utils/password-encryption'
+import { setAccessToken, setRefreshToken, clearTokens } from '@/utils/auth-token'
 import { toast } from 'sonner'
 
 export interface LoginResult {
@@ -14,8 +15,6 @@ export interface RegisterResult {
   error?: string
 }
 
-const ACCESS_TOKEN_KEY = 'goferbot_access_token'
-const REFRESH_TOKEN_KEY = 'goferbot_refresh_token'
 const REMEMBER_EMAIL_KEY = 'goferbot_remember_email'
 
 function mapAuthError(err: unknown): string {
@@ -63,9 +62,9 @@ export async function loginUser(
     const refreshToken = (res as unknown as { refreshToken?: string }).refreshToken
     const user = res.user
     if (token && user) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, token)
+      setAccessToken(token)
       if (refreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+        setRefreshToken(refreshToken)
       }
       if (rememberMe) {
         localStorage.setItem(REMEMBER_EMAIL_KEY, email)
@@ -101,9 +100,9 @@ export async function registerUser(
     const refreshToken = (res as unknown as { refreshToken?: string }).refreshToken
     const user = res.user
     if (token && user) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, token)
+      setAccessToken(token)
       if (refreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+        setRefreshToken(refreshToken)
       }
       useAuthStore.getState().setAuth(token, user)
       return { success: true }
@@ -124,9 +123,9 @@ export async function refreshAuth(): Promise<boolean> {
     const token = res.accessToken
     const refreshToken = (res as unknown as { refreshToken?: string }).refreshToken
     if (token) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, token)
+      setAccessToken(token)
       if (refreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+        setRefreshToken(refreshToken)
       }
       return true
     }
@@ -152,8 +151,7 @@ export async function fetchCurrentUser(): Promise<boolean> {
 }
 
 export function logoutUser(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  clearTokens()
   useAuthStore.getState().clearAuth()
   toast.success('已退出登录')
 }

@@ -4,14 +4,13 @@ import { cn } from '@/utils/cn'
 import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTabsStore } from '@/stores/tabs'
-import type { Tab } from '@/stores/tabs'
-import { ROUTES_REGISTER } from '@/router-register'
+import type { Tab, RemoveTabResult } from '@/stores/tabs'
 
 /** 创建临时聊天标签并导航到对应路由 */
 function navigateToNewChatTab(router: ReturnType<typeof useRouter>) {
-  const tempId = `temp_${crypto.randomUUID()}`
-  const chatPath = ROUTES_REGISTER.chat.bindTo?.(tempId) ?? `/chat/${tempId}`
-  router.navigate({ to: chatPath })
+  const sessionId = crypto.randomUUID()
+  useTabsStore.getState().addTempTab(sessionId)
+  router.navigate({ to: '/chat/$sessionId', params: { sessionId } })
 }
 
 export function TabBar({ className }: { className?: string }) {
@@ -54,15 +53,22 @@ export function TabBar({ className }: { className?: string }) {
   // 关闭标签
   const handleTabClose = useCallback(
     (tabId: string) => {
-      const newActiveId = removeTab(tabId)
-      if (newActiveId) {
-        const tab = useTabsStore.getState().tabs.find(t => t.id === newActiveId)
-        if (tab) {
-          router.navigate({ to: tab.route })
-        }
-      } else {
-        // 删除最后一个标签，自动生成新的临时标签页
-        navigateToNewChatTab(router)
+      const result: RemoveTabResult = removeTab(tabId)
+      switch (result.action) {
+        case 'rejected':
+          // 不允许关闭（只剩一个临时首页）
+          break
+        case 'navigate-new-temp':
+          // 最后一个标签被关闭，导航到新临时首页
+          navigateToNewChatTab(router)
+          break
+        case 'switch':
+          // 切换到相邻标签
+          const tab = useTabsStore.getState().tabs.find(t => t.id === result.targetId)
+          if (tab) {
+            router.navigate({ to: tab.route })
+          }
+          break
       }
     },
     [removeTab, router]
@@ -85,28 +91,30 @@ export function TabBar({ className }: { className?: string }) {
           const isActive = tab.id === activeTabId
           const isHovered = tab.id === hoveredTabId
           const isChatSession = tab.sessionId != null
+          // 只剩一个临时首页标签时不显示关闭按钮
+          const canClose = tab.closable && !(tabs.length === 1 && tab.isTemp)
 
           return (
             <div
               key={tab.id}
               data-active={isActive}
               className={cn(
-                'group relative flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors cursor-pointer select-none',
+                'w-[150px] group relative flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors cursor-pointer select-none',
                 isActive
-                  ? 'bg-white text-[#1F2328] shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-[#E7EAF0]'
-                  : 'bg-[#F0F2F5] text-[#5E6673] hover:bg-[#E8EAED] border border-transparent'
+                  ? 'bg-surface-1 text-text-primary shadow-sm border border-border-default'
+                  : 'bg-surface-3 text-text-secondary hover:bg-surface-2 border border-transparent'
               )}
               onClick={() => handleTabClick(tab)}
               onMouseEnter={() => setHoveredTabId(tab.id)}
               onMouseLeave={() => setHoveredTabId(null)}
             >
               {/* 活跃标签的小圆点 */}
-              {isActive && isChatSession && <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#5B7CFA]" />}
+              {isActive && isChatSession && <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-brand-blue" />}
 
               <span className="w-[120px] truncate">{tab.title}</span>
 
               {/* 关闭按钮 — 仅 hover 时显示，覆盖在文字上方 */}
-              {tab.closable && (isActive || isHovered) && (
+              {canClose && (isActive || isHovered) && (
                 <div className="absolute h-6 w-6 right-2 top-1/2 -translate-y-1/2 flex items-center justify-center">
                   <Button
                     variant="secondary"
@@ -130,7 +138,7 @@ export function TabBar({ className }: { className?: string }) {
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 shrink-0 rounded-md text-[#9AA3AF] hover:bg-[#E8EAED] hover:text-[#5E6673]"
+        className="h-8 w-8 shrink-0 rounded-md text-text-tertiary hover:bg-surface-2 hover:text-text-secondary"
         onClick={handleNewTab}
         title="新建问答会话"
       >
