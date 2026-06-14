@@ -1,13 +1,15 @@
 import { AbstractChatProvider } from '@ant-design/x-sdk'
 import type { TransformMessage, XRequestOptions, SSEOutput } from '@ant-design/x-sdk'
+import type { ChatMessagesRequest } from '@goferbot/data'
 
-import type { StreamChatRequest } from '@goferbot/data'
-
-export type GoferInput = StreamChatRequest
+export type GoferInput = ChatMessagesRequest
 
 export interface GoferOutput {
-  chunk: string
-  done: boolean
+  event: 'message'
+  conversation_id: string
+  message_id: string
+  answer: string
+  done?: boolean
   error?: string
 }
 
@@ -22,23 +24,34 @@ export class GoferChatProvider extends AbstractChatProvider<GoferMessage, GoferI
     _options: XRequestOptions<GoferInput, SSEOutput, GoferMessage>,
   ): GoferInput {
     return {
-      input: requestParams.input || '',
-      sessionId: requestParams.sessionId || '',
-      knowledgeBaseIds: requestParams.knowledgeBaseIds ?? [],
-      lastMessageId: requestParams.lastMessageId,
+      response_mode: 'streaming',
+      query: requestParams.query || '',
+      conversation_id: requestParams.conversation_id || '',
+      knowledge_base_ids: requestParams.knowledge_base_ids ?? [],
+      provider_key: requestParams.provider_key,
+      parent_message_id: requestParams.parent_message_id,
+      inputs: requestParams.inputs,
+      files: requestParams.files,
     }
   }
 
   transformLocalMessage(requestParams: Partial<GoferInput>): GoferMessage {
     return {
-      content: requestParams.input || '',
+      content: requestParams.query || '',
       role: 'user',
     }
   }
 
   transformMessage(info: TransformMessage<GoferMessage, SSEOutput>): GoferMessage {
     const { originMessage, chunk } = info
-    const data = chunk?.data as GoferOutput | undefined
+    let data: GoferOutput | undefined
+    try {
+      if (typeof chunk?.data === 'string') {
+        data = JSON.parse(chunk.data) as GoferOutput
+      }
+    } catch {
+      data = undefined
+    }
 
     if (data?.error) {
       return {
@@ -55,7 +68,7 @@ export class GoferChatProvider extends AbstractChatProvider<GoferMessage, GoferI
     }
 
     return {
-      content: `${originMessage?.content || ''}${data?.chunk || ''}`,
+      content: `${originMessage?.content || ''}${data?.answer || ''}`,
       role: 'assistant',
     }
   }

@@ -1,30 +1,45 @@
 /**
  * @ant-design/x SDK 相关请求配置
- *
- * 规范：所有 HTTP 请求配置集中在此目录，禁止在 feature/provider 中硬编码 URL。
- * 本文件对接后端 SSE 流式聊天接口，供 chat feature 的 Provider 使用。
  */
 import { XRequest } from '@ant-design/x-sdk'
 import type { SSEOutput } from '@ant-design/x-sdk'
-import type { StreamChatRequest } from '@goferbot/data'
+import type { ChatMessagesRequest } from '@goferbot/data'
+import { buildAuthHeader } from '@/utils/auth-token'
 
-/** 流式聊天输入参数（复用 data 包共享类型，LLM 配置由后端管理） */
-export type XChatInput = StreamChatRequest
+export type XChatInput = ChatMessagesRequest
 
-/** 后端 SSE chunk 格式 */
+export type { ChatInitResponse } from '@goferbot/data'
+export type { ProviderListItem } from '@goferbot/data'
+
 export interface XChatOutput {
-  chunk: string
-  done: boolean
+  event: 'message'
+  conversation_id: string
+  message_id: string
+  answer: string
+  done?: boolean
   error?: string
 }
 
-/** 对话消息格式 */
 export interface XChatMessage {
   content: string
   role: 'user' | 'assistant'
 }
 
-/** XRequest 实例 — 供 GoferChatProvider 使用 */
-export const xChatRequest = XRequest<XChatInput, SSEOutput>('/api/chat', {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
+
+function authedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers)
+  const authHeader = buildAuthHeader()
+  if (authHeader) {
+    headers.set('Authorization', authHeader)
+  }
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+  return fetch(input, { ...init, headers })
+}
+
+export const xChatRequest = XRequest<XChatInput, SSEOutput>(`${API_BASE_URL}/chat-messages`, {
   manual: true,
+  fetch: authedFetch,
 })
