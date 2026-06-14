@@ -88,6 +88,6 @@ export const chatMessagesChunkSchema = z.object({
 
 export const messageListQuerySchema = z.object({
   conversation_id: z.string().uuid(),
-  limit: z.number().min(1).max(100).optional().default(20),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
   last_id: z.string().uuid().optional(),
 })

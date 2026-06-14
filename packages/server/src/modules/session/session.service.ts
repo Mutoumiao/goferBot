@@ -108,6 +108,40 @@ export class SessionService {
     return { id, deleted: true }
   }
 
+  async listMessages(
+    userId: string,
+    sessionId: string,
+    query: { page?: number; limit?: number } = {},
+  ) {
+    await this.ensureOwnership(userId, sessionId)
+
+    const page = query.page ?? 1
+    const limit = query.limit ?? 50
+    const skip = (page - 1) * limit
+
+    const [messages, total] = await Promise.all([
+      this.prisma.message.findMany({
+        where: { sessionId },
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.message.count({ where: { sessionId } }),
+    ])
+
+    return {
+      messages: messages.map((m: any) => ({
+        id: m.id,
+        sessionId: m.sessionId,
+        role: m.role,
+        content: m.content,
+        createdAt: m.createdAt.toISOString(),
+      })),
+      total,
+      hasMore: skip + messages.length < total,
+    }
+  }
+
   private async ensureOwnership(userId: string, id: string) {
     const session = await this.prisma.session.findUnique({
       where: { id },

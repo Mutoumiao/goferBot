@@ -14,8 +14,8 @@ import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { SessionService } from './session.service.js'
 import { PagerDto } from '../../shared/dto/pager.dto.js'
-import { CreateSessionDto, createSessionSchema } from './dto/create-session.dto.js'
-import { UpdateSessionDto, updateSessionSchema } from './dto/update-session.dto.js'
+import { CreateSessionDto } from './dto/create-session.dto.js'
+import { UpdateSessionDto } from './dto/update-session.dto.js'
 
 @Controller('sessions')
 @UseGuards(JwtAuthGuard)
@@ -62,5 +62,17 @@ export class SessionController {
     @Param('id') id: string,
   ) {
     return this.sessionService.remove(userId, id)
+  }
+
+  @Get(':id/messages')
+  async listMessages(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Query() query: PagerDto,
+  ) {
+    return this.sessionService.listMessages(userId, id, {
+      page: query.page,
+      limit: query.size,
+    })
   }
 }
