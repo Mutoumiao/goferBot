@@ -11,6 +11,11 @@ function createMockPrisma(overrides = {}) {
       delete: vi.fn(),
       ...((overrides as any).session || {}),
     },
+    message: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      ...((overrides as any).message || {}),
+    },
     ...overrides,
   }
 }
@@ -147,5 +152,46 @@ describe('SessionService', () => {
     expect(result.items[0].messageCount).toBe(42)
     expect(result.items[0].title).toBe('Test Session')
     expect(result.items[0].provider).toBe('openai')
+  })
+
+  it('AC-05: listMessages returns paginated messages with ownership check', async () => {
+    const userId = 'user-123'
+    const sessionId = 's1'
+    mockPrisma.session.findUnique.mockResolvedValue({ id: sessionId, userId })
+    mockPrisma.message.findMany.mockResolvedValue([
+      {
+        id: 'm1',
+        sessionId,
+        role: 'user',
+        content: 'hi',
+        createdAt: new Date('2024-01-01'),
+      },
+    ])
+    mockPrisma.message.count.mockResolvedValue(1)
+
+    const result = await service.listMessages(userId, sessionId, { page: 1, limit: 50 })
+
+    expect(result.messages).toHaveLength(1)
+    expect(result.messages[0].id).toBe('m1')
+    expect(result.total).toBe(1)
+    expect(result.hasMore).toBe(false)
+    expect(mockPrisma.session.findUnique).toHaveBeenCalledWith({
+      where: { id: sessionId },
+      select: { userId: true },
+    })
+  })
+
+  it('AC-06: listMessages returns empty for new session', async () => {
+    const userId = 'user-123'
+    const sessionId = 's-new'
+    mockPrisma.session.findUnique.mockResolvedValue({ id: sessionId, userId })
+    mockPrisma.message.findMany.mockResolvedValue([])
+    mockPrisma.message.count.mockResolvedValue(0)
+
+    const result = await service.listMessages(userId, sessionId)
+
+    expect(result.messages).toHaveLength(0)
+    expect(result.total).toBe(0)
+    expect(result.hasMore).toBe(false)
   })
 })

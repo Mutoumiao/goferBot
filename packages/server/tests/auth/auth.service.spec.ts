@@ -7,6 +7,7 @@ describe('AuthService', () => {
   let mockJwtService: any
   let mockConfigService: any
   let mockUserService: any
+  let mockStorageService: any
 
   beforeEach(() => {
     mockJwtService = {
@@ -22,8 +23,9 @@ describe('AuthService', () => {
       validatePassword: vi.fn(),
       findById: vi.fn(),
     }
+    mockStorageService = {}
 
-    authService = new AuthService(mockJwtService, mockConfigService, mockUserService)
+    authService = new AuthService(mockJwtService, mockConfigService, mockUserService, mockStorageService)
   })
 
   describe('register', () => {
@@ -127,7 +129,7 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('mock-token')
       expect(mockJwtService.sign).toHaveBeenCalledWith(
         expect.any(Object),
-        expect.objectContaining({ expiresIn: '15m' }),
+        expect.objectContaining({ expiresIn: '2h' }),
       )
     })
   })

@@ -1,7 +1,7 @@
 /**
  * ChatController 集成测试
- * 覆盖端点：POST /api/chat
- * 场景：SSE 流式响应 happy path、Zod 验证失败、认证缺失、客户端断开处理
+ * 覆盖端点：POST /api/chat-messages
+ * 场景：SSE 流式响应 happy path、Zod 校验失败、认证缺失、会话不存在/无权访问
  */
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { TestAppFactory } from './helpers/test-app.factory.js'
@@ -11,7 +11,7 @@ import { ChatService } from '../../packages/server/src/modules/chat/chat.service
 import { createIpGenerator } from './helpers/test-utils.js'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
-const nextIp = createIpGenerator(3)
+const nextIp = createIpGenerator(4)
 
 describe('ChatController', () => {
   let app: NestFastifyApplication
@@ -19,6 +19,7 @@ describe('ChatController', () => {
   let dbUrl: string
   let dbName: string
   let userToken: string
+  let userId: string
 
   beforeAll(async () => {
     dbManager = new TestDatabaseManager()
@@ -27,7 +28,12 @@ describe('ChatController', () => {
     app = await TestAppFactory.create(dbUrl)
 
     const email = `chat-${Date.now()}@test.gofer`
-    await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Chat User' }, { remoteAddress: nextIp() })
+    const user = await AuthFixtures.createUser(
+      app,
+      { email, password: 'Test1234!', name: 'Chat User' },
+      { remoteAddress: nextIp() }
+    )
+    userId = user.id
     userToken = await AuthFixtures.loginAs(app, { email, password: 'Test1234!' }, { remoteAddress: nextIp() })
   }, 60000)
 
@@ -36,165 +42,175 @@ describe('ChatController', () => {
     if (dbManager && dbName) await dbManager.dropDatabase(dbName)
   })
 
-  describe('POST /api/chat', () => {
+  async function createSession(title = 'Test Session') {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: { authorization: `Bearer ${userToken}` },
+      payload: { title },
+    })
+    expect(res.statusCode).toBe(201)
+    return res.json().data.id as string
+  }
+
+  describe('POST /api/chat-messages', () => {
     it('AC-60: returns SSE stream for valid request', async () => {
+      const sessionId = await createSession()
       const chatService = app.get(ChatService)
       vi.spyOn(chatService, 'streamChat').mockImplementation(async function* () {
-        yield { content: 'Hello', done: false }
-        yield { content: '!', done: false }
-        yield { done: true }
-      })
-
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/chat',
-        headers: { authorization: `Bearer ${userToken}` },
-        payload: {
-          message: 'Hello',
-          sessionId: '550e8400-e29b-41d4-a716-446655440000',
-          config: {
-            provider: 'openai',
-            model: 'gpt-4',
-            baseUrl: 'https://api.openai.com',
-            apiKey: 'test-key',
-          },
-        },
-      })
-      expect(res.statusCode).toBe(200)
-      expect(res.headers['content-type']).toContain('text/event-stream')
-    })
-
-    it('AC-61: returns 400 for empty message', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/chat',
-        headers: { authorization: `Bearer ${userToken}` },
-        payload: {
-          message: '',
-          sessionId: '550e8400-e29b-41d4-a716-446655440000',
-          config: {
-            provider: 'openai',
-            model: 'gpt-4',
-            baseUrl: 'https://api.openai.com',
-            apiKey: 'test-key',
-          },
-        },
-      })
-      expect(res.statusCode).toBe(400)
-      const body = res.json()
-      expect(body.error.code).toBe('VALIDATION_ERROR')
-    })
-
-    it('AC-62: returns 400 for invalid sessionId', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/chat',
-        headers: { authorization: `Bearer ${userToken}` },
-        payload: {
-          message: 'Hello',
-          sessionId: 'invalid-uuid',
-          config: {
-            provider: 'openai',
-            model: 'gpt-4',
-            baseUrl: 'https://api.openai.com',
-            apiKey: 'test-key',
-          },
-        },
-      })
-      expect(res.statusCode).toBe(400)
-      const body = res.json()
-      expect(body.error.code).toBe('VALIDATION_ERROR')
-    })
-
-    it('AC-63: returns 400 for empty provider', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/chat',
-        headers: { authorization: `Bearer ${userToken}` },
-        payload: {
-          message: 'Hello',
-          sessionId: '550e8400-e29b-41d4-a716-446655440000',
-          config: {
-            provider: '',
-            model: 'gpt-4',
-            baseUrl: 'https://api.openai.com',
-            apiKey: 'test-key',
-          },
-        },
-      })
-      expect(res.statusCode).toBe(400)
-      const body = res.json()
-      expect(body.error.code).toBe('VALIDATION_ERROR')
-    })
-
-    it('AC-64: returns 400 for disallowed baseUrl', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/chat',
-        headers: { authorization: `Bearer ${userToken}` },
-        payload: {
-          message: 'Hello',
-          sessionId: '550e8400-e29b-41d4-a716-446655440000',
-          config: {
-            provider: 'openai',
-            model: 'gpt-4',
-            baseUrl: 'https://evil.com',
-            apiKey: 'test-key',
-          },
-        },
-      })
-      expect(res.statusCode).toBe(400)
-      const body = res.json()
-      expect(body.error.code).toBe('VALIDATION_ERROR')
-    })
-
-    it('AC-65: returns 401 without token', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/chat',
-        payload: {
-          message: 'Hello',
-          sessionId: '550e8400-e29b-41d4-a716-446655440000',
-          config: {
-            provider: 'openai',
-            model: 'gpt-4',
-            baseUrl: 'https://api.openai.com',
-            apiKey: 'test-key',
-          },
-        },
-      })
-      expect(res.statusCode).toBe(401)
-    })
-
-    it('AC-66: handles client disconnect gracefully', async () => {
-      const chatService = app.get(ChatService)
-      const abortSpy = vi.fn()
-      vi.spyOn(chatService, 'streamChat').mockImplementation(async function* () {
-        try {
-          yield { content: 'Hello', done: false }
-          await new Promise(resolve => setTimeout(resolve, 100))
-          yield { content: '!', done: false }
-        } finally {
-          abortSpy()
+        yield {
+          event: 'message',
+          conversation_id: sessionId,
+          message_id: '00000000-0000-0000-0000-000000000001',
+          answer: 'Hello',
+          done: false,
+        }
+        yield {
+          event: 'message',
+          conversation_id: sessionId,
+          message_id: '00000000-0000-0000-0000-000000000001',
+          answer: '',
+          done: true,
         }
       })
 
       const res = await app.inject({
         method: 'POST',
-        url: '/api/chat',
+        url: '/api/chat-messages',
         headers: { authorization: `Bearer ${userToken}` },
         payload: {
-          message: 'Hello',
-          sessionId: '550e8400-e29b-41d4-a716-446655440000',
-          config: {
-            provider: 'openai',
-            model: 'gpt-4',
-            baseUrl: 'https://api.openai.com',
-            apiKey: 'test-key',
-          },
+          response_mode: 'streaming',
+          query: 'Hello',
+          conversation_id: sessionId,
         },
       })
+
       expect(res.statusCode).toBe(200)
+      expect(res.headers['content-type']).toContain('text/event-stream')
+      expect(res.payload).toContain('"answer":"Hello"')
+      expect(res.payload).toContain('"done":true')
+    })
+
+    it('AC-61: returns 400 for empty query', async () => {
+      const sessionId = await createSession()
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/chat-messages',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: {
+          response_mode: 'streaming',
+          query: '',
+          conversation_id: sessionId,
+        },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AC-62: returns 400 for invalid conversation_id', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/chat-messages',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: {
+          response_mode: 'streaming',
+          query: 'Hello',
+          conversation_id: 'invalid-uuid',
+        },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AC-63: returns 404 when session does not exist', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/chat-messages',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: {
+          response_mode: 'streaming',
+          query: 'Hello',
+          conversation_id: '550e8400-e29b-41d4-a716-446655440000',
+        },
+      })
+      expect(res.statusCode).toBe(404)
+      const body = res.json()
+      expect(body.error.code).toBe('NOT_FOUND')
+    })
+
+    it('AC-64: returns 403 for other user session', async () => {
+      const otherEmail = `chat-other-${Date.now()}@test.gofer`
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'Other User' },
+        { remoteAddress: nextIp() }
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() }
+      )
+
+      const sessionId = await createSession('Private Session')
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/chat-messages',
+        headers: { authorization: `Bearer ${otherToken}` },
+        payload: {
+          response_mode: 'streaming',
+          query: 'Hello',
+          conversation_id: sessionId,
+        },
+      })
+      expect(res.statusCode).toBe(403)
+      const body = res.json()
+      expect(body.error.code).toBe('FORBIDDEN')
+    })
+
+    it('AC-65: returns 401 without token', async () => {
+      const sessionId = await createSession()
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/chat-messages',
+        payload: {
+          response_mode: 'streaming',
+          query: 'Hello',
+          conversation_id: sessionId,
+        },
+      })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('AC-66: handles stream error as SSE error event', async () => {
+      const sessionId = await createSession()
+      const chatService = app.get(ChatService)
+      vi.spyOn(chatService, 'streamChat').mockImplementation(async function* () {
+        yield {
+          event: 'message',
+          conversation_id: sessionId,
+          message_id: '00000000-0000-0000-0000-000000000001',
+          answer: 'Hello',
+          done: false,
+        }
+        throw new Error('LLM stream failed')
+      })
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/chat-messages',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: {
+          response_mode: 'streaming',
+          query: 'Hello',
+          conversation_id: sessionId,
+        },
+      })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.payload).toContain('"error":"LLM stream failed"')
+      expect(res.payload).toContain('"done":true')
     })
   })
 })

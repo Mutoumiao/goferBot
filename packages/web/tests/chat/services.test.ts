@@ -5,7 +5,7 @@ vi.mock('@/api/chat', () => ({
   createSession: vi.fn(() => ({ send: vi.fn() })),
   deleteSession: vi.fn(() => ({ send: vi.fn() })),
   renameSession: vi.fn(() => ({ send: vi.fn() })),
-  getHistory: vi.fn(() => ({ send: vi.fn() })),
+  getMessages: vi.fn(() => ({ send: vi.fn() })),
 }))
 
 import {
@@ -13,7 +13,7 @@ import {
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
   renameSession as apiRenameSession,
-  getHistory,
+  getMessages,
 } from '@/api/chat'
 import { useChatStore } from '@/features/chat/store'
 import {
@@ -155,7 +155,7 @@ describe('chat services', () => {
   describe('loadChatHistory', () => {
     it('sets messages on success', async () => {
       const messages: Message[] = [{ id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' }]
-      vi.mocked(getHistory).mockReturnValue({ send: vi.fn().mockResolvedValue({ messages }) } as any)
+      vi.mocked(getMessages).mockReturnValue({ send: vi.fn().mockResolvedValue({ data: messages }) } as any)
 
       await loadChatHistory('s1')
 
@@ -164,7 +164,7 @@ describe('chat services', () => {
     })
 
     it('silently handles error and resets loading', async () => {
-      vi.mocked(getHistory).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('hist fail')) } as any)
+      vi.mocked(getMessages).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('hist fail')) } as any)
 
       await loadChatHistory('s1')
 

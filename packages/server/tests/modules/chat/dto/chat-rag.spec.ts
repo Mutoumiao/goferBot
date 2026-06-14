@@ -3,9 +3,9 @@ import { streamChatRequestSchema } from '@goferbot/data'
 
 vi.mock('@langchain/openai', () => ({
   ChatOpenAI: vi.fn().mockImplementation(() => ({
-    stream: vi.fn().mockResolvedValue([
-      { content: 'ok' },
-    ]),
+    stream: vi.fn().mockImplementation(async function* () {
+      yield { content: 'ok' }
+    }),
   })),
 }))
 
@@ -62,6 +62,7 @@ describe('ChatService RAG retrieval', () => {
     $transaction: vi.fn().mockResolvedValue([]),
     session: { findUnique: vi.fn().mockResolvedValue({ id: 's1', userId: 'u1' }), update: vi.fn().mockResolvedValue({}) },
     message: { create: vi.fn().mockResolvedValue({}), findMany: vi.fn().mockResolvedValue([]) },
+    knowledgeBase: { count: vi.fn().mockResolvedValue(1) },
   }
   const mockConfigService = {
     get: vi.fn().mockReturnValue(''),
@@ -75,15 +76,18 @@ describe('ChatService RAG retrieval', () => {
       defaultChatProvider: 'openai',
     }),
   }
+  const mockModelRegistry = {
+    lookup: vi.fn().mockReturnValue(undefined),
+  }
 
   it('AC-03: injects retrieved chunks into system message', async () => {
     const { ChatService } = await import('@/modules/chat/chat.service.js')
-    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any)
+    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any, mockModelRegistry as any)
 
     const dto = {
-      input: 'What does the document say?',
-      sessionId: 's1',
-      knowledgeBaseIds: ['kb1'],
+      query: 'What does the document say?',
+      conversation_id: 's1',
+      knowledge_base_ids: ['kb1'],
     }
 
     const stream = service.streamChat('u1', dto as any)
@@ -92,18 +96,18 @@ describe('ChatService RAG retrieval', () => {
       chunks.push(chunk)
     }
 
-    expect(mockRagService.retrieveContext).toHaveBeenCalledWith(expect.objectContaining({ original: dto.input, kbIds: ['kb1'] }))
+    expect(mockRagService.retrieveContext).toHaveBeenCalledWith(expect.objectContaining({ original: dto.query, kbIds: ['kb1'] }))
   })
 
   it('AC-04: skips retrieval when knowledgeBaseIds is omitted', async () => {
     mockRagService.retrieveContext.mockClear()
 
     const { ChatService } = await import('@/modules/chat/chat.service.js')
-    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any)
+    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any, mockModelRegistry as any)
 
     const dto = {
-      input: 'Hello',
-      sessionId: 's1',
+      query: 'Hello',
+      conversation_id: 's1',
     }
 
     const stream = service.streamChat('u1', dto as any)
@@ -116,12 +120,12 @@ describe('ChatService RAG retrieval', () => {
     mockRagService.retrieveContext.mockClear()
 
     const { ChatService } = await import('@/modules/chat/chat.service.js')
-    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any)
+    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any, mockModelRegistry as any)
 
     const dto = {
-      input: 'Hello',
-      sessionId: 's1',
-      knowledgeBaseIds: [],
+      query: 'Hello',
+      conversation_id: 's1',
+      knowledge_base_ids: [],
     }
 
     const stream = service.streamChat('u1', dto as any)
@@ -134,12 +138,12 @@ describe('ChatService RAG retrieval', () => {
     mockRagService.retrieveContext.mockResolvedValue({ context: null })
 
     const { ChatService } = await import('@/modules/chat/chat.service.js')
-    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any)
+    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any, mockModelRegistry as any)
 
     const dto = {
-      input: 'Hello',
-      sessionId: 's1',
-      knowledgeBaseIds: ['kb1'],
+      query: 'Hello',
+      conversation_id: 's1',
+      knowledge_base_ids: ['kb1'],
     }
 
     const stream = service.streamChat('u1', dto as any)
@@ -149,21 +153,28 @@ describe('ChatService RAG retrieval', () => {
   })
 
   it('AC-07: falls back to plain LLM when retrieval throws', async () => {
-    const { ChatService } = await import('@/modules/chat/chat.service.js')
-    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any)
+    // 使用 async generator，使抛出的异常能被 for-await-of 正确捕获
+    mockRagService.retrieveContext.mockImplementationOnce(() =>
+      Promise.reject(new Error('Vector store down')),
+    )
 
-    mockRagService.retrieveContext.mockImplementationOnce(() => Promise.reject(new Error('Vector store down')))
+    const { ChatService } = await import('@/modules/chat/chat.service.js')
+    const service = new ChatService(mockPrisma as any, mockConfigService as any, mockRagService as any, mockSettingsService as any, mockModelRegistry as any)
 
     const dto = {
-      input: 'Hello',
-      sessionId: 's1',
-      knowledgeBaseIds: ['kb1'],
+      query: 'Hello',
+      conversation_id: 's1',
+      knowledge_base_ids: ['kb1'],
     }
 
-    await expect(async () => {
+    let thrown: unknown
+    try {
       const stream = service.streamChat('u1', dto as any)
       for await (const _ of stream) { /* consume */ }
-    }).not.toThrow()
+    } catch (err: unknown) {
+      thrown = err
+    }
+    expect(thrown).toBeUndefined()
   })
 })
 

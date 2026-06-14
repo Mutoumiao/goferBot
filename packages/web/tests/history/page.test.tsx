@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import type { Pagination } from '@goferbot/data'
 
 const mockNavigate = vi.fn()
 const mockOpenDialog = vi.fn()
@@ -12,6 +13,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/features/chat/hooks', () => ({
   useChatHistory: vi.fn(),
+  useLazyChatHistory: vi.fn(),
 }))
 
 vi.mock('@/features/chat/services', () => ({
@@ -61,13 +63,30 @@ vi.mock('@/components/ui/pagination', () => ({
   PaginationContent: ({ children }: any) => <ul>{children}</ul>,
   PaginationEllipsis: () => <li>...</li>,
   PaginationItem: ({ children }: any) => <li>{children}</li>,
-  PaginationLink: ({ children, isActive, ...props }: any) => <a {...props}>{children}</a>,
-  PaginationNext: ({ text, ...props }: any) => <a {...props}>{text}</a>,
-  PaginationPrevious: ({ text, ...props }: any) => <a {...props}>{text}</a>,
+  PaginationLink: ({ children, isActive, onClick }: any) => (
+    <button onClick={onClick} data-active={isActive}>{children}</button>
+  ),
+  PaginationNext: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
+  PaginationPrevious: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
 }))
 
-import { useChatHistory } from '@/features/chat/hooks'
+vi.mock('@/router-register', () => ({
+  ROUTES_REGISTER: {
+    chat: { bindTo: (id: string) => `/chat/${id}` },
+  },
+}))
+
+import { useLazyChatHistory } from '@/features/chat/hooks'
 import { ChatHistoryPage } from '@/features/chat/components/ChatHistoryPage'
+
+const createPagination = (total: number, currentPage: number, size: number): Pagination => ({
+  total,
+  currentPage,
+  size,
+  totalPage: Math.ceil(total / size),
+  hasNextPage: currentPage < Math.ceil(total / size),
+  hasPrevPage: currentPage > 1,
+})
 
 describe('ChatHistoryPage', () => {
   beforeEach(() => {
@@ -75,12 +94,13 @@ describe('ChatHistoryPage', () => {
   })
 
   it('renders loading skeleton', () => {
-    vi.mocked(useChatHistory).mockReturnValue({
+    vi.mocked(useLazyChatHistory).mockReturnValue({
       sessions: [],
-      total: 0,
+      pagination: null,
       loading: true,
       error: undefined,
       reload: vi.fn(),
+      load: vi.fn(),
     })
 
     render(<ChatHistoryPage />)
@@ -89,12 +109,13 @@ describe('ChatHistoryPage', () => {
   })
 
   it('renders empty state when no sessions', () => {
-    vi.mocked(useChatHistory).mockReturnValue({
+    vi.mocked(useLazyChatHistory).mockReturnValue({
       sessions: [],
-      total: 0,
+      pagination: null,
       loading: false,
       error: undefined,
       reload: vi.fn(),
+      load: vi.fn(),
     })
 
     render(<ChatHistoryPage />)
@@ -111,12 +132,13 @@ describe('ChatHistoryPage', () => {
         updatedAt: new Date().toISOString(),
       },
     ]
-    vi.mocked(useChatHistory).mockReturnValue({
+    vi.mocked(useLazyChatHistory).mockReturnValue({
       sessions,
-      total: 1,
+      pagination: createPagination(1, 1, 10),
       loading: false,
       error: undefined,
       reload: vi.fn(),
+      load: vi.fn(),
     })
 
     render(<ChatHistoryPage />)
@@ -124,6 +146,27 @@ describe('ChatHistoryPage', () => {
 
     fireEvent.click(screen.getByText('测试会话'))
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/chat/s1' })
+  })
+
+  it('renders error state and allows retry', async () => {
+    const mockReload = vi.fn()
+    vi.mocked(useLazyChatHistory).mockReturnValue({
+      sessions: [],
+      pagination: null,
+      loading: false,
+      error: new Error('加载失败'),
+      reload: mockReload,
+      load: vi.fn(),
+    })
+
+    render(<ChatHistoryPage />)
+
+    expect(screen.getByText('加载失败：加载失败')).toBeDefined()
+    
+    const retryBtn = screen.getByText('重试')
+    fireEvent.click(retryBtn)
+    
+    expect(mockReload).toHaveBeenCalled()
   })
 
   it('deletes session after confirmation', async () => {
@@ -136,22 +179,16 @@ describe('ChatHistoryPage', () => {
         updatedAt: new Date().toISOString(),
       },
     ]
-    vi.mocked(useChatHistory).mockReturnValue({
-      sessions,
-      total: 1,
-      loading: false,
-      error: undefined,
-      reload: vi.fn(),
-    })
     const mockReload = vi.fn()
-    vi.mocked(useChatHistory).mockReturnValue({
+    vi.mocked(useLazyChatHistory).mockReturnValue({
       sessions,
-      total: 1,
+      pagination: createPagination(1, 1, 10),
       loading: false,
       error: undefined,
       reload: mockReload,
+      load: vi.fn(),
     })
-    mockDeleteChatSessionWithReload.mockResolvedValue(undefined)
+    mockDeleteChatSessionWithReload.mockResolvedValue(true)
 
     render(<ChatHistoryPage />)
     expect(screen.getByText('待删除')).toBeDefined()
@@ -171,7 +208,6 @@ describe('ChatHistoryPage', () => {
       )
     })
 
-    // 验证 onReload 回调正确关联到 reload
     const callArgs = mockDeleteChatSessionWithReload.mock.calls[0][1]
     callArgs.onReload()
     expect(mockReload).toHaveBeenCalled()
@@ -185,16 +221,74 @@ describe('ChatHistoryPage', () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }))
-    vi.mocked(useChatHistory).mockReturnValue({
+    vi.mocked(useLazyChatHistory).mockReturnValue({
       sessions,
-      total: 12,
+      pagination: createPagination(12, 1, 10),
       loading: false,
       error: undefined,
       reload: vi.fn(),
+      load: vi.fn(),
     })
 
     render(<ChatHistoryPage />)
     expect(screen.getByText('会话 0')).toBeDefined()
     expect(screen.getByText('2')).toBeDefined()
+  })
+
+  it('shows loading skeleton during initial load', () => {
+    vi.mocked(useLazyChatHistory).mockReturnValue({
+      sessions: [],
+      pagination: null,
+      loading: true,
+      error: undefined,
+      reload: vi.fn(),
+      load: vi.fn(),
+    })
+
+    render(<ChatHistoryPage />)
+    
+    const skeletons = document.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBe(4)
+  })
+
+  it('shows page header with title and description', () => {
+    vi.mocked(useLazyChatHistory).mockReturnValue({
+      sessions: [],
+      pagination: null,
+      loading: false,
+      error: undefined,
+      reload: vi.fn(),
+      load: vi.fn(),
+    })
+
+    render(<ChatHistoryPage />)
+    
+    expect(screen.getByText('会话历史')).toBeDefined()
+    expect(screen.getByText('点击任意记录即可恢复到对应会话，继续追问、整理或查看引用来源。')).toBeDefined()
+  })
+
+  it('handles page change via pagination', () => {
+    const sessions = Array.from({ length: 10 }, (_, i) => ({
+      id: `s${i}`,
+      title: `会话 ${i}`,
+      messageCount: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }))
+    vi.mocked(useLazyChatHistory).mockReturnValue({
+      sessions,
+      pagination: createPagination(25, 1, 10),
+      loading: false,
+      error: undefined,
+      reload: vi.fn(),
+      load: vi.fn(),
+    })
+
+    render(<ChatHistoryPage />)
+    
+    const nextPageBtn = screen.getByText('下一页')
+    fireEvent.click(nextPageBtn)
+    
+    expect(useLazyChatHistory).toHaveBeenCalledWith(2, 10)
   })
 })
