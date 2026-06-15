@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-vi.mock('@/api/kb', () => ({
+vi.mock('@/api/KnowledgeBase', () => ({
   getKbList: vi.fn(() => ({ send: vi.fn() })),
   uploadFile: vi.fn(() => ({ send: vi.fn() })),
 }))

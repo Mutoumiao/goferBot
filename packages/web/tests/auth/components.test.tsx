@@ -99,7 +99,7 @@ describe('auth components', () => {
       await waitFor(() => {
         expect(loginUser).toHaveBeenCalledWith('user@example.com', 'password', false)
       })
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/app/chat' })
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
     })
 
     it('shows error message on failure', async () => {
@@ -230,7 +230,7 @@ describe('auth components', () => {
       await waitFor(() => {
         expect(registerUser).toHaveBeenCalledWith('User', 'user@example.com', 'password123')
       })
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/app/chat' })
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
     })
 
     it('toggles confirm password visibility', () => {

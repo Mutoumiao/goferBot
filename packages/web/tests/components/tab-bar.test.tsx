@@ -1,54 +1,95 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TabBar } from '@/components/tab-bar/TabBar'
+import type { Tab } from '@/stores/workspace.store'
+import { ROUTES_REGISTER } from '@/router-register'
 
-// ---- mock router ----
 const mockNavigate = vi.fn()
 
 vi.mock('@tanstack/react-router', () => ({
-  useRouter: () => ({
-    navigate: mockNavigate,
-  }),
+  createRootRoute: () => () => ({ component: () => null }),
+  createFileRoute: () => () => ({ component: () => null }),
+  useRouter: () => ({ navigate: mockNavigate }),
   Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
 }))
 
-// ---- mock tabs store ----
-const mockTabs: any[] = []
-let mockActiveTabId = 'home'
-let mockRemoveTab = vi.fn()
+vi.mock('lucide-react', () => ({
+  Plus: () => <svg data-testid="icon-plus" />,
+  X: () => <svg data-testid="icon-x" />,
+  MessageCircle: () => <svg data-testid="icon-message" />,
+  BookOpen: () => <svg data-testid="icon-book" />,
+  Clock: () => <svg data-testid="icon-clock" />,
+  Settings: () => <svg data-testid="icon-settings" />,
+  Trash2: () => <svg data-testid="icon-trash" />,
+  User: () => <svg data-testid="icon-user" />,
+}))
 
-const mockStoreState = () => ({
-  tabs: mockTabs,
-  activeTabId: mockActiveTabId,
-  removeTab: mockRemoveTab,
-  findTabByRoute: (route: string) => mockTabs.find((t) => t.route === route) ?? null,
-})
-
-vi.mock('@/stores/tabs', () => ({
-  useTabsStore: Object.assign(
-    (selector?: (s: any) => any) => {
-      const state = mockStoreState()
-      return selector ? selector(state) : state
-    },
-    {
-      getState: () => mockStoreState(),
-    },
+vi.mock('@/components/ui/button', () => ({
+  Button: ({ children, onClick, disabled, title, className, variant, size, 'aria-label': ariaLabel }: any) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={className}
+      data-variant={variant}
+      data-size={size}
+      aria-label={ariaLabel}
+    >
+      {children}
+    </button>
   ),
 }))
 
-// ---- mock chat service ----
-vi.mock('@/features/chat/services', () => ({
-  createChatSession: vi.fn(),
+const mockTabs: Tab[] = []
+let mockActiveTabId = ''
+
+const mockState = {
+  get tabs() {
+    return mockTabs
+  },
+  get activeTabId() {
+    return mockActiveTabId
+  },
+  activeTab: () => mockTabs.find((t) => t.id === mockActiveTabId) ?? null,
+  switchTab: vi.fn(),
+  removeTab: vi.fn(() => ({ removed: true, nextTab: null as Tab | null })),
+  updateTab: vi.fn(),
+  addTab: vi.fn((tab: Omit<Tab, 'id' | 'createdAt'>) => {
+    const newTab = { ...tab, id: 'new-tab-id', createdAt: Date.now() } as Tab
+    mockTabs.push(newTab)
+    return newTab
+  }),
+  renameTab: vi.fn(),
+  findTabByConversationId: vi.fn(),
+  findTabByType: vi.fn(),
+  reset: vi.fn(),
+}
+
+vi.mock('@/stores/workspace.store', () => ({
+  useWorkspaceStore: Object.assign(
+    (selector?: (s: any) => any) => {
+      return selector ? selector(mockState) : mockState
+    },
+    { getState: () => mockState },
+  ),
 }))
 
-import { createChatSession } from '@/features/chat/services'
+vi.mock('@/stores/tabManager', () => ({
+  tabManager: {
+    openNewChat: vi.fn(),
+    openConversation: vi.fn(),
+    switchTab: vi.fn(),
+    closeTab: vi.fn(),
+  },
+}))
+
+import { tabManager } from '@/stores/tabManager'
 
 describe('TabBar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockTabs.length = 0
-    mockActiveTabId = 'home'
-    mockRemoveTab = vi.fn()
+    mockActiveTabId = ''
   })
 
   it('renders with no tabs', () => {
@@ -58,8 +99,8 @@ describe('TabBar', () => {
 
   it('renders tabs from store', () => {
     mockTabs.push(
-      { id: 'home', route: '/chat', title: '问答首页', closable: false },
-      { id: 't1', route: '/knowledgeBase', title: '知识库', closable: true },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
     )
     mockActiveTabId = 'home'
 
@@ -70,63 +111,53 @@ describe('TabBar', () => {
 
   it('activates tab on click', () => {
     mockTabs.push(
-      { id: 'home', route: '/chat', title: '问答首页', closable: false },
-      { id: 't1', route: '/knowledgeBase', title: '知识库', closable: true },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
     )
     mockActiveTabId = 'home'
 
     render(<TabBar />)
     fireEvent.click(screen.getByText('知识库'))
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/knowledgeBase' })
+    expect(tabManager.switchTab).toHaveBeenCalledWith('t1')
   })
 
-  it('does not navigate when clicking already active tab', () => {
+  it('does not switch when clicking already active tab', () => {
     mockTabs.push(
-      { id: 'home', route: '/chat', title: '问答首页', closable: false },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
     )
     mockActiveTabId = 'home'
 
     render(<TabBar />)
     fireEvent.click(screen.getByText('问答首页'))
-    expect(mockNavigate).not.toHaveBeenCalled()
+    expect(tabManager.switchTab).not.toHaveBeenCalled()
   })
 
   it('closes tab when close button clicked', () => {
     mockTabs.push(
-      { id: 'home', route: '/chat', title: '问答首页', closable: false },
-      { id: 't1', route: '/knowledgeBase', title: '知识库', closable: true },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
     )
     mockActiveTabId = 't1'
-    mockRemoveTab.mockReturnValue('home')
 
     render(<TabBar />)
-    // hover to show close button
     const tab = screen.getByText('知识库').closest('[data-active]') as HTMLElement
     fireEvent.mouseEnter(tab)
     const closeBtn = screen.getByLabelText('关闭 知识库')
     fireEvent.click(closeBtn)
 
-    expect(mockRemoveTab).toHaveBeenCalledWith('t1')
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/chat' })
+    expect(tabManager.closeTab).toHaveBeenCalledWith('t1')
   })
 
-  it('creates new chat session on plus button click', async () => {
-    vi.mocked(createChatSession).mockResolvedValue({ id: 's1', title: '新对话', messageCount: 0, createdAt: '', updatedAt: '' })
-
+  it('creates new chat tab on plus button click', () => {
     render(<TabBar />)
     fireEvent.click(screen.getByTitle('新建问答会话'))
-
-    // wait for async
-    await new Promise((r) => setTimeout(r, 10))
-
-    expect(createChatSession).toHaveBeenCalled()
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/chat/s1' })
+    expect(tabManager.openNewChat).toHaveBeenCalled()
   })
 
-  it('shows blue dot for active chat-session tab', () => {
+  it('shows active state for chat-session tab', () => {
     mockTabs.push(
-      { id: 'home', route: '/chat', title: '问答首页', closable: false },
-      { id: 't1', route: '/chat/s1', title: '会话1', closable: true, sessionId: 's1' },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 't1', type: ROUTES_REGISTER.chat.key, title: '会话1', closable: true, conversationId: 's1', createdAt: Date.now() },
     )
     mockActiveTabId = 't1'
 
@@ -137,7 +168,7 @@ describe('TabBar', () => {
 
   it('does not show close button for non-closable tab', () => {
     mockTabs.push(
-      { id: 'home', route: '/chat', title: '问答首页', closable: false },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
     )
     mockActiveTabId = 'home'
 

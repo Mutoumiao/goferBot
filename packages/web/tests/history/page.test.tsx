@@ -7,8 +7,33 @@ const mockOpenDialog = vi.fn()
 const mockDeleteChatSessionWithReload = vi.fn()
 
 vi.mock('@tanstack/react-router', () => ({
+  createRootRoute: () => () => ({ component: () => null }),
   createFileRoute: () => () => ({ component: () => null }),
   useRouter: () => ({ navigate: mockNavigate }),
+}))
+
+vi.mock('@/stores/tabManager', () => ({
+  tabManager: {
+    openNewChat: vi.fn(),
+    openConversation: vi.fn(),
+    switchTab: vi.fn(),
+    closeTab: vi.fn(),
+  },
+}))
+
+vi.mock('@/stores/workspace.store', () => ({
+  useWorkspaceStore: Object.assign(
+    (selector?: (s: any) => any) => {
+      const state = {
+        tabs: [],
+        activeTabId: '',
+        findTabByConversationId: vi.fn(),
+        updateTab: vi.fn(),
+      }
+      return selector ? selector(state) : state
+    },
+    { getState: () => ({ findTabByConversationId: vi.fn(), updateTab: vi.fn() }) },
+  ),
 }))
 
 vi.mock('@/features/chat/hooks', () => ({
@@ -78,6 +103,7 @@ vi.mock('@/router-register', () => ({
 
 import { useLazyChatHistory } from '@/features/chat/hooks'
 import { ChatHistoryPage } from '@/features/chat/components/ChatHistoryPage'
+import { tabManager } from '@/stores/tabManager'
 
 const createPagination = (total: number, currentPage: number, size: number): Pagination => ({
   total,
@@ -145,7 +171,7 @@ describe('ChatHistoryPage', () => {
     expect(screen.getByText('测试会话')).toBeDefined()
 
     fireEvent.click(screen.getByText('测试会话'))
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/chat/s1' })
+    expect(tabManager.openConversation).toHaveBeenCalledWith('s1', '测试会话')
   })
 
   it('renders error state and allows retry', async () => {

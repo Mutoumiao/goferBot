@@ -18,6 +18,7 @@ import {
   getMessages,
 } from '@/api/chat'
 import { useChatStore } from '@/features/chat/store'
+import { useWorkspaceStore } from '@/stores/workspace.store'
 import {
   loadChatSessions,
   createChatSession,
@@ -28,6 +29,7 @@ import {
   submitTempChat,
 } from '@/features/chat/services'
 import { getPendingMessageKey } from '@/features/chat/constants'
+import { ROUTES_REGISTER } from '@/router-register'
 import type { Session, Message } from '@goferbot/data'
 
 describe('chat services', () => {
@@ -42,6 +44,7 @@ describe('chat services', () => {
       isLoadingSessions: false,
       error: null,
     })
+    useWorkspaceStore.getState().reset()
     vi.clearAllMocks()
   })
 
@@ -212,10 +215,12 @@ describe('chat services', () => {
     it('creates session and stores pending message as JSON', async () => {
       const session: Session = { id: 's1', title: 'New', messageCount: 0, createdAt: '', updatedAt: '' }
       vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(session) } as any)
+      useWorkspaceStore.getState().addTab({ type: ROUTES_REGISTER.chat.key, title: '新会话', closable: true, id: 'tab-1' })
 
-      const result = await submitTempChat('hello world')
+      const result = await submitTempChat('hello world', 'tab-1')
 
       expect(result).toBe('s1')
+      expect(useWorkspaceStore.getState().tabs[0].conversationId).toBe('s1')
       const stored = sessionStorage.getItem(getPendingMessageKey('s1'))
       expect(stored).toBeDefined()
       expect(JSON.parse(stored!)).toEqual({ content: 'hello world' })
@@ -225,7 +230,7 @@ describe('chat services', () => {
       const session: Session = { id: 's2', title: 'New', messageCount: 0, createdAt: '', updatedAt: '' }
       vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(session) } as any)
 
-      await submitTempChat('hello', { knowledgeBaseIds: ['kb1', 'kb2'] })
+      await submitTempChat('hello', 'tab-1', { knowledgeBaseIds: ['kb1', 'kb2'] })
 
       const stored = sessionStorage.getItem(getPendingMessageKey('s2'))
       expect(JSON.parse(stored!)).toEqual({ content: 'hello', knowledgeBaseIds: ['kb1', 'kb2'] })
@@ -234,7 +239,7 @@ describe('chat services', () => {
     it('returns null when session creation fails', async () => {
       vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(null) } as any)
 
-      const result = await submitTempChat('hello')
+      const result = await submitTempChat('hello', 'tab-1')
 
       expect(result).toBeNull()
       expect(sessionStorage.length).toBe(0)

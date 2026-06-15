@@ -52,7 +52,7 @@ describe('ChatTempHome', () => {
   })
 
   it('renders the home page with input and action buttons', () => {
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     expect(screen.getByText('今天想从知识库里理解什么？')).toBeDefined()
     expect(screen.getByPlaceholderText('询问、总结或让 AI 帮你整理桌面资料...')).toBeDefined()
@@ -62,7 +62,7 @@ describe('ChatTempHome', () => {
   })
 
   it('disables send button when input is empty', () => {
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     const sendBtn = screen.getByTestId('temp-send-btn') as HTMLButtonElement
     expect(sendBtn.disabled).toBe(true)
@@ -72,7 +72,7 @@ describe('ChatTempHome', () => {
     vi.mocked(submitTempChat).mockResolvedValue('s1')
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     const input = screen.getByPlaceholderText('询问、总结或让 AI 帮你整理桌面资料...')
     await user.type(input, 'hello world')
@@ -80,29 +80,29 @@ describe('ChatTempHome', () => {
     const sendBtn = screen.getByTestId('temp-send-btn')
     await user.click(sendBtn)
 
-    expect(submitTempChat).toHaveBeenCalledWith('hello world', { knowledgeBaseIds: [] })
-    expect(mockNavigate).toHaveBeenCalledWith('s1')
+    expect(submitTempChat).toHaveBeenCalledWith('hello world', 'tab-1', { knowledgeBaseIds: [] })
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('submits chat on Enter key without shift', async () => {
     vi.mocked(submitTempChat).mockResolvedValue('s2')
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     const input = screen.getByPlaceholderText('询问、总结或让 AI 帮你整理桌面资料...')
     await user.type(input, 'enter submit')
     await user.keyboard('{Enter}')
 
-    expect(submitTempChat).toHaveBeenCalledWith('enter submit', { knowledgeBaseIds: [] })
-    expect(mockNavigate).toHaveBeenCalledWith('s2')
+    expect(submitTempChat).toHaveBeenCalledWith('enter submit', 'tab-1', { knowledgeBaseIds: [] })
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('does not submit on shift+enter', async () => {
     vi.mocked(submitTempChat).mockResolvedValue('s3')
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     const input = screen.getByPlaceholderText('询问、总结或让 AI 帮你整理桌面资料...')
     await user.type(input, 'shift enter')
@@ -115,7 +115,7 @@ describe('ChatTempHome', () => {
     vi.mocked(submitTempChat).mockResolvedValue('s4')
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     await user.click(screen.getByTestId('kb-selector-trigger'))
     const items = screen.getAllByTestId('kb-selector-item')
@@ -126,15 +126,15 @@ describe('ChatTempHome', () => {
 
     await user.click(screen.getByTestId('temp-send-btn'))
 
-    expect(submitTempChat).toHaveBeenCalledWith('with kb', { knowledgeBaseIds: ['kb1'] })
-    expect(mockNavigate).toHaveBeenCalledWith('s4')
+    expect(submitTempChat).toHaveBeenCalledWith('with kb', 'tab-1', { knowledgeBaseIds: ['kb1'] })
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('does not navigate when session creation fails', async () => {
     vi.mocked(submitTempChat).mockResolvedValue(null)
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     const input = screen.getByPlaceholderText('询问、总结或让 AI 帮你整理桌面资料...')
     await user.type(input, 'fail')
@@ -147,7 +147,7 @@ describe('ChatTempHome', () => {
     vi.mocked(submitTempChat).mockImplementation(async () => 's5')
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     const input = screen.getByPlaceholderText('询问、总结或让 AI 帮你整理桌面资料...')
     await user.type(input, 'loading')
@@ -162,7 +162,7 @@ describe('ChatTempHome', () => {
     useChatStore.setState({ initError: 'model init failed' })
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     expect(screen.getByText('模型列表加载失败：model init failed')).toBeDefined()
     await user.click(screen.getByText('重试'))
@@ -172,14 +172,15 @@ describe('ChatTempHome', () => {
     vi.mocked(submitTempChat).mockResolvedValue('s6')
     const user = userEvent.setup()
 
-    render(<ChatTempHome onNavigateToSession={mockNavigate} />)
+    render(<ChatTempHome tabId="tab-1" />)
 
     await user.click(screen.getByText('总结文档'))
 
     expect(submitTempChat).toHaveBeenCalledWith(
       '请帮我总结这份文档的重点内容和行动项',
+      'tab-1',
       { knowledgeBaseIds: [] },
     )
-    expect(mockNavigate).toHaveBeenCalledWith('s6')
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 })
