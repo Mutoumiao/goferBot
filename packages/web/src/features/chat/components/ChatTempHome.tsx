@@ -37,7 +37,7 @@ export function ChatTempHome({ onNavigateToSession }: ChatTempHomeProps) {
       if (isLoading) return
       setIsLoading(true)
       try {
-        const newSessionId = await submitTempChat(content)
+        const newSessionId = await submitTempChat(content, { knowledgeBaseIds: selectedKbIds })
         if (newSessionId) {
           onNavigateToSession(newSessionId)
         }
@@ -45,7 +45,7 @@ export function ChatTempHome({ onNavigateToSession }: ChatTempHomeProps) {
         setIsLoading(false)
       }
     },
-    [isLoading, onNavigateToSession],
+    [isLoading, onNavigateToSession, selectedKbIds],
   )
 
   const handleKeyDown = useCallback(

@@ -1,17 +1,10 @@
 import { AbstractChatProvider } from '@ant-design/x-sdk'
 import type { TransformMessage, XRequestOptions, SSEOutput } from '@ant-design/x-sdk'
-import type { ChatMessagesRequest } from '@goferbot/data'
+import type { ChatMessagesChunk, ChatMessagesRequest } from '@goferbot/data'
 
 export type GoferInput = ChatMessagesRequest
 
-export interface GoferOutput {
-  event: 'message'
-  conversation_id: string
-  message_id: string
-  answer: string
-  done?: boolean
-  error?: string
-}
+export type GoferOutput = ChatMessagesChunk
 
 export interface GoferMessage {
   content: string
@@ -27,11 +20,11 @@ export class GoferChatProvider extends AbstractChatProvider<GoferMessage, GoferI
       response_mode: 'streaming',
       query: requestParams.query || '',
       conversation_id: requestParams.conversation_id || '',
-      knowledge_base_ids: requestParams.knowledge_base_ids ?? [],
       provider_key: requestParams.provider_key,
       parent_message_id: requestParams.parent_message_id,
       inputs: requestParams.inputs,
       files: requestParams.files,
+      knowledge_base_ids: requestParams.knowledge_base_ids,
     }
   }
 

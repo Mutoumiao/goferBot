@@ -4,6 +4,7 @@ import { XProvider } from '@ant-design/x'
 import { useXChat } from '@ant-design/x-sdk'
 import { createGoferProvider, fetchProviders, loadChatHistory, resolveSessionById } from '../services'
 import type { GoferMessage, GoferInput } from '../providers/GoferChatProvider'
+import type { PendingMessage } from '../services'
 import { useChatStore } from '../store'
 import { useTabsStore } from '@/stores/tabs'
 import { getPendingMessageKey } from '../constants'
@@ -16,7 +17,6 @@ interface ChatPageProps {
 }
 
 export function ChatPage({ sessionId, isTemp }: ChatPageProps) {
-  const [selectedKbIds, setSelectedKbIds] = useState<string[]>([])
   /** 标记 pending message 是否已处理，防止重复发送 */
   const pendingSentRef = useRef(false)
   /** 跟踪当前 sessionId，用于判断是否需要重置状态 */
@@ -163,10 +163,22 @@ export function ChatPage({ sessionId, isTemp }: ChatPageProps) {
     if (pendingSentRef.current) return
     if (!isTemp && activeSession?.id) {
       const pendingKey = getPendingMessageKey(activeSession.id)
-      const pending = sessionStorage.getItem(pendingKey)
-      if (pending) {
+      const raw = sessionStorage.getItem(pendingKey)
+      if (raw) {
         sessionStorage.removeItem(pendingKey)
         pendingSentRef.current = true
+
+        let pending: PendingMessage
+        try {
+          pending = JSON.parse(raw) as PendingMessage
+          if (typeof pending !== 'object' || pending === null || typeof pending.content !== 'string') {
+            throw new Error('invalid pending format')
+          }
+        } catch {
+          // 兼容旧版本纯文本格式
+          pending = { content: raw }
+        }
+
         // 使用 queueMicrotask 确保在当前渲染周期之后发送，
         // 避免 useXChat 内部状态尚未就绪的问题
         queueMicrotask(() => {
@@ -174,10 +186,10 @@ export function ChatPage({ sessionId, isTemp }: ChatPageProps) {
           const providerKey = useChatStore.getState().selectedProviderKey ?? undefined
           onRequest({
             response_mode: 'streaming',
-            query: pending.trim(),
+            query: pending.content.trim(),
             conversation_id: sid,
-            knowledge_base_ids: [],
             provider_key: providerKey,
+            knowledge_base_ids: pending.knowledgeBaseIds,
           } as GoferInput)
         })
       }
@@ -191,15 +203,10 @@ export function ChatPage({ sessionId, isTemp }: ChatPageProps) {
         response_mode: 'streaming',
         query: lastUserMsg.message.content,
         conversation_id: activeSession.id,
-        knowledge_base_ids: selectedKbIds,
         provider_key: useChatStore.getState().selectedProviderKey ?? undefined,
       } as GoferInput)
     }
-  }, [xMessages, activeSession?.id, onRequest, selectedKbIds])
-
-  const handleToggleKb = useCallback((kbId: string) => {
-    setSelectedKbIds((prev) => (prev.includes(kbId) ? prev.filter((id) => id !== kbId) : [...prev, kbId]))
-  }, [])
+  }, [xMessages, activeSession?.id, onRequest])
 
   const handleNavigateToSession = useCallback(
     (newSessionId: string) => {
@@ -225,9 +232,7 @@ export function ChatPage({ sessionId, isTemp }: ChatPageProps) {
         isRequesting={isRequesting}
         onRetry={handleRetry}
         onAbort={abort}
-        selectedKbIds={selectedKbIds}
         selectedProviderKey={useChatStore.getState().selectedProviderKey}
-        onToggleKb={handleToggleKb}
         onChangeProvider={setSelectedProviderKey}
       />
     </XProvider>

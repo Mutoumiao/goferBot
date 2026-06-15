@@ -1,30 +1,20 @@
 import type {
-  SendMessageRequest,
   MessageListResponse,
   SessionListResponse,
   CreateSessionRequest,
   Session,
-  ChatInitResponse,
   ChatProvidersResponse,
 } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
-/** 发送消息（非流式） */
-export const sendMessage = (data: SendMessageRequest) =>
-  alovaInstance.Post<{ message: unknown }>('/chat/message', data)
-
-/** 对话初始化 */
-export const getChatInit = () =>
-  alovaInstance.Get<ChatInitResponse>('/chat/init')
-
 /** 获取模型列表 */
 export const getChatProviders = () =>
-  alovaInstance.Get<ChatProvidersResponse>('/chat/providers')
+  alovaInstance.Get<ChatProvidersResponse>('/chat-messages/providers')
 
 /** 获取消息历史 — Dify 风格 */
-export const getMessages = (conversationId: string, limit = 20, lastId?: string) =>
-  alovaInstance.Get<MessageListResponse>('/messages', {
-    params: { conversation_id: conversationId, limit, last_id: lastId },
+export const getMessages = (conversationId: string, page = 1, size = 20) =>
+  alovaInstance.Get<MessageListResponse>('/chat-messages', {
+    params: { conversation_id: conversationId, page, size },
   })
 
 /** 获取会话列表 */

@@ -87,8 +87,8 @@ export async function loadChatHistory(sessionId: string) {
   setError(null)
   try {
     const res = await getMessages(sessionId).send()
-    if (res.data) {
-      setMessages(res.data as Message[])
+    if (res.items) {
+      setMessages(res.items as Message[])
     }
   } catch (e) {
     setError(e instanceof Error ? e.message : '加载历史消息失败')
@@ -150,13 +150,29 @@ export function createGoferProvider() {
 }
 
 /**
+ * 临时会话 pending message 结构。
+ * 旧版本使用纯文本存储，读取处做兼容处理。
+ */
+export interface PendingMessage {
+  content: string
+  knowledgeBaseIds?: string[]
+}
+
+/**
  * 业务编排：临时会话提交 → 创建真实会话 → 持久化 pending message → 返回新会话 ID
  * 组件只需调用此函数并执行导航
  */
-export async function submitTempChat(content: string): Promise<string | null> {
+export async function submitTempChat(
+  content: string,
+  options?: { knowledgeBaseIds?: string[] },
+): Promise<string | null> {
   const newSession = await createChatSession()
   if (!newSession?.id) return null
-  sessionStorage.setItem(getPendingMessageKey(newSession.id), content.trim())
+  const pending: PendingMessage = {
+    content: content.trim(),
+    knowledgeBaseIds: options?.knowledgeBaseIds,
+  }
+  sessionStorage.setItem(getPendingMessageKey(newSession.id), JSON.stringify(pending))
 
   // 将临时标签升级为真实会话标签
   const tabsStore = useTabsStore.getState()

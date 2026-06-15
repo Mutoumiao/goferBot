@@ -8,7 +8,6 @@ import type { GoferMessage, GoferInput } from '../providers/GoferChatProvider'
 import { useChatStore } from '../store'
 import { fetchProviders } from '../services'
 import { ProviderSelector } from './ProviderSelector'
-import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
 
 interface ChatSessionViewProps {
   sessionId: string
@@ -21,9 +20,7 @@ interface ChatSessionViewProps {
   isRequesting: boolean
   onRetry: () => void
   onAbort: () => void
-  selectedKbIds: string[]
   selectedProviderKey: string | null
-  onToggleKb: (kbId: string) => void
   onChangeProvider: (key: string | null) => void
 }
 
@@ -33,9 +30,7 @@ export function ChatSessionView({
   isRequesting,
   onRetry,
   onAbort,
-  selectedKbIds,
   selectedProviderKey,
-  onToggleKb,
   onChangeProvider,
 }: ChatSessionViewProps) {
   const [inputValue, setInputValue] = useState('')
@@ -59,11 +54,10 @@ export function ChatSessionView({
         response_mode: 'streaming',
         query: trimmed,
         conversation_id: sid,
-        knowledge_base_ids: selectedKbIds,
         provider_key: selectedProviderKey ?? undefined,
       })
     },
-    [activeSession?.id, selectedKbIds, selectedProviderKey, onRequest]
+    [activeSession?.id, selectedProviderKey, onRequest]
   )
 
   const bubbleItems = xMessages.map(({ id, message, status }) => ({
@@ -170,16 +164,12 @@ export function ChatSessionView({
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
-                <KnowledgeBaseSelector selectedIds={selectedKbIds} onToggle={onToggleKb} disabled={isRequesting} />
                 <ProviderSelector
                   providers={availableProviders}
                   selectedKey={selectedProviderKey}
                   onChange={onChangeProvider}
                   disabled={isRequesting || isInitLoading}
                 />
-                {selectedKbIds.length > 0 && (
-                  <span className="text-xs text-text-tertiary">已选 {selectedKbIds.length} 个知识库</span>
-                )}
                 {initError && !isInitLoading && (
                   <button
                     type="button"

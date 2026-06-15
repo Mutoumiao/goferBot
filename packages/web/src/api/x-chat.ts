@@ -3,22 +3,14 @@
  */
 import { XRequest } from '@ant-design/x-sdk'
 import type { SSEOutput } from '@ant-design/x-sdk'
-import type { ChatMessagesRequest } from '@goferbot/data'
+import type { ChatMessagesChunk, ChatMessagesRequest } from '@goferbot/data'
 import { buildAuthHeader } from '@/utils/auth-token'
 
 export type XChatInput = ChatMessagesRequest
 
-export type { ChatInitResponse } from '@goferbot/data'
 export type { ProviderListItem } from '@goferbot/data'
 
-export interface XChatOutput {
-  event: 'message'
-  conversation_id: string
-  message_id: string
-  answer: string
-  done?: boolean
-  error?: string
-}
+export type XChatOutput = ChatMessagesChunk
 
 export interface XChatMessage {
   content: string
