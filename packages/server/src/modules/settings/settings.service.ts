@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { SettingsDto } from './dto/settings.dto.js'
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
+import { ConfigCryptoService } from './config-crypto.service.js'
 
 const CONFIG_KEY = 'app_config'
 
@@ -19,105 +18,23 @@ const DEFAULT_CONFIG = {
   fontSizeLevel: 3,
 }
 
-const MASK_PREFIX = 'MASKED:'
-
-function maskApiKey(key: string): string {
-  if (!key || key.length <= 6) return MASK_PREFIX
-  return MASK_PREFIX + key.slice(0, 3)
-}
-
-function isMask(value: string): boolean {
-  return value.startsWith(MASK_PREFIX)
-}
-
 @Injectable()
 export class SettingsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
+    private readonly crypto: ConfigCryptoService,
   ) {}
 
-  private getEncryptionKey(): Buffer {
-    const envKey = this.configService.getOrThrow<string>('SETTINGS_ENCRYPTION_KEY')
-    return Buffer.from(envKey, 'base64')
-  }
-
-  private encrypt(text: string): string {
-    const key = this.getEncryptionKey()
-    const iv = randomBytes(16)
-    const cipher = createCipheriv('aes-256-gcm', key, iv)
-    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()])
-    const authTag = cipher.getAuthTag()
-    return iv.toString('base64') + ':' + authTag.toString('base64') + ':' + encrypted.toString('base64')
-  }
-
-  private decrypt(encryptedText: string): string {
-    const key = this.getEncryptionKey()
-    const parts = encryptedText.split(':')
-    if (parts.length !== 3) throw new Error('Invalid encrypted format')
-    const iv = Buffer.from(parts[0], 'base64')
-    const authTag = Buffer.from(parts[1], 'base64')
-    const encrypted = Buffer.from(parts[2], 'base64')
-    const decipher = createDecipheriv('aes-256-gcm', key, iv)
-    decipher.setAuthTag(authTag)
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()])
-    return decrypted.toString('utf8')
-  }
-
   private maskConfig(config: Record<string, unknown>): Record<string, unknown> {
-    const result = JSON.parse(JSON.stringify(config))
-    const providers = result.providers as Record<string, Record<string, unknown>>
-    for (const key of Object.keys(providers)) {
-      const apiKey = providers[key].apiKey as string
-      if (apiKey) {
-        providers[key].apiKey = maskApiKey(apiKey)
-      }
-    }
-    const emb = result.embeddingProvider as Record<string, unknown>
-    if (emb.apiKey) {
-      emb.apiKey = maskApiKey(emb.apiKey as string)
-    }
-    return result
+    return this.crypto.maskObject(config)
   }
 
   private encryptConfig(config: Record<string, unknown>): Record<string, unknown> {
-    const result = JSON.parse(JSON.stringify(config))
-    const providers = result.providers as Record<string, Record<string, unknown>>
-    for (const key of Object.keys(providers)) {
-      const apiKey = providers[key].apiKey as string
-      if (apiKey && !isMask(apiKey)) {
-        providers[key].apiKey = this.encrypt(apiKey)
-      }
-    }
-    const emb = result.embeddingProvider as Record<string, unknown>
-    if (emb.apiKey && !isMask(emb.apiKey as string)) {
-      emb.apiKey = this.encrypt(emb.apiKey as string)
-    }
-    return result
+    return this.crypto.encryptObject(config)
   }
 
   private decryptConfig(config: Record<string, unknown>): Record<string, unknown> {
-    const result = JSON.parse(JSON.stringify(config))
-    const providers = result.providers as Record<string, Record<string, unknown>>
-    for (const key of Object.keys(providers)) {
-      const apiKey = providers[key].apiKey as string
-      if (apiKey && !isMask(apiKey)) {
-        try {
-          providers[key].apiKey = this.decrypt(apiKey)
-        } catch {
-          // 解密失败则保留原值（可能是明文遗留）
-        }
-      }
-    }
-    const emb = result.embeddingProvider as Record<string, unknown>
-    if (emb.apiKey && !isMask(emb.apiKey as string)) {
-      try {
-        emb.apiKey = this.decrypt(emb.apiKey as string)
-      } catch {
-        // 同上
-      }
-    }
-    return result
+    return this.crypto.decryptObject(config)
   }
 
   async getSettings(userId: string): Promise<Record<string, unknown>> {
@@ -132,6 +49,23 @@ export class SettingsService {
     const parsed = JSON.parse(row.value) as Record<string, unknown>
     const decrypted = this.decryptConfig(parsed)
     return this.maskConfig(decrypted)
+  }
+
+  /**
+   * 服务端内部使用：返回解密后的原始配置（不掩码）。
+   * 用于需要真实 API Key 的后端服务（如 ChatService）。
+   */
+  async getDecryptedSettings(userId: string): Promise<Record<string, unknown>> {
+    const row = await this.prisma.setting.findUnique({
+      where: { userId_key: { userId, key: CONFIG_KEY } },
+    })
+
+    if (!row) {
+      return JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as Record<string, unknown>
+    }
+
+    const parsed = JSON.parse(row.value) as Record<string, unknown>
+    return this.decryptConfig(parsed)
   }
 
   async saveSettings(userId: string, dto: SettingsDto): Promise<Record<string, unknown>> {
@@ -152,13 +86,13 @@ export class SettingsService {
 
       for (const key of Object.keys(mergedProviders)) {
         const newApiKey = mergedProviders[key].apiKey as string
-        if (isMask(newApiKey)) {
+        if (this.crypto.isMasked(newApiKey)) {
           mergedProviders[key].apiKey = existingProviders[key]?.apiKey ?? ''
         }
       }
 
       const newEmbApiKey = (merged.embeddingProvider as Record<string, unknown>).apiKey as string
-      if (isMask(newEmbApiKey)) {
+      if (this.crypto.isMasked(newEmbApiKey)) {
         (merged.embeddingProvider as Record<string, unknown>).apiKey =
           (decrypted.embeddingProvider as Record<string, unknown>)?.apiKey ?? ''
       }
