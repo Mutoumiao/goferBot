@@ -12,15 +12,15 @@ import {
   createKbRequestSchema,
   updateKbRequestSchema,
   kbListResponseSchema,
+  kbDetailResponseSchema,
+  documentStatusSchema,
+  documentStatusResponseSchema,
 } from '../schemas/kb.schema.js'
 import {
   messageSchema,
-  streamChatRequestSchema,
-  sendMessageRequestSchema,
   messageListResponseSchema,
   sessionListResponseSchema,
   providerListItemSchema,
-  chatInitResponseSchema,
   chatProvidersResponseSchema,
   chatMessagesRequestSchema,
   chatMessagesChunkSchema,
@@ -70,17 +70,17 @@ export type KbEntry = z.infer<typeof kbEntrySchema>
 export type CreateKbRequest = z.infer<typeof createKbRequestSchema>
 export type UpdateKbRequest = z.infer<typeof updateKbRequestSchema>
 export type KbListResponse = z.infer<typeof kbListResponseSchema>
+export type KbDetailResponse = z.infer<typeof kbDetailResponseSchema>
+export type DocumentStatus = z.infer<typeof documentStatusSchema>
+export type DocumentStatusResponse = z.infer<typeof documentStatusResponseSchema>
 
 export type Message = z.infer<typeof messageSchema>
 export type Session = z.infer<typeof sessionSchema>
-export type StreamChatRequest = z.infer<typeof streamChatRequestSchema>
-export type SendMessageRequest = z.infer<typeof sendMessageRequestSchema>
 export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>
 export type UpdateSessionRequest = z.infer<typeof updateSessionRequestSchema>
 export type MessageListResponse = z.infer<typeof messageListResponseSchema>
 export type SessionListResponse = z.infer<typeof sessionListResponseSchema>
 export type ProviderListItem = z.infer<typeof providerListItemSchema>
-export type ChatInitResponse = z.infer<typeof chatInitResponseSchema>
 export type ChatProvidersResponse = z.infer<typeof chatProvidersResponseSchema>
 export type ChatMessagesRequest = z.infer<typeof chatMessagesRequestSchema>
 export type ChatMessagesChunk = z.infer<typeof chatMessagesChunkSchema>
@@ -115,13 +115,13 @@ export {
   createKbRequestSchema,
   updateKbRequestSchema,
   kbListResponseSchema,
+  kbDetailResponseSchema,
+  documentStatusSchema,
+  documentStatusResponseSchema,
   messageSchema,
-  streamChatRequestSchema,
-  sendMessageRequestSchema,
   messageListResponseSchema,
   sessionListResponseSchema,
   providerListItemSchema,
-  chatInitResponseSchema,
   chatProvidersResponseSchema,
   chatMessagesRequestSchema,
   chatMessagesChunkSchema,

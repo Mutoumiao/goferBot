@@ -72,6 +72,7 @@ model Document {
   hash         String?
   status       String   @default("uploaded")
   errorMessage String?  @map("error_message")
+  indexedAt    DateTime? @map("indexed_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

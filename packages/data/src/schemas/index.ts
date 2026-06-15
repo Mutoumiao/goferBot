@@ -15,11 +15,8 @@ export {
 
 export {
   messageSchema,
-  streamChatRequestSchema,
-  sendMessageRequestSchema,
   messageListResponseSchema,
   sessionListResponseSchema,
-  chatInitResponseSchema,
   chatProvidersResponseSchema,
   chatMessagesRequestSchema,
   chatMessagesChunkSchema,
@@ -31,6 +28,9 @@ export {
   createKbRequestSchema,
   updateKbRequestSchema,
   kbListResponseSchema,
+  kbDetailResponseSchema,
+  documentStatusSchema,
+  documentStatusResponseSchema,
 } from './kb.schema.js'
 
 export {
