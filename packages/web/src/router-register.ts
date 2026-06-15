@@ -3,7 +3,8 @@ import { MessageCircle, BookOpen, Clock, Settings, Trash2, User, type LucideIcon
 
 type RoutePath = keyof FileRoutesByFullPath
 
-type RouteKey = 'login' | 'chat' | 'knowledgeBase' | 'history' | 'settings' | 'recycle' | 'profile'
+export type RouteKey = 'login' | 'chat' | 'knowledgeBase' | 'history' | 'settings' | 'recycle' | 'profile'
+export type TabRouteKey = Exclude<RouteKey, 'login'>
 
 export interface RouteMeta {
   key: RouteKey
@@ -33,10 +34,10 @@ export const ROUTES_REGISTER = {
     title: '会话页',
     singleton: false,
     closable: true,
-    path: '/chat/$sessionId',
+    path: '/chat/$tabId',
     icon: MessageCircle,
     navSection: null,
-    bindTo: (sessionId: string) => `/chat/${sessionId}`,
+    bindTo: (tabId: string) => `/chat/${tabId}`,
   },
   knowledgeBase: {
     key: 'knowledgeBase',
@@ -84,3 +85,12 @@ export const ROUTES_REGISTER = {
     navSection: null,
   },
 } as const satisfies Record<RouteKey, RouteMeta>
+
+export function getRouteMeta(key: RouteKey): RouteMeta {
+  return ROUTES_REGISTER[key]
+}
+
+export function getTabPath(tab: { type: TabRouteKey; id: string }): string {
+  const meta = getRouteMeta(tab.type)
+  return meta.bindTo ? meta.bindTo(tab.id) : meta.path
+}
