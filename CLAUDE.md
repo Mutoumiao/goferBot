@@ -2,7 +2,24 @@
 
 GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的 Web 应用，支持文档管理、LLM 问答、RAG 检索增强。
 
-**技术栈**：React 19 + TanStack Start + NestJS 10 + Fastify + PostgreSQL + MinIO + Redis + BullMQ。
+## 技术栈详情
+
+| Layer         | Technology                | Version                           |
+|---------------|---------------------------|-----------------------------------|
+| **前端框架**  | React + TanStack Start    | React 19.x, TanStack Start latest |
+| **前端路由**  | TanStack Router           | 1.132.x                           |
+| **UI 构建**   | Vite + Tailwind CSS       | Vite 6.x, Tailwind 4.x            |
+| **状态管理**  | Zustand                   | 5.x                               |
+| **后端框架**  | NestJS + Fastify          | NestJS 10.x, Fastify 4.x          |
+| **数据库**    | PostgreSQL + pgvector     | PG 16                             |
+| **ORM**       | Prisma                    | 5.x                               |
+| **向量存储**  | pgvector                  | -                                 |
+| **缓存/队列** | Redis + BullMQ            | Redis 7, BullMQ 5.x               |
+| **对象存储**  | MinIO (S3兼容)            | -                                 |
+| **AI SDK**    | LangChain + @ant-design/x | LangChain 1.x                     |
+| **数据校验**  | Zod                       | 3.x                               |
+| **测试**      | Vitest                    | 4.x                               |
+| **包管理**    | pnpm                      | -                                 |
 
 ## Agent 核心约束
 
@@ -65,23 +82,56 @@ pnpm test:all         # 全量回归
 2. **再读 frontmatter** — 读 `docs/issues/{dir}/issue.md` 的 YAML 头部获取状态
 3. **按需深入正文** — 仅当相关且非 closed/deprecated 时才读正文
 
-## Skill 调用规则
 
-**1% 规则**：只要用户请求有 1% 的可能性匹配某个 skill，就必须调用它。
+## 代码约定
 
-**指令优先级**：用户显式指令 > 项目 skill > Superpowers skill > 默认行为
+### 文件命名
+- **React 组件**: PascalCase（如 `ChatPage.tsx`）
+- **TypeScript/TSX 文件**: camelCase（如 `auth.service.ts`）
+- **路由文件**: kebab-case（如 `knowledge-base.tsx`）
 
-### 项目流程路由
+### 代码模式
+- **前端状态管理**: Zustand stores（`stores/` 目录）
+- **后端模块**: NestJS 模块模式（Controller + Service + DTO）
+- **数据验证**: Zod schemas（共享在 `@goferbot/data` 包）
+- **API 调用**: alova（前端） / 内置 Fetch（特定场景）
+- **错误处理**: 统一异常过滤器 + ZodValidationPipe
 
-| 用户请求                         | 必须调用的 skill      |
-|----------------------------------|-----------------------|
-| 不知道怎么开始/流程是什么        | `/project-workflow`   |
-| 拆 issue/生成工单                | `/issue-generator`    |
-| 审查 spec/写 behavior spec       | `/spec-validator`     |
-| 写计划/生成实现方案              | `/plan-generator`     |
-| 开始开发 issue                   | `/dev-orchestrator`   |
-| 代码审查 / spec 对齐 / 安全审查  | `/kb-review`          |
-| 更新 issue 状态/标记完成         | `/issue-lifecycle`    |
-| 检查 plan/spec/code 是否违反 ADR | `/architecture-guard` |
-| 生成测试骨架                     | `/test-scaffold`      |
-| 检查前后端接口一致性             | `/integration-check`  |
+### 测试约定
+- **单元测试**: `*.spec.ts` 放在源文件同目录
+- **集成测试**: `vitest.integration.config.ts`，`tests/` 目录
+- **Mock 风格**: Jest mocks / nock
+
+### Git 提交约定
+- 使用简体中文描述
+- 格式: `type(scope): description`
+- type: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`
+- 示例: `fix(chat): 修复消息列表刷新问题`
+
+### 数据库约定
+- Prisma schema 位于 `packages/server/prisma/schema.prisma`
+- 命名: snake_case（数据库层）、camelCase（TypeScript）
+- 迁移: `pnpm prisma:migrate`
+
+### 环境变量
+- 根目录: `.env.example`（模板）
+- 服务端: `packages/server/.env.example`
+- 前端: `packages/web/.env.example`
+
+## 数据库模型（核心）
+
+```
+User ←→ KnowledgeBase ←→ Folder ←→ Document ←→ Chunk
+   ↓                              ↓
+   Session                        (向量数据)
+   ↓
+Setting
+```
+
+- **User**: 用户账户（email, password, role）
+- **KnowledgeBase**: 知识库（属于用户）
+- **Folder**: 文件夹（树形结构，支持嵌套）
+- **Document**: 文档（存储在 MinIO，metadata 在 DB）
+- **Chunk**: 文档切片（用于 RAG 检索，向量存储在 pgvector）
+- **Session**: 聊天会话
+- **Setting**: 用户设置
