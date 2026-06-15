@@ -1,5 +1,8 @@
 import { execSync } from 'child_process'
 import { Client } from 'pg'
+import path from 'path'
+
+const schemaPath = path.resolve(process.cwd(), 'packages/server/prisma/schema.prisma')
 
 export class TestDatabaseManager {
   async createDatabase(suffix: string): Promise<string> {
@@ -19,7 +22,7 @@ export class TestDatabaseManager {
     const dbUrl = adminUrlObj.toString()
 
     try {
-      execSync(`npx prisma migrate deploy --schema=packages/server/prisma/schema.prisma`, {
+      execSync(`pnpm --filter @goferbot/server exec prisma migrate deploy --schema=${schemaPath}`, {
         env: { ...process.env, DATABASE_URL: dbUrl },
         stdio: 'pipe',
       })

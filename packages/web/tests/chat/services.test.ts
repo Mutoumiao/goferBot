@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 vi.mock('@/api/chat', () => ({
   getSessions: vi.fn(() => ({ send: vi.fn() })),
+  getSessionById: vi.fn(() => ({ send: vi.fn() })),
   createSession: vi.fn(() => ({ send: vi.fn() })),
   deleteSession: vi.fn(() => ({ send: vi.fn() })),
   renameSession: vi.fn(() => ({ send: vi.fn() })),
@@ -10,6 +11,7 @@ vi.mock('@/api/chat', () => ({
 
 import {
   getSessions,
+  getSessionById,
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
   renameSession as apiRenameSession,
@@ -23,7 +25,9 @@ import {
   deleteChatSession,
   loadChatHistory,
   resolveSessionById,
+  submitTempChat,
 } from '@/features/chat/services'
+import { getPendingMessageKey } from '@/features/chat/constants'
 import type { Session, Message } from '@goferbot/data'
 
 describe('chat services', () => {
@@ -44,7 +48,7 @@ describe('chat services', () => {
   describe('loadChatSessions', () => {
     it('sets sessions on success', async () => {
       const sessions: Session[] = [{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }]
-      vi.mocked(getSessions).mockReturnValue({ send: vi.fn().mockResolvedValue({ sessions }) } as any)
+      vi.mocked(getSessions).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: sessions }) } as any)
 
       await loadChatSessions()
 
@@ -155,7 +159,7 @@ describe('chat services', () => {
   describe('loadChatHistory', () => {
     it('sets messages on success', async () => {
       const messages: Message[] = [{ id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' }]
-      vi.mocked(getMessages).mockReturnValue({ send: vi.fn().mockResolvedValue({ data: messages }) } as any)
+      vi.mocked(getMessages).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: messages }) } as any)
 
       await loadChatHistory('s1')
 
@@ -174,38 +178,66 @@ describe('chat services', () => {
   })
 
   describe('resolveSessionById', () => {
-    it('sets active from existing sessions without refresh', async () => {
+    it('fetches session by id and sets active', async () => {
       useChatStore.setState({
         sessions: [{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }],
       })
-
-      const result = await resolveSessionById('s1')
-
-      expect(result?.id).toBe('s1')
-      expect(useChatStore.getState().activeSession?.id).toBe('s1')
-      expect(getSessions).not.toHaveBeenCalled()
-    })
-
-    it('refreshes sessions and sets active when not found locally', async () => {
-      useChatStore.setState({ sessions: [] })
-      vi.mocked(getSessions).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ sessions: [{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }] }),
+      vi.mocked(getSessionById).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }),
       } as any)
 
       const result = await resolveSessionById('s1')
 
       expect(result?.id).toBe('s1')
       expect(useChatStore.getState().activeSession?.id).toBe('s1')
+      expect(getSessionById).toHaveBeenCalledWith('s1')
     })
 
-    it('returns undefined when session not found after refresh', async () => {
+    it('returns undefined when session not found', async () => {
       useChatStore.setState({ sessions: [] })
-      vi.mocked(getSessions).mockReturnValue({ send: vi.fn().mockResolvedValue({ sessions: [] }) } as any)
+      vi.mocked(getSessionById).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('not found')) } as any)
 
       const result = await resolveSessionById('s1')
 
       expect(result).toBeUndefined()
       expect(useChatStore.getState().activeSession).toBeNull()
+    })
+  })
+
+  describe('submitTempChat', () => {
+    beforeEach(() => {
+      sessionStorage.clear()
+    })
+
+    it('creates session and stores pending message as JSON', async () => {
+      const session: Session = { id: 's1', title: 'New', messageCount: 0, createdAt: '', updatedAt: '' }
+      vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(session) } as any)
+
+      const result = await submitTempChat('hello world')
+
+      expect(result).toBe('s1')
+      const stored = sessionStorage.getItem(getPendingMessageKey('s1'))
+      expect(stored).toBeDefined()
+      expect(JSON.parse(stored!)).toEqual({ content: 'hello world' })
+    })
+
+    it('stores knowledgeBaseIds in pending JSON when provided', async () => {
+      const session: Session = { id: 's2', title: 'New', messageCount: 0, createdAt: '', updatedAt: '' }
+      vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(session) } as any)
+
+      await submitTempChat('hello', { knowledgeBaseIds: ['kb1', 'kb2'] })
+
+      const stored = sessionStorage.getItem(getPendingMessageKey('s2'))
+      expect(JSON.parse(stored!)).toEqual({ content: 'hello', knowledgeBaseIds: ['kb1', 'kb2'] })
+    })
+
+    it('returns null when session creation fails', async () => {
+      vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(null) } as any)
+
+      const result = await submitTempChat('hello')
+
+      expect(result).toBeNull()
+      expect(sessionStorage.length).toBe(0)
     })
   })
 })

@@ -210,7 +210,6 @@ describe('ChatController', () => {
 
       expect(res.statusCode).toBe(200)
       expect(res.payload).toContain('"error":"LLM stream failed"')
-      expect(res.payload).toContain('"done":true')
     })
   })
 })

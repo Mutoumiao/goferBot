@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import swc from 'unplugin-swc'
 import path from 'path'
+import AIReporter from 'vitest-ai-reporter'
 
 export default defineConfig({
   plugins: [
@@ -16,7 +17,9 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, './packages/server/src'),
       '@server': path.resolve(__dirname, './packages/server/src'),
+      '@goferbot/server': path.resolve(__dirname, './packages/server/src'),
       '@rag-sdk': path.resolve(__dirname, './packages/rag-sdk/src'),
       '@goferbot/rag-sdk': path.resolve(__dirname, './packages/rag-sdk/src/index.ts'),
     },
@@ -24,9 +27,8 @@ export default defineConfig({
   test: {
     include: ['tests/e2e/api/**/*.spec.ts'],
     pool: 'forks',
-    maxForks: 1,
-    minForks: 1,
-    fileParallelism: false,
+    reporters: [new AIReporter()],
+    setupFiles: ['./tests/setup/integration-env.ts'],
     testTimeout: 60000,
     hookTimeout: 30000,
     teardownTimeout: 30000,

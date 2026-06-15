@@ -289,6 +289,6 @@ describe('ChatHistoryPage', () => {
     const nextPageBtn = screen.getByText('下一页')
     fireEvent.click(nextPageBtn)
     
-    expect(useLazyChatHistory).toHaveBeenCalledWith(2, 10)
+    expect(useLazyChatHistory).toHaveBeenCalledWith(2, 6)
   })
 })

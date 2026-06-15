@@ -157,4 +157,80 @@ describe('useChatStore', () => {
       expect(state.error).toBeNull()
     })
   })
+
+  describe('provider 状态', () => {
+    it('sets available providers and picks the first as default', () => {
+      const providers = [
+        { key: 'deepseek', name: 'DeepSeek', model: 'v3', isBuiltin: true },
+        { key: 'openai', name: 'OpenAI', model: 'gpt-4', isBuiltin: false },
+      ]
+      useChatStore.getState().setAvailableProviders(providers)
+
+      const state = useChatStore.getState()
+      expect(state.availableProviders).toEqual(providers)
+      expect(state.selectedProviderKey).toBe('deepseek')
+    })
+
+    it('keeps existing selected provider when still available', () => {
+      useChatStore.setState({ selectedProviderKey: 'openai' })
+      const providers = [
+        { key: 'deepseek', name: 'DeepSeek', model: 'v3', isBuiltin: true },
+        { key: 'openai', name: 'OpenAI', model: 'gpt-4', isBuiltin: false },
+      ]
+      useChatStore.getState().setAvailableProviders(providers)
+
+      expect(useChatStore.getState().selectedProviderKey).toBe('openai')
+    })
+
+    it('sets selected provider key', () => {
+      useChatStore.getState().setSelectedProviderKey('deepseek')
+      expect(useChatStore.getState().selectedProviderKey).toBe('deepseek')
+    })
+
+    it('sets init loading and error states', () => {
+      useChatStore.getState().setIsInitLoading(true)
+      useChatStore.getState().setInitError('init failed')
+
+      const state = useChatStore.getState()
+      expect(state.isInitLoading).toBe(true)
+      expect(state.initError).toBe('init failed')
+    })
+  })
+
+  describe('会话缓存', () => {
+    it('sets and gets cached messages', () => {
+      const messages: Message[] = [
+        { id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' },
+      ]
+      useChatStore.getState().setCachedMessages('s1', messages)
+
+      expect(useChatStore.getState().getCachedMessages('s1')).toEqual(messages)
+      expect(useChatStore.getState().isSessionLoaded('s1')).toBe(false)
+    })
+
+    it('marks session as loaded', () => {
+      useChatStore.getState().setSessionLoaded('s1', true)
+      expect(useChatStore.getState().isSessionLoaded('s1')).toBe(true)
+    })
+
+    it('clears session cache', () => {
+      useChatStore.getState().setCachedMessages('s1', [
+        { id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' },
+      ])
+      useChatStore.getState().clearSessionCache('s1')
+
+      expect(useChatStore.getState().getCachedMessages('s1')).toBeUndefined()
+    })
+
+    it('preserves messages when marking loaded', () => {
+      const messages: Message[] = [
+        { id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' },
+      ]
+      useChatStore.getState().setCachedMessages('s1', messages)
+      useChatStore.getState().setSessionLoaded('s1', true)
+
+      expect(useChatStore.getState().getCachedMessages('s1')).toEqual(messages)
+      expect(useChatStore.getState().isSessionLoaded('s1')).toBe(true)
+    })
+  })
 })
