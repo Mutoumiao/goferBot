@@ -1,0 +1,119 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import type { Message } from '@prisma/client'
+import { SessionRepository } from '@/modules/session/repositories/session.repository.js'
+import { MessageRepository } from '@/modules/session/repositories/message.repository.js'
+import type { LlmProvider } from './llm/llm-provider.interface.js'
+
+export interface ConversationContext {
+  sessionId: string
+  history: Array<{ role: string; content: string }>
+}
+
+@Injectable()
+export class ConversationService {
+  constructor(
+    private readonly sessionRepository: SessionRepository,
+    private readonly messageRepository: MessageRepository,
+  ) {}
+
+  async ensureOwnership(userId: string, sessionId: string): Promise<void> {
+    const session = await this.sessionRepository.findById(sessionId)
+    if (!session) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: '会话不存在',
+      })
+    }
+    if (session.userId !== userId) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: '无权访问该会话',
+      })
+    }
+  }
+
+  async createSession(userId: string, title = '新对话'): Promise<{ id: string; userId: string; title: string }> {
+    return this.sessionRepository.create({ userId, title })
+  }
+
+  async saveUserMessage(sessionId: string, content: string): Promise<Message> {
+    return this.messageRepository.create({
+      sessionId,
+      role: 'user',
+      content,
+    })
+  }
+
+  async saveAssistantMessage(sessionId: string, messageId: string, content: string): Promise<Message> {
+    return this.messageRepository.create({
+      id: messageId,
+      sessionId,
+      role: 'assistant',
+      content,
+    })
+  }
+
+  async loadHistory(
+    sessionId: string,
+    options?: { beforeMessageId?: string },
+  ): Promise<Array<{ role: string; content: string }>> {
+    if (options?.beforeMessageId) {
+      const beforeMessage = await this.messageRepository.findById(options.beforeMessageId)
+      if (!beforeMessage || beforeMessage.sessionId !== sessionId) {
+        throw new ForbiddenException({
+          code: 'FORBIDDEN',
+          message: 'parent_message_id 不属于当前会话',
+        })
+      }
+      const messages = await this.messageRepository.findUpToMessageId(sessionId, options.beforeMessageId, {
+        select: { role: true, content: true },
+      })
+      return messages as Array<{ role: string; content: string }>
+    }
+
+    const messages = await this.messageRepository.findBySessionId(sessionId)
+    return messages.map((m) => ({ role: m.role, content: m.content }))
+  }
+
+  async paginateMessages(
+    sessionId: string,
+    options: { page: number; size: number },
+  ) {
+    return this.messageRepository.paginateBySessionId(sessionId, options)
+  }
+
+  async generateTitle(
+    sessionId: string,
+    userMessage: string,
+    assistantMessage: string,
+    provider: LlmProvider,
+  ): Promise<void> {
+    const session = await this.sessionRepository.findById(sessionId)
+    if (!session) return
+    if (session.title !== '新对话' && session.title !== '会话页') return
+
+    const messages = [
+      { role: 'system' as const, content: '你是一个标题生成助手。请根据对话内容生成一个5-10字的简短中文标题，只返回标题本身，不要有任何额外内容或标点解释。' },
+      { role: 'user' as const, content: `用户：${userMessage}\nAI：${assistantMessage}` },
+    ]
+
+    try {
+      const title = await provider.invoke(messages)
+      const cleanedTitle = this.cleanTitle(title)
+      await this.sessionRepository.update(sessionId, { title: cleanedTitle })
+    } catch {
+      // 标题生成失败不影响主流程
+    }
+  }
+
+  private cleanTitle(title: string): string {
+    const cleaned = title
+      .replace(/[\n\r\t]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^["']|["']$/g, '')
+    if (!cleaned) return '新对话'
+    if (cleaned.length > 30) return cleaned.slice(0, 30)
+    return cleaned
+  }
+}

@@ -1,132 +1,43 @@
 import {
   Injectable,
   BadRequestException,
-  ForbiddenException,
-  NotFoundException,
+  Inject,
+  Optional,
   Logger,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { PrismaService } from '../../processors/database/prisma.service.js'
-import type { ChatMessagesDto } from './dto/chat.dto.js'
-import { RagService } from './rag.service.js'
 import { SettingsService } from '../settings/settings.service.js'
-import { ModelRegistryService } from './model-registry.service.js'
-import { ChatOpenAI } from '@langchain/openai'
-import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages'
-import type { BaseMessage } from '@langchain/core/messages'
+import { ModelRegistryService, type ModelInfo } from './model-registry.service.js'
+import { ConversationService } from './conversation.service.js'
+import { LlmProviderFactory } from './llm/llm-provider.factory.js'
+import type { ChatMessagesDto } from './dto/chat.dto.js'
+import type { LlmProvider, LlmMessage } from './llm/llm-provider.interface.js'
+import {
+  CHAT_CONTEXT_RETRIEVER,
+  type ChatContextRetriever,
+} from './interfaces/chat-context-retriever.interface.js'
+import type { ChatMessagesChunk } from '@goferbot/data'
 import { randomUUID } from 'crypto'
 
-const DEFAULT_LLM_TIMEOUT_MS = 300_000
-const DEFAULT_LLM_BASE_URL = 'https://api.openai.com'
-const DEFAULT_LLM_MODEL = 'gpt-3.5-turbo'
-const DEFAULT_SESSION_TITLE = '新对话'
-const DEFAULT_SESSION_TITLE_ALTERNATIVE = '会话页'
-const MAX_SESSION_TITLE_LENGTH = 30
-
-interface ChatChunk {
-  event: 'message'
-  conversation_id: string
-  message_id: string
-  answer: string
-  done?: boolean
-  error?: string
+function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
+  return m.role === 'system' || m.role === 'user' || m.role === 'assistant'
 }
 
 @Injectable()
 export class ChatService {
-  private readonly logger = new Logger(ChatService.name)
   private readonly llmTimeoutMs: number
+  private readonly logger = new Logger(ChatService.name)
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-    private readonly ragService: RagService,
     private readonly settingsService: SettingsService,
     private readonly modelRegistry: ModelRegistryService,
+    private readonly conversationService: ConversationService,
+    private readonly llmFactory: LlmProviderFactory,
+    @Inject(CHAT_CONTEXT_RETRIEVER) @Optional() private readonly contextRetriever?: ChatContextRetriever,
   ) {
-    const parsed = this.configService.get<number>('LLM_TIMEOUT_MS', DEFAULT_LLM_TIMEOUT_MS)
-    this.llmTimeoutMs = Number.isNaN(parsed) ? DEFAULT_LLM_TIMEOUT_MS : parsed
-  }
-
-  /**
-   * 根据 dto.providerKey 或用户默认设置解析出最终使用的 provider 键。
-   * - 若 dto.providerKey 提供且合法则使用该 provider；
-   * - 否则回退到 settings.defaultChatProvider；
-   * - 若最终 provider 不在配置中（或非法）则抛 BadRequestException。
-   */
-  private async resolveProvider(
-    userId: string,
-    providerKey?: string,
-  ): Promise<{
-    providerKey: string
-    providers: Record<string, { name: string; apiKey: string; model: string; baseUrl: string }>
-  }> {
-    const settings = await this.settingsService.getSettings(userId)
-    const providers = settings.providers as Record<
-      string,
-      { name: string; apiKey: string; model: string; baseUrl: string }
-    >
-    const defaultProvider = settings.defaultChatProvider as string
-
-    const resolvedKey = providerKey && providerKey.trim()
-      ? providerKey.trim()
-      : defaultProvider
-
-    const modelInfo = this.modelRegistry.lookup(resolvedKey)
-    if (modelInfo) {
-      return {
-        providerKey: modelInfo.providerKey,
-        providers: {
-          [modelInfo.providerKey]: {
-            name: modelInfo.providerName,
-            apiKey: '',
-            model: resolvedKey,
-            baseUrl: modelInfo.baseUrl,
-          },
-        },
-      }
-    }
-
-    if (!resolvedKey || !providers || !Object.prototype.hasOwnProperty.call(providers, resolvedKey)) {
-      throw new BadRequestException({
-        code: 'PROVIDER_INVALID',
-        message: `未配置的 provider: ${resolvedKey ?? '空'}`,
-      })
-    }
-
-    return { providerKey: resolvedKey, providers }
-  }
-
-  private async createChatModel(
-    userId: string,
-    providerKey?: string,
-    dtoModel?: string,
-  ): Promise<ChatOpenAI> {
-    const { providerKey: resolvedKey, providers } = await this.resolveProvider(userId, providerKey)
-
-    const provider = providers[resolvedKey]
-
-    const envApiKey = this.configService.get<string>(`${resolvedKey.toUpperCase()}_API_KEY`)
-    const envBaseUrl = this.configService.get<string>(`${resolvedKey.toUpperCase()}_BASE_URL`)
-    const envModel = this.configService.get<string>(`${resolvedKey.toUpperCase()}_MODEL`)
-
-    const apiKey = envApiKey || provider?.apiKey || ''
-    const baseUrl = envBaseUrl || provider?.baseUrl || DEFAULT_LLM_BASE_URL
-    const model = dtoModel || envModel || provider?.model || DEFAULT_LLM_MODEL
-
-    if (!apiKey) {
-      throw new BadRequestException({ code: 'LLM_NOT_CONFIGURED', message: '未配置 LLM API Key' })
-    }
-
-    return new ChatOpenAI({
-      apiKey,
-      model,
-      streaming: true,
-      timeout: this.llmTimeoutMs,
-      configuration: {
-        baseURL: baseUrl,
-      },
-    })
+    const parsed = this.configService.get<number>('LLM_TIMEOUT_MS', 300_000)
+    this.llmTimeoutMs = Number.isNaN(parsed) ? 300_000 : parsed
   }
 
   async validateChatAccess(userId: string, dto: ChatMessagesDto): Promise<void> {
@@ -137,238 +48,188 @@ export class ChatService {
         message: 'conversation_id 不能为空',
       })
     }
-
-    await this.ensureSessionOwnership(userId, sessionId)
+    await this.conversationService.ensureOwnership(userId, sessionId)
     await this.resolveProvider(userId, dto.provider_key)
-
-    if (dto.knowledge_base_ids && dto.knowledge_base_ids.length > 0) {
-      await this.ensureKnowledgeBaseOwnership(userId, dto.knowledge_base_ids)
-    }
   }
 
   async *streamChat(
     userId: string,
     dto: ChatMessagesDto,
-    onAbortController?: (ac: AbortController) => void,
-  ): AsyncGenerator<ChatChunk> {
+    abortController: AbortController,
+  ): AsyncGenerator<ChatMessagesChunk> {
     const messageId = randomUUID()
     const sessionId = dto.conversation_id
-    const input = dto.query
-    const lastMessageId = dto.parent_message_id ?? undefined
-
     if (!sessionId) {
       throw new BadRequestException({
         code: 'CONVERSATION_ID_REQUIRED',
         message: 'conversation_id 不能为空',
       })
     }
+    const input = dto.query
 
-    await this.ensureSessionOwnership(userId, sessionId)
-
-    // 保存用户输入
-    await this.prisma.$transaction([
-      this.prisma.message.create({
-        data: {
-          sessionId,
-          role: 'user',
-          content: input,
-        },
-      }),
-      this.prisma.session.update({
-        where: { id: sessionId },
-        data: { updatedAt: new Date() },
+    const [provider, history] = await Promise.all([
+      this.createProvider(userId, dto.provider_key, dto.model),
+      this.conversationService.loadHistory(sessionId, {
+        beforeMessageId: dto.parent_message_id ?? undefined,
       }),
     ])
 
-    // 加载历史消息用于多轮对话上下文
-    const historyWhere: { sessionId: string; createdAt?: { lte: Date } } = { sessionId }
-    if (lastMessageId) {
-      const lastMessage = await this.prisma.message.findUnique({
-        where: { id: lastMessageId },
-        select: { createdAt: true, sessionId: true },
-      })
-      if (!lastMessage) {
-        throw new BadRequestException({
-          code: 'PARENT_MESSAGE_NOT_FOUND',
-          message: 'parent_message_id 不存在',
-        })
-      }
-      if (lastMessage.sessionId !== sessionId) {
-        throw new ForbiddenException({
-          code: 'FORBIDDEN',
-          message: 'parent_message_id 不属于当前会话',
-        })
-      }
-      historyWhere.createdAt = { lte: lastMessage.createdAt }
-    }
+    await this.conversationService.saveUserMessage(sessionId, input)
 
-    const historyMessages = await this.prisma.message.findMany({
-      where: historyWhere,
-      orderBy: { createdAt: 'asc' },
-      select: { role: true, content: true },
-    })
+    const messages: LlmMessage[] = history.filter(isLlmMessage)
 
-    const llmMessages: Array<{ role: string; content: string }> = []
-
-    // 校验请求检索的知识库均属于当前用户
     if (dto.knowledge_base_ids && dto.knowledge_base_ids.length > 0) {
-      await this.ensureKnowledgeBaseOwnership(userId, dto.knowledge_base_ids)
-    }
-
-    // RAG 检索：当 knowledge_base_ids 存在时检索相关 chunks 并注入 system message
-    if (dto.knowledge_base_ids && dto.knowledge_base_ids.length > 0) {
-      try {
-        const result = await this.ragService.retrieveContext({
-          original: input,
+      if (this.contextRetriever) {
+        const { context } = await this.contextRetriever.retrieve(userId, input, {
           kbIds: dto.knowledge_base_ids,
         })
-        if (result.context) {
-          llmMessages.push({ role: 'system', content: `基于以下上下文回答问题：\n${result.context}` })
+        if (context) {
+          messages.push({
+            role: 'system',
+            content: `以下是与用户问题相关的上下文信息：\n\n${context}`,
+          })
         }
-      } catch (err: unknown) {
-        this.logger.warn('RAG retrieval failed, falling back to plain LLM', err)
+      } else {
+        this.logger.warn(
+          `收到 knowledge_base_ids 但未注册 ChatContextRetriever，跳过检索。sessionId=${sessionId}`,
+        )
       }
     }
-
-    historyMessages.forEach((m) => llmMessages.push({ role: m.role, content: m.content }))
-
-    const chat = await this.createChatModel(userId, dto.provider_key, dto.model)
-
-    // 将 messages 数组转换为 LangChain BaseMessage 格式
-    const createMessage = (role: string, content: string): BaseMessage => {
-      switch (role) {
-        case 'system':
-          return new SystemMessage(content)
-        case 'user':
-          return new HumanMessage(content)
-        case 'assistant':
-          return new AIMessage(content)
-        default:
-          return new HumanMessage(content)
-      }
-    }
-    const lcMessages: BaseMessage[] = llmMessages.map((m) => createMessage(m.role, m.content))
 
     let fullReply = ''
-    const abortController = new AbortController()
-    onAbortController?.(abortController)
 
     try {
-      const stream = await chat.stream(lcMessages, {
-        signal: abortController.signal,
-      })
-
-      for await (const chunk of stream) {
-        const content = chunk?.content
-        const text = Array.isArray(content)
-          ? content.map((c) => (typeof c === 'string' ? c : c.text ?? '')).join('')
-          : (content ?? '')
-        if (text) {
-          fullReply += text
-          yield { event: 'message', conversation_id: sessionId, message_id: messageId, answer: text, done: false }
+      for await (const chunk of provider.stream(messages, { abortSignal: abortController.signal })) {
+        if (chunk.text) {
+          fullReply += chunk.text
+          yield {
+            event: 'message',
+            conversation_id: sessionId,
+            message_id: messageId,
+            answer: chunk.text,
+            done: false,
+          }
         }
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
-        yield { event: 'message', conversation_id: sessionId, message_id: messageId, answer: '', done: true, error: `LLM 请求超时（${this.llmTimeoutMs / 1000} 秒）` }
+        yield {
+          event: 'error',
+          conversation_id: sessionId,
+          message_id: messageId,
+          answer: '',
+          done: true,
+          error: `LLM 请求超时（${this.llmTimeoutMs / 1000} 秒）`,
+        }
         return
       }
       const message = err instanceof Error ? err.message : '未知错误'
-      yield { event: 'message', conversation_id: sessionId, message_id: messageId, answer: '', done: true, error: message }
+      yield {
+        event: 'error',
+        conversation_id: sessionId,
+        message_id: messageId,
+        answer: '',
+        done: true,
+        error: message,
+      }
       return
     }
 
-    await this.prisma.$transaction([
-      this.prisma.message.create({
-        data: {
-          id: messageId,
-          sessionId,
-          role: 'assistant',
-          content: fullReply,
-        },
-      }),
-      this.prisma.session.update({
-        where: { id: sessionId },
-        data: { updatedAt: new Date() },
-      }),
-    ])
+    await this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply)
 
-    // 异步生成标题，不阻塞 SSE
     if (fullReply) {
-      this.generateSessionTitle(userId, sessionId, input, fullReply).catch(() => { })
+      this.conversationService.generateTitle(sessionId, input, fullReply, provider).catch((err: unknown) => {
+        this.logger.warn(`生成会话标题失败: ${err instanceof Error ? err.message : '未知错误'}`)
+      })
     }
 
-    yield { event: 'message', conversation_id: sessionId, message_id: messageId, answer: '', done: true }
+    yield {
+      event: 'message_end',
+      conversation_id: sessionId,
+      message_id: messageId,
+      answer: '',
+      done: true,
+    }
   }
 
-  private async generateSessionTitle(
+  private async createProvider(
     userId: string,
-    sessionId: string,
-    userMessage: string,
-    assistantMessage: string,
-  ) {
-    const session = await this.prisma.session.findUnique({
-      where: { id: sessionId },
-      select: { title: true },
-    })
-    if (!session || (session.title !== DEFAULT_SESSION_TITLE && session.title !== DEFAULT_SESSION_TITLE_ALTERNATIVE)) return
+    providerKey?: string,
+    dtoModel?: string,
+  ): Promise<LlmProvider> {
+    const { resolvedKey, provider: providerConfig, modelInfo } = await this.resolveProvider(userId, providerKey)
 
-    try {
-      const chat = await this.createChatModel(userId)
-      const messages = [
-        new SystemMessage('你是一个标题生成助手。请根据对话内容生成一个5-10字的简短中文标题，只返回标题本身，不要有任何额外内容或标点解释。'),
-        new HumanMessage(`用户：${userMessage}\nAI：${assistantMessage}`),
-      ]
-      const response = await chat.invoke(messages)
-      let title = typeof response.content === 'string' ? response.content.trim() : DEFAULT_SESSION_TITLE
-      title = title.replace(/[\n\r\t]/g, ' ').replace(/\s+/g, ' ').replace(/^["']|["']$/g, '').trim()
-      if (!title) title = DEFAULT_SESSION_TITLE
-      if (title.length > MAX_SESSION_TITLE_LENGTH) title = title.slice(0, MAX_SESSION_TITLE_LENGTH)
+    let apiKey: string
+    let baseURL: string
+    let model: string
 
-      await this.prisma.session.update({
-        where: { id: sessionId },
-        data: { title },
-      })
-    } catch (err: unknown) {
-      this.logger.warn('生成会话标题失败', err)
+    if (modelInfo) {
+      // 内置模型：使用模型注册中心中的 providerKey 读取环境变量，避免将用户传入的 provider_key 拼入环境变量名
+      const envApiKey = this.configService.get<string>(`${modelInfo.providerKey.toUpperCase()}_API_KEY`)
+      const envBaseUrl = this.configService.get<string>(`${modelInfo.providerKey.toUpperCase()}_BASE_URL`)
+      const envModel = this.configService.get<string>(`${modelInfo.providerKey.toUpperCase()}_MODEL`)
+      apiKey = envApiKey ?? ''
+      baseURL = envBaseUrl ?? modelInfo.baseUrl
+      model = dtoModel ?? envModel ?? resolvedKey
+    } else {
+      // 用户自定义 provider：使用 settings 中的配置，不再读取环境变量，防止通过 provider_key 探测服务端 secrets
+      apiKey = providerConfig.apiKey ?? ''
+      baseURL = providerConfig.baseUrl ?? 'https://api.openai.com'
+      model = dtoModel ?? providerConfig.model ?? 'gpt-3.5-turbo'
     }
+
+    if (!apiKey) {
+      throw new BadRequestException({ code: 'LLM_NOT_CONFIGURED', message: '未配置 LLM API Key' })
+    }
+
+    return this.llmFactory.create('openai-compatible', {
+      apiKey,
+      model,
+      baseURL,
+      timeout: this.llmTimeoutMs,
+    })
   }
 
-  private async ensureSessionOwnership(userId: string, sessionId: string) {
-    const session = await this.prisma.session.findUnique({
-      where: { id: sessionId },
-      select: { userId: true },
-    })
+  private async resolveProvider(
+    userId: string,
+    providerKey?: string,
+  ): Promise<{
+    providerKey: string
+    resolvedKey: string
+    provider: { name: string; apiKey: string; model: string; baseUrl: string }
+    modelInfo?: ModelInfo
+  }> {
+    const settings = await this.settingsService.getDecryptedSettings(userId)
+    const providers = settings.providers as Record<
+      string,
+      { name: string; apiKey: string; model: string; baseUrl: string }
+    >
+    const defaultProvider = settings.defaultChatProvider as string
 
-    if (!session) {
-      throw new NotFoundException({
-        code: 'NOT_FOUND',
-        message: '会话不存在',
+    const resolvedKey = providerKey?.trim() || defaultProvider
+
+    const modelInfo = this.modelRegistry.lookup(resolvedKey)
+    if (modelInfo) {
+      return {
+        providerKey: modelInfo.providerKey,
+        resolvedKey,
+        provider: {
+          name: modelInfo.providerName,
+          apiKey: '',
+          model: resolvedKey,
+          baseUrl: modelInfo.baseUrl,
+        },
+        modelInfo,
+      }
+    }
+
+    if (!resolvedKey || !providers || !Object.prototype.hasOwnProperty.call(providers, resolvedKey)) {
+      throw new BadRequestException({
+        code: 'PROVIDER_INVALID',
+        message: `未配置的 provider: ${resolvedKey ?? '空'}`,
       })
     }
 
-    if (session.userId !== userId) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: '无权访问该会话',
-      })
-    }
-  }
-
-  private async ensureKnowledgeBaseOwnership(userId: string, kbIds: string[]) {
-    const uniqueKbIds = Array.from(new Set(kbIds))
-    const ownedCount = await this.prisma.knowledgeBase.count({
-      where: {
-        userId,
-        id: { in: uniqueKbIds },
-      },
-    })
-
-    if (ownedCount !== uniqueKbIds.length) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: '无权访问指定的知识库',
-      })
-    }
+    return { providerKey: resolvedKey, resolvedKey, provider: providers[resolvedKey] }
   }
 }
