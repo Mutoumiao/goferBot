@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/auth'
-import { useTabsStore } from '@/stores/tabs'
+import { tabManager } from '@/stores/tabManager'
+import { ROUTES_REGISTER } from '@/router-register'
 
 function waitForInit(maxMs = 2000): Promise<void> {
   return new Promise(resolve => {
@@ -24,15 +25,15 @@ export const Route = createFileRoute('/')({
   beforeLoad: async () => {
     await waitForInit()
     if (!useAuthStore.getState().isAuthenticated) {
-      throw redirect({ to: '/login' })
+      throw redirect({ to: ROUTES_REGISTER.login.path })
     }
 
-    const sessionId = crypto.randomUUID()
-    useTabsStore.getState().addTempTab(sessionId)
+    // 创建一个新的聊天标签，最后的 redirect 会负责统一导航，避免重复 navigate
+    const tab = await tabManager.openNewChat({ skipNavigation: true })
 
     throw redirect({
-      to: '/chat/$sessionId',
-      params: { sessionId },
+      to: ROUTES_REGISTER.chat.path,
+      params: { tabId: tab.id },
     })
   },
   component: IndexPage,

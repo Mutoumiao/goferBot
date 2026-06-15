@@ -1,26 +1,24 @@
-import { Link, useRouter } from '@tanstack/react-router'
 import { cn } from '@/utils/cn'
 import { Avatar } from '@/features/auth/components/Avatar'
 import { useAuthStore } from '@/stores/auth'
-import { ROUTES_REGISTER } from '@/router-register'
+import { ROUTES_REGISTER, type TabRouteKey } from '@/router-register'
+import { tabManager } from '@/stores/tabManager'
+import { useWorkspaceStore } from '@/stores/workspace.store'
 
 interface NavItem {
-  to: string
+  key: TabRouteKey
   icon: React.ReactNode
   label: string
 }
 
 function useSidebarNav(): { primary: NavItem[]; secondary: NavItem[] } {
-  const entries = Object.entries(ROUTES_REGISTER).map(([, meta]) => ({ meta, fullPath: meta.path }))
-
   const primary: NavItem[] = []
   const secondary: NavItem[] = []
 
-  for (const { meta, fullPath } of entries) {
-    if (!meta?.icon || !meta.navSection) continue
-
+  for (const [, meta] of Object.entries(ROUTES_REGISTER)) {
+    if (!meta.icon || !meta.navSection) continue
     const item: NavItem = {
-      to: fullPath,
+      key: meta.key as TabRouteKey,
       icon: <meta.icon className="h-5 w-5" />,
       label: meta.title,
     }
@@ -36,12 +34,16 @@ function useSidebarNav(): { primary: NavItem[]; secondary: NavItem[] } {
 }
 
 export function IconSidebar({ className }: { className?: string }) {
-  const user = useAuthStore(s => s.user)
-  const router = useRouter()
+  const user = useAuthStore((s) => s.user)
   const { primary, secondary } = useSidebarNav()
+  const activeTab = useWorkspaceStore((s) => s.activeTab())
 
   const handleOpenProfile = () => {
-    router.navigate({ to: ROUTES_REGISTER.profile.path })
+    void tabManager.openRoute(ROUTES_REGISTER.profile.key)
+  }
+
+  const handleNavClick = (key: TabRouteKey) => {
+    void tabManager.openRoute(key)
   }
 
   return (
@@ -56,35 +58,39 @@ export function IconSidebar({ className }: { className?: string }) {
         <Avatar src={user?.avatarUrl} fallback={user?.name} size={40} />
       </button>
 
-      {/* 主导航图标 — 从路由 meta 动态生成 */}
+      {/* 主导航图标 */}
       <nav className="flex flex-1 flex-col items-center gap-3">
-        {primary.map(({ to, icon, label }) => (
-          <Link
-            key={to}
-            to={to}
+        {primary.map(({ key, icon, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]'
+              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
+              activeTab?.type === key && 'bg-[#D1D5DB]'
             )}
             title={label}
           >
             {icon}
-          </Link>
+          </button>
         ))}
       </nav>
 
-      {/* 次级导航图标 — 从路由 meta 动态生成 */}
+      {/* 次级导航图标 */}
       <nav className="flex flex-col items-center gap-3">
-        {secondary.map(({ to, icon, label }) => (
-          <Link
-            key={to}
-            to={to}
+        {secondary.map(({ key, icon, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]'
+              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
+              activeTab?.type === key && 'bg-[#D1D5DB]'
             )}
             title={label}
           >
             {icon}
-          </Link>
+          </button>
         ))}
       </nav>
     </aside>

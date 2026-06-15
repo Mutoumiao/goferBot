@@ -1,17 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { useRouter } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { confirmDeleteChatSession } from '@/features/chat/services'
 import { useLazyChatHistory } from '@/features/chat/hooks'
 import { ChatHistoryList } from './ChatHistoryList'
 import type { Session } from '@goferbot/data'
-import { ROUTES_REGISTER } from '@/router-register'
+import { tabManager } from '@/stores/tabManager'
+import { useWorkspaceStore } from '@/stores/workspace.store'
 
 const PAGE_SIZE = 6
 
 export function ChatHistoryPage() {
-  const router = useRouter()
-
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -25,9 +23,9 @@ export function ChatHistoryPage() {
 
   const handleResume = useCallback(
     (session: Session) => {
-      router.navigate({ to: ROUTES_REGISTER.chat.bindTo?.(session.id) })
+      void tabManager.openConversation(session.id, session.title ?? undefined)
     },
-    [router]
+    []
   )
 
   const handleDelete = useCallback(
@@ -35,7 +33,13 @@ export function ChatHistoryPage() {
       e?.stopPropagation()
       await confirmDeleteChatSession(session, {
         onBefore: () => setDeletingId(session.id),
-        onAfter: () => setDeletingId(null),
+        onAfter: () => {
+          setDeletingId(null)
+          const tab = useWorkspaceStore.getState().findTabByConversationId(session.id)
+          if (tab) {
+            useWorkspaceStore.getState().updateTab(tab.id, { conversationId: undefined, title: '新会话' })
+          }
+        },
         onReload: () => reload(),
       })
     },

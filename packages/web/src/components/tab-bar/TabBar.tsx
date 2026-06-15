@@ -1,27 +1,16 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { useRouter } from '@tanstack/react-router'
 import { cn } from '@/utils/cn'
 import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useTabsStore } from '@/stores/tabs'
-import type { Tab, RemoveTabResult } from '@/stores/tabs'
-
-/** 创建临时聊天标签并导航到对应路由 */
-function navigateToNewChatTab(router: ReturnType<typeof useRouter>) {
-  const sessionId = crypto.randomUUID()
-  useTabsStore.getState().addTempTab(sessionId)
-  router.navigate({ to: '/chat/$sessionId', params: { sessionId } })
-}
+import { useWorkspaceStore, type Tab } from '@/stores/workspace.store'
+import { tabManager } from '@/stores/tabManager'
 
 export function TabBar({ className }: { className?: string }) {
-  const router = useRouter()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hoveredTabId, setHoveredTabId] = useState<string | null>(null)
 
-  // Tabs store — 只读取状态和关闭操作
-  const tabs = useTabsStore(s => s.tabs)
-  const activeTabId = useTabsStore(s => s.activeTabId)
-  const removeTab = useTabsStore(s => s.removeTab)
+  const tabs = useWorkspaceStore((s) => s.tabs)
+  const activeTabId = useWorkspaceStore((s) => s.activeTabId)
 
   // active tab 变化时自动滚动到可视区域
   useEffect(() => {
@@ -41,43 +30,24 @@ export function TabBar({ className }: { className?: string }) {
     }
   }, [activeTabId])
 
-  // 点击标签 — 导航到对应路由
   const handleTabClick = useCallback(
     (tab: Tab) => {
       if (tab.id === activeTabId) return
-      router.navigate({ to: tab.route })
+      void tabManager.switchTab(tab.id)
     },
-    [router, activeTabId]
+    [activeTabId]
   )
 
-  // 关闭标签
   const handleTabClose = useCallback(
     (tabId: string) => {
-      const result: RemoveTabResult = removeTab(tabId)
-      switch (result.action) {
-        case 'rejected':
-          // 不允许关闭（只剩一个临时首页）
-          break
-        case 'navigate-new-temp':
-          // 最后一个标签被关闭，导航到新临时首页
-          navigateToNewChatTab(router)
-          break
-        case 'switch':
-          // 切换到相邻标签
-          const tab = useTabsStore.getState().tabs.find(t => t.id === result.targetId)
-          if (tab) {
-            router.navigate({ to: tab.route })
-          }
-          break
-      }
+      void tabManager.closeTab(tabId)
     },
-    [removeTab, router]
+    []
   )
 
-  // 新建标签 — 生成临时ID并导航到临时首页
   const handleNewTab = useCallback(() => {
-    navigateToNewChatTab(router)
-  }, [router])
+    void tabManager.openNewChat()
+  }, [])
 
   return (
     <div className={cn('flex h-[52px] items-center gap-2 bg-surface-secondary px-3.5', className)}>
@@ -87,12 +57,11 @@ export function TabBar({ className }: { className?: string }) {
         className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-hide"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {tabs.map(tab => {
+        {tabs.map((tab) => {
           const isActive = tab.id === activeTabId
           const isHovered = tab.id === hoveredTabId
-          const isChatSession = tab.sessionId != null
-          // 只剩一个临时首页标签时不显示关闭按钮
-          const canClose = tab.closable && !(tabs.length === 1 && tab.isTemp)
+          const isChatSession = tab.conversationId != null
+          const canClose = tab.closable
 
           return (
             <div
@@ -119,7 +88,7 @@ export function TabBar({ className }: { className?: string }) {
                   <Button
                     variant="secondary"
                     className="h-4 w-4 rounded-sm text-text-secondary hover:text-black bg-transparent hover:bg-transparent"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation()
                       handleTabClose(tab.id)
                     }}
