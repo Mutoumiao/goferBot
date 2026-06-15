@@ -184,7 +184,7 @@ importers:
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.3.0
-        version: 10.4.9(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)
+        version: 10.4.9(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)
       '@nestjs/schematics':
         specifier: ^10.1.0
         version: 10.2.3(chokidar@3.6.0)(typescript@5.9.3)
@@ -286,7 +286,7 @@ importers:
         version: 0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       nitro:
         specifier: npm:nitro-nightly@latest
-        version: nitro-nightly@3.0.1-20260610-171638-b4f3e2ba(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.2.0)(ioredis@5.11.1)(jiti@2.7.0)(lru-cache@11.5.1)(rollup@4.61.1)(vite@8.0.16(@types/node@22.19.20)(esbuild@0.28.0)(jiti@2.7.0)(stylus@0.57.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: nitro-nightly@3.0.1-20260611-123640-7765bcb7(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.2.0)(ioredis@5.11.1)(jiti@2.7.0)(lru-cache@11.5.1)(rollup@4.61.1)(vite@8.0.16(@types/node@22.19.20)(esbuild@0.28.0)(jiti@2.7.0)(stylus@0.57.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
       radix-ui:
         specifier: ^1.5.0
         version: 1.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -5788,19 +5788,22 @@ packages:
     resolution: {integrity: sha512-+h1lkLKhZMTYjog1VEpJNG7NZJWcuc2DDk/qsqSTRRCOXiLjeQ1d1/udrUGhqMxUgAlwKNZ0cf2uqan5GLuS2A==}
     engines: {node: '>=6'}
 
-  env-runner@0.1.9:
-    resolution: {integrity: sha512-W9AiZlPx0uXtghAJiTBkeZOgyQdecVvoln3cHoOEZswPq0cVMi+WBhUQjdUn+JcZFAFgOt+i5fcO7C2zniZoCg==}
+  env-runner@0.1.14:
+    resolution: {integrity: sha512-qdk5mmgFsd+zPg3r1bkZ+IbvpfUfypyDvNhMGypSMRpz7kOa/kI6SpW8fgyukuEM4Lo24M65r+1Ne0DtT7vFBA==}
     hasBin: true
     peerDependencies:
       '@netlify/runtime': ^4.1.23
       '@vercel/queue': ^0.2.0
       miniflare: ^4.20260515.0
+      wrangler: ^4.0.0
     peerDependenciesMeta:
       '@netlify/runtime':
         optional: true
       '@vercel/queue':
         optional: true
       miniflare:
+        optional: true
+      wrangler:
         optional: true
 
   error-ex@1.3.4:
@@ -7573,8 +7576,8 @@ packages:
   nf3@0.3.17:
     resolution: {integrity: sha512-N9zEWySuJFw+gR0lhS5863YsvNeudOdqRyFvNb+jMXbeTJOdrjDqkCpDginIZfUm0LzT1t1nCRiDeqQm/8kirQ==}
 
-  nitro-nightly@3.0.1-20260610-171638-b4f3e2ba:
-    resolution: {integrity: sha512-7Q1iHtu9rnVNq4IqHdtXFgbBf1/+JpchizYBooStsoYP2RvMKGkuY3eLfN92g2ORiAAxV96M5llXFKtDqHhyHQ==}
+  nitro-nightly@3.0.1-20260611-123640-7765bcb7:
+    resolution: {integrity: sha512-/u0D+xj1uZt6RNJbeNzBKcEE/8lBf3BVDbLQ9OxbS/FUgWrYHNcr1CfS0ghOgVEcIcYCEUVHE6G4VbAI9MjOlA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -7729,8 +7732,8 @@ packages:
     resolution: {integrity: sha512-AWGB9WFcRXOQs48Z/udjI5ZcZMHXwX8XPByNpOydgcGsDLIzjGizhoMWJyKAWze7AVW/2W1i+/gPX4YtKe5cyg==}
     engines: {node: '>=12.20.0'}
 
-  ocache@0.1.4:
-    resolution: {integrity: sha512-e7geNdWjxSnvsSgvLuPvgKgu7ubM10ZmTPOgpr7mz2BXYtvjMKTiLhjFi/gWU8chkuP6hNkZBsa9LzOusyaqkQ==}
+  ocache@0.1.5:
+    resolution: {integrity: sha512-kNNnkkVQup/QDvmTz8Q84wc2ntiyoVHDxa6eHWKt5qdGAmFRBIxy83rxgCYEjW0x06UJ9E3P6VgM2yY4rOBH4w==}
 
   ofetch@1.5.1:
     resolution: {integrity: sha512-2W4oUZlVaqAPAil6FUg/difl6YhqhUR7x2eZY4bQCko22UXg3hptq9KLQdqFClV+Wu85UX7hNtdGTngi/1BxcA==}
@@ -11161,7 +11164,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.2
     optional: true
 
-  '@nestjs/cli@10.4.9(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)':
+  '@nestjs/cli@10.4.9(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)':
     dependencies:
       '@angular-devkit/core': 17.3.11(chokidar@3.6.0)
       '@angular-devkit/schematics': 17.3.11(chokidar@3.6.0)
@@ -11171,7 +11174,7 @@ snapshots:
       chokidar: 3.6.0
       cli-table3: 0.6.5
       commander: 4.1.1
-      fork-ts-checker-webpack-plugin: 9.0.2(typescript@5.7.2)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0))
+      fork-ts-checker-webpack-plugin: 9.0.2(typescript@5.7.2)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0))
       glob: 10.4.5
       inquirer: 8.2.6
       node-emoji: 1.11.0
@@ -11180,7 +11183,7 @@ snapshots:
       tsconfig-paths: 4.2.0
       tsconfig-paths-webpack-plugin: 4.2.0
       typescript: 5.7.2
-      webpack: 5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)
+      webpack: 5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)
       webpack-node-externals: 3.0.0
     optionalDependencies:
       '@swc/core': 1.15.40(@swc/helpers@0.5.23)
@@ -13697,7 +13700,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 22.19.20
+      '@types/node': 20.19.42
 
   '@types/yauzl@2.10.3':
     dependencies:
@@ -14656,7 +14659,7 @@ snapshots:
 
   buffer-image-size@0.6.4:
     dependencies:
-      '@types/node': 22.19.20
+      '@types/node': 20.19.42
 
   buffer-xor@1.0.3: {}
 
@@ -15534,7 +15537,7 @@ snapshots:
 
   env-paths@2.2.1: {}
 
-  env-runner@0.1.9:
+  env-runner@0.1.14:
     dependencies:
       crossws: 0.4.6(srvx@0.11.16)
       exsolve: 1.0.8
@@ -16071,7 +16074,7 @@ snapshots:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
-  fork-ts-checker-webpack-plugin@9.0.2(typescript@5.7.2)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)):
+  fork-ts-checker-webpack-plugin@9.0.2(typescript@5.7.2)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)):
     dependencies:
       '@babel/code-frame': 7.29.7
       chalk: 4.1.2
@@ -16086,7 +16089,7 @@ snapshots:
       semver: 7.8.3
       tapable: 2.3.3
       typescript: 5.7.2
-      webpack: 5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)
+      webpack: 5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)
 
   form-data@4.0.5:
     dependencies:
@@ -16329,7 +16332,7 @@ snapshots:
 
   happy-dom@20.10.2:
     dependencies:
-      '@types/node': 22.19.20
+      '@types/node': 20.19.42
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       buffer-image-size: 0.6.4
@@ -17641,16 +17644,16 @@ snapshots:
 
   nf3@0.3.17: {}
 
-  nitro-nightly@3.0.1-20260610-171638-b4f3e2ba(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.2.0)(ioredis@5.11.1)(jiti@2.7.0)(lru-cache@11.5.1)(rollup@4.61.1)(vite@8.0.16(@types/node@22.19.20)(esbuild@0.28.0)(jiti@2.7.0)(stylus@0.57.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)):
+  nitro-nightly@3.0.1-20260611-123640-7765bcb7(chokidar@5.0.0)(dotenv@17.4.2)(giget@3.2.0)(ioredis@5.11.1)(jiti@2.7.0)(lru-cache@11.5.1)(rollup@4.61.1)(vite@8.0.16(@types/node@22.19.20)(esbuild@0.28.0)(jiti@2.7.0)(stylus@0.57.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       consola: 3.4.2
       crossws: 0.4.6(srvx@0.11.16)
       db0: 0.3.4
-      env-runner: 0.1.9
+      env-runner: 0.1.14
       h3: 2.0.1-rc.22(crossws@0.4.6(srvx@0.11.16))
       hookable: 6.1.1
       nf3: 0.3.17
-      ocache: 0.1.4
+      ocache: 0.1.5
       ofetch: 2.0.0-alpha.3
       ohash: 2.0.11
       rolldown: 1.1.0
@@ -17693,6 +17696,7 @@ snapshots:
       - mysql2
       - sqlite3
       - uploadthing
+      - wrangler
 
   nock@14.0.15:
     dependencies:
@@ -17834,7 +17838,7 @@ snapshots:
 
   obug@2.1.2: {}
 
-  ocache@0.1.4:
+  ocache@0.1.5:
     dependencies:
       ohash: 2.0.11
 
@@ -19425,18 +19429,6 @@ snapshots:
       mkdirp: 1.0.4
       yallist: 4.0.0
 
-  terser-webpack-plugin@5.6.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)):
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      jest-worker: 27.5.1
-      schema-utils: 4.3.3
-      terser: 5.48.0
-      webpack: 5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)
-    optionalDependencies:
-      '@swc/core': 1.15.40(@swc/helpers@0.5.23)
-      esbuild: 0.28.0
-      lightningcss: 1.32.0
-
   terser-webpack-plugin@5.6.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
@@ -19448,6 +19440,17 @@ snapshots:
       '@swc/core': 1.15.40(@swc/helpers@0.5.23)
       esbuild: 0.28.0
     optional: true
+
+  terser-webpack-plugin@5.6.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)):
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      jest-worker: 27.5.1
+      schema-utils: 4.3.3
+      terser: 5.48.0
+      webpack: 5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)
+    optionalDependencies:
+      '@swc/core': 1.15.40(@swc/helpers@0.5.23)
+      lightningcss: 1.32.0
 
   terser@5.48.0:
     dependencies:
@@ -20267,7 +20270,7 @@ snapshots:
       - uglify-js
     optional: true
 
-  webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0):
+  webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0):
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.9
@@ -20289,7 +20292,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 3.3.0
       tapable: 2.3.3
-      terser-webpack-plugin: 5.6.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(esbuild@0.28.0)(lightningcss@1.32.0))
+      terser-webpack-plugin: 5.6.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0)(webpack@5.97.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(lightningcss@1.32.0))
       watchpack: 2.5.1
       webpack-sources: 3.5.0
     transitivePeerDependencies:

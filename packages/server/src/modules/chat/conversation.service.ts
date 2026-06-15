@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
 import type { Message } from '@prisma/client'
-import { SessionRepository } from '@/modules/session/repositories/session.repository.js'
-import { MessageRepository } from '@/modules/session/repositories/message.repository.js'
+import { SessionRepository } from '../../modules/session/repositories/session.repository.js'
+import { MessageRepository } from '../..//modules/session/repositories/message.repository.js'
 import type { LlmProvider } from './llm/llm-provider.interface.js'
 
 export interface ConversationContext {
@@ -14,7 +14,7 @@ export class ConversationService {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly messageRepository: MessageRepository,
-  ) {}
+  ) { }
 
   async ensureOwnership(userId: string, sessionId: string): Promise<void> {
     const session = await this.sessionRepository.findById(sessionId)
