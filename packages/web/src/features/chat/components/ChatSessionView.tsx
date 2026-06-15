@@ -10,7 +10,7 @@ import { fetchProviders } from '../services'
 import { ProviderSelector } from './ProviderSelector'
 
 interface ChatSessionViewProps {
-  sessionId: string
+  conversationId: string
   xMessages: {
     id: number | string
     message: GoferMessage
@@ -25,6 +25,7 @@ interface ChatSessionViewProps {
 }
 
 export function ChatSessionView({
+  conversationId,
   xMessages,
   onRequest,
   isRequesting,
@@ -36,15 +37,14 @@ export function ChatSessionView({
   const [inputValue, setInputValue] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const { activeSession, isLoadingHistory, error, availableProviders, isInitLoading, initError, clearError } =
+  const { isLoadingHistory, error, availableProviders, isInitLoading, initError, clearError } =
     useChatStore()
 
   const handleSubmit = useCallback(
     (content: string) => {
       const trimmed = content.trim()
       if (!trimmed) return
-      const sid = activeSession?.id
-      if (!sid) {
+      if (!conversationId) {
         setErrorMessage('会话尚未就绪，请稍候重试')
         return
       }
@@ -53,11 +53,11 @@ export function ChatSessionView({
       onRequest({
         response_mode: 'streaming',
         query: trimmed,
-        conversation_id: sid,
+        conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
       })
     },
-    [activeSession?.id, selectedProviderKey, onRequest]
+    [conversationId, selectedProviderKey, onRequest]
   )
 
   const bubbleItems = xMessages.map(({ id, message, status }) => ({
@@ -174,7 +174,7 @@ export function ChatSessionView({
                   <button
                     type="button"
                     data-testid="init-retry-btn"
-                    onClick={() => fetchProviders()}
+                    onClick={() => void fetchProviders()}
                     className="text-xs text-brand-primary hover:underline"
                   >
                     模型列表加载失败，点击重试

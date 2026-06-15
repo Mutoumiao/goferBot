@@ -1,5 +1,4 @@
 import type { Message, Session } from '@goferbot/data'
-import { redirect } from '@tanstack/react-router'
 import {
   getSessions,
   createSession as apiCreateSession,
@@ -12,7 +11,7 @@ import {
 import { xChatRequest } from '@/api/x-chat'
 import { GoferChatProvider } from './providers/GoferChatProvider'
 import { useChatStore } from './store'
-import { useTabsStore } from '@/stores/tabs'
+import { useWorkspaceStore } from '@/stores/workspace.store'
 import { openDialog } from '@/overlays/services/overlay-service'
 import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
 import { getPendingMessageKey } from './constants'
@@ -164,6 +163,7 @@ export interface PendingMessage {
  */
 export async function submitTempChat(
   content: string,
+  tabId: string,
   options?: { knowledgeBaseIds?: string[] },
 ): Promise<string | null> {
   const newSession = await createChatSession()
@@ -174,26 +174,14 @@ export async function submitTempChat(
   }
   sessionStorage.setItem(getPendingMessageKey(newSession.id), JSON.stringify(pending))
 
-  // 将临时标签升级为真实会话标签
-  const tabsStore = useTabsStore.getState()
-  const activeTab = tabsStore.activeTab()
-  if (activeTab?.isTemp && activeTab.sessionId) {
-    tabsStore.promoteTempSession(activeTab.sessionId, newSession.id, newSession.title)
-  }
+  // 更新当前 tab 的 conversationId 与标题，不再替换路由
+  const workspace = useWorkspaceStore.getState()
+  workspace.updateTab(tabId, {
+    conversationId: newSession.id,
+    title: newSession.title,
+  })
 
   return newSession.id
-}
-
-/**
- * 业务编排：重命名会话 → 同步标签标题
- */
-export async function renameSessionAndTab(sessionId: string, title: string): Promise<void> {
-  await renameChatSession(sessionId, title)
-  const tabsStore = useTabsStore.getState()
-  const tab = tabsStore.tabs.find((t) => t.sessionId === sessionId)
-  if (tab) {
-    tabsStore.renameTab(tab.id, title)
-  }
 }
 
 /**
@@ -216,44 +204,4 @@ export async function fetchProviders(): Promise<void> {
   } finally {
     store.setIsInitLoading(false)
   }
-}
-
-/**
- * 业务编排：路由 loader — 解析会话 ID，判断是否临时会话
- * 返回 { sessionId, isTemp } 供路由使用
- *
- * 优化策略：
- * 1. 先检查 tabsStore 中的 tempSessionIds 集合，若 sessionId 在集合中，直接返回临时状态，不发起任何请求
- * 2. 非临时会话时，直接调用 getSessionById 获取会话详情，不依赖分页列表
- * 3. 仅在请求失败时降级到临时状态（会话不存在或权限不足）
- */
-export async function resolveSessionForRoute(sessionId: string): Promise<{ sessionId: string; isTemp: boolean; error?: string }> {
-  const tabsStore = useTabsStore.getState()
-
-  // 检查 tempSessionIds 集合：只要存在就一定是临时会话，不发起任何请求
-  if (tabsStore.isTempSession(sessionId)) {
-    return { sessionId, isTemp: true }
-  }
-
-  // 非临时会话：直接请求会话详情，不走全量列表查询
-  try {
-    const session = await getSessionById(sessionId).send()
-    if (session) {
-      // 同步标签标题
-      const tab = tabsStore.tabs.find((t) => t.sessionId === sessionId)
-      if (tab && tab.title !== session.title) {
-        tabsStore.renameTab(tab.id, session.title)
-      }
-      // 同时设置激活会话，避免 ChatPage 再次请求
-      useChatStore.getState().setActiveSession(session)
-      return { sessionId, isTemp: false }
-    }
-  } catch (e) {
-    // 会话不存在或权限不足，直接重定向到首页
-    // 不创建临时标签，避免重复请求和页面卡死
-    throw redirect({ to: '/' })
-  }
-
-  // 请求失败：视为临时会话
-  return { sessionId, isTemp: true }
 }

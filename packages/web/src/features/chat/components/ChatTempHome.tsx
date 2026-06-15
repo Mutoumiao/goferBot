@@ -10,10 +10,10 @@ import { ProviderSelector } from './ProviderSelector'
 import { QuickActions } from './QuickActions'
 
 interface ChatTempHomeProps {
-  onNavigateToSession: (sessionId: string) => void
+  tabId: string
 }
 
-export function ChatTempHome({ onNavigateToSession }: ChatTempHomeProps) {
+export function ChatTempHome({ tabId }: ChatTempHomeProps) {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([])
@@ -37,15 +37,12 @@ export function ChatTempHome({ onNavigateToSession }: ChatTempHomeProps) {
       if (isLoading) return
       setIsLoading(true)
       try {
-        const newSessionId = await submitTempChat(content, { knowledgeBaseIds: selectedKbIds })
-        if (newSessionId) {
-          onNavigateToSession(newSessionId)
-        }
+        await submitTempChat(content, tabId, { knowledgeBaseIds: selectedKbIds })
       } finally {
         setIsLoading(false)
       }
     },
-    [isLoading, onNavigateToSession, selectedKbIds],
+    [isLoading, tabId, selectedKbIds],
   )
 
   const handleKeyDown = useCallback(
