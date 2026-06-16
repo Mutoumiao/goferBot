@@ -97,7 +97,7 @@ describe('TabBar', () => {
     expect(screen.getByTitle('新建问答会话')).toBeDefined()
   })
 
-  it('renders tabs from store', () => {
+  it('renders tabs from store with icon and name', () => {
     mockTabs.push(
       { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
       { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
@@ -107,6 +107,31 @@ describe('TabBar', () => {
     render(<TabBar />)
     expect(screen.getByText('问答首页')).toBeDefined()
     expect(screen.getByText('知识库')).toBeDefined()
+    expect(screen.getByTestId('icon-message')).toBeDefined()
+    expect(screen.getByTestId('icon-book')).toBeDefined()
+  })
+
+  it('does not hide tabs behind a scroll container', () => {
+    mockTabs.push(
+      { id: 't1', type: ROUTES_REGISTER.chat.key, title: '会话 1', closable: true, createdAt: Date.now() },
+      { id: 't2', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
+      { id: 't3', type: ROUTES_REGISTER.history.key, title: '历史', closable: true, createdAt: Date.now() },
+      { id: 't4', type: ROUTES_REGISTER.settings.key, title: '设置', closable: true, createdAt: Date.now() },
+      { id: 't5', type: ROUTES_REGISTER.recycle.key, title: '回收站', closable: true, createdAt: Date.now() },
+    )
+    mockActiveTabId = 't1'
+
+    render(<TabBar />)
+    expect(screen.getByText('会话 1')).toBeDefined()
+    expect(screen.getByText('知识库')).toBeDefined()
+    expect(screen.getByText('历史')).toBeDefined()
+    expect(screen.getByText('设置')).toBeDefined()
+    expect(screen.getByText('回收站')).toBeDefined()
+
+    const tabList = screen.getByRole('tablist')
+    expect(tabList).toBeDefined()
+    expect(tabList.className).not.toContain('overflow-x-auto')
+    expect(tabList.className).not.toContain('scrollbar-hide')
   })
 
   it('activates tab on click', () => {
@@ -140,12 +165,11 @@ describe('TabBar', () => {
     mockActiveTabId = 't1'
 
     render(<TabBar />)
-    const tab = screen.getByText('知识库').closest('[data-active]') as HTMLElement
-    fireEvent.mouseEnter(tab)
     const closeBtn = screen.getByLabelText('关闭 知识库')
     fireEvent.click(closeBtn)
 
     expect(tabManager.closeTab).toHaveBeenCalledWith('t1')
+    expect(tabManager.switchTab).not.toHaveBeenCalled()
   })
 
   it('creates new chat tab on plus button click', () => {

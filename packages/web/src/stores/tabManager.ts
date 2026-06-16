@@ -45,6 +45,21 @@ export const tabManager = {
     })
   },
 
+  /**
+   * 确保指定 tabId 的 chat 标签存在。
+   * 用于直接访问 /chat/$tabId 但本地无该标签数据时的自愈恢复。
+   */
+  ensureChatTab(tabId: string) {
+    const workspace = useWorkspaceStore.getState()
+    if (workspace.tabs.some((t) => t.id === tabId)) return
+    workspace.addTab({
+      id: tabId,
+      type: ROUTES_REGISTER.chat.key,
+      title: DEFAULT_CHAT_TITLE,
+      closable: true,
+    })
+  },
+
   async openConversation(conversationId: string, title?: string) {
     const workspace = useWorkspaceStore.getState()
     const existing = workspace.findTabByConversationId(conversationId)

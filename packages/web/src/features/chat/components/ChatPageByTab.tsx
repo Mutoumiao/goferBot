@@ -4,6 +4,7 @@ import { useXChat } from '@ant-design/x-sdk'
 import type { Message } from '@goferbot/data'
 import { useWorkspaceStore } from '@/stores/workspace.store'
 import { useConversationStore } from '@/stores/conversation.store'
+import { tabManager } from '@/stores/tabManager'
 import { useChatStore } from '../store'
 import {
   createGoferProvider,
@@ -82,6 +83,13 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
     fetchProviders()
   }, [])
 
+  // 当 URL 中的 tabId 在本地没有对应标签时，自动创建一个空白 chat 标签自愈恢复
+  useEffect(() => {
+    if (!tab) {
+      tabManager.ensureChatTab(tabId)
+    }
+  }, [tabId, !!tab])
+
   // 当 tab 首次绑定 conversationId 时，加载历史消息
   useEffect(() => {
     if (!conversationId) return
@@ -154,7 +162,9 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
 
   if (!tab) {
     return (
-      <div className="flex h-full items-center justify-center text-red-500">标签不存在</div>
+      <div className="flex h-full items-center justify-center text-text-secondary">
+        正在恢复标签...
+      </div>
     )
   }
 

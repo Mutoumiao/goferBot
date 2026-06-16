@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, devtools } from 'zustand/middleware'
+import { persist, devtools, createJSONStorage } from 'zustand/middleware'
 import type { TabRouteKey } from '@/router-register'
 
 export type TabType = TabRouteKey
@@ -135,6 +135,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       {
         name: 'gofer-workspace-v1',
         partialize: (state) => ({ tabs: state.tabs, activeTabId: state.activeTabId }),
+        storage: createJSONStorage(() => sessionStorage)
       },
     ),
     { name: 'WorkspaceStore', enabled: import.meta.env?.DEV ?? true },
