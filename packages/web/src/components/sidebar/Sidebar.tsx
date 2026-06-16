@@ -3,7 +3,6 @@ import { Avatar } from '@/features/auth/components/Avatar'
 import { useAuthStore } from '@/stores/auth'
 import { ROUTES_REGISTER, type TabRouteKey } from '@/router-register'
 import { tabManager } from '@/stores/tabManager'
-import { useWorkspaceStore } from '@/stores/workspace.store'
 
 interface NavItem {
   key: TabRouteKey
@@ -34,9 +33,8 @@ function useSidebarNav(): { primary: NavItem[]; secondary: NavItem[] } {
 }
 
 export function IconSidebar({ className }: { className?: string }) {
-  const user = useAuthStore((s) => s.user)
+  const user = useAuthStore(s => s.user)
   const { primary, secondary } = useSidebarNav()
-  const activeTab = useWorkspaceStore((s) => s.activeTab())
 
   const handleOpenProfile = () => {
     void tabManager.openRoute(ROUTES_REGISTER.profile.key)
@@ -47,7 +45,7 @@ export function IconSidebar({ className }: { className?: string }) {
   }
 
   return (
-    <aside className={cn('flex w-[60px] flex-col items-center bg-surface-secondary py-5', className)}>
+    <aside className={cn('flex w-15 flex-col items-center bg-surface-secondary py-5', className)}>
       {/* 用户头像 */}
       <button
         type="button"
@@ -66,8 +64,7 @@ export function IconSidebar({ className }: { className?: string }) {
             type="button"
             onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
-              activeTab?.type === key && 'bg-[#D1D5DB]'
+              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]'
             )}
             title={label}
           >
@@ -84,8 +81,7 @@ export function IconSidebar({ className }: { className?: string }) {
             type="button"
             onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
-              activeTab?.type === key && 'bg-[#D1D5DB]'
+              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]'
             )}
             title={label}
           >
