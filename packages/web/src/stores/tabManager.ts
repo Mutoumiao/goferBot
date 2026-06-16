@@ -56,10 +56,17 @@ export const tabManager = {
   },
 
   async openNewChat(options?: { skipNavigation?: boolean }) {
-    return this.openRoute(ROUTES_REGISTER.chat.key, {
+    const workspace = useWorkspaceStore.getState()
+    const meta = getRouteMeta(ROUTES_REGISTER.chat.key)
+    const tab = workspace.addTab({
+      type: ROUTES_REGISTER.chat.key,
       title: DEFAULT_CHAT_TITLE,
-      skipNavigation: options?.skipNavigation,
+      closable: meta.closable,
     })
+    if (!options?.skipNavigation) {
+      await router.navigate({ to: meta.bindTo!(tab.id) })
+    }
+    return tab
   },
 
   /**

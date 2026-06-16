@@ -28,15 +28,13 @@ describe('tabManager', () => {
     expect(navigateMock).toHaveBeenCalledWith({ to: `/chat/${tab.id}` })
   })
 
-  test('openNewChat 对已有空白 chat 标签只切换不新建', async () => {
+  test('openNewChat 每次点击都新建空白 chat 标签', async () => {
     const first = await tabManager.openNewChat()
-    navigateMock.mockClear()
-
     const second = await tabManager.openNewChat()
 
-    expect(second.id).toBe(first.id)
-    expect(useWorkspaceStore.getState().tabs).toHaveLength(1)
-    expect(navigateMock).toHaveBeenCalledWith({ to: `/chat/${first.id}` })
+    expect(first.id).not.toBe(second.id)
+    expect(useWorkspaceStore.getState().tabs).toHaveLength(2)
+    expect(useWorkspaceStore.getState().activeTabId).toBe(second.id)
   })
 
   test('openConversation 为不同会话创建多个会话页标签', async () => {
@@ -280,15 +278,12 @@ describe('tabManager', () => {
     expect(navigateMock).toHaveBeenCalledWith({ to: ROUTES_REGISTER.history.path })
   })
 
-  test('openNewChat 对已存在的空白 chat 标签只切换不新建', async () => {
+  test('openNewChat 每次点击都新建空白 chat 标签', async () => {
     const first = await tabManager.openNewChat()
-    await tabManager.openHistory()
-    navigateMock.mockClear()
-
     const second = await tabManager.openNewChat()
 
-    expect(second.id).toBe(first.id)
+    expect(first.id).not.toBe(second.id)
     expect(useWorkspaceStore.getState().tabs).toHaveLength(2)
-    expect(navigateMock).toHaveBeenCalledWith({ to: `/chat/${first.id}` })
+    expect(useWorkspaceStore.getState().activeTabId).toBe(second.id)
   })
 })
