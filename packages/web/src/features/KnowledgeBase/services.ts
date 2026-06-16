@@ -155,8 +155,11 @@ export async function renameDocument(docId: string, name: string) {
 }
 
 export async function moveDocument(docId: string, targetFolderId: string | null) {
-  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  const { currentKbId, currentFolderId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
   if (!currentKbId) return
+  if (targetFolderId === currentFolderId) {
+    throw new Error('目标文件夹不能与当前文件夹相同')
+  }
 
   setFileLoading(true)
   setFileError(null)
@@ -165,6 +168,7 @@ export async function moveDocument(docId: string, targetFolderId: string | null)
     setDocuments(documents.filter((d) => d.id !== docId))
   } catch (e) {
     setFileError(e instanceof Error ? e.message : '移动失败')
+    throw e
   } finally {
     setFileLoading(false)
   }

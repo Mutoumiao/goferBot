@@ -52,6 +52,7 @@ interface FileViewProps {
   onOpenItem: (item: Folder | DocumentItem) => void
   onRenameItem: (item: Folder | DocumentItem) => void
   onDeleteItem: (item: Folder | DocumentItem) => void
+  onMoveItem: (doc: DocumentItem) => void
 }
 
 function GridView({
@@ -64,6 +65,7 @@ function GridView({
   onOpenItem,
   onRenameItem,
   onDeleteItem,
+  onMoveItem,
 }: FileViewProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -92,6 +94,7 @@ function GridView({
             item={doc}
             onRename={onRenameItem}
             onDelete={onDeleteItem}
+            onMove={onMoveItem}
           >
             <div>
               <FileGridItem item={doc} isFolder={false} onClick={() => onDocumentClick(doc)} />
@@ -113,6 +116,7 @@ function ListView({
   onOpenItem,
   onRenameItem,
   onDeleteItem,
+  onMoveItem,
 }: Omit<FileViewProps, 'folderDocumentCounts'>) {
   return (
     <div className="flex flex-col gap-3">
@@ -148,6 +152,7 @@ function ListView({
               item={doc}
               onRename={onRenameItem}
               onDelete={onDeleteItem}
+              onMove={onMoveItem}
             >
               <FileListItem
                 item={doc}
@@ -252,6 +257,18 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       },
     })
   }, [])
+
+  const handleMoveItem = useCallback(async (doc: DocumentItem) => {
+    const MoveDocumentDialog = (await import('./MoveDocumentDialog')).default
+    await openDialog(MoveDocumentDialog, {
+      docId: doc.id,
+      docName: doc.name,
+      onConfirm: async () => {
+        if (!currentKbId) return
+        await loadKbItems(currentKbId, currentFolderId, sortParams)
+      },
+    })
+  }, [currentKbId, currentFolderId, sortParams])
 
   const handleCreateFolder = useCallback(async () => {
     if (!currentKbId) return
@@ -359,6 +376,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       onOpenItem: handleOpenItem,
       onRenameItem: handleRenameItem,
       onDeleteItem: handleDeleteItem,
+      onMoveItem: handleMoveItem,
     }
 
     if (viewMode === 'grid') {

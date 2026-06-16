@@ -4,6 +4,7 @@ import {
   Pencil,
   Trash2,
   FolderPlus,
+  FolderInput,
 } from 'lucide-react'
 import {
   ContextMenu,
@@ -20,6 +21,7 @@ interface FileContextMenuProps {
   onOpen?: (item: Folder | DocumentItem) => void
   onRename?: (item: Folder | DocumentItem) => void
   onDelete?: (item: Folder | DocumentItem) => void
+  onMove?: (item: DocumentItem) => void
   onCreateFolder?: () => void
 }
 
@@ -29,6 +31,7 @@ export function FileContextMenu({
   onOpen,
   onRename,
   onDelete,
+  onMove,
   onCreateFolder,
 }: FileContextMenuProps) {
   const handleOpen = useCallback(() => {
@@ -42,6 +45,10 @@ export function FileContextMenu({
   const handleDelete = useCallback(() => {
     if (item && onDelete) onDelete(item)
   }, [item, onDelete])
+
+  const handleMove = useCallback(() => {
+    if (item && onMove && 'status' in item) onMove(item)
+  }, [item, onMove])
 
   const isFolder = item ? !('status' in item) : false
 
@@ -63,6 +70,12 @@ export function FileContextMenu({
               <ContextMenuItem onClick={handleRename}>
                 <Pencil className="mr-2 h-4 w-4" />
                 重命名
+              </ContextMenuItem>
+            )}
+            {!isFolder && onMove && (
+              <ContextMenuItem onClick={handleMove}>
+                <FolderInput className="mr-2 h-4 w-4" />
+                移动到
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
