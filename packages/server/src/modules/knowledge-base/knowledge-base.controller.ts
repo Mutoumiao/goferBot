@@ -27,6 +27,8 @@ export class KnowledgeBaseController {
   @Get()
   async list(@CurrentUser('id') userId: string) {
     const entries = await this.kbService.list(userId)
+    // TODO: 当前知识库列表未实现真实分页，固定返回第一页全量数据。
+    // 接入真实分页时，应解析 page/size 查询参数并返回对应切片。
     return {
       items: entries,
       pagination: {

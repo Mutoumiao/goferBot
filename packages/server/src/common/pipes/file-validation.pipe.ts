@@ -87,8 +87,7 @@ export class FileValidationPipe implements PipeTransform {
     }
     const buffer = Buffer.concat(chunks)
 
-    const fileStream = data.file as unknown as { truncated?: boolean }
-    if (fileStream.truncated) {
+    if (data.file.truncated) {
       throw new PayloadTooLargeException({
         code: 'PAYLOAD_TOO_LARGE',
         message: `文件超过 ${maxSizeBytes / 1024 / 1024}MB 限制`,

@@ -17,7 +17,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, LayoutGrid, List, ArrowUpDown, Upload, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, LayoutGrid, List, ArrowUpDown, Upload } from 'lucide-react'
 import type { Folder } from '../types'
 import type { ViewMode, SortOption } from '../types'
 
@@ -58,15 +58,6 @@ export function KnowledgeBaseToolbar({
   return (
     <div className="flex items-center justify-between border-b border-[#E7EAF0] px-5 py-2.5" onKeyDown={handleKeyDown}>
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-0.5">
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-[#9AA3AF] hover:text-[#5E6673]">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-[#9AA3AF] hover:text-[#5E6673]">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
