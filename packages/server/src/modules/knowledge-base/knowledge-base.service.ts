@@ -2,11 +2,14 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
 import type { CreateKbDto } from './dto/create-kb.dto.js'
 import type { UpdateKbDto } from './dto/update-kb.dto.js'
+
+const MAX_SEARCH_QUERY_LENGTH = 100
 
 @Injectable()
 export class KnowledgeBaseService {
@@ -64,14 +67,27 @@ export class KnowledgeBaseService {
   async search(userId: string, kbId: string, query: string) {
     await this.ensureOwnership(userId, kbId)
 
-    const likeQuery = `%${query}%`
+    const trimmed = query.trim()
+    if (!trimmed) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: '搜索关键词不能为空',
+      })
+    }
+    if (trimmed.length > MAX_SEARCH_QUERY_LENGTH) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: `搜索关键词不能超过 ${MAX_SEARCH_QUERY_LENGTH} 个字符`,
+      })
+    }
+
     const [folders, documents] = await Promise.all([
       this.prisma.folder.findMany({
-        where: { kbId, name: { contains: query, mode: 'insensitive' } },
+        where: { kbId, name: { contains: trimmed, mode: 'insensitive' } },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.document.findMany({
-        where: { kbId, name: { contains: query, mode: 'insensitive' } },
+        where: { kbId, name: { contains: trimmed, mode: 'insensitive' } },
         orderBy: { createdAt: 'desc' },
       }),
     ])
