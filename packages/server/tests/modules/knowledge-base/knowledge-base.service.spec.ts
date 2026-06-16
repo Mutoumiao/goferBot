@@ -16,6 +16,12 @@ describe('KnowledgeBaseService', () => {
         delete: vi.fn(),
         findUnique: vi.fn(),
       },
+      folder: {
+        findMany: vi.fn(),
+      },
+      document: {
+        findMany: vi.fn(),
+      },
     }
     mockCleanup = {
       cleanupKnowledgeBase: vi.fn().mockResolvedValue(undefined),
@@ -83,6 +89,34 @@ describe('KnowledgeBaseService', () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u2' })
 
       await expect(kbService.update('u1', 'kb1', { name: 'Updated' }))
+        .rejects.toThrow(ForbiddenException)
+    })
+  })
+
+  describe('search', () => {
+    it('returns matching folders and documents', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'Notes' }])
+      mockPrisma.document.findMany.mockResolvedValue([{ id: 'd1', name: 'notes.pdf' }])
+
+      const result = await kbService.search('u1', 'kb1', 'notes')
+
+      expect(result.folders).toHaveLength(1)
+      expect(result.documents).toHaveLength(1)
+      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', name: { contains: 'notes', mode: 'insensitive' } },
+        orderBy: { createdAt: 'asc' },
+      })
+      expect(mockPrisma.document.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', name: { contains: 'notes', mode: 'insensitive' } },
+        orderBy: { createdAt: 'desc' },
+      })
+    })
+
+    it('throws ForbiddenException when not owner', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u2' })
+
+      await expect(kbService.search('u1', 'kb1', 'notes'))
         .rejects.toThrow(ForbiddenException)
     })
   })

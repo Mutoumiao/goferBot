@@ -73,4 +73,17 @@ export class KnowledgeBaseController {
   ) {
     return this.folderService.getBreadcrumbs(userId, kbId, folderId)
   }
+
+  @Get(':kbId/search')
+  async search(
+    @CurrentUser('id') userId: string,
+    @Param('kbId') kbId: string,
+    @Query('q') query?: string,
+  ) {
+    const q = (query ?? '').trim()
+    if (!q) {
+      return { folders: [], documents: [] }
+    }
+    return this.kbService.search(userId, kbId, q)
+  }
 }

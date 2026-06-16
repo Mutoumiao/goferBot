@@ -1,4 +1,4 @@
-import { getKbList as apiGetKbList, uploadFile as apiUploadFile } from '@/api/KnowledgeBase'
+import { getKbList as apiGetKbList, uploadFile as apiUploadFile, searchKbItems as apiSearchKbItems } from '@/api/KnowledgeBase'
 import {
   getFolders as apiGetFolders,
   getDocuments as apiGetDocuments,
@@ -130,6 +130,31 @@ export async function previewDocument(docId: string) {
   } catch (e) {
     setFileError(e instanceof Error ? e.message : '预览失败')
     return null
+  } finally {
+    setFileLoading(false)
+  }
+}
+
+export async function searchKbItems(query: string) {
+  const { currentKbId, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  if (!currentKbId) return { folders: [], documents: [] }
+
+  const trimmed = query.trim()
+  if (!trimmed) {
+    return { folders: [], documents: [] }
+  }
+
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    const result = await apiSearchKbItems(currentKbId, trimmed).send()
+    const data = result as { folders: Folder[]; documents: DocumentItem[] }
+    setFolders(data.folders ?? [])
+    setDocuments(data.documents ?? [])
+    return data
+  } catch (e) {
+    setFileError(e instanceof Error ? e.message : '搜索失败')
+    return { folders: [], documents: [] }
   } finally {
     setFileLoading(false)
   }

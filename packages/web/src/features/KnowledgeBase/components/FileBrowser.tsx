@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useKbStore } from '../store'
-import { loadKbItems, uploadFiles, renameItem, removeItem, addFolder, previewDocument } from '../services'
+import { loadKbItems, uploadFiles, renameItem, removeItem, addFolder, previewDocument, searchKbItems } from '../services'
 import { KnowledgeBaseToolbar } from './KnowledgeBaseToolbar'
 import { FileGridItem } from './FileGridItem'
 import { FileListItem } from './FileListItem'
@@ -52,10 +52,19 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
   const { sortOrder } = parseSortOption(sortOption)
 
   useEffect(() => {
-    if (currentKbId) {
+    if (!currentKbId) return
+
+    const trimmed = searchQuery.trim()
+    if (!trimmed) {
       loadKbItems(currentKbId, currentFolderId)
+      return
     }
-  }, [currentKbId, currentFolderId])
+
+    const timer = setTimeout(() => {
+      searchKbItems(trimmed)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [currentKbId, currentFolderId, searchQuery])
 
   const handleFolderClick = useCallback((folder: Folder) => {
     setCurrentFolderId(folder.id)
@@ -111,10 +120,14 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
   }, [currentKbId, currentFolderId])
 
   const handleRetry = useCallback(() => {
-    if (currentKbId) {
+    if (!currentKbId) return
+    const trimmed = searchQuery.trim()
+    if (trimmed) {
+      searchKbItems(trimmed)
+    } else {
       loadKbItems(currentKbId, currentFolderId)
     }
-  }, [currentKbId, currentFolderId])
+  }, [currentKbId, currentFolderId, searchQuery])
 
   const handleUpload = useCallback(() => {
     const input = document.createElement('input')
@@ -161,21 +174,13 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     }
   }, [currentKbId, currentFolderId])
 
-  const filteredFolders = searchQuery.trim()
-    ? folders.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : folders
-
-  const filteredDocuments = searchQuery.trim()
-    ? documents.filter((d) => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : documents
-
-  const sortedFolders = [...filteredFolders].sort((a, b) => {
+  const sortedFolders = [...folders].sort((a, b) => {
     const aName = a.name.toLowerCase()
     const bName = b.name.toLowerCase()
     return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName)
   })
 
-  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
+  const sortedDocuments = [...documents].sort((a, b) => {
     const aName = a.name.toLowerCase()
     const bName = b.name.toLowerCase()
     return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName)

@@ -61,6 +61,24 @@ export class KnowledgeBaseService {
     return { id, deleted: true }
   }
 
+  async search(userId: string, kbId: string, query: string) {
+    await this.ensureOwnership(userId, kbId)
+
+    const likeQuery = `%${query}%`
+    const [folders, documents] = await Promise.all([
+      this.prisma.folder.findMany({
+        where: { kbId, name: { contains: query, mode: 'insensitive' } },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.document.findMany({
+        where: { kbId, name: { contains: query, mode: 'insensitive' } },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+
+    return { folders, documents }
+  }
+
   // ---- 私有方法 ----
 
   private async ensureOwnership(userId: string, kbId: string) {

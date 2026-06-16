@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 vi.mock('@/api/KnowledgeBase', () => ({
   getKbList: vi.fn(() => ({ send: vi.fn() })),
   uploadFile: vi.fn(() => ({ send: vi.fn() })),
+  searchKbItems: vi.fn(() => ({ send: vi.fn() })),
 }))
 
 vi.mock('@/api/file', () => ({
@@ -18,7 +19,7 @@ vi.mock('@/api/file', () => ({
   deleteFolder: vi.fn(() => ({ send: vi.fn() })),
 }))
 
-import { getKbList, uploadFile } from '@/api/KnowledgeBase'
+import { getKbList, uploadFile, searchKbItems } from '@/api/KnowledgeBase'
 import {
   getFolders,
   getDocuments,
@@ -36,6 +37,7 @@ import {
   fetchKbList,
   loadKbItems,
   previewDocument as svcPreviewDocument,
+  searchKbItems as svcSearchKbItems,
   removeDocument,
   renameDocument as svcRenameDocument,
   moveDocument as svcMoveDocument,
@@ -164,6 +166,39 @@ describe('kb services', () => {
       const result = await svcPreviewDocument('d1')
       expect(result).toBeNull()
       expect(previewDocument).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('searchKbItems', () => {
+    it('sets folders and documents from search result', async () => {
+      useKbStore.setState({ currentKbId: 'kb1' })
+      const folders: Folder[] = [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Notes', createdAt: '', updatedAt: '' }]
+      const documents: DocumentItem[] = [
+        { id: 'd1', kbId: 'kb1', folderId: null, name: 'notes.pdf', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
+      ]
+      vi.mocked(searchKbItems).mockReturnValue({ send: vi.fn().mockResolvedValue({ folders, documents }) } as any)
+
+      const result = await svcSearchKbItems('notes')
+
+      expect(result.folders).toEqual(folders)
+      expect(result.documents).toEqual(documents)
+      expect(useKbStore.getState().folders).toEqual(folders)
+      expect(useKbStore.getState().documents).toEqual(documents)
+    })
+
+    it('returns empty result when query is empty', async () => {
+      useKbStore.setState({ currentKbId: 'kb1' })
+      const result = await svcSearchKbItems('   ')
+
+      expect(result).toEqual({ folders: [], documents: [] })
+      expect(searchKbItems).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null })
+      const result = await svcSearchKbItems('notes')
+      expect(result).toEqual({ folders: [], documents: [] })
+      expect(searchKbItems).not.toHaveBeenCalled()
     })
   })
 

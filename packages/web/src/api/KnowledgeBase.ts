@@ -18,3 +18,8 @@ export const getKbDetail = (id: string) =>
 
 export const uploadFile = (kbId: string, formData: FormData) =>
   alovaInstance.Post(`/knowledge-bases/${kbId}/documents/upload`, formData)
+
+export const searchKbItems = (kbId: string, query: string) =>
+  alovaInstance.Get(`/knowledge-bases/${kbId}/search`, {
+    params: { q: query },
+  })
