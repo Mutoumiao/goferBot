@@ -26,6 +26,8 @@ describe('DocumentService', () => {
     }
     mockStorage = {
       uploadFile: vi.fn().mockResolvedValue(undefined),
+      downloadFile: vi.fn().mockResolvedValue(Buffer.from('# Hello')),
+      getUrl: vi.fn().mockReturnValue('http://minio/test-bucket/kb1/doc.pdf'),
     }
     mockVectorService = {}
     mockQueueService = {
@@ -125,6 +127,49 @@ describe('DocumentService', () => {
       mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb2' })
 
       await expect(docService.update('u1', 'kb1', 'd1', { name: 'Updated' }))
+        .rejects.toThrow(NotFoundException)
+    })
+  })
+
+  describe('preview', () => {
+    it('returns text content for markdown file', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.document.findUnique.mockResolvedValue({
+        id: 'd1',
+        kbId: 'kb1',
+        ext: 'md',
+        mimeType: 'text/markdown',
+        storageKey: 'kb1/1234567890-readme.md',
+      })
+
+      const result = await docService.preview('u1', 'kb1', 'd1')
+
+      expect(result.type).toBe('text')
+      expect(result.content).toBe('# Hello')
+      expect(mockStorage.downloadFile).toHaveBeenCalledWith('kb1/1234567890-readme.md')
+    })
+
+    it('returns pdf url for pdf file', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.document.findUnique.mockResolvedValue({
+        id: 'd1',
+        kbId: 'kb1',
+        ext: 'pdf',
+        mimeType: 'application/pdf',
+        storageKey: 'kb1/1234567890-doc.pdf',
+      })
+
+      const result = await docService.preview('u1', 'kb1', 'd1')
+
+      expect(result.type).toBe('pdf')
+      expect(result.url).toBe('http://minio/test-bucket/kb1/doc.pdf')
+    })
+
+    it('throws NotFoundException when document not in KB', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb2' })
+
+      await expect(docService.preview('u1', 'kb1', 'd1'))
         .rejects.toThrow(NotFoundException)
     })
   })

@@ -26,7 +26,9 @@ export const getBreadcrumbs = (kbId: string, folderId?: string | null) =>
     params: { folderId: folderId ?? '' },
   })
 
-// ---- 文档 ----
+/** 预览文档 */
+export const previewDocument = (kbId: string, docId: string) =>
+  alovaInstance.Get(`/knowledge-bases/${kbId}/documents/${docId}/preview`)
 
 /** 获取文档列表 */
 export const getDocuments = (kbId: string, folderId?: string | null) =>

@@ -29,8 +29,16 @@ export class FileValidationPipe implements PipeTransform {
 
   async transform(req: FastifyRequest): Promise<ValidatedFile> {
     const {
-      allowedMimeTypes = ['text/markdown', 'text/plain', 'application/pdf', 'text/x-markdown'],
-      allowedExtensions = ['md', 'txt', 'pdf'],
+      allowedMimeTypes = [
+        'text/markdown',
+        'text/x-markdown',
+        'text/plain',
+        'text/html',
+        'text/csv',
+        'application/json',
+        'application/pdf',
+      ],
+      allowedExtensions = ['md', 'txt', 'html', 'csv', 'json', 'pdf'],
       maxSizeBytes = 50 * 1024 * 1024,
       fieldName = 'file',
     } = this.options
@@ -54,8 +62,9 @@ export class FileValidationPipe implements PipeTransform {
 
     const mimeType = data.mimetype || 'application/octet-stream'
     if (!allowedMimeTypes.includes(mimeType)) {
-      // 对于 txt/md，mimetype 可能不一致，允许通过后缀判断
-      if (!(ext === 'txt' || ext === 'md')) {
+      // 文本类型 mimetype 可能因系统不同而不一致，允许通过后缀判断
+      const textExts = new Set(['txt', 'md', 'html', 'csv', 'json'])
+      if (!textExts.has(ext)) {
         throw new UnsupportedMediaTypeException({
           code: 'UNSUPPORTED_TYPE',
           message: '不支持的文件类型',

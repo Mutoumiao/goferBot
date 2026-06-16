@@ -3,6 +3,7 @@ import {
   getFolders as apiGetFolders,
   getDocuments as apiGetDocuments,
   getBreadcrumbs as apiGetBreadcrumbs,
+  previewDocument as apiPreviewDocument,
   deleteDocument as apiDeleteDocument,
   renameDocument as apiRenameDocument,
   moveDocument as apiMoveDocument,
@@ -112,6 +113,23 @@ export async function moveDocument(docId: string, targetFolderId: string | null)
     setDocuments(documents.filter((d) => d.id !== docId))
   } catch (e) {
     setFileError(e instanceof Error ? e.message : '移动失败')
+  } finally {
+    setFileLoading(false)
+  }
+}
+
+export async function previewDocument(docId: string) {
+  const { currentKbId, setFileLoading, setFileError } = useKbStore.getState()
+  if (!currentKbId) return null
+
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    const result = await apiPreviewDocument(currentKbId, docId).send()
+    return result as { type: 'text' | 'pdf' | 'unsupported'; mimeType: string; content?: string; url?: string | null }
+  } catch (e) {
+    setFileError(e instanceof Error ? e.message : '预览失败')
+    return null
   } finally {
     setFileLoading(false)
   }

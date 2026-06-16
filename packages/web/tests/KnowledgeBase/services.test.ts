@@ -9,6 +9,7 @@ vi.mock('@/api/file', () => ({
   getFolders: vi.fn(() => ({ send: vi.fn() })),
   getDocuments: vi.fn(() => ({ send: vi.fn() })),
   getBreadcrumbs: vi.fn(() => ({ send: vi.fn() })),
+  previewDocument: vi.fn(() => ({ send: vi.fn() })),
   deleteDocument: vi.fn(() => ({ send: vi.fn() })),
   renameDocument: vi.fn(() => ({ send: vi.fn() })),
   moveDocument: vi.fn(() => ({ send: vi.fn() })),
@@ -22,6 +23,7 @@ import {
   getFolders,
   getDocuments,
   getBreadcrumbs,
+  previewDocument,
   deleteDocument,
   renameDocument,
   moveDocument,
@@ -33,6 +35,7 @@ import { useKbStore } from '@/features/KnowledgeBase/store'
 import {
   fetchKbList,
   loadKbItems,
+  previewDocument as svcPreviewDocument,
   removeDocument,
   renameDocument as svcRenameDocument,
   moveDocument as svcMoveDocument,
@@ -131,6 +134,36 @@ describe('kb services', () => {
 
       expect(useKbStore.getState().fileError).toBe('fail')
       expect(useKbStore.getState().fileLoading).toBe(false)
+    })
+  })
+
+  describe('previewDocument', () => {
+    it('returns preview result on success', async () => {
+      useKbStore.setState({ currentKbId: 'kb1' })
+      const preview = { type: 'text' as const, mimeType: 'text/markdown', content: '# Hello' }
+      vi.mocked(previewDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(preview) } as any)
+
+      const result = await svcPreviewDocument('d1')
+
+      expect(result).toEqual(preview)
+      expect(previewDocument).toHaveBeenCalledWith('kb1', 'd1')
+    })
+
+    it('returns null and sets error on failure', async () => {
+      useKbStore.setState({ currentKbId: 'kb1' })
+      vi.mocked(previewDocument).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('preview fail')) } as any)
+
+      const result = await svcPreviewDocument('d1')
+
+      expect(result).toBeNull()
+      expect(useKbStore.getState().fileError).toBe('preview fail')
+    })
+
+    it('does nothing when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null })
+      const result = await svcPreviewDocument('d1')
+      expect(result).toBeNull()
+      expect(previewDocument).not.toHaveBeenCalled()
     })
   })
 

@@ -95,6 +95,42 @@ export class DocumentService {
     return { id: docId, deleted: true }
   }
 
+  async preview(userId: string, kbId: string, docId: string) {
+    await this.ensureOwnership(userId, kbId)
+
+    const doc = await this.prisma.document.findUnique({ where: { id: docId } })
+    if (!doc || doc.kbId !== kbId) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: '文档不存在' })
+    }
+
+    const textExts = new Set(['md', 'txt', 'html', 'csv', 'json'])
+    if (doc.ext && textExts.has(doc.ext.toLowerCase())) {
+      if (!doc.storageKey) {
+        throw new NotFoundException({ code: 'NOT_FOUND', message: '文档无存储对象' })
+      }
+      const buffer = await this.storage.downloadFile(doc.storageKey)
+      return {
+        type: 'text',
+        mimeType: doc.mimeType || 'text/plain',
+        content: buffer.toString('utf-8'),
+      }
+    }
+
+    if (doc.ext === 'pdf') {
+      return {
+        type: 'pdf',
+        mimeType: 'application/pdf',
+        url: doc.storageKey ? this.storage.getUrl(doc.storageKey) : null,
+      }
+    }
+
+    return {
+      type: 'unsupported',
+      mimeType: doc.mimeType || 'application/octet-stream',
+      url: doc.storageKey ? this.storage.getUrl(doc.storageKey) : null,
+    }
+  }
+
   private async ensureOwnership(userId: string, kbId: string) {
     const kb = await this.prisma.knowledgeBase.findUnique({
       where: { id: kbId },

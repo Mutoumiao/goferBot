@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useKbStore } from '../store'
-import { loadKbItems, uploadFiles, renameItem, removeItem, addFolder } from '../services'
+import { loadKbItems, uploadFiles, renameItem, removeItem, addFolder, previewDocument } from '../services'
 import { KnowledgeBaseToolbar } from './KnowledgeBaseToolbar'
 import { FileGridItem } from './FileGridItem'
 import { FileListItem } from './FileListItem'
@@ -61,8 +61,11 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     setCurrentFolderId(folder.id)
   }, [setCurrentFolderId])
 
-  const handleDocumentClick = useCallback((_doc: DocumentItem) => {
-    // Document click handled by f-47 (download/preview)
+  const handleDocumentClick = useCallback(async (doc: DocumentItem) => {
+    const preview = await previewDocument(doc.id)
+    if (!preview) return
+    const PreviewDialog = (await import('@/overlays/dialogs/PreviewDialog')).default
+    await openDialog(PreviewDialog, { document: doc, preview })
   }, [])
 
   const handleNavigate = useCallback((folderId: string | null) => {
@@ -117,6 +120,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     const input = document.createElement('input')
     input.type = 'file'
     input.multiple = true
+    input.accept = '.md,.txt,.html,.csv,.json,.pdf'
     input.onchange = (e) => {
       const files = (e.target as HTMLInputElement).files
       if (files && currentKbId) {
