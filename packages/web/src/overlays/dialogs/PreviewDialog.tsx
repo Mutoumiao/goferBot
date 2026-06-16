@@ -32,7 +32,7 @@ export default function PreviewDialog({ document, preview, onClose }: PreviewDia
           {preview.type === 'text' && preview.content !== undefined && (
             <div className="prose prose-sm max-w-none">
               {document.ext === 'md' ? (
-                <XMarkdown content={preview.content} />
+                <XMarkdown content={preview.content} escapeRawHtml />
               ) : (
                 <pre className="whitespace-pre-wrap text-sm">{preview.content}</pre>
               )}
