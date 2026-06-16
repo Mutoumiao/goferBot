@@ -32,11 +32,11 @@ export const ROUTES_REGISTER = {
   chat: {
     key: 'chat',
     title: '会话页',
-    singleton: false,
-    closable: true,
+    singleton: true,
+    closable: false,
     path: '/chat/$tabId',
     icon: MessageCircle,
-    navSection: null,
+    navSection: 'primary',
     bindTo: (tabId: string) => `/chat/${tabId}`,
   },
   knowledgeBase: {

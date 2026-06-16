@@ -6,6 +6,10 @@ import { useWorkspaceStore, type Tab } from '@/stores/workspace.store'
 import { tabManager } from '@/stores/tabManager'
 import { ROUTES_REGISTER } from '@/router-register'
 
+function isHomeChat(tab: Tab) {
+  return tab.type === ROUTES_REGISTER.chat.key && !tab.conversationId
+}
+
 export function TabBar({ className }: { className?: string }) {
   const tabs = useWorkspaceStore(s => s.tabs)
   const activeTabId = useWorkspaceStore(s => s.activeTabId)
@@ -32,7 +36,8 @@ export function TabBar({ className }: { className?: string }) {
       <div role="tablist" className="flex items-end gap-1 min-w-0 overflow-hidden">
         {tabs.map(tab => {
           const isActive = tab.id === activeTabId
-          const canClose = tab.closable
+          const isOnlyHomeChat = tabs.length === 1 && isHomeChat(tab)
+          const canClose = tab.closable && !isOnlyHomeChat
           const meta = ROUTES_REGISTER[tab.type]
           const Icon = meta?.icon ?? null
 
