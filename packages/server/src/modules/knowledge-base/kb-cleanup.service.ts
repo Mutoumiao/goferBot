@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
 import { VectorService } from '../../processors/vector/vector.service.js'
 
 @Injectable()
 export class KbCleanupService {
+  private readonly logger = new Logger(KbCleanupService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -49,14 +51,18 @@ export class KbCleanupService {
     })
 
     if (chunks.length > 0) {
-      await this.vectorService.deleteByIds(chunks.map((c) => c.id))
+      try {
+        await this.vectorService.deleteByIds(chunks.map((c) => c.id))
+      } catch {
+        this.logger.warn(`文档 ${documentId} 的向量数据清理失败，继续清理存储与记录`)
+      }
     }
 
     if (storageKey) {
       try {
         await this.storage.deleteFile(storageKey)
       } catch {
-        // 忽略 storage 删除失败，保证 DB 清理继续
+        this.logger.warn(`文档 ${documentId} 的存储文件 ${storageKey} 删除失败`)
       }
     }
   }
