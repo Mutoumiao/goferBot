@@ -120,17 +120,18 @@ export const tabManager = {
     const result = workspace.removeTab(tabId)
     if (!result.removed) return
 
-    if (!result.nextTab) {
-      const homeChat = findHomeChatTab()
-      if (homeChat) {
-        workspace.switchTab(homeChat.id)
-        await router.navigate({ to: getTabPath(homeChat) })
-        return
-      }
-      await this.openNewChat()
+    if (result.nextTab) {
+      await router.navigate({ to: getTabPath(result.nextTab) })
       return
     }
 
-    await router.navigate({ to: getTabPath(result.nextTab) })
+    const homeChat = findHomeChatTab()
+    if (homeChat) {
+      workspace.switchTab(homeChat.id)
+      await router.navigate({ to: getTabPath(homeChat) })
+      return
+    }
+
+    await this.openNewChat()
   },
 }

@@ -170,7 +170,7 @@ describe('tabManager', () => {
     expect(tab.id).toBe('orphan-tab')
     expect(tab.type).toBe(ROUTES_REGISTER.chat.key)
     expect(tab.title).toBe('新会话')
-    expect(tab.closable).toBe(false)
+    expect(tab.closable).toBe(true)
     expect(tab.conversationId).toBeUndefined()
     expect(useWorkspaceStore.getState().activeTabId).toBe('orphan-tab')
   })
@@ -250,7 +250,34 @@ describe('tabManager', () => {
     const state = useWorkspaceStore.getState()
     expect(state.tabs).toHaveLength(1)
     expect(state.activeTab()?.type).toBe(ROUTES_REGISTER.chat.key)
+    expect(state.activeTab()?.conversationId).toBeUndefined()
     expect(navigateMock).toHaveBeenCalledWith({ to: expect.stringMatching(/^\/chat\//) })
+  })
+
+  test('closeTab 关闭唯一会话页后新建问答首页', async () => {
+    const convTab = await tabManager.openConversation('conv-1')
+    navigateMock.mockClear()
+
+    await tabManager.closeTab(convTab.id)
+
+    const state = useWorkspaceStore.getState()
+    expect(state.tabs).toHaveLength(1)
+    expect(state.activeTab()?.type).toBe(ROUTES_REGISTER.chat.key)
+    expect(state.activeTab()?.conversationId).toBeUndefined()
+    expect(navigateMock).toHaveBeenCalled()
+  })
+
+  test('closeTab 多个标签时可关闭问答首页并切换到相邻标签', async () => {
+    const homeTab = await tabManager.openNewChat()
+    const historyTab = await tabManager.openHistory()
+    navigateMock.mockClear()
+
+    await tabManager.closeTab(homeTab.id)
+
+    const state = useWorkspaceStore.getState()
+    expect(state.tabs).toHaveLength(1)
+    expect(state.activeTab()?.id).toBe(historyTab.id)
+    expect(navigateMock).toHaveBeenCalledWith({ to: ROUTES_REGISTER.history.path })
   })
 
   test('openNewChat 对已存在的空白 chat 标签只切换不新建', async () => {

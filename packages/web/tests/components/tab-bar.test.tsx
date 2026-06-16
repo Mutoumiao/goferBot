@@ -99,7 +99,7 @@ describe('TabBar', () => {
 
   it('renders tabs from store with icon and name', () => {
     mockTabs.push(
-      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: true, createdAt: Date.now() },
       { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
     )
     mockActiveTabId = 'home'
@@ -136,7 +136,7 @@ describe('TabBar', () => {
 
   it('activates tab on click', () => {
     mockTabs.push(
-      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: true, createdAt: Date.now() },
       { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
     )
     mockActiveTabId = 'home'
@@ -148,7 +148,7 @@ describe('TabBar', () => {
 
   it('does not switch when clicking already active tab', () => {
     mockTabs.push(
-      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: true, createdAt: Date.now() },
     )
     mockActiveTabId = 'home'
 
@@ -159,7 +159,7 @@ describe('TabBar', () => {
 
   it('closes tab when close button clicked', () => {
     mockTabs.push(
-      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: true, createdAt: Date.now() },
       { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
     )
     mockActiveTabId = 't1'
@@ -172,6 +172,47 @@ describe('TabBar', () => {
     expect(tabManager.switchTab).not.toHaveBeenCalled()
   })
 
+  it('shows close button for home chat when multiple tabs exist', () => {
+    mockTabs.push(
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: true, createdAt: Date.now() },
+      { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
+    )
+    mockActiveTabId = 'home'
+
+    render(<TabBar />)
+    expect(screen.getByLabelText('关闭 问答首页')).toBeDefined()
+  })
+
+  it('hides close button for the only home chat tab', () => {
+    mockTabs.push(
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: true, createdAt: Date.now() },
+    )
+    mockActiveTabId = 'home'
+
+    render(<TabBar />)
+    expect(screen.queryByLabelText('关闭 问答首页')).toBeNull()
+  })
+
+  it('shows close button for a single non-home tab', () => {
+    mockTabs.push(
+      { id: 't1', type: ROUTES_REGISTER.knowledgeBase.key, title: '知识库', closable: true, createdAt: Date.now() },
+    )
+    mockActiveTabId = 't1'
+
+    render(<TabBar />)
+    expect(screen.getByLabelText('关闭 知识库')).toBeDefined()
+  })
+
+  it('shows close button for a single conversation tab', () => {
+    mockTabs.push(
+      { id: 'c1', type: ROUTES_REGISTER.chat.key, title: '会话1', closable: true, conversationId: 's1', createdAt: Date.now() },
+    )
+    mockActiveTabId = 'c1'
+
+    render(<TabBar />)
+    expect(screen.getByLabelText('关闭 会话1')).toBeDefined()
+  })
+
   it('creates new chat tab on plus button click', () => {
     render(<TabBar />)
     fireEvent.click(screen.getByTitle('新建问答会话'))
@@ -180,7 +221,7 @@ describe('TabBar', () => {
 
   it('shows active state for chat-session tab', () => {
     mockTabs.push(
-      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: false, createdAt: Date.now() },
+      { id: 'home', type: ROUTES_REGISTER.chat.key, title: '问答首页', closable: true, createdAt: Date.now() },
       { id: 't1', type: ROUTES_REGISTER.chat.key, title: '会话1', closable: true, conversationId: 's1', createdAt: Date.now() },
     )
     mockActiveTabId = 't1'

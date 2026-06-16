@@ -33,7 +33,7 @@ export const ROUTES_REGISTER = {
     key: 'chat',
     title: '会话页',
     singleton: true,
-    closable: false,
+    closable: true,
     path: '/chat/$tabId',
     icon: MessageCircle,
     navSection: 'primary',
