@@ -43,6 +43,16 @@ export class SseResponseHelper {
     reply.raw.setHeader('Cache-Control', 'no-cache')
     reply.raw.setHeader('Connection', 'keep-alive')
 
+    // 透传 Fastify CORS 插件已计算好的跨域头（含 vary: Origin），
+    // 避免直接写 raw 时丢失，导致浏览器报 CORS 错误。
+    const replyHeaders = reply.getHeaders()
+    for (const [key, value] of Object.entries(replyHeaders)) {
+      const lower = key.toLowerCase()
+      if (value !== undefined && (lower.startsWith('access-control-') || lower === 'vary')) {
+        reply.raw.setHeader(key, value)
+      }
+    }
+
     return abortController
   }
 
