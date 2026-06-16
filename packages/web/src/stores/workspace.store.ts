@@ -52,6 +52,16 @@ if (typeof sessionStorage !== 'undefined') {
   }
 }
 
+export function migrateWorkspaceState(persistedState: unknown, version: number): WorkspaceState {
+  const state = persistedState as WorkspaceState | undefined
+  if (version === 0 && state?.tabs) {
+    state.tabs = state.tabs.map((t) =>
+      t.type === 'chat' ? { ...t, closable: true } : t,
+    )
+  }
+  return state as WorkspaceState
+}
+
 export const useWorkspaceStore = create<WorkspaceStore>()(
   devtools(
     persist(
@@ -134,8 +144,10 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       }),
       {
         name: 'gofer-workspace-v1',
+        version: 1,
+        migrate: migrateWorkspaceState,
         partialize: (state) => ({ tabs: state.tabs, activeTabId: state.activeTabId }),
-        storage: createJSONStorage(() => sessionStorage)
+        storage: createJSONStorage(() => sessionStorage),
       },
     ),
     { name: 'WorkspaceStore', enabled: import.meta.env?.DEV ?? true },
