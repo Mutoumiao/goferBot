@@ -1,6 +1,4 @@
 import { createZodDto } from 'nestjs-zod'
 import { updateSessionRequestSchema } from '@goferbot/data/schemas'
 
-export class UpdateSessionDto extends createZodDto(updateSessionRequestSchema) {
-  declare title: string
-}
+export class UpdateSessionDto extends createZodDto(updateSessionRequestSchema) {}
