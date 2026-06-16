@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException, Optional } from '@nestjs/common'
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Optional } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
 import { VectorService } from '../../processors/vector/vector.service.js'
@@ -19,6 +19,22 @@ export interface UploadFilePayload {
 type SortOrder = 'asc' | 'desc'
 type DocumentSortBy = 'name' | 'createdAt' | 'updatedAt' | 'size' | 'type'
 
+const DOCUMENT_SORT_BY: readonly string[] = ['name', 'createdAt', 'updatedAt', 'size', 'type']
+const SORT_ORDER: readonly string[] = ['asc', 'desc']
+
+function parseDocumentSort(sortBy?: string, sortOrder?: string): { sortBy: DocumentSortBy; sortOrder: SortOrder } {
+  const by = sortBy && DOCUMENT_SORT_BY.includes(sortBy) ? (sortBy as DocumentSortBy) : 'createdAt'
+  const order = sortOrder && SORT_ORDER.includes(sortOrder) ? (sortOrder as SortOrder) : 'desc'
+  return { sortBy: by, sortOrder: order }
+}
+
+function normalizeFolderId(folderId?: string | null): string | null | undefined {
+  if (folderId === undefined) return undefined
+  if (folderId === null) return null
+  const trimmed = folderId.trim()
+  return trimmed || null
+}
+
 @Injectable()
 export class DocumentService {
   constructor(
@@ -33,17 +49,20 @@ export class DocumentService {
     userId: string,
     kbId: string,
     folderId?: string | null,
-    sortBy: DocumentSortBy = 'createdAt',
-    sortOrder: SortOrder = 'desc',
+    sortBy?: string,
+    sortOrder?: string,
   ) {
     await this.ensureOwnership(userId, kbId)
 
-    const orderBy = sortBy === 'type'
-      ? [{ ext: sortOrder }, { mimeType: sortOrder }]
-      : { [sortBy]: sortOrder }
+    const { sortBy: by, sortOrder: order } = parseDocumentSort(sortBy, sortOrder)
+    const effectiveFolderId = normalizeFolderId(folderId)
+
+    const orderBy = by === 'type'
+      ? [{ ext: order }, { mimeType: order }]
+      : { [by]: order }
 
     return this.prisma.document.findMany({
-      where: { kbId, folderId: folderId ?? null },
+      where: { kbId, folderId: effectiveFolderId ?? null },
       orderBy,
     })
   }
@@ -67,8 +86,9 @@ export class DocumentService {
       },
     })
 
-    if (this.queueService?.isHealthy()) {
-      await this.queueService.addDocumentJob(doc.id, 'index')
+    const queueHealthy = await this.queueService?.isHealthy()
+    if (queueHealthy) {
+      await this.queueService!.addDocumentJob(doc.id, 'index')
     }
 
     return { ...doc, size: doc.size !== null ? Number(doc.size) : null }
@@ -90,12 +110,31 @@ export class DocumentService {
     await this.ensureOwnership(userId, kbId)
     const doc = await this.prisma.document.findUnique({ where: { id: docId } })
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
+
+    const data: Partial<{ name: string; folderId: string | null }> = {}
+    if (dto.name !== undefined) data.name = dto.name
+
+    if (dto.folderId !== undefined) {
+      const targetFolderId = normalizeFolderId(dto.folderId)
+      if (targetFolderId === null) {
+        data.folderId = null
+      } else {
+        const folder = await this.prisma.folder.findFirst({
+          where: { id: targetFolderId, kbId },
+        })
+        if (!folder) {
+          throw new NotFoundException({
+            code: 'NOT_FOUND',
+            message: '目标文件夹不存在',
+          })
+        }
+        data.folderId = targetFolderId
+      }
+    }
+
     return this.prisma.document.update({
       where: { id: docId },
-      data: {
-        ...(dto.name && { name: dto.name }),
-        ...(dto.folderId !== undefined && { folderId: dto.folderId }),
-      },
+      data,
     })
   }
 

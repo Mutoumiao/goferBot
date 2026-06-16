@@ -11,6 +11,22 @@ import type { UpdateFolderDto } from './dto/update-folder.dto.js'
 type SortOrder = 'asc' | 'desc'
 type FolderSortBy = 'name' | 'createdAt' | 'updatedAt'
 
+const FOLDER_SORT_BY: readonly string[] = ['name', 'createdAt', 'updatedAt']
+const SORT_ORDER: readonly string[] = ['asc', 'desc']
+
+function parseFolderSort(sortBy?: string, sortOrder?: string): { sortBy: FolderSortBy; sortOrder: SortOrder } {
+  const by = sortBy && FOLDER_SORT_BY.includes(sortBy) ? (sortBy as FolderSortBy) : 'createdAt'
+  const order = sortOrder && SORT_ORDER.includes(sortOrder) ? (sortOrder as SortOrder) : 'asc'
+  return { sortBy: by, sortOrder: order }
+}
+
+function normalizeParentId(parentId?: string | null): string | null | undefined {
+  if (parentId === undefined) return undefined
+  if (parentId === null) return null
+  const trimmed = parentId.trim()
+  return trimmed || null
+}
+
 @Injectable()
 export class FolderService {
   constructor(
@@ -22,17 +38,20 @@ export class FolderService {
     userId: string,
     kbId: string,
     parentId?: string,
-    sortBy: FolderSortBy = 'createdAt',
-    sortOrder: SortOrder = 'asc',
+    sortBy?: string,
+    sortOrder?: string,
   ) {
     await this.ensureOwnership(userId, kbId)
+
+    const { sortBy: by, sortOrder: order } = parseFolderSort(sortBy, sortOrder)
+    const effectiveParentId = normalizeParentId(parentId)
 
     return this.prisma.folder.findMany({
       where: {
         kbId,
-        parentId: parentId ?? null,
+        parentId: effectiveParentId ?? null,
       },
-      orderBy: { [sortBy]: sortOrder },
+      orderBy: { [by]: order },
     })
   }
 

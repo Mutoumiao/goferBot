@@ -8,12 +8,15 @@ import {
   Param,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { FolderService } from './folder.service.js'
 import { CreateFolderDto } from './dto/create-folder.dto.js'
 import { UpdateFolderDto } from './dto/update-folder.dto.js'
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 @Controller('knowledge-bases/:kbId/folders')
 @UseGuards(JwtAuthGuard)
@@ -28,13 +31,15 @@ export class FolderController {
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
   ) {
-    return this.folderService.list(
-      userId,
-      kbId,
-      parentId,
-      sortBy as 'name' | 'createdAt' | 'updatedAt' | undefined,
-      sortOrder as 'asc' | 'desc' | undefined,
-    )
+    if (parentId !== undefined && parentId !== '') {
+      if (!UUID_REGEX.test(parentId)) {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: 'parentId 格式非法',
+        })
+      }
+    }
+    return this.folderService.list(userId, kbId, parentId, sortBy, sortOrder)
   }
 
   @Post()

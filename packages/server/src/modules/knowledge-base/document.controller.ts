@@ -19,6 +19,8 @@ import { CreateDocumentDto } from './dto/create-document.dto.js'
 import { UpdateDocumentDto } from './dto/update-document.dto.js'
 import { FileValidationPipe } from '../../common/pipes/file-validation.pipe.js'
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 @Controller('knowledge-bases/:kbId/documents')
 @UseGuards(JwtAuthGuard)
 export class DocumentController {
@@ -33,21 +35,14 @@ export class DocumentController {
     @Query('sortOrder') sortOrder?: string,
   ) {
     if (folderId !== undefined && folderId !== '') {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(folderId)) {
+      if (!UUID_REGEX.test(folderId)) {
         throw new BadRequestException({
           code: 'VALIDATION_ERROR',
           message: 'folderId 格式非法',
         })
       }
     }
-    return this.documentService.list(
-      userId,
-      kbId,
-      folderId,
-      sortBy as 'name' | 'createdAt' | 'updatedAt' | 'size' | 'type' | undefined,
-      sortOrder as 'asc' | 'desc' | undefined,
-    )
+    return this.documentService.list(userId, kbId, folderId, sortBy, sortOrder)
   }
 
   @Post('upload')
