@@ -24,7 +24,7 @@ const BUILTIN_CHAT_PROVIDERS: BuiltinProviderConfig[] = [
     name: 'DeepSeek',
     envPrefix: 'DEEPSEEK',
     defaultBaseUrl: 'https://api.deepseek.com',
-    defaultModels: ['deepseek-chat'],
+    defaultModels: ['deepseek-v4-flash'],
   },
 ]
 
@@ -77,4 +77,4 @@ function createModelRegistry(config: ConfigService): ModelRegistryService {
   ],
   exports: [ModelRegistryService],
 })
-export class ChatModule {}
+export class ChatModule { }

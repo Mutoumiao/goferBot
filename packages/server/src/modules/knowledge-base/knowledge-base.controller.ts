@@ -6,18 +6,23 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { KnowledgeBaseService } from './knowledge-base.service.js'
+import { FolderService } from './folder.service.js'
 import { CreateKbDto } from './dto/create-kb.dto.js'
 import { UpdateKbDto } from './dto/update-kb.dto.js'
 
 @Controller('knowledge-bases')
 @UseGuards(JwtAuthGuard)
 export class KnowledgeBaseController {
-  constructor(private readonly kbService: KnowledgeBaseService) {}
+  constructor(
+    private readonly kbService: KnowledgeBaseService,
+    private readonly folderService: FolderService,
+  ) {}
 
   @Get()
   async list(@CurrentUser('id') userId: string) {
@@ -58,5 +63,14 @@ export class KnowledgeBaseController {
     @Param('id') id: string,
   ) {
     return this.kbService.remove(userId, id)
+  }
+
+  @Get(':kbId/breadcrumbs')
+  async breadcrumbs(
+    @CurrentUser('id') userId: string,
+    @Param('kbId') kbId: string,
+    @Query('folderId') folderId?: string,
+  ) {
+    return this.folderService.getBreadcrumbs(userId, kbId, folderId)
   }
 }

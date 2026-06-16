@@ -17,6 +17,7 @@ describe('useKbStore', () => {
       currentFolderId: null,
       fileLoading: false,
       fileError: null,
+      breadcrumbs: [],
     })
   })
 
@@ -33,6 +34,7 @@ describe('useKbStore', () => {
       expect(state.currentFolderId).toBeNull()
       expect(state.fileLoading).toBe(false)
       expect(state.fileError).toBeNull()
+      expect(state.breadcrumbs).toHaveLength(0)
     })
   })
 
@@ -108,6 +110,15 @@ describe('useKbStore', () => {
       useKbStore.getState().setFileError('network error')
       expect(useKbStore.getState().fileLoading).toBe(true)
       expect(useKbStore.getState().fileError).toBe('network error')
+    })
+
+    it('sets breadcrumbs', () => {
+      const breadcrumbs: Folder[] = [
+        { id: 'f1', kbId: 'kb1', parentId: null, name: 'Root', createdAt: '', updatedAt: '' },
+        { id: 'f2', kbId: 'kb1', parentId: 'f1', name: 'Child', createdAt: '', updatedAt: '' },
+      ]
+      useKbStore.getState().setBreadcrumbs(breadcrumbs)
+      expect(useKbStore.getState().breadcrumbs).toEqual(breadcrumbs)
     })
   })
 
@@ -203,33 +214,20 @@ describe('useKbStore', () => {
     })
   })
 
-  describe('breadcrumb 计算', () => {
-    it('returns empty breadcrumb when no current folder', () => {
-      expect(useKbStore.getState().breadcrumb()).toHaveLength(0)
+  describe('breadcrumb 状态', () => {
+    it('has empty breadcrumbs by default', () => {
+      expect(useKbStore.getState().breadcrumbs).toHaveLength(0)
     })
 
-    it('builds breadcrumb from current folder up to root', () => {
-      const folders: Folder[] = [
+    it('sets breadcrumbs from server', () => {
+      const breadcrumbs: Folder[] = [
         { id: 'f1', kbId: 'kb1', parentId: null, name: 'Root', createdAt: '', updatedAt: '' },
         { id: 'f2', kbId: 'kb1', parentId: 'f1', name: 'Child', createdAt: '', updatedAt: '' },
         { id: 'f3', kbId: 'kb1', parentId: 'f2', name: 'GrandChild', createdAt: '', updatedAt: '' },
       ]
-      useKbStore.getState().setFolders(folders)
-      useKbStore.getState().setCurrentFolderId('f3')
-      const breadcrumb = useKbStore.getState().breadcrumb()
-      expect(breadcrumb).toHaveLength(3)
-      expect(breadcrumb.map((f) => f.name)).toEqual(['Root', 'Child', 'GrandChild'])
-    })
-
-    it('stops breadcrumb when parent not found', () => {
-      const folders: Folder[] = [
-        { id: 'f1', kbId: 'kb1', parentId: 'missing', name: 'Orphan', createdAt: '', updatedAt: '' },
-      ]
-      useKbStore.getState().setFolders(folders)
-      useKbStore.getState().setCurrentFolderId('f1')
-      const breadcrumb = useKbStore.getState().breadcrumb()
-      expect(breadcrumb).toHaveLength(1)
-      expect(breadcrumb[0].name).toBe('Orphan')
+      useKbStore.getState().setBreadcrumbs(breadcrumbs)
+      expect(useKbStore.getState().breadcrumbs).toHaveLength(3)
+      expect(useKbStore.getState().breadcrumbs.map((f) => f.name)).toEqual(['Root', 'Child', 'GrandChild'])
     })
   })
 })

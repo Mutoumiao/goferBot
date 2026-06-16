@@ -8,6 +8,7 @@ vi.mock('@/api/KnowledgeBase', () => ({
 vi.mock('@/api/file', () => ({
   getFolders: vi.fn(() => ({ send: vi.fn() })),
   getDocuments: vi.fn(() => ({ send: vi.fn() })),
+  getBreadcrumbs: vi.fn(() => ({ send: vi.fn() })),
   deleteDocument: vi.fn(() => ({ send: vi.fn() })),
   renameDocument: vi.fn(() => ({ send: vi.fn() })),
   moveDocument: vi.fn(() => ({ send: vi.fn() })),
@@ -20,6 +21,7 @@ import { getKbList, uploadFile } from '@/api/KnowledgeBase'
 import {
   getFolders,
   getDocuments,
+  getBreadcrumbs,
   deleteDocument,
   renameDocument,
   moveDocument,
@@ -60,6 +62,7 @@ describe('kb services', () => {
       currentFolderId: null,
       fileLoading: false,
       fileError: null,
+      breadcrumbs: [],
     })
     vi.clearAllMocks()
   })
@@ -97,13 +100,17 @@ describe('kb services', () => {
   })
 
   describe('loadKbItems', () => {
-    it('sets folders and documents on success', async () => {
+    it('sets folders, documents and breadcrumbs on success', async () => {
       const folders: Folder[] = [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' }]
       const documents: DocumentItem[] = [
         { id: 'd1', kbId: 'kb1', folderId: null, name: 'doc', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
       ]
+      const breadcrumbs: Folder[] = [
+        { id: 'f2', kbId: 'kb1', parentId: null, name: 'Parent', createdAt: '', updatedAt: '' },
+      ]
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue(folders) } as any)
       vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue(documents) } as any)
+      vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue(breadcrumbs) } as any)
 
       await loadKbItems('kb1', 'f1')
 
@@ -111,12 +118,14 @@ describe('kb services', () => {
       expect(useKbStore.getState().currentFolderId).toBe('f1')
       expect(useKbStore.getState().folders).toEqual(folders)
       expect(useKbStore.getState().documents).toEqual(documents)
+      expect(useKbStore.getState().breadcrumbs).toEqual(breadcrumbs)
       expect(useKbStore.getState().fileLoading).toBe(false)
     })
 
     it('sets fileError on failure', async () => {
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
       vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
 
       await loadKbItems('kb1', null)
 

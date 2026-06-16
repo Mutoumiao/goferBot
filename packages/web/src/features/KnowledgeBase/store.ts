@@ -17,6 +17,7 @@ interface KbState {
   currentFolderId: string | null
   fileLoading: boolean
   fileError: string | null
+  breadcrumbs: Folder[]
 
   setEntries: (entries: KbEntry[]) => void
   addEntry: (entry: KbEntry) => void
@@ -31,6 +32,7 @@ interface KbState {
   setCurrentFolderId: (id: string | null) => void
   setFileLoading: (v: boolean) => void
   setFileError: (error: string | null) => void
+  setBreadcrumbs: (breadcrumbs: Folder[]) => void
 
   addUploadTask: (task: Omit<UploadTask, 'id' | 'progress' | 'status'>) => string
   startUploadTask: (taskId: string) => void
@@ -40,7 +42,6 @@ interface KbState {
   removeUploadTask: (taskId: string) => void
   clearCompletedUploads: () => void
 
-  breadcrumb: () => Folder[]
   activeUploadCount: () => number
 }
 
@@ -57,6 +58,7 @@ export const useKbStore = create<KbState>((set, get) => ({
   currentFolderId: null,
   fileLoading: false,
   fileError: null,
+  breadcrumbs: [],
 
   setEntries: (entries) => set({ entries }),
   addEntry: (entry) => set((s) => ({ entries: [...s.entries, entry] })),
@@ -74,6 +76,7 @@ export const useKbStore = create<KbState>((set, get) => ({
   setCurrentFolderId: (id) => set({ currentFolderId: id }),
   setFileLoading: (v) => set({ fileLoading: v }),
   setFileError: (error) => set({ fileError: error }),
+  setBreadcrumbs: (breadcrumbs) => set({ breadcrumbs }),
 
   addUploadTask: (task): string => {
     const id = crypto.randomUUID()
@@ -128,19 +131,6 @@ export const useKbStore = create<KbState>((set, get) => ({
         (t) => t.status === 'uploading' || t.status === 'queued',
       ),
     })
-  },
-
-  breadcrumb: () => {
-    const { folders, currentFolderId } = get()
-    const path: Folder[] = []
-    let fid = currentFolderId
-    while (fid) {
-      const f = folders.find((x) => x.id === fid)
-      if (!f) break
-      path.unshift(f)
-      fid = f.parentId
-    }
-    return path
   },
 
   activeUploadCount: () => {

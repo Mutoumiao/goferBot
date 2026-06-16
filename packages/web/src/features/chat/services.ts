@@ -11,6 +11,7 @@ import {
 import { xChatRequest } from '@/api/x-chat'
 import { GoferChatProvider } from './providers/GoferChatProvider'
 import { useChatStore } from './store'
+import { useConversationStore } from '@/stores/conversation.store'
 import { useWorkspaceStore } from '@/stores/workspace.store'
 import { openDialog } from '@/overlays/services/overlay-service'
 import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
@@ -81,13 +82,14 @@ export async function deleteChatSession(id: string) {
 }
 
 export async function loadChatHistory(sessionId: string) {
-  const { setMessages, setIsLoadingHistory, setError } = useChatStore.getState()
+  const { setIsLoadingHistory, setError } = useChatStore.getState()
+  const { setMessages } = useConversationStore.getState()
   setIsLoadingHistory(true)
   setError(null)
   try {
     const res = await getMessages(sessionId).send()
     if (res.items) {
-      setMessages(res.items as Message[])
+      setMessages(sessionId, res.items as Message[])
     }
   } catch (e) {
     setError(e instanceof Error ? e.message : '加载历史消息失败')

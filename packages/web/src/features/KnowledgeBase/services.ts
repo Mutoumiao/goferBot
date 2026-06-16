@@ -2,6 +2,7 @@ import { getKbList as apiGetKbList, uploadFile as apiUploadFile } from '@/api/Kn
 import {
   getFolders as apiGetFolders,
   getDocuments as apiGetDocuments,
+  getBreadcrumbs as apiGetBreadcrumbs,
   deleteDocument as apiDeleteDocument,
   renameDocument as apiRenameDocument,
   moveDocument as apiMoveDocument,
@@ -31,8 +32,15 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
 let currentLoadId = 0
 
 export async function loadKbItems(kbId: string, folderId: string | null = null) {
-  const { setFolders, setDocuments, setCurrentKbId, setCurrentFolderId, setFileLoading, setFileError } =
-    useKbStore.getState()
+  const {
+    setFolders,
+    setDocuments,
+    setCurrentKbId,
+    setCurrentFolderId,
+    setFileLoading,
+    setFileError,
+    setBreadcrumbs,
+  } = useKbStore.getState()
 
   const thisLoadId = ++currentLoadId
 
@@ -42,13 +50,15 @@ export async function loadKbItems(kbId: string, folderId: string | null = null) 
   setFileError(null)
 
   try {
-    const [folders, documents] = await Promise.all([
+    const [folders, documents, breadcrumbs] = await Promise.all([
       apiGetFolders(kbId, folderId).send(),
       apiGetDocuments(kbId, folderId).send(),
+      apiGetBreadcrumbs(kbId, folderId).send(),
     ])
     if (thisLoadId !== currentLoadId) return
     setFolders((folders as Folder[]) ?? [])
     setDocuments((documents as DocumentItem[]) ?? [])
+    setBreadcrumbs((breadcrumbs as Folder[]) ?? [])
   } catch (e) {
     if (thisLoadId !== currentLoadId) return
     setFileError(e instanceof Error ? e.message : '加载失败')

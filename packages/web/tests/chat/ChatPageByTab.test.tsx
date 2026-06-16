@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import type { Tab } from '@/stores/workspace.store'
 import { ChatPageByTab } from '@/features/chat/components/ChatPageByTab'
+
+const mockSetMessages = vi.fn()
+const mockOnRequest = vi.fn()
+const mockXMessages: any[] = []
 
 vi.mock('@ant-design/x', () => ({
   XProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -9,11 +13,11 @@ vi.mock('@ant-design/x', () => ({
 
 vi.mock('@ant-design/x-sdk', () => ({
   useXChat: () => ({
-    messages: [],
-    onRequest: vi.fn(),
+    messages: mockXMessages,
+    onRequest: mockOnRequest,
     isRequesting: false,
     abort: vi.fn(),
-    setMessages: vi.fn(),
+    setMessages: mockSetMessages,
   }),
 }))
 
@@ -69,19 +73,30 @@ vi.mock('@/stores/workspace.store', () => ({
   ),
 }))
 
+const conversationMap: Record<string, { id: string; messages: any[] }> = {}
+
 vi.mock('@/stores/conversation.store', () => ({
   useConversationStore: Object.assign(
     () => ({
-      conversationMap: {},
-      setMessages: vi.fn(),
+      conversationMap,
+      setMessages: (id: string, messages: any[]) => {
+        conversationMap[id] = { id, messages }
+      },
     }),
-    { getState: () => ({ conversationMap: {}, setMessages: vi.fn() }) },
+    {
+      getState: () => ({
+        conversationMap,
+        setMessages: (id: string, messages: any[]) => {
+          conversationMap[id] = { id, messages }
+        },
+      }),
+    },
   ),
 }))
 
 vi.mock('@/features/chat/store', () => ({
   useChatStore: () => ({
-    selectedProviderKey: null,
+    selectedProviderKey: 'openai',
     setSelectedProviderKey: vi.fn(),
   }),
 }))
@@ -91,6 +106,7 @@ describe('ChatPageByTab', () => {
     vi.clearAllMocks()
     mockTabs.length = 0
     mockActiveTabId = ''
+    Object.keys(conversationMap).forEach((key) => delete conversationMap[key])
   })
 
   it('当标签不存在时显示恢复占位', () => {
@@ -127,5 +143,114 @@ describe('ChatPageByTab', () => {
     render(<ChatPageByTab tabId="conv-tab" />)
 
     expect(screen.getByTestId('chat-session-view').textContent).toBe('session-conv-123')
+  })
+
+  it('会话历史加载后应通过 conversationStore 设置到 useXChat', async () => {
+    const { loadChatHistory } = await import('@/features/chat/services')
+    vi.mocked(loadChatHistory).mockImplementation(async (sessionId: string) => {
+      conversationMap[sessionId] = {
+        id: sessionId,
+        messages: [{ id: 'm1', sessionId, role: 'user', content: '历史消息', createdAt: '' }],
+      }
+    })
+
+    mockTabs.push({
+      id: 'hist-tab',
+      type: 'chat',
+      title: '历史会话',
+      closable: true,
+      conversationId: 'conv-hist',
+      createdAt: Date.now(),
+    })
+
+    render(<ChatPageByTab tabId="hist-tab" />)
+
+    await waitFor(() => {
+      expect(loadChatHistory).toHaveBeenCalledWith('conv-hist')
+      expect(mockSetMessages).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'm1',
+            message: expect.objectContaining({ content: '历史消息', role: 'user' }),
+            status: 'success',
+          }),
+        ]),
+      )
+    })
+  })
+
+  it('切换 conversationId 时应清空旧消息并加载新会话历史', async () => {
+    const { loadChatHistory } = await import('@/features/chat/services')
+    vi.mocked(loadChatHistory).mockImplementation(async (sessionId: string) => {
+      conversationMap[sessionId] = {
+        id: sessionId,
+        messages: [{ id: `m-${sessionId}`, sessionId, role: 'user', content: `msg-${sessionId}`, createdAt: '' }],
+      }
+    })
+
+    mockTabs.push({
+      id: 'switch-tab',
+      type: 'chat',
+      title: '会话 A',
+      closable: true,
+      conversationId: 'conv-a',
+      createdAt: Date.now(),
+    })
+
+    const { rerender } = render(<ChatPageByTab tabId="switch-tab" />)
+
+    await waitFor(() => expect(loadChatHistory).toHaveBeenCalledWith('conv-a'))
+    expect(mockSetMessages).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: expect.objectContaining({ content: 'msg-conv-a' }),
+        }),
+      ]),
+    )
+
+    // 模拟切换到会话 B
+    mockTabs[0].conversationId = 'conv-b'
+    rerender(<ChatPageByTab tabId="switch-tab" />)
+
+    await waitFor(() => expect(loadChatHistory).toHaveBeenCalledWith('conv-b'))
+    expect(mockSetMessages).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: expect.objectContaining({ content: 'msg-conv-b' }),
+        }),
+      ]),
+    )
+  })
+
+  it('自动发送 pending message 时应传递当前选中的 provider_key', async () => {
+    const { loadChatHistory } = await import('@/features/chat/services')
+    vi.mocked(loadChatHistory).mockImplementation(async () => {
+      /* no-op */
+    })
+
+    sessionStorage.setItem('pending:conv-pending', JSON.stringify({ content: 'hello' }))
+
+    mockTabs.push({
+      id: 'pending-tab',
+      type: 'chat',
+      title: '待发送会话',
+      closable: true,
+      conversationId: 'conv-pending',
+      createdAt: Date.now(),
+    })
+
+    render(<ChatPageByTab tabId="pending-tab" />)
+
+    await waitFor(() => {
+      expect(mockOnRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: 'hello',
+          conversation_id: 'conv-pending',
+          provider_key: 'openai',
+        }),
+      )
+    })
+
+    sessionStorage.removeItem('pending:conv-pending')
   })
 })

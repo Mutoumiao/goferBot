@@ -82,6 +82,11 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
     fetchProviders()
   }, [])
 
+  // 当 conversationId 变化时重置 pending 发送标记，避免切换会话后漏发
+  useEffect(() => {
+    pendingSentRef.current = false
+  }, [conversationId])
+
   // 当 tab 首次绑定 conversationId 时，加载历史消息
   useEffect(() => {
     if (!conversationId) return
@@ -94,6 +99,8 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
       return
     }
 
+    // 先清空旧会话消息，避免在加载新历史期间显示旧内容
+    setMessages([])
     loadChatHistory(conversationId).then(() => {
       const fresh = useConversationStore.getState().conversationMap[conversationId]?.messages ?? []
       setMessages(messagesToMessageInfos(fresh))
@@ -134,11 +141,11 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         response_mode: 'streaming',
         query: pending.content.trim(),
         conversation_id: conversationId,
-        provider_key: undefined,
+        provider_key: selectedProviderKey ?? undefined,
         knowledge_base_ids: pending.knowledgeBaseIds,
       } as GoferInput)
     })
-  }, [conversationId, onRequest])
+  }, [conversationId, onRequest, selectedProviderKey])
 
   const handleRetry = useCallback(() => {
     const lastUserMsg = [...xMessages].reverse().find((m) => m.message.role === 'user')
@@ -147,10 +154,10 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         response_mode: 'streaming',
         query: lastUserMsg.message.content,
         conversation_id: conversationId,
-        provider_key: undefined,
+        provider_key: selectedProviderKey ?? undefined,
       } as GoferInput)
     }
-  }, [xMessages, conversationId, onRequest])
+  }, [xMessages, conversationId, onRequest, selectedProviderKey])
 
   if (!tab) {
     return (

@@ -19,6 +19,7 @@ import {
 } from '@/api/chat'
 import { useChatStore } from '@/features/chat/store'
 import { useWorkspaceStore } from '@/stores/workspace.store'
+import { useConversationStore } from '@/stores/conversation.store'
 import {
   loadChatSessions,
   createChatSession,
@@ -44,6 +45,7 @@ describe('chat services', () => {
       isLoadingSessions: false,
       error: null,
     })
+    useConversationStore.setState({ conversationMap: {} })
     useWorkspaceStore.getState().reset()
     vi.clearAllMocks()
   })
@@ -160,13 +162,13 @@ describe('chat services', () => {
   })
 
   describe('loadChatHistory', () => {
-    it('sets messages on success', async () => {
+    it('sets messages into conversation store on success', async () => {
       const messages: Message[] = [{ id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' }]
       vi.mocked(getMessages).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: messages }) } as any)
 
       await loadChatHistory('s1')
 
-      expect(useChatStore.getState().messages).toEqual(messages)
+      expect(useConversationStore.getState().conversationMap['s1']?.messages).toEqual(messages)
       expect(useChatStore.getState().isLoadingHistory).toBe(false)
     })
 
@@ -176,7 +178,7 @@ describe('chat services', () => {
       await loadChatHistory('s1')
 
       expect(useChatStore.getState().isLoadingHistory).toBe(false)
-      expect(useChatStore.getState().messages).toHaveLength(0)
+      expect(useConversationStore.getState().conversationMap['s1']).toBeUndefined()
     })
   })
 

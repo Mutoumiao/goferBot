@@ -39,7 +39,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     documents,
     fileLoading,
     fileError,
-    breadcrumb,
+    breadcrumbs,
     setCurrentFolderId,
     currentKbId,
     currentFolderId,
@@ -309,7 +309,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     >
       <KnowledgeBaseToolbar
         kbName={kbName}
-        breadcrumb={breadcrumb()}
+        breadcrumb={breadcrumbs}
         onNavigate={handleNavigate}
         viewMode={viewMode}
         onViewModeChange={setViewMode}

@@ -93,6 +93,30 @@ export class FolderService {
     return { id: folderId, deleted: true }
   }
 
+  async getBreadcrumbs(
+    userId: string,
+    kbId: string,
+    folderId?: string,
+  ): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
+    await this.ensureOwnership(userId, kbId)
+
+    if (!folderId) {
+      return []
+    }
+
+    const folder = await this.prisma.folder.findFirst({
+      where: { id: folderId, kbId },
+    })
+    if (!folder) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: '文件夹不存在',
+      })
+    }
+
+    return this.findAncestors(folderId)
+  }
+
   async findAncestors(folderId: string): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
     const ancestors: Array<{ id: string; name: string; parentId: string | null }> = []
     let current = await this.prisma.folder.findUnique({ where: { id: folderId } })
