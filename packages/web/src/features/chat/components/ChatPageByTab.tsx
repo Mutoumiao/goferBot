@@ -101,10 +101,16 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
 
     // 先清空旧会话消息，避免在加载新历史期间显示旧内容
     setMessages([])
+    let stale = false
     loadChatHistory(conversationId).then(() => {
+      if (stale) return
       const fresh = useConversationStore.getState().conversationMap[conversationId]?.messages ?? []
       setMessages(messagesToMessageInfos(fresh))
     })
+
+    return () => {
+      stale = true
+    }
   }, [conversationId, setMessages])
 
   // 同步 useXChat 消息到 conversation store
@@ -136,7 +142,9 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
       pending = { content: raw }
     }
 
+    let cancelled = false
     queueMicrotask(() => {
+      if (cancelled) return
       onRequest({
         response_mode: 'streaming',
         query: pending.content.trim(),
@@ -145,6 +153,10 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         knowledge_base_ids: pending.knowledgeBaseIds,
       } as GoferInput)
     })
+
+    return () => {
+      cancelled = true
+    }
   }, [conversationId, onRequest, selectedProviderKey])
 
   const handleRetry = useCallback(() => {

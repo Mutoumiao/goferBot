@@ -200,6 +200,7 @@ describe('ChatPageByTab', () => {
     const { rerender } = render(<ChatPageByTab tabId="switch-tab" />)
 
     await waitFor(() => expect(loadChatHistory).toHaveBeenCalledWith('conv-a'))
+    expect(mockSetMessages).toHaveBeenCalledWith([])
     expect(mockSetMessages).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
@@ -213,6 +214,7 @@ describe('ChatPageByTab', () => {
     rerender(<ChatPageByTab tabId="switch-tab" />)
 
     await waitFor(() => expect(loadChatHistory).toHaveBeenCalledWith('conv-b'))
+    expect(mockSetMessages).toHaveBeenCalledWith([])
     expect(mockSetMessages).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
