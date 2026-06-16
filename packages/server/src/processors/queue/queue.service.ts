@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Inject, forwardRef } from '@nestjs/common'
+import { Injectable, OnModuleInit, OnModuleDestroy, Inject, forwardRef, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Queue, Job } from 'bullmq'
 import type { Redis } from 'ioredis'
@@ -13,9 +13,10 @@ import { WorkerService } from './worker.service.js'
 
 @Injectable()
 export class QueueService implements OnModuleInit, OnModuleDestroy {
-  private redis!: Redis
+  private redis?: Redis
   private documentQueue!: Queue<DocumentJobData>
   private embeddingQueue!: Queue<EmbeddingJobData>
+  private readonly logger = new Logger(QueueService.name)
 
   constructor(
     private readonly configService: ConfigService,
@@ -33,33 +34,43 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.redis.ping()
     } catch {
-      console.warn(`[QueueService] Redis 连接失败 (${host}:${port})，队列功能已禁用。如需使用队列，请启动 Redis 服务。`)
+      this.logger.warn(`Redis 连接失败 (${host}:${port})，队列功能已禁用。如需使用队列，请启动 Redis 服务。`)
       await this.redis.quit().catch(() => {})
-      this.redis = undefined as unknown as Redis
+      this.redis = undefined
       return
     }
 
     this.documentQueue = createDocumentQueue(this.redis)
     this.embeddingQueue = createEmbeddingQueue(this.redis)
 
-    console.log('QueueService: Redis connection established')
+    this.logger.log('Redis connection established')
     this.workerService.startWorkers(this.redis)
+
+    this.redis.on('error', (err) => {
+      this.logger.error(`Redis connection error: ${err.message}`)
+    })
   }
 
   private isEnabled(): boolean {
-    return this.redis !== (undefined as unknown as Redis)
+    return this.redis !== undefined && this.redis.status === 'ready'
   }
 
-  isHealthy(): boolean {
-    return this.isEnabled()
+  async isHealthy(): Promise<boolean> {
+    if (!this.isEnabled()) return false
+    try {
+      await this.redis!.ping()
+      return true
+    } catch {
+      return false
+    }
   }
 
   async onModuleDestroy() {
     if (!this.isEnabled()) return
     await this.documentQueue.close()
     await this.embeddingQueue.close()
-    await this.redis.quit()
-    console.log('QueueService: Queues and Redis connection closed')
+    await this.redis!.quit()
+    this.logger.log('Queues and Redis connection closed')
   }
 
   async addDocumentJob(documentId: string, type: 'index'): Promise<Job<DocumentJobData>> {
@@ -150,6 +161,6 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
   getRedisConnection(): Redis {
     if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
-    return this.redis
+    return this.redis!
   }
 }
