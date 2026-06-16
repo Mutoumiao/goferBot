@@ -12,7 +12,7 @@ import {
   deleteFolder as apiDeleteFolder,
 } from '@/api/file'
 import { useKbStore } from './store'
-import type { Folder, DocumentItem } from './types'
+import type { Folder, DocumentItem, ItemSortParams } from './types'
 import type { KbListResponse } from '@goferbot/data'
 
 export async function fetchKbList(): Promise<{ success: boolean; error?: string }> {
@@ -31,11 +31,6 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
 }
 
 let currentLoadId = 0
-
-export interface ItemSortParams {
-  sortBy: 'name' | 'updatedAt' | 'createdAt' | 'size' | 'type'
-  sortOrder: 'asc' | 'desc'
-}
 
 export async function loadKbItems(
   kbId: string,
