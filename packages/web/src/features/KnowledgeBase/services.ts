@@ -286,11 +286,12 @@ export async function addFolder(kbId: string, name: string, parentId?: string | 
   }
 }
 
-export async function uploadFiles(kbId: string, files: File[], folderId?: string | null) {
-  const { addUploadTask, startUploadTask, updateUploadProgress, markUploadComplete, markUploadFailed } = useKbStore.getState()
+export async function uploadFiles(kbId: string, files: File[], folderId?: string | null, sort?: ItemSortParams) {
+  const { addUploadTask, startUploadTask, updateUploadProgress, markUploadComplete, markUploadFailed, maxConcurrent } = useKbStore.getState()
 
-  const taskIds: string[] = []
-  for (const file of files) {
+  if (files.length === 0) return []
+
+  const uploadOne = async (file: File): Promise<string> => {
     const taskId = addUploadTask({
       fileName: file.name,
       fileSize: file.size,
@@ -298,7 +299,6 @@ export async function uploadFiles(kbId: string, files: File[], folderId?: string
       folderId,
       file,
     })
-    taskIds.push(taskId)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -314,9 +314,27 @@ export async function uploadFiles(kbId: string, files: File[], folderId?: string
     } catch (e) {
       markUploadFailed(taskId, e instanceof Error ? e.message : '上传失败')
     }
+
+    return taskId
   }
 
+  const taskIds: string[] = []
+  for (const chunkFiles of chunk(files, maxConcurrent)) {
+    const chunkTaskIds = await Promise.all(chunkFiles.map(uploadOne))
+    taskIds.push(...chunkTaskIds)
+  }
+
+  await loadKbItems(kbId, folderId ?? null, sort)
+
   return taskIds
+}
+
+function chunk<T>(array: T[], size: number): T[][] {
+  const result: T[][] = []
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size))
+  }
+  return result
 }
 
 export function navigateToFolder(folderId: string | null) {

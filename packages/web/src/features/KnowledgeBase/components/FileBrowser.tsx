@@ -208,7 +208,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       searchKbItems(trimmed)
     }, 300)
     return () => clearTimeout(timer)
-  }, [currentKbId, currentFolderId, searchQuery, sortOption])
+  }, [currentKbId, currentFolderId, searchQuery, sortParams])
 
   const handleFolderClick = useCallback((folder: Folder) => {
     setCurrentFolderId(folder.id)
@@ -273,32 +273,42 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     }
   }, [currentKbId, currentFolderId, searchQuery, sortOption])
 
+  const handleUploadComplete = useCallback(async (kbId: string, files: File[], targetFolderId?: string | null) => {
+    const folderId = targetFolderId ?? currentFolderId
+    await uploadFiles(kbId, files, folderId, sortParams)
+    if (searchQuery.trim()) {
+      setSearchQuery('')
+      await loadKbItems(kbId, folderId, sortParams)
+    }
+  }, [currentFolderId, searchQuery, sortParams])
+
   const handleUpload = useCallback(() => {
     const input = document.createElement('input')
     input.type = 'file'
     input.multiple = true
     input.accept = '.md,.txt,.html,.csv,.json,.pdf'
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files
-      if (files && currentKbId) {
-        uploadFiles(currentKbId, Array.from(files), currentFolderId)
-      }
+      if (!files) return
+      const { currentKbId: latestKbId, currentFolderId: latestFolderId } = useKbStore.getState()
+      if (!latestKbId) return
+      await handleUploadComplete(latestKbId, Array.from(files), latestFolderId)
+      input.remove()
     }
     input.click()
-  }, [currentKbId, currentFolderId])
+  }, [handleUploadComplete])
 
-  const handleDropFiles = useCallback((files: File[]) => {
-    if (currentKbId) {
-      uploadFiles(currentKbId, files, currentFolderId)
-    }
-  }, [currentKbId, currentFolderId])
+  const handleDropFiles = useCallback(async (files: File[]) => {
+    if (!currentKbId) return
+    await handleUploadComplete(currentKbId, files, currentFolderId)
+  }, [currentKbId, currentFolderId, handleUploadComplete])
 
-  const handleRetryUpload = useCallback((taskId: string) => {
+  const handleRetryUpload = useCallback(async (taskId: string) => {
     const task = uploadTasks.find((t) => t.id === taskId)
     if (!task || !currentKbId || !task.file) return
     removeUploadTask(taskId)
-    uploadFiles(currentKbId, [task.file], task.folderId)
-  }, [uploadTasks, currentKbId, removeUploadTask])
+    await handleUploadComplete(currentKbId, [task.file], task.folderId)
+  }, [uploadTasks, currentKbId, removeUploadTask, handleUploadComplete])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -310,13 +320,13 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     setIsDragOver(false)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
     if (e.dataTransfer.files.length > 0 && currentKbId) {
-      uploadFiles(currentKbId, Array.from(e.dataTransfer.files), currentFolderId)
+      await handleUploadComplete(currentKbId, Array.from(e.dataTransfer.files), currentFolderId)
     }
-  }, [currentKbId, currentFolderId])
+  }, [currentKbId, currentFolderId, handleUploadComplete])
 
   const renderContent = () => {
     if (fileLoading) {
