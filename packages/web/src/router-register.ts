@@ -36,7 +36,7 @@ export const ROUTES_REGISTER = {
     closable: true,
     path: '/chat/$tabId',
     icon: MessageCircle,
-    navSection: 'primary',
+    navSection: null,
     bindTo: (tabId: string) => `/chat/${tabId}`,
   },
   knowledgeBase: {
