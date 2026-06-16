@@ -16,7 +16,7 @@ export const documentSchema = z.object({
   kbId: z.string(),
   folderId: z.string().nullable().optional(),
   size: z.number().optional(),
-  status: z.enum(['uploaded', 'queued', 'processing', 'indexed', 'failed']),
+  status: z.enum(['uploaded', 'chunking', 'embedding', 'indexing', 'ready', 'failed']),
   indexedAt: z.string().nullable().optional(),
   progress: z.number().min(0).max(100).optional(),
   error: z.string().optional(),

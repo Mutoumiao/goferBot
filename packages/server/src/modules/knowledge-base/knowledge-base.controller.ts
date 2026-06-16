@@ -22,7 +22,17 @@ export class KnowledgeBaseController {
   @Get()
   async list(@CurrentUser('id') userId: string) {
     const entries = await this.kbService.list(userId)
-    return { entries, total: entries.length }
+    return {
+      items: entries,
+      pagination: {
+        total: entries.length,
+        size: entries.length,
+        currentPage: 1,
+        totalPage: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    }
   }
 
   @Post()

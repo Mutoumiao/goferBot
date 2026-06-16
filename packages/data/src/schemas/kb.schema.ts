@@ -44,9 +44,10 @@ export const kbDetailResponseSchema = z.object({
 
 export const documentStatusSchema = z.enum([
   'uploaded',
-  'queued',
-  'processing',
-  'indexed',
+  'chunking',
+  'embedding',
+  'indexing',
+  'ready',
   'failed',
 ])
 

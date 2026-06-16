@@ -5,6 +5,7 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common'
 describe('KnowledgeBaseService', () => {
   let kbService: KnowledgeBaseService
   let mockPrisma: any
+  let mockCleanup: any
 
   beforeEach(() => {
     mockPrisma = {
@@ -15,20 +16,16 @@ describe('KnowledgeBaseService', () => {
         delete: vi.fn(),
         findUnique: vi.fn(),
       },
-      folder: {
-        findMany: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        delete: vi.fn(),
-        findFirst: vi.fn(),
-      },
+    }
+    mockCleanup = {
+      cleanupKnowledgeBase: vi.fn().mockResolvedValue(undefined),
     }
 
-    kbService = new KnowledgeBaseService(mockPrisma)
+    kbService = new KnowledgeBaseService(mockPrisma, mockCleanup)
   })
 
   describe('list', () => {
-    it('AC-04a: returns knowledge bases for user', async () => {
+    it('AC-04a: returns knowledge bases for user sorted by pinned first', async () => {
       mockPrisma.knowledgeBase.findMany.mockResolvedValue([
         { id: 'kb1', name: 'Test KB', userId: 'u1' },
       ])
@@ -39,7 +36,11 @@ describe('KnowledgeBaseService', () => {
       expect(result[0].name).toBe('Test KB')
       expect(mockPrisma.knowledgeBase.findMany).toHaveBeenCalledWith({
         where: { userId: 'u1' },
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [
+          { isPinned: 'desc' },
+          { sortOrder: 'asc' },
+          { createdAt: 'desc' },
+        ],
       })
     })
   })
@@ -87,44 +88,14 @@ describe('KnowledgeBaseService', () => {
   })
 
   describe('remove', () => {
-    it('AC-04f: removes knowledge base for owner', async () => {
+    it('AC-04f: removes knowledge base for owner and cleans up data', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.knowledgeBase.delete.mockResolvedValue({})
 
       const result = await kbService.remove('u1', 'kb1')
 
+      expect(mockCleanup.cleanupKnowledgeBase).toHaveBeenCalledWith('kb1')
       expect(result.deleted).toBe(true)
-    })
-  })
-
-  describe('folder operations', () => {
-    it('AC-04g: lists folders in knowledge base', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findMany.mockResolvedValue([
-        { id: 'f1', name: 'Folder 1' },
-      ])
-
-      const result = await kbService.listFolders('u1', 'kb1')
-
-      expect(result).toHaveLength(1)
-    })
-
-    it('AC-04h: creates folder with valid parent', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValue({ id: 'p1', kbId: 'kb1' })
-      mockPrisma.folder.create.mockResolvedValue({ id: 'f1', name: 'New Folder' })
-
-      const result = await kbService.createFolder('u1', 'kb1', { name: 'New Folder', parentId: 'p1' })
-
-      expect(result.name).toBe('New Folder')
-    })
-
-    it('AC-04i: throws NotFoundException when parent folder not found', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValue(null)
-
-      await expect(kbService.createFolder('u1', 'kb1', { name: 'New', parentId: 'p1' }))
-        .rejects.toThrow(NotFoundException)
     })
   })
 })

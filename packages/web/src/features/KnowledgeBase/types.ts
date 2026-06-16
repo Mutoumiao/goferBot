@@ -15,7 +15,7 @@ export interface DocumentItem {
   ext: string | null
   mimeType: string | null
   size: number | null
-  status: 'uploaded' | 'parsing' | 'chunking' | 'indexing' | 'ready' | 'failed'
+  status: 'uploaded' | 'chunking' | 'embedding' | 'indexing' | 'ready' | 'failed'
   createdAt: string
   updatedAt: string
 }

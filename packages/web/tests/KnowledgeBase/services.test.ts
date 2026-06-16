@@ -67,7 +67,7 @@ describe('kb services', () => {
   describe('fetchKbList', () => {
     it('returns success and sets entries on ok', async () => {
       const entries: KbEntry[] = [{ id: 'kb1', name: 'Test', description: '', fileCount: 0, createdAt: '', updatedAt: '' }]
-      vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ entries }) } as any)
+      vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: entries, pagination: { total: 1, size: 1, currentPage: 1, totalPage: 1, hasNextPage: false, hasPrevPage: false } }) } as any)
 
       const result = await fetchKbList()
 

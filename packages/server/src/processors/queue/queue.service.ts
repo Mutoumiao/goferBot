@@ -50,6 +50,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     return this.redis !== (undefined as unknown as Redis)
   }
 
+  isHealthy(): boolean {
+    return this.isEnabled()
+  }
+
   async onModuleDestroy() {
     if (!this.isEnabled()) return
     await this.documentQueue.close()

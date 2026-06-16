@@ -5,6 +5,7 @@ import { VectorService } from '../../processors/vector/vector.service.js'
 import { QueueService } from '../../processors/queue/queue.service.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
+import { KbCleanupService } from './kb-cleanup.service.js'
 
 export interface UploadFilePayload {
   filename: string
@@ -21,6 +22,7 @@ export class DocumentService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly vectorService: VectorService,
+    private readonly cleanupService: KbCleanupService,
     @Optional() private readonly queueService?: QueueService,
   ) {}
 
@@ -51,7 +53,7 @@ export class DocumentService {
       },
     })
 
-    if (this.queueService) {
+    if (this.queueService?.isHealthy()) {
       await this.queueService.addDocumentJob(doc.id, 'index')
     }
 
@@ -88,6 +90,7 @@ export class DocumentService {
     const doc = await this.prisma.document.findUnique({ where: { id: docId } })
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
 
+    await this.cleanupService.cleanupDocument(doc.id, doc.storageKey)
     await this.prisma.document.delete({ where: { id: docId } })
     return { id: docId, deleted: true }
   }

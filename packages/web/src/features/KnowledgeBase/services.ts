@@ -11,15 +11,15 @@ import {
 } from '@/api/file'
 import { useKbStore } from './store'
 import type { Folder, DocumentItem } from './types'
-import type { KbEntry } from '@goferbot/data'
+import type { KbListResponse } from '@goferbot/data'
 
 export async function fetchKbList(): Promise<{ success: boolean; error?: string }> {
   const { setEntries, setKbLoading } = useKbStore.getState()
   setKbLoading(true)
   try {
     const res = await apiGetKbList().send()
-    const data = res as { entries?: KbEntry[] }
-    setEntries(data.entries ?? [])
+    const data = res as KbListResponse
+    setEntries(data.items ?? [])
     return { success: true }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : '加载知识库列表失败' }

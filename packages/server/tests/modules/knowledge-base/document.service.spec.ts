@@ -9,6 +9,8 @@ describe('DocumentService', () => {
   let mockVectorService: any
   let mockQueueService: any
 
+  let mockCleanupService: any
+
   beforeEach(() => {
     mockPrisma = {
       knowledgeBase: {
@@ -28,9 +30,13 @@ describe('DocumentService', () => {
     mockVectorService = {}
     mockQueueService = {
       addDocumentJob: vi.fn().mockResolvedValue(undefined),
+      isHealthy: vi.fn().mockReturnValue(true),
+    }
+    mockCleanupService = {
+      cleanupDocument: vi.fn().mockResolvedValue(undefined),
     }
 
-    docService = new DocumentService(mockPrisma, mockStorage, mockVectorService, mockQueueService)
+    docService = new DocumentService(mockPrisma, mockStorage, mockVectorService, mockCleanupService, mockQueueService)
   })
 
   describe('list', () => {
@@ -68,8 +74,8 @@ describe('DocumentService', () => {
       expect(mockQueueService.addDocumentJob).toHaveBeenCalledWith('d1', 'index')
     })
 
-    it('AC-04l: uploads file without queue when queueService not provided', async () => {
-      docService = new DocumentService(mockPrisma, mockStorage, mockVectorService, undefined)
+    it('AC-04l: uploads file without queue when queueService not healthy', async () => {
+      mockQueueService.isHealthy.mockReturnValue(false)
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.create.mockResolvedValue({
         id: 'd1', name: 'test.txt', storageKey: 'kb1/1234567890-test.txt', size: BigInt(100),
@@ -86,6 +92,7 @@ describe('DocumentService', () => {
 
       expect(result.name).toBe('test.txt')
       expect(mockStorage.uploadFile).toHaveBeenCalled()
+      expect(mockQueueService.addDocumentJob).not.toHaveBeenCalled()
     })
   })
 
