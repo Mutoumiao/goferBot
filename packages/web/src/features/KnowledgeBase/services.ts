@@ -1,4 +1,4 @@
-import { getKbList as apiGetKbList, uploadFile as apiUploadFile, searchKbItems as apiSearchKbItems } from '@/api/KnowledgeBase'
+import { getKbList as apiGetKbList, updateKb as apiUpdateKb, uploadFile as apiUploadFile, searchKbItems as apiSearchKbItems } from '@/api/KnowledgeBase'
 import {
   getFolders as apiGetFolders,
   getDocuments as apiGetDocuments,
@@ -14,6 +14,7 @@ import {
 import { useKbStore } from './store'
 import type { Folder, DocumentItem, ItemSortParams } from './types'
 import type { KbListResponse } from '@goferbot/data'
+import { toast } from 'sonner'
 
 export async function fetchKbList(): Promise<{ success: boolean; error?: string }> {
   const { setEntries, setKbLoading } = useKbStore.getState()
@@ -28,6 +29,48 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
   } finally {
     setKbLoading(false)
   }
+}
+
+const pinningIds = new Set<string>()
+
+export async function pinKnowledgeBase(id: string, isPinned: boolean): Promise<boolean> {
+  if (pinningIds.has(id)) return false
+  pinningIds.add(id)
+  const { updateEntry } = useKbStore.getState()
+  try {
+    await apiUpdateKb(id, { isPinned }).send()
+    updateEntry(id, { isPinned })
+    await fetchKbList()
+    return true
+  } catch (e) {
+    toast.error('置顶操作失败，请稍后重试')
+    return false
+  } finally {
+    pinningIds.delete(id)
+  }
+}
+
+export function removeKnowledgeBaseAndClearSelection(kbId: string) {
+  const {
+    selectedId,
+    setSelectedId,
+    setCurrentKbId,
+    setCurrentFolderId,
+    setFolders,
+    setDocuments,
+    setBreadcrumbs,
+    removeEntry,
+  } = useKbStore.getState()
+
+  removeEntry(kbId)
+  if (selectedId !== kbId) return
+
+  setSelectedId(null)
+  setCurrentKbId(null)
+  setCurrentFolderId(null)
+  setFolders([])
+  setDocuments([])
+  setBreadcrumbs([])
 }
 
 let currentLoadId = 0
