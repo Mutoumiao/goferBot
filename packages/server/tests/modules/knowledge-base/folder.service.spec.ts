@@ -42,6 +42,19 @@ describe('FolderService', () => {
       })
     })
 
+    it('treats empty string parentId as root (null)', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'Root Folder' }])
+
+      const result = await folderService.list('u1', 'kb1', '')
+
+      expect(result).toHaveLength(1)
+      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', parentId: null },
+        orderBy: { createdAt: 'asc' },
+      })
+    })
+
     it('sorts folders by requested field and order', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'A' }])
@@ -52,6 +65,19 @@ describe('FolderService', () => {
       expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
         where: { kbId: 'kb1', parentId: 'p1' },
         orderBy: { name: 'desc' },
+      })
+    })
+
+    it('falls back to default sort when parameters are invalid', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'A' }])
+
+      const result = await folderService.list('u1', 'kb1', 'p1', 'size', 'bad')
+
+      expect(result).toHaveLength(1)
+      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', parentId: 'p1' },
+        orderBy: { createdAt: 'asc' },
       })
     })
   })

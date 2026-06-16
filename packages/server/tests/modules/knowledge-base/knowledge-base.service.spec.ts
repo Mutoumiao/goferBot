@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { KnowledgeBaseService } from '@/modules/knowledge-base/knowledge-base.service.js'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
 
 describe('KnowledgeBaseService', () => {
   let kbService: KnowledgeBaseService
@@ -111,6 +111,34 @@ describe('KnowledgeBaseService', () => {
         where: { kbId: 'kb1', name: { contains: 'notes', mode: 'insensitive' } },
         orderBy: { createdAt: 'desc' },
       })
+    })
+
+    it('trims search query before searching', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'Notes' }])
+      mockPrisma.document.findMany.mockResolvedValue([])
+
+      const result = await kbService.search('u1', 'kb1', '  notes  ')
+
+      expect(result.folders).toHaveLength(1)
+      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', name: { contains: 'notes', mode: 'insensitive' } },
+        orderBy: { createdAt: 'asc' },
+      })
+    })
+
+    it('throws BadRequestException when query is empty', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+
+      await expect(kbService.search('u1', 'kb1', '   '))
+        .rejects.toThrow(BadRequestException)
+    })
+
+    it('throws BadRequestException when query exceeds max length', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+
+      await expect(kbService.search('u1', 'kb1', 'a'.repeat(101)))
+        .rejects.toThrow(BadRequestException)
     })
 
     it('throws ForbiddenException when not owner', async () => {
