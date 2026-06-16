@@ -32,7 +32,16 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
 
 let currentLoadId = 0
 
-export async function loadKbItems(kbId: string, folderId: string | null = null) {
+export interface ItemSortParams {
+  sortBy: 'name' | 'updatedAt' | 'createdAt' | 'size' | 'type'
+  sortOrder: 'asc' | 'desc'
+}
+
+export async function loadKbItems(
+  kbId: string,
+  folderId: string | null = null,
+  sort?: ItemSortParams,
+) {
   const {
     setFolders,
     setDocuments,
@@ -50,10 +59,15 @@ export async function loadKbItems(kbId: string, folderId: string | null = null) 
   setFileLoading(true)
   setFileError(null)
 
+  const folderSort = sort
+    ? { sortBy: sort.sortBy === 'type' ? 'name' : sort.sortBy, sortOrder: sort.sortOrder }
+    : undefined
+  const documentSort = sort ? { sortBy: sort.sortBy, sortOrder: sort.sortOrder } : undefined
+
   try {
     const [folders, documents, breadcrumbs] = await Promise.all([
-      apiGetFolders(kbId, folderId).send(),
-      apiGetDocuments(kbId, folderId).send(),
+      apiGetFolders(kbId, folderId, folderSort).send(),
+      apiGetDocuments(kbId, folderId, documentSort).send(),
       apiGetBreadcrumbs(kbId, folderId).send(),
     ])
     if (thisLoadId !== currentLoadId) return

@@ -16,6 +16,9 @@ export interface UploadFilePayload {
   folderId: string | null
 }
 
+type SortOrder = 'asc' | 'desc'
+type DocumentSortBy = 'name' | 'createdAt' | 'updatedAt' | 'size' | 'type'
+
 @Injectable()
 export class DocumentService {
   constructor(
@@ -26,11 +29,22 @@ export class DocumentService {
     @Optional() private readonly queueService?: QueueService,
   ) {}
 
-  async list(userId: string, kbId: string, folderId?: string | null) {
+  async list(
+    userId: string,
+    kbId: string,
+    folderId?: string | null,
+    sortBy: DocumentSortBy = 'createdAt',
+    sortOrder: SortOrder = 'desc',
+  ) {
     await this.ensureOwnership(userId, kbId)
+
+    const orderBy = sortBy === 'type'
+      ? [{ ext: sortOrder }, { mimeType: sortOrder }]
+      : { [sortBy]: sortOrder }
+
     return this.prisma.document.findMany({
       where: { kbId, folderId: folderId ?? null },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
     })
   }
 

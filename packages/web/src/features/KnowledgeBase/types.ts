@@ -34,6 +34,16 @@ export interface UploadTask {
 
 export type ViewMode = 'grid' | 'list'
 
-export type SortOption = 'name-asc' | 'name-desc' | 'date-desc' | 'date-asc'
+export type SortOption =
+  | 'name-asc'
+  | 'name-desc'
+  | 'updatedAt-desc'
+  | 'updatedAt-asc'
+  | 'createdAt-desc'
+  | 'createdAt-asc'
+  | 'size-desc'
+  | 'size-asc'
+  | 'type-desc'
+  | 'type-asc'
 
 export type FilterType = 'all' | 'document' | 'image' | 'other'

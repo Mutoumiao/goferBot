@@ -8,6 +8,9 @@ import { KbCleanupService } from './kb-cleanup.service.js'
 import type { CreateFolderDto } from './dto/create-folder.dto.js'
 import type { UpdateFolderDto } from './dto/update-folder.dto.js'
 
+type SortOrder = 'asc' | 'desc'
+type FolderSortBy = 'name' | 'createdAt' | 'updatedAt'
+
 @Injectable()
 export class FolderService {
   constructor(
@@ -15,7 +18,13 @@ export class FolderService {
     private readonly cleanupService: KbCleanupService,
   ) {}
 
-  async list(userId: string, kbId: string, parentId?: string) {
+  async list(
+    userId: string,
+    kbId: string,
+    parentId?: string,
+    sortBy: FolderSortBy = 'createdAt',
+    sortOrder: SortOrder = 'asc',
+  ) {
     await this.ensureOwnership(userId, kbId)
 
     return this.prisma.folder.findMany({
@@ -23,7 +32,7 @@ export class FolderService {
         kbId,
         parentId: parentId ?? null,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { [sortBy]: sortOrder },
     })
   }
 

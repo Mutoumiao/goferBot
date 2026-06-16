@@ -42,7 +42,7 @@ describe('DocumentService', () => {
   })
 
   describe('list', () => {
-    it('AC-04j: returns documents for KB owner', async () => {
+    it('AC-04j: returns documents for KB owner with default sort', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.findMany.mockResolvedValue([
         { id: 'd1', name: 'doc.txt', kbId: 'kb1' },
@@ -52,6 +52,36 @@ describe('DocumentService', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0].name).toBe('doc.txt')
+      expect(mockPrisma.document.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', folderId: null },
+        orderBy: { createdAt: 'desc' },
+      })
+    })
+
+    it('sorts documents by requested field', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.document.findMany.mockResolvedValue([{ id: 'd1', name: 'a' }])
+
+      const result = await docService.list('u1', 'kb1', null, 'name', 'asc')
+
+      expect(result).toHaveLength(1)
+      expect(mockPrisma.document.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', folderId: null },
+        orderBy: { name: 'asc' },
+      })
+    })
+
+    it('sorts documents by type using ext and mimeType', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.document.findMany.mockResolvedValue([{ id: 'd1', name: 'a' }])
+
+      const result = await docService.list('u1', 'kb1', null, 'type', 'desc')
+
+      expect(result).toHaveLength(1)
+      expect(mockPrisma.document.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', folderId: null },
+        orderBy: [{ ext: 'desc' }, { mimeType: 'desc' }],
+      })
     })
   })
 

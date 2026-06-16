@@ -23,14 +23,14 @@ interface FileBrowserProps {
   kbName: string
 }
 
-function parseSortOption(option: SortOption): { sortBy: 'name' | 'date' | 'size'; sortOrder: 'asc' | 'desc' } {
-  const [sortBy, sortOrder] = option.split('-') as ['name' | 'date' | 'size', 'asc' | 'desc']
+function parseSortOption(option: SortOption): { sortBy: 'name' | 'updatedAt' | 'createdAt' | 'size' | 'type'; sortOrder: 'asc' | 'desc' } {
+  const [sortBy, sortOrder] = option.split('-') as ['name' | 'updatedAt' | 'createdAt' | 'size' | 'type', 'asc' | 'desc']
   return { sortBy, sortOrder }
 }
 
 export function FileBrowser({ kbName }: FileBrowserProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [sortOption, setSortOption] = useState<SortOption>('date-desc')
+  const [sortOption, setSortOption] = useState<SortOption>('updatedAt-desc')
   const [isDragOver, setIsDragOver] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -49,14 +49,14 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     removeUploadTask,
   } = useKbStore()
 
-  const { sortOrder } = parseSortOption(sortOption)
+  const sortParams = parseSortOption(sortOption)
 
   useEffect(() => {
     if (!currentKbId) return
 
     const trimmed = searchQuery.trim()
     if (!trimmed) {
-      loadKbItems(currentKbId, currentFolderId)
+      loadKbItems(currentKbId, currentFolderId, sortParams)
       return
     }
 
@@ -64,7 +64,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       searchKbItems(trimmed)
     }, 300)
     return () => clearTimeout(timer)
-  }, [currentKbId, currentFolderId, searchQuery])
+  }, [currentKbId, currentFolderId, searchQuery, sortOption])
 
   const handleFolderClick = useCallback((folder: Folder) => {
     setCurrentFolderId(folder.id)
@@ -125,9 +125,9 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     if (trimmed) {
       searchKbItems(trimmed)
     } else {
-      loadKbItems(currentKbId, currentFolderId)
+      loadKbItems(currentKbId, currentFolderId, sortParams)
     }
-  }, [currentKbId, currentFolderId, searchQuery])
+  }, [currentKbId, currentFolderId, searchQuery, sortOption])
 
   const handleUpload = useCallback(() => {
     const input = document.createElement('input')
@@ -174,18 +174,6 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     }
   }, [currentKbId, currentFolderId])
 
-  const sortedFolders = [...folders].sort((a, b) => {
-    const aName = a.name.toLowerCase()
-    const bName = b.name.toLowerCase()
-    return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName)
-  })
-
-  const sortedDocuments = [...documents].sort((a, b) => {
-    const aName = a.name.toLowerCase()
-    const bName = b.name.toLowerCase()
-    return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName)
-  })
-
   const renderContent = () => {
     if (fileLoading) {
       return (
@@ -208,8 +196,8 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       )
     }
 
-    const hasItems = sortedFolders.length > 0 || sortedDocuments.length > 0
-    const totalCount = sortedFolders.length + sortedDocuments.length
+    const hasItems = folders.length > 0 || documents.length > 0
+    const totalCount = folders.length + documents.length
 
     if (!hasItems) {
       return (
@@ -224,7 +212,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       return (
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-4 gap-3">
-            {sortedFolders.map((folder) => (
+            {folders.map((folder) => (
               <FileContextMenu
                 key={folder.id}
                 item={folder}
@@ -236,13 +224,13 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
                   <FileGridItem
                     item={folder}
                     isFolder
-                    documentCount={sortedDocuments.filter((d) => d.folderId === folder.id).length}
+                    documentCount={documents.filter((d) => d.folderId === folder.id).length}
                     onClick={() => handleFolderClick(folder)}
                   />
                 </div>
               </FileContextMenu>
             ))}
-            {sortedDocuments.map((doc) => (
+            {documents.map((doc) => (
               <FileContextMenu
                 key={doc.id}
                 item={doc}
@@ -273,7 +261,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedFolders.map((folder) => (
+            {folders.map((folder) => (
               <FileContextMenu
                 key={folder.id}
                 item={folder}
@@ -288,7 +276,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
                 />
               </FileContextMenu>
             ))}
-            {sortedDocuments.map((doc) => (
+            {documents.map((doc) => (
               <FileContextMenu
                 key={doc.id}
                 item={doc}

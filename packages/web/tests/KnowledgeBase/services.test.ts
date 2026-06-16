@@ -127,6 +127,30 @@ describe('kb services', () => {
       expect(useKbStore.getState().fileLoading).toBe(false)
     })
 
+    it('passes sort params to folder and document APIs', async () => {
+      useKbStore.setState({ currentKbId: 'kb1' })
+      vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+
+      await loadKbItems('kb1', 'f1', { sortBy: 'size', sortOrder: 'desc' })
+
+      expect(getFolders).toHaveBeenCalledWith('kb1', 'f1', { sortBy: 'size', sortOrder: 'desc' })
+      expect(getDocuments).toHaveBeenCalledWith('kb1', 'f1', { sortBy: 'size', sortOrder: 'desc' })
+    })
+
+    it('maps type sort to name for folders', async () => {
+      useKbStore.setState({ currentKbId: 'kb1' })
+      vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+
+      await loadKbItems('kb1', 'f1', { sortBy: 'type', sortOrder: 'asc' })
+
+      expect(getFolders).toHaveBeenCalledWith('kb1', 'f1', { sortBy: 'name', sortOrder: 'asc' })
+      expect(getDocuments).toHaveBeenCalledWith('kb1', 'f1', { sortBy: 'type', sortOrder: 'asc' })
+    })
+
     it('sets fileError on failure', async () => {
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
       vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)

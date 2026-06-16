@@ -29,6 +29,8 @@ export class DocumentController {
     @CurrentUser('id') userId: string,
     @Param('kbId') kbId: string,
     @Query('folderId') folderId?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
     if (folderId !== undefined && folderId !== '') {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -39,7 +41,13 @@ export class DocumentController {
         })
       }
     }
-    return this.documentService.list(userId, kbId, folderId)
+    return this.documentService.list(
+      userId,
+      kbId,
+      folderId,
+      sortBy as 'name' | 'createdAt' | 'updatedAt' | 'size' | 'type' | undefined,
+      sortOrder as 'asc' | 'desc' | undefined,
+    )
   }
 
   @Post('upload')

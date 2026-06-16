@@ -2,10 +2,19 @@ import { alovaInstance } from '@/utils/server'
 
 // ---- 文件夹 ----
 
+export interface SortParams {
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+}
+
 /** 获取文件夹列表 */
-export const getFolders = (kbId: string, parentId?: string | null) =>
+export const getFolders = (kbId: string, parentId?: string | null, sort?: SortParams) =>
   alovaInstance.Get(`/knowledge-bases/${kbId}/folders`, {
-    params: { parentId: parentId ?? '' },
+    params: {
+      parentId: parentId ?? '',
+      ...(sort?.sortBy && { sortBy: sort.sortBy }),
+      ...(sort?.sortOrder && { sortOrder: sort.sortOrder }),
+    },
   })
 
 /** 创建文件夹 */
@@ -31,9 +40,13 @@ export const previewDocument = (kbId: string, docId: string) =>
   alovaInstance.Get(`/knowledge-bases/${kbId}/documents/${docId}/preview`)
 
 /** 获取文档列表 */
-export const getDocuments = (kbId: string, folderId?: string | null) =>
+export const getDocuments = (kbId: string, folderId?: string | null, sort?: SortParams) =>
   alovaInstance.Get(`/knowledge-bases/${kbId}/documents`, {
-    params: { folderId: folderId ?? '' },
+    params: {
+      folderId: folderId ?? '',
+      ...(sort?.sortBy && { sortBy: sort.sortBy }),
+      ...(sort?.sortOrder && { sortOrder: sort.sortOrder }),
+    },
   })
 
 /** 删除文档 */

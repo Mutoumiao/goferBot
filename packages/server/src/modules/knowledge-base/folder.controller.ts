@@ -25,8 +25,16 @@ export class FolderController {
     @CurrentUser('id') userId: string,
     @Param('kbId') kbId: string,
     @Query('parentId') parentId?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
-    return this.folderService.list(userId, kbId, parentId)
+    return this.folderService.list(
+      userId,
+      kbId,
+      parentId,
+      sortBy as 'name' | 'createdAt' | 'updatedAt' | undefined,
+      sortOrder as 'asc' | 'desc' | undefined,
+    )
   }
 
   @Post()

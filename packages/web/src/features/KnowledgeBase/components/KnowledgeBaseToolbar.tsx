@@ -147,10 +147,16 @@ export function KnowledgeBaseToolbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuRadioGroup value={sortOption} onValueChange={(v) => onSortChange(v as SortOption)}>
-              <DropdownMenuRadioItem value="date-desc">按更新时间</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="date-asc">按更新时间</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="name-asc">按名称</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="name-desc">按名称</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="updatedAt-desc">按更新时间（新→旧）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="updatedAt-asc">按更新时间（旧→新）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="createdAt-desc">按创建时间（新→旧）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="createdAt-asc">按创建时间（旧→新）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="name-asc">按名称（A→Z）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="name-desc">按名称（Z→A）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="size-desc">按大小（大→小）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="size-asc">按大小（小→大）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="type-asc">按类型（A→Z）</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="type-desc">按类型（Z→A）</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>

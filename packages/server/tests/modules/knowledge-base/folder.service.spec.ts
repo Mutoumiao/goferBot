@@ -29,7 +29,7 @@ describe('FolderService', () => {
   })
 
   describe('list', () => {
-    it('lists folders under parent', async () => {
+    it('lists folders under parent with default sort', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'Folder' }])
 
@@ -39,6 +39,19 @@ describe('FolderService', () => {
       expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
         where: { kbId: 'kb1', parentId: 'p1' },
         orderBy: { createdAt: 'asc' },
+      })
+    })
+
+    it('sorts folders by requested field and order', async () => {
+      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'A' }])
+
+      const result = await folderService.list('u1', 'kb1', 'p1', 'name', 'desc')
+
+      expect(result).toHaveLength(1)
+      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
+        where: { kbId: 'kb1', parentId: 'p1' },
+        orderBy: { name: 'desc' },
       })
     })
   })
