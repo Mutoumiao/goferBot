@@ -7,6 +7,7 @@ import { AlertCircleIcon, XIcon, Paperclip } from 'lucide-react'
 import type { GoferMessage, GoferInput } from '../providers/GoferChatProvider'
 import { useChatStore } from '../store'
 import { fetchProviders } from '../services'
+import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
 import { ProviderSelector } from './ProviderSelector'
 
 interface ChatSessionViewProps {
@@ -22,6 +23,8 @@ interface ChatSessionViewProps {
   onAbort: () => void
   selectedProviderKey: string | null
   onChangeProvider: (key: string | null) => void
+  selectedKbId: string | null
+  onSelectKb: (kbId: string | null) => void
 }
 
 export function ChatSessionView({
@@ -33,6 +36,8 @@ export function ChatSessionView({
   onAbort,
   selectedProviderKey,
   onChangeProvider,
+  selectedKbId,
+  onSelectKb,
 }: ChatSessionViewProps) {
   const [inputValue, setInputValue] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -55,9 +60,10 @@ export function ChatSessionView({
         query: trimmed,
         conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
+        knowledge_base_ids: selectedKbId ? [selectedKbId] : undefined,
       })
     },
-    [conversationId, selectedProviderKey, onRequest]
+    [conversationId, selectedProviderKey, selectedKbId, onRequest]
   )
 
   const bubbleItems = xMessages.map(({ id, message, status }) => ({
@@ -164,6 +170,11 @@ export function ChatSessionView({
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
+                <KnowledgeBaseSelector
+                  selectedId={selectedKbId}
+                  onSelect={onSelectKb}
+                  disabled={isRequesting}
+                />
                 <ProviderSelector
                   providers={availableProviders}
                   selectedKey={selectedProviderKey}

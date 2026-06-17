@@ -4,6 +4,9 @@ import { alovaInstance } from '@/utils/server'
 export const getKbList = () =>
   alovaInstance.Get('/knowledge-bases')
 
+export const getKbForSelector = () =>
+  alovaInstance.Get('/knowledge-bases/for-selector')
+
 export const createKb = (data: CreateKbRequest) =>
   alovaInstance.Post('/knowledge-bases', data)
 

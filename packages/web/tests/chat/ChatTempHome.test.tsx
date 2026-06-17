@@ -41,10 +41,12 @@ describe('ChatTempHome', () => {
       sessionCache: new Map(),
     })
     vi.mocked(useRequest).mockReturnValue({
-      data: [
-        { id: 'kb1', name: '知识库 A', fileCount: 2 },
-        { id: 'kb2', name: '知识库 B', fileCount: 5 },
-      ],
+      data: {
+        data: [
+          { id: 'kb1', name: '知识库 A', fileCount: 2 },
+          { id: 'kb2', name: '知识库 B', fileCount: 5 },
+        ],
+      },
       loading: false,
       error: undefined,
       send: vi.fn(),
@@ -80,7 +82,7 @@ describe('ChatTempHome', () => {
     const sendBtn = screen.getByTestId('temp-send-btn')
     await user.click(sendBtn)
 
-    expect(submitTempChat).toHaveBeenCalledWith('hello world', 'tab-1', { knowledgeBaseIds: [] })
+    expect(submitTempChat).toHaveBeenCalledWith('hello world', 'tab-1', { knowledgeBaseIds: undefined })
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
@@ -94,7 +96,7 @@ describe('ChatTempHome', () => {
     await user.type(input, 'enter submit')
     await user.keyboard('{Enter}')
 
-    expect(submitTempChat).toHaveBeenCalledWith('enter submit', 'tab-1', { knowledgeBaseIds: [] })
+    expect(submitTempChat).toHaveBeenCalledWith('enter submit', 'tab-1', { knowledgeBaseIds: undefined })
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
@@ -111,7 +113,7 @@ describe('ChatTempHome', () => {
     expect(submitTempChat).not.toHaveBeenCalled()
   })
 
-  it('carries selected knowledge base ids on submit', async () => {
+  it('carries selected knowledge base id on submit', async () => {
     vi.mocked(submitTempChat).mockResolvedValue('s4')
     const user = userEvent.setup()
 
@@ -179,7 +181,7 @@ describe('ChatTempHome', () => {
     expect(submitTempChat).toHaveBeenCalledWith(
       '请帮我总结这份文档的重点内容和行动项',
       'tab-1',
-      { knowledgeBaseIds: [] },
+      { knowledgeBaseIds: undefined },
     )
     expect(mockNavigate).not.toHaveBeenCalled()
   })

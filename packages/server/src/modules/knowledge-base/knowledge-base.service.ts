@@ -10,6 +10,7 @@ import type { CreateKbDto } from './dto/create-kb.dto.js'
 import type { UpdateKbDto } from './dto/update-kb.dto.js'
 
 const MAX_SEARCH_QUERY_LENGTH = 100
+const MAX_SELECTOR_ITEMS = 100
 
 @Injectable()
 export class KnowledgeBaseService {
@@ -29,6 +30,39 @@ export class KnowledgeBaseService {
         { createdAt: 'desc' },
       ],
     })
+  }
+
+  async listForSelector(userId: string) {
+    const rows = await this.prisma.knowledgeBase.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+        icon: true,
+        isPinned: true,
+        sortOrder: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { documents: true } },
+      },
+      orderBy: [
+        { isPinned: 'desc' },
+        { sortOrder: 'asc' },
+        { createdAt: 'desc' },
+      ],
+      take: MAX_SELECTOR_ITEMS,
+    })
+
+    return rows.map((kb) => ({
+      id: kb.id,
+      name: kb.name,
+      icon: kb.icon ?? undefined,
+      isPinned: kb.isPinned,
+      sortOrder: kb.sortOrder,
+      fileCount: kb._count.documents,
+      createdAt: kb.createdAt.toISOString(),
+      updatedAt: kb.updatedAt.toISOString(),
+    }))
   }
 
   async create(userId: string, dto: CreateKbDto) {

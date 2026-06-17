@@ -73,26 +73,78 @@ describe('KnowledgeBaseController', () => {
       expect(res.statusCode).toBe(401)
     })
 
-    it('AC-70: does not return other user\'s KBs', async () => {
-      const otherEmail = `other-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'Other' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    it('AC-70a: returns only current user KBs from for-selector', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/knowledge-bases',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: 'Selector KB' },
+      })
 
+      const otherEmail = `other-sel-${Date.now()}@test.gofer`
+      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'OtherSel' }, { remoteAddress: nextIp() })
+      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
       await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
         headers: { authorization: `Bearer ${otherToken}` },
-        payload: { name: 'Other KB' },
+        payload: { name: 'Other Selector KB' },
       })
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/knowledge-bases',
+        url: '/api/knowledge-bases/for-selector',
         headers: { authorization: `Bearer ${userToken}` },
       })
+      expect(res.statusCode).toBe(200)
       const body = res.json()
-      const hasOtherKb = body.data.some((kb: any) => kb.name === 'Other KB')
-      expect(hasOtherKb).toBe(false)
+      expect(Array.isArray(body.data)).toBe(true)
+      const names = body.data.map((kb: any) => kb.name)
+      expect(names).toContain('Selector KB')
+      expect(names).not.toContain('Other Selector KB')
+      body.data.forEach((kb: any) => {
+        expect(kb).toHaveProperty('id')
+        expect(kb).toHaveProperty('name')
+        expect(typeof kb.fileCount).toBe('number')
+      })
+    })
+  })
+
+  describe('GET /api/knowledge-bases/for-selector', () => {
+    it('AC-70b: returns pinned KBs first and limits to 100', async () => {
+      // 先创建一个未置顶知识库
+      await app.inject({
+        method: 'POST',
+        url: '/api/knowledge-bases',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: 'Unpinned Selector KB' },
+      })
+
+      // 再创建并置顶一个知识库
+      const pinnedRes = await app.inject({
+        method: 'POST',
+        url: '/api/knowledge-bases',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: 'Pinned Selector KB' },
+      })
+      const pinnedId = pinnedRes.json().data.id
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/knowledge-bases/${pinnedId}`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { isPinned: true, sortOrder: 0 },
+      })
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/knowledge-bases/for-selector',
+        headers: { authorization: `Bearer ${userToken}` },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(Array.isArray(body.data)).toBe(true)
+      expect(body.data.length).toBeLessThanOrEqual(100)
+      expect(body.data[0].name).toBe('Pinned Selector KB')
     })
   })
 

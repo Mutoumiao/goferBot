@@ -42,6 +42,11 @@ export class KnowledgeBaseController {
     }
   }
 
+  @Get('for-selector')
+  async forSelector(@CurrentUser('id') userId: string) {
+    return this.kbService.listForSelector(userId)
+  }
+
   @Post()
   async create(
     @CurrentUser('id') userId: string,

@@ -16,7 +16,7 @@ interface ChatTempHomeProps {
 export function ChatTempHome({ tabId }: ChatTempHomeProps) {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedKbIds, setSelectedKbIds] = useState<string[]>([])
+  const [selectedKbId, setSelectedKbId] = useState<string | null>(null)
 
   const {
     availableProviders,
@@ -26,10 +26,8 @@ export function ChatTempHome({ tabId }: ChatTempHomeProps) {
     setSelectedProviderKey,
   } = useChatStore()
 
-  const handleToggleKb = useCallback((kbId: string) => {
-    setSelectedKbIds((prev) =>
-      prev.includes(kbId) ? prev.filter((id) => id !== kbId) : [...prev, kbId],
-    )
+  const handleSelectKb = useCallback((kbId: string | null) => {
+    setSelectedKbId(kbId)
   }, [])
 
   const handleSubmit = useCallback(
@@ -37,12 +35,12 @@ export function ChatTempHome({ tabId }: ChatTempHomeProps) {
       if (isLoading) return
       setIsLoading(true)
       try {
-        await submitTempChat(content, tabId, { knowledgeBaseIds: selectedKbIds })
+        await submitTempChat(content, tabId, { knowledgeBaseIds: selectedKbId ? [selectedKbId] : undefined })
       } finally {
         setIsLoading(false)
       }
     },
-    [isLoading, tabId, selectedKbIds],
+    [isLoading, tabId, selectedKbId],
   )
 
   const handleKeyDown = useCallback(
@@ -94,8 +92,8 @@ export function ChatTempHome({ tabId }: ChatTempHomeProps) {
                 </Button>
 
                 <KnowledgeBaseSelector
-                  selectedIds={selectedKbIds}
-                  onToggle={handleToggleKb}
+                  selectedId={selectedKbId}
+                  onSelect={handleSelectKb}
                   disabled={isLoading}
                 />
                 <ProviderSelector

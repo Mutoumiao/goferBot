@@ -1,5 +1,5 @@
 import { useRequest } from 'alova/client'
-import { getKbList } from '@/api/KnowledgeBase'
+import { getKbForSelector } from '@/api/KnowledgeBase'
 import type { KbEntry } from '@goferbot/data'
 import { DatabaseIcon, HashIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,16 +11,20 @@ import {
 import { cn } from '@/utils/cn'
 
 interface KnowledgeBaseSelectorProps {
-  selectedIds: string[]
-  onToggle: (kbId: string) => void
+  selectedId: string | null
+  onSelect: (kbId: string | null) => void
   disabled?: boolean
 }
 
-export function KnowledgeBaseSelector({ selectedIds, onToggle, disabled = false }: KnowledgeBaseSelectorProps) {
-  const { data, loading, error, send } = useRequest(() => getKbList(), { immediate: true })
+export function KnowledgeBaseSelector({ selectedId, onSelect, disabled = false }: KnowledgeBaseSelectorProps) {
+  const { data, loading, error, send } = useRequest(() => getKbForSelector(), { immediate: true })
 
-  const rawData = data as any
-  const kbList: KbEntry[] = Array.isArray(rawData) ? rawData : (rawData?.data ?? [])
+  const response = data as { data?: KbEntry[] } | undefined
+  const kbList: KbEntry[] = response?.data ?? []
+
+  const handleToggle = (kbId: string) => {
+    onSelect(selectedId === kbId ? null : kbId)
+  }
 
   return (
     <Popover>
@@ -34,9 +38,9 @@ export function KnowledgeBaseSelector({ selectedIds, onToggle, disabled = false 
         >
           <HashIcon className="size-3.5" />
           <span>知识库</span>
-          {selectedIds.length > 0 && (
+          {selectedId && (
             <span className="ml-0.5 rounded-full bg-brand-primary px-1.5 py-px text-[10px] text-white">
-              {selectedIds.length}
+              1
             </span>
           )}
         </Button>
@@ -75,30 +79,29 @@ export function KnowledgeBaseSelector({ selectedIds, onToggle, disabled = false 
 
         {!loading &&
           !error &&
-          kbList.map(kb => (
-            <div
-              key={kb.id}
-              data-testid="kb-selector-item"
-              className={cn(
-                'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl',
-                'text-text-primary hover:bg-surface-2'
-              )}
-              onClick={e => {
-                e.preventDefault()
-                onToggle(kb.id)
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(kb.id)}
-                className="pointer-events-none size-4 rounded border-border-default text-brand-primary focus:ring-brand-primary"
-                readOnly
-              />
-              <DatabaseIcon className="size-4 text-text-secondary" />
-              <span className="truncate">{kb.name}</span>
-              <span className="ml-auto text-xs text-text-tertiary">{kb.fileCount ?? 0} 文档</span>
-            </div>
-          ))}
+          kbList.map(kb => {
+            const isSelected = selectedId === kb.id
+            return (
+              <div
+                key={kb.id}
+                data-testid="kb-selector-item"
+                className={cn(
+                  'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl',
+                  isSelected ? 'bg-surface-2 text-brand-primary' : 'text-text-primary hover:bg-surface-2'
+                )}
+                onClick={e => {
+                  e.preventDefault()
+                  handleToggle(kb.id)
+                }}
+                role="radio"
+                aria-checked={isSelected}
+              >
+                <DatabaseIcon className="size-4 text-text-secondary" />
+                <span className="truncate">{kb.name}</span>
+                <span className="ml-auto text-xs text-text-tertiary">{kb.fileCount ?? 0} 文档</span>
+              </div>
+            )
+          })}
       </PopoverContent>
     </Popover>
   )

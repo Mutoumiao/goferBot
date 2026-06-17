@@ -50,6 +50,7 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
   const conversationId = tab?.conversationId
 
   const { selectedProviderKey, setSelectedProviderKey } = useChatStore()
+  const [selectedKbId, setSelectedKbId] = useState<string | null>(null)
 
   const {
     messages: xMessages,
@@ -167,9 +168,10 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         query: lastUserMsg.message.content,
         conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
+        knowledge_base_ids: selectedKbId ? [selectedKbId] : undefined,
       } as GoferInput)
     }
-  }, [xMessages, conversationId, onRequest, selectedProviderKey])
+  }, [xMessages, conversationId, onRequest, selectedProviderKey, selectedKbId])
 
   if (!tab) {
     return (
@@ -194,6 +196,8 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         onAbort={abort}
         selectedProviderKey={selectedProviderKey}
         onChangeProvider={setSelectedProviderKey}
+        selectedKbId={selectedKbId}
+        onSelectKb={setSelectedKbId}
       />
     </XProvider>
   )
