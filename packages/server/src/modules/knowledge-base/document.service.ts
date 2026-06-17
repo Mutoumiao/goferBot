@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Optional } from '@nestjs/common'
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Optional, Logger } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
 import { VectorService } from '../../processors/vector/vector.service.js'
@@ -9,6 +9,10 @@ import type { MoveDocumentDto } from './dto/move-document.dto.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
 
 const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+
+function normalizeDocSize(size: bigint | number | null): number | null {
+  return size !== null ? Number(size) : null
+}
 
 export interface UploadFilePayload {
   filename: string
@@ -40,6 +44,8 @@ function normalizeFolderId(folderId?: string | null): string | null | undefined 
 
 @Injectable()
 export class DocumentService {
+  private readonly logger = new Logger(DocumentService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -166,10 +172,11 @@ export class DocumentService {
     }
 
     if (targetKbId === kbId) {
-      return this.prisma.document.update({
+      const updated = await this.prisma.document.update({
         where: { id: docId },
         data: { folderId: targetFolderId },
       })
+      return { ...updated, size: normalizeDocSize(updated.size) }
     }
 
     // 跨 KB 移动：重新上传文件到目标 KB
@@ -193,6 +200,14 @@ export class DocumentService {
     await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
 
     const oldStorageKey = doc.storageKey
+
+    // 删除旧 chunk 记录（向量随文档级联删除或 cleanupDocument 清理）
+    try {
+      await this.prisma.chunk.deleteMany({ where: { documentId: docId } })
+    } catch (e) {
+      this.logger.warn(`文档 ${docId} 跨知识库移动时删除旧 chunk 记录失败`, e instanceof Error ? e.stack : undefined)
+    }
+
     const updated = await this.prisma.document.update({
       where: { id: docId },
       data: {
@@ -206,11 +221,17 @@ export class DocumentService {
     // 清理原 KB 的 storage 与 vector
     try {
       await this.cleanupService.cleanupDocument(docId, oldStorageKey)
-    } catch {
-      // 清理失败不影响移动结果，记录警告
+    } catch (e) {
+      this.logger.warn(`文档 ${docId} 跨知识库移动后清理原存储/向量失败`, e instanceof Error ? e.stack : undefined)
     }
 
-    return { ...updated, size: updated.size !== null ? Number(updated.size) : null }
+    // 触发重新索引
+    const queueHealthy = await this.queueService?.isHealthy()
+    if (queueHealthy) {
+      await this.queueService!.addDocumentJob(docId, 'index')
+    }
+
+    return { ...updated, size: normalizeDocSize(updated.size) }
   }
 
   async remove(userId: string, kbId: string, docId: string) {

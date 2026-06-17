@@ -138,7 +138,10 @@ export class FolderService {
 
     const targetKbId = dto.targetKbId ?? kbId
     if (targetKbId !== kbId) {
-      await this.ensureOwnership(userId, targetKbId)
+      throw new BadRequestException({
+        code: 'NOT_SUPPORTED',
+        message: '跨知识库移动文件夹尚未支持',
+      })
     }
 
     const targetFolderId = dto.targetFolderId ?? null

@@ -12,7 +12,10 @@ export const updateFolderRequestSchema = z.object({
 export const moveFolderRequestSchema = z.object({
   targetKbId: z.string().uuid('targetKbId 格式非法').optional(),
   targetFolderId: z.string().uuid('targetFolderId 格式非法').nullable().optional(),
-})
+}).refine(
+  ({ targetKbId, targetFolderId }) => targetKbId !== undefined || targetFolderId !== undefined,
+  { message: 'targetKbId 与 targetFolderId 至少提供一个', path: ['targetKbId'] },
+)
 
 export const folderSchema = z.object({
   id: z.string(),

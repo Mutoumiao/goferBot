@@ -350,6 +350,34 @@ describe('FolderController', () => {
       expect(body.data.parentId).toBe(parentId)
     })
 
+    it('AC-44a: rejects cross-KB folder move in Slice 7', async () => {
+      const otherKbRes = await app.inject({
+        method: 'POST',
+        url: '/api/knowledge-bases',
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: `Target-KB-${Date.now()}` },
+      })
+      const targetKbId = otherKbRes.json().data.id
+
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Cross KB Folder' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { targetKbId },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('NOT_SUPPORTED')
+    })
+
     it('AC-45: rejects moving folder to itself', async () => {
       const folderRes = await app.inject({
         method: 'POST',
@@ -425,6 +453,26 @@ describe('FolderController', () => {
         payload: { targetFolderId: null },
       })
       expect(res.statusCode).toBe(401)
+    })
+
+    it('AC-48a: returns 400 for empty move body', async () => {
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Empty Body' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: {},
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
     })
   })
 })

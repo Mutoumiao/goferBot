@@ -12,6 +12,7 @@ import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { createIpGenerator } from './helpers/test-utils.js'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(2)
@@ -569,6 +570,18 @@ describe('DocumentController', () => {
       })
       const docId = uploadRes.json().data.id
 
+      // 模拟已存在的 chunk 记录，验证跨 KB move 会清理旧 chunk
+      const prisma = app.get(PrismaService)
+      await prisma.chunk.create({
+        data: {
+          documentId: docId,
+          kbId,
+          content,
+          chunkIndex: 0,
+        },
+      })
+      expect(await prisma.chunk.count({ where: { documentId: docId } })).toBe(1)
+
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
@@ -580,6 +593,7 @@ describe('DocumentController', () => {
       expect(body.data.kbId).toBe(targetKbId)
       expect(body.data.status).toBe('uploaded')
       expect(body.data.storageKey.startsWith(targetKbId)).toBe(true)
+      expect(await prisma.chunk.count({ where: { documentId: docId } })).toBe(0)
     })
 
     it('AC-63: returns 401 without token', async () => {
@@ -589,6 +603,26 @@ describe('DocumentController', () => {
         payload: { targetFolderId: null },
       })
       expect(res.statusCode).toBe(401)
+    })
+
+    it('AC-63a: returns 400 for empty move body', async () => {
+      const docRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/documents`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: 'Empty Body' },
+      })
+      const docId = docRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: {},
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
     })
   })
 })
