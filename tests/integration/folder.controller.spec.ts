@@ -350,7 +350,7 @@ describe('FolderController', () => {
       expect(body.data.parentId).toBe(parentId)
     })
 
-    it('AC-44a: rejects cross-KB folder move in Slice 7', async () => {
+    it('AC-44a: supports cross-KB folder move', async () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
@@ -373,9 +373,18 @@ describe('FolderController', () => {
         headers: { authorization: `Bearer ${token}` },
         payload: { targetKbId },
       })
-      expect(res.statusCode).toBe(400)
+      expect(res.statusCode).toBe(200)
       const body = res.json()
-      expect(body.error.code).toBe('NOT_SUPPORTED')
+      expect(body.data.kbId).toBe(targetKbId)
+      expect(body.data.parentId).toBeNull()
+
+      const sourceRes = await app.inject({
+        method: 'GET',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const sourceFolders = sourceRes.json().data as Array<{ id: string }>
+      expect(sourceFolders.some((f) => f.id === folderId)).toBe(false)
     })
 
     it('AC-45: rejects moving folder to itself', async () => {
@@ -506,7 +515,7 @@ describe('FolderController', () => {
       expect(body.data.name).toBe('Copy Target')
     })
 
-    it('AC-50: rejects cross-KB folder copy in Slice 8', async () => {
+    it('AC-50: supports cross-KB folder copy', async () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
@@ -529,9 +538,19 @@ describe('FolderController', () => {
         headers: { authorization: `Bearer ${token}` },
         payload: { targetKbId },
       })
-      expect(res.statusCode).toBe(400)
+      expect(res.statusCode).toBe(200)
       const body = res.json()
-      expect(body.error.code).toBe('NOT_SUPPORTED')
+      expect(body.data.kbId).toBe(targetKbId)
+      expect(body.data.name).toBe('Cross KB Copy Folder')
+      expect(body.data.parentId).toBeNull()
+
+      const sourceRes = await app.inject({
+        method: 'GET',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const sourceFolders = sourceRes.json().data as Array<{ id: string }>
+      expect(sourceFolders.some((f) => f.id === folderId)).toBe(true)
     })
 
     it('AC-51: returns 401 without token', async () => {
