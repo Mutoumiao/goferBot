@@ -9,12 +9,14 @@ import {
   Query,
   UseGuards,
   BadRequestException,
+  HttpCode,
 } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { FolderService } from './folder.service.js'
 import { CreateFolderDto } from './dto/create-folder.dto.js'
 import { UpdateFolderDto } from './dto/update-folder.dto.js'
+import { MoveFolderDto } from './dto/move-folder.dto.js'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -68,5 +70,16 @@ export class FolderController {
     @Param('folderId') folderId: string,
   ) {
     return this.folderService.remove(userId, kbId, folderId)
+  }
+
+  @Post(':folderId/move')
+  @HttpCode(200)
+  async move(
+    @CurrentUser('id') userId: string,
+    @Param('kbId') kbId: string,
+    @Param('folderId') folderId: string,
+    @Body() dto: MoveFolderDto,
+  ) {
+    return this.folderService.move(userId, kbId, folderId, dto)
   }
 }

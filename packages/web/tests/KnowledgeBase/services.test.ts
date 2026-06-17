@@ -324,20 +324,20 @@ describe('kb services', () => {
       })
       vi.mocked(moveDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
 
-      await svcMoveDocument('d1', 'f2')
+      await svcMoveDocument('d1', 'kb1', 'f2')
 
       expect(useKbStore.getState().documents).toHaveLength(0)
     })
 
     it('throws when target folder is current folder', async () => {
       useKbStore.setState({ currentKbId: 'kb1', currentFolderId: 'f1' })
-      await expect(svcMoveDocument('d1', 'f1')).rejects.toThrow('目标文件夹不能与当前文件夹相同')
+      await expect(svcMoveDocument('d1', 'kb1', 'f1')).rejects.toThrow('目标位置不能与当前位置相同')
       expect(moveDocument).not.toHaveBeenCalled()
     })
 
     it('throws when currentKbId is null', async () => {
       useKbStore.setState({ currentKbId: null })
-      await expect(svcMoveDocument('d1', 'f1')).rejects.toThrow('未选择知识库')
+      await expect(svcMoveDocument('d1', 'kb1', 'f1')).rejects.toThrow('未选择知识库')
       expect(moveDocument).not.toHaveBeenCalled()
     })
   })

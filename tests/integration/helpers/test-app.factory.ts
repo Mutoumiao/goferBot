@@ -11,6 +11,7 @@ import { bootstrap } from '../../../packages/server/src/bootstrap.js'
 const mockQueueService = {
   onModuleInit: async () => {},
   onModuleDestroy: async () => {},
+  isHealthy: () => true,
   addDocumentJob: async () => null,
   addEmbeddingJob: async () => null,
   getJobStatus: async () => null,

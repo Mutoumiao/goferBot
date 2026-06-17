@@ -42,12 +42,14 @@ export {
 export {
   createDocumentRequestSchema,
   updateDocumentRequestSchema,
+  moveDocumentRequestSchema,
   documentSchema,
 } from './document.schema.js'
 
 export {
   createFolderRequestSchema,
   updateFolderRequestSchema,
+  moveFolderRequestSchema,
   folderSchema,
 } from './folder.schema.js'
 

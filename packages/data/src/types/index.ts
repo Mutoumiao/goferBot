@@ -34,11 +34,13 @@ import {
 import {
   createDocumentRequestSchema,
   updateDocumentRequestSchema,
+  moveDocumentRequestSchema,
   documentSchema,
 } from '../schemas/document.schema.js'
 import {
   createFolderRequestSchema,
   updateFolderRequestSchema,
+  moveFolderRequestSchema,
   folderSchema,
 } from '../schemas/folder.schema.js'
 import {
@@ -89,10 +91,12 @@ export type MessageListQuery = z.infer<typeof messageListQuerySchema>
 export type Document = z.infer<typeof documentSchema>
 export type CreateDocumentRequest = z.infer<typeof createDocumentRequestSchema>
 export type UpdateDocumentRequest = z.infer<typeof updateDocumentRequestSchema>
+export type MoveDocumentRequest = z.infer<typeof moveDocumentRequestSchema>
 
 export type Folder = z.infer<typeof folderSchema>
 export type CreateFolderRequest = z.infer<typeof createFolderRequestSchema>
 export type UpdateFolderRequest = z.infer<typeof updateFolderRequestSchema>
+export type MoveFolderRequest = z.infer<typeof moveFolderRequestSchema>
 
 export type AdminUser = z.infer<typeof adminUserSchema>
 export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>
@@ -131,9 +135,11 @@ export {
   sessionSchema,
   createDocumentRequestSchema,
   updateDocumentRequestSchema,
+  moveDocumentRequestSchema,
   documentSchema,
   createFolderRequestSchema,
   updateFolderRequestSchema,
+  moveFolderRequestSchema,
   folderSchema,
   adminUserListQuerySchema,
   updateUserStatusRequestSchema,

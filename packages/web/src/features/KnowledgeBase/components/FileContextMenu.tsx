@@ -5,6 +5,7 @@ import {
   Trash2,
   FolderPlus,
   FolderInput,
+  Copy,
 } from 'lucide-react'
 import {
   ContextMenu,
@@ -21,7 +22,8 @@ interface FileContextMenuProps {
   onOpen?: (item: Folder | DocumentItem) => void
   onRename?: (item: Folder | DocumentItem) => void
   onDelete?: (item: Folder | DocumentItem) => void
-  onMove?: (item: DocumentItem) => void
+  onMove?: (item: Folder | DocumentItem) => void
+  onCopy?: (item: Folder | DocumentItem) => void
   onCreateFolder?: () => void
 }
 
@@ -32,6 +34,7 @@ export function FileContextMenu({
   onRename,
   onDelete,
   onMove,
+  onCopy,
   onCreateFolder,
 }: FileContextMenuProps) {
   const handleOpen = useCallback(() => {
@@ -47,8 +50,12 @@ export function FileContextMenu({
   }, [item, onDelete])
 
   const handleMove = useCallback(() => {
-    if (item && onMove && 'status' in item) onMove(item)
+    if (item && onMove) onMove(item)
   }, [item, onMove])
+
+  const handleCopy = useCallback(() => {
+    if (item && onCopy) onCopy(item)
+  }, [item, onCopy])
 
   const isFolder = item ? !('status' in item) : false
 
@@ -72,10 +79,16 @@ export function FileContextMenu({
                 重命名
               </ContextMenuItem>
             )}
-            {!isFolder && onMove && (
+            {onMove && (
               <ContextMenuItem onClick={handleMove}>
                 <FolderInput className="mr-2 h-4 w-4" />
                 移动到
+              </ContextMenuItem>
+            )}
+            {onCopy && (
+              <ContextMenuItem onClick={handleCopy}>
+                <Copy className="mr-2 h-4 w-4" />
+                复制到
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />

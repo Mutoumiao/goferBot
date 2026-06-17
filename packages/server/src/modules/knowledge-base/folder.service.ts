@@ -2,11 +2,13 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
 import type { CreateFolderDto } from './dto/create-folder.dto.js'
 import type { UpdateFolderDto } from './dto/update-folder.dto.js'
+import type { MoveFolderDto } from './dto/move-folder.dto.js'
 
 type SortOrder = 'asc' | 'desc'
 type FolderSortBy = 'name' | 'createdAt' | 'updatedAt'
@@ -119,6 +121,62 @@ export class FolderService {
     await this.cleanupService.cleanupFolder(kbId, folderId)
     await this.prisma.folder.delete({ where: { id: folderId } })
     return { id: folderId, deleted: true }
+  }
+
+  async move(userId: string, kbId: string, folderId: string, dto: MoveFolderDto) {
+    await this.ensureOwnership(userId, kbId)
+
+    const folder = await this.prisma.folder.findFirst({
+      where: { id: folderId, kbId },
+    })
+    if (!folder) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: '文件夹不存在',
+      })
+    }
+
+    const targetKbId = dto.targetKbId ?? kbId
+    if (targetKbId !== kbId) {
+      await this.ensureOwnership(userId, targetKbId)
+    }
+
+    const targetFolderId = dto.targetFolderId ?? null
+
+    if (targetFolderId !== null) {
+      if (targetFolderId === folderId) {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: '不能将文件夹移动到自身',
+        })
+      }
+
+      const targetFolder = await this.prisma.folder.findFirst({
+        where: { id: targetFolderId, kbId: targetKbId },
+      })
+      if (!targetFolder) {
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: '目标文件夹不存在',
+        })
+      }
+
+      const isMovingToDescendant = await this.isDescendant(folderId, targetFolderId)
+      if (isMovingToDescendant) {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: '不能将文件夹移动到其子文件夹中',
+        })
+      }
+    }
+
+    return this.prisma.folder.update({
+      where: { id: folderId },
+      data: {
+        kbId: targetKbId,
+        parentId: targetFolderId,
+      },
+    })
   }
 
   async getBreadcrumbs(

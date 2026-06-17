@@ -515,6 +515,82 @@ describe('DocumentController', () => {
       expect(res.statusCode).toBe(404)
     })
   })
+
+  describe('POST /api/knowledge-bases/:kbId/documents/:docId/move', () => {
+    it('AC-60: moves document to another folder in same KB', async () => {
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: 'Doc Move Target' },
+      })
+      const targetFolderId = folderRes.json().data.id
+
+      const docRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/documents`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: 'Doc To Move' },
+      })
+      const docId = docRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { targetFolderId },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.data.folderId).toBe(targetFolderId)
+    })
+
+    it('AC-61: moves document across KBs and resets status to uploaded', async () => {
+      const otherKbRes = await app.inject({
+        method: 'POST',
+        url: '/api/knowledge-bases',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: `Target-KB-${Date.now()}` },
+      })
+      const targetKbId = otherKbRes.json().data.id
+
+      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const content = 'Cross KB move content'
+      const multipartBody = buildMultipartBody(boundary, 'file', 'cross.txt', 'text/plain', Buffer.from(content))
+
+      const uploadRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/documents/upload`,
+        headers: {
+          'content-type': `multipart/form-data; boundary=${boundary}`,
+          authorization: `Bearer ${userToken}`,
+        },
+        payload: multipartBody,
+      })
+      const docId = uploadRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { targetKbId },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.data.kbId).toBe(targetKbId)
+      expect(body.data.status).toBe('uploaded')
+      expect(body.data.storageKey.startsWith(targetKbId)).toBe(true)
+    })
+
+    it('AC-63: returns 401 without token', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/documents/00000000-0000-0000-0000-000000000000/move`,
+        payload: { targetFolderId: null },
+      })
+      expect(res.statusCode).toBe(401)
+    })
+  })
 })
 
 function buildMultipartBody(

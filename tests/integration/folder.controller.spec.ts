@@ -320,4 +320,111 @@ describe('FolderController', () => {
       expect(res.statusCode).toBe(401)
     })
   })
+
+  describe('POST /api/knowledge-bases/:kbId/folders/:folderId/move', () => {
+    it('AC-44: moves folder to another parent', async () => {
+      const parentRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Move Parent' },
+      })
+      const parentId = parentRes.json().data.id
+
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Move Target' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { targetFolderId: parentId },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.data.parentId).toBe(parentId)
+    })
+
+    it('AC-45: rejects moving folder to itself', async () => {
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Self Move' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { targetFolderId: folderId },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AC-46: rejects moving folder to its descendant', async () => {
+      const parentRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Cycle Parent' },
+      })
+      const parentId = parentRes.json().data.id
+
+      const childRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Cycle Child', parentId },
+      })
+      const childId = childRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${parentId}/move`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { targetFolderId: childId },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AC-47: returns 404 for non-existent target folder', async () => {
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'No Target' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { targetFolderId: '00000000-0000-0000-0000-000000000000' },
+      })
+      expect(res.statusCode).toBe(404)
+      const body = res.json()
+      expect(body.error.code).toBe('NOT_FOUND')
+    })
+
+    it('AC-48: returns 401 without token', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/00000000-0000-0000-0000-000000000000/move`,
+        payload: { targetFolderId: null },
+      })
+      expect(res.statusCode).toBe(401)
+    })
+  })
 })

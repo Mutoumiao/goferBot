@@ -7,6 +7,9 @@ import {
   deleteDocument as apiDeleteDocument,
   renameDocument as apiRenameDocument,
   moveDocument as apiMoveDocument,
+  moveFolder as apiMoveFolder,
+  copyDocument as apiCopyDocument,
+  copyFolder as apiCopyFolder,
   createFolder as apiCreateFolder,
   renameFolder as apiRenameFolder,
   deleteFolder as apiDeleteFolder,
@@ -229,18 +232,75 @@ export async function renameDocument(docId: string, name: string) {
   }
 }
 
-export async function moveDocument(docId: string, targetFolderId: string | null) {
+export async function moveDocument(docId: string, targetKbId: string, targetFolderId: string | null) {
   const { currentKbId, currentFolderId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
-  if (targetFolderId === currentFolderId) {
-    throw new ServiceError('目标文件夹不能与当前文件夹相同')
+  if (targetKbId === currentKbId && targetFolderId === currentFolderId) {
+    throw new ServiceError('目标位置不能与当前位置相同')
   }
 
   setFileLoading(true)
   setFileError(null)
   try {
-    await apiMoveDocument(currentKbId, docId, targetFolderId).send()
+    await apiMoveDocument(currentKbId, docId, targetKbId, targetFolderId).send()
     setDocuments(documents.filter((d) => d.id !== docId))
+  } catch (e) {
+    throwServiceError(e)
+  } finally {
+    setFileLoading(false)
+  }
+}
+
+export async function moveFolder(folderId: string, targetKbId: string, targetFolderId: string | null) {
+  const { currentKbId, currentFolderId, folders, setFolders, setFileLoading, setFileError } = useKbStore.getState()
+  if (!currentKbId) throw new ServiceError('未选择知识库')
+  if (targetKbId === currentKbId && targetFolderId === currentFolderId) {
+    throw new ServiceError('目标位置不能与当前位置相同')
+  }
+
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    await apiMoveFolder(currentKbId, folderId, targetKbId, targetFolderId).send()
+    setFolders(folders.filter((f) => f.id !== folderId))
+  } catch (e) {
+    throwServiceError(e)
+  } finally {
+    setFileLoading(false)
+  }
+}
+
+export async function copyDocument(docId: string, targetKbId: string, targetFolderId: string | null) {
+  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  if (!currentKbId) throw new ServiceError('未选择知识库')
+
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    const copied = await apiCopyDocument(currentKbId, docId, targetKbId, targetFolderId).send()
+    if (targetKbId === currentKbId && targetFolderId === useKbStore.getState().currentFolderId) {
+      setDocuments([...documents, copied as DocumentItem])
+    }
+    return copied
+  } catch (e) {
+    throwServiceError(e)
+  } finally {
+    setFileLoading(false)
+  }
+}
+
+export async function copyFolder(folderId: string, targetKbId: string, targetFolderId: string | null) {
+  const { currentKbId, folders, setFolders, setFileLoading, setFileError } = useKbStore.getState()
+  if (!currentKbId) throw new ServiceError('未选择知识库')
+
+  setFileLoading(true)
+  setFileError(null)
+  try {
+    const copied = await apiCopyFolder(currentKbId, folderId, targetKbId, targetFolderId).send()
+    if (targetKbId === currentKbId && targetFolderId === useKbStore.getState().currentFolderId) {
+      setFolders([...folders, copied as Folder])
+    }
+    return copied
   } catch (e) {
     throwServiceError(e)
   } finally {

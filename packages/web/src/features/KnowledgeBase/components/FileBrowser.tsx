@@ -52,7 +52,8 @@ interface FileViewProps {
   onOpenItem: (item: Folder | DocumentItem) => void
   onRenameItem: (item: Folder | DocumentItem) => void
   onDeleteItem: (item: Folder | DocumentItem) => void
-  onMoveItem: (doc: DocumentItem) => void
+  onMoveItem: (item: Folder | DocumentItem) => void
+  onCopyItem: (item: Folder | DocumentItem) => void
 }
 
 function GridView({
@@ -66,6 +67,7 @@ function GridView({
   onRenameItem,
   onDeleteItem,
   onMoveItem,
+  onCopyItem,
 }: FileViewProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -77,6 +79,8 @@ function GridView({
             onOpen={onOpenItem}
             onRename={onRenameItem}
             onDelete={onDeleteItem}
+            onMove={onMoveItem}
+            onCopy={onCopyItem}
           >
             <div>
               <FileGridItem
@@ -95,6 +99,7 @@ function GridView({
             onRename={onRenameItem}
             onDelete={onDeleteItem}
             onMove={onMoveItem}
+            onCopy={onCopyItem}
           >
             <div>
               <FileGridItem item={doc} isFolder={false} onClick={() => onDocumentClick(doc)} />
@@ -117,6 +122,7 @@ function ListView({
   onRenameItem,
   onDeleteItem,
   onMoveItem,
+  onCopyItem,
 }: Omit<FileViewProps, 'folderDocumentCounts'>) {
   return (
     <div className="flex flex-col gap-3">
@@ -139,6 +145,8 @@ function ListView({
                 onOpen={onOpenItem}
                 onRename={onRenameItem}
                 onDelete={onDeleteItem}
+                onMove={onMoveItem}
+                onCopy={onCopyItem}
               >
                 <FileListItem
                   item={folder}
@@ -154,6 +162,7 @@ function ListView({
                 onRename={onRenameItem}
                 onDelete={onDeleteItem}
                 onMove={onMoveItem}
+                onCopy={onCopyItem}
               >
                 <FileListItem
                   item={doc}
@@ -260,11 +269,23 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     })
   }, [])
 
-  const handleMoveItem = useCallback(async (doc: DocumentItem) => {
-    const MoveDocumentDialog = (await import('./MoveDocumentDialog')).default
-    await openDialog(MoveDocumentDialog, {
-      docId: doc.id,
-      docName: doc.name,
+  const handleMoveItem = useCallback(async (item: Folder | DocumentItem) => {
+    const MoveCopyDialog = (await import('./MoveCopyDialog')).default
+    await openDialog(MoveCopyDialog, {
+      mode: 'move',
+      item,
+      onConfirm: async () => {
+        if (!currentKbId) return
+        await loadKbItems(currentKbId, currentFolderId, sortParams)
+      },
+    })
+  }, [currentKbId, currentFolderId, sortParams])
+
+  const handleCopyItem = useCallback(async (item: Folder | DocumentItem) => {
+    const MoveCopyDialog = (await import('./MoveCopyDialog')).default
+    await openDialog(MoveCopyDialog, {
+      mode: 'copy',
+      item,
       onConfirm: async () => {
         if (!currentKbId) return
         await loadKbItems(currentKbId, currentFolderId, sortParams)
@@ -379,6 +400,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       onRenameItem: handleRenameItem,
       onDeleteItem: handleDeleteItem,
       onMoveItem: handleMoveItem,
+      onCopyItem: handleCopyItem,
     }
 
     if (viewMode === 'grid') {
