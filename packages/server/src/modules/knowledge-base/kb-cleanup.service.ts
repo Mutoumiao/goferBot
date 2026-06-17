@@ -25,22 +25,31 @@ export class KbCleanupService {
   }
 
   async cleanupFolder(kbId: string, folderId: string): Promise<void> {
-    const documents = await this.prisma.document.findMany({
-      where: { kbId, folderId },
-      select: { id: true, storageKey: true },
-    })
+    // 使用显式栈遍历 folder 树，避免深层嵌套导致调用栈溢出。
+    // folder 记录本身由调用方通过 Prisma 级联删除（Folder.parent/children 已声明 onDelete: Cascade）。
+    const stack: string[] = [folderId]
 
-    for (const doc of documents) {
-      await this.cleanupDocument(doc.id, doc.storageKey)
-    }
+    while (stack.length > 0) {
+      const currentFolderId = stack.pop()
+      if (!currentFolderId) break
 
-    const children = await this.prisma.folder.findMany({
-      where: { parentId: folderId },
-      select: { id: true },
-    })
+      const documents = await this.prisma.document.findMany({
+        where: { kbId, folderId: currentFolderId },
+        select: { id: true, storageKey: true },
+      })
 
-    for (const child of children) {
-      await this.cleanupFolder(kbId, child.id)
+      for (const doc of documents) {
+        await this.cleanupDocument(doc.id, doc.storageKey)
+      }
+
+      const children = await this.prisma.folder.findMany({
+        where: { parentId: currentFolderId },
+        select: { id: true },
+      })
+
+      for (const child of children) {
+        stack.push(child.id)
+      }
     }
   }
 
@@ -53,16 +62,22 @@ export class KbCleanupService {
     if (chunks.length > 0) {
       try {
         await this.vectorService.deleteByIds(chunks.map((c) => c.id))
-      } catch {
-        this.logger.warn(`文档 ${documentId} 的向量数据清理失败，继续清理存储与记录`)
+      } catch (err) {
+        this.logger.warn(
+          `文档 ${documentId} 的向量数据清理失败，继续清理存储与记录`,
+          err instanceof Error ? err.stack : String(err),
+        )
       }
     }
 
     if (storageKey) {
       try {
         await this.storage.deleteFile(storageKey)
-      } catch {
-        this.logger.warn(`文档 ${documentId} 的存储文件 ${storageKey} 删除失败`)
+      } catch (err) {
+        this.logger.warn(
+          `文档 ${documentId} 的存储文件 ${storageKey} 删除失败`,
+          err instanceof Error ? err.stack : String(err),
+        )
       }
     }
   }

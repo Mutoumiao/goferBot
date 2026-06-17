@@ -50,6 +50,7 @@ class NoOpThrottlerGuard implements CanActivate {
 
 export interface CreateAppOptions {
   realMode?: boolean
+  mockQueue?: boolean
 }
 
 export class TestAppFactory {
@@ -57,7 +58,7 @@ export class TestAppFactory {
     dbUrl: string,
     opts: CreateAppOptions = {},
   ): Promise<NestFastifyApplication> {
-    const { realMode = false } = opts
+    const { realMode = false, mockQueue = false } = opts
 
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
@@ -71,10 +72,14 @@ export class TestAppFactory {
       // 注意：ThrottlerGuard 通过 APP_GUARD 全局注册，且 AuthController 使用 @Throttle 装饰器，
       // 此处 overrideModule 无法覆盖 @Throttle 的独立配置。测试中通过 remoteAddress 绕过限流。
 
+    // realMode=false 时全部使用 mock 服务；realMode=true 时默认使用真实 Queue/Vector/Storage。
+    // 当需要在真实 Storage + Vector 环境下禁用队列（避免 Worker 异步干扰）时，可传 mockQueue=true。
+    if (!realMode || mockQueue) {
+      moduleRef.overrideProvider(QueueService).useValue(mockQueueService)
+    }
+
     if (!realMode) {
       moduleRef
-        .overrideProvider(QueueService)
-        .useValue(mockQueueService)
         .overrideProvider(VectorService)
         .useValue(mockVectorService)
         .overrideProvider(StorageService)
