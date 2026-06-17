@@ -43,6 +43,7 @@ export {
   createDocumentRequestSchema,
   updateDocumentRequestSchema,
   moveDocumentRequestSchema,
+  copyDocumentRequestSchema,
   documentSchema,
 } from './document.schema.js'
 
@@ -50,6 +51,7 @@ export {
   createFolderRequestSchema,
   updateFolderRequestSchema,
   moveFolderRequestSchema,
+  copyFolderRequestSchema,
   folderSchema,
 } from './folder.schema.js'
 

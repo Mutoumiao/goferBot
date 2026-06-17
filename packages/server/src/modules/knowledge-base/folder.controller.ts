@@ -17,6 +17,7 @@ import { FolderService } from './folder.service.js'
 import { CreateFolderDto } from './dto/create-folder.dto.js'
 import { UpdateFolderDto } from './dto/update-folder.dto.js'
 import { MoveFolderDto } from './dto/move-folder.dto.js'
+import { CopyFolderDto } from './dto/copy-folder.dto.js'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -81,5 +82,16 @@ export class FolderController {
     @Body() dto: MoveFolderDto,
   ) {
     return this.folderService.move(userId, kbId, folderId, dto)
+  }
+
+  @Post(':folderId/copy')
+  @HttpCode(200)
+  async copy(
+    @CurrentUser('id') userId: string,
+    @Param('kbId') kbId: string,
+    @Param('folderId') folderId: string,
+    @Body() dto: CopyFolderDto,
+  ) {
+    return this.folderService.copy(userId, kbId, folderId, dto)
   }
 }

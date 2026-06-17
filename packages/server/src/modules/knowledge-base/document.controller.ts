@@ -19,6 +19,7 @@ import { DocumentService } from './document.service.js'
 import { CreateDocumentDto } from './dto/create-document.dto.js'
 import { UpdateDocumentDto } from './dto/update-document.dto.js'
 import { MoveDocumentDto } from './dto/move-document.dto.js'
+import { CopyDocumentDto } from './dto/copy-document.dto.js'
 import { FileValidationPipe } from '../../common/pipes/file-validation.pipe.js'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -106,6 +107,17 @@ export class DocumentController {
     @Body() dto: MoveDocumentDto,
   ) {
     return this.documentService.move(userId, kbId, docId, dto)
+  }
+
+  @Post(':docId/copy')
+  @HttpCode(200)
+  async copy(
+    @CurrentUser('id') userId: string,
+    @Param('kbId') kbId: string,
+    @Param('docId') docId: string,
+    @Body() dto: CopyDocumentDto,
+  ) {
+    return this.documentService.copy(userId, kbId, docId, dto)
   }
 
   @Delete(':docId')

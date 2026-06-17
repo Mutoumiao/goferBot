@@ -6,6 +6,7 @@ describe('FolderService', () => {
   let folderService: FolderService
   let mockPrisma: any
   let mockCleanup: any
+  let mockDocumentService: any
 
   beforeEach(() => {
     mockPrisma = {
@@ -24,8 +25,9 @@ describe('FolderService', () => {
     mockCleanup = {
       cleanupFolder: vi.fn().mockResolvedValue(undefined),
     }
+    mockDocumentService = {}
 
-    folderService = new FolderService(mockPrisma, mockCleanup)
+    folderService = new FolderService(mockPrisma, mockCleanup, mockDocumentService)
   })
 
   describe('list', () => {

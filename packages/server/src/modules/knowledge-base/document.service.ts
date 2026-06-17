@@ -6,6 +6,7 @@ import { QueueService } from '../../processors/queue/queue.service.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
 import type { MoveDocumentDto } from './dto/move-document.dto.js'
+import type { CopyDocumentDto } from './dto/copy-document.dto.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
 
 const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024 // 50MB
@@ -232,6 +233,72 @@ export class DocumentService {
     }
 
     return { ...updated, size: normalizeDocSize(updated.size) }
+  }
+
+  async copy(userId: string, kbId: string, docId: string, dto: CopyDocumentDto) {
+    await this.ensureOwnership(userId, kbId)
+
+    const doc = await this.prisma.document.findUnique({ where: { id: docId } })
+    if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
+
+    const targetKbId = dto.targetKbId ?? kbId
+    if (targetKbId !== kbId) {
+      await this.ensureOwnership(userId, targetKbId)
+    }
+
+    const targetFolderId = dto.targetFolderId ?? null
+    if (targetFolderId !== null) {
+      const folder = await this.prisma.folder.findFirst({
+        where: { id: targetFolderId, kbId: targetKbId },
+      })
+      if (!folder) {
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: '目标文件夹不存在',
+        })
+      }
+    }
+
+    if (targetKbId !== kbId) {
+      const size = doc.size !== null ? Number(doc.size) : 0
+      if (size > MAX_CROSS_KB_FILE_SIZE) {
+        throw new BadRequestException({
+          code: 'PAYLOAD_TOO_LARGE',
+          message: '跨知识库复制文件大小不能超过 50MB',
+        })
+      }
+    }
+
+    if (!doc.storageKey) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: '文档无存储对象，无法复制',
+      })
+    }
+
+    const buffer = await this.storage.downloadFile(doc.storageKey)
+    const newStorageKey = `${targetKbId}/${Date.now()}-${doc.name}`
+    await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
+
+    const copied = await this.prisma.document.create({
+      data: {
+        kbId: targetKbId,
+        folderId: targetFolderId,
+        name: doc.name,
+        ext: doc.ext,
+        mimeType: doc.mimeType,
+        size: doc.size,
+        storageKey: newStorageKey,
+        status: 'uploaded',
+      },
+    })
+
+    const queueHealthy = await this.queueService?.isHealthy()
+    if (queueHealthy) {
+      await this.queueService!.addDocumentJob(copied.id, 'index')
+    }
+
+    return { ...copied, size: normalizeDocSize(copied.size) }
   }
 
   async remove(userId: string, kbId: string, docId: string) {

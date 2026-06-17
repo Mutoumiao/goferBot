@@ -36,6 +36,7 @@ interface FolderOption {
   id: string
   name: string
   depth: number
+  parentId: string | null
 }
 
 const ROOT_VALUE = 'root'
@@ -59,9 +60,19 @@ async function loadChildren(
     return
   }
   for (const folder of folders) {
-    result.push({ id: folder.id, name: folder.name, depth })
+    result.push({ id: folder.id, name: folder.name, depth, parentId: folder.parentId ?? null })
     await loadChildren(kbId, folder.id, depth + 1, result)
   }
+}
+
+function isDescendant(folders: FolderOption[], ancestorId: string, folderId: string): boolean {
+  const folderMap = new Map(folders.map((f) => [f.id, f.parentId]))
+  let current = folderMap.get(folderId)
+  while (current) {
+    if (current === ancestorId) return true
+    current = folderMap.get(current)
+  }
+  return false
 }
 
 function isFolder(item: FolderType | DocumentItem): item is FolderType {
@@ -167,8 +178,11 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
   const selectedValue = targetFolderId ?? ROOT_VALUE
   const canConfirm = !!currentKbId && !confirming && !loadingFolders && !loadingKbs
 
-  // folder 移动/复制时，排除自身；后代排除由后端循环引用检测兜底
-  const visibleFolders = isFolder(item) ? folders.filter((f) => f.id !== item.id) : folders
+  // folder 复制时，禁止选择自身及后代（避免复制到自身子树形成循环）
+  const disabledFolderIds = isFolder(item) && mode === 'copy'
+    ? new Set(folders.filter((f) => f.id === item.id || isDescendant(folders, item.id, f.id)).map((f) => f.id))
+    : new Set<string>()
+  const visibleFolders = folders
 
   return (
     <Dialog open onOpenChange={() => onClose?.(false)}>
@@ -222,19 +236,25 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
                   <Home className="h-4 w-4 text-muted-foreground" />
                   <label htmlFor={ROOT_VALUE} className="flex-1 cursor-pointer text-sm">根目录</label>
                 </div>
-                {visibleFolders.map((folder) => (
-                  <div
-                    key={folder.id}
-                    className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-accent"
-                    style={{ paddingLeft: `${12 + folder.depth * 16}px` }}
-                  >
-                    <RadioGroupItem value={folder.id} id={folder.id} />
-                    <FolderIcon className="h-4 w-4 text-muted-foreground" />
-                    <label htmlFor={folder.id} className="flex-1 cursor-pointer text-sm">
-                      {folder.name}
-                    </label>
-                  </div>
-                ))}
+                {visibleFolders.map((folder) => {
+                  const disabled = disabledFolderIds.has(folder.id)
+                  return (
+                    <div
+                      key={folder.id}
+                      className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-accent"
+                      style={{ paddingLeft: `${12 + folder.depth * 16}px` }}
+                    >
+                      <RadioGroupItem value={folder.id} id={folder.id} disabled={disabled} />
+                      <FolderIcon className="h-4 w-4 text-muted-foreground" />
+                      <label
+                        htmlFor={folder.id}
+                        className={`flex-1 cursor-pointer text-sm ${disabled ? 'text-muted-foreground' : ''}`}
+                      >
+                        {folder.name}
+                      </label>
+                    </div>
+                  )
+                })}
               </RadioGroup>
             )}
           </div>

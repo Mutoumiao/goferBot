@@ -17,6 +17,8 @@ export const moveFolderRequestSchema = z.object({
   { message: 'targetKbId 与 targetFolderId 至少提供一个', path: ['targetKbId'] },
 )
 
+export const copyFolderRequestSchema = moveFolderRequestSchema
+
 export const folderSchema = z.object({
   id: z.string(),
   name: z.string(),

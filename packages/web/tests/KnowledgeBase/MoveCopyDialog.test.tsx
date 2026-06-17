@@ -129,4 +129,40 @@ describe('MoveCopyDialog', () => {
       expect(onConfirm).toHaveBeenCalled()
     })
   })
+
+  it('disables source folder and its descendants in copy mode', async () => {
+    const { getKbList } = await import('@/api/KnowledgeBase')
+    const { getFolders } = await import('@/api/file')
+    vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getFolders).mockImplementation((_kbId, parentId) => ({
+      send: vi.fn().mockResolvedValue(
+        parentId === null
+          ? [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Source Folder' }, { id: 'f2', kbId: 'kb1', parentId: null, name: 'Sibling' }]
+          : parentId === 'f1'
+            ? [{ id: 'f1-1', kbId: 'kb1', parentId: 'f1', name: 'Child' }]
+            : [],
+      ),
+    }) as any)
+
+    render(
+      <MoveCopyDialog
+        mode="copy"
+        item={mockFolder}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Child')).toBeDefined()
+    })
+
+    const sourceRadio = screen.getByRole('radio', { name: 'Source Folder' })
+    const childRadio = screen.getByRole('radio', { name: 'Child' })
+    const siblingRadio = screen.getByRole('radio', { name: 'Sibling' })
+
+    expect((sourceRadio as HTMLInputElement).disabled).toBe(true)
+    expect((childRadio as HTMLInputElement).disabled).toBe(true)
+    expect((siblingRadio as HTMLInputElement).disabled).toBe(false)
+  })
 })

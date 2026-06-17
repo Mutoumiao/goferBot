@@ -19,6 +19,8 @@ vi.mock('@/api/file', () => ({
   deleteDocument: vi.fn(() => ({ send: vi.fn() })),
   renameDocument: vi.fn(() => ({ send: vi.fn() })),
   moveDocument: vi.fn(() => ({ send: vi.fn() })),
+  copyDocument: vi.fn(() => ({ send: vi.fn() })),
+  copyFolder: vi.fn(() => ({ send: vi.fn() })),
   createFolder: vi.fn(() => ({ send: vi.fn() })),
   renameFolder: vi.fn(() => ({ send: vi.fn() })),
   deleteFolder: vi.fn(() => ({ send: vi.fn() })),
@@ -33,6 +35,8 @@ import {
   deleteDocument,
   renameDocument,
   moveDocument,
+  copyDocument,
+  copyFolder,
   createFolder,
   renameFolder,
   deleteFolder,
@@ -46,6 +50,8 @@ import {
   removeDocument,
   renameDocument as svcRenameDocument,
   moveDocument as svcMoveDocument,
+  copyDocument as svcCopyDocument,
+  copyFolder as svcCopyFolder,
   createFolder as svcCreateFolder,
   renameFolder as svcRenameFolder,
   removeFolder as svcRemoveFolder,
@@ -339,6 +345,66 @@ describe('kb services', () => {
       useKbStore.setState({ currentKbId: null })
       await expect(svcMoveDocument('d1', 'kb1', 'f1')).rejects.toThrow('未选择知识库')
       expect(moveDocument).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('copyDocument', () => {
+    it('adds copied document to current list when target is current folder', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        currentFolderId: 'f1',
+        documents: [{ id: 'd1', kbId: 'kb1', folderId: 'f1', name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+      })
+      const copied: DocumentItem = { id: 'd2', kbId: 'kb1', folderId: 'f1', name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'uploaded', createdAt: '', updatedAt: '' }
+      vi.mocked(copyDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(copied) } as any)
+
+      await svcCopyDocument('d1', 'kb1', 'f1')
+
+      expect(useKbStore.getState().documents).toHaveLength(2)
+      expect(useKbStore.getState().documents[1].id).toBe('d2')
+    })
+
+    it('does not add document when target is another kb', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        currentFolderId: 'f1',
+        documents: [{ id: 'd1', kbId: 'kb1', folderId: 'f1', name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+      })
+      const copied: DocumentItem = { id: 'd2', kbId: 'kb2', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'uploaded', createdAt: '', updatedAt: '' }
+      vi.mocked(copyDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(copied) } as any)
+
+      await svcCopyDocument('d1', 'kb2', null)
+
+      expect(useKbStore.getState().documents).toHaveLength(1)
+    })
+
+    it('throws when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null })
+      await expect(svcCopyDocument('d1', 'kb1', null)).rejects.toThrow('未选择知识库')
+      expect(copyDocument).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('copyFolder', () => {
+    it('adds copied folder to current list when target is current folder', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        currentFolderId: 'f1',
+        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' }],
+      })
+      const copied: Folder = { id: 'f2', kbId: 'kb1', parentId: 'f1', name: 'A', createdAt: '', updatedAt: '' }
+      vi.mocked(copyFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(copied) } as any)
+
+      await svcCopyFolder('f1', 'kb1', 'f1')
+
+      expect(useKbStore.getState().folders).toHaveLength(2)
+      expect(useKbStore.getState().folders[1].id).toBe('f2')
+    })
+
+    it('throws when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null })
+      await expect(svcCopyFolder('f1', 'kb1', null)).rejects.toThrow('未选择知识库')
+      expect(copyFolder).not.toHaveBeenCalled()
     })
   })
 

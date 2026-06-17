@@ -475,4 +475,92 @@ describe('FolderController', () => {
       expect(body.error.code).toBe('VALIDATION_ERROR')
     })
   })
+
+  describe('POST /api/knowledge-bases/:kbId/folders/:folderId/copy', () => {
+    it('AC-49: copies folder to another parent in same KB', async () => {
+      const parentRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Copy Parent' },
+      })
+      const parentId = parentRes.json().data.id
+
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Copy Target' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/copy`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { targetFolderId: parentId },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.data.parentId).toBe(parentId)
+      expect(body.data.name).toBe('Copy Target')
+    })
+
+    it('AC-50: rejects cross-KB folder copy in Slice 8', async () => {
+      const otherKbRes = await app.inject({
+        method: 'POST',
+        url: '/api/knowledge-bases',
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: `Copy-Target-KB-${Date.now()}` },
+      })
+      const targetKbId = otherKbRes.json().data.id
+
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Cross KB Copy Folder' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/copy`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { targetKbId },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('NOT_SUPPORTED')
+    })
+
+    it('AC-51: returns 401 without token', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/00000000-0000-0000-0000-000000000000/copy`,
+        payload: { targetFolderId: null },
+      })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('AC-51a: returns 400 for empty copy body', async () => {
+      const folderRes = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Empty Copy Body' },
+      })
+      const folderId = folderRes.json().data.id
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/knowledge-bases/${kbId}/folders/${folderId}/copy`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: {},
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+    })
+  })
 })

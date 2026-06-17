@@ -18,6 +18,8 @@ export const moveDocumentRequestSchema = z.object({
   { message: 'targetKbId 与 targetFolderId 至少提供一个', path: ['targetKbId'] },
 )
 
+export const copyDocumentRequestSchema = moveDocumentRequestSchema
+
 export const documentSchema = z.object({
   id: z.string(),
   name: z.string(),

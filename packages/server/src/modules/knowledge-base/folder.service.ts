@@ -9,6 +9,8 @@ import { KbCleanupService } from './kb-cleanup.service.js'
 import type { CreateFolderDto } from './dto/create-folder.dto.js'
 import type { UpdateFolderDto } from './dto/update-folder.dto.js'
 import type { MoveFolderDto } from './dto/move-folder.dto.js'
+import type { CopyFolderDto } from './dto/copy-folder.dto.js'
+import { DocumentService } from './document.service.js'
 
 type SortOrder = 'asc' | 'desc'
 type FolderSortBy = 'name' | 'createdAt' | 'updatedAt'
@@ -34,6 +36,7 @@ export class FolderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cleanupService: KbCleanupService,
+    private readonly documentService: DocumentService,
   ) {}
 
   async list(
@@ -180,6 +183,130 @@ export class FolderService {
         parentId: targetFolderId,
       },
     })
+  }
+
+  async copy(userId: string, kbId: string, folderId: string, dto: CopyFolderDto) {
+    await this.ensureOwnership(userId, kbId)
+
+    const folder = await this.prisma.folder.findFirst({
+      where: { id: folderId, kbId },
+    })
+    if (!folder) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: '文件夹不存在',
+      })
+    }
+
+    const targetKbId = dto.targetKbId ?? kbId
+    if (targetKbId !== kbId) {
+      throw new BadRequestException({
+        code: 'NOT_SUPPORTED',
+        message: '跨知识库复制文件夹尚未支持',
+      })
+    }
+
+    const targetFolderId = dto.targetFolderId ?? null
+    if (targetFolderId !== null) {
+      const targetFolder = await this.prisma.folder.findFirst({
+        where: { id: targetFolderId, kbId: targetKbId },
+      })
+      if (!targetFolder) {
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: '目标文件夹不存在',
+        })
+      }
+    }
+
+    const copiedRoot = await this.copyTree(userId, kbId, folderId, targetKbId, targetFolderId)
+    return copiedRoot
+  }
+
+  private async copyTree(
+    userId: string,
+    srcKbId: string,
+    srcFolderId: string,
+    targetKbId: string,
+    targetParentId: string | null,
+  ) {
+    const sourceRoot = await this.prisma.folder.findUnique({ where: { id: srcFolderId } })
+    if (!sourceRoot) throw new NotFoundException('源文件夹不存在')
+
+    const folderMap = new Map<string, string>()
+    const stack: Array<{ id: string; parentId: string | null }> = [
+      { id: sourceRoot.id, parentId: targetParentId },
+    ]
+    let copiedRootId: string | null = null
+
+    while (stack.length > 0) {
+      const { id: currentId, parentId: currentParentId } = stack.pop()!
+      const sourceFolder = await this.prisma.folder.findUnique({ where: { id: currentId } })
+      if (!sourceFolder) continue
+
+      const newName = await this.resolveUniqueFolderName(targetKbId, currentParentId, sourceFolder.name)
+      const copiedFolder = await this.prisma.folder.create({
+        data: {
+          kbId: targetKbId,
+          parentId: currentParentId,
+          name: newName,
+        },
+      })
+      folderMap.set(currentId, copiedFolder.id)
+      if (copiedRootId === null) copiedRootId = copiedFolder.id
+
+      await this.copyDocumentsInFolder(userId, srcKbId, currentId, targetKbId, copiedFolder.id)
+
+      const children = await this.prisma.folder.findMany({
+        where: { parentId: currentId },
+        select: { id: true },
+      })
+      for (const child of children) {
+        stack.push({ id: child.id, parentId: copiedFolder.id })
+      }
+    }
+
+    if (!copiedRootId) throw new BadRequestException('文件夹复制失败')
+    return this.prisma.folder.findUnique({ where: { id: copiedRootId } })
+  }
+
+  private async copyDocumentsInFolder(
+    userId: string,
+    srcKbId: string,
+    srcFolderId: string,
+    targetKbId: string,
+    targetFolderId: string,
+  ) {
+    const docs = await this.prisma.document.findMany({
+      where: { kbId: srcKbId, folderId: srcFolderId },
+      select: { id: true },
+    })
+
+    for (const doc of docs) {
+      await this.documentService.copy(userId, srcKbId, doc.id, {
+        targetKbId,
+        targetFolderId,
+      })
+    }
+  }
+
+  private async resolveUniqueFolderName(
+    kbId: string,
+    parentId: string | null,
+    baseName: string,
+  ): Promise<string> {
+    const existing = await this.prisma.folder.findMany({
+      where: { kbId, parentId },
+      select: { name: true },
+    })
+    const existingNames = new Set(existing.map((f) => f.name))
+    if (!existingNames.has(baseName)) return baseName
+
+    let index = 1
+    while (existingNames.has(`${baseName} (${index})`)) {
+      index++
+    }
+    return `${baseName} (${index})`
   }
 
   async getBreadcrumbs(
