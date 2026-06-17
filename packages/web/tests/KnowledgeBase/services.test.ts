@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+vi.mock('sonner', () => ({
+  toast: { error: vi.fn() },
+}))
+
 vi.mock('@/api/KnowledgeBase', () => ({
   getKbList: vi.fn(() => ({ send: vi.fn() })),
+  updateKb: vi.fn(() => ({ send: vi.fn() })),
   uploadFile: vi.fn(() => ({ send: vi.fn() })),
   searchKbItems: vi.fn(() => ({ send: vi.fn() })),
 }))
@@ -19,7 +24,7 @@ vi.mock('@/api/file', () => ({
   deleteFolder: vi.fn(() => ({ send: vi.fn() })),
 }))
 
-import { getKbList, uploadFile, searchKbItems } from '@/api/KnowledgeBase'
+import { getKbList, uploadFile, searchKbItems, updateKb } from '@/api/KnowledgeBase'
 import {
   getFolders,
   getDocuments,
@@ -49,6 +54,8 @@ import {
   addFolder,
   uploadFiles,
   navigateToFolder,
+  pinKnowledgeBase,
+  removeKnowledgeBaseAndClearSelection,
 } from '@/features/KnowledgeBase/services'
 import type { KbEntry } from '@goferbot/data'
 import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
@@ -558,6 +565,100 @@ describe('kb services', () => {
 
       await expect(addFolder('kb1', 'New')).rejects.toThrow('操作失败，请稍后重试')
       expect(useKbStore.getState().fileError).toBeNull()
+    })
+  })
+
+  describe('pinKnowledgeBase', () => {
+    it('calls updateKb and refreshes list on success', async () => {
+      useKbStore.setState({
+        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: false }],
+      })
+      vi.mocked(updateKb).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+      vi.mocked(getKbList).mockReturnValue({
+        send: vi.fn().mockResolvedValue({
+          items: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: true }],
+          pagination: { total: 1, size: 1, currentPage: 1, totalPage: 1, hasNextPage: false, hasPrevPage: false },
+        }),
+      } as any)
+
+      const result = await pinKnowledgeBase('kb1', true)
+
+      expect(result).toBe(true)
+      expect(updateKb).toHaveBeenCalledWith('kb1', { isPinned: true })
+      expect(useKbStore.getState().entries[0].isPinned).toBe(true)
+    })
+
+    it('returns false and toasts error on api failure', async () => {
+      useKbStore.setState({
+        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: false }],
+      })
+      vi.mocked(updateKb).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('HTTP 500: fail')) } as any)
+
+      const result = await pinKnowledgeBase('kb1', true)
+
+      expect(result).toBe(false)
+      expect(updateKb).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores duplicate pin requests for the same kb', async () => {
+      useKbStore.setState({
+        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: false }],
+      })
+      vi.mocked(updateKb).mockReturnValue({
+        send: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50))),
+      } as any)
+
+      const p1 = pinKnowledgeBase('kb1', true)
+      const p2 = pinKnowledgeBase('kb1', false)
+
+      expect(await p2).toBe(false)
+      await p1
+      expect(updateKb).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('removeKnowledgeBaseAndClearSelection', () => {
+    it('removes entry and clears selection when deleting selected kb', () => {
+      useKbStore.setState({
+        selectedId: 'kb1',
+        currentKbId: 'kb1',
+        currentFolderId: 'f1',
+        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' }],
+        documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+        breadcrumbs: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' }],
+        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '' }],
+      })
+
+      removeKnowledgeBaseAndClearSelection('kb1')
+
+      expect(useKbStore.getState().entries).toHaveLength(0)
+      expect(useKbStore.getState().selectedId).toBeNull()
+      expect(useKbStore.getState().currentKbId).toBeNull()
+      expect(useKbStore.getState().currentFolderId).toBeNull()
+      expect(useKbStore.getState().folders).toHaveLength(0)
+      expect(useKbStore.getState().documents).toHaveLength(0)
+      expect(useKbStore.getState().breadcrumbs).toHaveLength(0)
+    })
+
+    it('only removes entry when deleted kb is not selected', () => {
+      useKbStore.setState({
+        selectedId: 'kb2',
+        currentKbId: 'kb2',
+        currentFolderId: 'f1',
+        folders: [{ id: 'f1', kbId: 'kb2', parentId: null, name: 'F', createdAt: '', updatedAt: '' }],
+        entries: [
+          { id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '' },
+          { id: 'kb2', name: 'B', description: '', fileCount: 0, createdAt: '', updatedAt: '' },
+        ],
+      })
+
+      removeKnowledgeBaseAndClearSelection('kb1')
+
+      expect(useKbStore.getState().entries).toHaveLength(1)
+      expect(useKbStore.getState().entries[0].id).toBe('kb2')
+      expect(useKbStore.getState().selectedId).toBe('kb2')
+      expect(useKbStore.getState().currentKbId).toBe('kb2')
+      expect(useKbStore.getState().folders).toHaveLength(1)
     })
   })
 })

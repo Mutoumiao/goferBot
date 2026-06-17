@@ -31,10 +31,10 @@ const FILE_ICON_BG: Record<string, string> = {
   md: 'bg-[#9E9E9E]',
 }
 
-const DOCUMENT_STATUS_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
+const DOCUMENT_STATUS_CONFIG: Record<DocumentItem['status'], { bg: string; text: string; label: string }> = {
   uploaded: { bg: 'bg-[#9E9E9E]', text: 'text-white', label: '已上传' },
-  parsing: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '解析中' },
   chunking: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '分块中' },
+  embedding: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '嵌入中' },
   indexing: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '索引中' },
   ready: { bg: 'bg-[#4CAF50]', text: 'text-white', label: '就绪' },
   failed: { bg: 'bg-[#F44336]', text: 'text-white', label: '失败' },
