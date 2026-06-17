@@ -37,7 +37,7 @@ export class FolderService {
     private readonly prisma: PrismaService,
     private readonly cleanupService: KbCleanupService,
     private readonly documentService: DocumentService,
-  ) {}
+  ) { }
 
   async list(
     userId: string,
@@ -143,28 +143,45 @@ export class FolderService {
     const targetFolderId = dto.targetFolderId ?? null
 
     if (targetKbId !== kbId) {
-      await this.ensureOwnership(userId, targetKbId)
+      return this.moveCrossKb(userId, kbId, folderId, targetKbId, targetFolderId)
+    }
+    return this.moveWithinKb(folderId, kbId, targetFolderId)
+  }
 
-      if (targetFolderId !== null) {
-        const targetFolder = await this.prisma.folder.findFirst({
-          where: { id: targetFolderId, kbId: targetKbId },
+  private async moveCrossKb(
+    userId: string,
+    srcKbId: string,
+    folderId: string,
+    targetKbId: string,
+    targetFolderId: string | null,
+  ) {
+    await this.ensureOwnership(userId, targetKbId)
+
+    if (targetFolderId !== null) {
+      const targetFolder = await this.prisma.folder.findFirst({
+        where: { id: targetFolderId, kbId: targetKbId },
+      })
+      if (!targetFolder) {
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: '目标文件夹不存在',
         })
-        if (!targetFolder) {
-          throw new NotFoundException({
-            code: 'NOT_FOUND',
-            message: '目标文件夹不存在',
-          })
-        }
       }
-
-      const copiedRoot = await this.copyTree(userId, kbId, folderId, targetKbId, targetFolderId)
-
-      await this.cleanupService.cleanupFolder(kbId, folderId)
-      await this.prisma.folder.delete({ where: { id: folderId } })
-
-      return copiedRoot
     }
 
+    const copiedRoot = await this.copyTree(userId, srcKbId, folderId, targetKbId, targetFolderId)
+
+    await this.cleanupService.cleanupFolder(srcKbId, folderId)
+    await this.prisma.folder.delete({ where: { id: folderId } })
+
+    return copiedRoot
+  }
+
+  private async moveWithinKb(
+    folderId: string,
+    kbId: string,
+    targetFolderId: string | null,
+  ) {
     if (targetFolderId !== null) {
       if (targetFolderId === folderId) {
         throw new BadRequestException({
@@ -174,7 +191,7 @@ export class FolderService {
       }
 
       const targetFolder = await this.prisma.folder.findFirst({
-        where: { id: targetFolderId, kbId: targetKbId },
+        where: { id: targetFolderId, kbId },
       })
       if (!targetFolder) {
         throw new NotFoundException({
@@ -195,7 +212,7 @@ export class FolderService {
     return this.prisma.folder.update({
       where: { id: folderId },
       data: {
-        kbId: targetKbId,
+        kbId,
         parentId: targetFolderId,
       },
     })
@@ -246,11 +263,28 @@ export class FolderService {
     const sourceRoot = await this.prisma.folder.findUnique({ where: { id: srcFolderId } })
     if (!sourceRoot) throw new NotFoundException('源文件夹不存在')
 
-    // folder 树记录在事务内原子创建；文档复制涉及外部存储/向量，无法纳入同一事务。
+    const folderMap = await this.copyFolderNodesInTransaction(sourceRoot.id, targetKbId, targetParentId)
+
+    // 在事务外复制文档，确保目标 folder 已提交，DocumentService 能正常校验目标 folder。
+    for (const [srcFolderId, copiedFolderId] of folderMap) {
+      await this.copyDocumentsInFolder(userId, srcKbId, srcFolderId, targetKbId, copiedFolderId)
+    }
+
+    const copiedRootId = folderMap.get(sourceRoot.id)
+    if (!copiedRootId) throw new BadRequestException('文件夹复制失败')
+    return this.prisma.folder.findUnique({ where: { id: copiedRootId } })
+  }
+
+  private async copyFolderNodesInTransaction(
+    sourceRootId: string,
+    targetKbId: string,
+    targetParentId: string | null,
+  ): Promise<Map<string, string>> {
     const folderMap = new Map<string, string>()
+    // folder 树记录在事务内原子创建；文档复制涉及外部存储/向量，无法纳入同一事务。
     await this.prisma.$transaction(async (tx: any) => {
       const stack: Array<{ id: string; parentId: string | null }> = [
-        { id: sourceRoot.id, parentId: targetParentId },
+        { id: sourceRootId, parentId: targetParentId },
       ]
 
       while (stack.length > 0) {
@@ -277,15 +311,7 @@ export class FolderService {
         }
       }
     })
-
-    // 在事务外复制文档，确保目标 folder 已提交，DocumentService 能正常校验目标 folder。
-    for (const [srcFolderId, copiedFolderId] of folderMap) {
-      await this.copyDocumentsInFolder(userId, srcKbId, srcFolderId, targetKbId, copiedFolderId)
-    }
-
-    const copiedRootId = folderMap.get(sourceRoot.id)
-    if (!copiedRootId) throw new BadRequestException('文件夹复制失败')
-    return this.prisma.folder.findUnique({ where: { id: copiedRootId } })
+    return folderMap
   }
 
   private async copyDocumentsInFolder(

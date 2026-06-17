@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { getFolders } from '@/api/file'
-import { getKbList } from '@/api/KnowledgeBase'
+import { getKbForSelector } from '@/api/KnowledgeBase'
 import { useKbStore } from '../store'
 import { moveDocument, moveFolder, copyDocument, copyFolder } from '../services'
 import type { Folder as FolderType, DocumentItem } from '../types'
@@ -97,12 +97,12 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
     if (!currentKbId) return
     let cancelled = false
     setLoadingKbs(true)
-    getKbList()
+    getKbForSelector()
       .send()
       .then((res) => {
         if (cancelled) return
-        const data = res as { items?: KbEntry[] }
-        const list = data.items ?? []
+        const data = res as { items?: KbEntry[]; data?: KbEntry[] }
+        const list = ((data.items ?? data.data) ?? []) as KbEntry[]
         setKbs(list)
         if (list.some((kb) => kb.id === currentKbId)) {
           setTargetKbId(currentKbId)
@@ -178,8 +178,8 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
   const selectedValue = targetFolderId ?? ROOT_VALUE
   const canConfirm = !!currentKbId && !confirming && !loadingFolders && !loadingKbs
 
-  // folder 复制时，禁止选择自身及后代（避免复制到自身子树形成循环）
-  const disabledFolderIds = isFolder(item) && mode === 'copy'
+  // folder 操作时（move/copy），禁止选择自身及后代（避免移动到自身或复制到自身子树形成循环）
+  const disabledFolderIds = isFolder(item)
     ? new Set(folders.filter((f) => f.id === item.id || isDescendant(folders, item.id, f.id)).map((f) => f.id))
     : new Set<string>()
   const visibleFolders = folders

@@ -15,7 +15,7 @@ vi.mock('@/api/file', () => ({
 }))
 
 vi.mock('@/api/KnowledgeBase', () => ({
-  getKbList: vi.fn(() => ({ send: vi.fn().mockResolvedValue({ items: [] }) })),
+  getKbForSelector: vi.fn(() => ({ send: vi.fn().mockResolvedValue({ items: [] }) })),
 }))
 
 vi.mock('@/features/KnowledgeBase/services', () => ({
@@ -64,8 +64,8 @@ describe('MoveCopyDialog', () => {
   })
 
   it('renders move dialog for document', async () => {
-    const { getKbList } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    const { getKbForSelector } = await import('@/api/KnowledgeBase')
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
 
     render(
       <MoveCopyDialog
@@ -85,8 +85,8 @@ describe('MoveCopyDialog', () => {
   })
 
   it('renders copy dialog for folder', async () => {
-    const { getKbList } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    const { getKbForSelector } = await import('@/api/KnowledgeBase')
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
 
     render(
       <MoveCopyDialog
@@ -106,8 +106,8 @@ describe('MoveCopyDialog', () => {
   it('confirms move with root target', async () => {
     const user = userEvent.setup()
     const onConfirm = vi.fn()
-    const { getKbList } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    const { getKbForSelector } = await import('@/api/KnowledgeBase')
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
 
     render(
       <MoveCopyDialog
@@ -131,9 +131,9 @@ describe('MoveCopyDialog', () => {
   })
 
   it('disables source folder and its descendants in copy mode', async () => {
-    const { getKbList } = await import('@/api/KnowledgeBase')
+    const { getKbForSelector } = await import('@/api/KnowledgeBase')
     const { getFolders } = await import('@/api/file')
-    vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
     vi.mocked(getFolders).mockImplementation((_kbId, parentId) => ({
       send: vi.fn().mockResolvedValue(
         parentId === null
@@ -147,6 +147,42 @@ describe('MoveCopyDialog', () => {
     render(
       <MoveCopyDialog
         mode="copy"
+        item={mockFolder}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Child')).toBeDefined()
+    })
+
+    const sourceRadio = screen.getByRole('radio', { name: 'Source Folder' })
+    const childRadio = screen.getByRole('radio', { name: 'Child' })
+    const siblingRadio = screen.getByRole('radio', { name: 'Sibling' })
+
+    expect((sourceRadio as HTMLInputElement).disabled).toBe(true)
+    expect((childRadio as HTMLInputElement).disabled).toBe(true)
+    expect((siblingRadio as HTMLInputElement).disabled).toBe(false)
+  })
+
+  it('disables source folder and its descendants in move mode', async () => {
+    const { getKbForSelector } = await import('@/api/KnowledgeBase')
+    const { getFolders } = await import('@/api/file')
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getFolders).mockImplementation((_kbId, parentId) => ({
+      send: vi.fn().mockResolvedValue(
+        parentId === null
+          ? [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Source Folder' }, { id: 'f2', kbId: 'kb1', parentId: null, name: 'Sibling' }]
+          : parentId === 'f1'
+            ? [{ id: 'f1-1', kbId: 'kb1', parentId: 'f1', name: 'Child' }]
+            : [],
+      ),
+    }) as any)
+
+    render(
+      <MoveCopyDialog
+        mode="move"
         item={mockFolder}
         onClose={vi.fn()}
         onConfirm={vi.fn()}

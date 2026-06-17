@@ -173,34 +173,28 @@ export class DocumentService {
     }
 
     if (targetKbId === kbId) {
-      const updated = await this.prisma.document.update({
-        where: { id: docId },
-        data: { folderId: targetFolderId },
-      })
-      return { ...updated, size: normalizeDocSize(updated.size) }
+      return this.moveWithinKb(docId, targetFolderId)
     }
+    return this.moveCrossKb(doc, targetKbId, targetFolderId)
+  }
 
-    // 跨 KB 移动：重新上传文件到目标 KB
-    const size = doc.size !== null ? Number(doc.size) : 0
-    if (size > MAX_CROSS_KB_FILE_SIZE) {
-      throw new BadRequestException({
-        code: 'PAYLOAD_TOO_LARGE',
-        message: '跨知识库移动文件大小不能超过 50MB',
-      })
-    }
+  private async moveWithinKb(docId: string, targetFolderId: string | null) {
+    const updated = await this.prisma.document.update({
+      where: { id: docId },
+      data: { folderId: targetFolderId },
+    })
+    return { ...updated, size: normalizeDocSize(updated.size) }
+  }
 
-    if (!doc.storageKey) {
-      throw new BadRequestException({
-        code: 'BAD_REQUEST',
-        message: '文档无存储对象，无法跨知识库移动',
-      })
-    }
+  private async moveCrossKb(
+    doc: { id: string; size: bigint | number | null; storageKey: string | null; name: string; mimeType: string | null },
+    targetKbId: string,
+    targetFolderId: string | null,
+  ) {
+    const docId = doc.id
+    this.assertCrossKbSize(doc)
 
-    const buffer = await this.storage.downloadFile(doc.storageKey)
-    const newStorageKey = `${targetKbId}/${Date.now()}-${doc.name}`
-    await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
-
-    const oldStorageKey = doc.storageKey
+    const { newStorageKey, oldStorageKey } = await this.reuploadForCrossKb(doc, targetKbId)
 
     // 删除旧 chunk 记录（向量随文档级联删除或 cleanupDocument 清理）
     try {
@@ -219,20 +213,53 @@ export class DocumentService {
       },
     })
 
-    // 清理原 KB 的 storage 与 vector
+    await this.cleanupOldStorageAfterMove(docId, oldStorageKey)
+    await this.enqueueReindex(docId)
+
+    return { ...updated, size: normalizeDocSize(updated.size) }
+  }
+
+  private assertCrossKbSize(doc: { size: bigint | number | null }) {
+    const size = doc.size !== null ? Number(doc.size) : 0
+    if (size > MAX_CROSS_KB_FILE_SIZE) {
+      throw new BadRequestException({
+        code: 'PAYLOAD_TOO_LARGE',
+        message: '跨知识库移动文件大小不能超过 50MB',
+      })
+    }
+  }
+
+  private async reuploadForCrossKb(
+    doc: { storageKey: string | null; name: string; mimeType: string | null },
+    targetKbId: string,
+  ) {
+    if (!doc.storageKey) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: '文档无存储对象，无法跨知识库移动',
+      })
+    }
+
+    const buffer = await this.storage.downloadFile(doc.storageKey)
+    const newStorageKey = `${targetKbId}/${Date.now()}-${doc.name}`
+    await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
+
+    return { newStorageKey, oldStorageKey: doc.storageKey }
+  }
+
+  private async cleanupOldStorageAfterMove(docId: string, oldStorageKey: string) {
     try {
       await this.cleanupService.cleanupDocument(docId, oldStorageKey)
     } catch (e) {
       this.logger.warn(`文档 ${docId} 跨知识库移动后清理原存储/向量失败`, e instanceof Error ? e.stack : undefined)
     }
+  }
 
-    // 触发重新索引
+  private async enqueueReindex(docId: string) {
     const queueHealthy = await this.queueService?.isHealthy()
     if (queueHealthy) {
       await this.queueService!.addDocumentJob(docId, 'index')
     }
-
-    return { ...updated, size: normalizeDocSize(updated.size) }
   }
 
   async copy(userId: string, kbId: string, docId: string, dto: CopyDocumentDto) {
@@ -259,7 +286,16 @@ export class DocumentService {
       }
     }
 
-    if (targetKbId !== kbId) {
+    return this.copyDocument(doc, targetKbId, targetFolderId, targetKbId !== kbId)
+  }
+
+  private async copyDocument(
+    doc: { id: string; size: bigint | number | null; storageKey: string | null; name: string; mimeType: string | null; ext: string | null },
+    targetKbId: string,
+    targetFolderId: string | null,
+    isCrossKb: boolean,
+  ) {
+    if (isCrossKb) {
       const size = doc.size !== null ? Number(doc.size) : 0
       if (size > MAX_CROSS_KB_FILE_SIZE) {
         throw new BadRequestException({
