@@ -15,6 +15,8 @@ export default defineConfig({
       },
     }),
   ],
+  esbuild: false,
+  oxc: false,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './packages/server/src'),
