@@ -25,7 +25,7 @@ interface FileBrowserProps {
 
 function LoadingState() {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} data-testid="skeleton-card" className="h-32 bg-[#F7F8FA] rounded-xl animate-pulse" />
       ))}
@@ -69,7 +69,7 @@ function GridView({
 }: FileViewProps) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {folders.map((folder) => (
           <FileContextMenu
             key={folder.id}
@@ -120,49 +120,51 @@ function ListView({
 }: Omit<FileViewProps, 'folderDocumentCounts'>) {
   return (
     <div className="flex flex-col gap-3">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-8"></TableHead>
-            <TableHead>名称</TableHead>
-            <TableHead>类型</TableHead>
-            <TableHead className="text-right">大小</TableHead>
-            <TableHead className="text-right">日期</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {folders.map((folder) => (
-            <FileContextMenu
-              key={folder.id}
-              item={folder}
-              onOpen={onOpenItem}
-              onRename={onRenameItem}
-              onDelete={onDeleteItem}
-            >
-              <FileListItem
+      <div className="overflow-x-auto">
+        <Table aria-label="文件列表">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8"></TableHead>
+              <TableHead>名称</TableHead>
+              <TableHead>类型</TableHead>
+              <TableHead className="text-right">大小</TableHead>
+              <TableHead className="text-right">日期</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {folders.map((folder) => (
+              <FileContextMenu
+                key={folder.id}
                 item={folder}
-                isFolder
-                onClick={() => onFolderClick(folder)}
-              />
-            </FileContextMenu>
-          ))}
-          {documents.map((doc) => (
-            <FileContextMenu
-              key={doc.id}
-              item={doc}
-              onRename={onRenameItem}
-              onDelete={onDeleteItem}
-              onMove={onMoveItem}
-            >
-              <FileListItem
+                onOpen={onOpenItem}
+                onRename={onRenameItem}
+                onDelete={onDeleteItem}
+              >
+                <FileListItem
+                  item={folder}
+                  isFolder
+                  onClick={() => onFolderClick(folder)}
+                />
+              </FileContextMenu>
+            ))}
+            {documents.map((doc) => (
+              <FileContextMenu
+                key={doc.id}
                 item={doc}
-                isFolder={false}
-                onClick={() => onDocumentClick(doc)}
-              />
-            </FileContextMenu>
-          ))}
-        </TableBody>
-      </Table>
+                onRename={onRenameItem}
+                onDelete={onDeleteItem}
+                onMove={onMoveItem}
+              >
+                <FileListItem
+                  item={doc}
+                  isFolder={false}
+                  onClick={() => onDocumentClick(doc)}
+                />
+              </FileContextMenu>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
       <div className="flex justify-center py-2 text-sm text-[#9AA3AF]">共 {totalCount} 项</div>
     </div>
   )

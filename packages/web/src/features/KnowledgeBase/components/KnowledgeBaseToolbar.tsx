@@ -96,6 +96,7 @@ export function KnowledgeBaseToolbar({
             <Input
               type="text"
               placeholder="搜索当前知识库..."
+              aria-label="搜索当前知识库"
               className="h-auto w-44 border-0 bg-transparent p-0 text-sm text-[#1F2328] shadow-none placeholder:text-[#9AA3AF] focus-visible:ring-0"
               autoFocus
               value={searchQuery}
@@ -112,6 +113,7 @@ export function KnowledgeBaseToolbar({
             size="icon"
             className="h-8 w-8 rounded-lg bg-[#F4F5F7] text-[#5E6673] hover:bg-[#EBECF0]"
             onClick={() => setSearchOpen(true)}
+            aria-label="搜索"
           >
             <Search className="h-4 w-4" />
           </Button>
@@ -122,6 +124,7 @@ export function KnowledgeBaseToolbar({
           size="icon"
           className="h-8 w-8 rounded-lg bg-[#F4F5F7] text-[#5E6673] hover:bg-[#EBECF0]"
           onClick={() => onViewModeChange(viewMode === 'grid' ? 'list' : 'grid')}
+          aria-label={viewMode === 'grid' ? '切换到列表视图' : '切换到网格视图'}
         >
           {viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
         </Button>
@@ -132,6 +135,7 @@ export function KnowledgeBaseToolbar({
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-lg bg-[#F4F5F7] text-[#5E6673] hover:bg-[#EBECF0]"
+              aria-label="排序"
             >
               <ArrowUpDown className="h-4 w-4" />
             </Button>
@@ -157,6 +161,7 @@ export function KnowledgeBaseToolbar({
           size="icon"
           className="h-8 w-8 rounded-lg bg-[#F4F5F7] text-[#5E6673] hover:bg-[#EBECF0]"
           onClick={onUpload}
+          aria-label="上传文件"
         >
           <Upload className="h-4 w-4" />
         </Button>

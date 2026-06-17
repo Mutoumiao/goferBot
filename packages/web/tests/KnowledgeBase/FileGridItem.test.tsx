@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { FileGridItem } from '@/features/KnowledgeBase/components/FileGridItem'
 import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
 
@@ -33,6 +34,7 @@ describe('FileGridItem', () => {
 
     expect(screen.getByText('测试文件夹')).toBeDefined()
     expect(screen.getByText('5 个文件')).toBeDefined()
+    expect(screen.getByRole('button', { name: /打开文件夹/ })).toBeDefined()
   })
 
   it.each([
@@ -53,5 +55,32 @@ describe('FileGridItem', () => {
 
     expect(screen.getByText('report.pdf')).toBeDefined()
     expect(screen.getByText('2.0 KB')).toBeDefined()
+    expect(screen.getByRole('button', { name: /打开文档/ })).toBeDefined()
+  })
+
+  it('opens folder on click and Enter', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(<FileGridItem item={mockFolder} isFolder documentCount={3} onClick={onClick} />)
+
+    const button = screen.getByRole('button', { name: /打开文件夹/ })
+    await user.click(button)
+    expect(onClick).toHaveBeenCalledTimes(1)
+
+    await user.keyboard('{enter}')
+    expect(onClick).toHaveBeenCalledTimes(2)
+  })
+
+  it('opens document on click and Enter', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(<FileGridItem item={makeDocument('ready')} isFolder={false} onClick={onClick} />)
+
+    const button = screen.getByRole('button', { name: /打开文档/ })
+    await user.click(button)
+    expect(onClick).toHaveBeenCalledTimes(1)
+
+    await user.keyboard('{enter}')
+    expect(onClick).toHaveBeenCalledTimes(2)
   })
 })

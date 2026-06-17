@@ -18,9 +18,16 @@ export function FileListItem({ item, isFolder, onClick }: FileListItemProps) {
   return (
     <tr
       onClick={onClick}
-      className="border-b border-border-default hover:bg-surface-2 cursor-pointer transition-colors"
+      className="border-b border-border-default hover:bg-surface-2 cursor-pointer transition-colors focus-visible:bg-[#EEF2FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5B7CFA]"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
+      role="button"
+      aria-label={isFolder ? `打开文件夹 ${item.name}` : `打开文档 ${item.name}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
     >
       <td className="py-2 px-3">
         <Icon className="h-5 w-5 text-text-secondary" />

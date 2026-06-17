@@ -52,24 +52,28 @@ function FolderCard({ item, documentCount, onClick }: FolderCardProps) {
   const dateStr = `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 
   return (
-    <div
-      onClick={onClick}
-      className="flex cursor-pointer flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA]"
-    >
-      <div className="flex items-center justify-between">
+    <div className="group relative flex flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA] focus-within:ring-2 focus-within:ring-[#5B7CFA] focus-within:ring-offset-2">
+      { /* 透明背景按钮覆盖整张卡片，让卡片本身支持键盘操作；内容层禁止指针事件，避免遮挡点击 */ }
+      <button
+        type="button"
+        className="absolute inset-0 z-0 cursor-pointer rounded-xl focus-visible:outline-none"
+        onClick={onClick}
+        aria-label={`打开文件夹 ${item.name}`}
+      />
+      <div className="relative z-10 flex items-center justify-between pointer-events-none">
         <div className={cn('flex h-10 w-10 items-center justify-center rounded-[10px]', colors.bg)}>
           <FolderIcon className={cn('h-6 w-6', colors.icon)} />
         </div>
-        <button
-          className="flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF] transition-colors hover:bg-[#F7F8FA]"
-          onClick={(e) => e.stopPropagation()}
+        <span
+          className="flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF]"
+          aria-hidden="true"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
           </svg>
-        </button>
+        </span>
       </div>
-      <div className="flex flex-col gap-0.5">
+      <div className="relative z-10 flex flex-col gap-0.5 pointer-events-none">
         <span className="text-sm font-medium text-[#1F2328]">{item.name}</span>
         <span className="text-xs text-[#9AA3AF]">{documentCount} 个文件</span>
         <span className="text-xs text-[#9AA3AF]">{dateStr}</span>
@@ -88,29 +92,33 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
   const statusConfig = DOCUMENT_STATUS_CONFIG[item.status] || null
 
   return (
-    <div
-      onClick={onClick}
-      className="relative flex h-[150px] cursor-pointer flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA]"
-    >
+    <div className="group relative flex h-[150px] flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA] focus-within:ring-2 focus-within:ring-[#5B7CFA] focus-within:ring-offset-2">
+      { /* 透明背景按钮覆盖整张卡片，让卡片本身支持键盘操作；内容层禁止指针事件，避免遮挡点击 */ }
+      <button
+        type="button"
+        className="absolute inset-0 z-0 cursor-pointer rounded-xl focus-visible:outline-none"
+        onClick={onClick}
+        aria-label={`打开文档 ${item.name}`}
+      />
       {statusConfig && (
-        <span className={cn('absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[10px] font-medium', statusConfig.bg, statusConfig.text)}>
+        <span className={cn('absolute right-2 top-2 z-10 rounded-full px-1.5 py-0.5 text-[10px] font-medium pointer-events-none', statusConfig.bg, statusConfig.text)}>
           {statusConfig.label}
         </span>
       )}
-      <div className="flex items-center justify-between">
+      <div className="relative z-10 flex items-center justify-between pointer-events-none">
         <div className={cn('flex h-10 w-10 items-center justify-center rounded-[10px]', iconBg)}>
           <span className="text-base font-bold text-white">{firstLetter}</span>
         </div>
-        <button
-          className="flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF] transition-colors hover:bg-[#F7F8FA]"
-          onClick={(e) => e.stopPropagation()}
+        <span
+          className="flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF]"
+          aria-hidden="true"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
           </svg>
-        </button>
+        </span>
       </div>
-      <div className="flex flex-1 flex-col gap-1">
+      <div className="relative z-10 flex flex-1 flex-col gap-1 pointer-events-none">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-[#1F2328]">{item.name}</span>
         </div>
