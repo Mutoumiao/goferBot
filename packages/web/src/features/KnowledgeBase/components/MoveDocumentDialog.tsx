@@ -31,10 +31,15 @@ interface FolderOption {
 
 const ROOT_VALUE = 'root'
 
-async function loadAllFolders(kbId: string): Promise<FolderOption[]> {
+interface LoadResult {
+  folders: FolderOption[]
+  hasError: boolean
+}
+
+async function loadAllFolders(kbId: string): Promise<LoadResult> {
   const result: FolderOption[] = []
-  await loadChildren(kbId, null, 0, result)
-  return result
+  const hasError = await loadChildren(kbId, null, 0, result)
+  return { folders: result, hasError }
 }
 
 async function loadChildren(
@@ -42,24 +47,27 @@ async function loadChildren(
   parentId: string | null,
   depth: number,
   result: FolderOption[],
-) {
+): Promise<boolean> {
   let folders: FolderType[] = []
+  let hasError = false
   try {
     folders = (await getFolders(kbId, parentId).send()) as FolderType[]
   } catch {
-    // 某一层加载失败时跳过该分支，继续加载其他分支
-    return
+    hasError = true
   }
   for (const folder of folders) {
     result.push({ id: folder.id, name: folder.name, depth })
-    await loadChildren(kbId, folder.id, depth + 1, result)
+    const childError = await loadChildren(kbId, folder.id, depth + 1, result)
+    if (childError) hasError = true
   }
+  return hasError
 }
 
 export default function MoveDocumentDialog({ docId, docName, onClose, onConfirm }: MoveDocumentDialogProps) {
   const { currentKbId, currentFolderId } = useKbStore()
   const [folders, setFolders] = useState<FolderOption[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [targetFolderId, setTargetFolderId] = useState<string | null>(null)
 
@@ -67,13 +75,16 @@ export default function MoveDocumentDialog({ docId, docName, onClose, onConfirm 
     if (!currentKbId) return
     let cancelled = false
     setLoading(true)
+    setLoadError(false)
     loadAllFolders(currentKbId)
-      .then((data) => {
+      .then(({ folders, hasError }) => {
         if (cancelled) return
-        setFolders(data)
+        setFolders(folders)
+        setLoadError(hasError)
       })
       .catch(() => {
         if (cancelled) return
+        setLoadError(true)
         toast.error('加载文件夹列表失败')
       })
       .finally(() => {
@@ -99,6 +110,7 @@ export default function MoveDocumentDialog({ docId, docName, onClose, onConfirm 
   }
 
   const selectedValue = targetFolderId ?? ROOT_VALUE
+  const canConfirm = !!currentKbId && !confirming && !loading
 
   return (
     <Dialog open onOpenChange={() => onClose?.(false)}>
@@ -109,6 +121,10 @@ export default function MoveDocumentDialog({ docId, docName, onClose, onConfirm 
             将「<span className="font-medium text-foreground">{docName}</span>」移动到：
           </DialogDescription>
         </DialogHeader>
+
+        {!currentKbId && (
+          <p className="text-sm text-destructive py-4">当前未选择知识库，无法移动文件。</p>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -144,11 +160,15 @@ export default function MoveDocumentDialog({ docId, docName, onClose, onConfirm 
           </RadioGroup>
         )}
 
+        {loadError && (
+          <p className="text-xs text-destructive py-2">部分文件夹加载失败，列表可能不完整。</p>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onClose?.(false)} disabled={confirming}>
             取消
           </Button>
-          <Button onClick={handleConfirm} disabled={confirming || loading}>
+          <Button onClick={handleConfirm} disabled={!canConfirm}>
             {confirming && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
             确定
           </Button>

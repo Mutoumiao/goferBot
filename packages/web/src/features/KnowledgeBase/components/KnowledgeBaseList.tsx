@@ -28,6 +28,7 @@ import {
   removeKnowledgeBaseAndClearSelection,
 } from '../services'
 import { openDialog } from '@/overlays/services/overlay-service'
+import { toast } from 'sonner'
 import type { KbEntry } from '@goferbot/data'
 
 function KbSkeletonCard() {
@@ -53,14 +54,18 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
   const handleSelect = useCallback(() => onSelect(entry), [entry, onSelect])
 
   return (
-    <div
-      className={cn(
-        'group flex cursor-pointer flex-col gap-2 rounded-xl p-3.5 transition-colors',
-        isSelected ? 'bg-[#EEF2FF]' : 'border border-[#E7EAF0] bg-white hover:bg-[#F7F8FA]',
-      )}
-      onClick={handleSelect}
-    >
-      <div className="flex items-center justify-between">
+    <li className="group relative flex flex-col gap-2 rounded-xl p-3.5">
+      <button
+        type="button"
+        className={cn(
+          'absolute inset-0 z-0 rounded-xl transition-colors',
+          isSelected ? 'bg-[#EEF2FF]' : 'border border-[#E7EAF0] bg-white hover:bg-[#F7F8FA]',
+        )}
+        onClick={handleSelect}
+        aria-pressed={isSelected}
+        aria-label={`选择知识库 ${entry.name}`}
+      />
+      <div className="relative z-10 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-2">
           {entry.isPinned && (
             <Pin className="h-3 w-3 fill-[#5B7CFA] text-[#5B7CFA]" aria-hidden="true" />
@@ -84,7 +89,7 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
           <DropdownMenuTrigger asChild>
             <button
               className={cn(
-                'flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF] transition-opacity hover:bg-[#F7F8FA]',
+                'pointer-events-auto flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF] transition-opacity hover:bg-[#F7F8FA]',
                 isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
               )}
               onClick={(e) => e.stopPropagation()}
@@ -132,13 +137,13 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
       </div>
       <span
         className={cn(
-          'text-xs',
+          'relative z-10 text-xs pointer-events-none',
           isSelected ? 'text-[#5B7CFA]/80' : 'text-[#9AA3AF]',
         )}
       >
         {entry.description || `${entry.fileCount ?? 0} 个文件`}
       </span>
-    </div>
+    </li>
   )
 }
 
@@ -174,7 +179,12 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
     await openDialog(EditKbDialog, {
       entry,
       onConfirm: async () => {
-        await fetchKbList()
+        try {
+          await fetchKbList()
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : '刷新知识库列表失败')
+          throw e
+        }
       },
     })
   }, [])
@@ -186,7 +196,12 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
       kbName: entry.name,
       onConfirm: async () => {
         removeKnowledgeBaseAndClearSelection(entry.id)
-        await fetchKbList()
+        try {
+          await fetchKbList()
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : '刷新知识库列表失败')
+          throw e
+        }
       },
     })
   }, [])
@@ -205,6 +220,7 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
             <button
               className="flex h-7 w-7 items-center justify-center rounded-md border border-[#E7EAF0] bg-white transition-colors hover:bg-[#F7F8FA]"
               onClick={handleCreate}
+              aria-label="新建知识库"
             >
               <Plus className="h-4 w-4 text-[#5E6673]" />
             </button>
@@ -212,6 +228,7 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
               className="flex h-7 w-7 items-center justify-center rounded-md text-[#9AA3AF] transition-colors hover:bg-[#F7F8FA] hover:text-[#5E6673]"
               onClick={onToggle}
               title="收起知识库列表"
+              aria-label="收起知识库列表"
             >
               <PanelLeftClose className="h-4 w-4" />
             </button>
@@ -222,6 +239,7 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
           <div className="flex items-center gap-2 rounded-lg bg-[#F7F8FA] px-3 py-2.5">
             <Search className="h-4 w-4 text-[#9AA3AF]" />
             <input
+              id="kb-search"
               type="text"
               placeholder="搜索知识库"
               aria-label="搜索知识库"
@@ -256,7 +274,7 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5">
+            <ul role="list" className="flex flex-col gap-2.5">
               {entries.map((entry) => (
                 <KbListItem
                   key={entry.id}
@@ -268,7 +286,7 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
                   onDelete={handleDelete}
                 />
               ))}
-            </div>
+            </ul>
           )}
         </nav>
       </aside>

@@ -36,10 +36,8 @@ const pinningIds = new Set<string>()
 export async function pinKnowledgeBase(id: string, isPinned: boolean): Promise<boolean> {
   if (pinningIds.has(id)) return false
   pinningIds.add(id)
-  const { updateEntry } = useKbStore.getState()
   try {
     await apiUpdateKb(id, { isPinned }).send()
-    updateEntry(id, { isPinned })
     await fetchKbList()
     return true
   } catch (e) {

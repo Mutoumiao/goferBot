@@ -288,7 +288,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     } else {
       loadKbItems(currentKbId, currentFolderId, sortParams)
     }
-  }, [currentKbId, currentFolderId, searchQuery, sortOption])
+  }, [currentKbId, currentFolderId, searchQuery, sortParams])
 
   const handleUploadComplete = useCallback(async (kbId: string, files: File[], targetFolderId?: string | null) => {
     const folderId = targetFolderId ?? currentFolderId
