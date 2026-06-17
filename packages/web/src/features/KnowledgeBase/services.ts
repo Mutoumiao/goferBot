@@ -16,6 +16,83 @@ import type { Folder, DocumentItem, ItemSortParams } from './types'
 import type { KbListResponse } from '@goferbot/data'
 import { toast } from 'sonner'
 
+class ServiceError extends Error {
+  status?: number
+
+  constructor(message: string, status?: number) {
+    super(message)
+    this.name = 'ServiceError'
+    this.status = status
+  }
+}
+
+function getHttpStatus(error: unknown): number | null {
+  if (error && typeof error === 'object') {
+    if ('status' in error && typeof (error as { status?: unknown }).status === 'number') {
+      return (error as { status: number }).status
+    }
+    const response = (error as { response?: unknown }).response
+    if (
+      response &&
+      typeof response === 'object' &&
+      'status' in response &&
+      typeof (response as { status?: unknown }).status === 'number'
+    ) {
+      return (response as { status: number }).status
+    }
+  }
+  if (error instanceof Error) {
+    const match = error.message.match(/^HTTP (\d{3})/)
+    if (match) return Number(match[1])
+  }
+  return null
+}
+
+function isNetworkError(error: unknown): boolean {
+  const message =
+    error instanceof TypeError || error instanceof Error ? error.message.toLowerCase() : ''
+  return (
+    message.includes('network') ||
+    message.includes('fetch') ||
+    message.includes('failed to fetch')
+  )
+}
+
+function mapErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return '网络连接异常，请检查网络后重试'
+  const status = getHttpStatus(error)
+  switch (status) {
+    case 400:
+      return '请求参数错误，请检查后重试'
+    case 401:
+    case 403:
+      return '登录已过期，请重新登录'
+    case 404:
+      return '资源不存在或已被删除'
+    case 409:
+      return '名称冲突，请更换后重试'
+    case 422:
+      return '输入数据校验失败，请检查后重试'
+    case 429:
+      return '操作过于频繁，请稍后再试'
+    case 500:
+    case 502:
+    case 503:
+      return '服务器繁忙，请稍后重试'
+    default:
+      return '操作失败，请稍后重试'
+  }
+}
+
+function throwServiceError(error: unknown): never {
+  const status = getHttpStatus(error)
+  throw new ServiceError(mapErrorMessage(error), status ?? undefined)
+}
+
+function isFolderItem(item: Folder | DocumentItem): item is Folder {
+  return !('status' in item)
+}
+
 export async function fetchKbList(): Promise<{ success: boolean; error?: string }> {
   const { setEntries, setKbLoading } = useKbStore.getState()
   setKbLoading(true)
@@ -25,7 +102,7 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
     setEntries(data.items ?? [])
     return { success: true }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : '加载知识库列表失败' }
+    return { success: false, error: mapErrorMessage(e) }
   } finally {
     setKbLoading(false)
   }
@@ -41,7 +118,7 @@ export async function pinKnowledgeBase(id: string, isPinned: boolean): Promise<b
     await fetchKbList()
     return true
   } catch (e) {
-    toast.error('置顶操作失败，请稍后重试')
+    toast.error(mapErrorMessage(e))
     return false
   } finally {
     pinningIds.delete(id)
@@ -112,7 +189,7 @@ export async function loadKbItems(
     setBreadcrumbs((breadcrumbs as Folder[]) ?? [])
   } catch (e) {
     if (thisLoadId !== currentLoadId) return
-    setFileError(e instanceof Error ? e.message : '加载失败')
+    setFileError(mapErrorMessage(e))
   } finally {
     if (thisLoadId === currentLoadId) {
       setFileLoading(false)
@@ -122,7 +199,7 @@ export async function loadKbItems(
 
 export async function removeDocument(docId: string) {
   const { currentKbId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
-  if (!currentKbId) return
+  if (!currentKbId) throw new ServiceError('未选择知识库')
 
   setFileLoading(true)
   setFileError(null)
@@ -130,7 +207,7 @@ export async function removeDocument(docId: string) {
     await apiDeleteDocument(currentKbId, docId).send()
     setDocuments(documents.filter((d) => d.id !== docId))
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '删除失败')
+    throwServiceError(e)
   } finally {
     setFileLoading(false)
   }
@@ -138,7 +215,7 @@ export async function removeDocument(docId: string) {
 
 export async function renameDocument(docId: string, name: string) {
   const { currentKbId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
-  if (!currentKbId) return
+  if (!currentKbId) throw new ServiceError('未选择知识库')
 
   setFileLoading(true)
   setFileError(null)
@@ -146,7 +223,7 @@ export async function renameDocument(docId: string, name: string) {
     const updated = await apiRenameDocument(currentKbId, docId, name).send()
     setDocuments(documents.map((d) => (d.id === docId ? (updated as DocumentItem) : d)))
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '重命名失败')
+    throwServiceError(e)
   } finally {
     setFileLoading(false)
   }
@@ -154,9 +231,9 @@ export async function renameDocument(docId: string, name: string) {
 
 export async function moveDocument(docId: string, targetFolderId: string | null) {
   const { currentKbId, currentFolderId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
-  if (!currentKbId) return
+  if (!currentKbId) throw new ServiceError('未选择知识库')
   if (targetFolderId === currentFolderId) {
-    throw new Error('目标文件夹不能与当前文件夹相同')
+    throw new ServiceError('目标文件夹不能与当前文件夹相同')
   }
 
   setFileLoading(true)
@@ -165,8 +242,7 @@ export async function moveDocument(docId: string, targetFolderId: string | null)
     await apiMoveDocument(currentKbId, docId, targetFolderId).send()
     setDocuments(documents.filter((d) => d.id !== docId))
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '移动失败')
-    throw e
+    throwServiceError(e)
   } finally {
     setFileLoading(false)
   }
@@ -182,61 +258,94 @@ export async function previewDocument(docId: string) {
     const result = await apiPreviewDocument(currentKbId, docId).send()
     return result as { type: 'text' | 'pdf' | 'unsupported'; mimeType: string; content?: string; url?: string | null }
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '预览失败')
+    setFileError(mapErrorMessage(e))
     return null
   } finally {
     setFileLoading(false)
   }
 }
 
+let currentSearchId = 0
+
 export async function searchKbItems(query: string) {
   const { currentKbId, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
-  if (!currentKbId) return { folders: [], documents: [] }
+  if (!currentKbId) {
+    setFileError('未选择知识库')
+    return { folders: [], documents: [] }
+  }
 
   const trimmed = query.trim()
   if (!trimmed) {
+    setFileError(null)
+    setFolders([])
+    setDocuments([])
     return { folders: [], documents: [] }
   }
+
+  const thisSearchId = ++currentSearchId
 
   setFileLoading(true)
   setFileError(null)
   try {
     const result = await apiSearchKbItems(currentKbId, trimmed).send()
     const data = result as { folders: Folder[]; documents: DocumentItem[] }
-    setFolders(data.folders ?? [])
-    setDocuments(data.documents ?? [])
+    if (thisSearchId === currentSearchId) {
+      setFolders(data.folders ?? [])
+      setDocuments(data.documents ?? [])
+    }
     return data
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '搜索失败')
+    const msg = mapErrorMessage(e)
+    if (thisSearchId === currentSearchId) {
+      setFileError(msg)
+    }
     return { folders: [], documents: [] }
   } finally {
-    setFileLoading(false)
+    if (thisSearchId === currentSearchId) {
+      setFileLoading(false)
+    }
   }
 }
 
 export async function createFolder(kbId: string, name: string, parentId: string | null = null) {
-  const updated = await apiCreateFolder(kbId, name, parentId).send()
-  return updated as Folder
+  try {
+    const updated = await apiCreateFolder(kbId, name, parentId).send()
+    return updated as Folder
+  } catch (e) {
+    throwServiceError(e)
+  }
 }
 
 export async function renameFolder(kbId: string, folderId: string, name: string) {
-  const updated = await apiRenameFolder(kbId, folderId, name).send()
-  return updated as Folder
+  try {
+    const updated = await apiRenameFolder(kbId, folderId, name).send()
+    return updated as Folder
+  } catch (e) {
+    throwServiceError(e)
+  }
 }
 
 export async function removeFolder(kbId: string, folderId: string) {
-  await apiDeleteFolder(kbId, folderId).send()
+  try {
+    await apiDeleteFolder(kbId, folderId).send()
+  } catch (e) {
+    throwServiceError(e)
+  }
 }
+
+const removingIds = new Set<string>()
+const renamingIds = new Set<string>()
 
 export async function removeItem(item: Folder | DocumentItem) {
   const { currentKbId, folders, documents, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
-  if (!currentKbId) return
+  if (!currentKbId) throw new ServiceError('未选择知识库')
+  if (removingIds.has(item.id)) throw new ServiceError('操作进行中，请稍候')
 
-  const isFolderItem = !('status' in item)
+  removingIds.add(item.id)
   setFileLoading(true)
   setFileError(null)
   try {
-    if (isFolderItem) {
+    if (isFolderItem(item)) {
       await apiDeleteFolder(currentKbId, item.id).send()
       setFolders(folders.filter((f) => f.id !== item.id))
     } else {
@@ -244,21 +353,23 @@ export async function removeItem(item: Folder | DocumentItem) {
       setDocuments(documents.filter((d) => d.id !== item.id))
     }
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '删除失败')
+    throwServiceError(e)
   } finally {
+    removingIds.delete(item.id)
     setFileLoading(false)
   }
 }
 
 export async function renameItem(item: Folder | DocumentItem, name: string) {
   const { currentKbId, folders, documents, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
-  if (!currentKbId) return
+  if (!currentKbId) throw new ServiceError('未选择知识库')
+  if (renamingIds.has(item.id)) throw new ServiceError('操作进行中，请稍候')
 
-  const isFolderItem = !('status' in item)
+  renamingIds.add(item.id)
   setFileLoading(true)
   setFileError(null)
   try {
-    if (isFolderItem) {
+    if (isFolderItem(item)) {
       const updated = await apiRenameFolder(currentKbId, item.id, name).send()
       setFolders(folders.map((f) => (f.id === item.id ? (updated as Folder) : f)))
     } else {
@@ -266,8 +377,9 @@ export async function renameItem(item: Folder | DocumentItem, name: string) {
       setDocuments(documents.map((d) => (d.id === item.id ? (updated as DocumentItem) : d)))
     }
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '重命名失败')
+    throwServiceError(e)
   } finally {
+    renamingIds.delete(item.id)
     setFileLoading(false)
   }
 }
@@ -281,8 +393,7 @@ export async function addFolder(kbId: string, name: string, parentId?: string | 
     setFolders([...folders, created as Folder])
     return created as Folder
   } catch (e) {
-    setFileError(e instanceof Error ? e.message : '创建文件夹失败')
-    throw e
+    throwServiceError(e)
   } finally {
     setFileLoading(false)
   }

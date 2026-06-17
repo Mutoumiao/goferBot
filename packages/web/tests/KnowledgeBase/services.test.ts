@@ -84,13 +84,13 @@ describe('kb services', () => {
       expect(useKbStore.getState().isLoading).toBe(false)
     })
 
-    it('returns error on failure', async () => {
+    it('returns friendly network error on network failure', async () => {
       vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('network')) } as any)
 
       const result = await fetchKbList()
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('network')
+      expect(result.error).toBe('网络连接异常，请检查网络后重试')
       expect(useKbStore.getState().isLoading).toBe(false)
     })
 
@@ -100,7 +100,16 @@ describe('kb services', () => {
       const result = await fetchKbList()
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('加载知识库列表失败')
+      expect(result.error).toBe('操作失败，请稍后重试')
+    })
+
+    it('maps HTTP 500 to server busy message', async () => {
+      vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('HTTP 500: Internal Server Error')) } as any)
+
+      const result = await fetchKbList()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('服务器繁忙，请稍后重试')
     })
   })
 
@@ -151,14 +160,14 @@ describe('kb services', () => {
       expect(getDocuments).toHaveBeenCalledWith('kb1', 'f1', { sortBy: 'type', sortOrder: 'asc' })
     })
 
-    it('sets fileError on failure', async () => {
+    it('sets friendly fileError on failure', async () => {
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
       vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
       vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
 
       await loadKbItems('kb1', null)
 
-      expect(useKbStore.getState().fileError).toBe('fail')
+      expect(useKbStore.getState().fileError).toBe('操作失败，请稍后重试')
       expect(useKbStore.getState().fileLoading).toBe(false)
     })
   })
@@ -175,14 +184,14 @@ describe('kb services', () => {
       expect(previewDocument).toHaveBeenCalledWith('kb1', 'd1')
     })
 
-    it('returns null and sets error on failure', async () => {
+    it('returns null and sets friendly error on failure', async () => {
       useKbStore.setState({ currentKbId: 'kb1' })
       vi.mocked(previewDocument).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('preview fail')) } as any)
 
       const result = await svcPreviewDocument('d1')
 
       expect(result).toBeNull()
-      expect(useKbStore.getState().fileError).toBe('preview fail')
+      expect(useKbStore.getState().fileError).toBe('操作失败，请稍后重试')
     })
 
     it('does nothing when currentKbId is null', async () => {
@@ -218,11 +227,32 @@ describe('kb services', () => {
       expect(searchKbItems).not.toHaveBeenCalled()
     })
 
-    it('does nothing when currentKbId is null', async () => {
+    it('sets fileError when currentKbId is null', async () => {
       useKbStore.setState({ currentKbId: null })
       const result = await svcSearchKbItems('notes')
       expect(result).toEqual({ folders: [], documents: [] })
       expect(searchKbItems).not.toHaveBeenCalled()
+      expect(useKbStore.getState().fileError).toBe('未选择知识库')
+    })
+
+    it('ignores stale search results', async () => {
+      useKbStore.setState({ currentKbId: 'kb1' })
+      let resolveFirst: (value: unknown) => void = () => {}
+      vi.mocked(searchKbItems)
+        .mockReturnValueOnce({
+          send: vi.fn().mockImplementation(() => new Promise((resolve) => { resolveFirst = resolve })),
+        } as any)
+        .mockReturnValueOnce({
+          send: vi.fn().mockResolvedValue({ folders: [{ id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }], documents: [] }),
+        } as any)
+
+      const p1 = svcSearchKbItems('first')
+      const p2 = svcSearchKbItems('second')
+      await p2
+      expect(useKbStore.getState().folders).toEqual([{ id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }])
+      resolveFirst({ folders: [{ id: 'old', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }], documents: [] })
+      await p1
+      expect(useKbStore.getState().folders).toEqual([{ id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }])
     })
   })
 
@@ -243,19 +273,18 @@ describe('kb services', () => {
       expect(useKbStore.getState().documents[0].id).toBe('d2')
     })
 
-    it('does nothing when currentKbId is null', async () => {
+    it('throws when currentKbId is null', async () => {
       useKbStore.setState({ currentKbId: null, documents: [{ id: 'd1', kbId: '', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }] })
-      await removeDocument('d1')
+      await expect(removeDocument('d1')).rejects.toThrow('未选择知识库')
       expect(deleteDocument).not.toHaveBeenCalled()
     })
 
-    it('sets fileError on api failure', async () => {
+    it('throws friendly error on api failure', async () => {
       useKbStore.setState({ currentKbId: 'kb1', documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }] })
       vi.mocked(deleteDocument).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('del fail')) } as any)
 
-      await removeDocument('d1')
-
-      expect(useKbStore.getState().fileError).toBe('del fail')
+      await expect(removeDocument('d1')).rejects.toThrow('操作失败，请稍后重试')
+      expect(useKbStore.getState().fileError).toBeNull()
     })
   })
 
@@ -272,6 +301,12 @@ describe('kb services', () => {
 
       expect(useKbStore.getState().documents[0].name).toBe('new')
     })
+
+    it('throws when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null })
+      await expect(svcRenameDocument('d1', 'new')).rejects.toThrow('未选择知识库')
+      expect(renameDocument).not.toHaveBeenCalled()
+    })
   })
 
   describe('moveDocument', () => {
@@ -285,6 +320,18 @@ describe('kb services', () => {
       await svcMoveDocument('d1', 'f2')
 
       expect(useKbStore.getState().documents).toHaveLength(0)
+    })
+
+    it('throws when target folder is current folder', async () => {
+      useKbStore.setState({ currentKbId: 'kb1', currentFolderId: 'f1' })
+      await expect(svcMoveDocument('d1', 'f1')).rejects.toThrow('目标文件夹不能与当前文件夹相同')
+      expect(moveDocument).not.toHaveBeenCalled()
+    })
+
+    it('throws when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null })
+      await expect(svcMoveDocument('d1', 'f1')).rejects.toThrow('未选择知识库')
+      expect(moveDocument).not.toHaveBeenCalled()
     })
   })
 
@@ -348,6 +395,18 @@ describe('kb services', () => {
       expect(tasks[0].error).toBe('up fail')
       vi.unstubAllGlobals()
     })
+
+    it('saves file object in task for retry', async () => {
+      vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
+      vi.mocked(uploadFile).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+
+      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' })
+      await uploadFiles('kb1', [file])
+
+      const task = useKbStore.getState().uploadTasks[0]
+      expect(task.file).toBe(file)
+      vi.unstubAllGlobals()
+    })
   })
 
   describe('navigateToFolder', () => {
@@ -395,10 +454,38 @@ describe('kb services', () => {
       expect(useKbStore.getState().documents).toHaveLength(0)
     })
 
-    it('does nothing when currentKbId is null', async () => {
+    it('throws when currentKbId is null', async () => {
       useKbStore.setState({ currentKbId: null, folders: [{ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' }] })
-      await removeItem({ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
+      await expect(removeItem({ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' })).rejects.toThrow('未选择知识库')
       expect(deleteFolder).not.toHaveBeenCalled()
+    })
+
+    it('rejects concurrent remove requests for the same item', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' }],
+      })
+      vi.mocked(deleteFolder).mockReturnValue({
+        send: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50))),
+      } as any)
+
+      const p1 = removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
+      const p2 = removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
+
+      await expect(p2).rejects.toThrow('操作进行中，请稍候')
+      await p1
+      expect(deleteFolder).toHaveBeenCalledTimes(1)
+    })
+
+    it('maps HTTP 409 to friendly conflict message', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' }],
+      })
+      vi.mocked(deleteFolder).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('HTTP 409: Conflict')) } as any)
+
+      await expect(removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })).rejects.toThrow('名称冲突，请更换后重试')
+      expect(useKbStore.getState().fileError).toBeNull()
     })
   })
 
@@ -428,6 +515,29 @@ describe('kb services', () => {
 
       expect(useKbStore.getState().documents[0].name).toBe('new')
     })
+
+    it('throws when currentKbId is null', async () => {
+      useKbStore.setState({ currentKbId: null })
+      await expect(renameItem({ id: 'f1', kbId: '', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'New')).rejects.toThrow('未选择知识库')
+      expect(renameFolder).not.toHaveBeenCalled()
+    })
+
+    it('rejects concurrent rename requests for the same item', async () => {
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }],
+      })
+      vi.mocked(renameFolder).mockReturnValue({
+        send: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50))),
+      } as any)
+
+      const p1 = renameItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'New')
+      const p2 = renameItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'Another')
+
+      await expect(p2).rejects.toThrow('操作进行中，请稍候')
+      await p1
+      expect(renameFolder).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('addFolder', () => {
@@ -442,26 +552,12 @@ describe('kb services', () => {
       expect(useKbStore.getState().folders).toHaveLength(1)
     })
 
-    it('sets fileError on api failure', async () => {
+    it('throws friendly error on api failure', async () => {
       useKbStore.setState({ currentKbId: 'kb1', folders: [] })
       vi.mocked(createFolder).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
 
-      await expect(addFolder('kb1', 'New')).rejects.toThrow('fail')
-      expect(useKbStore.getState().fileError).toBe('fail')
-    })
-  })
-
-  describe('uploadFiles', () => {
-    it('saves file object in task for retry', async () => {
-      vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-      vi.mocked(uploadFile).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
-
-      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' })
-      await uploadFiles('kb1', [file])
-
-      const task = useKbStore.getState().uploadTasks[0]
-      expect(task.file).toBe(file)
-      vi.unstubAllGlobals()
+      await expect(addFolder('kb1', 'New')).rejects.toThrow('操作失败，请稍后重试')
+      expect(useKbStore.getState().fileError).toBeNull()
     })
   })
 })
