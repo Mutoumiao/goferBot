@@ -15,7 +15,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: [],  // 包内单元测试由各自 config 运行
+    include: [],  // 包内单元测试由各自 config 运行，根配置仅作为聚合
     exclude: [
       'tests/e2e/**',
       'tests/integration/**',

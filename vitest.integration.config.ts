@@ -37,6 +37,7 @@ export default defineConfig({
     pool: 'forks',
     reporters: [new AIReporter()],
     setupFiles: ['./tests/setup/integration-env.ts'],
+    globalSetup: ['./tests/setup/test-db-teardown.ts'],
     testTimeout: 60000,
     hookTimeout: 30000,
     teardownTimeout: 30000,
