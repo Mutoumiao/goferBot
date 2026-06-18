@@ -15,6 +15,8 @@
     "test:integration:watch": "vitest --config vitest.integration.config.ts",
     "test:e2e:api": "vitest run --config vitest.e2e-api.config.ts",
     "test:e2e:api:watch": "vitest --config vitest.e2e-api.config.ts",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --project=chromium",
     "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e:api && pnpm test:e2e",
     "type-check": "pnpm -r type-check",
     "preview": "pnpm --filter @goferbot/web preview",
