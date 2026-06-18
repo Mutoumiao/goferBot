@@ -10,7 +10,6 @@ async function main() {
     AppModule,
     new FastifyAdapter({
       bodyLimit: 1048576, // 1MB JSON body limit
-      trustProxy: true,   // 信任 X-Forwarded-For 头（用于 E2E 测试绕过限流）
     }),
   )
 

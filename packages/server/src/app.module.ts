@@ -32,13 +32,18 @@ import { SpiderGuard } from './common/guards/spider.guard.js'
       isGlobal: true,
       envFilePath: ['.env', '../.env'],
     }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 60000,
-        limit: 60,
-      },
-    ]),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          name: 'default',
+          ttl: 60000,
+          limit: 60,
+        },
+      ],
+      // 非生产环境（开发 / E2E）跳过限流：本地批量请求与重复登录测试不再被 429。
+      // skipIf 在 ThrottlerGuard 最先执行，故 @Throttle() 装饰的接口（如 auth 的 5 次/分）一并豁免。
+      skipIf: () => process.env.NODE_ENV !== 'production',
+    }),
     HealthModule,
     UserModule,
     AuthModule,

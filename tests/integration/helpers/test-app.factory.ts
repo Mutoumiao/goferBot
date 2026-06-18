@@ -69,8 +69,6 @@ export class TestAppFactory {
           datasources: { db: { url: dbUrl } },
         }),
       )
-      // 注意：ThrottlerGuard 通过 APP_GUARD 全局注册，且 AuthController 使用 @Throttle 装饰器，
-      // 此处 overrideModule 无法覆盖 @Throttle 的独立配置。测试中通过 remoteAddress 绕过限流。
 
     // realMode=false 时全部使用 mock 服务；realMode=true 时默认使用真实 Queue/Vector/Storage。
     // 当需要在真实 Storage + Vector 环境下禁用队列（避免 Worker 异步干扰）时，可传 mockQueue=true。
