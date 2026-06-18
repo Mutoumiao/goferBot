@@ -74,6 +74,16 @@ pnpm test:integration # 模块级集成测试
 pnpm test:e2e:api     # HTTP API E2E
 pnpm test:e2e         # 浏览器 E2E（Playwright）
 pnpm test:all         # 全量回归
+pnpm format           # biome 格式化（写入）
+pnpm format:check     # biome 格式化检查（不写入，CI 用）
+pnpm format:unsafe    # biome 格式化（含 unsafe 修复）
+pnpm lint             # biome 仅 lint
+pnpm check            # biome 检查（format + lint + assist）
+pnpm check:fix        # biome 检查并应用安全修复
+pnpm check:unsafe     # biome 检查并应用全部修复
+pnpm check:staged     # biome 仅处理 git 暂存文件
+pnpm check:changed    # biome 仅处理 VCS 变更文件
+pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 ```
 
 ## Agent 文档读取协议
