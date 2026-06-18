@@ -79,3 +79,5 @@ docs/design/pen/*
 .archived/
 
 .playwright-cli/
+e2e/report/index.html
+e2e/artifacts/.last-run.json

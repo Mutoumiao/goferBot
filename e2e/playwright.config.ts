@@ -18,6 +18,8 @@ export default defineConfig({
     ['html', { outputFolder: path.resolve(__dirname, './report'), open: 'never' }],
   ],
   outputDir: path.resolve(__dirname, './artifacts'),
+  globalSetup: path.resolve(__dirname, './playwright.global-setup.ts'),
+  globalTeardown: path.resolve(__dirname, './playwright.global-teardown.ts'),
   use: {
     baseURL: webServerUrl,
     trace: 'on-first-retry',
@@ -35,12 +37,14 @@ export default defineConfig({
   webServer: process.env.WEB_SERVER_URL
     ? undefined
     : {
-        command: 'pnpm --filter @goferbot/web dev',
-        url: 'http://localhost:1420',
-        reuseExistingServer: true,
-        timeout: 120_000,
-        env: {
-          ...process.env,
-        },
+      command: 'pnpm --filter @goferbot/web dev',
+      url: 'http://localhost:1420',
+      reuseExistingServer: true,
+      timeout: 120_000,
+      env: {
+        ...process.env,
+        // 强制使用 goferbot_e2e 数据库
+        DATABASE_URL: 'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public',
       },
+    },
 })

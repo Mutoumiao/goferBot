@@ -19,7 +19,8 @@
       "!**/routeTree.gen.ts",
       "!packages/webui",
       "!**/prisma/migrations",
-      "!**/docs"
+      "!**/docs",
+      "!**/node_modules"
     ]
   },
   "formatter": {
@@ -75,7 +76,9 @@
   },
   "overrides": [
     {
-      "includes": ["packages/server/**"],
+      "includes": [
+        "packages/server/**"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -91,7 +94,9 @@
       }
     },
     {
-      "includes": ["packages/web/src/components/ui/**"],
+      "includes": [
+        "packages/web/src/components/ui/**"
+      ],
       "linter": {
         "rules": {
           "a11y": "off",
@@ -126,7 +131,12 @@
       }
     },
     {
-      "includes": ["**/*.config.ts", "**/*.config.cjs", "scripts/**", "*.cjs"],
+      "includes": [
+        "**/*.config.ts",
+        "**/*.config.cjs",
+        "scripts/**",
+        "*.cjs"
+      ],
       "linter": {
         "rules": {
           "suspicious": {
