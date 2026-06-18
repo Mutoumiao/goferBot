@@ -1,64 +1,69 @@
-import { useState, useCallback } from 'react'
-import { useAuthStore } from '@/stores/auth'
-import { Avatar } from '@/features/auth/components/Avatar'
-import { updateProfile, logoutUser } from '@/features/auth/services'
-import { ChevronRight, LogOut } from 'lucide-react'
-import { toast } from 'sonner'
-import { openDialog } from '@/overlays/services/overlay-service'
+import { useState, useCallback } from "react";
+import { useAuthStore } from "@/stores/auth";
+import { Avatar } from "@/features/auth/components/Avatar";
+import { updateProfile, logoutUser } from "@/features/auth/services";
+import { ChevronRight, LogOut } from "lucide-react";
+import { toast } from "sonner";
+import { openDialog } from "@/overlays/services/overlay-service";
 
 export function ProfilePage() {
-  const user = useAuthStore((s) => s.user)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const user = useAuthStore((s) => s.user);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpenAvatarDialog = useCallback(async () => {
-    if (!user) return
-    const EditAvatarDialog = (await import('@/overlays/dialogs/EditAvatarDialog')).default
+    if (!user) return;
+    const EditAvatarDialog = (
+      await import("@/overlays/dialogs/EditAvatarDialog")
+    ).default;
     const file = await openDialog<File | undefined>(EditAvatarDialog, {
       currentAvatar: user.avatarUrl,
-    })
+    });
     if (file) {
-      setIsSubmitting(true)
-      const result = await updateProfile({ avatarFile: file })
-      setIsSubmitting(false)
+      setIsSubmitting(true);
+      const result = await updateProfile({ avatarFile: file });
+      setIsSubmitting(false);
       if (!result.success) {
-        toast.error(result.error ?? '头像更新失败')
+        toast.error(result.error ?? "头像更新失败");
       }
     }
-  }, [user])
+  }, [user]);
 
   const handleOpenNameDialog = useCallback(async () => {
-    if (!user) return
-    const EditNameDialog = (await import('@/overlays/dialogs/EditNameDialog')).default
+    if (!user) return;
+    const EditNameDialog = (await import("@/overlays/dialogs/EditNameDialog"))
+      .default;
     const newName = await openDialog<string | undefined>(EditNameDialog, {
-      currentName: user.name ?? '',
-    })
+      currentName: user.name ?? "",
+    });
     if (newName && newName !== user.name) {
-      setIsSubmitting(true)
-      const result = await updateProfile({ name: newName })
-      setIsSubmitting(false)
+      setIsSubmitting(true);
+      const result = await updateProfile({ name: newName });
+      setIsSubmitting(false);
       if (!result.success) {
-        toast.error(result.error ?? '用户名更新失败')
+        toast.error(result.error ?? "用户名更新失败");
       }
     }
-  }, [user])
+  }, [user]);
 
   const handleLogout = () => {
-    logoutUser()
-  }
+    logoutUser();
+  };
 
   if (!user) {
     return (
       <div className="flex h-full items-center justify-center">
         <p className="text-[#5E6673]">加载中...</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="h-full w-full bg-[#F7F8FA]">
       <div className="mx-auto max-w-[920px] px-10 py-10">
         {/* 页面标题 */}
-        <h1 className="mb-8 text-[28px] font-semibold text-[#1F2328]">基础信息</h1>
+        <h1 className="mb-8 text-[28px] font-semibold text-[#1F2328]">
+          基础信息
+        </h1>
 
         <div className="space-y-8">
           {/* ====== 基础信息卡片 ====== */}
@@ -73,7 +78,12 @@ export function ProfilePage() {
               >
                 <span className="text-[15px] text-[#1F2328]">头像</span>
                 <div className="flex items-center gap-3">
-                  <Avatar src={user.avatarUrl} fallback={user.name} size={52} className="rounded-[10px]" />
+                  <Avatar
+                    src={user.avatarUrl}
+                    fallback={user.name}
+                    size={52}
+                    className="rounded-[10px]"
+                  />
                   <ChevronRight className="h-[18px] w-[18px] text-[#9AA3AF]" />
                 </div>
               </button>
@@ -90,7 +100,9 @@ export function ProfilePage() {
               >
                 <span className="text-[15px] text-[#1F2328]">用户名</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-[14px] text-[#5E6673]">{user.name ?? '—'}</span>
+                  <span className="text-[14px] text-[#5E6673]">
+                    {user.name ?? "—"}
+                  </span>
                   <ChevronRight className="h-[18px] w-[18px] text-[#9AA3AF]" />
                 </div>
               </button>
@@ -99,7 +111,9 @@ export function ProfilePage() {
 
           {/* ====== 账号安全 ====== */}
           <section>
-            <h2 className="mb-2 text-[13px] font-medium text-[#9AA3AF]">账号安全</h2>
+            <h2 className="mb-2 text-[13px] font-medium text-[#9AA3AF]">
+              账号安全
+            </h2>
             <div className="rounded-xl border border-[#E7EAF0] bg-white">
               <button
                 type="button"
@@ -114,5 +128,5 @@ export function ProfilePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

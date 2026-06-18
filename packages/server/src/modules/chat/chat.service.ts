@@ -67,16 +67,28 @@ export class ChatService {
     }
     const input = dto.query
 
-    const [provider, history] = await Promise.all([
-      this.createProvider(userId, dto.provider_key, dto.model),
-      this.conversationService.loadHistory(sessionId, {
-        beforeMessageId: dto.parent_message_id ?? undefined,
-      }),
-    ])
+    // Service 层兜底：即使 DTO 校验通过，空字符串也不应传给 LLM
+    if (typeof input !== 'string' || input.trim().length === 0) {
+      throw new BadRequestException({
+        code: 'QUERY_EMPTY',
+        message: '输入内容不能为空',
+      })
+    }
+
+    // 先解析 provider（失败时无需加载历史消息，减少无效数据库压力）
+    const provider = await this.createProvider(userId, dto.provider_key, dto.model)
+    const history = await this.conversationService.loadHistory(sessionId, {
+      beforeMessageId: dto.parent_message_id ?? undefined,
+    })
 
     await this.conversationService.saveUserMessage(sessionId, input)
 
     const messages: LlmMessage[] = history.filter(isLlmMessage)
+
+    // 将当前用户输入追加到 messages。
+    // 原因：loadHistory 在 saveUserMessage 之前调用，新会话首条消息时 history 为空。
+    // 若不追加，LLM 会收到空 messages 并报 "Empty input messages"。
+    messages.push({ role: 'user', content: input })
 
     if (dto.knowledge_base_ids && dto.knowledge_base_ids.length > 0) {
       if (this.contextRetriever) {
@@ -100,6 +112,8 @@ export class ChatService {
 
     try {
       for await (const chunk of provider.stream(messages, { abortSignal: abortController.signal })) {
+        // 客户端已断开时提前终止，避免继续消耗 tokens
+        if (abortController.signal.aborted) break
         if (chunk.text) {
           fullReply += chunk.text
           yield {
@@ -135,11 +149,38 @@ export class ChatService {
       return
     }
 
-    await this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply)
+    // 客户端在流期间主动取消：不持久化半截回复，也不触发 message_end
+    if (abortController.signal.aborted) {
+      yield {
+        event: 'error',
+        conversation_id: sessionId,
+        message_id: messageId,
+        answer: '',
+        done: true,
+        error: '已取消',
+      }
+      return
+    }
+
+    try {
+      await this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '未知错误'
+      this.logger.error(`保存 assistant 消息失败 sessionId=${sessionId}: ${message}`)
+      yield {
+        event: 'error',
+        conversation_id: sessionId,
+        message_id: messageId,
+        answer: '',
+        done: true,
+        error: `回复保存失败: ${message}`,
+      }
+      return
+    }
 
     if (fullReply) {
       this.conversationService.generateTitle(sessionId, input, fullReply, provider).catch((err: unknown) => {
-        this.logger.warn(`生成会话标题失败: ${err instanceof Error ? err.message : '未知错误'}`)
+        this.logger.error(`生成会话标题失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`)
       })
     }
 
