@@ -2,21 +2,21 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
   type AppConfig,
-  type LLMConfig,
-  type ProviderConfig,
   DEFAULT_CONFIG,
+  type LLMConfig,
+  mergeAppConfig,
+  type ProviderConfig,
   getLLMConfig as resolveLLMConfig,
   configuredProviders as resolveProviders,
-  mergeAppConfig,
 } from '@/utils/llm-config'
 import { alovaInstance } from '@/utils/server'
 
 // 向下兼容 — 类型重导出
 export type {
-  ProviderConfig,
-  EmbeddingProviderConfig,
   AppConfig,
+  EmbeddingProviderConfig,
   LLMConfig,
+  ProviderConfig,
 } from '@/utils/llm-config'
 export { DEFAULT_CONFIG } from '@/utils/llm-config'
 

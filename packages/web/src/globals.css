@@ -5,8 +5,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-
-
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Inter Variable', sans-serif;
@@ -58,7 +56,7 @@
   --card-foreground: #1a1a2e;
   --popover: #ffffff;
   --popover-foreground: #1a1a2e;
-  --primary: #5074FA;
+  --primary: #5074fa;
   --primary-foreground: #ffffff;
   --secondary: #f8f9fa;
   --secondary-foreground: #1a1a2e;
@@ -93,7 +91,7 @@
   --card-foreground: #f1f3f5;
   --popover: #252542;
   --popover-foreground: #f1f3f5;
-  --primary: #5074FA;
+  --primary: #5074fa;
   --primary-foreground: #1a1a2e;
   --secondary: #2d2d4a;
   --secondary-foreground: #f1f3f5;

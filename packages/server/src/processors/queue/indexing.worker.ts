@@ -1,12 +1,12 @@
+import { OpenAIEmbedder, RecursiveCharacterChunker, runIndexing } from '@goferbot/rag-sdk'
 import { Injectable, Logger } from '@nestjs/common'
-import { Job } from 'bullmq'
-import { PrismaService } from '../database/prisma.service.js'
-import { StorageService } from '../storage/storage.service.js'
 import { ConfigService } from '@nestjs/config'
-import { DocumentParser } from '../parser/document.parser.js'
-import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
-import { runIndexing, OpenAIEmbedder, RecursiveCharacterChunker } from '@goferbot/rag-sdk'
+import { Job } from 'bullmq'
 import type { DocumentJobData } from '../../queue/queues.js'
+import { PrismaService } from '../database/prisma.service.js'
+import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
+import { DocumentParser } from '../parser/document.parser.js'
+import { StorageService } from '../storage/storage.service.js'
 
 type DocumentStatus = 'uploaded' | 'chunking' | 'embedding' | 'indexing' | 'ready' | 'failed'
 
@@ -40,27 +40,30 @@ export class IndexingWorker {
     const chunker = new RecursiveCharacterChunker()
 
     try {
-      await runIndexing({
-        documentId: doc.id,
-        kbId: doc.kbId,
-        content: text,
-        mimeType: doc.mimeType ?? 'text/plain',
-      }, {
-        chunker,
-        embedder,
-        indexer: this.indexer,
-        onStageChange: async (stages) => {
-          const map: Record<string, DocumentStatus> = {
-            chunk: 'chunking',
-            embed: 'embedding',
-            index: 'indexing',
-          }
-          const running = stages.find(s => s.status === 'running')
-          if (running && map[running.name]) {
-            await this.updateStatus(doc.id, map[running.name])
-          }
+      await runIndexing(
+        {
+          documentId: doc.id,
+          kbId: doc.kbId,
+          content: text,
+          mimeType: doc.mimeType ?? 'text/plain',
         },
-      })
+        {
+          chunker,
+          embedder,
+          indexer: this.indexer,
+          onStageChange: async (stages) => {
+            const map: Record<string, DocumentStatus> = {
+              chunk: 'chunking',
+              embed: 'embedding',
+              index: 'indexing',
+            }
+            const running = stages.find((s) => s.status === 'running')
+            if (running && map[running.name]) {
+              await this.updateStatus(doc.id, map[running.name])
+            }
+          },
+        },
+      )
 
       await this.updateStatus(doc.id, 'ready')
     } catch (err) {
@@ -71,7 +74,11 @@ export class IndexingWorker {
     }
   }
 
-  private async updateStatus(docId: string, status: DocumentStatus, errorMessage?: string): Promise<void> {
+  private async updateStatus(
+    docId: string,
+    status: DocumentStatus,
+    errorMessage?: string,
+  ): Promise<void> {
     await this.prisma.document.update({
       where: { id: docId },
       data: { status, ...(errorMessage && { errorMessage }) },

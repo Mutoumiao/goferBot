@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, UseGuards, HttpCode } from '@nestjs/common'
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { SettingsService } from './settings.service.js'
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { SettingsDto } from './dto/settings.dto.js'
+import { SettingsService } from './settings.service.js'
 
 @Controller('settings')
 @UseGuards(JwtAuthGuard)
@@ -16,10 +16,7 @@ export class SettingsController {
 
   @Post()
   @HttpCode(200)
-  async saveSettings(
-    @CurrentUser('id') userId: string,
-    @Body() dto: SettingsDto,
-  ) {
+  async saveSettings(@CurrentUser('id') userId: string, @Body() dto: SettingsDto) {
     return this.settingsService.saveSettings(userId, dto)
   }
 }

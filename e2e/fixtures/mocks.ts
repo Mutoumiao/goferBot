@@ -1,5 +1,5 @@
+import { constants, createPrivateKey, privateDecrypt } from 'node:crypto'
 import type { Page, Route } from '@playwright/test'
-import { privateDecrypt, createPrivateKey, constants } from 'node:crypto'
 
 export const MOCK_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA13qT6v0YXoPUW/0vnFMS
@@ -215,9 +215,7 @@ export function installChatMocks(page: Page) {
       contentType: 'application/json',
       body: JSON.stringify({
         data: {
-          providers: [
-            { key: 'mock-provider', name: 'Mock Provider', enabled: true },
-          ],
+          providers: [{ key: 'mock-provider', name: 'Mock Provider', enabled: true }],
         },
       }),
     })
@@ -295,7 +293,8 @@ export function installChatMocks(page: Page) {
       body: [
         'id: 1',
         'event: message',
-        'data: ' + JSON.stringify({ content: '你好，我是 Mock AI，已收到你的消息。', role: 'assistant' }),
+        'data: ' +
+          JSON.stringify({ content: '你好，我是 Mock AI，已收到你的消息。', role: 'assistant' }),
         '',
         'id: 2',
         'event: done',

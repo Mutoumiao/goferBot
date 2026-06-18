@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockSend = vi.fn()
 
@@ -7,7 +7,12 @@ vi.mock('@/api/auth', () => ({
 }))
 
 import { getPublicKey } from '@/api/auth'
-import { fetchPublicKey, encryptPassword, clearPublicKeyCache, PasswordEncryptionError } from '@/utils/password-encryption'
+import {
+  clearPublicKeyCache,
+  encryptPassword,
+  fetchPublicKey,
+  PasswordEncryptionError,
+} from '@/utils/password-encryption'
 
 // Valid base64 string that atob can parse (16 bytes = 24 base64 chars after padding)
 const VALID_BASE64_KEY = btoa('a'.repeat(16))

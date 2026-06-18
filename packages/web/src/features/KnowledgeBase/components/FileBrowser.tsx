@@ -1,23 +1,31 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
 import { FolderIcon, Upload } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { openDialog } from '@/overlays/services/overlay-service'
 import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  addFolder,
+  loadKbItems,
+  previewDocument,
+  removeItem,
+  renameItem,
+  searchKbItems,
+  uploadFiles,
+} from '../services'
 import { useKbStore } from '../store'
-import { loadKbItems, uploadFiles, renameItem, removeItem, addFolder, previewDocument, searchKbItems } from '../services'
-import { KnowledgeBaseToolbar } from './KnowledgeBaseToolbar'
+import {
+  type DocumentItem,
+  type Folder,
+  parseSortOption,
+  type SortOption,
+  type ViewMode,
+} from '../types'
+import { FileContextMenu } from './FileContextMenu'
 import { FileGridItem } from './FileGridItem'
 import { FileListItem } from './FileListItem'
+import { KnowledgeBaseToolbar } from './KnowledgeBaseToolbar'
 import { UploadDropZone } from './UploadDropZone'
 import { UploadProgressBar } from './UploadProgressBar'
-import { FileContextMenu } from './FileContextMenu'
-import { openDialog } from '@/overlays/services/overlay-service'
-import { parseSortOption, type Folder, type DocumentItem, type ViewMode, type SortOption } from '../types'
 
 interface FileBrowserProps {
   kbName: string
@@ -27,7 +35,11 @@ function LoadingState() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} data-testid="skeleton-card" className="h-32 bg-[#F7F8FA] rounded-xl animate-pulse" />
+        <div
+          key={i}
+          data-testid="skeleton-card"
+          className="h-32 bg-[#F7F8FA] rounded-xl animate-pulse"
+        />
       ))}
     </div>
   )
@@ -148,11 +160,7 @@ function ListView({
                 onMove={onMoveItem}
                 onCopy={onCopyItem}
               >
-                <FileListItem
-                  item={folder}
-                  isFolder
-                  onClick={() => onFolderClick(folder)}
-                />
+                <FileListItem item={folder} isFolder onClick={() => onFolderClick(folder)} />
               </FileContextMenu>
             ))}
             {documents.map((doc) => (
@@ -164,11 +172,7 @@ function ListView({
                 onMove={onMoveItem}
                 onCopy={onCopyItem}
               >
-                <FileListItem
-                  item={doc}
-                  isFolder={false}
-                  onClick={() => onDocumentClick(doc)}
-                />
+                <FileListItem item={doc} isFolder={false} onClick={() => onDocumentClick(doc)} />
               </FileContextMenu>
             ))}
           </TableBody>
@@ -226,9 +230,12 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     return () => clearTimeout(timer)
   }, [currentKbId, currentFolderId, searchQuery, sortParams])
 
-  const handleFolderClick = useCallback((folder: Folder) => {
-    setCurrentFolderId(folder.id)
-  }, [setCurrentFolderId])
+  const handleFolderClick = useCallback(
+    (folder: Folder) => {
+      setCurrentFolderId(folder.id)
+    },
+    [setCurrentFolderId],
+  )
 
   const handleDocumentClick = useCallback(async (doc: DocumentItem) => {
     const preview = await previewDocument(doc.id)
@@ -237,15 +244,21 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     await openDialog(PreviewDialog, { document: doc, preview })
   }, [])
 
-  const handleNavigate = useCallback((folderId: string | null) => {
-    setCurrentFolderId(folderId)
-  }, [setCurrentFolderId])
+  const handleNavigate = useCallback(
+    (folderId: string | null) => {
+      setCurrentFolderId(folderId)
+    },
+    [setCurrentFolderId],
+  )
 
-  const handleOpenItem = useCallback((item: Folder | DocumentItem) => {
-    if (!('status' in item)) {
-      setCurrentFolderId(item.id)
-    }
-  }, [setCurrentFolderId])
+  const handleOpenItem = useCallback(
+    (item: Folder | DocumentItem) => {
+      if (!('status' in item)) {
+        setCurrentFolderId(item.id)
+      }
+    },
+    [setCurrentFolderId],
+  )
 
   const handleRenameItem = useCallback(async (item: Folder | DocumentItem) => {
     const RenameItemDialog = (await import('@/overlays/dialogs/RenameItemDialog')).default
@@ -269,29 +282,35 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     })
   }, [])
 
-  const handleMoveItem = useCallback(async (item: Folder | DocumentItem) => {
-    const MoveCopyDialog = (await import('./MoveCopyDialog')).default
-    await openDialog(MoveCopyDialog, {
-      mode: 'move',
-      item,
-      onConfirm: async () => {
-        if (!currentKbId) return
-        await loadKbItems(currentKbId, currentFolderId, sortParams)
-      },
-    })
-  }, [currentKbId, currentFolderId, sortParams])
+  const handleMoveItem = useCallback(
+    async (item: Folder | DocumentItem) => {
+      const MoveCopyDialog = (await import('./MoveCopyDialog')).default
+      await openDialog(MoveCopyDialog, {
+        mode: 'move',
+        item,
+        onConfirm: async () => {
+          if (!currentKbId) return
+          await loadKbItems(currentKbId, currentFolderId, sortParams)
+        },
+      })
+    },
+    [currentKbId, currentFolderId, sortParams],
+  )
 
-  const handleCopyItem = useCallback(async (item: Folder | DocumentItem) => {
-    const MoveCopyDialog = (await import('./MoveCopyDialog')).default
-    await openDialog(MoveCopyDialog, {
-      mode: 'copy',
-      item,
-      onConfirm: async () => {
-        if (!currentKbId) return
-        await loadKbItems(currentKbId, currentFolderId, sortParams)
-      },
-    })
-  }, [currentKbId, currentFolderId, sortParams])
+  const handleCopyItem = useCallback(
+    async (item: Folder | DocumentItem) => {
+      const MoveCopyDialog = (await import('./MoveCopyDialog')).default
+      await openDialog(MoveCopyDialog, {
+        mode: 'copy',
+        item,
+        onConfirm: async () => {
+          if (!currentKbId) return
+          await loadKbItems(currentKbId, currentFolderId, sortParams)
+        },
+      })
+    },
+    [currentKbId, currentFolderId, sortParams],
+  )
 
   const handleCreateFolder = useCallback(async () => {
     if (!currentKbId) return
@@ -313,14 +332,17 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     }
   }, [currentKbId, currentFolderId, searchQuery, sortParams])
 
-  const handleUploadComplete = useCallback(async (kbId: string, files: File[], targetFolderId?: string | null) => {
-    const folderId = targetFolderId ?? currentFolderId
-    await uploadFiles(kbId, files, folderId, sortParams)
-    if (searchQuery.trim()) {
-      setSearchQuery('')
-      await loadKbItems(kbId, folderId, sortParams)
-    }
-  }, [currentFolderId, searchQuery, sortParams])
+  const handleUploadComplete = useCallback(
+    async (kbId: string, files: File[], targetFolderId?: string | null) => {
+      const folderId = targetFolderId ?? currentFolderId
+      await uploadFiles(kbId, files, folderId, sortParams)
+      if (searchQuery.trim()) {
+        setSearchQuery('')
+        await loadKbItems(kbId, folderId, sortParams)
+      }
+    },
+    [currentFolderId, searchQuery, sortParams],
+  )
 
   const handleUpload = useCallback(() => {
     const input = document.createElement('input')
@@ -338,17 +360,23 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     input.click()
   }, [handleUploadComplete])
 
-  const handleDropFiles = useCallback(async (files: File[]) => {
-    if (!currentKbId) return
-    await handleUploadComplete(currentKbId, files, currentFolderId)
-  }, [currentKbId, currentFolderId, handleUploadComplete])
+  const handleDropFiles = useCallback(
+    async (files: File[]) => {
+      if (!currentKbId) return
+      await handleUploadComplete(currentKbId, files, currentFolderId)
+    },
+    [currentKbId, currentFolderId, handleUploadComplete],
+  )
 
-  const handleRetryUpload = useCallback(async (taskId: string) => {
-    const task = uploadTasks.find((t) => t.id === taskId)
-    if (!task || !currentKbId || !task.file) return
-    removeUploadTask(taskId)
-    await handleUploadComplete(currentKbId, [task.file], task.folderId)
-  }, [uploadTasks, currentKbId, removeUploadTask, handleUploadComplete])
+  const handleRetryUpload = useCallback(
+    async (taskId: string) => {
+      const task = uploadTasks.find((t) => t.id === taskId)
+      if (!task || !currentKbId || !task.file) return
+      removeUploadTask(taskId)
+      await handleUploadComplete(currentKbId, [task.file], task.folderId)
+    },
+    [uploadTasks, currentKbId, removeUploadTask, handleUploadComplete],
+  )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -360,13 +388,16 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     setIsDragOver(false)
   }, [])
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    if (e.dataTransfer.files.length > 0 && currentKbId) {
-      await handleUploadComplete(currentKbId, Array.from(e.dataTransfer.files), currentFolderId)
-    }
-  }, [currentKbId, currentFolderId, handleUploadComplete])
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragOver(false)
+      if (e.dataTransfer.files.length > 0 && currentKbId) {
+        await handleUploadComplete(currentKbId, Array.from(e.dataTransfer.files), currentFolderId)
+      }
+    },
+    [currentKbId, currentFolderId, handleUploadComplete],
+  )
 
   const renderContent = () => {
     if (fileLoading) {
@@ -440,9 +471,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       )}
 
       <div className="flex-1 overflow-auto p-6">
-        {currentKbId && (
-          <UploadDropZone kbId={currentKbId} onFilesSelected={handleDropFiles} />
-        )}
+        {currentKbId && <UploadDropZone kbId={currentKbId} onFilesSelected={handleDropFiles} />}
         <UploadProgressBar
           tasks={uploadTasks}
           activeUploadCount={activeUploadCount()}

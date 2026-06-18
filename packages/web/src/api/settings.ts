@@ -1,8 +1,6 @@
-import { alovaInstance } from '@/utils/server'
 import type { AppConfig } from '@/utils/llm-config'
+import { alovaInstance } from '@/utils/server'
 
-export const getSettings = () =>
-  alovaInstance.Get<AppConfig>('/settings')
+export const getSettings = () => alovaInstance.Get<AppConfig>('/settings')
 
-export const saveSettings = (data: AppConfig) =>
-  alovaInstance.Post<AppConfig>('/settings', data)
+export const saveSettings = (data: AppConfig) => alovaInstance.Post<AppConfig>('/settings', data)

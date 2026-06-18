@@ -1,7 +1,7 @@
 import { FolderIcon } from 'lucide-react'
-import { formatFileSize } from '@/utils/file'
 import { cn } from '@/utils/cn'
-import type { Folder, DocumentItem } from '../types'
+import { formatFileSize } from '@/utils/file'
+import type { DocumentItem, Folder } from '../types'
 
 interface FileGridItemProps {
   item: Folder | DocumentItem
@@ -31,7 +31,10 @@ const FILE_ICON_BG: Record<string, string> = {
   md: 'bg-[#9E9E9E]',
 }
 
-const DOCUMENT_STATUS_CONFIG: Record<DocumentItem['status'], { bg: string; text: string; label: string }> = {
+const DOCUMENT_STATUS_CONFIG: Record<
+  DocumentItem['status'],
+  { bg: string; text: string; label: string }
+> = {
   uploaded: { bg: 'bg-[#9E9E9E]', text: 'text-white', label: '已上传' },
   chunking: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '分块中' },
   embedding: { bg: 'bg-[#5B7CFA]', text: 'text-white', label: '嵌入中' },
@@ -53,7 +56,7 @@ function FolderCard({ item, documentCount, onClick }: FolderCardProps) {
 
   return (
     <div className="group relative flex flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA] focus-within:ring-2 focus-within:ring-[#5B7CFA] focus-within:ring-offset-2">
-      { /* 透明背景按钮覆盖整张卡片，让卡片本身支持键盘操作；内容层禁止指针事件，避免遮挡点击 */ }
+      {/* 透明背景按钮覆盖整张卡片，让卡片本身支持键盘操作；内容层禁止指针事件，避免遮挡点击 */}
       <button
         type="button"
         className="absolute inset-0 z-0 cursor-pointer rounded-xl focus-visible:outline-none"
@@ -68,8 +71,19 @@ function FolderCard({ item, documentCount, onClick }: FolderCardProps) {
           className="flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF]"
           aria-hidden="true"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="19" cy="12" r="1" />
+            <circle cx="5" cy="12" r="1" />
           </svg>
         </span>
       </div>
@@ -84,7 +98,11 @@ function FolderCard({ item, documentCount, onClick }: FolderCardProps) {
 
 function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => void }) {
   const ext = item.ext ?? ''
-  const typeColors = FILE_TYPE_COLORS[ext] || { bg: 'bg-[#F1F3F6]', text: 'text-[#5E6673]', label: ext.toUpperCase() }
+  const typeColors = FILE_TYPE_COLORS[ext] || {
+    bg: 'bg-[#F1F3F6]',
+    text: 'text-[#5E6673]',
+    label: ext.toUpperCase(),
+  }
   const iconBg = FILE_ICON_BG[ext] || 'bg-[#9E9E9E]'
   const date = new Date(item.updatedAt)
   const dateStr = `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
@@ -93,7 +111,7 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
 
   return (
     <div className="group relative flex h-[150px] flex-col gap-2.5 rounded-xl border border-[#E7EAF0] bg-white p-3.5 transition-colors hover:bg-[#F7F8FA] focus-within:ring-2 focus-within:ring-[#5B7CFA] focus-within:ring-offset-2">
-      { /* 透明背景按钮覆盖整张卡片，让卡片本身支持键盘操作；内容层禁止指针事件，避免遮挡点击 */ }
+      {/* 透明背景按钮覆盖整张卡片，让卡片本身支持键盘操作；内容层禁止指针事件，避免遮挡点击 */}
       <button
         type="button"
         className="absolute inset-0 z-0 cursor-pointer rounded-xl focus-visible:outline-none"
@@ -101,7 +119,13 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
         aria-label={`打开文档 ${item.name}`}
       />
       {statusConfig && (
-        <span className={cn('absolute right-2 top-2 z-10 rounded-full px-1.5 py-0.5 text-[10px] font-medium pointer-events-none', statusConfig.bg, statusConfig.text)}>
+        <span
+          className={cn(
+            'absolute right-2 top-2 z-10 rounded-full px-1.5 py-0.5 text-[10px] font-medium pointer-events-none',
+            statusConfig.bg,
+            statusConfig.text,
+          )}
+        >
           {statusConfig.label}
         </span>
       )}
@@ -113,8 +137,19 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
           className="flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF]"
           aria-hidden="true"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="19" cy="12" r="1" />
+            <circle cx="5" cy="12" r="1" />
           </svg>
         </span>
       </div>
@@ -122,7 +157,13 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-[#1F2328]">{item.name}</span>
         </div>
-        <span className={cn('w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold', typeColors.bg, typeColors.text)}>
+        <span
+          className={cn(
+            'w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold',
+            typeColors.bg,
+            typeColors.text,
+          )}
+        >
           {typeColors.label}
         </span>
         <span className="text-xs text-[#9AA3AF]">{formatFileSize(item.size)}</span>

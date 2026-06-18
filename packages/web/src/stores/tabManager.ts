@@ -6,7 +6,9 @@ const DEFAULT_CHAT_TITLE = '新会话'
 
 function findHomeChatTab() {
   const workspace = useWorkspaceStore.getState()
-  return workspace.tabs.find((t) => t.type === ROUTES_REGISTER.chat.key && !t.conversationId) ?? null
+  return (
+    workspace.tabs.find((t) => t.type === ROUTES_REGISTER.chat.key && !t.conversationId) ?? null
+  )
 }
 
 export const tabManager = {

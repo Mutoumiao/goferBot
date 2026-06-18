@@ -18,11 +18,11 @@
  */
 import { Client } from 'pg'
 import {
-  TestDatabaseManager,
   cleanupAllTrackedDatabases,
   cleanupOrphanedDatabases,
   listOrphanedDatabases,
   parseCreatedAtFromName,
+  TestDatabaseManager,
 } from '../tests/integration/helpers/test-database.manager.js'
 
 const DB_PREFIX = 'goferbot_test_'
@@ -147,9 +147,7 @@ async function main(): Promise<void> {
   else fail(`parseCreatedAtFromName mismatch: expected ${now}, got ${parsed}`)
 
   // 7. 最终状态
-  const finalOrphans = (await listOrphanedDatabases(adminUrl)).filter(
-    (n) => n.includes(marker),
-  )
+  const finalOrphans = (await listOrphanedDatabases(adminUrl)).filter((n) => n.includes(marker))
   if (finalOrphans.length === 0) ok(`No orphan DBs with marker "${marker}" remain`)
   else fail(`Orphan DBs still exist: ${finalOrphans.join(', ')}`)
 

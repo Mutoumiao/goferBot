@@ -14,25 +14,29 @@ function killPort(port) {
   try {
     if (process.platform === 'win32') {
       // Windows: 先查找占用端口的进程
-      const result = execSync(
-        `netstat -ano | findstr :${port} | findstr LISTENING`,
-        { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
-      )
+      const result = execSync(`netstat -ano | findstr :${port} | findstr LISTENING`, {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      })
 
       const lines = result.trim().split('\n').filter(Boolean)
-      const pids = [...new Set(
-        lines.map(line => {
-          const parts = line.trim().split(/\s+/)
-          return parts[parts.length - 1] // PID 在最后一列
-        }).filter(pid => pid && pid !== '0')
-      )]
+      const pids = [
+        ...new Set(
+          lines
+            .map((line) => {
+              const parts = line.trim().split(/\s+/)
+              return parts[parts.length - 1] // PID 在最后一列
+            })
+            .filter((pid) => pid && pid !== '0'),
+        ),
+      ]
 
       if (pids.length === 0) {
         console.log(`[kill-port] Port ${port} is already free`)
         return
       }
 
-      pids.forEach(pid => {
+      pids.forEach((pid) => {
         try {
           execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
           console.log(`[kill-port] Killed PID ${pid} on port ${port}`)
@@ -42,10 +46,7 @@ function killPort(port) {
       })
     } else {
       // macOS/Linux
-      execSync(
-        `lsof -ti:${port} | xargs kill -9 2>/dev/null || true`,
-        { stdio: 'ignore' }
-      )
+      execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' })
       console.log(`[kill-port] Cleaned port ${port}`)
     }
   } catch {

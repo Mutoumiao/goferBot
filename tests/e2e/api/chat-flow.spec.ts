@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+import { constants, publicEncrypt } from 'node:crypto'
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import axios from 'axios'
-import { publicEncrypt, constants } from 'node:crypto'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { ChatService } from '../../../packages/server/src/modules/chat/chat.service.js'
 import { TestAppFactory } from '../../integration/helpers/test-app.factory.js'
 import { TestDatabaseManager } from '../../integration/helpers/test-database.manager.js'
-import { ChatService } from '../../../packages/server/src/modules/chat/chat.service.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 let app: NestFastifyApplication
 let dbManager: TestDatabaseManager
@@ -20,7 +20,7 @@ async function encryptPassword(password: string): Promise<string> {
   const publicKey = await getPublicKey()
   const encrypted = publicEncrypt(
     { key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: 'sha256' },
-    Buffer.from(password)
+    Buffer.from(password),
   )
   return encrypted.toString('base64')
 }
@@ -69,7 +69,7 @@ describe('Chat HTTP E2E', () => {
     const sessionRes = await axios.post(
       `${baseURL}/api/sessions`,
       { title: 'E2E Session' },
-      { headers: { authorization: `Bearer ${token}` } }
+      { headers: { authorization: `Bearer ${token}` } },
     )
     const sessionId = sessionRes.data.data.id as string
 
@@ -101,7 +101,7 @@ describe('Chat HTTP E2E', () => {
       {
         headers: { authorization: `Bearer ${token}` },
         responseType: 'text',
-      }
+      },
     )
 
     expect(chatRes.status).toBe(200)

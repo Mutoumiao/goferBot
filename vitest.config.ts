@@ -1,5 +1,5 @@
-import { defineConfig } from 'vitest/config'
 import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from 'vitest/config'
 import AIReporter from 'vitest-ai-reporter'
 
 // 根 config 职责：跨包别名 + 全局 setup
@@ -15,27 +15,16 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: [],  // 包内单元测试由各自 config 运行，根配置仅作为聚合
-    exclude: [
-      'tests/e2e/**',
-      'tests/integration/**',
-      'packages/webui/**',
-      'node_modules/**',
-    ],
+    include: [], // 包内单元测试由各自 config 运行，根配置仅作为聚合
+    exclude: ['tests/e2e/**', 'tests/integration/**', 'packages/webui/**', 'node_modules/**'],
     environment: 'happy-dom',
     setupFiles: ['./tests/setup/testglobals.ts'],
     reporters: [new AIReporter()],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary'],
-      include: [
-        'packages/rag-sdk/src/**/*.ts',
-        'packages/server/src/**/*.ts',
-      ],
-      exclude: [
-        'packages/rag-sdk/src/index.ts',
-        'packages/server/src/main.ts',
-      ],
+      include: ['packages/rag-sdk/src/**/*.ts', 'packages/server/src/**/*.ts'],
+      exclude: ['packages/rag-sdk/src/index.ts', 'packages/server/src/main.ts'],
     },
   },
 })

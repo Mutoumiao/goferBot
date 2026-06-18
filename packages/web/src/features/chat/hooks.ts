@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
+import type { Pagination as PaginationType, Session, SessionListResponse } from '@goferbot/data'
 import { useRequest } from 'alova/client'
+import { useMemo } from 'react'
 import { getSessions } from '@/api/chat'
-import type { Session, SessionListResponse, Pagination as PaginationType } from '@goferbot/data'
 
 export interface ChatHistoryResult {
   sessions: Session[]
@@ -12,10 +12,12 @@ export interface ChatHistoryResult {
 }
 
 export function useChatHistory(page: number, pageSize: number): ChatHistoryResult {
-  const { data, loading, error, send: reload } = useRequest(
-    () => getSessions(page, pageSize),
-    { immediate: true },
-  )
+  const {
+    data,
+    loading,
+    error,
+    send: reload,
+  } = useRequest(() => getSessions(page, pageSize), { immediate: true })
 
   return useMemo(() => {
     const responseData = data as SessionListResponse | undefined
@@ -30,10 +32,12 @@ export interface LazyChatHistoryResult extends ChatHistoryResult {
 }
 
 export function useLazyChatHistory(page: number, pageSize: number): LazyChatHistoryResult {
-  const { data, loading, error, send: load } = useRequest(
-    () => getSessions(page, pageSize),
-    { immediate: false },
-  )
+  const {
+    data,
+    loading,
+    error,
+    send: load,
+  } = useRequest(() => getSessions(page, pageSize), { immediate: false })
 
   return useMemo(() => {
     const responseData = data as SessionListResponse | undefined

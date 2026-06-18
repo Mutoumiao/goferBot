@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/chat', () => ({
   getSessions: vi.fn(() => ({ send: vi.fn() })),
@@ -9,29 +9,29 @@ vi.mock('@/api/chat', () => ({
   getMessages: vi.fn(() => ({ send: vi.fn() })),
 }))
 
+import type { Message, Session } from '@goferbot/data'
 import {
-  getSessions,
-  getSessionById,
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
   renameSession as apiRenameSession,
   getMessages,
+  getSessionById,
+  getSessions,
 } from '@/api/chat'
-import { useChatStore } from '@/features/chat/store'
-import { useWorkspaceStore } from '@/stores/workspace.store'
-import { useConversationStore } from '@/stores/conversation.store'
+import { getPendingMessageKey } from '@/features/chat/constants'
 import {
-  loadChatSessions,
   createChatSession,
-  renameChatSession,
   deleteChatSession,
   loadChatHistory,
+  loadChatSessions,
+  renameChatSession,
   resolveSessionById,
   submitTempChat,
 } from '@/features/chat/services'
-import { getPendingMessageKey } from '@/features/chat/constants'
+import { useChatStore } from '@/features/chat/store'
 import { ROUTES_REGISTER } from '@/router-register'
-import type { Session, Message } from '@goferbot/data'
+import { useConversationStore } from '@/stores/conversation.store'
+import { useWorkspaceStore } from '@/stores/workspace.store'
 
 describe('chat services', () => {
   beforeEach(() => {
@@ -52,8 +52,12 @@ describe('chat services', () => {
 
   describe('loadChatSessions', () => {
     it('sets sessions on success', async () => {
-      const sessions: Session[] = [{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }]
-      vi.mocked(getSessions).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: sessions }) } as any)
+      const sessions: Session[] = [
+        { id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' },
+      ]
+      vi.mocked(getSessions).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ items: sessions }),
+      } as any)
 
       await loadChatSessions()
 
@@ -63,7 +67,9 @@ describe('chat services', () => {
     })
 
     it('sets error on failure', async () => {
-      vi.mocked(getSessions).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
+      vi.mocked(getSessions).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('fail')),
+      } as any)
 
       await loadChatSessions()
 
@@ -74,8 +80,16 @@ describe('chat services', () => {
 
   describe('createChatSession', () => {
     it('adds session and sets active on success', async () => {
-      const session: Session = { id: 's1', title: 'New', messageCount: 0, createdAt: '', updatedAt: '' }
-      vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(session) } as any)
+      const session: Session = {
+        id: 's1',
+        title: 'New',
+        messageCount: 0,
+        createdAt: '',
+        updatedAt: '',
+      }
+      vi.mocked(apiCreateSession).mockReturnValue({
+        send: vi.fn().mockResolvedValue(session),
+      } as any)
 
       const result = await createChatSession()
 
@@ -85,7 +99,9 @@ describe('chat services', () => {
     })
 
     it('returns undefined and sets error on failure', async () => {
-      vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('create fail')) } as any)
+      vi.mocked(apiCreateSession).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('create fail')),
+      } as any)
 
       const result = await createChatSession()
 
@@ -96,8 +112,12 @@ describe('chat services', () => {
 
   describe('renameChatSession', () => {
     it('updates session title in store on success', async () => {
-      useChatStore.setState({ sessions: [{ id: 's1', title: 'Old', messageCount: 0, createdAt: '', updatedAt: '' }] })
-      vi.mocked(apiRenameSession).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+      useChatStore.setState({
+        sessions: [{ id: 's1', title: 'Old', messageCount: 0, createdAt: '', updatedAt: '' }],
+      })
+      vi.mocked(apiRenameSession).mockReturnValue({
+        send: vi.fn().mockResolvedValue(undefined),
+      } as any)
 
       await renameChatSession('s1', 'New Title')
 
@@ -110,8 +130,12 @@ describe('chat services', () => {
     })
 
     it('sets error on failure', async () => {
-      useChatStore.setState({ sessions: [{ id: 's1', title: 'Old', messageCount: 0, createdAt: '', updatedAt: '' }] })
-      vi.mocked(apiRenameSession).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('rename fail')) } as any)
+      useChatStore.setState({
+        sessions: [{ id: 's1', title: 'Old', messageCount: 0, createdAt: '', updatedAt: '' }],
+      })
+      vi.mocked(apiRenameSession).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('rename fail')),
+      } as any)
 
       await renameChatSession('s1', 'New')
 
@@ -128,7 +152,9 @@ describe('chat services', () => {
         ],
         activeSession: { id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' },
       })
-      vi.mocked(apiDeleteSession).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+      vi.mocked(apiDeleteSession).mockReturnValue({
+        send: vi.fn().mockResolvedValue(undefined),
+      } as any)
 
       await deleteChatSession('s1')
 
@@ -144,7 +170,9 @@ describe('chat services', () => {
         ],
         activeSession: { id: 's2', title: 'B', messageCount: 0, createdAt: '', updatedAt: '' },
       })
-      vi.mocked(apiDeleteSession).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+      vi.mocked(apiDeleteSession).mockReturnValue({
+        send: vi.fn().mockResolvedValue(undefined),
+      } as any)
 
       await deleteChatSession('s1')
 
@@ -152,8 +180,12 @@ describe('chat services', () => {
     })
 
     it('sets error on failure', async () => {
-      useChatStore.setState({ sessions: [{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }] })
-      vi.mocked(apiDeleteSession).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('del fail')) } as any)
+      useChatStore.setState({
+        sessions: [{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }],
+      })
+      vi.mocked(apiDeleteSession).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('del fail')),
+      } as any)
 
       await deleteChatSession('s1')
 
@@ -163,8 +195,12 @@ describe('chat services', () => {
 
   describe('loadChatHistory', () => {
     it('sets messages into conversation store on success', async () => {
-      const messages: Message[] = [{ id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' }]
-      vi.mocked(getMessages).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: messages }) } as any)
+      const messages: Message[] = [
+        { id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' },
+      ]
+      vi.mocked(getMessages).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ items: messages }),
+      } as any)
 
       await loadChatHistory('s1')
 
@@ -173,7 +209,9 @@ describe('chat services', () => {
     })
 
     it('silently handles error and resets loading', async () => {
-      vi.mocked(getMessages).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('hist fail')) } as any)
+      vi.mocked(getMessages).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('hist fail')),
+      } as any)
 
       await loadChatHistory('s1')
 
@@ -188,7 +226,13 @@ describe('chat services', () => {
         sessions: [{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }],
       })
       vi.mocked(getSessionById).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }),
+        send: vi.fn().mockResolvedValue({
+          id: 's1',
+          title: 'A',
+          messageCount: 0,
+          createdAt: '',
+          updatedAt: '',
+        }),
       } as any)
 
       const result = await resolveSessionById('s1')
@@ -200,7 +244,9 @@ describe('chat services', () => {
 
     it('returns undefined when session not found', async () => {
       useChatStore.setState({ sessions: [] })
-      vi.mocked(getSessionById).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('not found')) } as any)
+      vi.mocked(getSessionById).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('not found')),
+      } as any)
 
       const result = await resolveSessionById('s1')
 
@@ -215,9 +261,19 @@ describe('chat services', () => {
     })
 
     it('creates session and stores pending message as JSON', async () => {
-      const session: Session = { id: 's1', title: 'New', messageCount: 0, createdAt: '', updatedAt: '' }
-      vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(session) } as any)
-      useWorkspaceStore.getState().addTab({ type: ROUTES_REGISTER.chat.key, title: '新会话', closable: true, id: 'tab-1' })
+      const session: Session = {
+        id: 's1',
+        title: 'New',
+        messageCount: 0,
+        createdAt: '',
+        updatedAt: '',
+      }
+      vi.mocked(apiCreateSession).mockReturnValue({
+        send: vi.fn().mockResolvedValue(session),
+      } as any)
+      useWorkspaceStore
+        .getState()
+        .addTab({ type: ROUTES_REGISTER.chat.key, title: '新会话', closable: true, id: 'tab-1' })
 
       const result = await submitTempChat('hello world', 'tab-1')
 
@@ -229,8 +285,16 @@ describe('chat services', () => {
     })
 
     it('stores knowledgeBaseIds in pending JSON when provided', async () => {
-      const session: Session = { id: 's2', title: 'New', messageCount: 0, createdAt: '', updatedAt: '' }
-      vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(session) } as any)
+      const session: Session = {
+        id: 's2',
+        title: 'New',
+        messageCount: 0,
+        createdAt: '',
+        updatedAt: '',
+      }
+      vi.mocked(apiCreateSession).mockReturnValue({
+        send: vi.fn().mockResolvedValue(session),
+      } as any)
 
       await submitTempChat('hello', 'tab-1', { knowledgeBaseIds: ['kb1', 'kb2'] })
 

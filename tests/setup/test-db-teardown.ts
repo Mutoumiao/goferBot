@@ -39,9 +39,7 @@ export default async function (): Promise<() => Promise<void>> {
     }
     if (res.skipped.length > 0) {
       // eslint-disable-next-line no-console
-      console.log(
-        `[test-db-teardown] skipped ${res.skipped.length} test DB(s) (in use / failed):`,
-      )
+      console.log(`[test-db-teardown] skipped ${res.skipped.length} test DB(s) (in use / failed):`)
       for (const line of res.skipped) {
         // eslint-disable-next-line no-console
         console.log(`  - ${line}`)

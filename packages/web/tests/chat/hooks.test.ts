@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { act, renderHook } from '@testing-library/react'
 import type { Session } from '@goferbot/data'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockPagination = {
   total: 10,
@@ -17,11 +17,11 @@ describe('useChatHistory', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     vi.doMock('alova/client', () => ({
       useRequest: mockUseRequest,
     }))
-    
+
     vi.doMock('@/api/chat', () => ({
       getSessions: mockGetSessions,
     }))
@@ -42,7 +42,7 @@ describe('useChatHistory', () => {
     expect(result.current.sessions).toEqual([])
     expect(result.current.pagination).toBeNull()
     expect(result.current.error).toBeUndefined()
-    
+
     expect(mockUseRequest).toHaveBeenCalled()
     const requestFn = mockUseRequest.mock.calls[0][0]
     requestFn()
@@ -51,8 +51,20 @@ describe('useChatHistory', () => {
 
   it('returns sessions and pagination when data is fetched', async () => {
     const mockSessions: Session[] = [
-      { id: 's1', title: 'Test Session', createdAt: '2024-01-01', updatedAt: '2024-01-01', messageCount: 5 },
-      { id: 's2', title: 'Another Session', createdAt: '2024-01-02', updatedAt: '2024-01-02', messageCount: 3 },
+      {
+        id: 's1',
+        title: 'Test Session',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+        messageCount: 5,
+      },
+      {
+        id: 's2',
+        title: 'Another Session',
+        createdAt: '2024-01-02',
+        updatedAt: '2024-01-02',
+        messageCount: 3,
+      },
     ]
     mockUseRequest.mockReturnValue({
       data: { items: mockSessions, pagination: mockPagination },

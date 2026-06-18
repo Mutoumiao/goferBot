@@ -58,28 +58,48 @@ export const renameDocument = (kbId: string, docId: string, name: string) =>
   alovaInstance.Patch(`/knowledge-bases/${kbId}/documents/${docId}`, { name })
 
 /** 移动文档到指定文件夹或知识库 */
-export const moveDocument = (kbId: string, docId: string, targetKbId?: string, targetFolderId?: string | null) =>
+export const moveDocument = (
+  kbId: string,
+  docId: string,
+  targetKbId?: string,
+  targetFolderId?: string | null,
+) =>
   alovaInstance.Post(`/knowledge-bases/${kbId}/documents/${docId}/move`, {
     targetKbId,
     targetFolderId,
   })
 
 /** 移动文件夹到指定文件夹或知识库 */
-export const moveFolder = (kbId: string, folderId: string, targetKbId?: string, targetFolderId?: string | null) =>
+export const moveFolder = (
+  kbId: string,
+  folderId: string,
+  targetKbId?: string,
+  targetFolderId?: string | null,
+) =>
   alovaInstance.Post(`/knowledge-bases/${kbId}/folders/${folderId}/move`, {
     targetKbId,
     targetFolderId,
   })
 
 /** 复制文档到指定文件夹或知识库 */
-export const copyDocument = (kbId: string, docId: string, targetKbId?: string, targetFolderId?: string | null) =>
+export const copyDocument = (
+  kbId: string,
+  docId: string,
+  targetKbId?: string,
+  targetFolderId?: string | null,
+) =>
   alovaInstance.Post(`/knowledge-bases/${kbId}/documents/${docId}/copy`, {
     targetKbId,
     targetFolderId,
   })
 
 /** 复制文件夹到指定文件夹或知识库 */
-export const copyFolder = (kbId: string, folderId: string, targetKbId?: string, targetFolderId?: string | null) =>
+export const copyFolder = (
+  kbId: string,
+  folderId: string,
+  targetKbId?: string,
+  targetFolderId?: string | null,
+) =>
   alovaInstance.Post(`/knowledge-bases/${kbId}/folders/${folderId}/copy`, {
     targetKbId,
     targetFolderId,

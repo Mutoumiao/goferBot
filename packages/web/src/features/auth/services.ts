@@ -1,9 +1,9 @@
 import type { User } from '@goferbot/data'
-import { login, register, getMe, refresh, updateMe, uploadAvatar } from '@/api/auth'
-import { useAuthStore } from '@/stores/auth'
-import { encryptPassword, clearPublicKeyCache } from '@/utils/password-encryption'
-import { setAccessToken, setRefreshToken, clearTokens } from '@/utils/auth-token'
 import { toast } from 'sonner'
+import { getMe, login, refresh, register, updateMe, uploadAvatar } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
+import { clearTokens, setAccessToken, setRefreshToken } from '@/utils/auth-token'
+import { clearPublicKeyCache, encryptPassword } from '@/utils/password-encryption'
 
 export interface LoginResult {
   success: boolean

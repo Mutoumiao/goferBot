@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
 import { useResponsive } from 'ahooks'
 import { BookOpen, PanelLeftOpen } from 'lucide-react'
-import { useKbStore } from '../store'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchKbList } from '../services'
-import { KnowledgeBaseList } from './KnowledgeBaseList'
+import { useKbStore } from '../store'
 import { FileBrowser } from './FileBrowser'
+import { KnowledgeBaseList } from './KnowledgeBaseList'
 
 export function KnowledgeBasePage() {
   const { entries, selectedId } = useKbStore()
@@ -63,7 +63,9 @@ export function KnowledgeBasePage() {
             <div className="text-center">
               <BookOpen className="mx-auto h-12 w-12 text-text-tertiary" />
               <h3 className="mt-4 text-lg font-medium text-text-primary">选择一个知识库</h3>
-              <p className="mt-2 text-sm text-text-secondary">从左侧列表中选择一个知识库开始管理文档</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                从左侧列表中选择一个知识库开始管理文档
+              </p>
             </div>
           </div>
         ) : (

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { LlmProviderFactory } from '@/modules/chat/llm/llm-provider.factory.js'
 import { OpenAiCompatibleProvider } from '@/modules/chat/llm/openai-compatible-provider.service.js'
 

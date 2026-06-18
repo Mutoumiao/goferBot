@@ -1,12 +1,12 @@
-import { Injectable, OnModuleInit } from '@nestjs/common'
 import type {
   IVectorStore,
   VectorRecord,
   VectorSearchOptions,
   VectorSearchResult,
 } from '@goferbot/rag-sdk'
-import { PrismaService } from '../database/prisma.service.js'
+import { Injectable, OnModuleInit } from '@nestjs/common'
 import { PgVectorStore } from '../../vector/pgvector.js'
+import { PrismaService } from '../database/prisma.service.js'
 
 @Injectable()
 export class VectorService implements IVectorStore, OnModuleInit {

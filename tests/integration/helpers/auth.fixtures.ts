@@ -1,4 +1,4 @@
-import { publicEncrypt, constants } from 'node:crypto'
+import { constants, publicEncrypt } from 'node:crypto'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 export const AuthFixtures = {

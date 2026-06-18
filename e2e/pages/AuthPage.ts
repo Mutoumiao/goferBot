@@ -1,4 +1,4 @@
-import { expect, type Page, type Locator, type Response } from '@playwright/test'
+import { expect, type Locator, type Page, type Response } from '@playwright/test'
 
 export class AuthPage {
   readonly page: Page
@@ -28,10 +28,7 @@ export class AuthPage {
   private async submitAuthForm(endpoint: 'register' | 'login'): Promise<Response> {
     const urlPart = `/api/auth/${endpoint}`
     const [response] = await Promise.all([
-      this.page.waitForResponse(
-        (r) => r.url().includes(urlPart),
-        { timeout: 15_000 },
-      ),
+      this.page.waitForResponse((r) => r.url().includes(urlPart), { timeout: 15_000 }),
       this.submitButton.click(),
     ])
     return response

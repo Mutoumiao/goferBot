@@ -23,7 +23,9 @@ export class ConfigCryptoService {
     const cipher = createCipheriv('aes-256-gcm', key, iv)
     const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()])
     const authTag = cipher.getAuthTag()
-    return iv.toString('base64') + ':' + authTag.toString('base64') + ':' + encrypted.toString('base64')
+    return (
+      iv.toString('base64') + ':' + authTag.toString('base64') + ':' + encrypted.toString('base64')
+    )
   }
 
   decrypt(encryptedText: string): string {
@@ -54,7 +56,10 @@ export class ConfigCryptoService {
    * 递归加密对象中指定 key 的字符串值。
    * 默认加密 `apiKey` 字段。
    */
-  encryptObject(obj: Record<string, unknown>, sensitiveKeys: string[] = ['apiKey']): Record<string, unknown> {
+  encryptObject(
+    obj: Record<string, unknown>,
+    sensitiveKeys: string[] = ['apiKey'],
+  ): Record<string, unknown> {
     const result = JSON.parse(JSON.stringify(obj)) as Record<string, unknown>
     this.transformSensitiveValues(result, sensitiveKeys, (value) => {
       if (typeof value !== 'string' || this.isMasked(value)) return value
@@ -67,7 +72,10 @@ export class ConfigCryptoService {
    * 递归解密对象中指定 key 的字符串值。
    * 解密失败时保留原值（兼容明文遗留）。
    */
-  decryptObject(obj: Record<string, unknown>, sensitiveKeys: string[] = ['apiKey']): Record<string, unknown> {
+  decryptObject(
+    obj: Record<string, unknown>,
+    sensitiveKeys: string[] = ['apiKey'],
+  ): Record<string, unknown> {
     const result = JSON.parse(JSON.stringify(obj)) as Record<string, unknown>
     this.transformSensitiveValues(result, sensitiveKeys, (value) => {
       if (typeof value !== 'string' || this.isMasked(value)) return value
@@ -83,7 +91,10 @@ export class ConfigCryptoService {
   /**
    * 递归掩码对象中指定 key 的字符串值。
    */
-  maskObject(obj: Record<string, unknown>, sensitiveKeys: string[] = ['apiKey']): Record<string, unknown> {
+  maskObject(
+    obj: Record<string, unknown>,
+    sensitiveKeys: string[] = ['apiKey'],
+  ): Record<string, unknown> {
     const result = JSON.parse(JSON.stringify(obj)) as Record<string, unknown>
     this.transformSensitiveValues(result, sensitiveKeys, (value) => {
       if (typeof value !== 'string' || !value) return value

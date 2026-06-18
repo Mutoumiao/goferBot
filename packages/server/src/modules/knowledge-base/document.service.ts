@@ -1,12 +1,19 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Optional, Logger } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import { QueueService } from '../../processors/queue/queue.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
 import { VectorService } from '../../processors/vector/vector.service.js'
-import { QueueService } from '../../processors/queue/queue.service.js'
-import type { CreateDocumentDto } from './dto/create-document.dto.js'
-import type { UpdateDocumentDto } from './dto/update-document.dto.js'
-import type { MoveDocumentDto } from './dto/move-document.dto.js'
 import type { CopyDocumentDto } from './dto/copy-document.dto.js'
+import type { CreateDocumentDto } from './dto/create-document.dto.js'
+import type { MoveDocumentDto } from './dto/move-document.dto.js'
+import type { UpdateDocumentDto } from './dto/update-document.dto.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
 
 const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024 // 50MB
@@ -30,7 +37,10 @@ type DocumentSortBy = 'name' | 'createdAt' | 'updatedAt' | 'size' | 'type'
 const DOCUMENT_SORT_BY: readonly string[] = ['name', 'createdAt', 'updatedAt', 'size', 'type']
 const SORT_ORDER: readonly string[] = ['asc', 'desc']
 
-function parseDocumentSort(sortBy?: string, sortOrder?: string): { sortBy: DocumentSortBy; sortOrder: SortOrder } {
+function parseDocumentSort(
+  sortBy?: string,
+  sortOrder?: string,
+): { sortBy: DocumentSortBy; sortOrder: SortOrder } {
   const by = sortBy && DOCUMENT_SORT_BY.includes(sortBy) ? (sortBy as DocumentSortBy) : 'createdAt'
   const order = sortOrder && SORT_ORDER.includes(sortOrder) ? (sortOrder as SortOrder) : 'desc'
   return { sortBy: by, sortOrder: order }
@@ -45,7 +55,7 @@ function normalizeFolderId(folderId?: string | null): string | null | undefined 
 
 @Injectable()
 export class DocumentService {
-  private readonly logger = new Logger(DocumentService.name)
+  private readonly logger = new Logger(DocumentService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -67,9 +77,7 @@ export class DocumentService {
     const { sortBy: by, sortOrder: order } = parseDocumentSort(sortBy, sortOrder)
     const effectiveFolderId = normalizeFolderId(folderId)
 
-    const orderBy = by === 'type'
-      ? [{ ext: order }, { mimeType: order }]
-      : { [by]: order }
+    const orderBy = by === 'type' ? [{ ext: order }, { mimeType: order }] : { [by]: order }
 
     return this.prisma.document.findMany({
       where: { kbId, folderId: effectiveFolderId ?? null },
@@ -187,7 +195,13 @@ export class DocumentService {
   }
 
   private async moveCrossKb(
-    doc: { id: string; size: bigint | number | null; storageKey: string | null; name: string; mimeType: string | null },
+    doc: {
+      id: string
+      size: bigint | number | null
+      storageKey: string | null
+      name: string
+      mimeType: string | null
+    },
     targetKbId: string,
     targetFolderId: string | null,
   ) {
@@ -200,7 +214,10 @@ export class DocumentService {
     try {
       await this.prisma.chunk.deleteMany({ where: { documentId: docId } })
     } catch (e) {
-      this.logger.warn(`文档 ${docId} 跨知识库移动时删除旧 chunk 记录失败`, e instanceof Error ? e.stack : undefined)
+      this.logger.warn(
+        `文档 ${docId} 跨知识库移动时删除旧 chunk 记录失败`,
+        e instanceof Error ? e.stack : undefined,
+      )
     }
 
     const updated = await this.prisma.document.update({
@@ -251,7 +268,10 @@ export class DocumentService {
     try {
       await this.cleanupService.cleanupDocument(docId, oldStorageKey)
     } catch (e) {
-      this.logger.warn(`文档 ${docId} 跨知识库移动后清理原存储/向量失败`, e instanceof Error ? e.stack : undefined)
+      this.logger.warn(
+        `文档 ${docId} 跨知识库移动后清理原存储/向量失败`,
+        e instanceof Error ? e.stack : undefined,
+      )
     }
   }
 
@@ -290,7 +310,14 @@ export class DocumentService {
   }
 
   private async copyDocument(
-    doc: { id: string; size: bigint | number | null; storageKey: string | null; name: string; mimeType: string | null; ext: string | null },
+    doc: {
+      id: string
+      size: bigint | number | null
+      storageKey: string | null
+      name: string
+      mimeType: string | null
+      ext: string | null
+    },
     targetKbId: string,
     targetFolderId: string | null,
     isCrossKb: boolean,

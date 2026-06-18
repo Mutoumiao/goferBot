@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
-import { generateKeyPairSync, privateDecrypt, constants } from 'crypto'
+import { constants, generateKeyPairSync, privateDecrypt } from 'crypto'
 
 @Injectable()
 export class PasswordEncryptionService implements OnModuleInit {

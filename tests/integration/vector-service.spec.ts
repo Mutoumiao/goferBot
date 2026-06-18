@@ -1,9 +1,10 @@
 // @vitest-environment node
-import { describe, it, expect, beforeAll } from 'vitest'
+
 import { PrismaClient } from '@prisma/client'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { VectorService } from '../../packages/server/src/processors/vector/vector.service'
-import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { checkInfrastructure } from './helpers/infra-check.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 
 describe('VectorService', () => {
   let infraAvailable = false

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { OpenAIEmbedder } from '@/embedders/openai.embedder.js'
-import { ValidationError, EmbeddingError } from '@/errors.js'
+import { EmbeddingError, ValidationError } from '@/errors.js'
 
 const config = {
   provider: 'openai' as const,
@@ -37,10 +37,7 @@ describe('OpenAIEmbedder.embedWithUsage', () => {
 
   it('AC-07: returns vectors and usage for multiple texts', async () => {
     globalThis.fetch = mockFetch({
-      data: [
-        { embedding: [0.1, 0.2, 0.3] },
-        { embedding: [0.4, 0.5, 0.6] },
-      ],
+      data: [{ embedding: [0.1, 0.2, 0.3] }, { embedding: [0.4, 0.5, 0.6] }],
       usage: { prompt_tokens: 10 },
     })
 
@@ -54,10 +51,7 @@ describe('OpenAIEmbedder.embedWithUsage', () => {
 
   it('AC-08: distributes total tokens proportionally by text length', async () => {
     globalThis.fetch = mockFetch({
-      data: [
-        { embedding: [0.1, 0.2, 0.3] },
-        { embedding: [0.4, 0.5, 0.6] },
-      ],
+      data: [{ embedding: [0.1, 0.2, 0.3] }, { embedding: [0.4, 0.5, 0.6] }],
       usage: { prompt_tokens: 100 },
     })
 
@@ -110,10 +104,7 @@ describe('OpenAIEmbedder.embedWithUsage', () => {
 
   it('AC-12: distributes evenly when all texts are empty', async () => {
     globalThis.fetch = mockFetch({
-      data: [
-        { embedding: [0.1, 0.2, 0.3] },
-        { embedding: [0.4, 0.5, 0.6] },
-      ],
+      data: [{ embedding: [0.1, 0.2, 0.3] }, { embedding: [0.4, 0.5, 0.6] }],
       usage: { prompt_tokens: 10 },
     })
 
@@ -127,10 +118,7 @@ describe('OpenAIEmbedder.embedWithUsage', () => {
 
   it('AC-13: corrects rounding error to match total', async () => {
     globalThis.fetch = mockFetch({
-      data: [
-        { embedding: [0.1, 0.2, 0.3] },
-        { embedding: [0.4, 0.5, 0.6] },
-      ],
+      data: [{ embedding: [0.1, 0.2, 0.3] }, { embedding: [0.4, 0.5, 0.6] }],
       usage: { prompt_tokens: 7 },
     })
 

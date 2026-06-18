@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { loginUser, getRememberedEmail } from '../services'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { getRememberedEmail, loginUser } from '../services'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -74,7 +74,7 @@ export function LoginForm() {
         <Input
           type="email"
           value={email}
-          onChange={e => {
+          onChange={(e) => {
             setEmail(e.target.value)
             if (emailError) setEmailError(null)
           }}
@@ -91,7 +91,7 @@ export function LoginForm() {
           <Input
             type={showPassword ? 'text' : 'password'}
             value={password}
-            onChange={e => {
+            onChange={(e) => {
               setPassword(e.target.value)
               if (passwordError) setPasswordError(null)
             }}
@@ -112,7 +112,10 @@ export function LoginForm() {
 
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2">
-          <Checkbox checked={rememberMe} onCheckedChange={checked => setRememberMe(checked === true)} />
+          <Checkbox
+            checked={rememberMe}
+            onCheckedChange={(checked) => setRememberMe(checked === true)}
+          />
           <span className="text-sm text-text-secondary">记住我</span>
         </label>
         <a href="#" className="text-sm font-medium text-primary">
@@ -120,7 +123,9 @@ export function LoginForm() {
         </a>
       </div>
 
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
 
       <Button type="submit" disabled={loading} className="h-14 w-full rounded-xl text-[15px]">
         {loading ? (

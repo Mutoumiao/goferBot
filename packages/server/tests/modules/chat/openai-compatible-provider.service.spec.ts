@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { OpenAiCompatibleProvider } from '@/modules/chat/llm/openai-compatible-provider.service.js'
 
 const mockStream = vi.fn()
@@ -105,7 +105,9 @@ describe('OpenAiCompatibleProvider', () => {
     const provider = new OpenAiCompatibleProvider({ apiKey: 'key', model: 'gpt-4' })
     const controller = new AbortController()
 
-    for await (const _ of provider.stream([{ role: 'user', content: 'hi' }], { abortSignal: controller.signal })) {
+    for await (const _ of provider.stream([{ role: 'user', content: 'hi' }], {
+      abortSignal: controller.signal,
+    })) {
       // consume
     }
 

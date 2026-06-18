@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react'
 import { XProvider } from '@ant-design/x'
-import { Sparkles, Paperclip, Send } from 'lucide-react'
+import { Paperclip, Send, Sparkles } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { fetchProviders, submitTempChat } from '../services'
 import { useChatStore } from '../store'
-import { submitTempChat, fetchProviders } from '../services'
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
 import { ProviderSelector } from './ProviderSelector'
 import { QuickActions } from './QuickActions'
@@ -35,7 +35,9 @@ export function ChatTempHome({ tabId }: ChatTempHomeProps) {
       if (isLoading) return
       setIsLoading(true)
       try {
-        await submitTempChat(content, tabId, { knowledgeBaseIds: selectedKbId ? [selectedKbId] : undefined })
+        await submitTempChat(content, tabId, {
+          knowledgeBaseIds: selectedKbId ? [selectedKbId] : undefined,
+        })
       } finally {
         setIsLoading(false)
       }

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { AuthPage } from '../pages/AuthPage'
 import { ChatPage } from '../pages/ChatPage'
 
@@ -71,7 +71,10 @@ test.describe('账户注册与登录（真实后端）', () => {
     // NOTE: 前端尚未实现登录路由守卫（issue f-02-route-guard），
     // 已登录用户访问 /login 应重定向到 /chat/* 的逻辑待实现。
     // 当前先以 fixme 记录，路由守卫落地后立即恢复。
-    test.fixme(true, 'blocked by f-02-route-guard: /login has no beforeLoad redirect for authenticated users')
+    test.fixme(
+      true,
+      'blocked by f-02-route-guard: /login has no beforeLoad redirect for authenticated users',
+    )
 
     const email = `e2e-redirect-${Date.now()}@example.com`
     const password = 'Password123'
@@ -110,7 +113,10 @@ test.describe('首页输入 -> 会话页（真实后端）', () => {
   test('首页输入提交后切换到会话页并显示对话', async ({ page }) => {
     // NOTE: 真实后端需配置可用的 LLM provider（DEEPSEEK_API_KEY 等）。
     // 当前环境 providers 为空，聊天流无法返回 AI 回复，跳过该用例。
-    test.fixme(true, 'blocked by no-llm-provider: backend /api/chat-messages/providers returns empty, assistant reply unavailable')
+    test.fixme(
+      true,
+      'blocked by no-llm-provider: backend /api/chat-messages/providers returns empty, assistant reply unavailable',
+    )
 
     await chatPage.waitForHome()
     await chatPage.submitFromHome('你好，请介绍一下知识库系统')
@@ -123,7 +129,10 @@ test.describe('首页输入 -> 会话页（真实后端）', () => {
   })
 
   test('会话页可以看到用户和 AI 双向对话', async ({ page }) => {
-    test.fixme(true, 'blocked by no-llm-provider: backend /api/chat-messages/providers returns empty, assistant reply unavailable')
+    test.fixme(
+      true,
+      'blocked by no-llm-provider: backend /api/chat-messages/providers returns empty, assistant reply unavailable',
+    )
 
     await chatPage.waitForHome()
     await chatPage.submitFromHome('写一首关于 AI 的诗')

@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  ForbiddenException,
-} from '@nestjs/common'
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common'
 
 @Injectable()
 export class SpiderGuard implements CanActivate {

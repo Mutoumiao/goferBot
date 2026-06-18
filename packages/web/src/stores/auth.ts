@@ -1,10 +1,9 @@
+import type { User } from '@goferbot/data'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { User } from '@goferbot/data'
 
 import { ROUTES_REGISTER } from '@/router-register'
-import { getAccessToken, clearTokens } from '@/utils/auth-token'
-
+import { clearTokens, getAccessToken } from '@/utils/auth-token'
 
 interface AuthState {
   user: User | null

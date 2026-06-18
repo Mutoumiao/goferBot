@@ -1,4 +1,10 @@
-import { openDialog, closeDialog, openContextMenu, closeContextMenu, closeAll } from '../services/overlay-service'
+import {
+  closeAll,
+  closeContextMenu,
+  closeDialog,
+  openContextMenu,
+  openDialog,
+} from '../services/overlay-service'
 
 /**
  * Overlay 命令式调用 hook

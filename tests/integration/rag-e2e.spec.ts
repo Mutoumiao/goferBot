@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { setupE2E, teardownE2E, app, prisma, mockEmbeddingPort, mockLLMPort } from './setup.ts'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { app, mockEmbeddingPort, mockLLMPort, prisma, setupE2E, teardownE2E } from './setup.ts'
 import { cleanupTestData } from './teardown.ts'
 
 const infraAvailable = process.env.DATABASE_URL?.includes('goferbot_test') ?? false
@@ -54,7 +54,10 @@ describe('RAG Server Integration E2E', () => {
       method: 'POST',
       url: '/api/knowledge-bases',
       headers: { authorization: `Bearer ${token}` },
-      payload: { name: `Q21-TestKB-${crypto.randomUUID()}`, description: 'RAG integration test KB' },
+      payload: {
+        name: `Q21-TestKB-${crypto.randomUUID()}`,
+        description: 'RAG integration test KB',
+      },
     })
     kbId = kbRes.json().data?.id ?? ''
   })
@@ -101,7 +104,7 @@ describe('RAG Server Integration E2E', () => {
 
     const chunks = await prisma.chunk.findMany({ where: { documentId: docId } })
     expect(chunks.length).toBeGreaterThan(0)
-    chunks.forEach(c => {
+    chunks.forEach((c) => {
       expect(c.content).toBeTruthy()
       expect(c.tokenCount).not.toBeNull()
     })
@@ -138,7 +141,12 @@ describe('RAG Server Integration E2E', () => {
         message: 'What does the document say about GoferBot?',
         sessionId,
         knowledgeBaseIds: [kbId],
-        config: { provider: 'openai', model: 'gpt-4', baseUrl: `http://127.0.0.1:${mockLLMPort}`, apiKey: 'mock' },
+        config: {
+          provider: 'openai',
+          model: 'gpt-4',
+          baseUrl: `http://127.0.0.1:${mockLLMPort}`,
+          apiKey: 'mock',
+        },
       },
     })
 
@@ -166,7 +174,12 @@ describe('RAG Server Integration E2E', () => {
       payload: {
         message: 'Hello',
         sessionId,
-        config: { provider: 'openai', model: 'gpt-4', baseUrl: `http://127.0.0.1:${mockLLMPort}`, apiKey: 'mock' },
+        config: {
+          provider: 'openai',
+          model: 'gpt-4',
+          baseUrl: `http://127.0.0.1:${mockLLMPort}`,
+          apiKey: 'mock',
+        },
       },
     })
 
@@ -175,7 +188,11 @@ describe('RAG Server Integration E2E', () => {
   })
 })
 
-async function waitForDocumentStatus(docId: string, targetStatus: 'ready' | 'failed', timeoutMs = 30000): Promise<void> {
+async function waitForDocumentStatus(
+  docId: string,
+  targetStatus: 'ready' | 'failed',
+  timeoutMs = 30000,
+): Promise<void> {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     const doc = await prisma.document.findUnique({ where: { id: docId } })

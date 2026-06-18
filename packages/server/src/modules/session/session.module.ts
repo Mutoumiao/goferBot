@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common'
-import { SessionService } from './session.service.js'
-import { SessionController } from './session.controller.js'
-import { SessionRepository } from './repositories/session.repository.js'
 import { MessageRepository } from './repositories/message.repository.js'
+import { SessionRepository } from './repositories/session.repository.js'
+import { SessionController } from './session.controller.js'
+import { SessionService } from './session.service.js'
 
 @Module({
   providers: [SessionService, SessionRepository, MessageRepository],

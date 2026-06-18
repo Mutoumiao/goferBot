@@ -1,4 +1,4 @@
-import { expect, type Page, type Locator } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 export class ChatPage {
   readonly page: Page
@@ -19,10 +19,16 @@ export class ChatPage {
     this.homeTextarea = page.getByPlaceholder('询问、总结或让 AI 帮你整理桌面资料...')
     this.homeSendButton = page.getByTestId('temp-send-btn')
     this.sessionInput = page.getByPlaceholder('继续追问，或让 AI 生成需求条目...')
-    this.sessionSendButton = page.locator('.ant-design-x-sender-suffix button, button.ant-btn-primary').first()
+    this.sessionSendButton = page
+      .locator('.ant-design-x-sender-suffix button, button.ant-btn-primary')
+      .first()
     this.bubbleList = page.locator('.ant-design-x-bubble-list')
-    this.userBubbles = page.locator('.ant-design-x-bubble-list .ant-design-x-bubble-user, [role="user"]')
-    this.assistantBubbles = page.locator('.ant-design-x-bubble-list .ant-design-x-bubble-assistant, [role="assistant"]')
+    this.userBubbles = page.locator(
+      '.ant-design-x-bubble-list .ant-design-x-bubble-user, [role="user"]',
+    )
+    this.assistantBubbles = page.locator(
+      '.ant-design-x-bubble-list .ant-design-x-bubble-assistant, [role="assistant"]',
+    )
     this.sideBar = page.locator('aside, [data-slot="sidebar"]').first()
     this.tabBar = page.locator('[data-slot="tabbar"], nav[class*="tab-bar"]').first()
     this.homeTitle = page.getByText('今天想从知识库里理解什么？')
@@ -53,18 +59,27 @@ export class ChatPage {
 
   async waitForAssistantReply(timeoutMs = 30_000) {
     await expect(this.bubbleList).toBeVisible({ timeout: timeoutMs })
-    await this.page.waitForSelector('.ant-design-x-bubble-list [role="assistant"], .ant-design-x-bubble-assistant', {
-      state: 'visible',
-      timeout: timeoutMs,
-    })
+    await this.page.waitForSelector(
+      '.ant-design-x-bubble-list [role="assistant"], .ant-design-x-bubble-assistant',
+      {
+        state: 'visible',
+        timeout: timeoutMs,
+      },
+    )
   }
 
   async getAssistantMessageCount(): Promise<number> {
-    return await this.page.locator('.ant-design-x-bubble-list [role="assistant"], .ant-design-x-bubble-assistant').count()
+    return await this.page
+      .locator('.ant-design-x-bubble-list [role="assistant"], .ant-design-x-bubble-assistant')
+      .count()
   }
 
   async getLastAssistantText(): Promise<string> {
-    const texts = await this.page.locator('.ant-design-x-bubble-list [role="assistant"] .ant-design-x-bubble-content, .ant-design-x-bubble-assistant .ant-design-x-bubble-content').allTextContents()
+    const texts = await this.page
+      .locator(
+        '.ant-design-x-bubble-list [role="assistant"] .ant-design-x-bubble-content, .ant-design-x-bubble-assistant .ant-design-x-bubble-content',
+      )
+      .allTextContents()
     return texts[texts.length - 1] ?? ''
   }
 }

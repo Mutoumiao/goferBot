@@ -1,17 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { FastifyRequest, FastifyReply } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { SseResponseHelper } from '@/common/helpers/sse-response.helper.js'
 import { ChatController } from '@/modules/chat/chat.controller.js'
 import type { ChatService } from '@/modules/chat/chat.service.js'
 import type { ConversationService } from '@/modules/chat/conversation.service.js'
 import type { ModelRegistryService } from '@/modules/chat/model-registry.service.js'
-import { SseResponseHelper } from '@/common/helpers/sse-response.helper.js'
 
 function createMockChatService(overrides = {}) {
   return {
     validateChatAccess: vi.fn().mockResolvedValue(undefined),
     streamChat: vi.fn().mockImplementation(async function* () {
       yield { event: 'message', conversation_id: 's1', message_id: 'm1', answer: 'hi', done: false }
-      yield { event: 'message_end', conversation_id: 's1', message_id: 'm1', answer: '', done: true }
+      yield {
+        event: 'message_end',
+        conversation_id: 's1',
+        message_id: 'm1',
+        answer: '',
+        done: true,
+      }
     }),
     ...overrides,
   }
@@ -27,7 +33,11 @@ function createMockConversationService(overrides = {}) {
 
 function createMockModelRegistry(overrides = {}) {
   return {
-    list: vi.fn().mockReturnValue([{ key: 'deepseek', name: 'DeepSeek', model: 'deepseek-chat', isBuiltin: true }]),
+    list: vi
+      .fn()
+      .mockReturnValue([
+        { key: 'deepseek', name: 'DeepSeek', model: 'deepseek-chat', isBuiltin: true },
+      ]),
     ...overrides,
   }
 }
@@ -69,7 +79,16 @@ describe('ChatController', () => {
     it('validates access and streams chunks', async () => {
       const dto = { conversation_id: 's1', query: 'hi', provider_key: 'deepseek' } as any
       const req = {} as FastifyRequest
-      const reply = { raw: { on: vi.fn(), statusCode: 0, setHeader: vi.fn(), write: vi.fn().mockReturnValue(true), end: vi.fn(), destroyed: false } } as unknown as FastifyReply
+      const reply = {
+        raw: {
+          on: vi.fn(),
+          statusCode: 0,
+          setHeader: vi.fn(),
+          write: vi.fn().mockReturnValue(true),
+          end: vi.fn(),
+          destroyed: false,
+        },
+      } as unknown as FastifyReply
 
       await controller.chat('user-1', dto, req, reply)
 
@@ -96,8 +115,20 @@ describe('ChatController', () => {
 
     it('stops writing when client disconnects', async () => {
       chatService.streamChat.mockImplementation(async function* () {
-        yield { event: 'message', conversation_id: 's1', message_id: 'm1', answer: 'a', done: false }
-        yield { event: 'message', conversation_id: 's1', message_id: 'm1', answer: 'b', done: false }
+        yield {
+          event: 'message',
+          conversation_id: 's1',
+          message_id: 'm1',
+          answer: 'a',
+          done: false,
+        }
+        yield {
+          event: 'message',
+          conversation_id: 's1',
+          message_id: 'm1',
+          answer: 'b',
+          done: false,
+        }
       })
       sseHelper.write.mockReturnValueOnce(true).mockReturnValueOnce(false)
 

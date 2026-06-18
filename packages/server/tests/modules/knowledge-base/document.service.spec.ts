@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ForbiddenException, NotFoundException } from '@nestjs/common'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DocumentService } from '@/modules/knowledge-base/document.service.js'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
 
 describe('DocumentService', () => {
   let docService: DocumentService
@@ -41,15 +41,19 @@ describe('DocumentService', () => {
       cleanupDocument: vi.fn().mockResolvedValue(undefined),
     }
 
-    docService = new DocumentService(mockPrisma, mockStorage, mockVectorService, mockCleanupService, mockQueueService)
+    docService = new DocumentService(
+      mockPrisma,
+      mockStorage,
+      mockVectorService,
+      mockCleanupService,
+      mockQueueService,
+    )
   })
 
   describe('list', () => {
     it('AC-04j: returns documents for KB owner with default sort', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.document.findMany.mockResolvedValue([
-        { id: 'd1', name: 'doc.txt', kbId: 'kb1' },
-      ])
+      mockPrisma.document.findMany.mockResolvedValue([{ id: 'd1', name: 'doc.txt', kbId: 'kb1' }])
 
       const result = await docService.list('u1', 'kb1')
 
@@ -118,7 +122,10 @@ describe('DocumentService', () => {
     it('AC-04k: uploads file and creates document for owner', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.create.mockResolvedValue({
-        id: 'd1', name: 'test.txt', storageKey: 'kb1/1234567890-test.txt', size: BigInt(100),
+        id: 'd1',
+        name: 'test.txt',
+        storageKey: 'kb1/1234567890-test.txt',
+        size: BigInt(100),
       })
 
       const result = await docService.upload('u1', 'kb1', {
@@ -139,7 +146,10 @@ describe('DocumentService', () => {
       mockQueueService.isHealthy.mockResolvedValue(false)
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.create.mockResolvedValue({
-        id: 'd1', name: 'test.txt', storageKey: 'kb1/1234567890-test.txt', size: BigInt(100),
+        id: 'd1',
+        name: 'test.txt',
+        storageKey: 'kb1/1234567890-test.txt',
+        size: BigInt(100),
       })
 
       const result = await docService.upload('u1', 'kb1', {
@@ -161,7 +171,10 @@ describe('DocumentService', () => {
     it('AC-04m: creates document with valid data', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.create.mockResolvedValue({
-        id: 'd1', name: 'New Doc', kbId: 'kb1', folderId: null,
+        id: 'd1',
+        name: 'New Doc',
+        kbId: 'kb1',
+        folderId: null,
       })
 
       const result = await docService.create('u1', 'kb1', { name: 'New Doc' })
@@ -185,8 +198,9 @@ describe('DocumentService', () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb2' })
 
-      await expect(docService.update('u1', 'kb1', 'd1', { name: 'Updated' }))
-        .rejects.toThrow(NotFoundException)
+      await expect(docService.update('u1', 'kb1', 'd1', { name: 'Updated' })).rejects.toThrow(
+        NotFoundException,
+      )
     })
 
     it('moves document to a folder within the same KB', async () => {
@@ -208,8 +222,9 @@ describe('DocumentService', () => {
       mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb1', folderId: null })
       mockPrisma.folder.findFirst.mockResolvedValue(null)
 
-      await expect(docService.update('u1', 'kb1', 'd1', { folderId: 'f2' }))
-        .rejects.toThrow(NotFoundException)
+      await expect(docService.update('u1', 'kb1', 'd1', { folderId: 'f2' })).rejects.toThrow(
+        NotFoundException,
+      )
     })
 
     it('allows moving document to root by setting folderId to null', async () => {
@@ -262,8 +277,7 @@ describe('DocumentService', () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb2' })
 
-      await expect(docService.preview('u1', 'kb1', 'd1'))
-        .rejects.toThrow(NotFoundException)
+      await expect(docService.preview('u1', 'kb1', 'd1')).rejects.toThrow(NotFoundException)
     })
   })
 
@@ -281,13 +295,16 @@ describe('DocumentService', () => {
     it('AC-04q: throws ForbiddenException when not owner', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u2' })
 
-      await expect(docService.remove('u1', 'kb1', 'd1'))
-        .rejects.toThrow(ForbiddenException)
+      await expect(docService.remove('u1', 'kb1', 'd1')).rejects.toThrow(ForbiddenException)
     })
 
     it('invokes cleanup service before deleting document', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb1', storageKey: 'kb1/d1.txt' })
+      mockPrisma.document.findUnique.mockResolvedValue({
+        id: 'd1',
+        kbId: 'kb1',
+        storageKey: 'kb1/d1.txt',
+      })
       mockPrisma.document.delete.mockResolvedValue({})
 
       await docService.remove('u1', 'kb1', 'd1')

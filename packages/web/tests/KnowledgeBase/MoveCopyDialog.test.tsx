@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { KbEntry } from '@goferbot/data'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MoveCopyDialog from '@/features/KnowledgeBase/components/MoveCopyDialog'
 import { useKbStore } from '@/features/KnowledgeBase/store'
-import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
-import type { KbEntry } from '@goferbot/data'
+import type { DocumentItem, Folder } from '@/features/KnowledgeBase/types'
 
 vi.mock('sonner', () => ({
   toast: { error: vi.fn() },
@@ -65,16 +65,11 @@ describe('MoveCopyDialog', () => {
 
   it('renders move dialog for document', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({
+      send: vi.fn().mockResolvedValue([mockKb]),
+    } as any)
 
-    render(
-      <MoveCopyDialog
-        mode="move"
-        item={mockDocument}
-        onClose={vi.fn()}
-        onConfirm={vi.fn()}
-      />,
-    )
+    render(<MoveCopyDialog mode="move" item={mockDocument} onClose={vi.fn()} onConfirm={vi.fn()} />)
 
     await waitFor(() => {
       expect(screen.getByText('移动文档')).toBeDefined()
@@ -86,16 +81,11 @@ describe('MoveCopyDialog', () => {
 
   it('renders copy dialog for folder', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({
+      send: vi.fn().mockResolvedValue([mockKb]),
+    } as any)
 
-    render(
-      <MoveCopyDialog
-        mode="copy"
-        item={mockFolder}
-        onClose={vi.fn()}
-        onConfirm={vi.fn()}
-      />,
-    )
+    render(<MoveCopyDialog mode="copy" item={mockFolder} onClose={vi.fn()} onConfirm={vi.fn()} />)
 
     await waitFor(() => {
       expect(screen.getByText('复制文件夹')).toBeDefined()
@@ -107,15 +97,12 @@ describe('MoveCopyDialog', () => {
     const user = userEvent.setup()
     const onConfirm = vi.fn()
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({
+      send: vi.fn().mockResolvedValue([mockKb]),
+    } as any)
 
     render(
-      <MoveCopyDialog
-        mode="move"
-        item={mockDocument}
-        onClose={vi.fn()}
-        onConfirm={onConfirm}
-      />,
+      <MoveCopyDialog mode="move" item={mockDocument} onClose={vi.fn()} onConfirm={onConfirm} />,
     )
 
     await waitFor(() => {
@@ -133,25 +120,26 @@ describe('MoveCopyDialog', () => {
   it('disables source folder and its descendants in copy mode', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
     const { getFolders } = await import('@/api/file')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
-    vi.mocked(getFolders).mockImplementation((_kbId, parentId) => ({
-      send: vi.fn().mockResolvedValue(
-        parentId === null
-          ? [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Source Folder' }, { id: 'f2', kbId: 'kb1', parentId: null, name: 'Sibling' }]
-          : parentId === 'f1'
-            ? [{ id: 'f1-1', kbId: 'kb1', parentId: 'f1', name: 'Child' }]
-            : [],
-      ),
-    }) as any)
-
-    render(
-      <MoveCopyDialog
-        mode="copy"
-        item={mockFolder}
-        onClose={vi.fn()}
-        onConfirm={vi.fn()}
-      />,
+    vi.mocked(getKbForSelector).mockReturnValue({
+      send: vi.fn().mockResolvedValue([mockKb]),
+    } as any)
+    vi.mocked(getFolders).mockImplementation(
+      (_kbId, parentId) =>
+        ({
+          send: vi.fn().mockResolvedValue(
+            parentId === null
+              ? [
+                  { id: 'f1', kbId: 'kb1', parentId: null, name: 'Source Folder' },
+                  { id: 'f2', kbId: 'kb1', parentId: null, name: 'Sibling' },
+                ]
+              : parentId === 'f1'
+                ? [{ id: 'f1-1', kbId: 'kb1', parentId: 'f1', name: 'Child' }]
+                : [],
+          ),
+        }) as any,
     )
+
+    render(<MoveCopyDialog mode="copy" item={mockFolder} onClose={vi.fn()} onConfirm={vi.fn()} />)
 
     await waitFor(() => {
       expect(screen.getByText('Child')).toBeDefined()
@@ -169,25 +157,26 @@ describe('MoveCopyDialog', () => {
   it('disables source folder and its descendants in move mode', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
     const { getFolders } = await import('@/api/file')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
-    vi.mocked(getFolders).mockImplementation((_kbId, parentId) => ({
-      send: vi.fn().mockResolvedValue(
-        parentId === null
-          ? [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Source Folder' }, { id: 'f2', kbId: 'kb1', parentId: null, name: 'Sibling' }]
-          : parentId === 'f1'
-            ? [{ id: 'f1-1', kbId: 'kb1', parentId: 'f1', name: 'Child' }]
-            : [],
-      ),
-    }) as any)
-
-    render(
-      <MoveCopyDialog
-        mode="move"
-        item={mockFolder}
-        onClose={vi.fn()}
-        onConfirm={vi.fn()}
-      />,
+    vi.mocked(getKbForSelector).mockReturnValue({
+      send: vi.fn().mockResolvedValue([mockKb]),
+    } as any)
+    vi.mocked(getFolders).mockImplementation(
+      (_kbId, parentId) =>
+        ({
+          send: vi.fn().mockResolvedValue(
+            parentId === null
+              ? [
+                  { id: 'f1', kbId: 'kb1', parentId: null, name: 'Source Folder' },
+                  { id: 'f2', kbId: 'kb1', parentId: null, name: 'Sibling' },
+                ]
+              : parentId === 'f1'
+                ? [{ id: 'f1-1', kbId: 'kb1', parentId: 'f1', name: 'Child' }]
+                : [],
+          ),
+        }) as any,
     )
+
+    render(<MoveCopyDialog mode="move" item={mockFolder} onClose={vi.fn()} onConfirm={vi.fn()} />)
 
     await waitFor(() => {
       expect(screen.getByText('Child')).toBeDefined()

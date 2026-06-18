@@ -1,4 +1,4 @@
-import type { RAGTrace, RAGStage, RAGObserver } from './types.js'
+import type { RAGObserver, RAGStage, RAGTrace } from './types.js'
 
 export class RAGTracer {
   constructor(private observers: RAGObserver[] = []) {}
@@ -39,7 +39,7 @@ export class RAGTracer {
   error(trace: RAGTrace, error: Error): void {
     trace.error = error.message
     trace.endTime = Date.now()
-    const currentStage = trace.stages.find(s => s.endTime === undefined)
+    const currentStage = trace.stages.find((s) => s.endTime === undefined)
     if (currentStage) {
       currentStage.error = error.message
       currentStage.endTime = Date.now()

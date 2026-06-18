@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import type { Session, Pagination } from '@goferbot/data'
+import type { Pagination, Session } from '@goferbot/data'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('lucide-react', () => ({
   MessageCircleIcon: () => <svg data-testid="icon-message" />,
@@ -10,7 +10,9 @@ vi.mock('lucide-react', () => ({
 
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, disabled, title }: any) => (
-    <button onClick={onClick} disabled={disabled} title={title}>{children}</button>
+    <button onClick={onClick} disabled={disabled} title={title}>
+      {children}
+    </button>
   ),
 }))
 
@@ -28,7 +30,9 @@ vi.mock('@/components/ui/pagination', () => ({
   PaginationEllipsis: () => <li>...</li>,
   PaginationItem: ({ children }: any) => <li>{children}</li>,
   PaginationLink: ({ children, isActive, onClick }: any) => (
-    <button onClick={onClick} data-active={isActive}>{children}</button>
+    <button onClick={onClick} data-active={isActive}>
+      {children}
+    </button>
   ),
   PaginationNext: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
   PaginationPrevious: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
@@ -63,7 +67,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.getByTestId('empty')).toBeDefined()
@@ -71,10 +75,7 @@ describe('ChatHistoryList', () => {
   })
 
   it('renders session list with multiple sessions', () => {
-    const sessions = [
-      createSession('s1', '会话一', 5),
-      createSession('s2', '会话二', 3),
-    ]
+    const sessions = [createSession('s1', '会话一', 5), createSession('s2', '会话二', 3)]
 
     render(
       <ChatHistoryList
@@ -84,7 +85,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.getByText('会话一')).toBeDefined()
@@ -105,7 +106,7 @@ describe('ChatHistoryList', () => {
         onResume={onResume}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     fireEvent.click(screen.getByText('测试会话'))
@@ -125,7 +126,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={onDelete}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     const deleteBtn = screen.getByTitle('删除会话')
@@ -147,7 +148,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     const deleteBtn = screen.getByTitle('删除会话') as HTMLButtonElement
@@ -165,7 +166,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.getByTestId('pagination')).toBeDefined()
@@ -184,7 +185,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.queryByTestId('pagination')).toBeNull()
@@ -202,7 +203,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={onPageChange}
-      />
+      />,
     )
 
     const page2Btn = screen.getByText('2')
@@ -225,7 +226,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     const timeElements = screen.getAllByText(/今天/)
@@ -243,7 +244,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={vi.fn()}
-      />
+      />,
     )
 
     expect(screen.getByText('未命名会话')).toBeDefined()
@@ -261,7 +262,7 @@ describe('ChatHistoryList', () => {
         onResume={vi.fn()}
         onDelete={vi.fn()}
         onPageChange={onPageChange}
-      />
+      />,
     )
 
     const prevBtn = screen.getByText('上一页')

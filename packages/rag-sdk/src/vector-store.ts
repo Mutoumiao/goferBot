@@ -40,10 +40,7 @@ export interface IVectorStore {
   /** 批量插入向量记录 */
   insertVectors(vectors: VectorRecord[]): Promise<void>
   /** ANN 近似最近邻搜索 */
-  searchVectors(
-    queryVector: number[],
-    options?: VectorSearchOptions,
-  ): Promise<VectorSearchResult[]>
+  searchVectors(queryVector: number[], options?: VectorSearchOptions): Promise<VectorSearchResult[]>
   /** 根据 ID 删除向量 */
   deleteByIds(ids: string[]): Promise<void>
   /** 幂等地创建/校验 collection 结构 */

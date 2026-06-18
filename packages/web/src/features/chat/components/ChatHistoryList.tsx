@@ -1,7 +1,8 @@
+import type { Pagination as PaginationType, Session } from '@goferbot/data'
+import { ArrowRightIcon, MessageCircleIcon, Trash2Icon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
-import { MessageCircleIcon, ArrowRightIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import {
   Pagination,
   PaginationContent,
@@ -12,7 +13,6 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import { cn } from '@/utils/cn'
-import type { Session, Pagination as PaginationType } from '@goferbot/data'
 
 function formatSessionTime(iso: string | undefined): string {
   if (!iso) return ''
@@ -101,13 +101,13 @@ export function ChatHistoryList({
   return (
     <>
       <div className="mt-6 space-y-2.5">
-        {sessions.map(session => (
+        {sessions.map((session) => (
           <div
             key={session.id}
             onClick={() => onResume(session)}
             className={cn(
               'group flex cursor-pointer items-center gap-4 rounded-lg border border-border-default bg-surface-1 p-4 shadow-sm transition-all',
-              'hover:border-border-subtle hover:shadow'
+              'hover:border-border-subtle hover:shadow',
             )}
           >
             <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-2xl bg-brand-blue-soft">
@@ -115,12 +115,18 @@ export function ChatHistoryList({
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-medium text-text-primary">{session.title || '未命名会话'}</p>
-              <p className="mt-1 line-clamp-1 text-xs text-text-secondary">{session.messageCount ?? 0} 条消息</p>
+              <p className="truncate text-[15px] font-medium text-text-primary">
+                {session.title || '未命名会话'}
+              </p>
+              <p className="mt-1 line-clamp-1 text-xs text-text-secondary">
+                {session.messageCount ?? 0} 条消息
+              </p>
             </div>
 
             <div className="hidden shrink-0 text-right sm:block">
-              <p className="text-xs text-text-tertiary">{formatSessionTime(session.updatedAt ?? session.createdAt)}</p>
+              <p className="text-xs text-text-tertiary">
+                {formatSessionTime(session.updatedAt ?? session.createdAt)}
+              </p>
               <p className="mt-1 text-xs text-text-tertiary">{session.messageCount ?? 0} 条消息</p>
             </div>
 
@@ -129,7 +135,7 @@ export function ChatHistoryList({
                 variant="ghost"
                 size="icon-sm"
                 className="h-[34px] w-[34px] rounded-full bg-surface-3 text-text-secondary opacity-0 transition-opacity group-hover:opacity-100"
-                onClick={e => onDelete(session, e)}
+                onClick={(e) => onDelete(session, e)}
                 disabled={deletingId === session.id}
                 title="删除会话"
               >
@@ -150,7 +156,10 @@ export function ChatHistoryList({
               <PaginationItem>
                 <PaginationPrevious
                   onClick={handlePrevious}
-                  className={cn('rounded-full border-0', page === 1 && 'pointer-events-none opacity-50')}
+                  className={cn(
+                    'rounded-full border-0',
+                    page === 1 && 'pointer-events-none opacity-50',
+                  )}
                   text="上一页"
                 />
               </PaginationItem>
@@ -168,18 +177,21 @@ export function ChatHistoryList({
                         'h-7 w-7 rounded-full border-0 p-0 text-[13px]',
                         item === page
                           ? 'bg-brand-blue-soft text-brand-blue ring-1 ring-brand-blue-ring'
-                          : 'text-text-secondary hover:bg-surface-3'
+                          : 'text-text-secondary hover:bg-surface-3',
                       )}
                     >
                       {item}
                     </PaginationLink>
                   </PaginationItem>
-                )
+                ),
               )}
               <PaginationItem>
                 <PaginationNext
                   onClick={handleNext}
-                  className={cn('rounded-full border-0', page === totalPages && 'pointer-events-none opacity-50')}
+                  className={cn(
+                    'rounded-full border-0',
+                    page === totalPages && 'pointer-events-none opacity-50',
+                  )}
                   text="下一页"
                 />
               </PaginationItem>

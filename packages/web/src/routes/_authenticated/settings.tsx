@@ -1,16 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { useSettingsServices } from '@/features/settings/services'
-import { SettingsSection } from '@/features/settings/components/SettingsSection'
-import { SettingsRow } from '@/features/settings/components/SettingsRow'
 import { AppearanceSelect } from '@/features/settings/components/AppearanceSelect'
-import { FontSizeSlider } from '@/features/settings/components/FontSizeSlider'
-import { ProviderSelect } from '@/features/settings/components/ProviderSelect'
 import { CustomProviderList } from '@/features/settings/components/CustomProviderList'
+import { FontSizeSlider } from '@/features/settings/components/FontSizeSlider'
 import { ProviderDialog } from '@/features/settings/components/ProviderDialog'
-import { configuredProviders } from '@/utils/llm-config'
-import type { ProviderConfig } from '@/utils/llm-config'
+import { ProviderSelect } from '@/features/settings/components/ProviderSelect'
+import { SettingsRow } from '@/features/settings/components/SettingsRow'
+import { SettingsSection } from '@/features/settings/components/SettingsSection'
+import { useSettingsServices } from '@/features/settings/services'
 import { ROUTES_REGISTER } from '@/router-register'
+import type { ProviderConfig } from '@/utils/llm-config'
+import { configuredProviders } from '@/utils/llm-config'
 
 export const Route = createFileRoute('/_authenticated/settings')({
   component: SettingsPage,

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ForbiddenException, NotFoundException } from '@nestjs/common'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FolderService } from '@/modules/knowledge-base/folder.service.js'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
 
 describe('FolderService', () => {
   let folderService: FolderService
@@ -99,8 +99,9 @@ describe('FolderService', () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.folder.findFirst.mockResolvedValue(null)
 
-      await expect(folderService.create('u1', 'kb1', { name: 'New', parentId: 'p1' }))
-        .rejects.toThrow(NotFoundException)
+      await expect(
+        folderService.create('u1', 'kb1', { name: 'New', parentId: 'p1' }),
+      ).rejects.toThrow(NotFoundException)
     })
   })
 
@@ -155,15 +156,17 @@ describe('FolderService', () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.folder.findFirst.mockResolvedValue(null)
 
-      await expect(folderService.getBreadcrumbs('u1', 'kb1', 'c1'))
-        .rejects.toThrow(NotFoundException)
+      await expect(folderService.getBreadcrumbs('u1', 'kb1', 'c1')).rejects.toThrow(
+        NotFoundException,
+      )
     })
 
     it('throws ForbiddenException when not owner', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u2' })
 
-      await expect(folderService.getBreadcrumbs('u1', 'kb1', 'c1'))
-        .rejects.toThrow(ForbiddenException)
+      await expect(folderService.getBreadcrumbs('u1', 'kb1', 'c1')).rejects.toThrow(
+        ForbiddenException,
+      )
     })
   })
 

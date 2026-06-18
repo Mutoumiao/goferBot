@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import nock from 'nock'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { checkInfrastructure } from './helpers/infra-check.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { checkInfrastructure } from './helpers/infra-check.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 describe('RAG Real Integration Tests', () => {
   let app: NestFastifyApplication
@@ -96,7 +96,13 @@ describe('RAG Real Integration Tests', () => {
 
     const content = 'GoferBot RAG 真实集成测试内容。'.repeat(50)
     const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-    const multipartBody = buildMultipartBody(boundary, 'file', 'rag-test.txt', 'text/plain', Buffer.from(content))
+    const multipartBody = buildMultipartBody(
+      boundary,
+      'file',
+      'rag-test.txt',
+      'text/plain',
+      Buffer.from(content),
+    )
 
     const uploadRes = await app.inject({
       method: 'POST',
@@ -139,9 +145,16 @@ describe('RAG Real Integration Tests', () => {
     }
 
     // 先上传并索引文档
-    const content = 'GoferBot 是一个基于 Vue 3 和 NestJS 的 AI Workspace 项目。它支持文档管理、LLM 问答和 RAG 检索增强。'
+    const content =
+      'GoferBot 是一个基于 Vue 3 和 NestJS 的 AI Workspace 项目。它支持文档管理、LLM 问答和 RAG 检索增强。'
     const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-    const multipartBody = buildMultipartBody(boundary, 'file', 'rag-retrieval.txt', 'text/plain', Buffer.from(content))
+    const multipartBody = buildMultipartBody(
+      boundary,
+      'file',
+      'rag-retrieval.txt',
+      'text/plain',
+      Buffer.from(content),
+    )
 
     const uploadRes = await app.inject({
       method: 'POST',
@@ -169,14 +182,18 @@ describe('RAG Real Integration Tests', () => {
     // Mock LLM API
     nock('http://localhost:9998')
       .post('/v1/chat/completions')
-      .reply(200, () => {
-        const sse = [
-          'data: {"choices":[{"delta":{"role":"assistant"}}]}',
-          'data: {"choices":[{"delta":{"content":"GoferBot 是一个 AI Workspace 项目。"}}]}',
-          'data: [DONE]',
-        ].join('\n\n')
-        return sse
-      }, { 'Content-Type': 'text/event-stream' })
+      .reply(
+        200,
+        () => {
+          const sse = [
+            'data: {"choices":[{"delta":{"role":"assistant"}}]}',
+            'data: {"choices":[{"delta":{"content":"GoferBot 是一个 AI Workspace 项目。"}}]}',
+            'data: [DONE]',
+          ].join('\n\n')
+          return sse
+        },
+        { 'Content-Type': 'text/event-stream' },
+      )
 
     const chatRes = await app.inject({
       method: 'POST',
@@ -218,7 +235,13 @@ describe('RAG Real Integration Tests', () => {
 
     const content = '测试失败降级。'
     const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-    const multipartBody = buildMultipartBody(boundary, 'file', 'rag-fail.txt', 'text/plain', Buffer.from(content))
+    const multipartBody = buildMultipartBody(
+      boundary,
+      'file',
+      'rag-fail.txt',
+      'text/plain',
+      Buffer.from(content),
+    )
 
     const uploadRes = await app.inject({
       method: 'POST',
@@ -261,8 +284,8 @@ function buildMultipartBody(
 ): Buffer {
   const prefix = Buffer.from(
     `--${boundary}\r\n` +
-    `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
-    `Content-Type: ${contentType}\r\n\r\n`,
+      `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
+      `Content-Type: ${contentType}\r\n\r\n`,
   )
   const suffix = Buffer.from(`\r\n--${boundary}--\r\n`)
   return Buffer.concat([prefix, buffer, suffix])

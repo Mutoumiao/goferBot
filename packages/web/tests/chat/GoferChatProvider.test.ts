@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { GoferChatProvider } from '@/features/chat/providers/GoferChatProvider'
 
 describe('GoferChatProvider', () => {
   const provider = new GoferChatProvider({
-    request: () => ({ manual: true, options: {} } as any),
+    request: () => ({ manual: true, options: {} }) as any,
   })
 
   describe('transformParams', () => {

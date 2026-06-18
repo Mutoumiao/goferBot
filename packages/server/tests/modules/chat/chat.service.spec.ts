@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { BadRequestException } from '@nestjs/common'
+import type { ConfigService } from '@nestjs/config'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatService } from '@/modules/chat/chat.service.js'
 import type { ConversationService } from '@/modules/chat/conversation.service.js'
+import type { ChatContextRetriever } from '@/modules/chat/interfaces/chat-context-retriever.interface.js'
 import type { LlmProviderFactory } from '@/modules/chat/llm/llm-provider.factory.js'
 import type { LlmProvider } from '@/modules/chat/llm/llm-provider.interface.js'
 import type { ModelRegistryService } from '@/modules/chat/model-registry.service.js'
 import type { SettingsService } from '@/modules/settings/settings.service.js'
-import type { ChatContextRetriever } from '@/modules/chat/interfaces/chat-context-retriever.interface.js'
-import type { ConfigService } from '@nestjs/config'
 
 function createMockConfigService(overrides = {}) {
   return {
@@ -24,7 +24,12 @@ function createMockConfigService(overrides = {}) {
 function createMockSettingsService(overrides = {}) {
   const settings = {
     providers: {
-      deepseek: { name: 'DeepSeek', apiKey: 'key', model: 'deepseek-chat', baseUrl: 'https://api.deepseek.com' },
+      deepseek: {
+        name: 'DeepSeek',
+        apiKey: 'key',
+        model: 'deepseek-chat',
+        baseUrl: 'https://api.deepseek.com',
+      },
     },
     defaultChatProvider: 'deepseek',
   }
@@ -110,12 +115,18 @@ describe('ChatService', () => {
 
   describe('validateChatAccess', () => {
     it('throws when conversation_id is missing', async () => {
-      await expect(service.validateChatAccess('user-1', { query: 'hi' } as any)).rejects.toThrow(BadRequestException)
+      await expect(service.validateChatAccess('user-1', { query: 'hi' } as any)).rejects.toThrow(
+        BadRequestException,
+      )
     })
 
     it('passes with valid session and provider', async () => {
       await expect(
-        service.validateChatAccess('user-1', { conversation_id: 's1', query: 'hi', provider_key: 'deepseek' } as any),
+        service.validateChatAccess('user-1', {
+          conversation_id: 's1',
+          query: 'hi',
+          provider_key: 'deepseek',
+        } as any),
       ).resolves.toBeUndefined()
     })
   })
@@ -153,7 +164,11 @@ describe('ChatService', () => {
       }
 
       expect(conversationService.saveUserMessage).toHaveBeenCalledWith('s1', 'hi')
-      expect(conversationService.saveAssistantMessage).toHaveBeenCalledWith('s1', expect.any(String), 'hello world')
+      expect(conversationService.saveAssistantMessage).toHaveBeenCalledWith(
+        's1',
+        expect.any(String),
+        'hello world',
+      )
     })
 
     it('passes history to provider', async () => {
@@ -239,13 +254,20 @@ describe('ChatService', () => {
 
       for await (const _ of service.streamChat(
         'user-1',
-        { conversation_id: 's1', query: 'hi', provider_key: 'deepseek', knowledge_base_ids: ['kb1', 'kb2'] } as any,
+        {
+          conversation_id: 's1',
+          query: 'hi',
+          provider_key: 'deepseek',
+          knowledge_base_ids: ['kb1', 'kb2'],
+        } as any,
         abortController,
       )) {
         // consume
       }
 
-      expect(contextRetriever.retrieve).toHaveBeenCalledWith('user-1', 'hi', { kbIds: ['kb1', 'kb2'] })
+      expect(contextRetriever.retrieve).toHaveBeenCalledWith('user-1', 'hi', {
+        kbIds: ['kb1', 'kb2'],
+      })
       const streamCall = vi.mocked(provider.stream).mock.calls[0]
       expect(streamCall[0]).toContainEqual({
         role: 'system',
@@ -269,7 +291,12 @@ describe('ChatService', () => {
 
       for await (const _ of service.streamChat(
         'user-1',
-        { conversation_id: 's1', query: 'hi', provider_key: 'deepseek', knowledge_base_ids: ['kb1'] } as any,
+        {
+          conversation_id: 's1',
+          query: 'hi',
+          provider_key: 'deepseek',
+          knowledge_base_ids: ['kb1'],
+        } as any,
         abortController,
       )) {
         // consume
@@ -491,7 +518,10 @@ describe('ChatService', () => {
         providerName: 'DeepSeek',
         baseUrl: 'https://api.deepseek.com',
       } as any)
-      settingsService.getDecryptedSettings.mockResolvedValue({ providers: {}, defaultChatProvider: '' } as any)
+      settingsService.getDecryptedSettings.mockResolvedValue({
+        providers: {},
+        defaultChatProvider: '',
+      } as any)
 
       const abortController = new AbortController()
       for await (const _ of service.streamChat(
@@ -519,7 +549,12 @@ describe('ChatService', () => {
 
       for await (const _ of service.streamChat(
         'user-1',
-        { conversation_id: 's-new', query: 'hello', provider_key: 'deepseek', knowledge_base_ids: ['kb1'] } as any,
+        {
+          conversation_id: 's-new',
+          query: 'hello',
+          provider_key: 'deepseek',
+          knowledge_base_ids: ['kb1'],
+        } as any,
         abortController,
       )) {
         // consume

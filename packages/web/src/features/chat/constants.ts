@@ -42,5 +42,3 @@ export const QUICK_ACTIONS = [
     prompt: '请帮我把这些信息整理成结构化的笔记',
   },
 ] as const
-
-

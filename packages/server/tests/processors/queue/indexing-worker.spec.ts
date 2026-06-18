@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IndexingWorker } from '@/processors/queue/indexing.worker.js'
 
 // Mock @goferbot/rag-sdk 模块 — 使用 vi.hoisted 确保变量在 vi.mock 提升前初始化
@@ -46,29 +46,67 @@ describe('IndexingWorker', () => {
   })
 
   it('AC-02: handleIndexJob drives full pipeline and sets status to ready', async () => {
-    mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb1', storageKey: 'k1', mimeType: 'text/plain', status: 'uploaded' })
+    mockPrisma.document.findUnique.mockResolvedValue({
+      id: 'd1',
+      kbId: 'kb1',
+      storageKey: 'k1',
+      mimeType: 'text/plain',
+      status: 'uploaded',
+    })
     // runIndexing 模拟：通过 onStageChange 回调更新状态，最终 resolve
     // SDK 实际传递的是 IndexingStage[] 数组
     mockRunIndexing.mockImplementation(async (_doc: any, options: any) => {
       const { onStageChange } = options
-      await onStageChange?.([{ name: 'chunk', status: 'running' }, { name: 'embed', status: 'pending' }, { name: 'index', status: 'pending' }])
-      await onStageChange?.([{ name: 'chunk', status: 'completed' }, { name: 'embed', status: 'pending' }, { name: 'index', status: 'pending' }])
-      await onStageChange?.([{ name: 'chunk', status: 'completed' }, { name: 'embed', status: 'running' }, { name: 'index', status: 'pending' }])
-      await onStageChange?.([{ name: 'chunk', status: 'completed' }, { name: 'embed', status: 'completed' }, { name: 'index', status: 'pending' }])
-      await onStageChange?.([{ name: 'chunk', status: 'completed' }, { name: 'embed', status: 'completed' }, { name: 'index', status: 'running' }])
-      await onStageChange?.([{ name: 'chunk', status: 'completed' }, { name: 'embed', status: 'completed' }, { name: 'index', status: 'completed' }])
+      await onStageChange?.([
+        { name: 'chunk', status: 'running' },
+        { name: 'embed', status: 'pending' },
+        { name: 'index', status: 'pending' },
+      ])
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'pending' },
+        { name: 'index', status: 'pending' },
+      ])
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'running' },
+        { name: 'index', status: 'pending' },
+      ])
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'completed' },
+        { name: 'index', status: 'pending' },
+      ])
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'completed' },
+        { name: 'index', status: 'running' },
+      ])
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'completed' },
+        { name: 'index', status: 'completed' },
+      ])
     })
 
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
 
-    expect(mockPrisma.document.update).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: 'd1' },
-      data: expect.objectContaining({ status: 'ready' }),
-    }))
+    expect(mockPrisma.document.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'd1' },
+        data: expect.objectContaining({ status: 'ready' }),
+      }),
+    )
   })
 
   it('AC-03: stage changes map to correct document statuses', async () => {
-    mockPrisma.document.findUnique.mockResolvedValue({ id: 'd1', kbId: 'kb1', storageKey: 'k1', mimeType: 'text/plain', status: 'uploaded' })
+    mockPrisma.document.findUnique.mockResolvedValue({
+      id: 'd1',
+      kbId: 'kb1',
+      storageKey: 'k1',
+      mimeType: 'text/plain',
+      status: 'uploaded',
+    })
     const statusUpdates: string[] = []
     mockPrisma.document.update.mockImplementation(({ data }: any) => {
       statusUpdates.push(data.status)
@@ -77,9 +115,21 @@ describe('IndexingWorker', () => {
 
     mockRunIndexing.mockImplementation(async (_doc: any, options: any) => {
       const { onStageChange } = options
-      await onStageChange?.([{ name: 'chunk', status: 'running' }, { name: 'embed', status: 'pending' }, { name: 'index', status: 'pending' }])
-      await onStageChange?.([{ name: 'chunk', status: 'completed' }, { name: 'embed', status: 'running' }, { name: 'index', status: 'pending' }])
-      await onStageChange?.([{ name: 'chunk', status: 'completed' }, { name: 'embed', status: 'completed' }, { name: 'index', status: 'running' }])
+      await onStageChange?.([
+        { name: 'chunk', status: 'running' },
+        { name: 'embed', status: 'pending' },
+        { name: 'index', status: 'pending' },
+      ])
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'running' },
+        { name: 'index', status: 'pending' },
+      ])
+      await onStageChange?.([
+        { name: 'chunk', status: 'completed' },
+        { name: 'embed', status: 'completed' },
+        { name: 'index', status: 'running' },
+      ])
     })
 
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
@@ -93,8 +143,9 @@ describe('IndexingWorker', () => {
 
   it('AC-04: handleIndexJob throws when document not found', async () => {
     mockPrisma.document.findUnique.mockResolvedValue(null)
-    await expect(worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any))
-      .rejects.toThrow('Document not found')
+    await expect(
+      worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any),
+    ).rejects.toThrow('Document not found')
   })
 
   it('AC-05: runIndexing failure sets status to failed after retries exhausted', async () => {

@@ -4,15 +4,15 @@
  * 所有类型由 Zod Schema 推导（z.infer），确保运行时校验与编译时类型一致。
  */
 
-import { z } from 'zod'
+import type { z } from 'zod'
 import type {
-  DocumentSourceSchema,
-  QuerySchema,
   ChunkSchema,
   ChunkWithScoreSchema,
-  RetrievalCandidateSchema,
+  DocumentSourceSchema,
   EmbeddingConfigSchema,
   HybridSearchOptionsSchema,
+  QuerySchema,
+  RetrievalCandidateSchema,
 } from './schema.js'
 
 /**

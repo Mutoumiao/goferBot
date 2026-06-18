@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { FileListItem } from '@/features/KnowledgeBase/components/FileListItem'
-import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
+import type { DocumentItem, Folder } from '@/features/KnowledgeBase/types'
 
 const mockFolder: Folder = {
   id: 'f1',

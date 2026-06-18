@@ -1,25 +1,25 @@
-import { useCallback } from 'react'
-import { cn } from '@/utils/cn'
 import { Plus, X } from 'lucide-react'
+import { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { useWorkspaceStore, type Tab } from '@/stores/workspace.store'
-import { tabManager } from '@/stores/tabManager'
 import { ROUTES_REGISTER } from '@/router-register'
+import { tabManager } from '@/stores/tabManager'
+import { type Tab, useWorkspaceStore } from '@/stores/workspace.store'
+import { cn } from '@/utils/cn'
 
 function isHomeChat(tab: Tab) {
   return tab.type === ROUTES_REGISTER.chat.key && !tab.conversationId
 }
 
 export function TabBar({ className }: { className?: string }) {
-  const tabs = useWorkspaceStore(s => s.tabs)
-  const activeTabId = useWorkspaceStore(s => s.activeTabId)
+  const tabs = useWorkspaceStore((s) => s.tabs)
+  const activeTabId = useWorkspaceStore((s) => s.activeTabId)
 
   const handleTabClick = useCallback(
     (tab: Tab) => {
       if (tab.id === activeTabId) return
       void tabManager.switchTab(tab.id)
     },
-    [activeTabId]
+    [activeTabId],
   )
 
   const handleTabClose = useCallback((tabId: string) => {
@@ -34,7 +34,7 @@ export function TabBar({ className }: { className?: string }) {
     <div className={cn('flex h-13 items-center gap-1 bg-surface-secondary px-2 pt-1', className)}>
       {/* 标签区域 — 浏览器标签栏无滚动，超出时压缩显示 */}
       <div role="tablist" className="flex items-end gap-1 min-w-0 overflow-hidden">
-        {tabs.map(tab => {
+        {tabs.map((tab) => {
           const isActive = tab.id === activeTabId
           const isOnlyHomeChat = tabs.length === 1 && isHomeChat(tab)
           const canClose = tab.closable && !isOnlyHomeChat
@@ -52,10 +52,10 @@ export function TabBar({ className }: { className?: string }) {
                 'group relative flex h-9 min-w-12 max-w-60 shrink items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] transition-colors cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isActive
                   ? 'bg-surface-1 text-text-primary z-10'
-                  : 'bg-surface-3 text-text-secondary hover:bg-surface-2 hover:text-text-primary'
+                  : 'bg-surface-3 text-text-secondary hover:bg-surface-2 hover:text-text-primary',
               )}
               onClick={() => handleTabClick(tab)}
-              onKeyDown={e => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
                   handleTabClick(tab)
@@ -76,13 +76,13 @@ export function TabBar({ className }: { className?: string }) {
                   aria-label={`关闭 ${tab.title}`}
                   className={cn(
                     'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-text-tertiary transition-opacity hover:bg-surface-3 hover:text-text-primary',
-                    isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
                   )}
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation()
                     handleTabClose(tab.id)
                   }}
-                  onKeyDown={e => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
                       e.stopPropagation()

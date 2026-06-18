@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ChatPageByTab } from '@/features/chat/components/ChatPageByTab'
+import { ROUTES_REGISTER } from '@/router-register'
 import { tabManager } from '@/stores/tabManager'
 import { useWorkspaceStore } from '@/stores/workspace.store'
-import { ROUTES_REGISTER } from '@/router-register'
 
 export const Route = createFileRoute('/_authenticated/chat/$tabId')({
   beforeLoad: ({ params }) => {

@@ -1,23 +1,17 @@
-import {
-  Injectable,
-  BadRequestException,
-  Inject,
-  Optional,
-  Logger,
-} from '@nestjs/common'
+import type { ChatMessagesChunk } from '@goferbot/data'
+import { BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { randomUUID } from 'crypto'
 import { SettingsService } from '../settings/settings.service.js'
-import { ModelRegistryService, type ModelInfo } from './model-registry.service.js'
 import { ConversationService } from './conversation.service.js'
-import { LlmProviderFactory } from './llm/llm-provider.factory.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
-import type { LlmProvider, LlmMessage } from './llm/llm-provider.interface.js'
 import {
   CHAT_CONTEXT_RETRIEVER,
   type ChatContextRetriever,
 } from './interfaces/chat-context-retriever.interface.js'
-import type { ChatMessagesChunk } from '@goferbot/data'
-import { randomUUID } from 'crypto'
+import { LlmProviderFactory } from './llm/llm-provider.factory.js'
+import type { LlmMessage, LlmProvider } from './llm/llm-provider.interface.js'
+import { type ModelInfo, ModelRegistryService } from './model-registry.service.js'
 
 function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
   return m.role === 'system' || m.role === 'user' || m.role === 'assistant'
@@ -26,7 +20,7 @@ function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
 @Injectable()
 export class ChatService {
   private readonly llmTimeoutMs: number
-  private readonly logger = new Logger(ChatService.name)
+  private readonly logger = new Logger(ChatService.name);
 
   constructor(
     private readonly configService: ConfigService,
@@ -111,7 +105,9 @@ export class ChatService {
     let fullReply = ''
 
     try {
-      for await (const chunk of provider.stream(messages, { abortSignal: abortController.signal })) {
+      for await (const chunk of provider.stream(messages, {
+        abortSignal: abortController.signal,
+      })) {
         // 客户端已断开时提前终止，避免继续消耗 tokens
         if (abortController.signal.aborted) break
         if (chunk.text) {
@@ -179,9 +175,13 @@ export class ChatService {
     }
 
     if (fullReply) {
-      this.conversationService.generateTitle(sessionId, input, fullReply, provider).catch((err: unknown) => {
-        this.logger.error(`生成会话标题失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`)
-      })
+      this.conversationService
+        .generateTitle(sessionId, input, fullReply, provider)
+        .catch((err: unknown) => {
+          this.logger.error(
+            `生成会话标题失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`,
+          )
+        })
     }
 
     yield {
@@ -198,7 +198,11 @@ export class ChatService {
     providerKey?: string,
     dtoModel?: string,
   ): Promise<LlmProvider> {
-    const { resolvedKey, provider: providerConfig, modelInfo } = await this.resolveProvider(userId, providerKey)
+    const {
+      resolvedKey,
+      provider: providerConfig,
+      modelInfo,
+    } = await this.resolveProvider(userId, providerKey)
 
     let apiKey: string
     let baseURL: string
@@ -206,9 +210,15 @@ export class ChatService {
 
     if (modelInfo) {
       // 内置模型：使用模型注册中心中的 providerKey 读取环境变量，避免将用户传入的 provider_key 拼入环境变量名
-      const envApiKey = this.configService.get<string>(`${modelInfo.providerKey.toUpperCase()}_API_KEY`)
-      const envBaseUrl = this.configService.get<string>(`${modelInfo.providerKey.toUpperCase()}_BASE_URL`)
-      const envModel = this.configService.get<string>(`${modelInfo.providerKey.toUpperCase()}_MODEL`)
+      const envApiKey = this.configService.get<string>(
+        `${modelInfo.providerKey.toUpperCase()}_API_KEY`,
+      )
+      const envBaseUrl = this.configService.get<string>(
+        `${modelInfo.providerKey.toUpperCase()}_BASE_URL`,
+      )
+      const envModel = this.configService.get<string>(
+        `${modelInfo.providerKey.toUpperCase()}_MODEL`,
+      )
       apiKey = envApiKey ?? ''
       baseURL = envBaseUrl ?? modelInfo.baseUrl
       model = dtoModel ?? envModel ?? resolvedKey
@@ -264,7 +274,7 @@ export class ChatService {
       }
     }
 
-    if (!resolvedKey || !providers || !Object.prototype.hasOwnProperty.call(providers, resolvedKey)) {
+    if (!resolvedKey || !providers || !Object.hasOwn(providers, resolvedKey)) {
       throw new BadRequestException({
         code: 'PROVIDER_INVALID',
         message: `未配置的 provider: ${resolvedKey ?? '空'}`,

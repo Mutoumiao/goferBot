@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common'
+import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { tap } from 'rxjs/operators'
 
@@ -12,10 +6,7 @@ import { tap } from 'rxjs/operators'
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingInterceptor.name)
 
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<unknown> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const isProduction = process.env.NODE_ENV === 'production'
     if (isProduction) {
       return next.handle()
@@ -26,16 +17,16 @@ export class LoggingInterceptor implements NestInterceptor {
     const url = request.url
     const now = Date.now()
 
-    this.logger.debug(`+++ Request: ${method} ${url} (ip: ${request.ip ?? request.socket?.remoteAddress ?? 'unknown'})`)
+    this.logger.debug(
+      `+++ Request: ${method} ${url} (ip: ${request.ip ?? request.socket?.remoteAddress ?? 'unknown'})`,
+    )
 
     return next.handle().pipe(
       tap(() => {
         const response = context.switchToHttp().getResponse()
         const statusCode = response.statusCode || 200
         const duration = Date.now() - now
-        this.logger.debug(
-          `--- Response: ${method} ${url} ${statusCode} +${duration}ms`,
-        )
+        this.logger.debug(`--- Response: ${method} ${url} ${statusCode} +${duration}ms`)
       }),
     )
   }

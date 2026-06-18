@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', () => ({
@@ -12,12 +12,12 @@ vi.mock('@/features/auth/services', () => ({
   getRememberedEmail: vi.fn(() => null),
 }))
 
-import { loginUser, registerUser, getRememberedEmail } from '@/features/auth/services'
-import { useAuthStore } from '@/stores/auth'
 import { AuthContainer } from '@/features/auth/components/AuthContainer'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
+import { getRememberedEmail, loginUser, registerUser } from '@/features/auth/services'
 import { useAuthPageStore } from '@/features/auth/store'
+import { useAuthStore } from '@/stores/auth'
 
 /** 设置受控 input 的值并触发 React onChange */
 function setInputValue(element: HTMLElement, value: string) {
@@ -128,7 +128,9 @@ describe('auth components', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '登录中...' })).toBeDefined()
       })
-      expect((screen.getByRole('button', { name: '登录中...' }) as HTMLButtonElement).disabled).toBe(true)
+      expect(
+        (screen.getByRole('button', { name: '登录中...' }) as HTMLButtonElement).disabled,
+      ).toBe(true)
     })
 
     it('clears email error when user starts typing', async () => {

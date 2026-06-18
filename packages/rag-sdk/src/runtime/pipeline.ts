@@ -1,6 +1,6 @@
-import type { Query, Chunk } from '../types.js'
-import type { RuntimeStage, RuntimeDebugInfo, RuntimePipelineResult } from '../pipeline.js'
-import type { IRetriever, IGenerator } from '../interfaces.js'
+import type { IGenerator, IRetriever } from '../interfaces.js'
+import type { RuntimeDebugInfo, RuntimePipelineResult, RuntimeStage } from '../pipeline.js'
+import type { Chunk, Query } from '../types.js'
 import type { DefaultRetrievalPostprocessor } from './postprocessor.js'
 
 export async function runRetrievalPipeline(
@@ -40,7 +40,7 @@ export async function runRetrievalPipeline(
   stages.push(postStage)
 
   // Stage 3: generation
-  const chunks = processed.map(c => c.chunk)
+  const chunks = processed.map((c) => c.chunk)
   const genStage: RuntimeStage = {
     name: 'generation',
     startTime: Date.now(),
@@ -53,7 +53,10 @@ export async function runRetrievalPipeline(
   genStage.output = answer
   stages.push(genStage)
 
-  const totalTokens = chunks.reduce((sum, c) => sum + (c.tokenCount ?? Math.ceil(c.content.length / 4)), 0)
+  const totalTokens = chunks.reduce(
+    (sum, c) => sum + (c.tokenCount ?? Math.ceil(c.content.length / 4)),
+    0,
+  )
 
   const debugInfo: RuntimeDebugInfo = {
     traceId,

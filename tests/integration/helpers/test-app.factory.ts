@@ -1,12 +1,12 @@
+import type { CanActivate } from '@nestjs/common'
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify'
-import { CanActivate } from '@nestjs/common'
-import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
-import { QueueService } from '../../../packages/server/src/processors/queue/queue.service.js'
-import { VectorService } from '../../../packages/server/src/processors/vector/vector.service.js'
-import { StorageService } from '../../../packages/server/src/processors/storage/storage.service.js'
 import { AppModule } from '../../../packages/server/src/app.module.js'
 import { bootstrap } from '../../../packages/server/src/bootstrap.js'
+import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
+import { QueueService } from '../../../packages/server/src/processors/queue/queue.service.js'
+import { StorageService } from '../../../packages/server/src/processors/storage/storage.service.js'
+import { VectorService } from '../../../packages/server/src/processors/vector/vector.service.js'
 
 const mockQueueService = {
   onModuleInit: async () => {},
@@ -54,10 +54,7 @@ export interface CreateAppOptions {
 }
 
 export class TestAppFactory {
-  static async create(
-    dbUrl: string,
-    opts: CreateAppOptions = {},
-  ): Promise<NestFastifyApplication> {
+  static async create(dbUrl: string, opts: CreateAppOptions = {}): Promise<NestFastifyApplication> {
     const { realMode = false, mockQueue = false } = opts
 
     const moduleRef = await Test.createTestingModule({

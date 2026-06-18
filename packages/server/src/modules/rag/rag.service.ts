@@ -1,5 +1,5 @@
+import { DefaultRetrievalPostprocessor, HybridRetriever } from '@goferbot/rag-sdk'
 import { Injectable, Logger } from '@nestjs/common'
-import { HybridRetriever, DefaultRetrievalPostprocessor } from '@goferbot/rag-sdk'
 
 export interface RetrievalResult {
   context: string | null

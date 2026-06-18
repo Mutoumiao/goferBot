@@ -1,7 +1,7 @@
-import type { Query, RetrievalCandidate, HybridSearchOptions } from '../types.js'
-import type { IRetriever, IKeywordStore, IEmbedder } from '../interfaces.js'
-import type { IVectorStore } from '../vector-store.js'
 import { RetrievalError } from '../errors.js'
+import type { IEmbedder, IKeywordStore, IRetriever } from '../interfaces.js'
+import type { HybridSearchOptions, Query, RetrievalCandidate } from '../types.js'
+import type { IVectorStore } from '../vector-store.js'
 import { reciprocalRankFusion } from './rrf.js'
 
 export interface HybridRetrieverOptions {
@@ -48,9 +48,15 @@ export class HybridRetriever implements IRetriever {
     try {
       const [queryVector] = await this.embedder.embed([query.original])
       const vectorSearchResults = await this.vectorStore.searchVectors(queryVector, { topK: limit })
-      vectorResults = vectorSearchResults.map(r => ({
+      vectorResults = vectorSearchResults.map((r) => ({
         // TODO: #adjacent-fix VectorSearchResult 缺少 chunk 完整信息，当前用占位值。真实场景需通过 chunkId 反查。
-        chunk: { id: r.chunkId, documentId: '', kbId: query.kbIds[0], content: '', chunkIndex: 0 } as any,
+        chunk: {
+          id: r.chunkId,
+          documentId: '',
+          kbId: query.kbIds[0],
+          content: '',
+          chunkIndex: 0,
+        } as any,
         score: r.score,
         source: 'vector' as const,
       }))

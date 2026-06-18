@@ -1,20 +1,10 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common'
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { KnowledgeBaseService } from './knowledge-base.service.js'
-import { FolderService } from './folder.service.js'
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CreateKbDto } from './dto/create-kb.dto.js'
 import { UpdateKbDto } from './dto/update-kb.dto.js'
+import { FolderService } from './folder.service.js'
+import { KnowledgeBaseService } from './knowledge-base.service.js'
 
 @Controller('knowledge-bases')
 @UseGuards(JwtAuthGuard)
@@ -48,10 +38,7 @@ export class KnowledgeBaseController {
   }
 
   @Post()
-  async create(
-    @CurrentUser('id') userId: string,
-    @Body() dto: CreateKbDto,
-  ) {
+  async create(@CurrentUser('id') userId: string, @Body() dto: CreateKbDto) {
     return this.kbService.create(userId, dto)
   }
 
@@ -65,10 +52,7 @@ export class KnowledgeBaseController {
   }
 
   @Delete(':id')
-  async remove(
-    @CurrentUser('id') userId: string,
-    @Param('id') id: string,
-  ) {
+  async remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.kbService.remove(userId, id)
   }
 

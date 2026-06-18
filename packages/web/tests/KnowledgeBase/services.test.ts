@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('sonner', () => ({
   toast: { error: vi.fn() },
@@ -26,45 +26,45 @@ vi.mock('@/api/file', () => ({
   deleteFolder: vi.fn(() => ({ send: vi.fn() })),
 }))
 
-import { getKbList, uploadFile, searchKbItems, updateKb } from '@/api/KnowledgeBase'
+import type { KbEntry } from '@goferbot/data'
 import {
-  getFolders,
-  getDocuments,
-  getBreadcrumbs,
-  previewDocument,
-  deleteDocument,
-  renameDocument,
-  moveDocument,
   copyDocument,
   copyFolder,
   createFolder,
-  renameFolder,
+  deleteDocument,
   deleteFolder,
+  getBreadcrumbs,
+  getDocuments,
+  getFolders,
+  moveDocument,
+  previewDocument,
+  renameDocument,
+  renameFolder,
 } from '@/api/file'
-import { useKbStore } from '@/features/KnowledgeBase/store'
+import { getKbList, searchKbItems, updateKb, uploadFile } from '@/api/KnowledgeBase'
 import {
+  addFolder,
   fetchKbList,
   loadKbItems,
-  previewDocument as svcPreviewDocument,
-  searchKbItems as svcSearchKbItems,
+  navigateToFolder,
+  pinKnowledgeBase,
   removeDocument,
-  renameDocument as svcRenameDocument,
-  moveDocument as svcMoveDocument,
+  removeItem,
+  removeKnowledgeBaseAndClearSelection,
+  renameItem,
   copyDocument as svcCopyDocument,
   copyFolder as svcCopyFolder,
   createFolder as svcCreateFolder,
-  renameFolder as svcRenameFolder,
+  moveDocument as svcMoveDocument,
+  previewDocument as svcPreviewDocument,
   removeFolder as svcRemoveFolder,
-  removeItem,
-  renameItem,
-  addFolder,
+  renameDocument as svcRenameDocument,
+  renameFolder as svcRenameFolder,
+  searchKbItems as svcSearchKbItems,
   uploadFiles,
-  navigateToFolder,
-  pinKnowledgeBase,
-  removeKnowledgeBaseAndClearSelection,
 } from '@/features/KnowledgeBase/services'
-import type { KbEntry } from '@goferbot/data'
-import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
+import { useKbStore } from '@/features/KnowledgeBase/store'
+import type { DocumentItem, Folder } from '@/features/KnowledgeBase/types'
 
 describe('kb services', () => {
   beforeEach(() => {
@@ -87,8 +87,22 @@ describe('kb services', () => {
 
   describe('fetchKbList', () => {
     it('returns success and sets entries on ok', async () => {
-      const entries: KbEntry[] = [{ id: 'kb1', name: 'Test', description: '', fileCount: 0, createdAt: '', updatedAt: '' }]
-      vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: entries, pagination: { total: 1, size: 1, currentPage: 1, totalPage: 1, hasNextPage: false, hasPrevPage: false } }) } as any)
+      const entries: KbEntry[] = [
+        { id: 'kb1', name: 'Test', description: '', fileCount: 0, createdAt: '', updatedAt: '' },
+      ]
+      vi.mocked(getKbList).mockReturnValue({
+        send: vi.fn().mockResolvedValue({
+          items: entries,
+          pagination: {
+            total: 1,
+            size: 1,
+            currentPage: 1,
+            totalPage: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        }),
+      } as any)
 
       const result = await fetchKbList()
 
@@ -98,7 +112,9 @@ describe('kb services', () => {
     })
 
     it('returns friendly network error on network failure', async () => {
-      vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('network')) } as any)
+      vi.mocked(getKbList).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('network')),
+      } as any)
 
       const result = await fetchKbList()
 
@@ -117,7 +133,9 @@ describe('kb services', () => {
     })
 
     it('maps HTTP 500 to server busy message', async () => {
-      vi.mocked(getKbList).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('HTTP 500: Internal Server Error')) } as any)
+      vi.mocked(getKbList).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('HTTP 500: Internal Server Error')),
+      } as any)
 
       const result = await fetchKbList()
 
@@ -128,16 +146,31 @@ describe('kb services', () => {
 
   describe('loadKbItems', () => {
     it('sets folders, documents and breadcrumbs on success', async () => {
-      const folders: Folder[] = [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' }]
+      const folders: Folder[] = [
+        { id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' },
+      ]
       const documents: DocumentItem[] = [
-        { id: 'd1', kbId: 'kb1', folderId: null, name: 'doc', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
+        {
+          id: 'd1',
+          kbId: 'kb1',
+          folderId: null,
+          name: 'doc',
+          ext: 'pdf',
+          mimeType: 'application/pdf',
+          size: 1024,
+          status: 'ready',
+          createdAt: '',
+          updatedAt: '',
+        },
       ]
       const breadcrumbs: Folder[] = [
         { id: 'f2', kbId: 'kb1', parentId: null, name: 'Parent', createdAt: '', updatedAt: '' },
       ]
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue(folders) } as any)
       vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue(documents) } as any)
-      vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue(breadcrumbs) } as any)
+      vi.mocked(getBreadcrumbs).mockReturnValue({
+        send: vi.fn().mockResolvedValue(breadcrumbs),
+      } as any)
 
       await loadKbItems('kb1', 'f1')
 
@@ -174,7 +207,9 @@ describe('kb services', () => {
     })
 
     it('sets friendly fileError on failure', async () => {
-      vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
+      vi.mocked(getFolders).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('fail')),
+      } as any)
       vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
       vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
 
@@ -189,7 +224,9 @@ describe('kb services', () => {
     it('returns preview result on success', async () => {
       useKbStore.setState({ currentKbId: 'kb1' })
       const preview = { type: 'text' as const, mimeType: 'text/markdown', content: '# Hello' }
-      vi.mocked(previewDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(preview) } as any)
+      vi.mocked(previewDocument).mockReturnValue({
+        send: vi.fn().mockResolvedValue(preview),
+      } as any)
 
       const result = await svcPreviewDocument('d1')
 
@@ -199,7 +236,9 @@ describe('kb services', () => {
 
     it('returns null and sets friendly error on failure', async () => {
       useKbStore.setState({ currentKbId: 'kb1' })
-      vi.mocked(previewDocument).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('preview fail')) } as any)
+      vi.mocked(previewDocument).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('preview fail')),
+      } as any)
 
       const result = await svcPreviewDocument('d1')
 
@@ -218,11 +257,26 @@ describe('kb services', () => {
   describe('searchKbItems', () => {
     it('sets folders and documents from search result', async () => {
       useKbStore.setState({ currentKbId: 'kb1' })
-      const folders: Folder[] = [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Notes', createdAt: '', updatedAt: '' }]
-      const documents: DocumentItem[] = [
-        { id: 'd1', kbId: 'kb1', folderId: null, name: 'notes.pdf', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
+      const folders: Folder[] = [
+        { id: 'f1', kbId: 'kb1', parentId: null, name: 'Notes', createdAt: '', updatedAt: '' },
       ]
-      vi.mocked(searchKbItems).mockReturnValue({ send: vi.fn().mockResolvedValue({ folders, documents }) } as any)
+      const documents: DocumentItem[] = [
+        {
+          id: 'd1',
+          kbId: 'kb1',
+          folderId: null,
+          name: 'notes.pdf',
+          ext: 'pdf',
+          mimeType: 'application/pdf',
+          size: 1024,
+          status: 'ready',
+          createdAt: '',
+          updatedAt: '',
+        },
+      ]
+      vi.mocked(searchKbItems).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ folders, documents }),
+      } as any)
 
       const result = await svcSearchKbItems('notes')
 
@@ -253,19 +307,45 @@ describe('kb services', () => {
       let resolveFirst: (value: unknown) => void = () => {}
       vi.mocked(searchKbItems)
         .mockReturnValueOnce({
-          send: vi.fn().mockImplementation(() => new Promise((resolve) => { resolveFirst = resolve })),
+          send: vi.fn().mockImplementation(
+            () =>
+              new Promise((resolve) => {
+                resolveFirst = resolve
+              }),
+          ),
         } as any)
         .mockReturnValueOnce({
-          send: vi.fn().mockResolvedValue({ folders: [{ id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }], documents: [] }),
+          send: vi.fn().mockResolvedValue({
+            folders: [
+              {
+                id: 'new',
+                kbId: 'kb1',
+                parentId: null,
+                name: 'New',
+                createdAt: '',
+                updatedAt: '',
+              },
+            ],
+            documents: [],
+          }),
         } as any)
 
       const p1 = svcSearchKbItems('first')
       const p2 = svcSearchKbItems('second')
       await p2
-      expect(useKbStore.getState().folders).toEqual([{ id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }])
-      resolveFirst({ folders: [{ id: 'old', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }], documents: [] })
+      expect(useKbStore.getState().folders).toEqual([
+        { id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' },
+      ])
+      resolveFirst({
+        folders: [
+          { id: 'old', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' },
+        ],
+        documents: [],
+      })
       await p1
-      expect(useKbStore.getState().folders).toEqual([{ id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }])
+      expect(useKbStore.getState().folders).toEqual([
+        { id: 'new', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' },
+      ])
     })
   })
 
@@ -274,11 +354,35 @@ describe('kb services', () => {
       useKbStore.setState({
         currentKbId: 'kb1',
         documents: [
-          { id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
-          { id: 'd2', kbId: 'kb1', folderId: null, name: 'b', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+          {
+            id: 'd2',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'b',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
         ],
       })
-      vi.mocked(deleteDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+      vi.mocked(deleteDocument).mockReturnValue({
+        send: vi.fn().mockResolvedValue(undefined),
+      } as any)
 
       await removeDocument('d1')
 
@@ -287,14 +391,48 @@ describe('kb services', () => {
     })
 
     it('throws when currentKbId is null', async () => {
-      useKbStore.setState({ currentKbId: null, documents: [{ id: 'd1', kbId: '', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }] })
+      useKbStore.setState({
+        currentKbId: null,
+        documents: [
+          {
+            id: 'd1',
+            kbId: '',
+            folderId: null,
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
+      })
       await expect(removeDocument('d1')).rejects.toThrow('未选择知识库')
       expect(deleteDocument).not.toHaveBeenCalled()
     })
 
     it('throws friendly error on api failure', async () => {
-      useKbStore.setState({ currentKbId: 'kb1', documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }] })
-      vi.mocked(deleteDocument).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('del fail')) } as any)
+      useKbStore.setState({
+        currentKbId: 'kb1',
+        documents: [
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
+      })
+      vi.mocked(deleteDocument).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('del fail')),
+      } as any)
 
       await expect(removeDocument('d1')).rejects.toThrow('操作失败，请稍后重试')
       expect(useKbStore.getState().fileError).toBeNull()
@@ -305,9 +443,33 @@ describe('kb services', () => {
     it('updates document in store after api success', async () => {
       useKbStore.setState({
         currentKbId: 'kb1',
-        documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'old', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+        documents: [
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'old',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
       })
-      const updated: DocumentItem = { id: 'd1', kbId: 'kb1', folderId: null, name: 'new', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }
+      const updated: DocumentItem = {
+        id: 'd1',
+        kbId: 'kb1',
+        folderId: null,
+        name: 'new',
+        ext: 'pdf',
+        mimeType: 'application/pdf',
+        size: 1024,
+        status: 'ready',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(renameDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(updated) } as any)
 
       await svcRenameDocument('d1', 'new')
@@ -326,7 +488,20 @@ describe('kb services', () => {
     it('removes document from current list after api success', async () => {
       useKbStore.setState({
         currentKbId: 'kb1',
-        documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+        documents: [
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
       })
       vi.mocked(moveDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
 
@@ -353,9 +528,33 @@ describe('kb services', () => {
       useKbStore.setState({
         currentKbId: 'kb1',
         currentFolderId: 'f1',
-        documents: [{ id: 'd1', kbId: 'kb1', folderId: 'f1', name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+        documents: [
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: 'f1',
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
       })
-      const copied: DocumentItem = { id: 'd2', kbId: 'kb1', folderId: 'f1', name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'uploaded', createdAt: '', updatedAt: '' }
+      const copied: DocumentItem = {
+        id: 'd2',
+        kbId: 'kb1',
+        folderId: 'f1',
+        name: 'a',
+        ext: 'pdf',
+        mimeType: 'application/pdf',
+        size: 1024,
+        status: 'uploaded',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(copyDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(copied) } as any)
 
       await svcCopyDocument('d1', 'kb1', 'f1')
@@ -368,9 +567,33 @@ describe('kb services', () => {
       useKbStore.setState({
         currentKbId: 'kb1',
         currentFolderId: 'f1',
-        documents: [{ id: 'd1', kbId: 'kb1', folderId: 'f1', name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+        documents: [
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: 'f1',
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
       })
-      const copied: DocumentItem = { id: 'd2', kbId: 'kb2', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'uploaded', createdAt: '', updatedAt: '' }
+      const copied: DocumentItem = {
+        id: 'd2',
+        kbId: 'kb2',
+        folderId: null,
+        name: 'a',
+        ext: 'pdf',
+        mimeType: 'application/pdf',
+        size: 1024,
+        status: 'uploaded',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(copyDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(copied) } as any)
 
       await svcCopyDocument('d1', 'kb2', null)
@@ -390,9 +613,18 @@ describe('kb services', () => {
       useKbStore.setState({
         currentKbId: 'kb1',
         currentFolderId: 'f1',
-        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' }],
+        folders: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' },
+        ],
       })
-      const copied: Folder = { id: 'f2', kbId: 'kb1', parentId: 'f1', name: 'A', createdAt: '', updatedAt: '' }
+      const copied: Folder = {
+        id: 'f2',
+        kbId: 'kb1',
+        parentId: 'f1',
+        name: 'A',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(copyFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(copied) } as any)
 
       await svcCopyFolder('f1', 'kb1', 'f1')
@@ -410,7 +642,14 @@ describe('kb services', () => {
 
   describe('createFolder', () => {
     it('returns created folder from api', async () => {
-      const folder: Folder = { id: 'f1', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }
+      const folder: Folder = {
+        id: 'f1',
+        kbId: 'kb1',
+        parentId: null,
+        name: 'New',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(createFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(folder) } as any)
 
       const result = await svcCreateFolder('kb1', 'New')
@@ -421,7 +660,14 @@ describe('kb services', () => {
 
   describe('renameFolder', () => {
     it('returns updated folder from api', async () => {
-      const folder: Folder = { id: 'f1', kbId: 'kb1', parentId: null, name: 'Renamed', createdAt: '', updatedAt: '' }
+      const folder: Folder = {
+        id: 'f1',
+        kbId: 'kb1',
+        parentId: null,
+        name: 'Renamed',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(renameFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(folder) } as any)
 
       const result = await svcRenameFolder('kb1', 'f1', 'Renamed')
@@ -458,7 +704,9 @@ describe('kb services', () => {
 
     it('marks upload failed on error', async () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-      vi.mocked(uploadFile).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('up fail')) } as any)
+      vi.mocked(uploadFile).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('up fail')),
+      } as any)
 
       const file = new File(['content'], 'test.pdf', { type: 'application/pdf' })
       await uploadFiles('kb1', [file])
@@ -507,7 +755,14 @@ describe('kb services', () => {
       })
       vi.mocked(deleteFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
 
-      await removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
+      await removeItem({
+        id: 'f1',
+        kbId: 'kb1',
+        parentId: null,
+        name: 'A',
+        createdAt: '',
+        updatedAt: '',
+      })
 
       expect(useKbStore.getState().folders).toHaveLength(1)
       expect(useKbStore.getState().folders[0].id).toBe('f2')
@@ -517,33 +772,78 @@ describe('kb services', () => {
       useKbStore.setState({
         currentKbId: 'kb1',
         documents: [
-          { id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
         ],
       })
-      vi.mocked(deleteDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
+      vi.mocked(deleteDocument).mockReturnValue({
+        send: vi.fn().mockResolvedValue(undefined),
+      } as any)
 
-      await removeItem({ id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' })
+      await removeItem({
+        id: 'd1',
+        kbId: 'kb1',
+        folderId: null,
+        name: 'a',
+        ext: 'pdf',
+        mimeType: 'application/pdf',
+        size: 1024,
+        status: 'ready',
+        createdAt: '',
+        updatedAt: '',
+      })
 
       expect(useKbStore.getState().documents).toHaveLength(0)
     })
 
     it('throws when currentKbId is null', async () => {
-      useKbStore.setState({ currentKbId: null, folders: [{ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' }] })
-      await expect(removeItem({ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' })).rejects.toThrow('未选择知识库')
+      useKbStore.setState({
+        currentKbId: null,
+        folders: [{ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' }],
+      })
+      await expect(
+        removeItem({ id: 'f1', kbId: '', parentId: null, name: 'A', createdAt: '', updatedAt: '' }),
+      ).rejects.toThrow('未选择知识库')
       expect(deleteFolder).not.toHaveBeenCalled()
     })
 
     it('rejects concurrent remove requests for the same item', async () => {
       useKbStore.setState({
         currentKbId: 'kb1',
-        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' }],
+        folders: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' },
+        ],
       })
       vi.mocked(deleteFolder).mockReturnValue({
         send: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50))),
       } as any)
 
-      const p1 = removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
-      const p2 = removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })
+      const p1 = removeItem({
+        id: 'f1',
+        kbId: 'kb1',
+        parentId: null,
+        name: 'A',
+        createdAt: '',
+        updatedAt: '',
+      })
+      const p2 = removeItem({
+        id: 'f1',
+        kbId: 'kb1',
+        parentId: null,
+        name: 'A',
+        createdAt: '',
+        updatedAt: '',
+      })
 
       await expect(p2).rejects.toThrow('操作进行中，请稍候')
       await p1
@@ -553,11 +853,24 @@ describe('kb services', () => {
     it('maps HTTP 409 to friendly conflict message', async () => {
       useKbStore.setState({
         currentKbId: 'kb1',
-        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' }],
+        folders: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' },
+        ],
       })
-      vi.mocked(deleteFolder).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('HTTP 409: Conflict')) } as any)
+      vi.mocked(deleteFolder).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('HTTP 409: Conflict')),
+      } as any)
 
-      await expect(removeItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'A', createdAt: '', updatedAt: '' })).rejects.toThrow('名称冲突，请更换后重试')
+      await expect(
+        removeItem({
+          id: 'f1',
+          kbId: 'kb1',
+          parentId: null,
+          name: 'A',
+          createdAt: '',
+          updatedAt: '',
+        }),
+      ).rejects.toThrow('名称冲突，请更换后重试')
       expect(useKbStore.getState().fileError).toBeNull()
     })
   })
@@ -566,12 +879,24 @@ describe('kb services', () => {
     it('renames folder in store after api success', async () => {
       useKbStore.setState({
         currentKbId: 'kb1',
-        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }],
+        folders: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' },
+        ],
       })
-      const updated: Folder = { id: 'f1', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }
+      const updated: Folder = {
+        id: 'f1',
+        kbId: 'kb1',
+        parentId: null,
+        name: 'New',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(renameFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(updated) } as any)
 
-      await renameItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'New')
+      await renameItem(
+        { id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' },
+        'New',
+      )
 
       expect(useKbStore.getState().folders[0].name).toBe('New')
     })
@@ -579,33 +904,84 @@ describe('kb services', () => {
     it('renames document in store after api success', async () => {
       useKbStore.setState({
         currentKbId: 'kb1',
-        documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'old', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
+        documents: [
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'old',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
       })
-      const updated: DocumentItem = { id: 'd1', kbId: 'kb1', folderId: null, name: 'new', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }
+      const updated: DocumentItem = {
+        id: 'd1',
+        kbId: 'kb1',
+        folderId: null,
+        name: 'new',
+        ext: 'pdf',
+        mimeType: 'application/pdf',
+        size: 1024,
+        status: 'ready',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(renameDocument).mockReturnValue({ send: vi.fn().mockResolvedValue(updated) } as any)
 
-      await renameItem({ id: 'd1', kbId: 'kb1', folderId: null, name: 'old', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }, 'new')
+      await renameItem(
+        {
+          id: 'd1',
+          kbId: 'kb1',
+          folderId: null,
+          name: 'old',
+          ext: 'pdf',
+          mimeType: 'application/pdf',
+          size: 1024,
+          status: 'ready',
+          createdAt: '',
+          updatedAt: '',
+        },
+        'new',
+      )
 
       expect(useKbStore.getState().documents[0].name).toBe('new')
     })
 
     it('throws when currentKbId is null', async () => {
       useKbStore.setState({ currentKbId: null })
-      await expect(renameItem({ id: 'f1', kbId: '', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'New')).rejects.toThrow('未选择知识库')
+      await expect(
+        renameItem(
+          { id: 'f1', kbId: '', parentId: null, name: 'Old', createdAt: '', updatedAt: '' },
+          'New',
+        ),
+      ).rejects.toThrow('未选择知识库')
       expect(renameFolder).not.toHaveBeenCalled()
     })
 
     it('rejects concurrent rename requests for the same item', async () => {
       useKbStore.setState({
         currentKbId: 'kb1',
-        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }],
+        folders: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' },
+        ],
       })
       vi.mocked(renameFolder).mockReturnValue({
         send: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50))),
       } as any)
 
-      const p1 = renameItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'New')
-      const p2 = renameItem({ id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' }, 'Another')
+      const p1 = renameItem(
+        { id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' },
+        'New',
+      )
+      const p2 = renameItem(
+        { id: 'f1', kbId: 'kb1', parentId: null, name: 'Old', createdAt: '', updatedAt: '' },
+        'Another',
+      )
 
       await expect(p2).rejects.toThrow('操作进行中，请稍候')
       await p1
@@ -616,7 +992,14 @@ describe('kb services', () => {
   describe('addFolder', () => {
     it('adds folder to store after api success', async () => {
       useKbStore.setState({ currentKbId: 'kb1', folders: [] })
-      const folder: Folder = { id: 'f1', kbId: 'kb1', parentId: null, name: 'New', createdAt: '', updatedAt: '' }
+      const folder: Folder = {
+        id: 'f1',
+        kbId: 'kb1',
+        parentId: null,
+        name: 'New',
+        createdAt: '',
+        updatedAt: '',
+      }
       vi.mocked(createFolder).mockReturnValue({ send: vi.fn().mockResolvedValue(folder) } as any)
 
       const result = await addFolder('kb1', 'New')
@@ -627,7 +1010,9 @@ describe('kb services', () => {
 
     it('throws friendly error on api failure', async () => {
       useKbStore.setState({ currentKbId: 'kb1', folders: [] })
-      vi.mocked(createFolder).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('fail')) } as any)
+      vi.mocked(createFolder).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('fail')),
+      } as any)
 
       await expect(addFolder('kb1', 'New')).rejects.toThrow('操作失败，请稍后重试')
       expect(useKbStore.getState().fileError).toBeNull()
@@ -637,13 +1022,40 @@ describe('kb services', () => {
   describe('pinKnowledgeBase', () => {
     it('calls updateKb and refreshes list on success', async () => {
       useKbStore.setState({
-        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: false }],
+        entries: [
+          {
+            id: 'kb1',
+            name: 'A',
+            description: '',
+            fileCount: 0,
+            createdAt: '',
+            updatedAt: '',
+            isPinned: false,
+          },
+        ],
       })
       vi.mocked(updateKb).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
       vi.mocked(getKbList).mockReturnValue({
         send: vi.fn().mockResolvedValue({
-          items: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: true }],
-          pagination: { total: 1, size: 1, currentPage: 1, totalPage: 1, hasNextPage: false, hasPrevPage: false },
+          items: [
+            {
+              id: 'kb1',
+              name: 'A',
+              description: '',
+              fileCount: 0,
+              createdAt: '',
+              updatedAt: '',
+              isPinned: true,
+            },
+          ],
+          pagination: {
+            total: 1,
+            size: 1,
+            currentPage: 1,
+            totalPage: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         }),
       } as any)
 
@@ -656,9 +1068,21 @@ describe('kb services', () => {
 
     it('returns false and toasts error on api failure', async () => {
       useKbStore.setState({
-        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: false }],
+        entries: [
+          {
+            id: 'kb1',
+            name: 'A',
+            description: '',
+            fileCount: 0,
+            createdAt: '',
+            updatedAt: '',
+            isPinned: false,
+          },
+        ],
       })
-      vi.mocked(updateKb).mockReturnValue({ send: vi.fn().mockRejectedValue(new Error('HTTP 500: fail')) } as any)
+      vi.mocked(updateKb).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('HTTP 500: fail')),
+      } as any)
 
       const result = await pinKnowledgeBase('kb1', true)
 
@@ -668,7 +1092,17 @@ describe('kb services', () => {
 
     it('ignores duplicate pin requests for the same kb', async () => {
       useKbStore.setState({
-        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '', isPinned: false }],
+        entries: [
+          {
+            id: 'kb1',
+            name: 'A',
+            description: '',
+            fileCount: 0,
+            createdAt: '',
+            updatedAt: '',
+            isPinned: false,
+          },
+        ],
       })
       vi.mocked(updateKb).mockReturnValue({
         send: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50))),
@@ -689,10 +1123,29 @@ describe('kb services', () => {
         selectedId: 'kb1',
         currentKbId: 'kb1',
         currentFolderId: 'f1',
-        folders: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' }],
-        documents: [{ id: 'd1', kbId: 'kb1', folderId: null, name: 'a', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' }],
-        breadcrumbs: [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' }],
-        entries: [{ id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '' }],
+        folders: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' },
+        ],
+        documents: [
+          {
+            id: 'd1',
+            kbId: 'kb1',
+            folderId: null,
+            name: 'a',
+            ext: 'pdf',
+            mimeType: 'application/pdf',
+            size: 1024,
+            status: 'ready',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
+        breadcrumbs: [
+          { id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' },
+        ],
+        entries: [
+          { id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '' },
+        ],
       })
 
       removeKnowledgeBaseAndClearSelection('kb1')
@@ -711,7 +1164,9 @@ describe('kb services', () => {
         selectedId: 'kb2',
         currentKbId: 'kb2',
         currentFolderId: 'f1',
-        folders: [{ id: 'f1', kbId: 'kb2', parentId: null, name: 'F', createdAt: '', updatedAt: '' }],
+        folders: [
+          { id: 'f1', kbId: 'kb2', parentId: null, name: 'F', createdAt: '', updatedAt: '' },
+        ],
         entries: [
           { id: 'kb1', name: 'A', description: '', fileCount: 0, createdAt: '', updatedAt: '' },
           { id: 'kb2', name: 'B', description: '', fileCount: 0, createdAt: '', updatedAt: '' },

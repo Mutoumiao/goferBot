@@ -1,7 +1,7 @@
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
   HttpStatus,
   Logger,
@@ -31,9 +31,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
 
     const isDevelopment = process.env.NODE_ENV === 'development'
 
@@ -71,9 +69,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `${request.method} ${request.url} ${exception instanceof Error ? exception.stack : String(exception)}`,
       )
     } else {
-      this.logger.warn(
-        `${request.method} ${request.url} ${status} ${message}`,
-      )
+      this.logger.warn(`${request.method} ${request.url} ${status} ${message}`)
     }
 
     response.status(status).type('application/json').send(errorResponse)

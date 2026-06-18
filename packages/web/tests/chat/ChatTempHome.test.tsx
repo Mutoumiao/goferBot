@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useChatStore } from '@/features/chat/store'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatTempHome } from '@/features/chat/components/ChatTempHome'
+import { useChatStore } from '@/features/chat/store'
 
 vi.mock('@ant-design/x', () => ({
   XProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -17,8 +17,8 @@ vi.mock('alova/client', () => ({
   useRequest: vi.fn(),
 }))
 
-import { submitTempChat } from '@/features/chat/services'
 import { useRequest } from 'alova/client'
+import { submitTempChat } from '@/features/chat/services'
 
 describe('ChatTempHome', () => {
   const mockNavigate = vi.fn()
@@ -80,7 +80,9 @@ describe('ChatTempHome', () => {
     const sendBtn = screen.getByTestId('temp-send-btn')
     await user.click(sendBtn)
 
-    expect(submitTempChat).toHaveBeenCalledWith('hello world', 'tab-1', { knowledgeBaseIds: undefined })
+    expect(submitTempChat).toHaveBeenCalledWith('hello world', 'tab-1', {
+      knowledgeBaseIds: undefined,
+    })
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
@@ -94,7 +96,9 @@ describe('ChatTempHome', () => {
     await user.type(input, 'enter submit')
     await user.keyboard('{Enter}')
 
-    expect(submitTempChat).toHaveBeenCalledWith('enter submit', 'tab-1', { knowledgeBaseIds: undefined })
+    expect(submitTempChat).toHaveBeenCalledWith('enter submit', 'tab-1', {
+      knowledgeBaseIds: undefined,
+    })
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
@@ -176,11 +180,9 @@ describe('ChatTempHome', () => {
 
     await user.click(screen.getByText('总结文档'))
 
-    expect(submitTempChat).toHaveBeenCalledWith(
-      '请帮我总结这份文档的重点内容和行动项',
-      'tab-1',
-      { knowledgeBaseIds: undefined },
-    )
+    expect(submitTempChat).toHaveBeenCalledWith('请帮我总结这份文档的重点内容和行动项', 'tab-1', {
+      knowledgeBaseIds: undefined,
+    })
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 })

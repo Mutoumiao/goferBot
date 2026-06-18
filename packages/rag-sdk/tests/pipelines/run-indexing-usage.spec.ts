@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
-import { runIndexing } from '@/pipelines/run-indexing.js'
+import { describe, expect, it, vi } from 'vitest'
 import type { IChunker, IEmbedder, IIndexer } from '@/interfaces.js'
-import type { DocumentSource, Chunk, TokenUsage } from '@/types.js'
+import { runIndexing } from '@/pipelines/run-indexing.js'
+import type { Chunk, DocumentSource, TokenUsage } from '@/types.js'
 
 const document: DocumentSource = {
   documentId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -23,7 +23,10 @@ function makeChunk(content: string, index: number): Chunk {
 describe('runIndexing with embedWithUsage', () => {
   it('AC-16: passes usage to indexer when embedder supports embedWithUsage', async () => {
     const chunks = [makeChunk('Hello world', 0), makeChunk('This is a test', 1)]
-    const vectors = [[0.1, 0.2], [0.3, 0.4]]
+    const vectors = [
+      [0.1, 0.2],
+      [0.3, 0.4],
+    ]
     const usage: TokenUsage[] = [
       { promptTokens: 2, totalTokens: 2 },
       { promptTokens: 3, totalTokens: 3 },
@@ -39,7 +42,7 @@ describe('runIndexing with embedWithUsage', () => {
 
     const result = await runIndexing(document, { chunker, embedder, indexer })
 
-    expect(embedder.embedWithUsage).toHaveBeenCalledWith(chunks.map(c => c.content))
+    expect(embedder.embedWithUsage).toHaveBeenCalledWith(chunks.map((c) => c.content))
     expect(embedder.embed).not.toHaveBeenCalled()
     expect(indexer.index).toHaveBeenCalledWith(chunks, vectors, usage)
     expect(result.stages[1].status).toBe('completed')
@@ -59,7 +62,7 @@ describe('runIndexing with embedWithUsage', () => {
 
     const result = await runIndexing(document, { chunker, embedder, indexer })
 
-    expect(embedder.embed).toHaveBeenCalledWith(chunks.map(c => c.content))
+    expect(embedder.embed).toHaveBeenCalledWith(chunks.map((c) => c.content))
     expect(indexer.index).toHaveBeenCalledWith(chunks, vectors, undefined)
     expect(result.stages[1].status).toBe('completed')
   })

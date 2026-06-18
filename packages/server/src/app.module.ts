@@ -1,30 +1,25 @@
 import { Module } from '@nestjs/common'
-import {
-  APP_INTERCEPTOR,
-  APP_FILTER,
-  APP_GUARD,
-  APP_PIPE,
-} from '@nestjs/core'
 import { ConfigModule } from '@nestjs/config'
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
-import { HealthModule } from './modules/health/health.module.js'
-import { UserModule } from './modules/user/user.module.js'
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
-import { VectorModule } from './processors/vector/vector.module.js'
+import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
+import { SpiderGuard } from './common/guards/spider.guard.js'
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
+import { ResponseInterceptor } from './common/interceptors/response.interceptor.js'
+import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js'
+import { AdminModule } from './modules/admin/admin.module.js'
+import { ChatModule } from './modules/chat/chat.module.js'
+import { HealthModule } from './modules/health/health.module.js'
+import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module.js'
+import { RagModule } from './modules/rag/rag.module.js'
+import { SessionModule } from './modules/session/session.module.js'
+import { SettingsModule } from './modules/settings/settings.module.js'
+import { UserModule } from './modules/user/user.module.js'
 import { KeywordModule } from './processors/keyword/keyword.module.js'
 import { QueueModule } from './processors/queue/queue.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
-import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module.js'
-import { SessionModule } from './modules/session/session.module.js'
-import { ChatModule } from './modules/chat/chat.module.js'
-import { SettingsModule } from './modules/settings/settings.module.js'
-import { AdminModule } from './modules/admin/admin.module.js'
-import { RagModule } from './modules/rag/rag.module.js'
-import { ResponseInterceptor } from './common/interceptors/response.interceptor.js'
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
-import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
-import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js'
-import { SpiderGuard } from './common/guards/spider.guard.js'
+import { VectorModule } from './processors/vector/vector.module.js'
 
 @Module({
   imports: [

@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { Message } from '@prisma/client'
-import { SessionRepository } from '../../modules/session/repositories/session.repository.js'
 import { MessageRepository } from '../..//modules/session/repositories/message.repository.js'
+import { SessionRepository } from '../../modules/session/repositories/session.repository.js'
 import type { LlmProvider } from './llm/llm-provider.interface.js'
 
 export interface ConversationContext {
@@ -14,7 +14,7 @@ export class ConversationService {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly messageRepository: MessageRepository,
-  ) { }
+  ) {}
 
   async ensureOwnership(userId: string, sessionId: string): Promise<void> {
     const session = await this.sessionRepository.findById(sessionId)
@@ -32,7 +32,10 @@ export class ConversationService {
     }
   }
 
-  async createSession(userId: string, title = '新对话'): Promise<{ id: string; userId: string; title: string }> {
+  async createSession(
+    userId: string,
+    title = '新对话',
+  ): Promise<{ id: string; userId: string; title: string }> {
     return this.sessionRepository.create({ userId, title })
   }
 
@@ -44,7 +47,11 @@ export class ConversationService {
     })
   }
 
-  async saveAssistantMessage(sessionId: string, messageId: string, content: string): Promise<Message> {
+  async saveAssistantMessage(
+    sessionId: string,
+    messageId: string,
+    content: string,
+  ): Promise<Message> {
     return this.messageRepository.create({
       id: messageId,
       sessionId,
@@ -65,9 +72,13 @@ export class ConversationService {
           message: 'parent_message_id 不属于当前会话',
         })
       }
-      const messages = await this.messageRepository.findUpToMessageId(sessionId, options.beforeMessageId, {
-        select: { role: true, content: true },
-      })
+      const messages = await this.messageRepository.findUpToMessageId(
+        sessionId,
+        options.beforeMessageId,
+        {
+          select: { role: true, content: true },
+        },
+      )
       return messages as Array<{ role: string; content: string }>
     }
 
@@ -75,10 +86,7 @@ export class ConversationService {
     return messages.map((m) => ({ role: m.role, content: m.content }))
   }
 
-  async paginateMessages(
-    sessionId: string,
-    options: { page: number; size: number },
-  ) {
+  async paginateMessages(sessionId: string, options: { page: number; size: number }) {
     return this.messageRepository.paginateBySessionId(sessionId, options)
   }
 
@@ -93,7 +101,11 @@ export class ConversationService {
     if (session.title !== '新对话' && session.title !== '会话页') return
 
     const messages = [
-      { role: 'system' as const, content: '你是一个标题生成助手。请根据对话内容生成一个5-10字的简短中文标题，只返回标题本身，不要有任何额外内容或标点解释。' },
+      {
+        role: 'system' as const,
+        content:
+          '你是一个标题生成助手。请根据对话内容生成一个5-10字的简短中文标题，只返回标题本身，不要有任何额外内容或标点解释。',
+      },
       { role: 'user' as const, content: `用户：${userMessage}\nAI：${assistantMessage}` },
     ]
 

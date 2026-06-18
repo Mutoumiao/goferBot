@@ -1,8 +1,13 @@
 import { createAlova } from 'alova'
-import ReactHook from 'alova/react'
 import adapterFetch from 'alova/fetch'
+import ReactHook from 'alova/react'
 import { useAuthStore } from '@/stores/auth'
-import { getRefreshToken, setAccessToken, setRefreshToken, buildAuthHeader } from '@/utils/auth-token'
+import {
+  buildAuthHeader,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from '@/utils/auth-token'
 
 // Token 刷新状态管理
 let isRefreshing = false
@@ -21,7 +26,9 @@ async function refreshToken(): Promise<string | null> {
       body: JSON.stringify({ refreshToken: refreshTokenValue }),
     })
     if (!response.ok) return null
-    const json = await response.json() as { data?: { accessToken?: string; refreshToken?: string } }
+    const json = (await response.json()) as {
+      data?: { accessToken?: string; refreshToken?: string }
+    }
     // 解包 NestJS ResponseInterceptor: { data: T }
     const payload = json.data ?? json
     const token = (payload as { accessToken?: string }).accessToken
@@ -44,7 +51,10 @@ function addSubscriber(cb: (token: string) => void) {
 }
 
 /** 处理 401/403：尝试刷新 token，失败则清空登录态 */
-async function doRefreshAndRetry(method: { send: () => unknown; config: { headers: Record<string, string> } }) {
+async function doRefreshAndRetry(method: {
+  send: () => unknown
+  config: { headers: Record<string, string> }
+}) {
   if (!isRefreshing) {
     isRefreshing = true
     try {

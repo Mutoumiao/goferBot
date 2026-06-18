@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest'
 import type { Message } from '@goferbot/data'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useConversationStore } from '@/stores/conversation.store'
 
 function makeMessage(overrides?: Partial<Message>): Message {
@@ -56,13 +56,15 @@ describe('ConversationStore', () => {
   })
 
   test('updateMessage 更新指定消息内容', () => {
-    useConversationStore.getState().setMessages('conv-1', [
-      makeMessage({ id: 'm1', content: 'old' }),
-    ])
+    useConversationStore
+      .getState()
+      .setMessages('conv-1', [makeMessage({ id: 'm1', content: 'old' })])
 
     useConversationStore.getState().updateMessage('conv-1', 'm1', { content: 'updated' })
 
-    expect(useConversationStore.getState().conversationMap['conv-1'].messages[0].content).toBe('updated')
+    expect(useConversationStore.getState().conversationMap['conv-1'].messages[0].content).toBe(
+      'updated',
+    )
   })
 
   test('setStreaming 更新流式状态', () => {
@@ -77,12 +79,16 @@ describe('ConversationStore', () => {
 
     useConversationStore.getState().setAbortController('conv-1', controller)
 
-    expect(useConversationStore.getState().conversationMap['conv-1'].abortController).toBe(controller)
+    expect(useConversationStore.getState().conversationMap['conv-1'].abortController).toBe(
+      controller,
+    )
 
     useConversationStore.getState().abortConversation('conv-1')
 
     expect(abortSpy).toHaveBeenCalled()
-    expect(useConversationStore.getState().conversationMap['conv-1'].abortController).toBeUndefined()
+    expect(
+      useConversationStore.getState().conversationMap['conv-1'].abortController,
+    ).toBeUndefined()
     expect(useConversationStore.getState().conversationMap['conv-1'].streaming).toBe(false)
   })
 

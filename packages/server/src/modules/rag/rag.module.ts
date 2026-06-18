@@ -1,9 +1,9 @@
+import { DefaultRetrievalPostprocessor, HybridRetriever, OpenAIEmbedder } from '@goferbot/rag-sdk'
 import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { RagService } from './rag.service.js'
-import { HybridRetriever, DefaultRetrievalPostprocessor, OpenAIEmbedder } from '@goferbot/rag-sdk'
-import { VectorService } from '../../processors/vector/vector.service.js'
 import { KeywordService } from '../../processors/keyword/keyword.service.js'
+import { VectorService } from '../../processors/vector/vector.service.js'
+import { RagService } from './rag.service.js'
 
 /**
  * FROZEN: 本项目 chat 暂不接入 RAG，模块仅作代码隔离。
@@ -14,7 +14,11 @@ import { KeywordService } from '../../processors/keyword/keyword.service.js'
     RagService,
     {
       provide: HybridRetriever,
-      useFactory: (vectorService: VectorService, keywordService: KeywordService, config: ConfigService) => {
+      useFactory: (
+        vectorService: VectorService,
+        keywordService: KeywordService,
+        config: ConfigService,
+      ) => {
         const embedder = new OpenAIEmbedder({
           provider: 'openai',
           apiKey: config.getOrThrow<string>('EMBEDDING_API_KEY'),
@@ -32,7 +36,11 @@ import { KeywordService } from '../../processors/keyword/keyword.service.js'
     },
     {
       provide: DefaultRetrievalPostprocessor,
-      useValue: new DefaultRetrievalPostprocessor({ minScore: 0, maxChunks: 10, tokenBudget: 3000 }),
+      useValue: new DefaultRetrievalPostprocessor({
+        minScore: 0,
+        maxChunks: 10,
+        tokenBudget: 3000,
+      }),
     },
   ],
   exports: [RagService],

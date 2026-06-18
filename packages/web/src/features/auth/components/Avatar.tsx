@@ -1,6 +1,6 @@
+import { User } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/utils/cn'
-import { User } from 'lucide-react'
 
 export interface AvatarProps {
   src?: string | null

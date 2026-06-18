@@ -1,4 +1,4 @@
-import { X, AlertCircle, RefreshCw } from 'lucide-react'
+import { AlertCircle, RefreshCw, X } from 'lucide-react'
 import type { UploadTask } from '../types'
 
 interface UploadProgressBarProps {
@@ -8,10 +8,16 @@ interface UploadProgressBarProps {
   onClear: () => void
 }
 
-export function UploadProgressBar({ tasks, activeUploadCount, onRetry, onClear }: UploadProgressBarProps) {
+export function UploadProgressBar({
+  tasks,
+  activeUploadCount,
+  onRetry,
+  onClear,
+}: UploadProgressBarProps) {
   if (tasks.length === 0) return null
 
-  const totalProgress = tasks.length > 0 ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length) : 0
+  const totalProgress =
+    tasks.length > 0 ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length) : 0
 
   return (
     <div className="rounded-lg border border-border-default bg-surface-1 p-3 mb-4">
@@ -47,7 +53,9 @@ export function UploadProgressBar({ tasks, activeUploadCount, onRetry, onClear }
             ) : (
               <span className="w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
             )}
-            <span className={`flex-1 truncate ${task.status === 'failed' ? 'text-red-600' : 'text-text-primary'}`}>
+            <span
+              className={`flex-1 truncate ${task.status === 'failed' ? 'text-red-600' : 'text-text-primary'}`}
+            >
               {task.fileName}
             </span>
             {task.status === 'failed' && (
@@ -65,7 +73,9 @@ export function UploadProgressBar({ tasks, activeUploadCount, onRetry, onClear }
               </>
             )}
             {task.status === 'completed' && <span className="text-green-500">完成</span>}
-            {task.status === 'uploading' && <span className="text-text-tertiary">{task.progress}%</span>}
+            {task.status === 'uploading' && (
+              <span className="text-text-tertiary">{task.progress}%</span>
+            )}
           </li>
         ))}
       </ul>

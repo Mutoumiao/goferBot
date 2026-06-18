@@ -4,13 +4,14 @@
  *          POST /api/auth/logout, POST /api/auth/refresh, GET /api/auth/me
  * 场景：happy path、Zod 验证失败、认证缺失/无效、资源不存在、唯一约束冲突
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
-import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(1)
 
@@ -88,7 +89,11 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/auth/register',
-        payload: { email: `reg-${Date.now()}@test.gofer`, encryptedPassword: 'not-valid-base64!!!', name: 'Test' },
+        payload: {
+          email: `reg-${Date.now()}@test.gofer`,
+          encryptedPassword: 'not-valid-base64!!!',
+          name: 'Test',
+        },
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
@@ -146,7 +151,11 @@ describe('AuthController', () => {
     it('AC-11: returns tokens for valid credentials', async () => {
       const email = `login-${Date.now()}@test.gofer`
       const password = 'Test1234!'
-      await AuthFixtures.createUser(app, { email, password, name: 'Login User' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email, password, name: 'Login User' },
+        { remoteAddress: nextIp() },
+      )
       const encryptedPassword = await AuthFixtures.encryptPassword(app, password)
       const res = await app.inject({
         method: 'POST',
@@ -181,7 +190,11 @@ describe('AuthController', () => {
 
     it('AC-14: returns 404 for wrong password', async () => {
       const email = `login-wrong-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Wrong User' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email, password: 'Test1234!', name: 'Wrong User' },
+        { remoteAddress: nextIp() },
+      )
       const encryptedPassword = await AuthFixtures.encryptPassword(app, 'WrongPassword1!')
       const res = await app.inject({
         method: 'POST',
@@ -193,7 +206,11 @@ describe('AuthController', () => {
 
     it('AC-15: returns 403 for disabled user', async () => {
       const email = `disabled-${Date.now()}@test.gofer`
-      const user = await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Disabled' }, { remoteAddress: nextIp() })
+      const user = await AuthFixtures.createUser(
+        app,
+        { email, password: 'Test1234!', name: 'Disabled' },
+        { remoteAddress: nextIp() },
+      )
       const prisma = app.get(PrismaService)
       await prisma.user.update({ where: { id: user.id }, data: { isActive: false } })
 
@@ -212,8 +229,16 @@ describe('AuthController', () => {
   describe('POST /api/auth/logout', () => {
     it('AC-17: returns success for valid token', async () => {
       const email = `logout-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Logout User' }, { remoteAddress: nextIp() })
-      const token = await AuthFixtures.loginAs(app, { email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email, password: 'Test1234!', name: 'Logout User' },
+        { remoteAddress: nextIp() },
+      )
+      const token = await AuthFixtures.loginAs(
+        app,
+        { email, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
       const res = await app.inject({
         method: 'POST',
         url: '/api/auth/logout',
@@ -245,7 +270,11 @@ describe('AuthController', () => {
   describe('POST /api/auth/refresh', () => {
     it('AC-20: returns new tokens for valid refresh token', async () => {
       const email = `refresh-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Refresh User' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email, password: 'Test1234!', name: 'Refresh User' },
+        { remoteAddress: nextIp() },
+      )
       const loginRes = await app.inject({
         method: 'POST',
         url: '/api/auth/login',
@@ -274,7 +303,11 @@ describe('AuthController', () => {
 
     it('AC-22: returns 401 for access token', async () => {
       const email = `refresh-at-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Refresh AT' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email, password: 'Test1234!', name: 'Refresh AT' },
+        { remoteAddress: nextIp() },
+      )
       const loginRes = await app.inject({
         method: 'POST',
         url: '/api/auth/login',
@@ -303,7 +336,10 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/auth/refresh',
-        payload: { refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJub24tZXhpc3RlbnQtdXNlciIsInR5cGUiOiJyZWZyZXNoIn0.fake' },
+        payload: {
+          refreshToken:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJub24tZXhpc3RlbnQtdXNlciIsInR5cGUiOiJyZWZyZXNoIn0.fake',
+        },
       })
       expect([401, 403]).toContain(res.statusCode)
     })
@@ -312,8 +348,16 @@ describe('AuthController', () => {
   describe('GET /api/auth/me', () => {
     it('AC-25: returns user profile for valid token', async () => {
       const email = `me-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Me User' }, { remoteAddress: nextIp() })
-      const token = await AuthFixtures.loginAs(app, { email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email, password: 'Test1234!', name: 'Me User' },
+        { remoteAddress: nextIp() },
+      )
+      const token = await AuthFixtures.loginAs(
+        app,
+        { email, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
       const res = await app.inject({
         method: 'GET',
         url: '/api/auth/me',
@@ -343,8 +387,16 @@ describe('AuthController', () => {
 
     it('AC-28: returns 401 when user not found', async () => {
       const email = `me-del-${Date.now()}@test.gofer`
-      const user = await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Deleted' }, { remoteAddress: nextIp() })
-      const token = await AuthFixtures.loginAs(app, { email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      const user = await AuthFixtures.createUser(
+        app,
+        { email, password: 'Test1234!', name: 'Deleted' },
+        { remoteAddress: nextIp() },
+      )
+      const token = await AuthFixtures.loginAs(
+        app,
+        { email, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
       const prisma = app.get(PrismaService)
       await prisma.user.delete({ where: { id: user.id } })
 

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { useAuthStore } from '@/stores/auth'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useAuthPageStore } from '@/features/auth/store'
+import { useAuthStore } from '@/stores/auth'
 
 describe('auth store', () => {
   beforeEach(() => {
@@ -66,7 +66,9 @@ describe('auth store', () => {
     })
 
     it('persists token and isAuthenticated to localStorage', () => {
-      useAuthStore.getState().setAuth('token-1', { id: 'u1', email: 'a@b.com', name: 'User' } as any)
+      useAuthStore
+        .getState()
+        .setAuth('token-1', { id: 'u1', email: 'a@b.com', name: 'User' } as any)
 
       const persisted = JSON.parse(localStorage.getItem('goferbot-auth')!)
       expect(persisted.state.token).toBe('token-1')

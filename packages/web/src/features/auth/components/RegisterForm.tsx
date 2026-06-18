@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { registerUser } from '../services'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -87,7 +87,7 @@ export function RegisterForm() {
         <Input
           type="text"
           value={name}
-          onChange={e => {
+          onChange={(e) => {
             setName(e.target.value)
             if (nameError) setNameError(null)
           }}
@@ -103,7 +103,7 @@ export function RegisterForm() {
         <Input
           type="email"
           value={email}
-          onChange={e => {
+          onChange={(e) => {
             setEmail(e.target.value)
             if (emailError) setEmailError(null)
           }}
@@ -120,7 +120,7 @@ export function RegisterForm() {
           <Input
             type={showPassword ? 'text' : 'password'}
             value={password}
-            onChange={e => {
+            onChange={(e) => {
               setPassword(e.target.value)
               if (passwordError) setPasswordError(null)
             }}
@@ -145,7 +145,7 @@ export function RegisterForm() {
           <Input
             type={showConfirmPassword ? 'text' : 'password'}
             value={confirmPassword}
-            onChange={e => {
+            onChange={(e) => {
               setConfirmPassword(e.target.value)
               if (confirmPasswordError) setConfirmPasswordError(null)
             }}
@@ -161,10 +161,14 @@ export function RegisterForm() {
             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
         </div>
-        {confirmPasswordError && <p className="mt-1.5 text-xs text-destructive">{confirmPasswordError}</p>}
+        {confirmPasswordError && (
+          <p className="mt-1.5 text-xs text-destructive">{confirmPasswordError}</p>
+        )}
       </div>
 
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
 
       <Button type="submit" disabled={loading} className="h-14 w-full rounded-xl text-[15px]">
         {loading ? (

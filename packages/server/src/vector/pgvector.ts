@@ -4,8 +4,8 @@ import type {
   VectorSearchOptions,
   VectorSearchResult,
 } from '@goferbot/rag-sdk'
-import type { PrismaService } from '../processors/database/prisma.service.js'
 import { VectorStoreError } from '../interfaces/errors.js'
+import type { PrismaService } from '../processors/database/prisma.service.js'
 
 export class PgVectorStore implements IVectorStore {
   constructor(private readonly prisma: PrismaService) {}
@@ -37,9 +37,7 @@ export class PgVectorStore implements IVectorStore {
     options?: VectorSearchOptions,
   ): Promise<VectorSearchResult[]> {
     if (queryVector.length !== 1536) {
-      throw new VectorStoreError(
-        `维度不匹配: 期望 1536, 实际 ${queryVector.length}`,
-      )
+      throw new VectorStoreError(`维度不匹配: 期望 1536, 实际 ${queryVector.length}`)
     }
 
     const topK = options?.topK ?? 5
@@ -47,7 +45,7 @@ export class PgVectorStore implements IVectorStore {
 
     try {
       const results = kbId
-        ? await this.prisma.$queryRaw`
+        ? ((await this.prisma.$queryRaw`
             SELECT
               id::text,
               1 - (embedding <=> ${queryVector}::vector) as score
@@ -56,11 +54,11 @@ export class PgVectorStore implements IVectorStore {
               AND embedding IS NOT NULL
             ORDER BY embedding <=> ${queryVector}::vector
             LIMIT ${topK}
-          ` as Array<{
+          `) as Array<{
             id: string
             score: number
-          }>
-        : await this.prisma.$queryRaw`
+          }>)
+        : ((await this.prisma.$queryRaw`
             SELECT
               id::text,
               1 - (embedding <=> ${queryVector}::vector) as score
@@ -68,10 +66,10 @@ export class PgVectorStore implements IVectorStore {
             WHERE embedding IS NOT NULL
             ORDER BY embedding <=> ${queryVector}::vector
             LIMIT ${topK}
-          ` as Array<{
+          `) as Array<{
             id: string
             score: number
-          }>
+          }>)
 
       return results.map((r) => ({
         id: r.id,

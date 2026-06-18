@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { ConfigProvider } from '@/components/ConfigProvider'
+import { IconSidebar } from '@/components/sidebar/Sidebar'
 import { TabBar } from '@/components/tab-bar/TabBar'
 import { TabRouteSync } from '@/components/tab-bar/TabRouteSync'
-import { IconSidebar } from '@/components/sidebar/Sidebar'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -16,7 +16,7 @@ const FONT_SIZE_MAP: Record<number, string> = {
 }
 
 function waitForInit(maxMs = 2000): Promise<void> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const start = Date.now()
     const check = () => {
       if (useAuthStore.getState().isInitialized) {
@@ -45,8 +45,8 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function useAppearanceEffect() {
-  const appearance = useSettingsStore(s => s.config.appearance)
-  const fontSizeLevel = useSettingsStore(s => s.config.fontSizeLevel)
+  const appearance = useSettingsStore((s) => s.config.appearance)
+  const fontSizeLevel = useSettingsStore((s) => s.config.fontSizeLevel)
 
   useEffect(() => {
     const root = document.documentElement

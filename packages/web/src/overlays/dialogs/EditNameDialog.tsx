@@ -1,13 +1,13 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 
 interface EditNameDialogProps {
@@ -16,11 +16,7 @@ interface EditNameDialogProps {
   onConfirm?: (name: string) => void | Promise<void>
 }
 
-export default function EditNameDialog({
-  currentName,
-  onClose,
-  onConfirm,
-}: EditNameDialogProps) {
+export default function EditNameDialog({ currentName, onClose, onConfirm }: EditNameDialogProps) {
   const [name, setName] = useState(currentName)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)

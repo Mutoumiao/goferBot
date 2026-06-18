@@ -1,6 +1,6 @@
-import { describe, test, expect, beforeEach } from 'vitest'
-import { useWorkspaceStore, type Tab } from '@/stores/workspace.store'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { ROUTES_REGISTER } from '@/router-register'
+import { type Tab, useWorkspaceStore } from '@/stores/workspace.store'
 
 function makeChatTab(overrides?: Partial<Tab>): Omit<Tab, 'id' | 'createdAt'> {
   return {
@@ -28,7 +28,9 @@ describe('WorkspaceStore', () => {
   })
 
   test('addTab 支持显式指定 id', () => {
-    const tab = useWorkspaceStore.getState().addTab({ ...makeChatTab({ title: '指定 id' }), id: 'tab-explicit' })
+    const tab = useWorkspaceStore
+      .getState()
+      .addTab({ ...makeChatTab({ title: '指定 id' }), id: 'tab-explicit' })
 
     expect(tab.id).toBe('tab-explicit')
   })
@@ -123,7 +125,9 @@ describe('WorkspaceStore', () => {
 
   test('findTabByType 按类型查找单例标签', () => {
     useWorkspaceStore.getState().addTab(makeChatTab())
-    const historyTab = useWorkspaceStore.getState().addTab({ type: ROUTES_REGISTER.history.key, title: '会话历史', closable: true })
+    const historyTab = useWorkspaceStore
+      .getState()
+      .addTab({ type: ROUTES_REGISTER.history.key, title: '会话历史', closable: true })
 
     const found = useWorkspaceStore.getState().findTabByType(ROUTES_REGISTER.history.key)
     expect(found?.id).toBe(historyTab.id)

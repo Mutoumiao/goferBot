@@ -1,22 +1,13 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Query,
-  UseGuards,
-  Res,
-  Req,
-} from '@nestjs/common'
-import type { FastifyRequest, FastifyReply } from 'fastify'
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
+import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { BypassResponse } from '../../common/decorators/bypass-response.decorator.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { ChatService } from './chat.service.js'
 import { ConversationService } from './conversation.service.js'
-import { ModelRegistryService } from './model-registry.service.js'
 import { ChatMessagesDto, MessageListQueryDto } from './dto/chat.dto.js'
+import { ModelRegistryService } from './model-registry.service.js'
 
 @Controller('chat-messages')
 @UseGuards(JwtAuthGuard)
@@ -58,10 +49,7 @@ export class ChatController {
   }
 
   @Get()
-  async listMessages(
-    @CurrentUser('id') userId: string,
-    @Query() query: MessageListQueryDto,
-  ) {
+  async listMessages(@CurrentUser('id') userId: string, @Query() query: MessageListQueryDto) {
     await this.conversationService.ensureOwnership(userId, query.conversation_id)
     return this.conversationService.paginateMessages(query.conversation_id, {
       page: query.page,

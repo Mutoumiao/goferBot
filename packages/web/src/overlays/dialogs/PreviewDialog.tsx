@@ -1,10 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { XMarkdown } from '@ant-design/x-markdown'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { DocumentItem } from '@/features/KnowledgeBase/types'
 
 export interface PreviewResult {

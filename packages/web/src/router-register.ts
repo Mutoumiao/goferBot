@@ -1,9 +1,24 @@
+import {
+  BookOpen,
+  Clock,
+  type LucideIcon,
+  MessageCircle,
+  Settings,
+  Trash2,
+  User,
+} from 'lucide-react'
 import type { FileRoutesByFullPath } from '@/routeTree.gen'
-import { MessageCircle, BookOpen, Clock, Settings, Trash2, User, type LucideIcon } from 'lucide-react'
 
 type RoutePath = keyof FileRoutesByFullPath
 
-export type RouteKey = 'login' | 'chat' | 'knowledgeBase' | 'history' | 'settings' | 'recycle' | 'profile'
+export type RouteKey =
+  | 'login'
+  | 'chat'
+  | 'knowledgeBase'
+  | 'history'
+  | 'settings'
+  | 'recycle'
+  | 'profile'
 export type TabRouteKey = Exclude<RouteKey, 'login'>
 
 export interface RouteMeta {

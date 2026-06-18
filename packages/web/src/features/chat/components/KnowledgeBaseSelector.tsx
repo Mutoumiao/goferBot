@@ -1,13 +1,9 @@
-import { useRequest } from 'alova/client'
-import { getKbForSelector } from '@/api/KnowledgeBase'
 import type { KbSelectorEntry } from '@goferbot/data'
+import { useRequest } from 'alova/client'
 import { DatabaseIcon, HashIcon } from 'lucide-react'
+import { getKbForSelector } from '@/api/KnowledgeBase'
 import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/utils/cn'
 
 interface KnowledgeBaseSelectorProps {
@@ -16,7 +12,11 @@ interface KnowledgeBaseSelectorProps {
   disabled?: boolean
 }
 
-export function KnowledgeBaseSelector({ selectedId, onSelect, disabled = false }: KnowledgeBaseSelectorProps) {
+export function KnowledgeBaseSelector({
+  selectedId,
+  onSelect,
+  disabled = false,
+}: KnowledgeBaseSelectorProps) {
   const { data, loading, error, send } = useRequest(() => getKbForSelector(), { immediate: true })
 
   const kbList: KbSelectorEntry[] = Array.isArray(data) ? data : []
@@ -53,7 +53,7 @@ export function KnowledgeBaseSelector({ selectedId, onSelect, disabled = false }
       >
         {loading && (
           <div className="space-y-2 p-3">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="h-8 w-full animate-pulse rounded bg-surface-2" />
             ))}
           </div>
@@ -78,7 +78,7 @@ export function KnowledgeBaseSelector({ selectedId, onSelect, disabled = false }
 
         {!loading &&
           !error &&
-          kbList.map(kb => {
+          kbList.map((kb) => {
             const isSelected = selectedId === kb.id
             return (
               <div
@@ -86,9 +86,11 @@ export function KnowledgeBaseSelector({ selectedId, onSelect, disabled = false }
                 data-testid="kb-selector-item"
                 className={cn(
                   'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl',
-                  isSelected ? 'bg-surface-2 text-brand-primary' : 'text-text-primary hover:bg-surface-2'
+                  isSelected
+                    ? 'bg-surface-2 text-brand-primary'
+                    : 'text-text-primary hover:bg-surface-2',
                 )}
-                onClick={e => {
+                onClick={(e) => {
                   e.preventDefault()
                   handleToggle(kb.id)
                 }}

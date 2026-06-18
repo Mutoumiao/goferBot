@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 vi.mock('@/router', () => ({
   router: {
@@ -7,9 +7,9 @@ vi.mock('@/router', () => ({
 }))
 
 import { router } from '@/router'
+import { ROUTES_REGISTER } from '@/router-register'
 import { tabManager } from '@/stores/tabManager'
 import { useWorkspaceStore } from '@/stores/workspace.store'
-import { ROUTES_REGISTER } from '@/router-register'
 
 const navigateMock = vi.mocked(router.navigate)
 
@@ -152,7 +152,9 @@ describe('tabManager', () => {
   })
 
   test('closeTab 不关闭不可关闭标签', async () => {
-    useWorkspaceStore.getState().addTab({ type: ROUTES_REGISTER.chat.key, title: '固定', closable: false })
+    useWorkspaceStore
+      .getState()
+      .addTab({ type: ROUTES_REGISTER.chat.key, title: '固定', closable: false })
     const tab = useWorkspaceStore.getState().tabs[0]
 
     await tabManager.closeTab(tab.id)

@@ -1,5 +1,5 @@
+import type { SSEOutput, TransformMessage, XRequestOptions } from '@ant-design/x-sdk'
 import { AbstractChatProvider } from '@ant-design/x-sdk'
-import type { TransformMessage, XRequestOptions, SSEOutput } from '@ant-design/x-sdk'
 import type { ChatMessagesChunk, ChatMessagesRequest } from '@goferbot/data'
 
 export type GoferInput = ChatMessagesRequest

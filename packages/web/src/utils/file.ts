@@ -1,17 +1,38 @@
-import { FileText, Image, FileArchive, FileCode, FileMusic, FileVideo } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { FileArchive, FileCode, FileMusic, FileText, FileVideo, Image } from 'lucide-react'
 
 export function getFileIcon(ext: string | null): LucideIcon {
   switch (ext?.toLowerCase()) {
-    case '.png': case '.jpg': case '.jpeg': case '.gif': case '.svg': case '.webp':
+    case '.png':
+    case '.jpg':
+    case '.jpeg':
+    case '.gif':
+    case '.svg':
+    case '.webp':
       return Image
-    case '.zip': case '.rar': case '.7z': case '.tar': case '.gz':
+    case '.zip':
+    case '.rar':
+    case '.7z':
+    case '.tar':
+    case '.gz':
       return FileArchive
-    case '.js': case '.ts': case '.tsx': case '.jsx': case '.py': case '.json': case '.yaml':
+    case '.js':
+    case '.ts':
+    case '.tsx':
+    case '.jsx':
+    case '.py':
+    case '.json':
+    case '.yaml':
       return FileCode
-    case '.mp3': case '.wav': case '.flac': case '.aac':
+    case '.mp3':
+    case '.wav':
+    case '.flac':
+    case '.aac':
       return FileMusic
-    case '.mp4': case '.avi': case '.mov': case '.mkv':
+    case '.mp4':
+    case '.avi':
+    case '.mov':
+    case '.mkv':
       return FileVideo
     default:
       return FileText

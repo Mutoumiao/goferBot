@@ -65,7 +65,9 @@ export function getLLMConfig(config: AppConfig, providerKey?: string): LLMConfig
 }
 
 /** 获取已配置的 provider 列表（apiKey 非空） */
-export function configuredProviders(config: AppConfig): { key: string; name: string; model: string }[] {
+export function configuredProviders(
+  config: AppConfig,
+): { key: string; name: string; model: string }[] {
   const list: { key: string; name: string; model: string }[] = []
   for (const [key, p] of Object.entries(config.providers)) {
     if (p.apiKey) {
@@ -80,9 +82,7 @@ export function mergeAppConfig(base: AppConfig, partial: Partial<AppConfig>): Ap
   return {
     ...base,
     ...partial,
-    providers: partial.providers
-      ? { ...base.providers, ...partial.providers }
-      : base.providers,
+    providers: partial.providers ? { ...base.providers, ...partial.providers } : base.providers,
     embeddingProvider: partial.embeddingProvider
       ? { ...base.embeddingProvider, ...partial.embeddingProvider }
       : base.embeddingProvider,

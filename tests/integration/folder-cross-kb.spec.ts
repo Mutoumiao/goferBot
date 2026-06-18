@@ -3,19 +3,20 @@
  * 目标：验证跨 KB copy/move folder 后目标 KB 子树完整、storage/vector 隔离。
  * 依赖：真实 MinIO + pgvector（通过 checkInfrastructure 检测，关键服务不可用时自动跳过）。
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { checkInfrastructure } from './helpers/infra-check.js'
+import {
+  canDownloadStorage,
+  hasEmbedding,
+  uploadDocumentWithChunk,
+} from './helpers/rag-test.helpers.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { checkInfrastructure } from './helpers/infra-check.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import {
-  uploadDocumentWithChunk,
-  hasEmbedding,
-  canDownloadStorage,
-} from './helpers/rag-test.helpers.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 describe('Folder Cross-KB Integration Tests', () => {
   let app: NestFastifyApplication
@@ -112,8 +113,18 @@ describe('Folder Cross-KB Integration Tests', () => {
 
       const rootFolderId = await createFolder(sourceKbId, 'Source Root')
       const childFolderId = await createFolder(sourceKbId, 'Child', rootFolderId)
-      const { docId: sourceDocId, chunkId: sourceChunkId, storageKey: sourceStorageKey } =
-        await uploadDocumentWithChunk(app, sourceKbId, userToken, 'nested.txt', 'Nested content', childFolderId)
+      const {
+        docId: sourceDocId,
+        chunkId: sourceChunkId,
+        storageKey: sourceStorageKey,
+      } = await uploadDocumentWithChunk(
+        app,
+        sourceKbId,
+        userToken,
+        'nested.txt',
+        'Nested content',
+        childFolderId,
+      )
 
       expect(await canDownloadStorage(app, sourceStorageKey)).toBe(true)
       expect(await hasEmbedding(prisma, sourceChunkId)).toBe(true)
@@ -182,8 +193,18 @@ describe('Folder Cross-KB Integration Tests', () => {
 
       const rootFolderId = await createFolder(sourceKbId, 'Move Root')
       const childFolderId = await createFolder(sourceKbId, 'Move Child', rootFolderId)
-      const { docId: sourceDocId, chunkId: sourceChunkId, storageKey: sourceStorageKey } =
-        await uploadDocumentWithChunk(app, sourceKbId, userToken, 'move-nested.txt', 'Move nested content', childFolderId)
+      const {
+        docId: sourceDocId,
+        chunkId: sourceChunkId,
+        storageKey: sourceStorageKey,
+      } = await uploadDocumentWithChunk(
+        app,
+        sourceKbId,
+        userToken,
+        'move-nested.txt',
+        'Move nested content',
+        childFolderId,
+      )
 
       expect(await canDownloadStorage(app, sourceStorageKey)).toBe(true)
       expect(await hasEmbedding(prisma, sourceChunkId)).toBe(true)

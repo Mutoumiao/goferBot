@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
+import type { Prisma, Session } from '@prisma/client'
 import { PrismaService } from '../../../processors/database/prisma.service.js'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
-import type { Session, Prisma } from '@prisma/client'
 
 @Injectable()
 export class SessionRepository extends BaseRepository<

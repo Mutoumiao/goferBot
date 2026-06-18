@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common'
-import { ChatOpenAI } from '@langchain/openai'
-import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages'
 import type { BaseMessage } from '@langchain/core/messages'
+import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { ChatOpenAI } from '@langchain/openai'
+import { Injectable } from '@nestjs/common'
 import type {
-  LlmProvider,
-  LlmMessage,
-  LlmStreamOptions,
   LlmInvokeOptions,
+  LlmMessage,
+  LlmProvider,
   LlmStreamChunk,
+  LlmStreamOptions,
 } from './llm-provider.interface.js'
 
 export interface OpenAiCompatibleProviderConfig {
@@ -76,7 +76,7 @@ export class OpenAiCompatibleProvider implements LlmProvider {
     if (typeof content === 'string') return content
     if (Array.isArray(content)) {
       return content
-        .map((c) => (typeof c === 'string' ? c : (c as { text?: string }).text ?? ''))
+        .map((c) => (typeof c === 'string' ? c : ((c as { text?: string }).text ?? '')))
         .join('')
     }
     return ''

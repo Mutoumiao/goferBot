@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { login, register, getMe, refresh, getPublicKey } from '@/api/auth'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getMe, getPublicKey, login, refresh, register } from '@/api/auth'
 
 vi.mock('@/utils/server', () => ({
   alovaInstance: {
@@ -24,13 +24,20 @@ describe('auth api', () => {
 
   it('login sends POST to /auth/login with encryptedPassword', async () => {
     const method = login({ email: 'a@b.com', encryptedPassword: 'enc-pwd' })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/login', { email: 'a@b.com', encryptedPassword: 'enc-pwd' })
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/login', {
+      email: 'a@b.com',
+      encryptedPassword: 'enc-pwd',
+    })
     expect(method.send).toBeDefined()
   })
 
   it('register sends POST to /auth/register with encryptedPassword and name', async () => {
     const method = register({ email: 'a@b.com', encryptedPassword: 'enc-pwd', name: 'User' })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/register', { email: 'a@b.com', encryptedPassword: 'enc-pwd', name: 'User' })
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/register', {
+      email: 'a@b.com',
+      encryptedPassword: 'enc-pwd',
+      name: 'User',
+    })
     expect(method.send).toBeDefined()
   })
 

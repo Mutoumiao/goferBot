@@ -1,5 +1,5 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
-import { PrismaClient, Prisma } from '@prisma/client'
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { Prisma, PrismaClient } from '@prisma/client'
 import type { PaginationResult } from '../../shared/interfaces/paginator.interface.js'
 
 // 扩展 PrismaClient 类型
@@ -15,10 +15,7 @@ function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
           this: T,
           x: Prisma.Exact<
             A,
-            Pick<
-              Prisma.Args<T, 'findFirst'>,
-              'where' | 'select' | 'include' | 'orderBy'
-            >
+            Pick<Prisma.Args<T, 'findFirst'>, 'where' | 'select' | 'include' | 'orderBy'>
           >,
           options: { page: number; size: number },
         ): Promise<PaginationResult<Prisma.Result<T, A, 'findFirst'>>> {

@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { describe, it, expect, beforeAll } from 'vitest'
+
 import { PrismaClient } from '@prisma/client'
-import { PgVectorStore } from '../../packages/server/src/vector/pgvector'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { VectorStoreError } from '../../packages/server/src/interfaces/errors'
-import { TestDatabaseManager } from './helpers/test-database.manager.js'
+import { PgVectorStore } from '../../packages/server/src/vector/pgvector'
 import { checkInfrastructure } from './helpers/infra-check.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 
 describe('PgVectorStore', () => {
   let infraAvailable = false
@@ -91,7 +92,11 @@ describe('PgVectorStore', () => {
 
       // 使用 $executeRaw 插入测试数据（Prisma Client 不支持 Unsupported 类型字段的 create）
       for (let i = 0; i < ids.length; i++) {
-        const embedding = [new Array(1536).fill(0.1), new Array(1536).fill(0.2), new Array(1536).fill(0.3)][i]
+        const embedding = [
+          new Array(1536).fill(0.1),
+          new Array(1536).fill(0.2),
+          new Array(1536).fill(0.3),
+        ][i]
         await prisma.$executeRaw`
           INSERT INTO chunks (id, document_id, kb_id, content, chunk_index, embedding)
           VALUES (${ids[i]}::uuid, ${docId}::uuid, ${kbId}::uuid, ${'chunk ' + i}, ${i}, ${embedding}::vector)
@@ -206,13 +211,17 @@ describe('PgVectorStore', () => {
     const store = new PgVectorStore(prisma as any)
 
     try {
-      await expect(store.insertVectors([{
-        id: crypto.randomUUID(),
-        chunkId: crypto.randomUUID(),
-        kbId: crypto.randomUUID(),
-        fileId: crypto.randomUUID(),
-        embedding: new Array(100).fill(0.1),
-      }])).rejects.toThrow(VectorStoreError)
+      await expect(
+        store.insertVectors([
+          {
+            id: crypto.randomUUID(),
+            chunkId: crypto.randomUUID(),
+            kbId: crypto.randomUUID(),
+            fileId: crypto.randomUUID(),
+            embedding: new Array(100).fill(0.1),
+          },
+        ]),
+      ).rejects.toThrow(VectorStoreError)
     } finally {
       await prisma.$disconnect()
       await dbManager.dropDatabase(dbName)

@@ -1,10 +1,10 @@
-import { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { ConfigService } from '@nestjs/config'
-import helmet from '@fastify/helmet'
 import cors from '@fastify/cors'
+import helmet from '@fastify/helmet'
 import multipart from '@fastify/multipart'
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
+import { ConfigService } from '@nestjs/config'
+import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { SpiderGuard } from './common/guards/spider.guard.js'
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 
 export async function bootstrap(app: NestFastifyApplication) {
   const configService = app.get(ConfigService)
@@ -28,7 +28,9 @@ export async function bootstrap(app: NestFastifyApplication) {
   const isProduction = process.env.NODE_ENV === 'production'
   const envOrigin = configService.get<string>('CORS_ORIGIN')
   const allowedOrigins = isProduction
-    ? (envOrigin ? [envOrigin] : [])
+    ? envOrigin
+      ? [envOrigin]
+      : []
     : [
         'http://localhost:1420',
         'tauri://localhost',

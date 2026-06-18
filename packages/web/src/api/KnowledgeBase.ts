@@ -1,23 +1,19 @@
-import type { CreateKbRequest, UpdateKbRequest, KbSelectorResponse } from '@goferbot/data'
+import type { CreateKbRequest, KbSelectorResponse, UpdateKbRequest } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
-export const getKbList = () =>
-  alovaInstance.Get('/knowledge-bases')
+export const getKbList = () => alovaInstance.Get('/knowledge-bases')
 
 export const getKbForSelector = () =>
   alovaInstance.Get<KbSelectorResponse>('/knowledge-bases/for-selector')
 
-export const createKb = (data: CreateKbRequest) =>
-  alovaInstance.Post('/knowledge-bases', data)
+export const createKb = (data: CreateKbRequest) => alovaInstance.Post('/knowledge-bases', data)
 
 export const updateKb = (id: string, data: UpdateKbRequest) =>
   alovaInstance.Patch(`/knowledge-bases/${id}`, data)
 
-export const deleteKb = (id: string) =>
-  alovaInstance.Delete(`/knowledge-bases/${id}`)
+export const deleteKb = (id: string) => alovaInstance.Delete(`/knowledge-bases/${id}`)
 
-export const getKbDetail = (id: string) =>
-  alovaInstance.Get(`/knowledge-bases/${id}`)
+export const getKbDetail = (id: string) => alovaInstance.Get(`/knowledge-bases/${id}`)
 
 export const uploadFile = (kbId: string, formData: FormData) =>
   alovaInstance.Post(`/knowledge-bases/${kbId}/documents/upload`, formData)

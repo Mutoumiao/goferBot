@@ -10,13 +10,15 @@ export const updateDocumentRequestSchema = z.object({
   folderId: z.string().uuid('folderId 格式非法').nullable().optional(),
 })
 
-export const moveDocumentRequestSchema = z.object({
-  targetKbId: z.string().uuid('targetKbId 格式非法').optional(),
-  targetFolderId: z.string().uuid('targetFolderId 格式非法').nullable().optional(),
-}).refine(
-  ({ targetKbId, targetFolderId }) => targetKbId !== undefined || targetFolderId !== undefined,
-  { message: 'targetKbId 与 targetFolderId 至少提供一个', path: ['targetKbId'] },
-)
+export const moveDocumentRequestSchema = z
+  .object({
+    targetKbId: z.string().uuid('targetKbId 格式非法').optional(),
+    targetFolderId: z.string().uuid('targetFolderId 格式非法').nullable().optional(),
+  })
+  .refine(
+    ({ targetKbId, targetFolderId }) => targetKbId !== undefined || targetFolderId !== undefined,
+    { message: 'targetKbId 与 targetFolderId 至少提供一个', path: ['targetKbId'] },
+  )
 
 export const copyDocumentRequestSchema = moveDocumentRequestSchema
 

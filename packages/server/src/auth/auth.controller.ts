@@ -1,13 +1,24 @@
-import { Controller, Post, Get, Patch, Body, HttpCode, HttpStatus, UseGuards, BadRequestException, Req } from '@nestjs/common'
-import type { FastifyRequest } from 'fastify'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
+import type { FastifyRequest } from 'fastify'
 import { AuthService } from './auth.service.js'
-import { JwtAuthGuard } from './guards/jwt.guard.js'
-import { CurrentUser } from './decorators/current-user.decorator.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
+import { CurrentUser } from './decorators/current-user.decorator.js'
 import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
+import { JwtAuthGuard } from './guards/jwt.guard.js'
 
 const PASSWORD_MIN = 6
 const PASSWORD_MAX = 100

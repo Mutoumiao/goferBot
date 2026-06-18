@@ -1,8 +1,8 @@
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import type { PrismaClient } from '@prisma/client'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { PrismaClient } from '@prisma/client'
-import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 
 export let app: NestFastifyApplication
 export let prisma: PrismaClient

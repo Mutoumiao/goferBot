@@ -3,12 +3,13 @@
  * 验证统一异常格式 { error: { code, message } }
  * 场景：400 验证错误、401 认证错误、404 资源不存在、403 权限不足、字段级错误详情
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(14)
 
@@ -25,12 +26,20 @@ describe('AllExceptionsFilter', () => {
     dbName = new URL(dbUrl).pathname.slice(1)
     app = await TestAppFactory.create(dbUrl)
 
-    const user = await AuthFixtures.createUser(app, {
-      email: `filter-${Date.now()}@test.gofer`,
-      password: 'Test1234!',
-      name: 'Filter Test',
-    }, { remoteAddress: nextIp() })
-    token = await AuthFixtures.loginAs(app, { email: user.email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    const user = await AuthFixtures.createUser(
+      app,
+      {
+        email: `filter-${Date.now()}@test.gofer`,
+        password: 'Test1234!',
+        name: 'Filter Test',
+      },
+      { remoteAddress: nextIp() },
+    )
+    token = await AuthFixtures.loginAs(
+      app,
+      { email: user.email, password: 'Test1234!' },
+      { remoteAddress: nextIp() },
+    )
   }, 60000)
 
   afterAll(async () => {
@@ -77,12 +86,20 @@ describe('AllExceptionsFilter', () => {
   })
 
   it('AC-10: returns { error: { code, message } } for 403', async () => {
-    const otherUser = await AuthFixtures.createUser(app, {
-      email: `other-${Date.now()}@test.gofer`,
-      password: 'Test1234!',
-      name: 'Other',
-    }, { remoteAddress: nextIp() })
-    const otherToken = await AuthFixtures.loginAs(app, { email: otherUser.email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    const otherUser = await AuthFixtures.createUser(
+      app,
+      {
+        email: `other-${Date.now()}@test.gofer`,
+        password: 'Test1234!',
+        name: 'Other',
+      },
+      { remoteAddress: nextIp() },
+    )
+    const otherToken = await AuthFixtures.loginAs(
+      app,
+      { email: otherUser.email, password: 'Test1234!' },
+      { remoteAddress: nextIp() },
+    )
 
     const createRes = await app.inject({
       method: 'POST',

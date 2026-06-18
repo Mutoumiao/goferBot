@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
+import { ConfigCryptoService } from './config-crypto.service.js'
 import { SettingsController } from './settings.controller.js'
 import { SettingsService } from './settings.service.js'
-import { ConfigCryptoService } from './config-crypto.service.js'
 
 @Module({
   controllers: [SettingsController],

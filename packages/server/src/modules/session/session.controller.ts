@@ -1,21 +1,21 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
   Param,
+  Patch,
+  Post,
   Query,
   UseGuards,
-  HttpCode,
 } from '@nestjs/common'
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { SessionService } from './session.service.js'
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { PagerDto } from '../../shared/dto/pager.dto.js'
 import { CreateSessionDto } from './dto/create-session.dto.js'
 import { UpdateSessionDto } from './dto/update-session.dto.js'
+import { SessionService } from './session.service.js'
 
 @Controller('sessions')
 @UseGuards(JwtAuthGuard)
@@ -31,18 +31,12 @@ export class SessionController {
   }
 
   @Get(':id')
-  async findOne(
-    @CurrentUser('id') userId: string,
-    @Param('id') id: string,
-  ) {
+  async findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.sessionService.findOne(userId, id)
   }
 
   @Post()
-  async create(
-    @CurrentUser('id') userId: string,
-    @Body() dto: CreateSessionDto,
-  ) {
+  async create(@CurrentUser('id') userId: string, @Body() dto: CreateSessionDto) {
     return this.sessionService.create(userId, dto)
   }
 
@@ -57,10 +51,7 @@ export class SessionController {
   }
 
   @Delete(':id')
-  async remove(
-    @CurrentUser('id') userId: string,
-    @Param('id') id: string,
-  ) {
+  async remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.sessionService.remove(userId, id)
   }
 

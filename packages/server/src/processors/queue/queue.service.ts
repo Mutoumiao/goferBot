@@ -1,11 +1,18 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Inject, forwardRef, Logger } from '@nestjs/common'
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { Queue, Job } from 'bullmq'
+import { Job, Queue } from 'bullmq'
 import type { Redis } from 'ioredis'
 import {
-  createRedisConnection,
   createDocumentQueue,
   createEmbeddingQueue,
+  createRedisConnection,
   type DocumentJobData,
   type EmbeddingJobData,
 } from '../../queue/index.js'
@@ -16,7 +23,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   private redis?: Redis
   private documentQueue!: Queue<DocumentJobData>
   private embeddingQueue!: Queue<EmbeddingJobData>
-  private readonly logger = new Logger(QueueService.name)
+  private readonly logger = new Logger(QueueService.name);
 
   constructor(
     private readonly configService: ConfigService,
@@ -34,7 +41,9 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.redis.ping()
     } catch {
-      this.logger.warn(`Redis 连接失败 (${host}:${port})，队列功能已禁用。如需使用队列，请启动 Redis 服务。`)
+      this.logger.warn(
+        `Redis 连接失败 (${host}:${port})，队列功能已禁用。如需使用队列，请启动 Redis 服务。`,
+      )
       await this.redis.quit().catch(() => {})
       this.redis = undefined
       return
@@ -83,7 +92,9 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     return this.embeddingQueue.add('process-embedding', { chunkIds })
   }
 
-  async getJobStatus(jobId: string): Promise<{ id: string; state: string; progress: number; data: unknown } | null> {
+  async getJobStatus(
+    jobId: string,
+  ): Promise<{ id: string; state: string; progress: number; data: unknown } | null> {
     if (!this.isEnabled()) return null
     const docJob = await this.documentQueue.getJob(jobId)
     if (docJob) {
@@ -110,15 +121,28 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     return null
   }
 
-  async getQueueStats(): Promise<{ documentQueue: Record<string, number>; embeddingQueue: Record<string, number> }> {
+  async getQueueStats(): Promise<{
+    documentQueue: Record<string, number>
+    embeddingQueue: Record<string, number>
+  }> {
     if (!this.isEnabled()) {
       return {
         documentQueue: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
         embeddingQueue: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
       }
     }
-    const [documentWaiting, documentActive, documentCompleted, documentFailed, documentDelayed,
-           embeddingWaiting, embeddingActive, embeddingCompleted, embeddingFailed, embeddingDelayed] = await Promise.all([
+    const [
+      documentWaiting,
+      documentActive,
+      documentCompleted,
+      documentFailed,
+      documentDelayed,
+      embeddingWaiting,
+      embeddingActive,
+      embeddingCompleted,
+      embeddingFailed,
+      embeddingDelayed,
+    ] = await Promise.all([
       this.documentQueue.getWaitingCount(),
       this.documentQueue.getActiveCount(),
       this.documentQueue.getCompletedCount(),

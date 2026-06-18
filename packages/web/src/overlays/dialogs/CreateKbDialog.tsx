@@ -1,16 +1,22 @@
+import type { CreateKbRequest } from '@goferbot/data'
+import { createKbRequestSchema } from '@goferbot/data'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { createKbRequestSchema } from '@goferbot/data'
-import type { CreateKbRequest } from '@goferbot/data'
-import { createKb } from '@/api/KnowledgeBase'
-import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { createKb } from '@/api/KnowledgeBase'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 interface CreateKbDialogProps {
   onClose?: (result?: unknown) => void
@@ -23,7 +29,12 @@ interface CreateKbDialogProps {
 
 type FormData = CreateKbRequest
 
-export default function CreateKbDialog({ onClose, onConfirm, initialData, onSave }: CreateKbDialogProps) {
+export default function CreateKbDialog({
+  onClose,
+  onConfirm,
+  initialData,
+  onSave,
+}: CreateKbDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!initialData?.id && !!onSave
@@ -76,7 +87,9 @@ export default function CreateKbDialog({ onClose, onConfirm, initialData, onSave
         <DialogHeader>
           <DialogTitle>{isEditMode ? '编辑知识库' : '创建知识库'}</DialogTitle>
           <DialogDescription>
-            {isEditMode ? '修改知识库的名称和描述信息。' : '填写知识库的名称和描述，创建一个新的知识库。'}
+            {isEditMode
+              ? '修改知识库的名称和描述信息。'
+              : '填写知识库的名称和描述，创建一个新的知识库。'}
           </DialogDescription>
         </DialogHeader>
 
@@ -91,7 +104,9 @@ export default function CreateKbDialog({ onClose, onConfirm, initialData, onSave
               aria-invalid={!!errors.name || !!serverError}
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-            {serverError && !errors.name && <p className="text-xs text-destructive">{serverError}</p>}
+            {serverError && !errors.name && (
+              <p className="text-xs text-destructive">{serverError}</p>
+            )}
           </div>
 
           {/* 描述 */}
@@ -100,17 +115,33 @@ export default function CreateKbDialog({ onClose, onConfirm, initialData, onSave
               描述
               <span className="text-muted-foreground ml-1">（可选）</span>
             </Label>
-            <Textarea id="kb-desc" {...register('description')} placeholder="描述（可选）" rows={3} />
+            <Textarea
+              id="kb-desc"
+              {...register('description')}
+              placeholder="描述（可选）"
+              rows={3}
+            />
           </div>
 
           {/* 按钮 */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onClose?.(false)} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onClose?.(false)}
+              disabled={isSubmitting}
+            >
               取消
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isSubmitting ? (isEditMode ? '保存中...' : '创建中...') : isEditMode ? '保存' : '创建'}
+              {isSubmitting
+                ? isEditMode
+                  ? '保存中...'
+                  : '创建中...'
+                : isEditMode
+                  ? '保存'
+                  : '创建'}
             </Button>
           </div>
         </form>

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { Paginator } from '../../shared/interfaces/paginator.interface.js'
 import type { CreateSessionDto } from './dto/create-session.dto.js'

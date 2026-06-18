@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { User } from '@goferbot/data'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/auth', () => ({
   login: vi.fn(() => ({ send: vi.fn() })),
@@ -17,10 +17,16 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn() },
 }))
 
-import { login, register, refresh, getMe } from '@/api/auth'
-import { encryptPassword, clearPublicKeyCache } from '@/utils/password-encryption'
+import { getMe, login, refresh, register } from '@/api/auth'
+import {
+  fetchCurrentUser,
+  loginUser,
+  logoutUser,
+  refreshAuth,
+  registerUser,
+} from '@/features/auth/services'
 import { useAuthStore } from '@/stores/auth'
-import { loginUser, registerUser, logoutUser, refreshAuth, fetchCurrentUser } from '@/features/auth/services'
+import { clearPublicKeyCache, encryptPassword } from '@/utils/password-encryption'
 
 const mockUser: User = {
   id: 'u1',
@@ -54,7 +60,10 @@ describe('auth services', () => {
       await loginUser('user@example.com', 'password', false)
 
       expect(encryptPassword).toHaveBeenCalledWith('password')
-      expect(login).toHaveBeenCalledWith({ email: 'user@example.com', encryptedPassword: 'encrypted-password' })
+      expect(login).toHaveBeenCalledWith({
+        email: 'user@example.com',
+        encryptedPassword: 'encrypted-password',
+      })
     })
 
     it('sets auth on success', async () => {
@@ -137,7 +146,11 @@ describe('auth services', () => {
       await registerUser('User', 'user@example.com', 'password')
 
       expect(encryptPassword).toHaveBeenCalledWith('password')
-      expect(register).toHaveBeenCalledWith({ email: 'user@example.com', encryptedPassword: 'encrypted-password', name: 'User' })
+      expect(register).toHaveBeenCalledWith({
+        email: 'user@example.com',
+        encryptedPassword: 'encrypted-password',
+        name: 'User',
+      })
     })
 
     it('sets auth on success', async () => {
@@ -263,7 +276,9 @@ describe('auth services', () => {
   describe('mapAuthError', () => {
     it('maps USER_EXISTS to user-friendly message', async () => {
       vi.mocked(register).mockReturnValue({
-        send: vi.fn().mockRejectedValue({ code: 'USER_EXISTS', message: 'Email already registered' }),
+        send: vi
+          .fn()
+          .mockRejectedValue({ code: 'USER_EXISTS', message: 'Email already registered' }),
       } as any)
 
       const result = await registerUser('User', 'user@example.com', 'password')
@@ -296,7 +311,9 @@ describe('auth services', () => {
 
     it('maps INVALID_REFRESH_TOKEN to user-friendly message', async () => {
       vi.mocked(login).mockReturnValue({
-        send: vi.fn().mockRejectedValue({ code: 'INVALID_REFRESH_TOKEN', message: 'Token expired' }),
+        send: vi
+          .fn()
+          .mockRejectedValue({ code: 'INVALID_REFRESH_TOKEN', message: 'Token expired' }),
       } as any)
 
       const result = await loginUser('user@example.com', 'password', false)

@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { Role } from '../../packages/server/src/auth/enums/role.enum.js'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
-import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import { Role } from '../../packages/server/src/auth/enums/role.enum.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 describe('AC-03: schema migration adds role and isActive columns', () => {
   let app: NestFastifyApplication
@@ -58,16 +58,27 @@ describe('Admin User Management API', () => {
     app = await TestAppFactory.create(dbUrl)
 
     // 创建管理员用户并登录
-    await AuthFixtures.createUser(app, { email: 'admin@test.gofer', password: 'Test1234!', name: 'Admin' })
+    await AuthFixtures.createUser(app, {
+      email: 'admin@test.gofer',
+      password: 'Test1234!',
+      name: 'Admin',
+    })
     const prisma = app.get(PrismaService)
     await prisma.user.update({
       where: { email: 'admin@test.gofer' },
       data: { role: Role.ADMIN },
     })
-    adminToken = await AuthFixtures.loginAs(app, { email: 'admin@test.gofer', password: 'Test1234!' })
+    adminToken = await AuthFixtures.loginAs(app, {
+      email: 'admin@test.gofer',
+      password: 'Test1234!',
+    })
 
     // 创建普通用户并登录
-    await AuthFixtures.createUser(app, { email: 'user@test.gofer', password: 'Test1234!', name: 'User' })
+    await AuthFixtures.createUser(app, {
+      email: 'user@test.gofer',
+      password: 'Test1234!',
+      name: 'User',
+    })
     userToken = await AuthFixtures.loginAs(app, { email: 'user@test.gofer', password: 'Test1234!' })
 
     // 创建更多用户用于分页测试（直接操作数据库绕过限流）

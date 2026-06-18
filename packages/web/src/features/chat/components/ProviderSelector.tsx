@@ -1,11 +1,7 @@
 import type { ProviderListItem } from '@goferbot/data'
 import { BotIcon, CheckIcon, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/utils/cn'
 
 interface ProviderSelectorProps {
@@ -25,7 +21,7 @@ export function ProviderSelector({
   onChange,
   disabled = false,
 }: ProviderSelectorProps) {
-  const selected = providers.find(p => p.key === selectedKey) ?? null
+  const selected = providers.find((p) => p.key === selectedKey) ?? null
 
   return (
     <Popover>
@@ -41,9 +37,7 @@ export function ProviderSelector({
           <BotIcon className="size-3.5" />
           <span>{selected ? selected.name : '模型'}</span>
           {selected && (
-            <span className="ml-0.5 text-[10px] text-text-tertiary">
-              {selected.model}
-            </span>
+            <span className="ml-0.5 text-[10px] text-text-tertiary">{selected.model}</span>
           )}
         </Button>
       </PopoverTrigger>
@@ -61,7 +55,7 @@ export function ProviderSelector({
           </div>
         ) : (
           <div role="listbox" aria-label="选择对话模型">
-            {providers.map(p => {
+            {providers.map((p) => {
               const isSelected = p.key === selectedKey
               return (
                 <div
@@ -75,7 +69,7 @@ export function ProviderSelector({
                     isSelected && 'bg-brand-primary/5 hover:bg-brand-primary/10',
                   )}
                   onClick={() => onChange(p.key)}
-                  onKeyDown={e => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
                       onChange(p.key)
@@ -92,10 +86,7 @@ export function ProviderSelector({
                     </span>
                   </div>
                   {isSelected && (
-                    <CheckIcon
-                      className="size-4 shrink-0 text-brand-primary"
-                      aria-hidden
-                    />
+                    <CheckIcon className="size-4 shrink-0 text-brand-primary" aria-hidden />
                   )}
                 </div>
               )

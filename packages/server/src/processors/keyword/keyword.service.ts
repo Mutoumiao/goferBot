@@ -1,6 +1,6 @@
+import type { IKeywordStore, RetrievalCandidate } from '@goferbot/rag-sdk'
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../database/prisma.service.js'
-import type { IKeywordStore, RetrievalCandidate } from '@goferbot/rag-sdk'
 
 @Injectable()
 export class KeywordService implements IKeywordStore {
@@ -16,9 +16,9 @@ export class KeywordService implements IKeywordStore {
 
   private async detectZhparser(): Promise<void> {
     try {
-      const result = await this.prisma.$queryRaw`
+      const result = (await this.prisma.$queryRaw`
         SELECT extname FROM pg_extension WHERE extname = 'zhparser'
-      ` as Array<{ extname: string }>
+      `) as Array<{ extname: string }>
       this.useChineseConfig = result.length > 0
       if (this.useChineseConfig) {
         this.logger.log('zhparser detected, using chinese config')
@@ -26,7 +26,9 @@ export class KeywordService implements IKeywordStore {
         this.logger.warn('zhparser not installed, falling back to simple config')
       }
     } catch (err) {
-      this.logger.warn(`zhparser detection failed: ${err instanceof Error ? err.message : String(err)}`)
+      this.logger.warn(
+        `zhparser detection failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
       this.useChineseConfig = false
     } finally {
       this.configChecked = true
@@ -41,7 +43,7 @@ export class KeywordService implements IKeywordStore {
     const limit = topK ?? 10
     const trimmedQuery = query.trim()
 
-    const results = await this.prisma.$queryRaw`
+    const results = (await this.prisma.$queryRaw`
       SELECT id, document_id, kb_id, content, chunk_index,
         ts_rank_cd(to_tsvector(${config}, content), plainto_tsquery(${config}, ${trimmedQuery})) as rank
       FROM chunks
@@ -49,7 +51,7 @@ export class KeywordService implements IKeywordStore {
         AND to_tsvector(${config}, content) @@ plainto_tsquery(${config}, ${trimmedQuery})
       ORDER BY rank DESC
       LIMIT ${limit}
-    ` as Array<{
+    `) as Array<{
       id: string
       document_id: string
       kb_id: string
@@ -58,7 +60,7 @@ export class KeywordService implements IKeywordStore {
       rank: number
     }>
 
-    return results.map(r => ({
+    return results.map((r) => ({
       chunk: {
         id: r.id,
         documentId: r.document_id,

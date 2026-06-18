@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { KnowledgeBaseService } from '@/modules/knowledge-base/knowledge-base.service.js'
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
 
 describe('KnowledgeBaseService', () => {
   let kbService: KnowledgeBaseService
@@ -42,11 +42,7 @@ describe('KnowledgeBaseService', () => {
       expect(result[0].name).toBe('Test KB')
       expect(mockPrisma.knowledgeBase.findMany).toHaveBeenCalledWith({
         where: { userId: 'u1' },
-        orderBy: [
-          { isPinned: 'desc' },
-          { sortOrder: 'asc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
       })
     })
   })
@@ -54,7 +50,11 @@ describe('KnowledgeBaseService', () => {
   describe('create', () => {
     it('AC-04b: creates knowledge base with valid data', async () => {
       mockPrisma.knowledgeBase.create.mockResolvedValue({
-        id: 'kb1', name: 'New KB', description: null, icon: null, userId: 'u1',
+        id: 'kb1',
+        name: 'New KB',
+        description: null,
+        icon: null,
+        userId: 'u1',
       })
 
       const result = await kbService.create('u1', { name: 'New KB' })
@@ -70,7 +70,8 @@ describe('KnowledgeBaseService', () => {
     it('AC-04c: updates knowledge base for owner', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.knowledgeBase.update.mockResolvedValue({
-        id: 'kb1', name: 'Updated KB',
+        id: 'kb1',
+        name: 'Updated KB',
       })
 
       const result = await kbService.update('u1', 'kb1', { name: 'Updated KB' })
@@ -81,15 +82,17 @@ describe('KnowledgeBaseService', () => {
     it('AC-04d: throws NotFoundException when KB not found', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue(null)
 
-      await expect(kbService.update('u1', 'kb1', { name: 'Updated' }))
-        .rejects.toThrow(NotFoundException)
+      await expect(kbService.update('u1', 'kb1', { name: 'Updated' })).rejects.toThrow(
+        NotFoundException,
+      )
     })
 
     it('AC-04e: throws ForbiddenException when not owner', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u2' })
 
-      await expect(kbService.update('u1', 'kb1', { name: 'Updated' }))
-        .rejects.toThrow(ForbiddenException)
+      await expect(kbService.update('u1', 'kb1', { name: 'Updated' })).rejects.toThrow(
+        ForbiddenException,
+      )
     })
   })
 
@@ -130,22 +133,21 @@ describe('KnowledgeBaseService', () => {
     it('throws BadRequestException when query is empty', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
 
-      await expect(kbService.search('u1', 'kb1', '   '))
-        .rejects.toThrow(BadRequestException)
+      await expect(kbService.search('u1', 'kb1', '   ')).rejects.toThrow(BadRequestException)
     })
 
     it('throws BadRequestException when query exceeds max length', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
 
-      await expect(kbService.search('u1', 'kb1', 'a'.repeat(101)))
-        .rejects.toThrow(BadRequestException)
+      await expect(kbService.search('u1', 'kb1', 'a'.repeat(101))).rejects.toThrow(
+        BadRequestException,
+      )
     })
 
     it('throws ForbiddenException when not owner', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u2' })
 
-      await expect(kbService.search('u1', 'kb1', 'notes'))
-        .rejects.toThrow(ForbiddenException)
+      await expect(kbService.search('u1', 'kb1', 'notes')).rejects.toThrow(ForbiddenException)
     })
   })
 

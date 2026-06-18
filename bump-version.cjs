@@ -22,7 +22,10 @@ async function updateVersion() {
       const fileContent = await fs.readFile(filePath, 'utf8')
 
       // Create the replacement pattern based on the file type
-      const updatedContent = fileContent.replace(searchPattern(OLD_VERSION), replacement(newVersion))
+      const updatedContent = fileContent.replace(
+        searchPattern(OLD_VERSION),
+        replacement(newVersion),
+      )
 
       await fs.writeFile(filePath, updatedContent)
       console.log(`Updated ${filename} version to ${newVersion}`)
@@ -37,20 +40,20 @@ async function updateVersion() {
 
   await updateFile(
     'package.json',
-    oldVer => `"version": "${oldVer}"`,
-    newVer => `"version": "${newVer}"`
+    (oldVer) => `"version": "${oldVer}"`,
+    (newVer) => `"version": "${newVer}"`,
   )
 
   await updateFile(
     'src-tauri/tauri.conf.json',
-    oldVer => `"version": "${oldVer}"`,
-    newVer => `"version": "${newVer}"`
+    (oldVer) => `"version": "${oldVer}"`,
+    (newVer) => `"version": "${newVer}"`,
   )
 
   await updateFile(
     'src-tauri/Cargo.toml',
-    oldVer => `version = "${oldVer}"`,
-    newVer => `version = "${newVer}"`
+    (oldVer) => `version = "${oldVer}"`,
+    (newVer) => `version = "${newVer}"`,
   )
 }
 

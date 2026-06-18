@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { confirmDeleteChatSession } from '@/features/chat/services'
-import { useLazyChatHistory } from '@/features/chat/hooks'
-import { ChatHistoryList } from './ChatHistoryList'
 import type { Session } from '@goferbot/data'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { useLazyChatHistory } from '@/features/chat/hooks'
+import { confirmDeleteChatSession } from '@/features/chat/services'
 import { tabManager } from '@/stores/tabManager'
 import { useWorkspaceStore } from '@/stores/workspace.store'
+import { ChatHistoryList } from './ChatHistoryList'
 
 const PAGE_SIZE = 6
 
@@ -21,12 +21,9 @@ export function ChatHistoryPage() {
     loadRef.current()
   }, [page])
 
-  const handleResume = useCallback(
-    (session: Session) => {
-      void tabManager.openConversation(session.id, session.title ?? undefined)
-    },
-    []
-  )
+  const handleResume = useCallback((session: Session) => {
+    void tabManager.openConversation(session.id, session.title ?? undefined)
+  }, [])
 
   const handleDelete = useCallback(
     async (session: Session, e?: React.MouseEvent) => {
@@ -37,13 +34,15 @@ export function ChatHistoryPage() {
           setDeletingId(null)
           const tab = useWorkspaceStore.getState().findTabByConversationId(session.id)
           if (tab) {
-            useWorkspaceStore.getState().updateTab(tab.id, { conversationId: undefined, title: '新会话' })
+            useWorkspaceStore
+              .getState()
+              .updateTab(tab.id, { conversationId: undefined, title: '新会话' })
           }
         },
         onReload: () => reload(),
       })
     },
-    [reload]
+    [reload],
   )
 
   const handlePageChange = useCallback((newPage: number) => {

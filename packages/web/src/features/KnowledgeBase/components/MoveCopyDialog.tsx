@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react'
-import { Folder as FolderIcon, Home, Loader2, BookOpen } from 'lucide-react'
+import type { KbSelectorEntry } from '@goferbot/data'
+import { BookOpen, Folder as FolderIcon, Home, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { getFolders } from '@/api/file'
+import { getKbForSelector } from '@/api/KnowledgeBase'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
@@ -18,12 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getFolders } from '@/api/file'
-import { getKbForSelector } from '@/api/KnowledgeBase'
+import { copyDocument, copyFolder, moveDocument, moveFolder } from '../services'
 import { useKbStore } from '../store'
-import { moveDocument, moveFolder, copyDocument, copyFolder } from '../services'
-import type { Folder as FolderType, DocumentItem } from '../types'
-import type { KbSelectorEntry } from '@goferbot/data'
+import type { DocumentItem, Folder as FolderType } from '../types'
 
 interface MoveCopyDialogProps {
   mode: 'move' | 'copy'
@@ -179,7 +179,11 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
 
   // folder 操作时（move/copy），禁止选择自身及后代（避免移动到自身或复制到自身子树形成循环）
   const disabledFolderIds = isFolder(item)
-    ? new Set(folders.filter((f) => f.id === item.id || isDescendant(folders, item.id, f.id)).map((f) => f.id))
+    ? new Set(
+        folders
+          .filter((f) => f.id === item.id || isDescendant(folders, item.id, f.id))
+          .map((f) => f.id),
+      )
     : new Set<string>()
   const visibleFolders = folders
 
@@ -187,14 +191,20 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
     <Dialog open onOpenChange={() => onClose?.(false)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{actionText}{itemTypeText}</DialogTitle>
+          <DialogTitle>
+            {actionText}
+            {itemTypeText}
+          </DialogTitle>
           <DialogDescription>
             将「<span className="font-medium text-foreground">{item.name}</span>」{actionText}到：
           </DialogDescription>
         </DialogHeader>
 
         {!currentKbId && (
-          <p className="text-sm text-destructive py-4">当前未选择知识库，无法{actionText}{itemTypeText}。</p>
+          <p className="text-sm text-destructive py-4">
+            当前未选择知识库，无法{actionText}
+            {itemTypeText}。
+          </p>
         )}
 
         <div className="flex flex-col gap-4 py-2">
@@ -233,7 +243,9 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
                 <div className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-accent">
                   <RadioGroupItem value={ROOT_VALUE} id={ROOT_VALUE} />
                   <Home className="h-4 w-4 text-muted-foreground" />
-                  <label htmlFor={ROOT_VALUE} className="flex-1 cursor-pointer text-sm">根目录</label>
+                  <label htmlFor={ROOT_VALUE} className="flex-1 cursor-pointer text-sm">
+                    根目录
+                  </label>
                 </div>
                 {visibleFolders.map((folder) => {
                   const disabled = disabledFolderIds.has(folder.id)

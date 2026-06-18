@@ -1,6 +1,6 @@
+import { BadRequestException } from '@nestjs/common'
 import { createZodValidationPipe } from 'nestjs-zod'
 import { ZodError } from 'zod/v4'
-import { BadRequestException } from '@nestjs/common'
 
 export const ZodValidationPipe = createZodValidationPipe({
   createValidationException: (error) => {

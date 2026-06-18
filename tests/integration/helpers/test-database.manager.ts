@@ -1,6 +1,6 @@
 import { execSync } from 'child_process'
-import { Client } from 'pg'
 import path from 'path'
+import { Client } from 'pg'
 
 const schemaPath = path.resolve(process.cwd(), 'packages/server/prisma/schema.prisma')
 const DB_PREFIX = 'goferbot_test_'

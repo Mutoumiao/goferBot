@@ -1,6 +1,6 @@
 import { FolderIcon } from 'lucide-react'
-import { getFileIcon, formatFileSize, formatDate } from '@/utils/file'
-import type { Folder, DocumentItem } from '../types'
+import { formatDate, formatFileSize, getFileIcon } from '@/utils/file'
+import type { DocumentItem, Folder } from '../types'
 
 interface FileListItemProps {
   item: Folder | DocumentItem

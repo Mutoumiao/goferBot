@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { migrateWorkspaceState, type WorkspaceStore } from '@/stores/workspace.store'
 
 describe('migrateWorkspaceState', () => {
@@ -6,7 +6,14 @@ describe('migrateWorkspaceState', () => {
     const persisted: WorkspaceStore = {
       tabs: [
         { id: 't1', type: 'chat', title: '问答首页', closable: false, createdAt: 1 },
-        { id: 't2', type: 'chat', title: '会话1', conversationId: 'c1', closable: false, createdAt: 2 },
+        {
+          id: 't2',
+          type: 'chat',
+          title: '会话1',
+          conversationId: 'c1',
+          closable: false,
+          createdAt: 2,
+        },
         { id: 't3', type: 'history', title: '历史', closable: true, createdAt: 3 },
       ],
       activeTabId: 't1',
@@ -31,9 +38,7 @@ describe('migrateWorkspaceState', () => {
 
   test('version 1 不修改数据', () => {
     const persisted: WorkspaceStore = {
-      tabs: [
-        { id: 't1', type: 'chat', title: '问答首页', closable: false, createdAt: 1 },
-      ],
+      tabs: [{ id: 't1', type: 'chat', title: '问答首页', closable: false, createdAt: 1 }],
       activeTabId: 't1',
       activeTab: () => null,
       addTab: () => ({ id: '', type: 'chat', title: '', closable: true, createdAt: 0 }),

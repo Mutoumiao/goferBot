@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 
 interface CreateFolderDialogProps {
@@ -15,10 +15,7 @@ interface CreateFolderDialogProps {
   onConfirm?: (name: string) => void | Promise<void>
 }
 
-export default function CreateFolderDialog({
-  onClose,
-  onConfirm,
-}: CreateFolderDialogProps) {
+export default function CreateFolderDialog({ onClose, onConfirm }: CreateFolderDialogProps) {
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)

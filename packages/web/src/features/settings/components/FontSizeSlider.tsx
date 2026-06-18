@@ -17,9 +17,7 @@ export function FontSizeSlider({ value, onChange }: FontSizeSliderProps) {
         value={[value]}
         onValueChange={([v]) => onChange(v as 1 | 2 | 3 | 4 | 5)}
       />
-      <span className="text-sm text-muted-foreground w-12 text-right">
-        {LABELS[value - 1]}
-      </span>
+      <span className="text-sm text-muted-foreground w-12 text-right">{LABELS[value - 1]}</span>
     </div>
   )
 }

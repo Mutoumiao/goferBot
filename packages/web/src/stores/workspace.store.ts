@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, devtools, createJSONStorage } from 'zustand/middleware'
+import { createJSONStorage, devtools, persist } from 'zustand/middleware'
 import type { TabRouteKey } from '@/router-register'
 
 export type TabType = TabRouteKey
@@ -18,9 +18,7 @@ interface WorkspaceState {
   activeTabId: string
 }
 
-export type RemoveTabResult =
-  | { removed: false }
-  | { removed: true; nextTab: Tab | null }
+export type RemoveTabResult = { removed: false } | { removed: true; nextTab: Tab | null }
 
 interface WorkspaceActions {
   activeTab: () => Tab | null
@@ -55,9 +53,7 @@ if (typeof sessionStorage !== 'undefined') {
 export function migrateWorkspaceState(persistedState: unknown, version: number): WorkspaceState {
   const state = persistedState as WorkspaceState | undefined
   if (version === 0 && state?.tabs) {
-    state.tabs = state.tabs.map((t) =>
-      t.type === 'chat' ? { ...t, closable: true } : t,
-    )
+    state.tabs = state.tabs.map((t) => (t.type === 'chat' ? { ...t, closable: true } : t))
   }
   return state as WorkspaceState
 }

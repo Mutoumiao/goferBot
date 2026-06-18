@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { ArrowUpDown, LayoutGrid, List, Search, Upload } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,8 +9,6 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Kbd } from '@/components/ui/kbd'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,9 +16,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, LayoutGrid, List, ArrowUpDown, Upload } from 'lucide-react'
-import type { Folder } from '../types'
-import type { ViewMode, SortOption } from '../types'
+import { Input } from '@/components/ui/input'
+import { Kbd } from '@/components/ui/kbd'
+import type { Folder, SortOption, ViewMode } from '../types'
 
 interface KnowledgeBaseToolbarProps {
   kbName: string
@@ -56,7 +55,10 @@ export function KnowledgeBaseToolbar({
   }, [])
 
   return (
-    <div className="flex items-center justify-between border-b border-[#E7EAF0] px-5 py-2.5" onKeyDown={handleKeyDown}>
+    <div
+      className="flex items-center justify-between border-b border-[#E7EAF0] px-5 py-2.5"
+      onKeyDown={handleKeyDown}
+    >
       <div className="flex items-center gap-2">
         <Breadcrumb>
           <BreadcrumbList>
@@ -141,11 +143,22 @@ export function KnowledgeBaseToolbar({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuRadioGroup value={sortOption} onValueChange={(v) => onSortChange(v as SortOption)}>
-              <DropdownMenuRadioItem value="updatedAt-desc">按更新时间（新→旧）</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="updatedAt-asc">按更新时间（旧→新）</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="createdAt-desc">按创建时间（新→旧）</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="createdAt-asc">按创建时间（旧→新）</DropdownMenuRadioItem>
+            <DropdownMenuRadioGroup
+              value={sortOption}
+              onValueChange={(v) => onSortChange(v as SortOption)}
+            >
+              <DropdownMenuRadioItem value="updatedAt-desc">
+                按更新时间（新→旧）
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="updatedAt-asc">
+                按更新时间（旧→新）
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="createdAt-desc">
+                按创建时间（新→旧）
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="createdAt-asc">
+                按创建时间（旧→新）
+              </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="name-asc">按名称（A→Z）</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="name-desc">按名称（Z→A）</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="size-desc">按大小（大→小）</DropdownMenuRadioItem>

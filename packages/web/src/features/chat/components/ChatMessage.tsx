@@ -1,5 +1,5 @@
-import ReactMarkdown from 'react-markdown'
 import type { Message } from '@goferbot/data'
+import ReactMarkdown from 'react-markdown'
 import { cn } from '@/utils/cn'
 
 interface ChatMessageProps {
@@ -14,7 +14,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div
         className={cn(
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium',
-          isUser ? 'order-2 bg-brand-primary text-white' : 'order-1 bg-surface-3 text-text-secondary',
+          isUser
+            ? 'order-2 bg-brand-primary text-white'
+            : 'order-1 bg-surface-3 text-text-secondary',
         )}
       >
         {isUser ? 'U' : 'AI'}

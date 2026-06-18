@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { DocumentParser } from '@/processors/parser/document.parser.js'
 
 describe('DocumentParser', () => {
@@ -18,7 +18,9 @@ describe('DocumentParser', () => {
 
   it('AC-03: throws error for application/pdf mimeType', async () => {
     const buffer = Buffer.from('pdf-binary')
-    await expect(parser.parse(buffer, 'application/pdf')).rejects.toThrow('PDF parsing not yet implemented')
+    await expect(parser.parse(buffer, 'application/pdf')).rejects.toThrow(
+      'PDF parsing not yet implemented',
+    )
   })
 
   it('AC-04: falls back to utf-8 for unknown mimeType', async () => {

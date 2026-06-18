@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('sonner', () => ({
   toast: { error: vi.fn() },
@@ -17,11 +17,7 @@ describe('EditNameDialog', () => {
 
   it('renders with current name pre-filled', () => {
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
@@ -31,11 +27,7 @@ describe('EditNameDialog', () => {
 
   it('shows error for empty name', async () => {
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
@@ -50,11 +42,7 @@ describe('EditNameDialog', () => {
 
   it('shows error for name exceeding 50 characters', async () => {
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
@@ -69,11 +57,7 @@ describe('EditNameDialog', () => {
 
   it('closes without calling onConfirm when name unchanged', async () => {
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
@@ -89,11 +73,7 @@ describe('EditNameDialog', () => {
     mockOnConfirm.mockResolvedValue(undefined)
 
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
@@ -110,11 +90,7 @@ describe('EditNameDialog', () => {
     mockOnConfirm.mockRejectedValue(new Error('update failed'))
 
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
@@ -129,11 +105,7 @@ describe('EditNameDialog', () => {
 
   it('closes when cancel button clicked', () => {
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     fireEvent.click(screen.getByRole('button', { name: '取消' }))
@@ -144,11 +116,7 @@ describe('EditNameDialog', () => {
     mockOnConfirm.mockImplementation(() => new Promise(() => {}))
 
     render(
-      <EditNameDialog
-        currentName="TestUser"
-        onClose={mockOnClose}
-        onConfirm={mockOnConfirm}
-      />,
+      <EditNameDialog currentName="TestUser" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement

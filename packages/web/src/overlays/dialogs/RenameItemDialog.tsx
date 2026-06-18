@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 
 interface RenameItemDialogProps {
@@ -63,9 +63,7 @@ export default function RenameItemDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>重命名{isFolder ? '文件夹' : '文件'}</DialogTitle>
-          <DialogDescription>
-            为「{itemName}」输入新名称。
-          </DialogDescription>
+          <DialogDescription>为「{itemName}」输入新名称。</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

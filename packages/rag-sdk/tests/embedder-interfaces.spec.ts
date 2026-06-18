@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { IEmbedder, IIndexer } from '@/interfaces.js'
-import type { TokenUsage, EmbedWithUsageResult, Chunk } from '@/types.js'
+import type { Chunk, EmbedWithUsageResult, TokenUsage } from '@/types.js'
 
 describe('TokenUsage types', () => {
   it('AC-01: TokenUsage type has promptTokens and totalTokens', () => {
@@ -33,7 +33,12 @@ describe('IEmbedder interface', () => {
         vectors: [],
         usage: [],
       }),
-      config: { provider: 'openai', model: 'text-embedding-3-small', dimension: 1536, apiKey: 'test' },
+      config: {
+        provider: 'openai',
+        model: 'text-embedding-3-small',
+        dimension: 1536,
+        apiKey: 'test',
+      },
     }
     expect(embedder.embedWithUsage).toBeDefined()
   })
@@ -41,7 +46,12 @@ describe('IEmbedder interface', () => {
   it('AC-04: IEmbedder embed method signature remains unchanged', () => {
     const embedder: IEmbedder = {
       embed: async (_texts: string[]) => [],
-      config: { provider: 'openai', model: 'text-embedding-3-small', dimension: 1536, apiKey: 'test' },
+      config: {
+        provider: 'openai',
+        model: 'text-embedding-3-small',
+        dimension: 1536,
+        apiKey: 'test',
+      },
     }
     expect(embedder.embed).toBeDefined()
     expect(embedder.embedWithUsage).toBeUndefined()

@@ -33,8 +33,8 @@ export async function uploadDocumentWithChunk(
   if (folderId) {
     const folderField = Buffer.from(
       `--${boundary}\r\n` +
-      'Content-Disposition: form-data; name="folderId"\r\n\r\n' +
-      `${folderId}\r\n`,
+        'Content-Disposition: form-data; name="folderId"\r\n\r\n' +
+        `${folderId}\r\n`,
     )
     parts.push(folderField)
   }
@@ -74,10 +74,7 @@ export async function uploadDocumentWithChunk(
   return { docId, chunkId, storageKey }
 }
 
-export async function hasEmbedding(
-  prisma: PrismaService,
-  chunkId: string,
-): Promise<boolean> {
+export async function hasEmbedding(prisma: PrismaService, chunkId: string): Promise<boolean> {
   const result = await prisma.$queryRaw`
     SELECT embedding IS NOT NULL as has_embedding
     FROM chunks
@@ -108,8 +105,8 @@ function buildMultipartBody(
 ): Buffer {
   const prefix = Buffer.from(
     `--${boundary}\r\n` +
-    `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
-    `Content-Type: ${contentType}\r\n\r\n`,
+      `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
+      `Content-Type: ${contentType}\r\n\r\n`,
   )
   const suffix = Buffer.from(`\r\n`)
   return Buffer.concat([prefix, buffer, suffix])

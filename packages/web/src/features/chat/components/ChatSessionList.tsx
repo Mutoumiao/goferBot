@@ -1,11 +1,11 @@
+import type { Session } from '@goferbot/data'
 import {
-  PlusIcon,
   MessageCircleIcon,
   MoreHorizontalIcon,
   PencilIcon,
+  PlusIcon,
   Trash2Icon,
 } from 'lucide-react'
-import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,9 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useChatStore } from '../store'
+import { cn } from '@/utils/cn'
 import { createChatSession, loadChatSessions } from '../services'
-import type { Session } from '@goferbot/data'
+import { useChatStore } from '../store'
 
 interface ChatSessionListProps {
   onRenameClick?: (session: Session) => void
@@ -34,7 +34,12 @@ export function ChatSessionList({ onRenameClick, onDeleteClick }: ChatSessionLis
     <div className="flex h-full flex-col border-r border-border-default bg-surface-1">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-3">
         <h2 className="text-sm font-medium text-text-primary">会话</h2>
-        <Button data-testid="new-session-btn" variant="ghost" size="icon-sm" onClick={() => createChatSession()}>
+        <Button
+          data-testid="new-session-btn"
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => createChatSession()}
+        >
           <PlusIcon className="size-4" />
         </Button>
       </div>

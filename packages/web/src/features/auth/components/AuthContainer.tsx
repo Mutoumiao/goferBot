@@ -1,8 +1,8 @@
+import { ArrowLeft, MessageCircle, Search, Shield, Sparkles } from 'lucide-react'
 import { useEffect } from 'react'
-import { Sparkles, Search, MessageCircle, Shield, ArrowLeft } from 'lucide-react'
+import { type AuthTab, useAuthPageStore } from '../store'
 import { LoginForm } from './LoginForm'
 import { RegisterForm } from './RegisterForm'
-import { useAuthPageStore, type AuthTab } from '../store'
 
 interface AuthContainerProps {
   defaultTab?: AuthTab
@@ -20,8 +20,8 @@ function getCurrentSearch(): string {
 }
 
 export function AuthContainer({ defaultTab = 'login' }: AuthContainerProps) {
-  const tab = useAuthPageStore(s => s.tab)
-  const setTab = useAuthPageStore(s => s.setTab)
+  const tab = useAuthPageStore((s) => s.tab)
+  const setTab = useAuthPageStore((s) => s.setTab)
 
   useEffect(() => {
     const queryTab = getTabFromSearch(getCurrentSearch())
@@ -99,7 +99,9 @@ export function AuthContainer({ defaultTab = 'login' }: AuthContainerProps) {
           )}
 
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold text-text-primary">{tab === 'login' ? '欢迎回来' : '创建账户'}</h2>
+            <h2 className="text-2xl font-bold text-text-primary">
+              {tab === 'login' ? '欢迎回来' : '创建账户'}
+            </h2>
             <p className="mt-2 text-sm text-text-secondary">
               {tab === 'login' ? '登录您的 GoferBot 账户' : '注册一个新的 GoferBot 账户'}
             </p>
@@ -113,7 +115,9 @@ export function AuthContainer({ defaultTab = 'login' }: AuthContainerProps) {
                 <div className="w-full border-t border-border-subtle"></div>
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-surface-1 px-4 text-xs text-text-tertiary">或使用以下方式登录</span>
+                <span className="bg-surface-1 px-4 text-xs text-text-tertiary">
+                  或使用以下方式登录
+                </span>
               </div>
             </div>
 
@@ -145,10 +149,20 @@ export function AuthContainer({ defaultTab = 'login' }: AuthContainerProps) {
   )
 }
 
-function FeatureItem({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function FeatureItem({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+}) {
   return (
     <div className="flex items-start gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60">{icon}</div>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60">
+        {icon}
+      </div>
       <div>
         <h3 className="font-semibold text-text-primary">{title}</h3>
         <p className="mt-1 text-sm text-text-secondary">{description}</p>

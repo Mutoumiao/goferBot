@@ -1,12 +1,11 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { configResponsive } from 'ahooks'
 import { useEffect } from 'react'
-
+import { fetchCurrentUser } from '@/features/auth/services'
 import { OverlayHost } from '@/overlays/host/OverlayHost'
 import { useAuthStore } from '@/stores/auth'
-import { fetchCurrentUser } from '@/features/auth/services'
 import appCss from '../globals.css?url'
 
 /* ========== ahooks 响应式断点全局配置 ========== */
@@ -72,9 +71,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <AuthInitializer>
-          {children}
-        </AuthInitializer>
+        <AuthInitializer>{children}</AuthInitializer>
         {/* Overlay Portal 系统 — 所有 Dialog/ContextMenu 渲染在此 */}
         <OverlayHost />
         <TanStackDevtools

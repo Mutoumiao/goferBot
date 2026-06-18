@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
 import { useRouterState } from '@tanstack/react-router'
-import { useWorkspaceStore } from '@/stores/workspace.store'
+import { useEffect } from 'react'
 import { getTabPath } from '@/router-register'
+import { useWorkspaceStore } from '@/stores/workspace.store'
 
 /**
  * TabRouteSync — 只读路由同步守护

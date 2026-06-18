@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
+import type { Document, Prisma } from '@prisma/client'
 import { PrismaService } from '../../../processors/database/prisma.service.js'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
-import type { Document, Prisma } from '@prisma/client'
 
 export type DocumentCreateInput = Prisma.DocumentCreateInput
 export type DocumentUpdateInput = Prisma.DocumentUpdateInput
@@ -30,11 +30,7 @@ export class DocumentRepository extends BaseRepository<
     return this.model.findFirst({ where: { id, kbId } })
   }
 
-  async updateStatus(
-    id: string,
-    status: string,
-    errorMessage?: string | null,
-  ): Promise<Document> {
+  async updateStatus(id: string, status: string, errorMessage?: string | null): Promise<Document> {
     const data: Prisma.DocumentUpdateInput = { status }
     if (errorMessage !== undefined) {
       data.errorMessage = errorMessage

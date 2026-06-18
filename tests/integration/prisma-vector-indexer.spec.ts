@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { describe, it, expect, beforeAll } from 'vitest'
+
 import { PrismaClient } from '@prisma/client'
-import { PrismaVectorIndexer } from '../../packages/server/src/processors/indexing/prisma-vector.indexer'
 import { ValidationError } from '@rag-sdk'
-import { TestDatabaseManager } from './helpers/test-database.manager.js'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { PrismaVectorIndexer } from '../../packages/server/src/processors/indexing/prisma-vector.indexer'
 import { checkInfrastructure } from './helpers/infra-check.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 
 describe('PrismaVectorIndexer', () => {
   let infraAvailable = false
@@ -70,10 +71,7 @@ describe('PrismaVectorIndexer', () => {
           tokenCount: 2,
         },
       ]
-      const vectors = [
-        new Array(1536).fill(0.1),
-        new Array(1536).fill(0.2),
-      ]
+      const vectors = [new Array(1536).fill(0.1), new Array(1536).fill(0.2)]
 
       await indexer.index(chunks as any, vectors)
 
@@ -283,9 +281,7 @@ describe('PrismaVectorIndexer', () => {
     const indexer = new PrismaVectorIndexer(prisma as any)
 
     try {
-      await expect(
-        indexer.index([{ id: '1' } as any], [])
-      ).rejects.toThrow(ValidationError)
+      await expect(indexer.index([{ id: '1' } as any], [])).rejects.toThrow(ValidationError)
     } finally {
       await prisma.$disconnect()
       await dbManager.dropDatabase(dbName)

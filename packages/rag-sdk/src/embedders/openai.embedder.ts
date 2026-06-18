@@ -1,5 +1,5 @@
-import type { EmbeddingConfig, TokenUsage, EmbedWithUsageResult } from '../types.js'
 import { EmbeddingError, ValidationError } from '../errors.js'
+import type { EmbeddingConfig, EmbedWithUsageResult, TokenUsage } from '../types.js'
 
 export class OpenAIEmbedder {
   readonly config: Readonly<EmbeddingConfig>
@@ -24,9 +24,7 @@ export class OpenAIEmbedder {
 
     for (const vec of results) {
       if (vec.length !== this.config.dimension) {
-        throw new EmbeddingError(
-          `Expected dimension ${this.config.dimension}, got ${vec.length}`
-        )
+        throw new EmbeddingError(`Expected dimension ${this.config.dimension}, got ${vec.length}`)
       }
     }
 
@@ -51,9 +49,7 @@ export class OpenAIEmbedder {
 
     for (const vec of results) {
       if (vec.length !== this.config.dimension) {
-        throw new EmbeddingError(
-          `Expected dimension ${this.config.dimension}, got ${vec.length}`
-        )
+        throw new EmbeddingError(`Expected dimension ${this.config.dimension}, got ${vec.length}`)
       }
     }
 
@@ -76,8 +72,7 @@ export class OpenAIEmbedder {
 
     if (!response.ok) {
       const text = await response.text()
-      throw new EmbeddingError(`Embedding API error: ${response.status} ${text}`,
-        new Error(text))
+      throw new EmbeddingError(`Embedding API error: ${response.status} ${text}`, new Error(text))
     }
 
     const data = await response.json()
@@ -100,8 +95,7 @@ export class OpenAIEmbedder {
 
     if (!response.ok) {
       const text = await response.text()
-      throw new EmbeddingError(`Embedding API error: ${response.status} ${text}`,
-        new Error(text))
+      throw new EmbeddingError(`Embedding API error: ${response.status} ${text}`, new Error(text))
     }
 
     const data = await response.json()
@@ -117,7 +111,7 @@ export class OpenAIEmbedder {
       const avg = Math.round(totalTokens / texts.length)
       usage = texts.map(() => ({ promptTokens: avg, totalTokens: avg }))
     } else {
-      usage = texts.map(text => {
+      usage = texts.map((text) => {
         const promptTokens = Math.round((text.length / totalLength) * totalTokens)
         return { promptTokens, totalTokens: promptTokens }
       })

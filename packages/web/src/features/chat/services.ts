@@ -1,21 +1,21 @@
 import type { Message, Session } from '@goferbot/data'
 import {
-  getSessions,
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
   renameSession as apiRenameSession,
-  getMessages,
   getChatProviders,
+  getMessages,
   getSessionById,
+  getSessions,
 } from '@/api/chat'
 import { xChatRequest } from '@/api/x-chat'
-import { GoferChatProvider } from './providers/GoferChatProvider'
-import { useChatStore } from './store'
+import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
+import { openDialog } from '@/overlays/services/overlay-service'
 import { useConversationStore } from '@/stores/conversation.store'
 import { useWorkspaceStore } from '@/stores/workspace.store'
-import { openDialog } from '@/overlays/services/overlay-service'
-import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
 import { getPendingMessageKey } from './constants'
+import { GoferChatProvider } from './providers/GoferChatProvider'
+import { useChatStore } from './store'
 
 export async function loadChatSessions() {
   const { setSessions, setIsLoadingSessions, setError } = useChatStore.getState()
@@ -114,10 +114,7 @@ export async function resolveSessionById(sessionId: string): Promise<Session | u
   }
 }
 
-export async function deleteChatSessionWithReload(
-  id: string,
-  options?: { onReload?: () => void },
-) {
+export async function deleteChatSessionWithReload(id: string, options?: { onReload?: () => void }) {
   await deleteChatSession(id)
   options?.onReload?.()
 }

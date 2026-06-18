@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
-import type { SettingsDto } from './dto/settings.dto.js'
 import { ConfigCryptoService } from './config-crypto.service.js'
+import type { SettingsDto } from './dto/settings.dto.js'
 
 const CONFIG_KEY = 'app_config'
 
@@ -11,7 +11,12 @@ const DEFAULT_CONFIG = {
     claude: { name: 'Claude', apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
     deepseek: { name: 'DeepSeek', apiKey: '', model: 'deepseek-chat', baseUrl: '' },
   },
-  embeddingProvider: { provider: 'openai', apiKey: '', model: 'text-embedding-3-small', baseUrl: '' },
+  embeddingProvider: {
+    provider: 'openai',
+    apiKey: '',
+    model: 'text-embedding-3-small',
+    baseUrl: '',
+  },
   temperature: 0.7,
   defaultChatProvider: 'deepseek',
   appearance: 'light',
@@ -93,7 +98,7 @@ export class SettingsService {
 
       const newEmbApiKey = (merged.embeddingProvider as Record<string, unknown>).apiKey as string
       if (this.crypto.isMasked(newEmbApiKey)) {
-        (merged.embeddingProvider as Record<string, unknown>).apiKey =
+        ;(merged.embeddingProvider as Record<string, unknown>).apiKey =
           (decrypted.embeddingProvider as Record<string, unknown>)?.apiKey ?? ''
       }
 

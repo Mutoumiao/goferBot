@@ -9,7 +9,7 @@
  *   4) cleanupAllTrackedDatabases 会 drop 全部 tracked
  *   5) cleanupOrphanedDatabases 会跳过活跃连接/当前 tracked 的库
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ---- Mocks（模块级）----
 let mockQueries: string[] = []
@@ -44,10 +44,10 @@ vi.mock('child_process', () => ({
 }))
 
 import {
-  TestDatabaseManager,
-  parseCreatedAtFromName,
   cleanupAllTrackedDatabases,
   cleanupOrphanedDatabases,
+  parseCreatedAtFromName,
+  TestDatabaseManager,
 } from '../../tests/integration/helpers/test-database.manager.js'
 
 describe('parseCreatedAtFromName', () => {
@@ -107,9 +107,7 @@ describe('TestDatabaseManager (mocked pg)', () => {
   it('createDatabase rolls back when migrate (execSync) fails', async () => {
     mockExecSyncThrows = true
     const mgr = new TestDatabaseManager()
-    await expect(mgr.createDatabase('rollback_unit')).rejects.toThrow(
-      /mocked migrate failure/,
-    )
+    await expect(mgr.createDatabase('rollback_unit')).rejects.toThrow(/mocked migrate failure/)
     // 关键：rollback 会调用 dropDatabase（DROP DATABASE IF EXISTS）
     const dropCalls = mockQueries.filter((q) => q.includes('DROP DATABASE'))
     expect(dropCalls.length).toBeGreaterThan(0)
@@ -120,9 +118,7 @@ describe('TestDatabaseManager (mocked pg)', () => {
   it('createDatabase rolls back when CREATE DATABASE fails (connect error)', async () => {
     currentConnectError = new Error('connection refused')
     const mgr = new TestDatabaseManager()
-    await expect(mgr.createDatabase('connect_fail')).rejects.toThrow(
-      /connection refused/,
-    )
+    await expect(mgr.createDatabase('connect_fail')).rejects.toThrow(/connection refused/)
     // 未登记 tracked，故应为空
     expect(mgr.getTrackedDatabases()).toHaveLength(0)
   })

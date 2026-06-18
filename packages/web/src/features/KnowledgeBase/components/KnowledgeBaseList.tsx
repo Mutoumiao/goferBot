@@ -1,18 +1,19 @@
-import { useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import type { KbEntry } from '@goferbot/data'
 import {
-  Plus,
-  RefreshCw,
   BookOpen,
-  Search,
+  MoreHorizontal,
   PanelLeftClose,
+  Pencil,
   Pin,
   PinOff,
-  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
   Trash2,
-  MoreHorizontal,
 } from 'lucide-react'
+import { useCallback } from 'react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,16 +21,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { cn } from '@/utils/cn'
-import { useKbStore } from '../store'
-import {
-  fetchKbList,
-  pinKnowledgeBase,
-  removeKnowledgeBaseAndClearSelection,
-} from '../services'
+import { Skeleton } from '@/components/ui/skeleton'
 import { openDialog } from '@/overlays/services/overlay-service'
-import { toast } from 'sonner'
-import type { KbEntry } from '@goferbot/data'
+import { cn } from '@/utils/cn'
+import { fetchKbList, pinKnowledgeBase, removeKnowledgeBaseAndClearSelection } from '../services'
+import { useKbStore } from '../store'
 
 function KbSkeletonCard() {
   return (
@@ -70,17 +66,9 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
           {entry.isPinned && (
             <Pin className="h-3 w-3 fill-[#5B7CFA] text-[#5B7CFA]" aria-hidden="true" />
           )}
-          <BookOpen
-            className={cn(
-              'h-4 w-4',
-              isSelected ? 'text-[#5B7CFA]' : 'text-[#9AA3AF]',
-            )}
-          />
+          <BookOpen className={cn('h-4 w-4', isSelected ? 'text-[#5B7CFA]' : 'text-[#9AA3AF]')} />
           <span
-            className={cn(
-              'text-sm font-medium',
-              isSelected ? 'text-[#5B7CFA]' : 'text-[#1F2328]',
-            )}
+            className={cn('text-sm font-medium', isSelected ? 'text-[#5B7CFA]' : 'text-[#1F2328]')}
           >
             {entry.name}
           </span>
@@ -154,7 +142,12 @@ interface KnowledgeBaseListProps {
   onRetry: () => void
 }
 
-export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }: KnowledgeBaseListProps) {
+export function KnowledgeBaseList({
+  sidebarOpen,
+  onToggle,
+  loadError,
+  onRetry,
+}: KnowledgeBaseListProps) {
   const { entries, isLoading: kbLoading, selectedId, setSelectedId } = useKbStore()
 
   const handleCreate = useCallback(async () => {
@@ -166,9 +159,12 @@ export function KnowledgeBaseList({ sidebarOpen, onToggle, loadError, onRetry }:
     })
   }, [])
 
-  const handleSelect = useCallback((entry: KbEntry) => {
-    setSelectedId(entry.id)
-  }, [setSelectedId])
+  const handleSelect = useCallback(
+    (entry: KbEntry) => {
+      setSelectedId(entry.id)
+    },
+    [setSelectedId],
+  )
 
   const handlePin = useCallback(async (entry: KbEntry) => {
     await pinKnowledgeBase(entry.id, !entry.isPinned)

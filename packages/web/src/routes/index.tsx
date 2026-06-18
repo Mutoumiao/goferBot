@@ -1,10 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { tabManager } from '@/stores/tabManager'
-import { ROUTES_REGISTER } from '@/router-register'
 
 function waitForInit(maxMs = 2000): Promise<void> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const start = Date.now()
     const check = () => {
       if (useAuthStore.getState().isInitialized) {

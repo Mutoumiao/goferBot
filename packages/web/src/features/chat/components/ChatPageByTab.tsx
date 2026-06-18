@@ -1,23 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { XProvider } from "@ant-design/x";
-import { useXChat } from "@ant-design/x-sdk";
-import type { Message } from "@goferbot/data";
-import { useWorkspaceStore } from "@/stores/workspace.store";
-import { useConversationStore } from "@/stores/conversation.store";
-import { useChatStore } from "../store";
-import {
-  createGoferProvider,
-  fetchProviders,
-  loadChatHistory,
-} from "../services";
-import type { GoferMessage, GoferInput } from "../providers/GoferChatProvider";
-import type { PendingMessage } from "../services";
-import { getPendingMessageKey } from "../constants";
-import { ChatTempHome } from "./ChatTempHome";
-import { ChatSessionView } from "./ChatSessionView";
+import { XProvider } from '@ant-design/x'
+import { useXChat } from '@ant-design/x-sdk'
+import type { Message } from '@goferbot/data'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useConversationStore } from '@/stores/conversation.store'
+import { useWorkspaceStore } from '@/stores/workspace.store'
+import { getPendingMessageKey } from '../constants'
+import type { GoferInput, GoferMessage } from '../providers/GoferChatProvider'
+import type { PendingMessage } from '../services'
+import { createGoferProvider, fetchProviders, loadChatHistory } from '../services'
+import { useChatStore } from '../store'
+import { ChatSessionView } from './ChatSessionView'
+import { ChatTempHome } from './ChatTempHome'
 
 interface ChatPageByTabProps {
-  tabId: string;
+  tabId: string
 }
 
 function messagesToMessageInfos(messages: Message[]) {
@@ -25,10 +21,10 @@ function messagesToMessageInfos(messages: Message[]) {
     id: message.id,
     message: {
       content: message.content,
-      role: message.role as GoferMessage["role"],
+      role: message.role as GoferMessage['role'],
     },
-    status: "success" as const,
-  }));
+    status: 'success' as const,
+  }))
 }
 
 function xMessagesToMessages(
@@ -36,24 +32,24 @@ function xMessagesToMessages(
   conversationId: string,
 ): Message[] {
   return xMessages.map((xMsg, index) => ({
-    id: typeof xMsg.id === "string" ? xMsg.id : `msg-${index}`,
+    id: typeof xMsg.id === 'string' ? xMsg.id : `msg-${index}`,
     sessionId: conversationId,
     role: xMsg.message.role,
     content: xMsg.message.content,
     createdAt: new Date().toISOString(),
-  }));
+  }))
 }
 
 export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
-  const tab = useWorkspaceStore((s) => s.tabs.find((t) => t.id === tabId));
-  const pendingSentRef = useRef(false);
+  const tab = useWorkspaceStore((s) => s.tabs.find((t) => t.id === tabId))
+  const pendingSentRef = useRef(false)
 
-  const providerRef = useState(() => createGoferProvider())[0];
+  const providerRef = useState(() => createGoferProvider())[0]
 
-  const conversationId = tab?.conversationId;
+  const conversationId = tab?.conversationId
 
-  const { selectedProviderKey, setSelectedProviderKey } = useChatStore();
-  const [selectedKbId, setSelectedKbId] = useState<string | null>(null);
+  const { selectedProviderKey, setSelectedProviderKey } = useChatStore()
+  const [selectedKbId, setSelectedKbId] = useState<string | null>(null)
 
   const {
     messages: xMessages,
@@ -64,136 +60,128 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
   } = useXChat<GoferMessage, GoferMessage, GoferInput>({
     provider: providerRef,
     requestPlaceholder: () => ({
-      content: "正在思考中...",
-      role: "assistant",
+      content: '正在思考中...',
+      role: 'assistant',
     }),
     requestFallback: (_, { error: err, messageInfo }) => {
-      if (err.name === "AbortError") {
+      if (err.name === 'AbortError') {
         return {
-          content: messageInfo?.message?.content || "已取消回复",
-          role: "assistant",
-        };
+          content: messageInfo?.message?.content || '已取消回复',
+          role: 'assistant',
+        }
       }
       return {
-        content: "网络异常，请稍后重试",
-        role: "assistant",
-      };
+        content: '网络异常，请稍后重试',
+        role: 'assistant',
+      }
     },
-  });
+  })
 
   // 初始化 providers
   useEffect(() => {
-    fetchProviders();
-  }, []);
+    fetchProviders()
+  }, [])
 
   // 当 conversationId 变化时重置 pending 发送标记，避免切换会话后漏发
   useEffect(() => {
-    pendingSentRef.current = false;
-  }, [conversationId]);
+    pendingSentRef.current = false
+  }, [conversationId])
 
   // 当 tab 首次绑定 conversationId 时，加载历史消息
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) return
 
-    const conversationStore = useConversationStore.getState();
-    const cached = conversationStore.conversationMap[conversationId];
+    const conversationStore = useConversationStore.getState()
+    const cached = conversationStore.conversationMap[conversationId]
 
     if (cached?.messages.length) {
-      setMessages(messagesToMessageInfos(cached.messages));
-      return;
+      setMessages(messagesToMessageInfos(cached.messages))
+      return
     }
 
     // 先清空旧会话消息，避免在加载新历史期间显示旧内容
-    setMessages([]);
-    let stale = false;
+    setMessages([])
+    let stale = false
     loadChatHistory(conversationId).then(() => {
-      if (stale) return;
-      const fresh =
-        useConversationStore.getState().conversationMap[conversationId]
-          ?.messages ?? [];
-      setMessages(messagesToMessageInfos(fresh));
-    });
+      if (stale) return
+      const fresh = useConversationStore.getState().conversationMap[conversationId]?.messages ?? []
+      setMessages(messagesToMessageInfos(fresh))
+    })
 
     return () => {
-      stale = true;
-    };
-  }, [conversationId, setMessages]);
+      stale = true
+    }
+  }, [conversationId, setMessages])
 
   // 同步 useXChat 消息到 conversation store
   useEffect(() => {
-    if (!conversationId || xMessages.length === 0) return;
-    const messages = xMessagesToMessages(xMessages, conversationId);
-    useConversationStore.getState().setMessages(conversationId, messages);
-  }, [conversationId, xMessages]);
+    if (!conversationId || xMessages.length === 0) return
+    const messages = xMessagesToMessages(xMessages, conversationId)
+    useConversationStore.getState().setMessages(conversationId, messages)
+  }, [conversationId, xMessages])
 
   // 自动发送 pending message
   useEffect(() => {
-    if (pendingSentRef.current) return;
-    if (!conversationId) return;
+    if (pendingSentRef.current) return
+    if (!conversationId) return
 
-    const pendingKey = getPendingMessageKey(conversationId);
-    const raw = sessionStorage.getItem(pendingKey);
-    if (!raw) return;
+    const pendingKey = getPendingMessageKey(conversationId)
+    const raw = sessionStorage.getItem(pendingKey)
+    if (!raw) return
 
-    sessionStorage.removeItem(pendingKey);
-    pendingSentRef.current = true;
+    sessionStorage.removeItem(pendingKey)
+    pendingSentRef.current = true
 
-    let pending: PendingMessage;
+    let pending: PendingMessage
     try {
-      pending = JSON.parse(raw) as PendingMessage;
-      if (
-        typeof pending !== "object" ||
-        pending === null ||
-        typeof pending.content !== "string"
-      ) {
-        throw new Error("invalid pending format");
+      pending = JSON.parse(raw) as PendingMessage
+      if (typeof pending !== 'object' || pending === null || typeof pending.content !== 'string') {
+        throw new Error('invalid pending format')
       }
     } catch {
-      pending = { content: raw };
+      pending = { content: raw }
     }
 
-    let cancelled = false;
+    let cancelled = false
     queueMicrotask(() => {
-      if (cancelled) return;
+      if (cancelled) return
       onRequest({
-        response_mode: "streaming",
+        response_mode: 'streaming',
         query: pending.content.trim(),
         conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
         knowledge_base_ids: pending.knowledgeBaseIds,
-      } as GoferInput);
-    });
+      } as GoferInput)
+    })
 
     return () => {
-      cancelled = true;
-    };
-  }, [conversationId, onRequest, selectedProviderKey]);
+      cancelled = true
+    }
+  }, [conversationId, onRequest, selectedProviderKey])
 
   const handleRetry = useCallback(() => {
-    const lastUserMsg = [...xMessages]
-      .reverse()
-      .find((m) => m.message.role === "user");
+    const lastUserMsg = [...xMessages].reverse().find((m) => m.message.role === 'user')
     if (lastUserMsg && conversationId) {
       onRequest({
-        response_mode: "streaming",
+        response_mode: 'streaming',
         query: lastUserMsg.message.content,
         conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
         knowledge_base_ids: selectedKbId ? [selectedKbId] : undefined,
-      } as GoferInput);
+      } as GoferInput)
     }
-  }, [xMessages, conversationId, onRequest, selectedProviderKey, selectedKbId]);
+  }, [xMessages, conversationId, onRequest, selectedProviderKey, selectedKbId])
 
   if (!tab) {
     return (
       <div className="flex h-full items-center justify-center text-text-secondary">
         正在恢复标签...
       </div>
-    );
+    )
   }
 
   if (!conversationId) {
-    return <ChatTempHome tabId={tabId} />;
+    return <ChatTempHome tabId={tabId} />
   }
 
   return (
@@ -211,5 +199,5 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         onSelectKb={setSelectedKbId}
       />
     </XProvider>
-  );
+  )
 }

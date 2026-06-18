@@ -1,5 +1,5 @@
+import type { Message, ProviderListItem, Session } from '@goferbot/data'
 import { create } from 'zustand'
-import type { Message, Session, ProviderListItem } from '@goferbot/data'
 import { useSettingsStore } from '@/stores/settings'
 
 interface ChatState {
@@ -56,7 +56,7 @@ function pickDefaultProviderKey(providers: ProviderListItem[]): string | null {
   if (providers.length === 0) return null
   try {
     const defaultKey = useSettingsStore.getState().config.defaultChatProvider
-    if (defaultKey && providers.some(p => p.key === defaultKey)) {
+    if (defaultKey && providers.some((p) => p.key === defaultKey)) {
       return defaultKey
     }
   } catch {
@@ -84,12 +84,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setActiveSession: (session) => set({ activeSession: session }),
   setMessages: (messages) => set({ messages }),
-  appendMessage: (message) =>
-    set((s) => ({ messages: [...s.messages, message] })),
+  appendMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
   setIsLoadingHistory: (v) => set({ isLoadingHistory: v }),
   setIsStreaming: (v) => set({ isStreaming: v }),
-  appendStreamContent: (chunk) =>
-    set((s) => ({ streamingContent: s.streamingContent + chunk })),
+  appendStreamContent: (chunk) => set((s) => ({ streamingContent: s.streamingContent + chunk })),
   flushStreamContent: () =>
     set((s) => {
       if (!s.streamingContent) return s
@@ -117,17 +115,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }),
 
   setSessions: (sessions) => set({ sessions }),
-  addSession: (session) =>
-    set((s) => ({ sessions: [session, ...s.sessions] })),
+  addSession: (session) => set((s) => ({ sessions: [session, ...s.sessions] })),
   removeSession: (id) =>
     set((s) => ({
       sessions: s.sessions.filter((ses) => ses.id !== id),
     })),
   updateSession: (id, updates) =>
     set((s) => ({
-      sessions: s.sessions.map((ses) =>
-        ses.id === id ? { ...ses, ...updates } : ses,
-      ),
+      sessions: s.sessions.map((ses) => (ses.id === id ? { ...ses, ...updates } : ses)),
     })),
   setIsLoadingSessions: (v) => set({ isLoadingSessions: v }),
   setError: (error) => set({ error }),
@@ -136,7 +131,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setAvailableProviders: (providers) => {
     const current = get()
     const selectedKey =
-      current.selectedProviderKey && providers.some(p => p.key === current.selectedProviderKey)
+      current.selectedProviderKey && providers.some((p) => p.key === current.selectedProviderKey)
         ? current.selectedProviderKey
         : pickDefaultProviderKey(providers)
     set({ availableProviders: providers, selectedProviderKey: selectedKey })

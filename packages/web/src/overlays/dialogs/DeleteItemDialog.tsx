@@ -1,15 +1,15 @@
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { useState } from 'react'
-import { Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 
@@ -65,7 +65,8 @@ export default function DeleteItemDialog({
             删除{isFolder ? '文件夹' : '文件'}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            确定要删除{isFolder ? '文件夹' : '文件'}「<span className="font-medium text-foreground">{itemName}</span>」吗？此操作不可撤销。
+            确定要删除{isFolder ? '文件夹' : '文件'}「
+            <span className="font-medium text-foreground">{itemName}</span>」吗？此操作不可撤销。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

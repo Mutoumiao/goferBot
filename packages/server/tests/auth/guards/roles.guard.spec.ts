@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { ExecutionContext, ForbiddenException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { RolesGuard } from '@/auth/guards/roles.guard.js'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { Role } from '@/auth/enums/role.enum.js'
+import { RolesGuard } from '@/auth/guards/roles.guard.js'
 
 describe('AC-04: RolesGuard allows ADMIN and rejects USER', () => {
   let guard: RolesGuard

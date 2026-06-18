@@ -3,12 +3,13 @@
  * 验证字段级错误返回
  * 场景：必填字段缺失、字符串格式错误、字符串过长、数值范围错误
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(15)
 
@@ -25,12 +26,20 @@ describe('ZodValidationPipe', () => {
     dbName = new URL(dbUrl).pathname.slice(1)
     app = await TestAppFactory.create(dbUrl)
 
-    const user = await AuthFixtures.createUser(app, {
-      email: `zod-${Date.now()}@test.gofer`,
-      password: 'Test1234!',
-      name: 'Zod Test',
-    }, { remoteAddress: nextIp() })
-    token = await AuthFixtures.loginAs(app, { email: user.email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    const user = await AuthFixtures.createUser(
+      app,
+      {
+        email: `zod-${Date.now()}@test.gofer`,
+        password: 'Test1234!',
+        name: 'Zod Test',
+      },
+      { remoteAddress: nextIp() },
+    )
+    token = await AuthFixtures.loginAs(
+      app,
+      { email: user.email, password: 'Test1234!' },
+      { remoteAddress: nextIp() },
+    )
   }, 60000)
 
   afterAll(async () => {
@@ -97,7 +106,12 @@ describe('ZodValidationPipe', () => {
           custom: { apiKey: 'sk-test', model: 'custom', baseUrl: '' },
           ollama: { enabled: false, url: 'http://localhost:11434', model: 'llama2', baseUrl: '' },
         },
-        embeddingProvider: { provider: 'openai', apiKey: 'sk-test', model: 'text-embedding-3', baseUrl: '' },
+        embeddingProvider: {
+          provider: 'openai',
+          apiKey: 'sk-test',
+          model: 'text-embedding-3',
+          baseUrl: '',
+        },
         temperature: 3,
         defaultChatProvider: 'openai',
       },

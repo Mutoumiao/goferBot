@@ -1,5 +1,5 @@
-import type { RetrievalCandidate, Query } from '../types.js'
 import type { IReranker } from '../interfaces.js'
+import type { Query, RetrievalCandidate } from '../types.js'
 import type { SelectionTrace } from './selection-trace.js'
 
 export interface DefaultRetrievalPostprocessorOptions {
@@ -40,7 +40,7 @@ export class DefaultRetrievalPostprocessor {
 
     // 1. Score filter
     const beforeFilter = result.length
-    result = result.filter(c => c.score >= this.minScore)
+    result = result.filter((c) => c.score >= this.minScore)
     trace.afterFilter = result.length
     if (result.length < beforeFilter) {
       trace.steps.push({
@@ -65,7 +65,7 @@ export class DefaultRetrievalPostprocessor {
     // 3. Budget trim
     const beforeBudget = result.length
     let tokenSum = 0
-    result = result.filter(c => {
+    result = result.filter((c) => {
       const tokens = c.chunk.tokenCount ?? Math.ceil(c.chunk.content.length / 4)
       if (tokenSum + tokens > this.tokenBudget) return false
       tokenSum += tokens

@@ -4,12 +4,13 @@
  *          PATCH /api/knowledge-bases/:id, DELETE /api/knowledge-bases/:id
  * 场景：happy path、Zod 验证失败、认证缺失/无效、权限不足、资源不存在
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(4)
 
@@ -27,8 +28,16 @@ describe('KnowledgeBaseController', () => {
     app = await TestAppFactory.create(dbUrl)
 
     const email = `kb-${Date.now()}@test.gofer`
-    await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'KB User' }, { remoteAddress: nextIp() })
-    userToken = await AuthFixtures.loginAs(app, { email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    await AuthFixtures.createUser(
+      app,
+      { email, password: 'Test1234!', name: 'KB User' },
+      { remoteAddress: nextIp() },
+    )
+    userToken = await AuthFixtures.loginAs(
+      app,
+      { email, password: 'Test1234!' },
+      { remoteAddress: nextIp() },
+    )
   }, 60000)
 
   afterAll(async () => {
@@ -82,8 +91,16 @@ describe('KnowledgeBaseController', () => {
       })
 
       const otherEmail = `other-sel-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'OtherSel' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'OtherSel' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
       await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
@@ -295,8 +312,16 @@ describe('KnowledgeBaseController', () => {
       const kbId = createRes.json().data.id
 
       const otherEmail = `other2-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'Other2' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'Other2' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
 
       const res = await app.inject({
         method: 'PATCH',
@@ -364,8 +389,16 @@ describe('KnowledgeBaseController', () => {
       const kbId = createRes.json().data.id
 
       const otherEmail = `other-del-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'OtherDel' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'OtherDel' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
 
       const res = await app.inject({
         method: 'DELETE',

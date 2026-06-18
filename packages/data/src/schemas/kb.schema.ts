@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { createPagedResponseSchema } from './common.schema.js'
-import { folderSchema } from './folder.schema.js'
 import { documentSchema } from './document.schema.js'
+import { folderSchema } from './folder.schema.js'
 
 export const kbEntrySchema = z.object({
   id: z.string(),

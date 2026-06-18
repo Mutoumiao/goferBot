@@ -1,5 +1,5 @@
 import { Injectable, Scope } from '@nestjs/common'
-import type { FastifyRequest, FastifyReply } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 
 export interface SseFrame {
   event?: string

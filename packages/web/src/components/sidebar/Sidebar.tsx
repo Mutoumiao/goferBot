@@ -1,8 +1,8 @@
-import { cn } from '@/utils/cn'
 import { Avatar } from '@/features/auth/components/Avatar'
-import { useAuthStore } from '@/stores/auth'
 import { ROUTES_REGISTER, type TabRouteKey } from '@/router-register'
+import { useAuthStore } from '@/stores/auth'
 import { tabManager } from '@/stores/tabManager'
+import { cn } from '@/utils/cn'
 
 interface NavItem {
   key: TabRouteKey
@@ -33,7 +33,7 @@ function useSidebarNav(): { primary: NavItem[]; secondary: NavItem[] } {
 }
 
 export function IconSidebar({ className }: { className?: string }) {
-  const user = useAuthStore(s => s.user)
+  const user = useAuthStore((s) => s.user)
   const { primary, secondary } = useSidebarNav()
 
   const handleOpenProfile = () => {
@@ -64,7 +64,7 @@ export function IconSidebar({ className }: { className?: string }) {
             type="button"
             onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]'
+              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
             )}
             title={label}
           >
@@ -81,7 +81,7 @@ export function IconSidebar({ className }: { className?: string }) {
             type="button"
             onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]'
+              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
             )}
             title={label}
           >

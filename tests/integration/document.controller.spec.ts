@@ -7,13 +7,14 @@
  *          DELETE /api/knowledge-bases/:kbId/documents/:docId
  * 场景：happy path、Zod 验证失败、认证缺失/无效、权限不足、资源不存在、文件类型/大小限制
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(2)
 
@@ -32,8 +33,16 @@ describe('DocumentController', () => {
     app = await TestAppFactory.create(dbUrl)
 
     const email = `doc-${Date.now()}@test.gofer`
-    await AuthFixtures.createUser(app, { email, password: 'Test1234!', name: 'Doc User' }, { remoteAddress: nextIp() })
-    userToken = await AuthFixtures.loginAs(app, { email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    await AuthFixtures.createUser(
+      app,
+      { email, password: 'Test1234!', name: 'Doc User' },
+      { remoteAddress: nextIp() },
+    )
+    userToken = await AuthFixtures.loginAs(
+      app,
+      { email, password: 'Test1234!' },
+      { remoteAddress: nextIp() },
+    )
 
     const kbRes = await app.inject({
       method: 'POST',
@@ -82,8 +91,16 @@ describe('DocumentController', () => {
 
     it('AC-32: returns 403 for non-owner', async () => {
       const otherEmail = `other-doc-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'Other' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'Other' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
       const res = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${kbId}/documents`,
@@ -97,7 +114,13 @@ describe('DocumentController', () => {
     it('AC-33: uploads txt file for KB owner', async () => {
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
       const content = 'Hello World'
-      const multipartBody = buildMultipartBody(boundary, 'file', 'test.txt', 'text/plain', Buffer.from(content))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'test.txt',
+        'text/plain',
+        Buffer.from(content),
+      )
 
       const res = await app.inject({
         method: 'POST',
@@ -116,7 +139,13 @@ describe('DocumentController', () => {
     it('AC-34: uploads md file for KB owner', async () => {
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
       const content = '# Markdown Test'
-      const multipartBody = buildMultipartBody(boundary, 'file', 'test.md', 'text/markdown', Buffer.from(content))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'test.md',
+        'text/markdown',
+        Buffer.from(content),
+      )
 
       const res = await app.inject({
         method: 'POST',
@@ -144,7 +173,13 @@ describe('DocumentController', () => {
 
     it('AC-36: returns 401 without token', async () => {
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-      const multipartBody = buildMultipartBody(boundary, 'file', 'test.txt', 'text/plain', Buffer.from('content'))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'test.txt',
+        'text/plain',
+        Buffer.from('content'),
+      )
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
@@ -156,11 +191,25 @@ describe('DocumentController', () => {
 
     it('AC-37: returns 403 for non-owner', async () => {
       const otherEmail = `other-up-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'Other' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'Other' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
 
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-      const multipartBody = buildMultipartBody(boundary, 'file', 'test.txt', 'text/plain', Buffer.from('content'))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'test.txt',
+        'text/plain',
+        Buffer.from('content'),
+      )
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
@@ -175,7 +224,13 @@ describe('DocumentController', () => {
 
     it('AC-38: returns 404 for non-existent KB', async () => {
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-      const multipartBody = buildMultipartBody(boundary, 'file', 'test.txt', 'text/plain', Buffer.from('content'))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'test.txt',
+        'text/plain',
+        Buffer.from('content'),
+      )
       const res = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases/non-existent-kb-id/documents/upload',
@@ -193,7 +248,13 @@ describe('DocumentController', () => {
       // Controller 内部有 MAX_SIZE = 50MB 的检查，此处验证正常大小文件可上传。
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
       const largeContent = Buffer.alloc(2 * 1024 * 1024, 'x')
-      const multipartBody = buildMultipartBody(boundary, 'file', 'large.txt', 'text/plain', largeContent)
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'large.txt',
+        'text/plain',
+        largeContent,
+      )
 
       const res = await app.inject({
         method: 'POST',
@@ -209,7 +270,13 @@ describe('DocumentController', () => {
 
     it('AC-40: returns 415 for unsupported type', async () => {
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-      const multipartBody = buildMultipartBody(boundary, 'file', 'test.exe', 'application/octet-stream', Buffer.from('binary'))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'test.exe',
+        'application/octet-stream',
+        Buffer.from('binary'),
+      )
 
       const res = await app.inject({
         method: 'POST',
@@ -227,7 +294,13 @@ describe('DocumentController', () => {
 
     it('AC-41: returns 415 for path traversal filename', async () => {
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-      const multipartBody = buildMultipartBody(boundary, 'file', '../../../etc/passwd', 'text/plain', Buffer.from('content'))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        '../../../etc/passwd',
+        'text/plain',
+        Buffer.from('content'),
+      )
 
       const res = await app.inject({
         method: 'POST',
@@ -292,8 +365,16 @@ describe('DocumentController', () => {
 
     it('AC-46: returns 403 for non-owner', async () => {
       const otherEmail = `other-create-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'Other' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'Other' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
@@ -382,8 +463,16 @@ describe('DocumentController', () => {
       const docId = createRes.json().data.id
 
       const otherEmail = `other-patch-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'Other' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'Other' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
 
       const res = await app.inject({
         method: 'PATCH',
@@ -487,8 +576,16 @@ describe('DocumentController', () => {
       const docId = createRes.json().data.id
 
       const otherEmail = `other-del-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(app, { email: otherEmail, password: 'Test1234!', name: 'Other' }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherEmail, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      await AuthFixtures.createUser(
+        app,
+        { email: otherEmail, password: 'Test1234!', name: 'Other' },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherEmail, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
 
       const res = await app.inject({
         method: 'DELETE',
@@ -557,7 +654,13 @@ describe('DocumentController', () => {
 
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
       const content = 'Cross KB move content'
-      const multipartBody = buildMultipartBody(boundary, 'file', 'cross.txt', 'text/plain', Buffer.from(content))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'cross.txt',
+        'text/plain',
+        Buffer.from(content),
+      )
 
       const uploadRes = await app.inject({
         method: 'POST',
@@ -638,7 +741,13 @@ describe('DocumentController', () => {
 
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
       const content = 'Same KB copy content'
-      const multipartBody = buildMultipartBody(boundary, 'file', 'same-copy.txt', 'text/plain', Buffer.from(content))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'same-copy.txt',
+        'text/plain',
+        Buffer.from(content),
+      )
 
       const uploadRes = await app.inject({
         method: 'POST',
@@ -675,7 +784,13 @@ describe('DocumentController', () => {
 
       const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
       const content = 'Cross KB copy content'
-      const multipartBody = buildMultipartBody(boundary, 'file', 'cross-copy.txt', 'text/plain', Buffer.from(content))
+      const multipartBody = buildMultipartBody(
+        boundary,
+        'file',
+        'cross-copy.txt',
+        'text/plain',
+        Buffer.from(content),
+      )
 
       const uploadRes = await app.inject({
         method: 'POST',
@@ -758,8 +873,8 @@ function buildMultipartBody(
 ): Buffer {
   const prefix = Buffer.from(
     `--${boundary}\r\n` +
-    `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
-    `Content-Type: ${contentType}\r\n\r\n`,
+      `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
+      `Content-Type: ${contentType}\r\n\r\n`,
   )
   const suffix = Buffer.from(`\r\n--${boundary}--\r\n`)
   return Buffer.concat([prefix, buffer, suffix])

@@ -1,12 +1,5 @@
+import { Copy, FolderInput, FolderOpen, FolderPlus, Pencil, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
-import {
-  FolderOpen,
-  Pencil,
-  Trash2,
-  FolderPlus,
-  FolderInput,
-  Copy,
-} from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -14,7 +7,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import type { Folder, DocumentItem } from '../types'
+import type { DocumentItem, Folder } from '../types'
 
 interface FileContextMenuProps {
   item: Folder | DocumentItem | null
@@ -61,9 +54,7 @@ export function FileContextMenu({
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>
-        {children}
-      </ContextMenuTrigger>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-48">
         {item ? (
           <>

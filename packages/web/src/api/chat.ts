@@ -1,9 +1,9 @@
 import type {
-  MessageListResponse,
-  SessionListResponse,
-  CreateSessionRequest,
-  Session,
   ChatProvidersResponse,
+  CreateSessionRequest,
+  MessageListResponse,
+  Session,
+  SessionListResponse,
 } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
@@ -32,8 +32,7 @@ export const createSession = (data?: CreateSessionRequest) =>
   alovaInstance.Post<Session>('/sessions', data ?? {})
 
 /** 删除会话 */
-export const deleteSession = (sessionId: string) =>
-  alovaInstance.Delete(`/sessions/${sessionId}`)
+export const deleteSession = (sessionId: string) => alovaInstance.Delete(`/sessions/${sessionId}`)
 
 /** 重命名会话 */
 export const renameSession = (sessionId: string, title: string) =>

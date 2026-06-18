@@ -3,15 +3,16 @@
  * 目标：验证删除 KB/Folder/Document 时 RAG 相关数据（chunk 记录、向量、storage 文件）被完整清理。
  * 依赖：真实 MinIO + pgvector 环境（通过 checkInfrastructure 检测，不可用时自动跳过）。
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { TestAppFactory } from './helpers/test-app.factory.js'
-import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { checkInfrastructure } from './helpers/infra-check.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
-import { createIpGenerator } from './helpers/test-utils.js'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 import { StorageService } from '../../packages/server/src/processors/storage/storage.service.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { checkInfrastructure } from './helpers/infra-check.js'
+import { TestAppFactory } from './helpers/test-app.factory.js'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
+import { createIpGenerator } from './helpers/test-utils.js'
 
 const VECTOR_DIMENSION = 1536
 
@@ -84,7 +85,10 @@ describe('KbCleanup Integration Tests', () => {
       }
 
       const prisma = app.get(PrismaService)
-      const { docId, chunkId, storageKey } = await uploadDocumentWithChunk('doc-delete.txt', 'Document delete test content')
+      const { docId, chunkId, storageKey } = await uploadDocumentWithChunk(
+        'doc-delete.txt',
+        'Document delete test content',
+      )
 
       // 前置条件：chunk 记录、向量、storage 文件均存在
       expect(await prisma.chunk.count({ where: { documentId: docId } })).toBe(1)
@@ -153,7 +157,10 @@ describe('KbCleanup Integration Tests', () => {
       }
 
       const prisma = app.get(PrismaService)
-      const { docId, chunkId, storageKey } = await uploadDocumentWithChunk('kb-doc.txt', 'KB cleanup test content')
+      const { docId, chunkId, storageKey } = await uploadDocumentWithChunk(
+        'kb-doc.txt',
+        'KB cleanup test content',
+      )
 
       expect(await prisma.chunk.count({ where: { documentId: docId } })).toBe(1)
       expect(await hasEmbedding(prisma, chunkId)).toBe(true)
@@ -232,10 +239,11 @@ describe('KbCleanup Integration Tests', () => {
       })
       const targetKbId = targetKbRes.json().data.id
 
-      const { docId, chunkId, storageKey: sourceStorageKey } = await uploadDocumentWithChunk(
-        'cross-move.txt',
-        'Cross KB move cleanup content',
-      )
+      const {
+        docId,
+        chunkId,
+        storageKey: sourceStorageKey,
+      } = await uploadDocumentWithChunk('cross-move.txt', 'Cross KB move cleanup content')
 
       expect(await prisma.chunk.count({ where: { documentId: docId } })).toBe(1)
       expect(await hasEmbedding(prisma, chunkId)).toBe(true)
@@ -272,7 +280,13 @@ describe('KbCleanup Integration Tests', () => {
     folderId?: string,
   ): Promise<{ docId: string; chunkId: string; storageKey: string }> {
     const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
-    const multipartBody = buildMultipartBody(boundary, 'file', filename, 'text/plain', Buffer.from(content))
+    const multipartBody = buildMultipartBody(
+      boundary,
+      'file',
+      filename,
+      'text/plain',
+      Buffer.from(content),
+    )
 
     const uploadRes = await app.inject({
       method: 'POST',
@@ -321,7 +335,10 @@ describe('KbCleanup Integration Tests', () => {
     return (result as Array<{ has_embedding: boolean }>)[0]?.has_embedding ?? false
   }
 
-  async function canDownloadStorage(appInstance: NestFastifyApplication, key: string): Promise<boolean> {
+  async function canDownloadStorage(
+    appInstance: NestFastifyApplication,
+    key: string,
+  ): Promise<boolean> {
     const storage = appInstance.get(StorageService)
     try {
       await storage.downloadFile(key)
@@ -341,8 +358,8 @@ function buildMultipartBody(
 ): Buffer {
   const prefix = Buffer.from(
     `--${boundary}\r\n` +
-    `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
-    `Content-Type: ${contentType}\r\n\r\n`,
+      `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
+      `Content-Type: ${contentType}\r\n\r\n`,
   )
   const suffix = Buffer.from(`\r\n--${boundary}--\r\n`)
   return Buffer.concat([prefix, buffer, suffix])

@@ -4,7 +4,16 @@
  * 所有接口由具体实现类实现，server 通过依赖注入将实现传入 SDK。
  */
 
-import type { DocumentSource, Chunk, Query, RetrievalCandidate, EmbeddingConfig, HybridSearchOptions, TokenUsage, EmbedWithUsageResult } from './types.js'
+import type {
+  Chunk,
+  DocumentSource,
+  EmbeddingConfig,
+  EmbedWithUsageResult,
+  HybridSearchOptions,
+  Query,
+  RetrievalCandidate,
+  TokenUsage,
+} from './types.js'
 
 /**
  * 文档分块策略抽象。

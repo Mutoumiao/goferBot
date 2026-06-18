@@ -1,6 +1,6 @@
 import { useSettingsStore } from '@/stores/settings'
-import { generateCustomProviderKey } from './types'
 import type { ProviderConfig } from '@/utils/llm-config'
+import { generateCustomProviderKey } from './types'
 
 export function useSettingsServices() {
   const store = useSettingsStore()

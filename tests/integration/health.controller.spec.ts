@@ -3,10 +3,11 @@
  * 覆盖端点：GET /api/health
  * 场景：存活检查、无需认证
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 describe('HealthController', () => {
   let app: NestFastifyApplication

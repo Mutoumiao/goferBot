@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IconSidebar } from '@/components/sidebar/Sidebar'
 import { ROUTES_REGISTER } from '@/router-register'
 
@@ -8,7 +8,9 @@ vi.mock('@/utils/cn', () => ({
 }))
 
 vi.mock('@/features/auth/components/Avatar', () => ({
-  Avatar: ({ fallback }: { fallback?: string }) => <div data-testid="avatar">{fallback?.[0] ?? 'U'}</div>,
+  Avatar: ({ fallback }: { fallback?: string }) => (
+    <div data-testid="avatar">{fallback?.[0] ?? 'U'}</div>
+  ),
 }))
 
 vi.mock('@/stores/auth', () => ({
@@ -57,7 +59,9 @@ describe('IconSidebar', () => {
       expect(screen.getByTitle(meta.title)).toBeDefined()
     }
 
-    const secondaryRoutes = Object.values(ROUTES_REGISTER).filter((m) => m.navSection === 'secondary')
+    const secondaryRoutes = Object.values(ROUTES_REGISTER).filter(
+      (m) => m.navSection === 'secondary',
+    )
     for (const meta of secondaryRoutes) {
       expect(screen.getByTitle(meta.title)).toBeDefined()
     }

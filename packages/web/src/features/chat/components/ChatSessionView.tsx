@@ -1,12 +1,12 @@
-import { useState, useCallback, useEffect } from 'react'
 import { Bubble, Sender } from '@ant-design/x'
 import { XMarkdown } from '@ant-design/x-markdown'
+import { AlertCircleIcon, Paperclip, XIcon } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { AlertCircleIcon, XIcon, Paperclip } from 'lucide-react'
-import type { GoferMessage, GoferInput } from '../providers/GoferChatProvider'
-import { useChatStore } from '../store'
+import type { GoferInput, GoferMessage } from '../providers/GoferChatProvider'
 import { fetchProviders } from '../services'
+import { useChatStore } from '../store'
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
 import { ProviderSelector } from './ProviderSelector'
 
@@ -63,7 +63,7 @@ export function ChatSessionView({
         knowledge_base_ids: selectedKbId ? [selectedKbId] : undefined,
       })
     },
-    [conversationId, selectedProviderKey, selectedKbId, onRequest]
+    [conversationId, selectedProviderKey, selectedKbId, onRequest],
   )
 
   const bubbleItems = xMessages.map(({ id, message, status }) => ({
@@ -137,9 +137,18 @@ export function ChatSessionView({
           />
 
           {errorMessage && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4" data-testid="error-banner">
+            <div
+              className="rounded-lg border border-destructive/30 bg-destructive/10 p-4"
+              data-testid="error-banner"
+            >
               <p className="text-sm text-destructive-foreground">{errorMessage}</p>
-              <Button data-testid="error-retry-btn" variant="destructive" size="sm" onClick={onRetry} className="mt-2">
+              <Button
+                data-testid="error-retry-btn"
+                variant="destructive"
+                size="sm"
+                onClick={onRetry}
+                className="mt-2"
+              >
                 重试
               </Button>
             </div>
@@ -229,7 +238,12 @@ export function ChatSessionView({
         <div className="absolute bottom-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-error/20 bg-surface-1 px-4 py-2.5 text-sm text-error shadow-xl">
           <AlertCircleIcon className="size-4" />
           <span>{error}</span>
-          <Button data-testid="error-toast-close" variant="ghost" size="icon-xs" onClick={clearError}>
+          <Button
+            data-testid="error-toast-close"
+            variant="ghost"
+            size="icon-xs"
+            onClick={clearError}
+          >
             <XIcon className="size-3.5" />
           </Button>
         </div>

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import type { KbEntry } from '@goferbot/data'
 import { createFileRoute } from '@tanstack/react-router'
 import { useRequest } from 'alova/client'
-import { getKbList, deleteKb } from '@/api/KnowledgeBase'
-import type { KbEntry } from '@goferbot/data'
+import { useEffect, useState } from 'react'
+import { deleteKb, getKbList } from '@/api/KnowledgeBase'
 import { ROUTES_REGISTER } from '@/router-register'
 
 export const Route = createFileRoute('/_authenticated/recycle')({
@@ -30,18 +30,19 @@ function RecycleBinPage() {
 
   useEffect(() => {
     reload()
-      .then(res => {
+      .then((res) => {
         // alova onSuccess 已解包 { data: T }
         const entries = (res as { entries?: KbEntry[] })?.entries ?? []
         // 筛选已标记为删除的条目（软删除）
         const deleted = entries
-          .filter(e => (e as Record<string, unknown>).isDeleted === true)
-          .map(e => ({
+          .filter((e) => (e as Record<string, unknown>).isDeleted === true)
+          .map((e) => ({
             id: e.id,
             title: e.name,
             description: e.description ?? null,
             type: 'kb' as const,
-            deletedAt: ((e as Record<string, unknown>).deletedAt as string) ?? new Date().toISOString(),
+            deletedAt:
+              ((e as Record<string, unknown>).deletedAt as string) ?? new Date().toISOString(),
           }))
         setTrashItems(deleted)
       })
@@ -54,7 +55,7 @@ function RecycleBinPage() {
     setRemovingId(id)
     try {
       await removePermanently(id)
-      setTrashItems(prev => prev.filter(item => item.id !== id))
+      setTrashItems((prev) => prev.filter((item) => item.id !== id))
     } finally {
       setRemovingId(null)
     }
@@ -65,7 +66,9 @@ function RecycleBinPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-text-primary">回收站</h1>
-          <p className="mt-1 text-sm text-text-secondary">已删除的会话和知识库文件 — 保留 30 天后自动清理</p>
+          <p className="mt-1 text-sm text-text-secondary">
+            已删除的会话和知识库文件 — 保留 30 天后自动清理
+          </p>
         </div>
         <button
           onClick={() => {
@@ -101,14 +104,16 @@ function RecycleBinPage() {
         <div className="mt-12 text-center">
           <p className="text-3xl">🗑️</p>
           <p className="mt-3 text-sm font-medium text-text-secondary">回收站为空</p>
-          <p className="mt-1 text-xs text-text-tertiary">删除的知识库或会话会显示在这里，可在 30 天内恢复</p>
+          <p className="mt-1 text-xs text-text-tertiary">
+            删除的知识库或会话会显示在这里，可在 30 天内恢复
+          </p>
         </div>
       )}
 
       {/* Trash list */}
       {!loading && !error && trashItems.length > 0 && (
         <div className="mt-6 space-y-2">
-          {trashItems.map(item => (
+          {trashItems.map((item) => (
             <div
               key={item.id}
               className="flex items-center justify-between rounded-md border border-border-default bg-surface-1 px-4 py-3"
@@ -118,9 +123,13 @@ function RecycleBinPage() {
                   <span className="text-xs rounded bg-surface-3 px-1.5 py-0.5 text-text-tertiary">
                     {item.type === 'kb' ? '知识库' : '会话'}
                   </span>
-                  <p className="truncate text-sm font-medium text-text-primary">{item.title || '未命名'}</p>
+                  <p className="truncate text-sm font-medium text-text-primary">
+                    {item.title || '未命名'}
+                  </p>
                 </div>
-                {item.description && <p className="mt-1 truncate text-xs text-text-tertiary">{item.description}</p>}
+                {item.description && (
+                  <p className="mt-1 truncate text-xs text-text-tertiary">{item.description}</p>
+                )}
                 <p className="mt-1 text-xs text-text-tertiary">
                   删除于 {new Date(item.deletedAt).toLocaleDateString('zh-CN')}
                 </p>

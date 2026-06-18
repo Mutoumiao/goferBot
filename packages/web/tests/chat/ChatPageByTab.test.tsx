@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import type { Tab } from '@/stores/workspace.store'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatPageByTab } from '@/features/chat/components/ChatPageByTab'
+import type { Tab } from '@/stores/workspace.store'
 
 const mockSetMessages = vi.fn()
 const mockOnRequest = vi.fn()
@@ -32,7 +32,9 @@ vi.mock('@/features/chat/constants', () => ({
 }))
 
 vi.mock('@/features/chat/components/ChatTempHome', () => ({
-  ChatTempHome: ({ tabId }: { tabId: string }) => <div data-testid="chat-temp-home">temp-{tabId}</div>,
+  ChatTempHome: ({ tabId }: { tabId: string }) => (
+    <div data-testid="chat-temp-home">temp-{tabId}</div>
+  ),
 }))
 
 vi.mock('@/features/chat/components/ChatSessionView', () => ({
@@ -184,7 +186,15 @@ describe('ChatPageByTab', () => {
     vi.mocked(loadChatHistory).mockImplementation(async (sessionId: string) => {
       conversationMap[sessionId] = {
         id: sessionId,
-        messages: [{ id: `m-${sessionId}`, sessionId, role: 'user', content: `msg-${sessionId}`, createdAt: '' }],
+        messages: [
+          {
+            id: `m-${sessionId}`,
+            sessionId,
+            role: 'user',
+            content: `msg-${sessionId}`,
+            createdAt: '',
+          },
+        ],
       }
     })
 

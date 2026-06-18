@@ -1,5 +1,5 @@
-import { create } from 'zustand'
 import type { Message } from '@goferbot/data'
+import { create } from 'zustand'
 
 export interface Conversation {
   id: string
@@ -77,9 +77,7 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
       const existing = state.conversationMap[id]
       if (!existing) return state
 
-      const messages = existing.messages.map((m) =>
-        m.id === messageId ? { ...m, ...updates } : m,
-      )
+      const messages = existing.messages.map((m) => (m.id === messageId ? { ...m, ...updates } : m))
       return {
         conversationMap: {
           ...state.conversationMap,

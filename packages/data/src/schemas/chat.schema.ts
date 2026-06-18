@@ -7,26 +7,32 @@ export const messageSchema = z.object({
   role: z.enum(['user', 'assistant', 'system']),
   content: z.string(),
   createdAt: z.string(),
-  files: z.array(z.object({
-    id: z.string(),
-    fileName: z.string(),
-    fileUrl: z.string(),
-  })).optional(),
+  files: z
+    .array(
+      z.object({
+        id: z.string(),
+        fileName: z.string(),
+        fileUrl: z.string(),
+      }),
+    )
+    .optional(),
 })
 
 export const messageListResponseSchema = createPagedResponseSchema(messageSchema)
 
 export const sessionListResponseSchema = z.object({
-  items: z.array(z.object({
-    id: z.string(),
-    userId: z.string().optional(),
-    title: z.string(),
-    provider: z.string().nullable().optional(),
-    model: z.string().nullable().optional(),
-    createdAt: z.string(),
-    updatedAt: z.string(),
-    messageCount: z.number(),
-  })),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      userId: z.string().optional(),
+      title: z.string(),
+      provider: z.string().nullable().optional(),
+      model: z.string().nullable().optional(),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+      messageCount: z.number(),
+    }),
+  ),
   pagination: paginationSchema,
 })
 

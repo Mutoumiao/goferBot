@@ -1,24 +1,26 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useKbStore } from '@/features/KnowledgeBase/store'
 import type { KbEntry } from '@goferbot/data'
-import type { Folder, DocumentItem } from '@/features/KnowledgeBase/types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useKbStore } from '@/features/KnowledgeBase/store'
+import type { DocumentItem, Folder } from '@/features/KnowledgeBase/types'
 
 describe('useKbStore', () => {
   beforeEach(() => {
-    useKbStore.setState(useKbStore.getInitialState?.() ?? {
-      entries: [],
-      isLoading: false,
-      selectedId: null,
-      uploadTasks: [],
-      maxConcurrent: 3,
-      folders: [],
-      documents: [],
-      currentKbId: null,
-      currentFolderId: null,
-      fileLoading: false,
-      fileError: null,
-      breadcrumbs: [],
-    })
+    useKbStore.setState(
+      useKbStore.getInitialState?.() ?? {
+        entries: [],
+        isLoading: false,
+        selectedId: null,
+        uploadTasks: [],
+        maxConcurrent: 3,
+        folders: [],
+        documents: [],
+        currentKbId: null,
+        currentFolderId: null,
+        fileLoading: false,
+        fileError: null,
+        breadcrumbs: [],
+      },
+    )
   })
 
   describe('初始状态', () => {
@@ -41,21 +43,42 @@ describe('useKbStore', () => {
   describe('知识库列表状态', () => {
     it('sets entries', () => {
       const entries: KbEntry[] = [
-        { id: 'kb1', name: 'Test KB', description: 'desc', fileCount: 0, createdAt: '', updatedAt: '' },
+        {
+          id: 'kb1',
+          name: 'Test KB',
+          description: 'desc',
+          fileCount: 0,
+          createdAt: '',
+          updatedAt: '',
+        },
       ]
       useKbStore.getState().setEntries(entries)
       expect(useKbStore.getState().entries).toEqual(entries)
     })
 
     it('adds entry', () => {
-      const entry: KbEntry = { id: 'kb1', name: 'Test', description: '', fileCount: 0, createdAt: '', updatedAt: '' }
+      const entry: KbEntry = {
+        id: 'kb1',
+        name: 'Test',
+        description: '',
+        fileCount: 0,
+        createdAt: '',
+        updatedAt: '',
+      }
       useKbStore.getState().addEntry(entry)
       expect(useKbStore.getState().entries).toHaveLength(1)
       expect(useKbStore.getState().entries[0].id).toBe('kb1')
     })
 
     it('updates entry by id', () => {
-      const entry: KbEntry = { id: 'kb1', name: 'Test', description: '', fileCount: 0, createdAt: '', updatedAt: '' }
+      const entry: KbEntry = {
+        id: 'kb1',
+        name: 'Test',
+        description: '',
+        fileCount: 0,
+        createdAt: '',
+        updatedAt: '',
+      }
       useKbStore.getState().setEntries([entry])
       useKbStore.getState().updateEntry('kb1', { name: 'Updated' })
       expect(useKbStore.getState().entries[0].name).toBe('Updated')
@@ -85,14 +108,27 @@ describe('useKbStore', () => {
 
   describe('文件浏览状态', () => {
     it('sets folders', () => {
-      const folders: Folder[] = [{ id: 'f1', kbId: 'kb1', parentId: null, name: 'Folder', createdAt: '', updatedAt: '' }]
+      const folders: Folder[] = [
+        { id: 'f1', kbId: 'kb1', parentId: null, name: 'Folder', createdAt: '', updatedAt: '' },
+      ]
       useKbStore.getState().setFolders(folders)
       expect(useKbStore.getState().folders).toEqual(folders)
     })
 
     it('sets documents', () => {
       const docs: DocumentItem[] = [
-        { id: 'd1', kbId: 'kb1', folderId: null, name: 'doc', ext: 'pdf', mimeType: 'application/pdf', size: 1024, status: 'ready', createdAt: '', updatedAt: '' },
+        {
+          id: 'd1',
+          kbId: 'kb1',
+          folderId: null,
+          name: 'doc',
+          ext: 'pdf',
+          mimeType: 'application/pdf',
+          size: 1024,
+          status: 'ready',
+          createdAt: '',
+          updatedAt: '',
+        },
       ]
       useKbStore.getState().setDocuments(docs)
       expect(useKbStore.getState().documents).toEqual(docs)
@@ -141,7 +177,9 @@ describe('useKbStore', () => {
 
     it('updates upload progress for uploading task', () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-      useKbStore.getState().addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
       // manually set to uploading to allow progress update
       useKbStore.setState((s) => ({
         uploadTasks: s.uploadTasks.map((t) => ({ ...t, status: 'uploading' as const })),
@@ -153,7 +191,9 @@ describe('useKbStore', () => {
 
     it('marks upload as complete', () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-      useKbStore.getState().addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
       useKbStore.setState((s) => ({
         uploadTasks: s.uploadTasks.map((t) => ({ ...t, status: 'uploading' as const })),
       }))
@@ -166,7 +206,9 @@ describe('useKbStore', () => {
 
     it('marks upload as failed', () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-      useKbStore.getState().addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
       useKbStore.setState((s) => ({
         uploadTasks: s.uploadTasks.map((t) => ({ ...t, status: 'uploading' as const })),
       }))
@@ -179,16 +221,24 @@ describe('useKbStore', () => {
 
     it('removes upload task', () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-      useKbStore.getState().addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
       useKbStore.getState().removeUploadTask('uuid-1')
       expect(useKbStore.getState().uploadTasks).toHaveLength(0)
       vi.unstubAllGlobals()
     })
 
     it('clears completed uploads', () => {
-      vi.stubGlobal('crypto', { randomUUID: vi.fn().mockReturnValueOnce('uuid-1').mockReturnValueOnce('uuid-2') })
-      useKbStore.getState().addUploadTask({ fileName: 'a.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
-      useKbStore.getState().addUploadTask({ fileName: 'b.pdf', fileSize: 2048, kbId: 'kb1', folderId: null })
+      vi.stubGlobal('crypto', {
+        randomUUID: vi.fn().mockReturnValueOnce('uuid-1').mockReturnValueOnce('uuid-2'),
+      })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'a.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'b.pdf', fileSize: 2048, kbId: 'kb1', folderId: null })
       useKbStore.setState((s) => ({
         uploadTasks: s.uploadTasks.map((t, i) =>
           i === 0 ? { ...t, status: 'completed' as const } : { ...t, status: 'uploading' as const },
@@ -201,9 +251,15 @@ describe('useKbStore', () => {
     })
 
     it('returns active upload count', () => {
-      vi.stubGlobal('crypto', { randomUUID: vi.fn().mockReturnValueOnce('uuid-1').mockReturnValueOnce('uuid-2') })
-      useKbStore.getState().addUploadTask({ fileName: 'a.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
-      useKbStore.getState().addUploadTask({ fileName: 'b.pdf', fileSize: 2048, kbId: 'kb1', folderId: null })
+      vi.stubGlobal('crypto', {
+        randomUUID: vi.fn().mockReturnValueOnce('uuid-1').mockReturnValueOnce('uuid-2'),
+      })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'a.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'b.pdf', fileSize: 2048, kbId: 'kb1', folderId: null })
       useKbStore.setState((s) => ({
         uploadTasks: s.uploadTasks.map((t, i) =>
           i === 0 ? { ...t, status: 'uploading' as const } : { ...t, status: 'queued' as const },
@@ -227,7 +283,11 @@ describe('useKbStore', () => {
       ]
       useKbStore.getState().setBreadcrumbs(breadcrumbs)
       expect(useKbStore.getState().breadcrumbs).toHaveLength(3)
-      expect(useKbStore.getState().breadcrumbs.map((f) => f.name)).toEqual(['Root', 'Child', 'GrandChild'])
+      expect(useKbStore.getState().breadcrumbs.map((f) => f.name)).toEqual([
+        'Root',
+        'Child',
+        'GrandChild',
+      ])
     })
   })
 })

@@ -1,13 +1,13 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
-import { KbCleanupService } from './kb-cleanup.service.js'
 import type { CreateKbDto } from './dto/create-kb.dto.js'
 import type { UpdateKbDto } from './dto/update-kb.dto.js'
+import { KbCleanupService } from './kb-cleanup.service.js'
 
 const MAX_SEARCH_QUERY_LENGTH = 100
 const MAX_SELECTOR_ITEMS = 100
@@ -24,11 +24,7 @@ export class KnowledgeBaseService {
   async list(userId: string) {
     return this.prisma.knowledgeBase.findMany({
       where: { userId },
-      orderBy: [
-        { isPinned: 'desc' },
-        { sortOrder: 'asc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
     })
   }
 
@@ -45,11 +41,7 @@ export class KnowledgeBaseService {
         updatedAt: true,
         _count: { select: { documents: true } },
       },
-      orderBy: [
-        { isPinned: 'desc' },
-        { sortOrder: 'asc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
       take: MAX_SELECTOR_ITEMS,
     })
 

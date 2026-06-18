@@ -5,24 +5,24 @@
  * 使用内存 Mock 实现所有外部接口，不依赖外部服务。
  */
 
-import {
-  RecursiveCharacterChunker,
-  runIndexing,
-  HybridRetriever,
-  DefaultRetrievalPostprocessor,
-  runRetrievalPipeline,
-} from '../src/index.js'
 import type {
-  DocumentSource,
-  Query,
   Chunk,
+  DocumentSource,
+  EmbeddingConfig,
+  IGenerator,
+  IKeywordStore,
   IVectorStore,
+  Query,
+  RetrievalCandidate,
   VectorRecord,
   VectorSearchResult,
-  IKeywordStore,
-  RetrievalCandidate,
-  IGenerator,
-  EmbeddingConfig,
+} from '../src/index.js'
+import {
+  DefaultRetrievalPostprocessor,
+  HybridRetriever,
+  RecursiveCharacterChunker,
+  runIndexing,
+  runRetrievalPipeline,
 } from '../src/index.js'
 
 // 内存 Mock IVectorStore
@@ -62,7 +62,9 @@ function createMockKeywordStore(): IKeywordStore & { _register(chunk: Chunk): vo
       }
       return results.slice(0, topK ?? 10)
     },
-    _register(chunk: Chunk) { chunks.set(chunk.id, chunk) },
+    _register(chunk: Chunk) {
+      chunks.set(chunk.id, chunk)
+    },
   }
 }
 
@@ -78,9 +80,17 @@ function createMockGenerator(): IGenerator {
 // 内存 Mock IEmbedder（固定维度，确定性输出）
 function createMockEmbedder(dimension = 4) {
   return {
-    config: { provider: 'mock', model: 'mock', dimension, apiKey: 'mock', baseUrl: 'http://mock' } as Readonly<EmbeddingConfig>,
+    config: {
+      provider: 'mock',
+      model: 'mock',
+      dimension,
+      apiKey: 'mock',
+      baseUrl: 'http://mock',
+    } as Readonly<EmbeddingConfig>,
     async embed(texts: string[]) {
-      return texts.map((_, i) => Array.from({ length: dimension }, (_, j) => (i + 1) * 0.1 + j * 0.01))
+      return texts.map((_, i) =>
+        Array.from({ length: dimension }, (_, j) => (i + 1) * 0.1 + j * 0.01),
+      )
     },
   }
 }
@@ -91,7 +101,8 @@ async function main() {
   const document: DocumentSource = {
     documentId: '550e8400-e29b-41d4-a716-446655440000',
     kbId: '550e8400-e29b-41d4-a716-446655440001',
-    content: 'RAG（Retrieval-Augmented Generation）是一种将检索与生成结合的 NLP 技术。它通过从外部知识库检索相关文档，增强生成模型的回答能力。',
+    content:
+      'RAG（Retrieval-Augmented Generation）是一种将检索与生成结合的 NLP 技术。它通过从外部知识库检索相关文档，增强生成模型的回答能力。',
     mimeType: 'text/plain',
   }
 
@@ -128,7 +139,7 @@ async function main() {
     embedder,
     indexer,
     onStageChange: (stages) => {
-      console.log('[Demo] Indexing stages:', stages.map(s => `${s.name}=${s.status}`).join(', '))
+      console.log('[Demo] Indexing stages:', stages.map((s) => `${s.name}=${s.status}`).join(', '))
     },
   })
 
@@ -157,12 +168,7 @@ async function main() {
     tokenBudget: 3000,
   })
 
-  const result = await runRetrievalPipeline(
-    query,
-    retriever,
-    postprocessor,
-    generator,
-  )
+  const result = await runRetrievalPipeline(query, retriever, postprocessor, generator)
 
   console.log(`[Demo] 回答生成完成: "${result.answer}"`)
   console.log(`[Demo] 选中 chunks: ${result.chunks.length}`)
@@ -176,8 +182,14 @@ async function main() {
   // ========== Assertions ==========
   const checks = [
     { name: 'chunks.length > 0', pass: indexingResult.chunks.length > 0 },
-    { name: 'vectorCount === chunks.length', pass: indexingResult.vectorCount === indexingResult.chunks.length },
-    { name: 'all stages completed', pass: indexingResult.stages.every(s => s.status === 'completed') },
+    {
+      name: 'vectorCount === chunks.length',
+      pass: indexingResult.vectorCount === indexingResult.chunks.length,
+    },
+    {
+      name: 'all stages completed',
+      pass: indexingResult.stages.every((s) => s.status === 'completed'),
+    },
     { name: 'answer is truthy', pass: !!result.answer },
     { name: 'result.chunks.length > 0', pass: result.chunks.length > 0 },
     { name: 'latencyMs >= 0', pass: result.debugInfo.metrics.latencyMs >= 0 },

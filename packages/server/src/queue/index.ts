@@ -1,12 +1,12 @@
-export { createRedisConnection } from './redis.js'
 export {
   createDocumentQueue,
   createEmbeddingQueue,
   DOCUMENT_PROCESSING_QUEUE,
-  EMBEDDING_QUEUE,
   type DocumentJobData,
+  EMBEDDING_QUEUE,
   type EmbeddingJobData,
 } from './queues.js'
+export { createRedisConnection } from './redis.js'
 export {
   createDocumentWorker,
   createEmbeddingWorker,

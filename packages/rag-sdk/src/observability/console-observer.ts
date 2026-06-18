@@ -1,4 +1,4 @@
-import type { RAGTrace, RAGStage, RAGObserver } from './types.js'
+import type { RAGObserver, RAGStage, RAGTrace } from './types.js'
 
 export const consoleObserver: RAGObserver = {
   onTraceStart(trace: RAGTrace) {

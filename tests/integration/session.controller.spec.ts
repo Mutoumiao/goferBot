@@ -4,12 +4,13 @@
  *          POST /api/sessions/:id/rename, DELETE /api/sessions/:id
  * 场景：happy path、Zod 验证失败、认证缺失/无效、资源不存在、权限不足、边界条件
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(10)
 
@@ -27,13 +28,21 @@ describe('SessionController', () => {
     dbName = new URL(dbUrl).pathname.slice(1)
     app = await TestAppFactory.create(dbUrl)
 
-    const user = await AuthFixtures.createUser(app, {
-      email: `session-${Date.now()}@test.gofer`,
-      password: 'Test1234!',
-      name: 'Session Test',
-    }, { remoteAddress: nextIp() })
+    const user = await AuthFixtures.createUser(
+      app,
+      {
+        email: `session-${Date.now()}@test.gofer`,
+        password: 'Test1234!',
+        name: 'Session Test',
+      },
+      { remoteAddress: nextIp() },
+    )
     userId = user.id
-    token = await AuthFixtures.loginAs(app, { email: user.email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    token = await AuthFixtures.loginAs(
+      app,
+      { email: user.email, password: 'Test1234!' },
+      { remoteAddress: nextIp() },
+    )
   }, 60000)
 
   afterAll(async () => {
@@ -96,12 +105,20 @@ describe('SessionController', () => {
     })
 
     it('AC-05: returns 403 for other user session', async () => {
-      const otherUser = await AuthFixtures.createUser(app, {
-        email: `other-${Date.now()}@test.gofer`,
-        password: 'Test1234!',
-        name: 'Other',
-      }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherUser.email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      const otherUser = await AuthFixtures.createUser(
+        app,
+        {
+          email: `other-${Date.now()}@test.gofer`,
+          password: 'Test1234!',
+          name: 'Other',
+        },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherUser.email, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
 
       const createRes = await app.inject({
         method: 'POST',
@@ -234,12 +251,20 @@ describe('SessionController', () => {
     })
 
     it('AC-14: returns 403 for other user session', async () => {
-      const otherUser = await AuthFixtures.createUser(app, {
-        email: `other2-${Date.now()}@test.gofer`,
-        password: 'Test1234!',
-        name: 'Other2',
-      }, { remoteAddress: nextIp() })
-      const otherToken = await AuthFixtures.loginAs(app, { email: otherUser.email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+      const otherUser = await AuthFixtures.createUser(
+        app,
+        {
+          email: `other2-${Date.now()}@test.gofer`,
+          password: 'Test1234!',
+          name: 'Other2',
+        },
+        { remoteAddress: nextIp() },
+      )
+      const otherToken = await AuthFixtures.loginAs(
+        app,
+        { email: otherUser.email, password: 'Test1234!' },
+        { remoteAddress: nextIp() },
+      )
 
       const createRes = await app.inject({
         method: 'POST',

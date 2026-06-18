@@ -1,16 +1,16 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
-import { KbCleanupService } from './kb-cleanup.service.js'
-import type { CreateFolderDto } from './dto/create-folder.dto.js'
-import type { UpdateFolderDto } from './dto/update-folder.dto.js'
-import type { MoveFolderDto } from './dto/move-folder.dto.js'
-import type { CopyFolderDto } from './dto/copy-folder.dto.js'
 import { DocumentService } from './document.service.js'
+import type { CopyFolderDto } from './dto/copy-folder.dto.js'
+import type { CreateFolderDto } from './dto/create-folder.dto.js'
+import type { MoveFolderDto } from './dto/move-folder.dto.js'
+import type { UpdateFolderDto } from './dto/update-folder.dto.js'
+import { KbCleanupService } from './kb-cleanup.service.js'
 
 type SortOrder = 'asc' | 'desc'
 type FolderSortBy = 'name' | 'createdAt' | 'updatedAt'
@@ -18,7 +18,10 @@ type FolderSortBy = 'name' | 'createdAt' | 'updatedAt'
 const FOLDER_SORT_BY: readonly string[] = ['name', 'createdAt', 'updatedAt']
 const SORT_ORDER: readonly string[] = ['asc', 'desc']
 
-function parseFolderSort(sortBy?: string, sortOrder?: string): { sortBy: FolderSortBy; sortOrder: SortOrder } {
+function parseFolderSort(
+  sortBy?: string,
+  sortOrder?: string,
+): { sortBy: FolderSortBy; sortOrder: SortOrder } {
   const by = sortBy && FOLDER_SORT_BY.includes(sortBy) ? (sortBy as FolderSortBy) : 'createdAt'
   const order = sortOrder && SORT_ORDER.includes(sortOrder) ? (sortOrder as SortOrder) : 'asc'
   return { sortBy: by, sortOrder: order }
@@ -37,15 +40,9 @@ export class FolderService {
     private readonly prisma: PrismaService,
     private readonly cleanupService: KbCleanupService,
     private readonly documentService: DocumentService,
-  ) { }
+  ) {}
 
-  async list(
-    userId: string,
-    kbId: string,
-    parentId?: string,
-    sortBy?: string,
-    sortOrder?: string,
-  ) {
+  async list(userId: string, kbId: string, parentId?: string, sortBy?: string, sortOrder?: string) {
     await this.ensureOwnership(userId, kbId)
 
     const { sortBy: by, sortOrder: order } = parseFolderSort(sortBy, sortOrder)
@@ -84,12 +81,7 @@ export class FolderService {
     })
   }
 
-  async update(
-    userId: string,
-    kbId: string,
-    folderId: string,
-    dto: UpdateFolderDto,
-  ) {
+  async update(userId: string, kbId: string, folderId: string, dto: UpdateFolderDto) {
     await this.ensureOwnership(userId, kbId)
 
     const folder = await this.prisma.folder.findFirst({
@@ -177,11 +169,7 @@ export class FolderService {
     return copiedRoot
   }
 
-  private async moveWithinKb(
-    folderId: string,
-    kbId: string,
-    targetFolderId: string | null,
-  ) {
+  private async moveWithinKb(folderId: string, kbId: string, targetFolderId: string | null) {
     if (targetFolderId !== null) {
       if (targetFolderId === folderId) {
         throw new BadRequestException({
@@ -263,7 +251,11 @@ export class FolderService {
     const sourceRoot = await this.prisma.folder.findUnique({ where: { id: srcFolderId } })
     if (!sourceRoot) throw new NotFoundException('源文件夹不存在')
 
-    const folderMap = await this.copyFolderNodesInTransaction(sourceRoot.id, targetKbId, targetParentId)
+    const folderMap = await this.copyFolderNodesInTransaction(
+      sourceRoot.id,
+      targetKbId,
+      targetParentId,
+    )
 
     // 在事务外复制文档，确保目标 folder 已提交，DocumentService 能正常校验目标 folder。
     for (const [srcFolderId, copiedFolderId] of folderMap) {
@@ -292,7 +284,12 @@ export class FolderService {
         const sourceFolder = await tx.folder.findUnique({ where: { id: currentId } })
         if (!sourceFolder) continue
 
-        const newName = await this.resolveUniqueFolderName(targetKbId, currentParentId, sourceFolder.name, tx)
+        const newName = await this.resolveUniqueFolderName(
+          targetKbId,
+          currentParentId,
+          sourceFolder.name,
+          tx,
+        )
         const copiedFolder = await tx.folder.create({
           data: {
             kbId: targetKbId,
@@ -379,7 +376,9 @@ export class FolderService {
     return this.findAncestors(folderId)
   }
 
-  async findAncestors(folderId: string): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
+  async findAncestors(
+    folderId: string,
+  ): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
     const ancestors: Array<{ id: string; name: string; parentId: string | null }> = []
     let current = await this.prisma.folder.findUnique({ where: { id: folderId } })
 

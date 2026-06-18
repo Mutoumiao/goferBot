@@ -1,21 +1,13 @@
-import {
-  Global,
-  Module,
-  type DynamicModule,
-  type Provider,
-} from '@nestjs/common'
+import { type DynamicModule, Global, Module, type Provider } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { Job } from 'bullmq'
+import { type DocumentJobHandler, type EmbeddingJobHandler } from '../../queue/index.js'
+import type { DocumentJobData } from '../../queue/queues.js'
+import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
+import { DocumentParser } from '../parser/document.parser.js'
+import { IndexingWorker } from './indexing.worker.js'
 import { QueueService } from './queue.service.js'
 import { WorkerService } from './worker.service.js'
-import { IndexingWorker } from './indexing.worker.js'
-import { DocumentParser } from '../parser/document.parser.js'
-import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
-import {
-  type DocumentJobHandler,
-  type EmbeddingJobHandler,
-} from '../../queue/index.js'
-import type { DocumentJobData } from '../../queue/queues.js'
 
 export interface QueueModuleOptions {
   documentHandler?: DocumentJobHandler

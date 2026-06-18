@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { useChatStore } from '@/features/chat/store'
 import type { Message, Session } from '@goferbot/data'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { useChatStore } from '@/features/chat/store'
 
 describe('useChatStore', () => {
   beforeEach(() => {
@@ -32,7 +32,13 @@ describe('useChatStore', () => {
 
   describe('会话状态', () => {
     it('sets active session', () => {
-      const session: Session = { id: 's1', title: 'Test', messageCount: 0, createdAt: '', updatedAt: '' }
+      const session: Session = {
+        id: 's1',
+        title: 'Test',
+        messageCount: 0,
+        createdAt: '',
+        updatedAt: '',
+      }
       useChatStore.getState().setActiveSession(session)
       expect(useChatStore.getState().activeSession?.id).toBe('s1')
     })
@@ -47,8 +53,12 @@ describe('useChatStore', () => {
     })
 
     it('adds session to front of list', () => {
-      useChatStore.getState().setSessions([{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }])
-      useChatStore.getState().addSession({ id: 's2', title: 'B', messageCount: 0, createdAt: '', updatedAt: '' })
+      useChatStore
+        .getState()
+        .setSessions([{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }])
+      useChatStore
+        .getState()
+        .addSession({ id: 's2', title: 'B', messageCount: 0, createdAt: '', updatedAt: '' })
       expect(useChatStore.getState().sessions[0].id).toBe('s2')
       expect(useChatStore.getState().sessions).toHaveLength(2)
     })
@@ -64,7 +74,9 @@ describe('useChatStore', () => {
     })
 
     it('updates session by id', () => {
-      useChatStore.getState().setSessions([{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }])
+      useChatStore
+        .getState()
+        .setSessions([{ id: 's1', title: 'A', messageCount: 0, createdAt: '', updatedAt: '' }])
       useChatStore.getState().updateSession('s1', { title: 'Updated' })
       expect(useChatStore.getState().sessions[0].title).toBe('Updated')
     })
@@ -93,8 +105,16 @@ describe('useChatStore', () => {
     })
 
     it('appends message', () => {
-      useChatStore.getState().setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'hello', createdAt: '' }])
-      useChatStore.getState().appendMessage({ id: 'm2', sessionId: 's1', role: 'assistant', content: 'hi', createdAt: '' })
+      useChatStore
+        .getState()
+        .setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'hello', createdAt: '' }])
+      useChatStore.getState().appendMessage({
+        id: 'm2',
+        sessionId: 's1',
+        role: 'assistant',
+        content: 'hi',
+        createdAt: '',
+      })
       expect(useChatStore.getState().messages).toHaveLength(2)
       expect(useChatStore.getState().messages[1].role).toBe('assistant')
     })
@@ -113,9 +133,17 @@ describe('useChatStore', () => {
     })
 
     it('flushes stream content into message', () => {
-      const session: Session = { id: 's1', title: 'Test', messageCount: 0, createdAt: '', updatedAt: '' }
+      const session: Session = {
+        id: 's1',
+        title: 'Test',
+        messageCount: 0,
+        createdAt: '',
+        updatedAt: '',
+      }
       useChatStore.getState().setActiveSession(session)
-      useChatStore.getState().setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'q', createdAt: '' }])
+      useChatStore
+        .getState()
+        .setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'q', createdAt: '' }])
       useChatStore.getState().appendStreamContent('answer')
       useChatStore.getState().flushStreamContent()
       const state = useChatStore.getState()
@@ -126,7 +154,9 @@ describe('useChatStore', () => {
     })
 
     it('does nothing when flushing empty content', () => {
-      useChatStore.getState().setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'q', createdAt: '' }])
+      useChatStore
+        .getState()
+        .setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'q', createdAt: '' }])
       useChatStore.getState().flushStreamContent()
       expect(useChatStore.getState().messages).toHaveLength(1)
     })
@@ -139,8 +169,12 @@ describe('useChatStore', () => {
 
   describe('clearChat', () => {
     it('resets all chat state', () => {
-      useChatStore.getState().setActiveSession({ id: 's1', title: 'T', messageCount: 0, createdAt: '', updatedAt: '' })
-      useChatStore.getState().setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' }])
+      useChatStore
+        .getState()
+        .setActiveSession({ id: 's1', title: 'T', messageCount: 0, createdAt: '', updatedAt: '' })
+      useChatStore
+        .getState()
+        .setMessages([{ id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' }])
       useChatStore.getState().setIsStreaming(true)
       useChatStore.getState().appendStreamContent('data')
       useChatStore.getState().setIsLoadingSessions(true)
@@ -214,9 +248,11 @@ describe('useChatStore', () => {
     })
 
     it('clears session cache', () => {
-      useChatStore.getState().setCachedMessages('s1', [
-        { id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' },
-      ])
+      useChatStore
+        .getState()
+        .setCachedMessages('s1', [
+          { id: 'm1', sessionId: 's1', role: 'user', content: 'hi', createdAt: '' },
+        ])
       useChatStore.getState().clearSessionCache('s1')
 
       expect(useChatStore.getState().getCachedMessages('s1')).toBeUndefined()

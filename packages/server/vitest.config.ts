@@ -1,6 +1,6 @@
-import { defineConfig } from 'vitest/config'
-import swc from 'unplugin-swc'
 import path from 'path'
+import swc from 'unplugin-swc'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [

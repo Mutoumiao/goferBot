@@ -1,15 +1,15 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { Loader2, RotateCcw, RotateCw, Upload } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { RotateCcw, RotateCw, Upload, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
 
 const ACCEPTED_TYPES = 'image/png,image/jpeg,image/webp'
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -143,10 +143,7 @@ export default function EditAvatarDialog({
           resolve(dataUrl)
           return
         }
-        const ratio = Math.min(
-          MAX_IMAGE_DIMENSION / width,
-          MAX_IMAGE_DIMENSION / height,
-        )
+        const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height)
         width = Math.floor(width * ratio)
         height = Math.floor(height * ratio)
 
@@ -166,27 +163,30 @@ export default function EditAvatarDialog({
     })
   }, [])
 
-  const handleFileSelect = useCallback(async (file: File) => {
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('图片大小不能超过 5MB')
-      return
-    }
-    if (!ACCEPTED_TYPES.split(',').includes(file.type)) {
-      toast.error('仅支持 PNG、JPEG、WebP 格式')
-      return
-    }
+  const handleFileSelect = useCallback(
+    async (file: File) => {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error('图片大小不能超过 5MB')
+        return
+      }
+      if (!ACCEPTED_TYPES.split(',').includes(file.type)) {
+        toast.error('仅支持 PNG、JPEG、WebP 格式')
+        return
+      }
 
-    const reader = new FileReader()
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string
-      const compressed = await compressImage(dataUrl)
-      setImageSrc(compressed)
-    }
-    reader.onerror = () => {
-      toast.error('图片读取失败')
-    }
-    reader.readAsDataURL(file)
-  }, [compressImage])
+      const reader = new FileReader()
+      reader.onload = async (ev) => {
+        const dataUrl = ev.target?.result as string
+        const compressed = await compressImage(dataUrl)
+        setImageSrc(compressed)
+      }
+      reader.onerror = () => {
+        toast.error('图片读取失败')
+      }
+      reader.readAsDataURL(file)
+    },
+    [compressImage],
+  )
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -277,7 +277,10 @@ export default function EditAvatarDialog({
     const baseScale = OUTPUT_SIZE / Math.max(boxW, boxH)
     const finalScale = baseScale * scale
 
-    ctx.translate(OUTPUT_SIZE / 2 + offset.x * SCALE_RATIO, OUTPUT_SIZE / 2 + offset.y * SCALE_RATIO)
+    ctx.translate(
+      OUTPUT_SIZE / 2 + offset.x * SCALE_RATIO,
+      OUTPUT_SIZE / 2 + offset.y * SCALE_RATIO,
+    )
     ctx.rotate(rad)
     ctx.scale(finalScale, finalScale)
     ctx.drawImage(imgObj, -imgW / 2, -imgH / 2)
@@ -374,12 +377,7 @@ export default function EditAvatarDialog({
                 >
                   <RotateCw className="h-4 w-4" />
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTriggerUpload}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={handleTriggerUpload}>
                   <Upload className="mr-1.5 h-4 w-4" />
                   重新选择
                 </Button>
@@ -440,13 +438,8 @@ export default function EditAvatarDialog({
             >
               取消
             </Button>
-            <Button
-              onClick={handleConfirm}
-              disabled={!imageSrc || isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : null}
+            <Button onClick={handleConfirm} disabled={!imageSrc || isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
               确认保存
             </Button>
           </div>

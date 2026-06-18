@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest'
+
 import { existsSync } from 'fs'
 import { Client } from 'pg'
-import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { cleanupDatabase } from '../e2e/fixtures/database'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { isBackendAvailable, resetBackendAvailability } from '../e2e/fixtures/auth'
+import { cleanupDatabase } from '../e2e/fixtures/database'
+import { TestDatabaseManager } from './helpers/test-database.manager.js'
 
 let backendOk: boolean
 let dbManager: TestDatabaseManager

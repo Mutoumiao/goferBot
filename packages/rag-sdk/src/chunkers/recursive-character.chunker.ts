@@ -1,5 +1,5 @@
-import type { DocumentSource, Chunk } from '../types.js'
 import { ValidationError } from '../errors.js'
+import type { Chunk, DocumentSource } from '../types.js'
 
 interface RecursiveCharacterChunkerOptions {
   chunkSize?: number

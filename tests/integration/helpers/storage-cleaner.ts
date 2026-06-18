@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '@prisma/client'
 
 export class StorageCleaner {
   async truncateAllTables(prisma: PrismaClient): Promise<void> {
@@ -8,9 +8,7 @@ export class StorageCleaner {
     `)
     const tables = result.map((r) => `"${r.tablename}"`).join(', ')
     if (tables) {
-      await prisma.$executeRawUnsafe(
-        `TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`
-      )
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`)
     }
   }
 }

@@ -22,7 +22,10 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
       delete: (args: { where: Record<string, unknown> }) => Promise<T>
       deleteMany: (args: { where?: Record<string, unknown> }) => Promise<{ count: number }>
       count: (args?: { where?: Record<string, unknown> }) => Promise<number>
-      paginate: <A>(args: A, options: { page: number; size: number }) => Promise<PaginationResult<T>>
+      paginate: <A>(
+        args: A,
+        options: { page: number; size: number },
+      ) => Promise<PaginationResult<T>>
       exists: (args: { where: Record<string, unknown> }) => Promise<boolean>
     }
   }
@@ -53,10 +56,10 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
     where: Record<string, unknown>,
     options: { page: number; size: number; orderBy?: Record<string, 'asc' | 'desc'> },
   ): Promise<PaginationResult<T>> {
-    return this.model.paginate(
-      { where, orderBy: options.orderBy } as never,
-      { page: options.page, size: options.size },
-    )
+    return this.model.paginate({ where, orderBy: options.orderBy } as never, {
+      page: options.page,
+      size: options.size,
+    })
   }
 
   async exists(where: Record<string, unknown>): Promise<boolean> {

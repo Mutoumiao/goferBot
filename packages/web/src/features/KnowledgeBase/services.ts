@@ -1,23 +1,28 @@
-import { getKbList as apiGetKbList, updateKb as apiUpdateKb, uploadFile as apiUploadFile, searchKbItems as apiSearchKbItems } from '@/api/KnowledgeBase'
+import type { KbListResponse } from '@goferbot/data'
+import { toast } from 'sonner'
 import {
-  getFolders as apiGetFolders,
-  getDocuments as apiGetDocuments,
-  getBreadcrumbs as apiGetBreadcrumbs,
-  previewDocument as apiPreviewDocument,
-  deleteDocument as apiDeleteDocument,
-  renameDocument as apiRenameDocument,
-  moveDocument as apiMoveDocument,
-  moveFolder as apiMoveFolder,
   copyDocument as apiCopyDocument,
   copyFolder as apiCopyFolder,
   createFolder as apiCreateFolder,
-  renameFolder as apiRenameFolder,
+  deleteDocument as apiDeleteDocument,
   deleteFolder as apiDeleteFolder,
+  getBreadcrumbs as apiGetBreadcrumbs,
+  getDocuments as apiGetDocuments,
+  getFolders as apiGetFolders,
+  moveDocument as apiMoveDocument,
+  moveFolder as apiMoveFolder,
+  previewDocument as apiPreviewDocument,
+  renameDocument as apiRenameDocument,
+  renameFolder as apiRenameFolder,
 } from '@/api/file'
+import {
+  getKbList as apiGetKbList,
+  searchKbItems as apiSearchKbItems,
+  updateKb as apiUpdateKb,
+  uploadFile as apiUploadFile,
+} from '@/api/KnowledgeBase'
 import { useKbStore } from './store'
-import type { Folder, DocumentItem, ItemSortParams } from './types'
-import type { KbListResponse } from '@goferbot/data'
-import { toast } from 'sonner'
+import type { DocumentItem, Folder, ItemSortParams } from './types'
 
 class ServiceError extends Error {
   status?: number
@@ -55,9 +60,7 @@ function isNetworkError(error: unknown): boolean {
   const message =
     error instanceof TypeError || error instanceof Error ? error.message.toLowerCase() : ''
   return (
-    message.includes('network') ||
-    message.includes('fetch') ||
-    message.includes('failed to fetch')
+    message.includes('network') || message.includes('fetch') || message.includes('failed to fetch')
   )
 }
 
@@ -201,7 +204,8 @@ export async function loadKbItems(
 }
 
 export async function removeDocument(docId: string) {
-  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } =
+    useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
 
   setFileLoading(true)
@@ -217,7 +221,8 @@ export async function removeDocument(docId: string) {
 }
 
 export async function renameDocument(docId: string, name: string) {
-  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } =
+    useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
 
   setFileLoading(true)
@@ -232,8 +237,13 @@ export async function renameDocument(docId: string, name: string) {
   }
 }
 
-export async function moveDocument(docId: string, targetKbId: string, targetFolderId: string | null) {
-  const { currentKbId, currentFolderId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+export async function moveDocument(
+  docId: string,
+  targetKbId: string,
+  targetFolderId: string | null,
+) {
+  const { currentKbId, currentFolderId, documents, setDocuments, setFileLoading, setFileError } =
+    useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
   if (targetKbId === currentKbId && targetFolderId === currentFolderId) {
     throw new ServiceError('目标位置不能与当前位置相同')
@@ -251,8 +261,13 @@ export async function moveDocument(docId: string, targetKbId: string, targetFold
   }
 }
 
-export async function moveFolder(folderId: string, targetKbId: string, targetFolderId: string | null) {
-  const { currentKbId, currentFolderId, folders, setFolders, setFileLoading, setFileError } = useKbStore.getState()
+export async function moveFolder(
+  folderId: string,
+  targetKbId: string,
+  targetFolderId: string | null,
+) {
+  const { currentKbId, currentFolderId, folders, setFolders, setFileLoading, setFileError } =
+    useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
   if (targetKbId === currentKbId && targetFolderId === currentFolderId) {
     throw new ServiceError('目标位置不能与当前位置相同')
@@ -270,8 +285,13 @@ export async function moveFolder(folderId: string, targetKbId: string, targetFol
   }
 }
 
-export async function copyDocument(docId: string, targetKbId: string, targetFolderId: string | null) {
-  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+export async function copyDocument(
+  docId: string,
+  targetKbId: string,
+  targetFolderId: string | null,
+) {
+  const { currentKbId, documents, setDocuments, setFileLoading, setFileError } =
+    useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
 
   setFileLoading(true)
@@ -289,7 +309,11 @@ export async function copyDocument(docId: string, targetKbId: string, targetFold
   }
 }
 
-export async function copyFolder(folderId: string, targetKbId: string, targetFolderId: string | null) {
+export async function copyFolder(
+  folderId: string,
+  targetKbId: string,
+  targetFolderId: string | null,
+) {
   const { currentKbId, folders, setFolders, setFileLoading, setFileError } = useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
 
@@ -316,7 +340,12 @@ export async function previewDocument(docId: string) {
   setFileError(null)
   try {
     const result = await apiPreviewDocument(currentKbId, docId).send()
-    return result as { type: 'text' | 'pdf' | 'unsupported'; mimeType: string; content?: string; url?: string | null }
+    return result as {
+      type: 'text' | 'pdf' | 'unsupported'
+      mimeType: string
+      content?: string
+      url?: string | null
+    }
   } catch (e) {
     setFileError(mapErrorMessage(e))
     return null
@@ -328,7 +357,8 @@ export async function previewDocument(docId: string) {
 let currentSearchId = 0
 
 export async function searchKbItems(query: string) {
-  const { currentKbId, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  const { currentKbId, setFolders, setDocuments, setFileLoading, setFileError } =
+    useKbStore.getState()
   if (!currentKbId) {
     setFileError('未选择知识库')
     return { folders: [], documents: [] }
@@ -397,7 +427,15 @@ const removingIds = new Set<string>()
 const renamingIds = new Set<string>()
 
 export async function removeItem(item: Folder | DocumentItem) {
-  const { currentKbId, folders, documents, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  const {
+    currentKbId,
+    folders,
+    documents,
+    setFolders,
+    setDocuments,
+    setFileLoading,
+    setFileError,
+  } = useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
   if (removingIds.has(item.id)) throw new ServiceError('操作进行中，请稍候')
 
@@ -421,7 +459,15 @@ export async function removeItem(item: Folder | DocumentItem) {
 }
 
 export async function renameItem(item: Folder | DocumentItem, name: string) {
-  const { currentKbId, folders, documents, setFolders, setDocuments, setFileLoading, setFileError } = useKbStore.getState()
+  const {
+    currentKbId,
+    folders,
+    documents,
+    setFolders,
+    setDocuments,
+    setFileLoading,
+    setFileError,
+  } = useKbStore.getState()
   if (!currentKbId) throw new ServiceError('未选择知识库')
   if (renamingIds.has(item.id)) throw new ServiceError('操作进行中，请稍候')
 
@@ -459,8 +505,20 @@ export async function addFolder(kbId: string, name: string, parentId?: string | 
   }
 }
 
-export async function uploadFiles(kbId: string, files: File[], folderId?: string | null, sort?: ItemSortParams) {
-  const { addUploadTask, startUploadTask, updateUploadProgress, markUploadComplete, markUploadFailed, maxConcurrent } = useKbStore.getState()
+export async function uploadFiles(
+  kbId: string,
+  files: File[],
+  folderId?: string | null,
+  sort?: ItemSortParams,
+) {
+  const {
+    addUploadTask,
+    startUploadTask,
+    updateUploadProgress,
+    markUploadComplete,
+    markUploadFailed,
+    maxConcurrent,
+  } = useKbStore.getState()
 
   if (files.length === 0) return []
 

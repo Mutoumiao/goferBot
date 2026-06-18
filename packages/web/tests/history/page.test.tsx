@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { Pagination } from '@goferbot/data'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockNavigate = vi.fn()
 const mockOpenDialog = vi.fn()
@@ -63,7 +63,9 @@ vi.mock('lucide-react', () => ({
 
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, disabled, title }: any) => (
-    <button onClick={onClick} disabled={disabled} title={title}>{children}</button>
+    <button onClick={onClick} disabled={disabled} title={title}>
+      {children}
+    </button>
   ),
 }))
 
@@ -89,7 +91,9 @@ vi.mock('@/components/ui/pagination', () => ({
   PaginationEllipsis: () => <li>...</li>,
   PaginationItem: ({ children }: any) => <li>{children}</li>,
   PaginationLink: ({ children, isActive, onClick }: any) => (
-    <button onClick={onClick} data-active={isActive}>{children}</button>
+    <button onClick={onClick} data-active={isActive}>
+      {children}
+    </button>
   ),
   PaginationNext: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
   PaginationPrevious: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
@@ -101,8 +105,8 @@ vi.mock('@/router-register', () => ({
   },
 }))
 
-import { useLazyChatHistory } from '@/features/chat/hooks'
 import { ChatHistoryPage } from '@/features/chat/components/ChatHistoryPage'
+import { useLazyChatHistory } from '@/features/chat/hooks'
 import { tabManager } from '@/stores/tabManager'
 
 const createPagination = (total: number, currentPage: number, size: number): Pagination => ({
@@ -188,10 +192,10 @@ describe('ChatHistoryPage', () => {
     render(<ChatHistoryPage />)
 
     expect(screen.getByText('加载失败：加载失败')).toBeDefined()
-    
+
     const retryBtn = screen.getByText('重试')
     fireEvent.click(retryBtn)
-    
+
     expect(mockReload).toHaveBeenCalled()
   })
 
@@ -272,7 +276,7 @@ describe('ChatHistoryPage', () => {
     })
 
     render(<ChatHistoryPage />)
-    
+
     const skeletons = document.querySelectorAll('.animate-pulse')
     expect(skeletons.length).toBe(4)
   })
@@ -288,9 +292,11 @@ describe('ChatHistoryPage', () => {
     })
 
     render(<ChatHistoryPage />)
-    
+
     expect(screen.getByText('会话历史')).toBeDefined()
-    expect(screen.getByText('点击任意记录即可恢复到对应会话，继续追问、整理或查看引用来源。')).toBeDefined()
+    expect(
+      screen.getByText('点击任意记录即可恢复到对应会话，继续追问、整理或查看引用来源。'),
+    ).toBeDefined()
   })
 
   it('handles page change via pagination', () => {
@@ -311,10 +317,10 @@ describe('ChatHistoryPage', () => {
     })
 
     render(<ChatHistoryPage />)
-    
+
     const nextPageBtn = screen.getByText('下一页')
     fireEvent.click(nextPageBtn)
-    
+
     expect(useLazyChatHistory).toHaveBeenCalledWith(2, 6)
   })
 })

@@ -1,11 +1,17 @@
-const ALLOWED_HOSTNAMES = [
-  'api.openai.com',
-  'api.deepseek.com',
-  'api.anthropic.com',
-]
+const ALLOWED_HOSTNAMES = ['api.openai.com', 'api.deepseek.com', 'api.anthropic.com']
 
 const BLOCKED_HOSTNAMES = ['127.0.0.1', '0.0.0.0', '[::1]', '[::]']
-const BLOCKED_IP_PREFIXES = ['10.', '172.', '192.168.', '169.254.', '127.', '0.', 'fc', 'fd', 'fe80:']
+const BLOCKED_IP_PREFIXES = [
+  '10.',
+  '172.',
+  '192.168.',
+  '169.254.',
+  '127.',
+  '0.',
+  'fc',
+  'fd',
+  'fe80:',
+]
 
 export interface SsrfGuardOptions {
   /** 是否允许 localhost（Ollama 本地部署需要） */

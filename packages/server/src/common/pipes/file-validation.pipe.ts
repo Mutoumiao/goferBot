@@ -1,11 +1,11 @@
+import type { MultipartFile } from '@fastify/multipart'
 import {
   Injectable,
+  PayloadTooLargeException,
   PipeTransform,
   UnsupportedMediaTypeException,
-  PayloadTooLargeException,
 } from '@nestjs/common'
 import type { FastifyRequest } from 'fastify'
-import type { MultipartFile } from '@fastify/multipart'
 
 export interface FileValidationOptions {
   allowedMimeTypes?: string[]

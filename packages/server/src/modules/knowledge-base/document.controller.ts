@@ -1,26 +1,26 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  Req,
   BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common'
 import type { FastifyRequest } from 'fastify'
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { DocumentService } from './document.service.js'
-import { CreateDocumentDto } from './dto/create-document.dto.js'
-import { UpdateDocumentDto } from './dto/update-document.dto.js'
-import { MoveDocumentDto } from './dto/move-document.dto.js'
-import { CopyDocumentDto } from './dto/copy-document.dto.js'
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { FileValidationPipe } from '../../common/pipes/file-validation.pipe.js'
+import { DocumentService } from './document.service.js'
+import { CopyDocumentDto } from './dto/copy-document.dto.js'
+import { CreateDocumentDto } from './dto/create-document.dto.js'
+import { MoveDocumentDto } from './dto/move-document.dto.js'
+import { UpdateDocumentDto } from './dto/update-document.dto.js'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

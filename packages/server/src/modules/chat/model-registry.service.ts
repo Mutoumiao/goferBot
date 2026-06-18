@@ -19,7 +19,11 @@ export class ModelRegistryService {
 
   register(models: ModelRegistration[]): void {
     for (const m of models) {
-      this.models.set(m.id, { providerKey: m.providerKey, providerName: m.providerName, baseUrl: m.baseUrl })
+      this.models.set(m.id, {
+        providerKey: m.providerKey,
+        providerName: m.providerName,
+        baseUrl: m.baseUrl,
+      })
     }
   }
 

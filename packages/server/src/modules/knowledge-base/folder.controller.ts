@@ -1,23 +1,23 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
+  BadRequestException,
   Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
   Param,
+  Patch,
+  Post,
   Query,
   UseGuards,
-  BadRequestException,
-  HttpCode,
 } from '@nestjs/common'
-import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
-import { FolderService } from './folder.service.js'
-import { CreateFolderDto } from './dto/create-folder.dto.js'
-import { UpdateFolderDto } from './dto/update-folder.dto.js'
-import { MoveFolderDto } from './dto/move-folder.dto.js'
+import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CopyFolderDto } from './dto/copy-folder.dto.js'
+import { CreateFolderDto } from './dto/create-folder.dto.js'
+import { MoveFolderDto } from './dto/move-folder.dto.js'
+import { UpdateFolderDto } from './dto/update-folder.dto.js'
+import { FolderService } from './folder.service.js'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

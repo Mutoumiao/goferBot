@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
+import type { Message, Prisma } from '@prisma/client'
 import { PrismaService } from '../../../processors/database/prisma.service.js'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
-import type { Message, Prisma } from '@prisma/client'
 
 @Injectable()
 export class MessageRepository extends BaseRepository<
@@ -41,13 +41,7 @@ export class MessageRepository extends BaseRepository<
     }) as Promise<Message[]>
   }
 
-  async paginateBySessionId(
-    sessionId: string,
-    options: { page: number; size: number },
-  ) {
-    return this.paginate(
-      { sessionId },
-      { ...options, orderBy: { createdAt: 'asc' } },
-    )
+  async paginateBySessionId(sessionId: string, options: { page: number; size: number }) {
+    return this.paginate({ sessionId }, { ...options, orderBy: { createdAt: 'asc' } })
   }
 }

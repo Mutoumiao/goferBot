@@ -64,9 +64,7 @@ export async function checkInfrastructure(): Promise<InfraHealthResult> {
       const client = new Client({ connectionString: adminUrl })
       try {
         await client.connect()
-        const res = await client.query(
-          "SELECT 1 FROM pg_extension WHERE extname = 'vector'"
-        )
+        const res = await client.query("SELECT 1 FROM pg_extension WHERE extname = 'vector'")
         result.pgvector = res.rowCount !== null && res.rowCount > 0
         if (!result.pgvector) {
           result.details.pgvector = 'pgvector extension not installed in PostgreSQL'

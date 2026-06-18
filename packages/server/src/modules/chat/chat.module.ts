@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
+import { SessionModule } from '../session/session.module.js'
+import { SettingsModule } from '../settings/settings.module.js'
 import { ChatController } from './chat.controller.js'
 import { ChatService } from './chat.service.js'
 import { ConversationService } from './conversation.service.js'
-import { ModelRegistryService } from './model-registry.service.js'
-import { LlmProviderFactory } from './llm/llm-provider.factory.js'
-import { SettingsModule } from '../settings/settings.module.js'
-import { SessionModule } from '../session/session.module.js'
 import { CHAT_CONTEXT_RETRIEVER } from './interfaces/chat-context-retriever.interface.js'
-import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
+import { LlmProviderFactory } from './llm/llm-provider.factory.js'
+import { ModelRegistryService } from './model-registry.service.js'
 
 interface BuiltinProviderConfig {
   key: string
@@ -43,12 +43,14 @@ function createModelRegistry(config: ConfigService): ModelRegistryService {
     if (!apiKey) continue
 
     for (const model of provider.defaultModels) {
-      registry.register([{
-        id: model,
-        providerKey: provider.key,
-        providerName: provider.name,
-        baseUrl,
-      }])
+      registry.register([
+        {
+          id: model,
+          providerKey: provider.key,
+          providerName: provider.name,
+          baseUrl,
+        },
+      ])
     }
   }
 
@@ -77,4 +79,4 @@ function createModelRegistry(config: ConfigService): ModelRegistryService {
   ],
   exports: [ModelRegistryService],
 })
-export class ChatModule { }
+export class ChatModule {}

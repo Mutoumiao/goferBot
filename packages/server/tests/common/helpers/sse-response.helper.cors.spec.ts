@@ -1,15 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { Test } from '@nestjs/testing'
-import {
-  Controller,
-  Get,
-  Inject,
-  Req,
-  Res,
-} from '@nestjs/common'
+import { Controller, Get, Inject, Req, Res } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify'
-import type { FastifyRequest, FastifyReply } from 'fastify'
+import { Test } from '@nestjs/testing'
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { bootstrap } from '../../../src/bootstrap.js'
 import { BypassResponse } from '../../../src/common/decorators/bypass-response.decorator.js'
 import { SseResponseHelper } from '../../../src/common/helpers/sse-response.helper.js'

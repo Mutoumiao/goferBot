@@ -4,7 +4,7 @@
  * 定义索引流水线和检索流水线的类型级契约。
  */
 
-import type { Chunk, Query, DocumentSource } from './types.js'
+import type { Chunk, DocumentSource, Query } from './types.js'
 
 export interface IndexingStage {
   name: string
@@ -18,9 +18,7 @@ export interface IndexingResult {
   stages: IndexingStage[]
 }
 
-export type IndexingPipeline = (
-  document: DocumentSource
-) => Promise<IndexingResult>
+export type IndexingPipeline = (document: DocumentSource) => Promise<IndexingResult>
 
 export interface RuntimeStage {
   name: string

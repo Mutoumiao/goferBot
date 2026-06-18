@@ -1,9 +1,9 @@
-import { Worker, Job } from 'bullmq'
+import { Job, Worker } from 'bullmq'
 import type { Redis } from 'ioredis'
 import {
   DOCUMENT_PROCESSING_QUEUE,
-  EMBEDDING_QUEUE,
   type DocumentJobData,
+  EMBEDDING_QUEUE,
   type EmbeddingJobData,
 } from './queues.js'
 

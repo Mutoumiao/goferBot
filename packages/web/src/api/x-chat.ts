@@ -1,8 +1,9 @@
 /**
  * @ant-design/x SDK 相关请求配置
  */
-import { XRequest } from '@ant-design/x-sdk'
+
 import type { SSEOutput } from '@ant-design/x-sdk'
+import { XRequest } from '@ant-design/x-sdk'
 import type { ChatMessagesChunk, ChatMessagesRequest } from '@goferbot/data'
 import { buildAuthHeader } from '@/utils/auth-token'
 

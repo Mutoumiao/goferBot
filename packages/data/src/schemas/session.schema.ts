@@ -7,7 +7,8 @@ export const createSessionRequestSchema = z.object({
 })
 
 export const updateSessionRequestSchema = z.object({
-  title: z.string()
+  title: z
+    .string()
     .min(1, '标题不能为空')
     .max(100, '标题过长')
     .refine((v) => v.trim().length > 0, { message: '标题不能为空' }),

@@ -1,8 +1,8 @@
-import { create } from 'zustand'
 import type { KbEntry } from '@goferbot/data'
-import type { Folder, DocumentItem, UploadTask } from './types'
+import { create } from 'zustand'
+import type { DocumentItem, Folder, UploadTask } from './types'
 
-export type { Folder, DocumentItem, UploadTask }
+export type { DocumentItem, Folder, UploadTask }
 
 interface KbState {
   entries: KbEntry[]

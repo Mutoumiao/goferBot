@@ -3,13 +3,14 @@
  * 覆盖端点：POST /api/chat-messages
  * 场景：SSE 流式响应 happy path、Zod 校验失败、认证缺失、会话不存在/无权访问
  */
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { ChatService } from '../../packages/server/src/modules/chat/chat.service.js'
+import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
-import { ChatService } from '../../packages/server/src/modules/chat/chat.service.js'
 import { createIpGenerator } from './helpers/test-utils.js'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 
 const nextIp = createIpGenerator(4)
 
@@ -31,10 +32,14 @@ describe('ChatController', () => {
     const user = await AuthFixtures.createUser(
       app,
       { email, password: 'Test1234!', name: 'Chat User' },
-      { remoteAddress: nextIp() }
+      { remoteAddress: nextIp() },
     )
     userId = user.id
-    userToken = await AuthFixtures.loginAs(app, { email, password: 'Test1234!' }, { remoteAddress: nextIp() })
+    userToken = await AuthFixtures.loginAs(
+      app,
+      { email, password: 'Test1234!' },
+      { remoteAddress: nextIp() },
+    )
   }, 60000)
 
   afterAll(async () => {
@@ -145,12 +150,12 @@ describe('ChatController', () => {
       await AuthFixtures.createUser(
         app,
         { email: otherEmail, password: 'Test1234!', name: 'Other User' },
-        { remoteAddress: nextIp() }
+        { remoteAddress: nextIp() },
       )
       const otherToken = await AuthFixtures.loginAs(
         app,
         { email: otherEmail, password: 'Test1234!' },
-        { remoteAddress: nextIp() }
+        { remoteAddress: nextIp() },
       )
 
       const sessionId = await createSession('Private Session')
