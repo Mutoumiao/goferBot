@@ -25,7 +25,7 @@ export function ProviderDialog({ open, onOpenChange, initialData, onSubmit }: Pr
 
   useEffect(() => {
     setForm(initialData ?? EMPTY_FORM)
-  }, [initialData, open])
+  }, [initialData])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

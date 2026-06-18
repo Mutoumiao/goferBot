@@ -10,7 +10,7 @@ export class AdminService {
   async listUsers(query: AdminUserListQueryDto) {
     const { page, size, search, isActive } = query
 
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (search) {
       where.email = { contains: search, mode: 'insensitive' }
@@ -20,7 +20,7 @@ export class AdminService {
       where.isActive = isActive
     }
 
-    const result = await (this.prisma.user as any).paginate(
+    const result = await this.prisma.user.paginate(
       {
         where,
         orderBy: { createdAt: 'desc' },

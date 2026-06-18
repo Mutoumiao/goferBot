@@ -89,7 +89,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         removeTab: (tabId): RemoveTabResult => {
           const { tabs, activeTabId } = get()
           const target = tabs.find((t) => t.id === tabId)
-          if (!target || !target.closable) {
+          if (!target?.closable) {
             return { removed: false }
           }
 

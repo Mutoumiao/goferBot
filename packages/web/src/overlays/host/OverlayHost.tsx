@@ -8,12 +8,10 @@ export function OverlayHost() {
   if (entries.length === 0) return null
 
   return createPortal(
-    <>
-      {entries.map((entry) => {
-        const { id, component: Comp, props } = entry
-        return <Comp key={id} {...props} onClose={(result?: unknown) => remove(id, result)} />
-      })}
-    </>,
+    entries.map((entry) => {
+      const { id, component: Comp, props } = entry
+      return <Comp key={id} {...props} onClose={(result?: unknown) => remove(id, result)} />
+    }),
     document.body,
   )
 }

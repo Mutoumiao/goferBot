@@ -399,8 +399,9 @@ export default function EditAvatarDialog({
             </div>
           ) : (
             /* 上传区域 */
-            <div
-              className={`flex h-[240px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed transition-colors ${
+            <button
+              type="button"
+              className={`flex h-[240px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed transition-colors ${
                 isDragging
                   ? 'border-primary bg-primary/5'
                   : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -417,7 +418,7 @@ export default function EditAvatarDialog({
                   支持 PNG、JPEG、WebP，不大于 5MB
                 </p>
               </div>
-            </div>
+            </button>
           )}
 
           <input

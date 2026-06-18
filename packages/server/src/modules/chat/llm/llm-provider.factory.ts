@@ -19,7 +19,6 @@ export interface LlmProviderConfig {
 export class LlmProviderFactory {
   create(providerKey: string, config: LlmProviderConfig): LlmProvider {
     switch (providerKey) {
-      case 'openai-compatible':
       default:
         return new OpenAiCompatibleProvider({
           apiKey: config.apiKey,

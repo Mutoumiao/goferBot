@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common'
+import { BadRequestException, type Logger } from '@nestjs/common'
 import type { ConfigService } from '@nestjs/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatService } from '@/modules/chat/chat.service.js'
@@ -308,10 +308,18 @@ describe('ChatService', () => {
 
     it('handles abort error gracefully', async () => {
       const provider = createMockProvider({
-        stream: vi.fn().mockImplementation(async function* () {
+        stream: vi.fn().mockImplementation(() => {
           const err = new Error('AbortError')
           err.name = 'AbortError'
-          throw err
+          return {
+            [Symbol.asyncIterator]() {
+              return {
+                async next() {
+                  throw err
+                },
+              }
+            },
+          }
         }),
       })
       llmFactory.create.mockReturnValue(provider)
@@ -407,7 +415,7 @@ describe('ChatService', () => {
       const provider = createMockProvider()
       llmFactory.create.mockReturnValue(provider)
       const abortController = new AbortController()
-      const errorSpy = vi.spyOn(service['logger'], 'error').mockImplementation(() => {})
+      const errorSpy = vi.spyOn((service as unknown as { logger: Logger }).logger, 'error').mockImplementation(() => {})
 
       const chunks: any[] = []
       for await (const chunk of service.streamChat(
@@ -477,8 +485,17 @@ describe('ChatService', () => {
 
     it('handles provider stream errors', async () => {
       const provider = createMockProvider({
-        stream: vi.fn().mockImplementation(async function* () {
-          throw new Error('stream broken')
+        stream: vi.fn().mockImplementation(() => {
+          const error = new Error('stream broken')
+          return {
+            [Symbol.asyncIterator]() {
+              return {
+                async next() {
+                  throw error
+                },
+              }
+            },
+          }
         }),
       })
       llmFactory.create.mockReturnValue(provider)

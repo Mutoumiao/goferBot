@@ -17,7 +17,7 @@ function getInitials(name?: string): string {
 
 export function Avatar({ src, fallback, size = 40, className }: AvatarProps) {
   const [imgError, setImgError] = useState(false)
-  const hasValidSrc = src && !imgError
+  const validSrc = src && !imgError ? src : null
 
   const initials = getInitials(fallback)
 
@@ -30,9 +30,9 @@ export function Avatar({ src, fallback, size = 40, className }: AvatarProps) {
       style={{ width: size, height: size }}
       title={fallback}
     >
-      {hasValidSrc ? (
+      {validSrc ? (
         <img
-          src={src!}
+          src={validSrc}
           alt={fallback ?? '头像'}
           className="h-full w-full object-cover"
           onError={() => setImgError(true)}

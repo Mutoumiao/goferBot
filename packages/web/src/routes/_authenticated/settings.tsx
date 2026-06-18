@@ -26,7 +26,7 @@ function SettingsPage() {
 
   useEffect(() => {
     svc.loadSettings()
-  }, [])
+  }, [svc.loadSettings])
 
   const providerOptions = configuredProviders(svc.config)
   const editingProvider = editingKey ? svc.config.providers[editingKey] : undefined

@@ -55,12 +55,12 @@ function normalizeFolderId(folderId?: string | null): string | null | undefined 
 
 @Injectable()
 export class DocumentService {
-  private readonly logger = new Logger(DocumentService.name);
+  private readonly logger = new Logger(DocumentService.name)
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-    private readonly vectorService: VectorService,
+    readonly _vectorService: VectorService,
     private readonly cleanupService: KbCleanupService,
     @Optional() private readonly queueService?: QueueService,
   ) {}
@@ -106,7 +106,7 @@ export class DocumentService {
 
     const queueHealthy = await this.queueService?.isHealthy()
     if (queueHealthy) {
-      await this.queueService!.addDocumentJob(doc.id, 'index')
+      await this.queueService?.addDocumentJob(doc.id, 'index')
     }
 
     return { ...doc, size: doc.size !== null ? Number(doc.size) : null }
@@ -278,7 +278,7 @@ export class DocumentService {
   private async enqueueReindex(docId: string) {
     const queueHealthy = await this.queueService?.isHealthy()
     if (queueHealthy) {
-      await this.queueService!.addDocumentJob(docId, 'index')
+      await this.queueService?.addDocumentJob(docId, 'index')
     }
   }
 
@@ -358,7 +358,7 @@ export class DocumentService {
 
     const queueHealthy = await this.queueService?.isHealthy()
     if (queueHealthy) {
-      await this.queueService!.addDocumentJob(copied.id, 'index')
+      await this.queueService?.addDocumentJob(copied.id, 'index')
     }
 
     return { ...copied, size: normalizeDocSize(copied.size) }

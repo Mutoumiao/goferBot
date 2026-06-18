@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common'
 import type { Document, Prisma } from '@prisma/client'
-import { PrismaService } from '../../../processors/database/prisma.service.js'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
 
 export type DocumentCreateInput = Prisma.DocumentCreateInput
@@ -13,10 +12,6 @@ export class DocumentRepository extends BaseRepository<
   DocumentUpdateInput
 > {
   protected readonly modelName = 'document' as const
-
-  constructor(prisma: PrismaService) {
-    super(prisma)
-  }
 
   async findByKbId(kbId: string, folderId?: string | null): Promise<Document[]> {
     const where: Prisma.DocumentWhereInput = { kbId }

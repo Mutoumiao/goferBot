@@ -1,6 +1,6 @@
 import type { IGenerator, IRetriever } from '../interfaces.js'
 import type { RuntimeDebugInfo, RuntimePipelineResult, RuntimeStage } from '../pipeline.js'
-import type { Chunk, Query } from '../types.js'
+import type { Query } from '../types.js'
 import type { DefaultRetrievalPostprocessor } from './postprocessor.js'
 
 export async function runRetrievalPipeline(
@@ -34,7 +34,7 @@ export async function runRetrievalPipeline(
     input: candidates,
     output: null,
   }
-  const { candidates: processed, trace } = await postprocessor.process(candidates, query)
+  const { candidates: processed } = await postprocessor.process(candidates, query)
   postStage.endTime = Date.now()
   postStage.output = processed
   stages.push(postStage)

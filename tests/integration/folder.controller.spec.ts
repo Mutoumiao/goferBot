@@ -20,7 +20,7 @@ describe('FolderController', () => {
   let dbUrl: string
   let dbName: string
   let token: string
-  let userId: string
+  let _userId: string
   let kbId: string
 
   beforeAll(async () => {
@@ -38,7 +38,7 @@ describe('FolderController', () => {
       },
       { remoteAddress: nextIp() },
     )
-    userId = user.id
+    _userId = user.id
     token = await AuthFixtures.loginAs(
       app,
       { email: user.email, password: 'Test1234!' },

@@ -112,7 +112,7 @@ describe('DocumentController', () => {
 
   describe('POST /api/knowledge-bases/:kbId/documents/upload', () => {
     it('AC-33: uploads txt file for KB owner', async () => {
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const content = 'Hello World'
       const multipartBody = buildMultipartBody(
         boundary,
@@ -137,7 +137,7 @@ describe('DocumentController', () => {
     })
 
     it('AC-34: uploads md file for KB owner', async () => {
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const content = '# Markdown Test'
       const multipartBody = buildMultipartBody(
         boundary,
@@ -172,7 +172,7 @@ describe('DocumentController', () => {
     })
 
     it('AC-36: returns 401 without token', async () => {
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const multipartBody = buildMultipartBody(
         boundary,
         'file',
@@ -202,7 +202,7 @@ describe('DocumentController', () => {
         { remoteAddress: nextIp() },
       )
 
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const multipartBody = buildMultipartBody(
         boundary,
         'file',
@@ -223,7 +223,7 @@ describe('DocumentController', () => {
     })
 
     it('AC-38: returns 404 for non-existent KB', async () => {
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const multipartBody = buildMultipartBody(
         boundary,
         'file',
@@ -246,7 +246,7 @@ describe('DocumentController', () => {
     it('AC-39: returns 201 for file < 50MB', async () => {
       // 注意：> 50MB 的 413 测试需要分配大量内存，在集成测试中跳过。
       // Controller 内部有 MAX_SIZE = 50MB 的检查，此处验证正常大小文件可上传。
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const largeContent = Buffer.alloc(2 * 1024 * 1024, 'x')
       const multipartBody = buildMultipartBody(
         boundary,
@@ -269,7 +269,7 @@ describe('DocumentController', () => {
     })
 
     it('AC-40: returns 415 for unsupported type', async () => {
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const multipartBody = buildMultipartBody(
         boundary,
         'file',
@@ -293,7 +293,7 @@ describe('DocumentController', () => {
     })
 
     it('AC-41: returns 415 for path traversal filename', async () => {
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const multipartBody = buildMultipartBody(
         boundary,
         'file',
@@ -652,7 +652,7 @@ describe('DocumentController', () => {
       })
       const targetKbId = otherKbRes.json().data.id
 
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const content = 'Cross KB move content'
       const multipartBody = buildMultipartBody(
         boundary,
@@ -739,7 +739,7 @@ describe('DocumentController', () => {
       })
       const targetFolderId = folderRes.json().data.id
 
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const content = 'Same KB copy content'
       const multipartBody = buildMultipartBody(
         boundary,
@@ -782,7 +782,7 @@ describe('DocumentController', () => {
       })
       const targetKbId = otherKbRes.json().data.id
 
-      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+      const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
       const content = 'Cross KB copy content'
       const multipartBody = buildMultipartBody(
         boundary,

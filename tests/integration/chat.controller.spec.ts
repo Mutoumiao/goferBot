@@ -20,7 +20,7 @@ describe('ChatController', () => {
   let dbUrl: string
   let dbName: string
   let userToken: string
-  let userId: string
+  let _userId: string
 
   beforeAll(async () => {
     dbManager = new TestDatabaseManager()
@@ -34,7 +34,7 @@ describe('ChatController', () => {
       { email, password: 'Test1234!', name: 'Chat User' },
       { remoteAddress: nextIp() },
     )
-    userId = user.id
+    _userId = user.id
     userToken = await AuthFixtures.loginAs(
       app,
       { email, password: 'Test1234!' },

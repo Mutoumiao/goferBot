@@ -1,4 +1,4 @@
-import { type DynamicModule, Global, Module, type Provider } from '@nestjs/common'
+import { type DynamicModule, Global, Module, type Provider, type Type } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { Job } from 'bullmq'
 import { type DocumentJobHandler, type EmbeddingJobHandler } from '../../queue/index.js'
@@ -21,6 +21,10 @@ export interface QueueModuleOptions {
 })
 @Global()
 export class QueueModule {
+  private constructor() {
+    // NestJS 动态模块不应被实例化
+  }
+
   static forRoot(options: QueueModuleOptions = {}): DynamicModule {
     const providers: Provider[] = [
       QueueService,
@@ -50,7 +54,8 @@ export class QueueModule {
     }
 
     return {
-      module: QueueModule,
+      // biome-ignorelint: suspicious/noExplicitAny: NestJS 动态模块需要使用 Type<any>
+      module: QueueModule as unknown as Type<any>,
       imports: [ConfigModule],
       providers,
       exports: [QueueService, WorkerService],

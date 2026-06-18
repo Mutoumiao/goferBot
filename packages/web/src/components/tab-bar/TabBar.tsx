@@ -68,10 +68,10 @@ export function TabBar({ className }: { className?: string }) {
                 {tab.title}
               </span>
 
-              {/* 关闭按钮 — 使用 div role="button" 避免嵌套 button */}
+              {/* 关闭按钮 */}
               {canClose && (
-                <div
-                  role="button"
+                <button
+                  type="button"
                   tabIndex={-1}
                   aria-label={`关闭 ${tab.title}`}
                   className={cn(
@@ -82,16 +82,9 @@ export function TabBar({ className }: { className?: string }) {
                     e.stopPropagation()
                     handleTabClose(tab.id)
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleTabClose(tab.id)
-                    }
-                  }}
                 >
                   <X className="h-3.5 w-3.5" />
-                </div>
+                </button>
               )}
             </div>
           )

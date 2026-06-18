@@ -1,6 +1,7 @@
 import type { Chunk, IIndexer, TokenUsage } from '@goferbot/rag-sdk'
 import { ValidationError } from '@goferbot/rag-sdk'
 import { Injectable } from '@nestjs/common'
+import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../database/prisma.service.js'
 
 @Injectable()
@@ -17,7 +18,7 @@ export class PrismaVectorIndexer implements IIndexer {
 
     const tokenCounts = this.computeTokenCounts(chunks, usage)
 
-    await this.prisma.$transaction(async (tx: any) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (let i = 0; i < chunks.length; i++) {
         await tx.$executeRaw`
           INSERT INTO chunks (id, document_id, kb_id, content, token_count, chunk_index, embedding)

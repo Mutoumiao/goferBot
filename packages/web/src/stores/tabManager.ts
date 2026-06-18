@@ -66,7 +66,7 @@ export const tabManager = {
       closable: meta.closable,
     })
     if (!options?.skipNavigation) {
-      await router.navigate({ to: meta.bindTo!(tab.id) })
+      await router.navigate({ to: meta.bindTo?.(tab.id) })
     }
     return tab
   },
@@ -103,7 +103,7 @@ export const tabManager = {
       closable: true,
     })
     const meta = getRouteMeta(ROUTES_REGISTER.chat.key)
-    await router.navigate({ to: meta.bindTo!(tab.id) })
+    await router.navigate({ to: meta.bindTo?.(tab.id) })
     return tab
   },
 

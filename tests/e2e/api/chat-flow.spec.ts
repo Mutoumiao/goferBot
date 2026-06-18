@@ -63,7 +63,7 @@ describe('Chat HTTP E2E', () => {
     const email = `chat-e2e-${Date.now()}@test.gofer`
     const password = 'Test1234!'
 
-    const user = await registerUser(email, password, 'E2E User')
+    const _user = await registerUser(email, password, 'E2E User')
     const token = await login(email, password)
 
     const sessionRes = await axios.post(

@@ -25,6 +25,13 @@ function setInputValue(element: HTMLElement, value: string) {
   fireEvent.change(input, { target: { value } })
 }
 
+/** 从元素获取最近的 form 元素，若不存在则抛出错误 */
+function getForm(element: HTMLElement): HTMLFormElement {
+  const form = element.closest('form')
+  if (!form) throw new Error('Element is not inside a form')
+  return form
+}
+
 describe('auth components', () => {
   beforeEach(() => {
     useAuthStore.setState({ user: null, token: null, isAuthenticated: false, isInitialized: false })
@@ -65,7 +72,7 @@ describe('auth components', () => {
       setInputValue(emailInput, 'invalid')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
 
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
@@ -78,7 +85,7 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), '123')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
@@ -94,7 +101,7 @@ describe('auth components', () => {
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
 
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(loginUser).toHaveBeenCalledWith('user@example.com', 'password', false)
@@ -109,7 +116,7 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('invalid credentials')).toBeDefined()
@@ -123,7 +130,7 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '登录中...' })).toBeDefined()
@@ -137,7 +144,7 @@ describe('auth components', () => {
       render(<LoginForm />)
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'invalid')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
@@ -164,7 +171,7 @@ describe('auth components', () => {
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password123')
 
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('请输入用户名')).toBeDefined()
@@ -180,7 +187,7 @@ describe('auth components', () => {
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password123')
 
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
@@ -195,7 +202,7 @@ describe('auth components', () => {
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'weak')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'weak')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
@@ -210,7 +217,7 @@ describe('auth components', () => {
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'different')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('两次输入的密码不一致')).toBeDefined()
@@ -227,7 +234,7 @@ describe('auth components', () => {
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password123')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(registerUser).toHaveBeenCalledWith('User', 'user@example.com', 'password123')
@@ -239,8 +246,10 @@ describe('auth components', () => {
       render(<RegisterForm />)
       const confirmInput = screen.getByPlaceholderText('请再次输入密码') as HTMLInputElement
       // Find the toggle button next to confirm password input
-      const confirmWrapper = confirmInput.closest('div')!
-      const confirmToggle = confirmWrapper.querySelector('button')!
+      const confirmWrapper = confirmInput.closest('div')
+      if (!confirmWrapper) throw new Error('confirmWrapper not found')
+      const confirmToggle = confirmWrapper.querySelector('button')
+      if (!confirmToggle) throw new Error('confirmToggle not found')
 
       expect(confirmInput.type).toBe('password')
       fireEvent.click(confirmToggle)
@@ -254,7 +263,7 @@ describe('auth components', () => {
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('密码需同时包含字母和数字')).toBeDefined()
@@ -269,7 +278,7 @@ describe('auth components', () => {
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'weak')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'weak')
-      fireEvent.submit((emailInput as HTMLInputElement).closest('form')!)
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
         expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()

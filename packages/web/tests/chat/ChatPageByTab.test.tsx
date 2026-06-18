@@ -108,7 +108,9 @@ describe('ChatPageByTab', () => {
     vi.clearAllMocks()
     mockTabs.length = 0
     mockActiveTabId = ''
-    Object.keys(conversationMap).forEach((key) => delete conversationMap[key])
+    Object.keys(conversationMap).forEach((key) => {
+      delete conversationMap[key]
+    })
   })
 
   it('当标签不存在时显示恢复占位', () => {

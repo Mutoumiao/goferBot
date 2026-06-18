@@ -70,8 +70,9 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="mb-2 block text-sm font-medium text-text-primary">邮箱</label>
+        <label htmlFor="login-email" className="mb-2 block text-sm font-medium text-text-primary">邮箱</label>
         <Input
+          id="login-email"
           type="email"
           value={email}
           onChange={(e) => {
@@ -86,9 +87,10 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-text-primary">密码</label>
+        <label htmlFor="login-password" className="mb-2 block text-sm font-medium text-text-primary">密码</label>
         <div className="relative">
           <Input
+            id="login-password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => {
@@ -111,16 +113,17 @@ export function LoginForm() {
       </div>
 
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2">
+        <label htmlFor="login-remember" className="flex items-center gap-2">
           <Checkbox
+            id="login-remember"
             checked={rememberMe}
             onCheckedChange={(checked) => setRememberMe(checked === true)}
           />
           <span className="text-sm text-text-secondary">记住我</span>
         </label>
-        <a href="#" className="text-sm font-medium text-primary">
+        <button type="button" className="text-sm font-medium text-primary hover:underline">
           忘记密码？
-        </a>
+        </button>
       </div>
 
       {error && (

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common'
 import type { KnowledgeBase, Prisma } from '@prisma/client'
-import { PrismaService } from '../../../processors/database/prisma.service.js'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
 
 @Injectable()
@@ -10,10 +9,6 @@ export class KbRepository extends BaseRepository<
   Prisma.KnowledgeBaseUpdateInput
 > {
   protected readonly modelName = 'knowledgeBase' as const
-
-  constructor(prisma: PrismaService) {
-    super(prisma)
-  }
 
   async findByUserId(userId: string): Promise<KnowledgeBase[]> {
     return this.model.findMany({ where: { userId } })

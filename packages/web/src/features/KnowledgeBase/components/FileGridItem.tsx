@@ -81,6 +81,7 @@ function FolderCard({ item, documentCount, onClick }: FolderCardProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
+            <title>更多操作</title>
             <circle cx="12" cy="12" r="1" />
             <circle cx="19" cy="12" r="1" />
             <circle cx="5" cy="12" r="1" />
@@ -147,6 +148,7 @@ function DocumentCard({ item, onClick }: { item: DocumentItem; onClick: () => vo
             strokeLinecap="round"
             strokeLinejoin="round"
           >
+            <title>更多操作</title>
             <circle cx="12" cy="12" r="1" />
             <circle cx="19" cy="12" r="1" />
             <circle cx="5" cy="12" r="1" />

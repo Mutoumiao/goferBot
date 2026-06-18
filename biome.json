@@ -32,7 +32,10 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended",
+      "suspicious": {
+        "noControlCharactersInRegex": "off"
+      }
     },
     "domains": {
       "react": "recommended",
@@ -46,6 +49,14 @@
       "trailingCommas": "all",
       "arrowParentheses": "always",
       "bracketSpacing": true
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "json": {
@@ -72,6 +83,9 @@
           },
           "complexity": {
             "noBannedTypes": "off"
+          },
+          "correctness": {
+            "useHookAtTopLevel": "off"
           }
         }
       }
@@ -91,12 +105,15 @@
       }
     },
     {
-      "includes": ["**/*.spec.ts", "**/*.test.ts", "tests/**", "e2e/**"],
+      "includes": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.test.ts", "**/*.test.tsx", "tests/**", "e2e/**"],
       "linter": {
         "rules": {
           "suspicious": {
             "noConsole": "off",
             "noExplicitAny": "off"
+          },
+          "correctness": {
+            "useHookAtTopLevel": "off"
           }
         }
       }

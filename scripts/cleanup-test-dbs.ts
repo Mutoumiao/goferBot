@@ -111,7 +111,7 @@ async function main(): Promise<void> {
   candidates.forEach((c) => {
     const flags: string[] = []
     if (c.isActive) flags.push('ACTIVE')
-    if (c.tooYoung) flags.push('<' + opts.olderThanHours + 'h')
+    if (c.tooYoung) flags.push(`<${opts.olderThanHours}h`)
     const flagStr = flags.length ? `  [${flags.join(', ')}]` : ''
     console.log(`  ${c.name}  (${c.age})${flagStr}`)
   })
@@ -165,7 +165,7 @@ async function main(): Promise<void> {
   console.log(`\nDone: dropped ${dropped.length}, failed ${failed.length}.`)
   if (failed.length > 0) {
     console.log('\nFailed databases (check if they are still in use):')
-    failed.forEach((f) => console.log(`  - ${f}`))
+    for (const f of failed) console.log(`  - ${f}`)
   }
 }
 

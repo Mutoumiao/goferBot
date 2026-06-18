@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { DocumentService } from './document.service.js'
 import type { CopyFolderDto } from './dto/copy-folder.dto.js'
@@ -274,13 +275,15 @@ export class FolderService {
   ): Promise<Map<string, string>> {
     const folderMap = new Map<string, string>()
     // folder 树记录在事务内原子创建；文档复制涉及外部存储/向量，无法纳入同一事务。
-    await this.prisma.$transaction(async (tx: any) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const stack: Array<{ id: string; parentId: string | null }> = [
         { id: sourceRootId, parentId: targetParentId },
       ]
 
       while (stack.length > 0) {
-        const { id: currentId, parentId: currentParentId } = stack.pop()!
+        const item = stack.pop()
+        if (!item) continue
+        const { id: currentId, parentId: currentParentId } = item
         const sourceFolder = await tx.folder.findUnique({ where: { id: currentId } })
         if (!sourceFolder) continue
 
@@ -335,7 +338,7 @@ export class FolderService {
     kbId: string,
     parentId: string | null,
     baseName: string,
-    tx?: any,
+    tx?: Prisma.TransactionClient,
   ): Promise<string> {
     const client = tx ?? this.prisma
     const existing = await client.folder.findMany({

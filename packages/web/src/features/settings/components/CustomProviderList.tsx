@@ -41,13 +41,14 @@ export function CustomProviderList({
           </div>
         </SettingsRow>
       ))}
-      <div
-        className="flex items-center gap-2 px-4 py-4 cursor-pointer text-primary"
+      <button
+        type="button"
+        className="flex items-center gap-2 px-4 py-4 cursor-pointer text-primary border-none bg-transparent"
         onClick={onAdd}
       >
         <PlusIcon className="size-4" />
         <span className="text-sm">添加自定义模型</span>
-      </div>
+      </button>
     </>
   )
 }

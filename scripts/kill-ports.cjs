@@ -4,7 +4,7 @@
  * 适用场景：命令行崩溃、Agent异常退出、进程僵死等
  */
 
-const { execSync } = require('child_process')
+const { execSync } = require('node:child_process')
 
 const PORTS = [3000, 5173]
 

@@ -26,7 +26,7 @@ export class OpenAiCompatibleProvider implements LlmProvider {
 
   private readonly client: ChatOpenAI
 
-  constructor(private readonly config: OpenAiCompatibleProviderConfig) {
+  constructor(readonly config: OpenAiCompatibleProviderConfig) {
     this.client = new ChatOpenAI({
       apiKey: config.apiKey,
       model: config.model,
@@ -54,7 +54,7 @@ export class OpenAiCompatibleProvider implements LlmProvider {
     }
   }
 
-  async invoke(messages: LlmMessage[], options?: LlmInvokeOptions): Promise<string> {
+  async invoke(messages: LlmMessage[], _options?: LlmInvokeOptions): Promise<string> {
     const lcMessages = messages.map((m) => this.toLangChainMessage(m))
     const response = await this.client.invoke(lcMessages)
     return this.extractText(response.content)
@@ -66,7 +66,6 @@ export class OpenAiCompatibleProvider implements LlmProvider {
         return new SystemMessage(message.content)
       case 'assistant':
         return new AIMessage(message.content)
-      case 'user':
       default:
         return new HumanMessage(message.content)
     }

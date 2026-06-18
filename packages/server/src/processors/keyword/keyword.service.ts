@@ -6,7 +6,6 @@ import { PrismaService } from '../database/prisma.service.js'
 export class KeywordService implements IKeywordStore {
   private readonly logger = new Logger(KeywordService.name)
   private useChineseConfig = false
-  private configChecked = false
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -31,7 +30,7 @@ export class KeywordService implements IKeywordStore {
       )
       this.useChineseConfig = false
     } finally {
-      this.configChecked = true
+      ;(this as { configChecked?: boolean }).configChecked = true
     }
   }
 

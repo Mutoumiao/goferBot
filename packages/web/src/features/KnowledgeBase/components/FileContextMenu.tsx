@@ -91,14 +91,12 @@ export function FileContextMenu({
             )}
           </>
         ) : (
-          <>
-            {onCreateFolder && (
-              <ContextMenuItem onClick={onCreateFolder}>
-                <FolderPlus className="mr-2 h-4 w-4" />
-                新建文件夹
-              </ContextMenuItem>
-            )}
-          </>
+          onCreateFolder && (
+            <ContextMenuItem onClick={onCreateFolder}>
+              <FolderPlus className="mr-2 h-4 w-4" />
+              新建文件夹
+            </ContextMenuItem>
+          )
         )}
       </ContextMenuContent>
     </ContextMenu>

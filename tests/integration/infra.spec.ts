@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { existsSync } from 'fs'
+import { existsSync } from 'node:fs'
 import { Client } from 'pg'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { isBackendAvailable, resetBackendAvailability } from '../e2e/fixtures/auth'
@@ -89,7 +89,7 @@ describe('E2E Infrastructure (q-16)', () => {
     const client = new Client({ connectionString: process.env.DATABASE_URL })
     await client.connect()
     const res = await client.query('SELECT COUNT(*) FROM users')
-    expect(parseInt(res.rows[0].count)).toBe(0)
+    expect(parseInt(res.rows[0].count, 10)).toBe(0)
     await client.end()
   })
 

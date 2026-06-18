@@ -99,7 +99,7 @@ describe('PgVectorStore', () => {
         ][i]
         await prisma.$executeRaw`
           INSERT INTO chunks (id, document_id, kb_id, content, chunk_index, embedding)
-          VALUES (${ids[i]}::uuid, ${docId}::uuid, ${kbId}::uuid, ${'chunk ' + i}, ${i}, ${embedding}::vector)
+          VALUES (${ids[i]}::uuid, ${docId}::uuid, ${kbId}::uuid, ${`chunk ${i}`}, ${i}, ${embedding}::vector)
         `
       }
 

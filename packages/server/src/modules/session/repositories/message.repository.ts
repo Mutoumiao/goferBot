@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common'
 import type { Message, Prisma } from '@prisma/client'
-import { PrismaService } from '../../../processors/database/prisma.service.js'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
 
 @Injectable()
@@ -10,10 +9,6 @@ export class MessageRepository extends BaseRepository<
   Prisma.MessageUncheckedUpdateInput
 > {
   protected readonly modelName = 'message' as const
-
-  constructor(prisma: PrismaService) {
-    super(prisma)
-  }
 
   async findBySessionId(sessionId: string): Promise<Message[]> {
     return this.model.findMany({

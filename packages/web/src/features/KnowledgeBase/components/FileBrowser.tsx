@@ -32,11 +32,17 @@ interface FileBrowserProps {
 }
 
 function LoadingState() {
+  const skeletonKeys = [
+    'skeleton-0',
+    'skeleton-1',
+    'skeleton-2',
+    'skeleton-3',
+  ] as const
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
+      {skeletonKeys.map((key) => (
         <div
-          key={i}
+          key={key}
           data-testid="skeleton-card"
           className="h-32 bg-[#F7F8FA] rounded-xl animate-pulse"
         />
@@ -444,6 +450,8 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
   return (
     <div
       className="relative flex flex-1 flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_2px_8px_rgba(160,158,158,0.25)]"
+      role="application"
+      aria-label="文件浏览器"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

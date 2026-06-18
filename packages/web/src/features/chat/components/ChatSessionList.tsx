@@ -78,12 +78,13 @@ export function ChatSessionList({ onRenameClick, onDeleteClick }: ChatSessionLis
           sessions.map((session) => {
             const sessionDate = session.createdAt ? new Date(session.createdAt) : null
             return (
-              <div
+              <button
                 key={session.id}
+                type="button"
                 data-testid="session-item"
                 onClick={() => setActiveSession(session)}
                 className={cn(
-                  'group mx-2 my-0.5 cursor-pointer rounded-lg px-3 py-2.5 transition-colors',
+                  'group mx-2 my-0.5 flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors border-none bg-transparent',
                   activeSession?.id === session.id
                     ? 'bg-surface-2 text-text-primary'
                     : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary',
@@ -103,7 +104,11 @@ export function ChatSessionList({ onRenameClick, onDeleteClick }: ChatSessionLis
                     {session.messageCount > 0 && (
                       <span className="text-xs text-text-tertiary">{session.messageCount}</span>
                     )}
-                    <div onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      className="border-none bg-transparent p-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -133,10 +138,10 @@ export function ChatSessionList({ onRenameClick, onDeleteClick }: ChatSessionLis
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </div>
+                    </button>
                   </div>
                 </div>
-              </div>
+              </button>
             )
           })}
       </div>

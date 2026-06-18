@@ -1,6 +1,9 @@
 import type { ComponentType } from 'react'
 import { useOverlayStore } from '../host/overlay-store'
 
+// biome-ignorelint: suspicious/noExplicitAny: ComponentType<any> 用于兼容不同 Dialog 的 Props 结构
+type AnyComponent = ComponentType<any>
+
 /**
  * 打开 Dialog — 返回 Promise，在 dialog 关闭时 resolve
  *
@@ -10,17 +13,17 @@ import { useOverlayStore } from '../host/overlay-store'
  * if (result === 'confirm') { ... }
  * ```
  */
-export function openDialog<T = unknown>(
-  component: ComponentType<any>,
-  props?: Record<string, unknown>,
-): Promise<T> {
+export function openDialog<TResult = unknown, TProps extends object = Record<string, unknown>>(
+  component: AnyComponent,
+  props: TProps = {} as TProps,
+): Promise<TResult> {
   const store = useOverlayStore.getState()
-  return new Promise<T>((resolve, reject) => {
+  return new Promise<TResult>((resolve, reject) => {
     store.push({
       kind: 'dialog',
       component,
-      props: props ?? {},
-      resolve: (v) => resolve(v as T),
+      props: props as Record<string, unknown>,
+      resolve: (v) => resolve(v as TResult),
       reject,
     })
   })
@@ -36,19 +39,19 @@ export function closeDialog(id: string, result?: unknown): void {
 /**
  * 打开 ContextMenu — 在指定屏幕坐标弹出右键菜单
  */
-export function openContextMenu<T = unknown>(
-  component: ComponentType<any>,
+export function openContextMenu<TResult = unknown, TProps extends object = Record<string, unknown>>(
+  component: AnyComponent,
   position: { x: number; y: number },
-  props?: Record<string, unknown>,
-): Promise<T> {
+  props: TProps = {} as TProps,
+): Promise<TResult> {
   const store = useOverlayStore.getState()
-  return new Promise<T>((resolve, reject) => {
+  return new Promise<TResult>((resolve, reject) => {
     store.push({
       kind: 'context-menu',
       component,
-      props: props ?? {},
+      props: props as Record<string, unknown>,
       position,
-      resolve: (v) => resolve(v as T),
+      resolve: (v) => resolve(v as TResult),
       reject,
     })
   })

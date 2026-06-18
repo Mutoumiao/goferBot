@@ -14,13 +14,17 @@ import { PrismaService } from '../database/prisma.service.js'
 export class WorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WorkerService.name)
   private documentWorker?: Worker
-  private embeddingWorker?: Worker;
+  private embeddingWorker?: Worker
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    @Optional() @Inject('DOCUMENT_JOB_HANDLER') private readonly documentHandler?: DocumentJobHandler,
-    @Optional() @Inject('EMBEDDING_JOB_HANDLER') private readonly embeddingHandler?: EmbeddingJobHandler,
+    @Optional()
+    @Inject('DOCUMENT_JOB_HANDLER')
+    private readonly documentHandler?: DocumentJobHandler,
+    @Optional()
+    @Inject('EMBEDDING_JOB_HANDLER')
+    private readonly embeddingHandler?: EmbeddingJobHandler,
   ) {}
 
   async onModuleInit() {

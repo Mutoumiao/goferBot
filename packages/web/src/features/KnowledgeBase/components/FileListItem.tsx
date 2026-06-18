@@ -17,30 +17,29 @@ export function FileListItem({ item, isFolder, onClick }: FileListItemProps) {
 
   return (
     <tr
-      onClick={onClick}
-      className="border-b border-border-default hover:bg-surface-2 cursor-pointer transition-colors focus-visible:bg-[#EEF2FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5B7CFA]"
-      tabIndex={0}
-      role="button"
-      aria-label={isFolder ? `打开文件夹 ${item.name}` : `打开文档 ${item.name}`}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onClick()
-        }
-      }}
+      className="relative border-b border-border-default hover:bg-surface-2 transition-colors focus-within:bg-[#EEF2FF] focus-within:ring-2 focus-within:ring-[#5B7CFA]"
     >
-      <td className="py-2 px-3">
-        <Icon className="h-5 w-5 text-text-secondary" />
-      </td>
-      <td className="py-2 px-3 text-sm text-text-primary">{item.name}</td>
-      <td className="py-2 px-3 text-xs text-text-tertiary">
-        {isFolder ? '文件夹' : (ext ?? '--')}
-      </td>
-      <td className="py-2 px-3 text-xs text-text-tertiary text-right">
-        {size !== null ? formatFileSize(size) : '--'}
-      </td>
-      <td className="py-2 px-3 text-xs text-text-tertiary text-right">
-        {date ? formatDate(date) : '--'}
+      <td colSpan={5} className="p-0">
+        <button
+          type="button"
+          className="flex w-full items-center cursor-pointer bg-transparent border-none p-0 text-left focus-visible:outline-none"
+          onClick={onClick}
+          aria-label={isFolder ? `打开文件夹 ${item.name}` : `打开文档 ${item.name}`}
+        >
+          <span className="py-2 px-3">
+            <Icon className="h-5 w-5 text-text-secondary" />
+          </span>
+          <span className="py-2 px-3 text-sm text-text-primary flex-1">{item.name}</span>
+          <span className="py-2 px-3 text-xs text-text-tertiary">
+            {isFolder ? '文件夹' : (ext ?? '--')}
+          </span>
+          <span className="py-2 px-3 text-xs text-text-tertiary text-right">
+            {size !== null ? formatFileSize(size) : '--'}
+          </span>
+          <span className="py-2 px-3 text-xs text-text-tertiary text-right">
+            {date ? formatDate(date) : '--'}
+          </span>
+        </button>
       </td>
     </tr>
   )

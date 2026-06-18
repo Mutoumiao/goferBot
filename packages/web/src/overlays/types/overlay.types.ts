@@ -6,7 +6,7 @@ export interface OverlayEntry {
   id: string
   kind: OverlayKind
   /** React 组件 */
-  component: ComponentType<any>
+  component: ComponentType<Record<string, unknown>>
   /** 传给组件的 props */
   props: Record<string, unknown>
   /** z-index 层级，自增 */

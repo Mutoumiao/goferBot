@@ -27,7 +27,7 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
       const rejected: { name: string; reason: string }[] = []
 
       for (const file of files) {
-        const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+        const ext = `.${file.name.split('.').pop()?.toLowerCase()}`
         if (!ALLOWED_EXTENSIONS.includes(ext)) {
           rejected.push({ name: file.name, reason: '不支持的文件类型' })
           continue
@@ -94,11 +94,10 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
 
   return (
     <div>
-      <div
+      <button
+        type="button"
         data-testid="upload-drop-zone"
-        role="button"
-        tabIndex={0}
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
+        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all w-full
           ${
             isDragOver
               ? 'border-blue-400 bg-blue-50 scale-[1.02]'
@@ -112,9 +111,6 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') handleClick()
-        }}
       >
         <input
           ref={fileInputRef}
@@ -131,7 +127,7 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
         />
         <p className="text-sm text-text-secondary">拖拽文件到此处，或点击选择</p>
         <p className="mt-1 text-xs text-text-tertiary">支持多文件，单文件最大 50MB</p>
-      </div>
+      </button>
 
       {warning && (
         <div className="mt-2 rounded bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-700">
@@ -141,9 +137,9 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
 
       {rejectedFiles.length > 0 && (
         <div className="mt-2 space-y-1">
-          {rejectedFiles.map((item, idx) => (
+          {rejectedFiles.map((item) => (
             <div
-              key={idx}
+              key={item.name}
               data-testid="rejected-file"
               className="flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-600"
             >

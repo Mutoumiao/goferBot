@@ -5,6 +5,11 @@ import type { PaginationResult } from '../../shared/interfaces/paginator.interfa
 // 扩展 PrismaClient 类型
 type ExtendedPrismaClient = ReturnType<typeof createExtendedPrismaClient>
 
+interface MinimalModelDelegate {
+  count(args?: Record<string, unknown>): Promise<number>
+  findMany(args?: Record<string, unknown>): Promise<unknown[]>
+}
+
 function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
   const client = new PrismaClient(options)
 
@@ -30,17 +35,19 @@ function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
                 hasNextPage: false,
                 hasPrevPage: false,
               },
-            } as PaginationResult<any>
+            } as unknown as PaginationResult<Prisma.Result<T, A, 'findFirst'>>
           }
 
           const { page, size: perPage } = options
           const skip = page > 0 ? perPage * (page - 1) : 0
-          const countArgs = (x as any).where ? { where: (x as any).where } : {}
+          const xRecord = x as unknown as Record<string, unknown>
+          const countArgs = xRecord.where ? { where: xRecord.where } : {}
 
+          const model = this as unknown as MinimalModelDelegate
           const [total, data] = await Promise.all([
-            (this as any).count(countArgs),
-            (this as any).findMany({
-              ...(x as any),
+            model.count(countArgs),
+            model.findMany({
+              ...xRecord,
               take: perPage,
               skip,
             }),
@@ -58,7 +65,7 @@ function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
               hasNextPage: page < lastPage,
               hasPrevPage: page > 1,
             },
-          } as PaginationResult<any>
+          } as unknown as PaginationResult<Prisma.Result<T, A, 'findFirst'>>
         },
 
         async exists<T, A>(
@@ -68,7 +75,8 @@ function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
           if (typeof x !== 'object' || x === null || !('where' in x)) {
             return false
           }
-          const count = await (this as any).count({ where: (x as any).where })
+          const xRecord = x as unknown as Record<string, unknown>
+          const count = await (this as unknown as MinimalModelDelegate).count({ where: xRecord.where })
           return count > 0
         },
       },
@@ -134,15 +142,15 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.$disconnect()
   }
 
-  $queryRaw(...args: any[]) {
-    return (this.client as any).$queryRaw(...args)
+  $queryRaw(...args: unknown[]): unknown {
+    return (this.client.$queryRaw as (...args: unknown[]) => unknown)(...args)
   }
 
-  $executeRaw(...args: any[]) {
-    return (this.client as any).$executeRaw(...args)
+  $executeRaw(...args: unknown[]): unknown {
+    return (this.client.$executeRaw as (...args: unknown[]) => unknown)(...args)
   }
 
-  $transaction(...args: any[]) {
-    return (this.client as any).$transaction(...args)
+  $transaction(...args: unknown[]): unknown {
+    return (this.client.$transaction as (...args: unknown[]) => unknown)(...args)
   }
 }

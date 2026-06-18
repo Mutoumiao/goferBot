@@ -166,7 +166,7 @@ describe('Admin User Management API', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/users/${user!.id}/status`,
+        url: `/api/admin/users/${user?.id}/status`,
         payload: { isActive: false },
         headers: { authorization: `Bearer ${adminToken}` },
       })
@@ -193,7 +193,7 @@ describe('Admin User Management API', () => {
 
       const response = await app.inject({
         method: 'PATCH',
-        url: `/api/admin/users/${user!.id}/status`,
+        url: `/api/admin/users/${user?.id}/status`,
         payload: { isActive: false },
         headers: { authorization: `Bearer ${userToken}` },
       })

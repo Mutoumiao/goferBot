@@ -7,6 +7,13 @@ vi.mock('sonner', () => ({
 
 import EditNameDialog from '@/overlays/dialogs/EditNameDialog'
 
+/** 从元素获取最近的 form 元素，若不存在则抛出错误 */
+function getForm(element: HTMLElement): HTMLFormElement {
+  const form = element.closest('form')
+  if (!form) throw new Error('Element is not inside a form')
+  return form
+}
+
 describe('EditNameDialog', () => {
   const mockOnClose = vi.fn()
   const mockOnConfirm = vi.fn()
@@ -32,7 +39,7 @@ describe('EditNameDialog', () => {
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
     fireEvent.change(input, { target: { value: '   ' } })
-    fireEvent.submit(input.closest('form')!)
+    fireEvent.submit(getForm(input))
 
     await waitFor(() => {
       expect(screen.getByText('昵称不能为空')).toBeDefined()
@@ -47,7 +54,7 @@ describe('EditNameDialog', () => {
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'a'.repeat(51) } })
-    fireEvent.submit(input.closest('form')!)
+    fireEvent.submit(getForm(input))
 
     await waitFor(() => {
       expect(screen.getByText('昵称不能超过 50 个字符')).toBeDefined()
@@ -61,7 +68,7 @@ describe('EditNameDialog', () => {
     )
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
-    fireEvent.submit(input.closest('form')!)
+    fireEvent.submit(getForm(input))
 
     await waitFor(() => {
       expect(mockOnClose).toHaveBeenCalled()
@@ -78,7 +85,7 @@ describe('EditNameDialog', () => {
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
     fireEvent.change(input, { target: { value: '  NewName  ' } })
-    fireEvent.submit(input.closest('form')!)
+    fireEvent.submit(getForm(input))
 
     await waitFor(() => {
       expect(mockOnConfirm).toHaveBeenCalledWith('NewName')
@@ -95,7 +102,7 @@ describe('EditNameDialog', () => {
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'NewName' } })
-    fireEvent.submit(input.closest('form')!)
+    fireEvent.submit(getForm(input))
 
     await waitFor(() => {
       expect(screen.getByText('update failed')).toBeDefined()
@@ -121,7 +128,7 @@ describe('EditNameDialog', () => {
 
     const input = screen.getByDisplayValue('TestUser') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'NewName' } })
-    fireEvent.submit(input.closest('form')!)
+    fireEvent.submit(getForm(input))
 
     await waitFor(() => {
       const saveButton = screen.getByRole('button', { name: '保存中...' }) as HTMLButtonElement

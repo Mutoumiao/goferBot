@@ -12,7 +12,7 @@ import { PrismaService } from '../database/prisma.service.js'
 export class VectorService implements IVectorStore, OnModuleInit {
   private readonly store: PgVectorStore
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(readonly prisma: PrismaService) {
     this.store = new PgVectorStore(prisma)
   }
 

@@ -1,7 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import type { ChatMessagesChunk } from '@goferbot/data'
 import { BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { randomUUID } from 'crypto'
 import { SettingsService } from '../settings/settings.service.js'
 import { ConversationService } from './conversation.service.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
@@ -20,7 +20,7 @@ function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
 @Injectable()
 export class ChatService {
   private readonly llmTimeoutMs: number
-  private readonly logger = new Logger(ChatService.name);
+  private readonly logger = new Logger(ChatService.name)
 
   constructor(
     private readonly configService: ConfigService,
@@ -28,7 +28,9 @@ export class ChatService {
     private readonly modelRegistry: ModelRegistryService,
     private readonly conversationService: ConversationService,
     private readonly llmFactory: LlmProviderFactory,
-    @Inject(CHAT_CONTEXT_RETRIEVER) @Optional() private readonly contextRetriever?: ChatContextRetriever,
+    @Inject(CHAT_CONTEXT_RETRIEVER)
+    @Optional()
+    private readonly contextRetriever?: ChatContextRetriever,
   ) {
     const parsed = this.configService.get<number>('LLM_TIMEOUT_MS', 300_000)
     this.llmTimeoutMs = Number.isNaN(parsed) ? 300_000 : parsed

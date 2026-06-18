@@ -61,17 +61,17 @@ export function ChatHistoryList({
   const totalPages = pagination?.totalPage ?? 1
 
   const paginationItems = useMemo(() => {
-    const items: (number | 'ellipsis')[] = []
+    const items: { key: string; value: number | 'ellipsis' }[] = []
     if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) items.push(i)
+      for (let i = 1; i <= totalPages; i++) items.push({ key: String(i), value: i })
     } else {
-      items.push(1)
-      if (page > 3) items.push('ellipsis')
+      items.push({ key: '1', value: 1 })
+      if (page > 3) items.push({ key: 'ellipsis-start', value: 'ellipsis' })
       const start = Math.max(2, page - 1)
       const end = Math.min(totalPages - 1, page + 1)
-      for (let i = start; i <= end; i++) items.push(i)
-      if (page < totalPages - 2) items.push('ellipsis')
-      items.push(totalPages)
+      for (let i = start; i <= end; i++) items.push({ key: String(i), value: i })
+      if (page < totalPages - 2) items.push({ key: 'ellipsis-end', value: 'ellipsis' })
+      items.push({ key: String(totalPages), value: totalPages })
     }
     return items
   }, [page, totalPages])
@@ -102,11 +102,13 @@ export function ChatHistoryList({
     <>
       <div className="mt-6 space-y-2.5">
         {sessions.map((session) => (
-          <div
+          <button
             key={session.id}
+            type="button"
+            tabIndex={0}
             onClick={() => onResume(session)}
             className={cn(
-              'group flex cursor-pointer items-center gap-4 rounded-lg border border-border-default bg-surface-1 p-4 shadow-sm transition-all',
+              'group flex w-full cursor-pointer items-center gap-4 rounded-lg border border-border-default bg-surface-1 p-4 text-left shadow-sm transition-all',
               'hover:border-border-subtle hover:shadow',
             )}
           >
@@ -145,7 +147,7 @@ export function ChatHistoryList({
                 <ArrowRightIcon className="size-[15px]" />
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -163,24 +165,24 @@ export function ChatHistoryList({
                   text="上一页"
                 />
               </PaginationItem>
-              {paginationItems.map((item, idx) =>
-                item === 'ellipsis' ? (
-                  <PaginationItem key={`ellipsis-${idx}`}>
+              {paginationItems.map((item) =>
+                item.value === 'ellipsis' ? (
+                  <PaginationItem key={item.key}>
                     <PaginationEllipsis />
                   </PaginationItem>
                 ) : (
-                  <PaginationItem key={item}>
+                  <PaginationItem key={item.key}>
                     <PaginationLink
-                      isActive={item === page}
-                      onClick={() => onPageChange(item)}
+                      isActive={item.value === page}
+                      onClick={() => onPageChange(item.value as number)}
                       className={cn(
                         'h-7 w-7 rounded-full border-0 p-0 text-[13px]',
-                        item === page
+                        item.value === page
                           ? 'bg-brand-blue-soft text-brand-blue ring-1 ring-brand-blue-ring'
                           : 'text-text-secondary hover:bg-surface-3',
                       )}
                     >
-                      {item}
+                      {item.value}
                     </PaginationLink>
                   </PaginationItem>
                 ),

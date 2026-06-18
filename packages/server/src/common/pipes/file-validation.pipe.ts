@@ -40,7 +40,6 @@ export class FileValidationPipe implements PipeTransform {
       ],
       allowedExtensions = ['md', 'txt', 'html', 'csv', 'json', 'pdf'],
       maxSizeBytes = 50 * 1024 * 1024,
-      fieldName = 'file',
     } = this.options
 
     const data = await req.file()

@@ -18,7 +18,7 @@ export async function uploadDocumentWithChunk(
   content: string,
   folderId?: string,
 ): Promise<UploadedDocWithChunk> {
-  const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+  const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
   const parts: Buffer[] = []
 
   const filePart = buildMultipartBody(

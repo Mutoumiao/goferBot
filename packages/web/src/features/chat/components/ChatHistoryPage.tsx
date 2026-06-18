@@ -19,7 +19,7 @@ export function ChatHistoryPage() {
 
   useEffect(() => {
     loadRef.current()
-  }, [page])
+  }, [])
 
   const handleResume = useCallback((session: Session) => {
     void tabManager.openConversation(session.id, session.title ?? undefined)
@@ -63,8 +63,8 @@ export function ChatHistoryPage() {
 
         {loading && (
           <div className="mt-6 space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[76px] w-full animate-pulse rounded-lg bg-surface-3" />
+            {[1, 2, 3, 4].map((key) => (
+              <div key={`skeleton-${key}`} className="h-[76px] w-full animate-pulse rounded-lg bg-surface-3" />
             ))}
           </div>
         )}

@@ -204,7 +204,7 @@ describe('chat services', () => {
 
       await loadChatHistory('s1')
 
-      expect(useConversationStore.getState().conversationMap['s1']?.messages).toEqual(messages)
+      expect(useConversationStore.getState().conversationMap.s1?.messages).toEqual(messages)
       expect(useChatStore.getState().isLoadingHistory).toBe(false)
     })
 
@@ -216,7 +216,7 @@ describe('chat services', () => {
       await loadChatHistory('s1')
 
       expect(useChatStore.getState().isLoadingHistory).toBe(false)
-      expect(useConversationStore.getState().conversationMap['s1']).toBeUndefined()
+      expect(useConversationStore.getState().conversationMap.s1).toBeUndefined()
     })
   })
 
@@ -281,7 +281,7 @@ describe('chat services', () => {
       expect(useWorkspaceStore.getState().tabs[0].conversationId).toBe('s1')
       const stored = sessionStorage.getItem(getPendingMessageKey('s1'))
       expect(stored).toBeDefined()
-      expect(JSON.parse(stored!)).toEqual({ content: 'hello world' })
+      expect(JSON.parse(stored ?? '{}')).toEqual({ content: 'hello world' })
     })
 
     it('stores knowledgeBaseIds in pending JSON when provided', async () => {
@@ -299,7 +299,7 @@ describe('chat services', () => {
       await submitTempChat('hello', 'tab-1', { knowledgeBaseIds: ['kb1', 'kb2'] })
 
       const stored = sessionStorage.getItem(getPendingMessageKey('s2'))
-      expect(JSON.parse(stored!)).toEqual({ content: 'hello', knowledgeBaseIds: ['kb1', 'kb2'] })
+      expect(JSON.parse(stored ?? '{}')).toEqual({ content: 'hello', knowledgeBaseIds: ['kb1', 'kb2'] })
     })
 
     it('returns null when session creation fails', async () => {

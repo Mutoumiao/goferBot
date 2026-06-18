@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const fs = require('fs').promises
-const path = require('path')
+const fs = require('node:fs').promises
+const path = require('node:path')
 // Replace the ESM import with CommonJS require
 const packageJson = require('./package.json')
 const OLD_VERSION = packageJson.version

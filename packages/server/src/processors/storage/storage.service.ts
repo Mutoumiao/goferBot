@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { IStorageProvider } from '../../interfaces/IStorageProvider.js'
-import { MinIOStorageProvider } from '../../storage/minio.js'
 import { STORAGE_PROVIDER } from './storage.provider.js'
 
 @Injectable()

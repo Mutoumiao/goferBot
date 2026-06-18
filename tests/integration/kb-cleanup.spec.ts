@@ -279,7 +279,7 @@ describe('KbCleanup Integration Tests', () => {
     content: string,
     folderId?: string,
   ): Promise<{ docId: string; chunkId: string; storageKey: string }> {
-    const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+    const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
     const multipartBody = buildMultipartBody(
       boundary,
       'file',

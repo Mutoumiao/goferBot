@@ -76,6 +76,7 @@ export function KnowledgeBasePage() {
       {!sidebarOpen && (
         <div className="absolute left-4 top-4 z-10">
           <button
+            type="button"
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7EAF0] bg-white text-[#5E6673] shadow-sm transition-colors hover:bg-[#F7F8FA]"
             onClick={handleToggleSidebar}
             title="展开知识库列表"

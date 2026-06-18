@@ -66,7 +66,7 @@ describe('SSE raw response CORS headers', () => {
     expect(res.headers['content-type']).toContain('text/event-stream')
     expect(res.headers['access-control-allow-origin']).toBe(origin)
     expect(res.headers['access-control-allow-credentials']).toBe('true')
-    expect(res.headers['vary']).toContain('Origin')
+    expect(res.headers.vary).toContain('Origin')
   })
 
   it('当 origin 不在白名单时，应拒绝请求且不附加跨域头', async () => {

@@ -70,7 +70,9 @@ describe('auth store', () => {
         .getState()
         .setAuth('token-1', { id: 'u1', email: 'a@b.com', name: 'User' } as any)
 
-      const persisted = JSON.parse(localStorage.getItem('goferbot-auth')!)
+      const raw = localStorage.getItem('goferbot-auth')
+      expect(raw).not.toBeNull()
+      const persisted = JSON.parse(raw as string)
       expect(persisted.state.token).toBe('token-1')
       expect(persisted.state.isAuthenticated).toBe(true)
     })

@@ -57,6 +57,7 @@ export function KnowledgeBaseToolbar({
   return (
     <div
       className="flex items-center justify-between border-b border-[#E7EAF0] px-5 py-2.5"
+      role="toolbar"
       onKeyDown={handleKeyDown}
     >
       <div className="flex items-center gap-2">

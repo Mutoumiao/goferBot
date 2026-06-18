@@ -1,6 +1,6 @@
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 
 const MASK_PREFIX = 'MASKED:'
 
@@ -23,9 +23,7 @@ export class ConfigCryptoService {
     const cipher = createCipheriv('aes-256-gcm', key, iv)
     const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()])
     const authTag = cipher.getAuthTag()
-    return (
-      iv.toString('base64') + ':' + authTag.toString('base64') + ':' + encrypted.toString('base64')
-    )
+    return `${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted.toString('base64')}`
   }
 
   decrypt(encryptedText: string): string {

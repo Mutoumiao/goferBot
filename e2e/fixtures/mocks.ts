@@ -298,7 +298,7 @@ export function installChatMocks(page: Page) {
         '',
         'id: 2',
         'event: done',
-        'data: ' + JSON.stringify({ done: true }),
+        `data: ${JSON.stringify({ done: true })}`,
         '',
       ].join('\n'),
     })

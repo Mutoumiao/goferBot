@@ -85,7 +85,7 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
   // 当 conversationId 变化时重置 pending 发送标记，避免切换会话后漏发
   useEffect(() => {
     pendingSentRef.current = false
-  }, [conversationId])
+  }, [])
 
   // 当 tab 首次绑定 conversationId 时，加载历史消息
   useEffect(() => {

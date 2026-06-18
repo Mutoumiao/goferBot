@@ -114,7 +114,7 @@ describe('ResponseInterceptor', () => {
     // 注意：app.inject() 对 SSE 的支持有限，至少验证不是 JSON 包装格式
     const contentType = res.headers['content-type']
     // 如果成功设置 SSE 头，则验证；否则验证响应不是 { data: ... } 格式
-    if (contentType && contentType.includes('text/event-stream')) {
+    if (contentType?.includes('text/event-stream')) {
       expect(contentType).toContain('text/event-stream')
     } else {
       // app.inject() 可能无法完整处理 SSE，验证响应未被 ResponseInterceptor 包装

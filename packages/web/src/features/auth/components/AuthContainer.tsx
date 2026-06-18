@@ -109,40 +109,38 @@ export function AuthContainer({ defaultTab = 'login' }: AuthContainerProps) {
 
           {tab === 'login' ? <LoginForm /> : <RegisterForm />}
 
-          <>
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border-subtle"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-surface-1 px-4 text-xs text-text-tertiary">
-                  或使用以下方式登录
-                </span>
-              </div>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border-subtle"></div>
             </div>
+            <div className="relative flex justify-center">
+              <span className="bg-surface-1 px-4 text-xs text-text-tertiary">
+                或使用以下方式登录
+              </span>
+            </div>
+          </div>
 
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-border-default bg-white py-3.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-2"
-              style={{ height: '56px' }}
-            >
-              <GoogleIcon />
-              使用 Google 账号登录
-            </button>
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border-default bg-white py-3.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-2"
+            style={{ height: '56px' }}
+          >
+            <GoogleIcon />
+            使用 Google 账号登录
+          </button>
 
-            {tab === 'login' && (
-              <p className="mt-8 text-center text-sm text-text-secondary">
-                还没有账号？{' '}
-                <button
-                  type="button"
-                  onClick={() => switchTab('register')}
-                  className="font-medium text-primary hover:underline"
-                >
-                  立即注册
-                </button>
-              </p>
-            )}
-          </>
+          {tab === 'login' && (
+            <p className="mt-8 text-center text-sm text-text-secondary">
+              还没有账号？{' '}
+              <button
+                type="button"
+                onClick={() => switchTab('register')}
+                className="font-medium text-primary hover:underline"
+              >
+                立即注册
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -174,6 +172,7 @@ function FeatureItem({
 function GoogleIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24">
+      <title>Google</title>
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
         fill="#4285F4"

@@ -10,7 +10,7 @@ export const consoleObserver: RAGObserver = {
   },
 
   onTraceComplete(trace: RAGTrace) {
-    const duration = trace.endTime! - trace.startTime
+    const duration = (trace.endTime ?? trace.startTime) - trace.startTime
     console.log('[RAG] trace complete', { traceId: trace.traceId, totalDuration: duration })
   },
 

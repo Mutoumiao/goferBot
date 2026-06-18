@@ -33,7 +33,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
 
-    const isDevelopment = process.env.NODE_ENV === 'development'
+    const _isDevelopment = process.env.NODE_ENV === 'development'
 
     let code = 'INTERNAL_ERROR'
     let message = '服务器内部错误'

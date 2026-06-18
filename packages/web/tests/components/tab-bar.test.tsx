@@ -36,6 +36,7 @@ vi.mock('@/components/ui/button', () => ({
     'aria-label': ariaLabel,
   }: any) => (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}

@@ -95,7 +95,7 @@ describe('RAG Real Integration Tests', () => {
     }
 
     const content = 'GoferBot RAG 真实集成测试内容。'.repeat(50)
-    const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+    const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
     const multipartBody = buildMultipartBody(
       boundary,
       'file',
@@ -147,7 +147,7 @@ describe('RAG Real Integration Tests', () => {
     // 先上传并索引文档
     const content =
       'GoferBot 是一个基于 Vue 3 和 NestJS 的 AI Workspace 项目。它支持文档管理、LLM 问答和 RAG 检索增强。'
-    const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+    const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
     const multipartBody = buildMultipartBody(
       boundary,
       'file',
@@ -234,7 +234,7 @@ describe('RAG Real Integration Tests', () => {
     nock.cleanAll()
 
     const content = '测试失败降级。'
-    const boundary = '----FormBoundary' + Math.random().toString(36).slice(2)
+    const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
     const multipartBody = buildMultipartBody(
       boundary,
       'file',

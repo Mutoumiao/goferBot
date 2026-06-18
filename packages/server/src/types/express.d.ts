@@ -1,5 +1,3 @@
-import type { JwtAccessPayload } from '../auth/auth.service.js'
-
 declare global {
   namespace Express {
     interface User {

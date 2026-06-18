@@ -76,6 +76,7 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
+              type="button"
               className={cn(
                 'pointer-events-auto flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF] transition-opacity hover:bg-[#F7F8FA]',
                 isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
@@ -214,6 +215,7 @@ export function KnowledgeBaseList({
           <h2 className="text-lg font-semibold text-[#1F2328]">知识库</h2>
           <div className="flex items-center gap-1">
             <button
+              type="button"
               className="flex h-7 w-7 items-center justify-center rounded-md border border-[#E7EAF0] bg-white transition-colors hover:bg-[#F7F8FA]"
               onClick={handleCreate}
               aria-label="新建知识库"
@@ -221,6 +223,7 @@ export function KnowledgeBaseList({
               <Plus className="h-4 w-4 text-[#5E6673]" />
             </button>
             <button
+              type="button"
               className="flex h-7 w-7 items-center justify-center rounded-md text-[#9AA3AF] transition-colors hover:bg-[#F7F8FA] hover:text-[#5E6673]"
               onClick={onToggle}
               title="收起知识库列表"
@@ -270,7 +273,7 @@ export function KnowledgeBaseList({
               </Button>
             </div>
           ) : (
-            <ul role="list" className="flex flex-col gap-2.5">
+            <ul className="flex flex-col gap-2.5">
               {entries.map((entry) => (
                 <KbListItem
                   key={entry.id}

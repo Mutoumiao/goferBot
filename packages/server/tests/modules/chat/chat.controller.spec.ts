@@ -99,8 +99,17 @@ describe('ChatController', () => {
     })
 
     it('writes error when stream throws', async () => {
-      chatService.streamChat.mockImplementation(async function* () {
-        throw new Error('stream error')
+      chatService.streamChat.mockImplementation(() => {
+        const error = new Error('stream error')
+        return {
+          [Symbol.asyncIterator]() {
+            return {
+              async next() {
+                throw error
+              },
+            }
+          },
+        }
       })
 
       const dto = { conversation_id: 's1', query: 'hi' } as any

@@ -23,7 +23,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   private redis?: Redis
   private documentQueue!: Queue<DocumentJobData>
   private embeddingQueue!: Queue<EmbeddingJobData>
-  private readonly logger = new Logger(QueueService.name);
+  private readonly logger = new Logger(QueueService.name)
 
   constructor(
     private readonly configService: ConfigService,
@@ -67,7 +67,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   async isHealthy(): Promise<boolean> {
     if (!this.isEnabled()) return false
     try {
-      await this.redis!.ping()
+      await this.redis?.ping()
       return true
     } catch {
       return false
@@ -78,7 +78,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     if (!this.isEnabled()) return
     await this.documentQueue.close()
     await this.embeddingQueue.close()
-    await this.redis!.quit()
+    await this.redis?.quit()
     this.logger.log('Queues and Redis connection closed')
   }
 
@@ -185,6 +185,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
   getRedisConnection(): Redis {
     if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
-    return this.redis!
+    const redis = this.redis
+    if (!redis) throw new Error('QueueService: Redis not initialized')
+    return redis
   }
 }

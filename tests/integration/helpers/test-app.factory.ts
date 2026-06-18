@@ -1,4 +1,3 @@
-import type { CanActivate } from '@nestjs/common'
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 import { AppModule } from '../../../packages/server/src/app.module.js'
@@ -42,18 +41,16 @@ const mockStorageService = {
   getPresignedUploadUrl: async () => 'http://mock.url',
 }
 
-class NoOpThrottlerGuard implements CanActivate {
-  canActivate() {
-    return true
-  }
-}
-
 export interface CreateAppOptions {
   realMode?: boolean
   mockQueue?: boolean
 }
 
 export class TestAppFactory {
+  private constructor() {
+    // 工厂类不应被实例化
+  }
+
   static async create(dbUrl: string, opts: CreateAppOptions = {}): Promise<NestFastifyApplication> {
     const { realMode = false, mockQueue = false } = opts
 

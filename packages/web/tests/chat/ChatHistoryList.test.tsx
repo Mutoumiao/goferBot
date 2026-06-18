@@ -10,7 +10,7 @@ vi.mock('lucide-react', () => ({
 
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, disabled, title }: any) => (
-    <button onClick={onClick} disabled={disabled} title={title}>
+    <button type="button" onClick={onClick} disabled={disabled} title={title}>
       {children}
     </button>
   ),
@@ -30,12 +30,12 @@ vi.mock('@/components/ui/pagination', () => ({
   PaginationEllipsis: () => <li>...</li>,
   PaginationItem: ({ children }: any) => <li>{children}</li>,
   PaginationLink: ({ children, isActive, onClick }: any) => (
-    <button onClick={onClick} data-active={isActive}>
+    <button type="button" onClick={onClick} data-active={isActive}>
       {children}
     </button>
   ),
-  PaginationNext: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
-  PaginationPrevious: ({ text, onClick }: any) => <button onClick={onClick}>{text}</button>,
+  PaginationNext: ({ text, onClick }: any) => <button type="button" onClick={onClick}>{text}</button>,
+  PaginationPrevious: ({ text, onClick }: any) => <button type="button" onClick={onClick}>{text}</button>,
 }))
 
 import { ChatHistoryList } from '@/features/chat/components/ChatHistoryList'

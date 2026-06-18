@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { Paginator } from '../../shared/interfaces/paginator.interface.js'
 import type { CreateSessionDto } from './dto/create-session.dto.js'
@@ -27,7 +28,7 @@ export class SessionService {
     const page = query.page ?? 1
     const limit = query.limit ?? 50
 
-    const result = await (this.prisma.session as any).paginate(
+    const result = await this.prisma.session.paginate(
       {
         where: { userId },
         orderBy: { updatedAt: 'desc' },
@@ -41,16 +42,18 @@ export class SessionService {
     )
 
     return {
-      items: result.data.map((session: any) => ({
-        id: session.id,
-        userId: session.userId,
-        title: session.title,
-        provider: session.provider,
-        model: session.model,
-        createdAt: session.createdAt,
-        updatedAt: session.updatedAt,
-        messageCount: session._count.messages,
-      })),
+      items: result.data
+        .filter((session): session is Prisma.SessionGetPayload<{ include: { _count: { select: { messages: true } } } }> => session !== null)
+        .map((session) => ({
+          id: session.id,
+          userId: session.userId,
+          title: session.title,
+          provider: session.provider,
+          model: session.model,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          messageCount: session._count.messages,
+        })),
       pagination: result.pagination,
     }
   }
@@ -126,7 +129,7 @@ export class SessionService {
     ])
 
     return {
-      messages: messages.map((m: any) => ({
+      messages: messages.map((m: Prisma.MessageGetPayload<object>) => ({
         id: m.id,
         sessionId: m.sessionId,
         role: m.role,

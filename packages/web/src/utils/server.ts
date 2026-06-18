@@ -42,7 +42,7 @@ async function refreshToken(): Promise<string | null> {
 }
 
 function onRefreshed(newToken: string) {
-  refreshSubscribers.forEach((cb) => cb(newToken))
+  for (const cb of refreshSubscribers) cb(newToken)
   refreshSubscribers = []
 }
 
@@ -51,10 +51,12 @@ function addSubscriber(cb: (token: string) => void) {
 }
 
 /** 处理 401/403：尝试刷新 token，失败则清空登录态 */
-async function doRefreshAndRetry(method: {
+interface AlovaMethod {
   send: () => unknown
   config: { headers: Record<string, string> }
-}) {
+}
+
+async function doRefreshAndRetry(method: AlovaMethod) {
   if (!isRefreshing) {
     isRefreshing = true
     try {
@@ -74,7 +76,7 @@ async function doRefreshAndRetry(method: {
   return new Promise<void>((resolve) => {
     addSubscriber((token: string) => {
       method.config.headers.Authorization = `Bearer ${token}`
-      resolve(method.send() as unknown as void)
+      resolve(method.send() as unknown as undefined)
     })
   })
 }
@@ -85,8 +87,7 @@ function isUnauthorized(status: number) {
 }
 
 const responded = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSuccess(response: Response, method: any) {
+  onSuccess(response: Response, method: AlovaMethod) {
     if (isUnauthorized(response.status)) {
       return doRefreshAndRetry(method)
     }
@@ -119,8 +120,7 @@ const responded = {
     }
     return response.json().then((json: Record<string, unknown>) => json.data ?? json)
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onError(error: { status?: number }, method: any) {
+  onError(error: { status?: number }, method: AlovaMethod) {
     if (error.status && isUnauthorized(error.status)) {
       return doRefreshAndRetry(method)
     }

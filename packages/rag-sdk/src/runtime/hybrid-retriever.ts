@@ -1,6 +1,6 @@
 import { RetrievalError } from '../errors.js'
 import type { IEmbedder, IKeywordStore, IRetriever } from '../interfaces.js'
-import type { HybridSearchOptions, Query, RetrievalCandidate } from '../types.js'
+import type { Chunk, HybridSearchOptions, Query, RetrievalCandidate } from '../types.js'
 import type { IVectorStore } from '../vector-store.js'
 import { reciprocalRankFusion } from './rrf.js'
 
@@ -56,7 +56,7 @@ export class HybridRetriever implements IRetriever {
           kbId: query.kbIds[0],
           content: '',
           chunkIndex: 0,
-        } as any,
+        } as Chunk,
         score: r.score,
         source: 'vector' as const,
       }))

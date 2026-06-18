@@ -63,6 +63,7 @@ export function KnowledgeBaseSelector({
           <div className="space-y-2 p-4 text-center text-sm">
             <p className="text-text-secondary">{error.message ?? '加载失败'}</p>
             <button
+              type="button"
               data-testid="kb-selector-retry"
               className="text-brand-primary hover:underline"
               onClick={() => send()}
@@ -81,11 +82,12 @@ export function KnowledgeBaseSelector({
           kbList.map((kb) => {
             const isSelected = selectedId === kb.id
             return (
-              <div
+              <button
                 key={kb.id}
+                type="button"
                 data-testid="kb-selector-item"
                 className={cn(
-                  'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl',
+                  'flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl border-none bg-transparent text-left',
                   isSelected
                     ? 'bg-surface-2 text-brand-primary'
                     : 'text-text-primary hover:bg-surface-2',
@@ -94,13 +96,12 @@ export function KnowledgeBaseSelector({
                   e.preventDefault()
                   handleToggle(kb.id)
                 }}
-                role="radio"
-                aria-checked={isSelected}
+                aria-pressed={isSelected}
               >
                 <DatabaseIcon className="size-4 text-text-secondary" />
                 <span className="truncate">{kb.name}</span>
                 <span className="ml-auto text-xs text-text-tertiary">{kb.fileCount ?? 0} 文档</span>
-              </div>
+              </button>
             )
           })}
       </PopoverContent>

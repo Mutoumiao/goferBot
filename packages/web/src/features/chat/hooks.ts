@@ -8,7 +8,7 @@ export interface ChatHistoryResult {
   pagination: PaginationType | null
   loading: boolean
   error: Error | undefined
-  reload: () => Promise<any>
+  reload: () => Promise<SessionListResponse | undefined>
 }
 
 export function useChatHistory(page: number, pageSize: number): ChatHistoryResult {
@@ -23,12 +23,12 @@ export function useChatHistory(page: number, pageSize: number): ChatHistoryResul
     const responseData = data as SessionListResponse | undefined
     const sessions = responseData?.items ?? []
     const pagination = responseData?.pagination ?? null
-    return { sessions, pagination, loading, error, reload }
+    return { sessions, pagination, loading, error, reload: reload as ChatHistoryResult['reload'] }
   }, [data, loading, error, reload])
 }
 
 export interface LazyChatHistoryResult extends ChatHistoryResult {
-  load: () => Promise<any>
+  load: () => Promise<SessionListResponse | undefined>
 }
 
 export function useLazyChatHistory(page: number, pageSize: number): LazyChatHistoryResult {
@@ -43,6 +43,13 @@ export function useLazyChatHistory(page: number, pageSize: number): LazyChatHist
     const responseData = data as SessionListResponse | undefined
     const sessions = responseData?.items ?? []
     const pagination = responseData?.pagination ?? null
-    return { sessions, pagination, loading, error, reload: load, load }
+    return {
+      sessions,
+      pagination,
+      loading,
+      error,
+      reload: load as LazyChatHistoryResult['reload'],
+      load: load as LazyChatHistoryResult['load'],
+    }
   }, [data, loading, error, load])
 }

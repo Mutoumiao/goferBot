@@ -49,7 +49,7 @@ function RecycleBinPage() {
       .catch(() => {
         // error handled by useRequest
       })
-  }, [])
+  }, [reload])
 
   const handlePermanentDelete = async (id: string) => {
     setRemovingId(id)
@@ -71,6 +71,7 @@ function RecycleBinPage() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => {
             reload().catch(() => {})
           }}
@@ -89,6 +90,7 @@ function RecycleBinPage() {
         <div className="mt-8 text-center">
           <p className="text-sm text-error">加载失败：{error.message || '未知错误'}</p>
           <button
+            type="button"
             onClick={() => {
               reload().catch(() => {})
             }}
@@ -137,6 +139,7 @@ function RecycleBinPage() {
               <div className="ml-4 flex shrink-0 items-center gap-1">
                 {/* 恢复按钮 — 需要后端 /api/knowledge-base/:id/restore 端点 */}
                 <button
+                  type="button"
                   disabled
                   className="rounded p-1.5 text-text-tertiary transition-colors hover:bg-surface-2 disabled:opacity-40"
                   title="恢复功能需要后端支持"
@@ -144,6 +147,7 @@ function RecycleBinPage() {
                   <RestoreIcon />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handlePermanentDelete(item.id)}
                   disabled={removingId === item.id}
                   className="rounded p-1.5 text-text-tertiary transition-colors hover:bg-surface-2 hover:text-error disabled:opacity-50"
@@ -173,6 +177,7 @@ function RestoreIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
+      <title>恢复</title>
       <polyline points="1 4 1 10 7 10" />
       <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
     </svg>
@@ -192,6 +197,7 @@ function TrashIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
+      <title>删除</title>
       <path d="M3 6h18" />
       <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
       <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />

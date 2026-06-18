@@ -28,7 +28,7 @@ export const useOverlayStore = create<OverlayState>((set, get) => ({
   },
 
   closeAll: () => {
-    get().entries.forEach((e) => e.resolve?.(undefined))
+    for (const e of get().entries) e.resolve?.(undefined)
     set({ entries: [] })
   },
 }))

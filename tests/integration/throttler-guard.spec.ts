@@ -18,7 +18,7 @@ describe('ThrottlerGuard', () => {
   let dbManager: TestDatabaseManager
   let dbUrl: string
   let dbName: string
-  let token: string
+  let _token: string
 
   beforeAll(async () => {
     dbManager = new TestDatabaseManager()
@@ -35,7 +35,7 @@ describe('ThrottlerGuard', () => {
       },
       { remoteAddress: nextIp() },
     )
-    token = await AuthFixtures.loginAs(
+    _token = await AuthFixtures.loginAs(
       app,
       { email: user.email, password: 'Test1234!' },
       { remoteAddress: nextIp() },
@@ -98,7 +98,7 @@ describe('ThrottlerGuard', () => {
 
     expect(res.statusCode).toBe(429)
     expect(res.headers['retry-after']).toBeDefined()
-    const retryAfter = parseInt(res.headers['retry-after'])
+    const retryAfter = parseInt(res.headers['retry-after'], 10)
     expect(retryAfter).toBeGreaterThan(0)
     expect(retryAfter).toBeLessThanOrEqual(60)
   })

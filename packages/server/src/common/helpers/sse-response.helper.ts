@@ -24,7 +24,7 @@ export class SseResponseHelper {
    * 初始化 SSE 响应：设置 header、监听客户端断开。
    * 返回 AbortController，供上游在客户端断开时取消长时间任务。
    */
-  init(req: FastifyRequest, reply: FastifyReply): AbortController {
+  init(_req: FastifyRequest, reply: FastifyReply): AbortController {
     this.reply = reply
     const abortController = new AbortController()
 

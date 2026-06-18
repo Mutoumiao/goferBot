@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common'
 import type { Folder, Prisma } from '@prisma/client'
-import { PrismaService } from '../../../processors/database/prisma.service.js'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
 
 @Injectable()
@@ -10,10 +9,6 @@ export class FolderRepository extends BaseRepository<
   Prisma.FolderUpdateInput
 > {
   protected readonly modelName = 'folder' as const
-
-  constructor(prisma: PrismaService) {
-    super(prisma)
-  }
 
   async findByKbId(kbId: string, parentId?: string | null): Promise<Folder[]> {
     const where: Prisma.FolderWhereInput = { kbId }
