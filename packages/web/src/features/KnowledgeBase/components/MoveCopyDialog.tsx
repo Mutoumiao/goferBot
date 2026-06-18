@@ -209,7 +209,9 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
 
         <div className="flex flex-col gap-4 py-2">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="move-copy-target-kb" className="text-sm font-medium">目标知识库</label>
+            <label htmlFor="move-copy-target-kb" className="text-sm font-medium">
+              目标知识库
+            </label>
             <Select value={targetKbId} onValueChange={setTargetKbId} disabled={loadingKbs}>
               <SelectTrigger id="move-copy-target-kb" className="w-full">
                 <SelectValue placeholder="选择知识库" />
@@ -228,7 +230,9 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={ROOT_VALUE} className="text-sm font-medium">目标文件夹</label>
+            <label htmlFor={ROOT_VALUE} className="text-sm font-medium">
+              目标文件夹
+            </label>
             {loadingFolders ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

@@ -43,7 +43,13 @@ export class SessionService {
 
     return {
       items: result.data
-        .filter((session): session is Prisma.SessionGetPayload<{ include: { _count: { select: { messages: true } } } }> => session !== null)
+        .filter(
+          (
+            session,
+          ): session is Prisma.SessionGetPayload<{
+            include: { _count: { select: { messages: true } } }
+          }> => session !== null,
+        )
         .map((session) => ({
           id: session.id,
           userId: session.userId,

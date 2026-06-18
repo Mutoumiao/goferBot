@@ -70,7 +70,9 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="login-email" className="mb-2 block text-sm font-medium text-text-primary">邮箱</label>
+        <label htmlFor="login-email" className="mb-2 block text-sm font-medium text-text-primary">
+          邮箱
+        </label>
         <Input
           id="login-email"
           type="email"
@@ -87,7 +89,12 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="login-password" className="mb-2 block text-sm font-medium text-text-primary">密码</label>
+        <label
+          htmlFor="login-password"
+          className="mb-2 block text-sm font-medium text-text-primary"
+        >
+          密码
+        </label>
         <div className="relative">
           <Input
             id="login-password"

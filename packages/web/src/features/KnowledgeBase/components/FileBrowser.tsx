@@ -32,12 +32,7 @@ interface FileBrowserProps {
 }
 
 function LoadingState() {
-  const skeletonKeys = [
-    'skeleton-0',
-    'skeleton-1',
-    'skeleton-2',
-    'skeleton-3',
-  ] as const
+  const skeletonKeys = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'] as const
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {skeletonKeys.map((key) => (

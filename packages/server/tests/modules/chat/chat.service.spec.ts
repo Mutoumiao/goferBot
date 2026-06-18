@@ -415,7 +415,9 @@ describe('ChatService', () => {
       const provider = createMockProvider()
       llmFactory.create.mockReturnValue(provider)
       const abortController = new AbortController()
-      const errorSpy = vi.spyOn((service as unknown as { logger: Logger }).logger, 'error').mockImplementation(() => {})
+      const errorSpy = vi
+        .spyOn((service as unknown as { logger: Logger }).logger, 'error')
+        .mockImplementation(() => {})
 
       const chunks: any[] = []
       for await (const chunk of service.streamChat(

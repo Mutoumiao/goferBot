@@ -76,7 +76,9 @@ function createExtendedPrismaClient(options?: Prisma.PrismaClientOptions) {
             return false
           }
           const xRecord = x as unknown as Record<string, unknown>
-          const count = await (this as unknown as MinimalModelDelegate).count({ where: xRecord.where })
+          const count = await (this as unknown as MinimalModelDelegate).count({
+            where: xRecord.where,
+          })
           return count > 0
         },
       },

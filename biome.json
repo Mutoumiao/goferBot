@@ -105,7 +105,14 @@
       }
     },
     {
-      "includes": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.test.ts", "**/*.test.tsx", "tests/**", "e2e/**"],
+      "includes": [
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "tests/**",
+        "e2e/**"
+      ],
       "linter": {
         "rules": {
           "suspicious": {

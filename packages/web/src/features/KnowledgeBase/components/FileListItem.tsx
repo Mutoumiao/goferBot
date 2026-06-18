@@ -16,9 +16,7 @@ export function FileListItem({ item, isFolder, onClick }: FileListItemProps) {
   const ext = isFolder ? null : doc.ext
 
   return (
-    <tr
-      className="relative border-b border-border-default hover:bg-surface-2 transition-colors focus-within:bg-[#EEF2FF] focus-within:ring-2 focus-within:ring-[#5B7CFA]"
-    >
+    <tr className="relative border-b border-border-default hover:bg-surface-2 transition-colors focus-within:bg-[#EEF2FF] focus-within:ring-2 focus-within:ring-[#5B7CFA]">
       <td colSpan={5} className="p-0">
         <button
           type="button"

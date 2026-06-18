@@ -299,7 +299,10 @@ describe('chat services', () => {
       await submitTempChat('hello', 'tab-1', { knowledgeBaseIds: ['kb1', 'kb2'] })
 
       const stored = sessionStorage.getItem(getPendingMessageKey('s2'))
-      expect(JSON.parse(stored ?? '{}')).toEqual({ content: 'hello', knowledgeBaseIds: ['kb1', 'kb2'] })
+      expect(JSON.parse(stored ?? '{}')).toEqual({
+        content: 'hello',
+        knowledgeBaseIds: ['kb1', 'kb2'],
+      })
     })
 
     it('returns null when session creation fails', async () => {

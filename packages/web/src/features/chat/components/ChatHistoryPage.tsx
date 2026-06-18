@@ -64,7 +64,10 @@ export function ChatHistoryPage() {
         {loading && (
           <div className="mt-6 space-y-2">
             {[1, 2, 3, 4].map((key) => (
-              <div key={`skeleton-${key}`} className="h-[76px] w-full animate-pulse rounded-lg bg-surface-3" />
+              <div
+                key={`skeleton-${key}`}
+                className="h-[76px] w-full animate-pulse rounded-lg bg-surface-3"
+              />
             ))}
           </div>
         )}

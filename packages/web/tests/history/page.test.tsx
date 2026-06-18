@@ -95,8 +95,16 @@ vi.mock('@/components/ui/pagination', () => ({
       {children}
     </button>
   ),
-  PaginationNext: ({ text, onClick }: any) => <button type="button" onClick={onClick}>{text}</button>,
-  PaginationPrevious: ({ text, onClick }: any) => <button type="button" onClick={onClick}>{text}</button>,
+  PaginationNext: ({ text, onClick }: any) => (
+    <button type="button" onClick={onClick}>
+      {text}
+    </button>
+  ),
+  PaginationPrevious: ({ text, onClick }: any) => (
+    <button type="button" onClick={onClick}>
+      {text}
+    </button>
+  ),
 }))
 
 vi.mock('@/router-register', () => ({

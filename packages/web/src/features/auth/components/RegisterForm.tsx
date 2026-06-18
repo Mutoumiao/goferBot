@@ -83,7 +83,9 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="register-name" className="mb-2 block text-sm font-medium text-text-primary">用户名</label>
+        <label htmlFor="register-name" className="mb-2 block text-sm font-medium text-text-primary">
+          用户名
+        </label>
         <Input
           id="register-name"
           type="text"
@@ -100,7 +102,12 @@ export function RegisterForm() {
       </div>
 
       <div>
-        <label htmlFor="register-email" className="mb-2 block text-sm font-medium text-text-primary">邮箱</label>
+        <label
+          htmlFor="register-email"
+          className="mb-2 block text-sm font-medium text-text-primary"
+        >
+          邮箱
+        </label>
         <Input
           id="register-email"
           type="email"
@@ -117,7 +124,12 @@ export function RegisterForm() {
       </div>
 
       <div>
-        <label htmlFor="register-password" className="mb-2 block text-sm font-medium text-text-primary">密码</label>
+        <label
+          htmlFor="register-password"
+          className="mb-2 block text-sm font-medium text-text-primary"
+        >
+          密码
+        </label>
         <div className="relative">
           <Input
             id="register-password"
@@ -143,7 +155,12 @@ export function RegisterForm() {
       </div>
 
       <div>
-        <label htmlFor="register-confirm-password" className="mb-2 block text-sm font-medium text-text-primary">确认密码</label>
+        <label
+          htmlFor="register-confirm-password"
+          className="mb-2 block text-sm font-medium text-text-primary"
+        >
+          确认密码
+        </label>
         <div className="relative">
           <Input
             id="register-confirm-password"
