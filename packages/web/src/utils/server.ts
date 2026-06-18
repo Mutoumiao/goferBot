@@ -80,9 +80,32 @@ const responded = {
     if (isUnauthorized(response.status)) {
       return doRefreshAndRetry(method)
     }
-    // 非 2xx 响应（除 401/403 外）视为错误，抛出异常
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      // 保留 NestJS 异常体中的 { code, message } 结构，使上层 mapAuthError 能解析出中文提示
+      return response
+        .clone()
+        .json()
+        .catch(() => null)
+        .then((body: unknown) => {
+          const payload =
+            body && typeof body === 'object' && 'error' in (body as object)
+              ? (body as { error?: { code?: string; message?: string } }).error
+              : (body as { code?: string; message?: string } | null)
+          const message =
+            (payload && typeof payload === 'object' && 'message' in payload && payload.message) ||
+            `HTTP ${response.status}: ${response.statusText}`
+          const code =
+            payload && typeof payload === 'object' && 'code' in payload ? payload.code : undefined
+          const err = new Error(message) as Error & {
+            status?: number
+            code?: string
+            cause?: unknown
+          }
+          err.status = response.status
+          err.code = code as string | undefined
+          err.cause = body
+          throw err
+        })
     }
     return response.json().then((json: Record<string, unknown>) => json.data ?? json)
   },
