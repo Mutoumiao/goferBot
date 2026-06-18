@@ -23,7 +23,7 @@ import { getKbForSelector } from '@/api/KnowledgeBase'
 import { useKbStore } from '../store'
 import { moveDocument, moveFolder, copyDocument, copyFolder } from '../services'
 import type { Folder as FolderType, DocumentItem } from '../types'
-import type { KbEntry } from '@goferbot/data'
+import type { KbSelectorEntry } from '@goferbot/data'
 
 interface MoveCopyDialogProps {
   mode: 'move' | 'copy'
@@ -81,7 +81,7 @@ function isFolder(item: FolderType | DocumentItem): item is FolderType {
 
 export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveCopyDialogProps) {
   const { currentKbId } = useKbStore()
-  const [kbs, setKbs] = useState<KbEntry[]>([])
+  const [kbs, setKbs] = useState<KbSelectorEntry[]>([])
   const [folders, setFolders] = useState<FolderOption[]>([])
   const [loadingKbs, setLoadingKbs] = useState(false)
   const [loadingFolders, setLoadingFolders] = useState(false)
@@ -101,8 +101,7 @@ export default function MoveCopyDialog({ mode, item, onClose, onConfirm }: MoveC
       .send()
       .then((res) => {
         if (cancelled) return
-        const data = res as { items?: KbEntry[]; data?: KbEntry[] }
-        const list = ((data.items ?? data.data) ?? []) as KbEntry[]
+        const list = Array.isArray(res) ? (res as KbSelectorEntry[]) : []
         setKbs(list)
         if (list.some((kb) => kb.id === currentKbId)) {
           setTargetKbId(currentKbId)

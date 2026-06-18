@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB，与后端限制对齐
 
-const ALLOWED_EXTENSIONS = ['.md', '.txt', '.pdf']
-const ALLOWED_MIME_TYPES = ['text/markdown', 'text/plain', 'application/pdf']
+const ALLOWED_EXTENSIONS = ['.md', '.txt', '.html', '.csv', '.json', '.pdf']
 
 const ILLEGAL_FILENAME_PATTERN = /[\x00-\x1f\x7f]|\.\.|\/|\\/
 
@@ -29,7 +28,7 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
 
       for (const file of files) {
         const ext = '.' + file.name.split('.').pop()?.toLowerCase()
-        if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_MIME_TYPES.includes(file.type)) {
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
           rejected.push({ name: file.name, reason: '不支持的文件类型' })
           continue
         }
@@ -121,6 +120,7 @@ export function UploadDropZone({ onFilesSelected }: UploadDropZoneProps) {
           ref={fileInputRef}
           type="file"
           multiple
+          accept=".md,.txt,.html,.csv,.json,.pdf"
           className="hidden"
           onChange={handleFileChange}
           tabIndex={-1}

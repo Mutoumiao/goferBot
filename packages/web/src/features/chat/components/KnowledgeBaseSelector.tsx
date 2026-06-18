@@ -1,6 +1,6 @@
 import { useRequest } from 'alova/client'
 import { getKbForSelector } from '@/api/KnowledgeBase'
-import type { KbEntry } from '@goferbot/data'
+import type { KbSelectorEntry } from '@goferbot/data'
 import { DatabaseIcon, HashIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,8 +19,7 @@ interface KnowledgeBaseSelectorProps {
 export function KnowledgeBaseSelector({ selectedId, onSelect, disabled = false }: KnowledgeBaseSelectorProps) {
   const { data, loading, error, send } = useRequest(() => getKbForSelector(), { immediate: true })
 
-  const response = data as { data?: KbEntry[] } | undefined
-  const kbList: KbEntry[] = response?.data ?? []
+  const kbList: KbSelectorEntry[] = Array.isArray(data) ? data : []
 
   const handleToggle = (kbId: string) => {
     onSelect(selectedId === kbId ? null : kbId)

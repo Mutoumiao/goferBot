@@ -31,6 +31,19 @@ export const updateKbRequestSchema = z.object({
 
 export const kbListResponseSchema = createPagedResponseSchema(kbEntrySchema)
 
+export const kbSelectorEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  icon: z.string().max(10).optional(),
+  isPinned: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  fileCount: z.number().int().min(0).optional(),
+  createdAt: z.string(),
+  updatedAt: z.string().optional(),
+})
+
+export const kbSelectorResponseSchema = z.array(kbSelectorEntrySchema)
+
 export const kbDetailResponseSchema = z.object({
   id: z.string(),
   name: z.string(),

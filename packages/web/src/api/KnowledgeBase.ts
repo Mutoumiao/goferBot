@@ -1,11 +1,11 @@
-import type { CreateKbRequest, UpdateKbRequest } from '@goferbot/data'
+import type { CreateKbRequest, UpdateKbRequest, KbSelectorResponse } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
 export const getKbList = () =>
   alovaInstance.Get('/knowledge-bases')
 
 export const getKbForSelector = () =>
-  alovaInstance.Get('/knowledge-bases/for-selector')
+  alovaInstance.Get<KbSelectorResponse>('/knowledge-bases/for-selector')
 
 export const createKb = (data: CreateKbRequest) =>
   alovaInstance.Post('/knowledge-bases', data)

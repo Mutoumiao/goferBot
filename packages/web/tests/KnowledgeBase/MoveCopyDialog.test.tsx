@@ -15,7 +15,7 @@ vi.mock('@/api/file', () => ({
 }))
 
 vi.mock('@/api/KnowledgeBase', () => ({
-  getKbForSelector: vi.fn(() => ({ send: vi.fn().mockResolvedValue({ items: [] }) })),
+  getKbForSelector: vi.fn(() => ({ send: vi.fn().mockResolvedValue([]) })),
 }))
 
 vi.mock('@/features/KnowledgeBase/services', () => ({
@@ -65,7 +65,7 @@ describe('MoveCopyDialog', () => {
 
   it('renders move dialog for document', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
 
     render(
       <MoveCopyDialog
@@ -86,7 +86,7 @@ describe('MoveCopyDialog', () => {
 
   it('renders copy dialog for folder', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
 
     render(
       <MoveCopyDialog
@@ -107,7 +107,7 @@ describe('MoveCopyDialog', () => {
     const user = userEvent.setup()
     const onConfirm = vi.fn()
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
 
     render(
       <MoveCopyDialog
@@ -133,7 +133,7 @@ describe('MoveCopyDialog', () => {
   it('disables source folder and its descendants in copy mode', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
     const { getFolders } = await import('@/api/file')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
     vi.mocked(getFolders).mockImplementation((_kbId, parentId) => ({
       send: vi.fn().mockResolvedValue(
         parentId === null
@@ -169,7 +169,7 @@ describe('MoveCopyDialog', () => {
   it('disables source folder and its descendants in move mode', async () => {
     const { getKbForSelector } = await import('@/api/KnowledgeBase')
     const { getFolders } = await import('@/api/file')
-    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue({ items: [mockKb] }) } as any)
+    vi.mocked(getKbForSelector).mockReturnValue({ send: vi.fn().mockResolvedValue([mockKb]) } as any)
     vi.mocked(getFolders).mockImplementation((_kbId, parentId) => ({
       send: vi.fn().mockResolvedValue(
         parentId === null

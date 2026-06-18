@@ -12,6 +12,8 @@ import {
   createKbRequestSchema,
   updateKbRequestSchema,
   kbListResponseSchema,
+  kbSelectorEntrySchema,
+  kbSelectorResponseSchema,
   kbDetailResponseSchema,
   documentStatusSchema,
   documentStatusResponseSchema,
@@ -72,6 +74,8 @@ export type KbEntry = z.infer<typeof kbEntrySchema>
 export type CreateKbRequest = z.infer<typeof createKbRequestSchema>
 export type UpdateKbRequest = z.infer<typeof updateKbRequestSchema>
 export type KbListResponse = z.infer<typeof kbListResponseSchema>
+export type KbSelectorEntry = z.infer<typeof kbSelectorEntrySchema>
+export type KbSelectorResponse = z.infer<typeof kbSelectorResponseSchema>
 export type KbDetailResponse = z.infer<typeof kbDetailResponseSchema>
 export type DocumentStatus = z.infer<typeof documentStatusSchema>
 export type DocumentStatusResponse = z.infer<typeof documentStatusResponseSchema>
@@ -119,6 +123,8 @@ export {
   createKbRequestSchema,
   updateKbRequestSchema,
   kbListResponseSchema,
+  kbSelectorEntrySchema,
+  kbSelectorResponseSchema,
   kbDetailResponseSchema,
   documentStatusSchema,
   documentStatusResponseSchema,

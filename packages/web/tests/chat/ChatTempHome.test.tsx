@@ -41,12 +41,10 @@ describe('ChatTempHome', () => {
       sessionCache: new Map(),
     })
     vi.mocked(useRequest).mockReturnValue({
-      data: {
-        data: [
-          { id: 'kb1', name: '知识库 A', fileCount: 2 },
-          { id: 'kb2', name: '知识库 B', fileCount: 5 },
-        ],
-      },
+      data: [
+        { id: 'kb1', name: '知识库 A', fileCount: 2 },
+        { id: 'kb2', name: '知识库 B', fileCount: 5 },
+      ],
       loading: false,
       error: undefined,
       send: vi.fn(),

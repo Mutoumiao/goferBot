@@ -20,7 +20,7 @@ describe('KnowledgeBaseSelector', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useRequest).mockReturnValue({
-      data: { data: mockKbList },
+      data: mockKbList,
       loading: false,
       error: undefined,
       send: vi.fn(),
