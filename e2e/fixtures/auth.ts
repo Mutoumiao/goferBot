@@ -38,7 +38,7 @@ export async function createTestUser(): Promise<TestUser> {
     throw new Error(`Failed to create test user: ${response.status} ${error}`)
   }
 
-  const result = await response.json() as { data?: { user?: { id: string } } }
+  const result = (await response.json()) as { data?: { user?: { id: string } } }
   const userId = result.data?.user?.id
 
   if (!userId) {
@@ -60,10 +60,9 @@ export async function deleteTestUser(identifier: { email?: string; id?: string }
     const client = new Client({ connectionString: E2E_DATABASE_URL })
     try {
       await client.connect()
-      const res = await client.query<{ id: string }>(
-        'SELECT id FROM users WHERE email = $1',
-        [identifier.email],
-      )
+      const res = await client.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [
+        identifier.email,
+      ])
       if (res.rows.length > 0) {
         userId = res.rows[0].id
       }

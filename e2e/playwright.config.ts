@@ -37,14 +37,15 @@ export default defineConfig({
   webServer: process.env.WEB_SERVER_URL
     ? undefined
     : {
-      command: 'pnpm --filter @goferbot/web dev',
-      url: 'http://localhost:1420',
-      reuseExistingServer: true,
-      timeout: 120_000,
-      env: {
-        ...process.env,
-        // 强制使用 goferbot_e2e 数据库
-        DATABASE_URL: 'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public',
+        command: 'pnpm --filter @goferbot/web dev',
+        url: 'http://localhost:1420',
+        reuseExistingServer: true,
+        timeout: 120_000,
+        env: {
+          ...process.env,
+          // 强制使用 goferbot_e2e 数据库
+          DATABASE_URL:
+            'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public',
+        },
       },
-    },
 })
