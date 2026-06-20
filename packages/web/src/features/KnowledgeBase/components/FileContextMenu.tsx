@@ -9,6 +9,24 @@ import {
 } from '@/components/ui/context-menu'
 import type { DocumentItem, Folder } from '../types'
 
+/**
+ * 包装菜单项点击回调，确保 ContextMenu 彻底释放焦点后再执行业务逻辑。
+ *
+ * 当前 overlay 系统把 Dialog 渲染到 document.body 的 portal 中。Dialog 挂载时会
+ * 立即给页面其余部分加 aria-hidden。如果此时 ContextMenu 的菜单项或触发器仍持有
+ * 焦点，浏览器就会报 "Blocked aria-hidden on an element because its descendant
+ * retained focus"。
+ *
+ * 因此先 blur 当前焦点元素，再用 setTimeout 让菜单完成关闭动画，最后才打开 Dialog。
+ */
+function deferAfterClose(handler: () => void) {
+  return () => {
+    const active = document.activeElement as HTMLElement | null
+    active?.blur()
+    window.setTimeout(() => handler(), 0)
+  }
+}
+
 interface FileContextMenuProps {
   item: Folder | DocumentItem | null
   children: React.ReactNode
@@ -53,38 +71,38 @@ export function FileContextMenu({
   const isFolder = item ? !('status' in item) : false
 
   return (
-    <ContextMenu>
+    <ContextMenu modal={false}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
+      <ContextMenuContent className="w-48" onCloseAutoFocus={(e) => e.preventDefault()}>
         {item ? (
           <>
             {isFolder && onOpen && (
-              <ContextMenuItem onClick={handleOpen}>
+              <ContextMenuItem onClick={deferAfterClose(handleOpen)}>
                 <FolderOpen className="mr-2 h-4 w-4" />
                 打开
               </ContextMenuItem>
             )}
             {onRename && (
-              <ContextMenuItem onClick={handleRename}>
+              <ContextMenuItem onClick={deferAfterClose(handleRename)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 重命名
               </ContextMenuItem>
             )}
             {onMove && (
-              <ContextMenuItem onClick={handleMove}>
+              <ContextMenuItem onClick={deferAfterClose(handleMove)}>
                 <FolderInput className="mr-2 h-4 w-4" />
                 移动到
               </ContextMenuItem>
             )}
             {onCopy && (
-              <ContextMenuItem onClick={handleCopy}>
+              <ContextMenuItem onClick={deferAfterClose(handleCopy)}>
                 <Copy className="mr-2 h-4 w-4" />
                 复制到
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
             {onDelete && (
-              <ContextMenuItem onClick={handleDelete} className="text-red-600">
+              <ContextMenuItem onClick={deferAfterClose(handleDelete)} className="text-red-600">
                 <Trash2 className="mr-2 h-4 w-4" />
                 删除
               </ContextMenuItem>
@@ -92,7 +110,7 @@ export function FileContextMenu({
           </>
         ) : (
           onCreateFolder && (
-            <ContextMenuItem onClick={onCreateFolder}>
+            <ContextMenuItem onClick={deferAfterClose(onCreateFolder)}>
               <FolderPlus className="mr-2 h-4 w-4" />
               新建文件夹
             </ContextMenuItem>
