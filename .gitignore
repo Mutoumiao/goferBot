@@ -68,11 +68,7 @@ docs/design/pen/*
 .data/
 .gstack/
 
-.trae/
-
 .codegraph/
-
-.cursor/
 
 .claude/*
 
@@ -81,3 +77,8 @@ docs/design/pen/*
 .playwright-cli/
 e2e/report/index.html
 e2e/artifacts/.last-run.json
+
+# ide
+.trae/
+.zed/
+.cursor/
