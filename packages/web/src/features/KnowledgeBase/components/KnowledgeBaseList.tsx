@@ -24,7 +24,12 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { openDialog } from '@/overlays/services/overlay-service'
 import { cn } from '@/utils/cn'
-import { fetchKbList, pinKnowledgeBase, removeKnowledgeBaseAndClearSelection } from '../services'
+import {
+  fetchKbList,
+  loadKbItems,
+  pinKnowledgeBase,
+  removeKnowledgeBaseAndClearSelection,
+} from '../services'
 import { useKbStore } from '../store'
 
 function KbSkeletonCard() {
@@ -163,6 +168,9 @@ export function KnowledgeBaseList({
   const handleSelect = useCallback(
     (entry: KbEntry) => {
       setSelectedId(entry.id)
+      // 加载该知识库内容，同时设置 currentKbId —— 缺此调用会导致 currentKbId 永为 null，
+      // 进而使 FileBrowser 上传按钮静默吞咽（点击上传选完文件后无任何反应）
+      void loadKbItems(entry.id)
     },
     [setSelectedId],
   )
