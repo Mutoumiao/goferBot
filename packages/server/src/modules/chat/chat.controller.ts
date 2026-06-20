@@ -51,10 +51,12 @@ export class ChatController {
   @Get()
   async listMessages(@CurrentUser('id') userId: string, @Query() query: MessageListQueryDto) {
     await this.conversationService.ensureOwnership(userId, query.conversation_id)
-    return this.conversationService.paginateMessages(query.conversation_id, {
+    const result = await this.conversationService.paginateMessages(query.conversation_id, {
       page: query.page,
       size: query.size,
     })
+    // 统一分页响应格式：前端 MessageListResponse 期望 { items, pagination }
+    return { items: result.data, pagination: result.pagination }
   }
 
   @Get('providers')

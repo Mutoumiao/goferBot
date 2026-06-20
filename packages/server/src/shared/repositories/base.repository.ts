@@ -1,4 +1,5 @@
-import type { PrismaService } from '../../processors/database/prisma.service.js'
+import { Injectable } from '@nestjs/common'
+import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { PaginationResult } from '../interfaces/paginator.interface.js'
 
 export interface RepositoryOptions {
@@ -7,6 +8,7 @@ export interface RepositoryOptions {
   orderBy?: Record<string, 'asc' | 'desc'>
 }
 
+@Injectable()
 export abstract class BaseRepository<T, CreateInput, UpdateInput> {
   protected abstract readonly modelName: keyof PrismaService
 
@@ -54,7 +56,11 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
 
   async paginate(
     where: Record<string, unknown>,
-    options: { page: number; size: number; orderBy?: Record<string, 'asc' | 'desc'> },
+    options: {
+      page: number
+      size: number
+      orderBy?: Record<string, 'asc' | 'desc'>
+    },
   ): Promise<PaginationResult<T>> {
     return this.model.paginate({ where, orderBy: options.orderBy } as never, {
       page: options.page,

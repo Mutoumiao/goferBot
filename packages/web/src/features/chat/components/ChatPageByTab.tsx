@@ -43,6 +43,8 @@ function xMessagesToMessages(
 export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
   const tab = useWorkspaceStore((s) => s.tabs.find((t) => t.id === tabId))
   const pendingSentRef = useRef(false)
+  // 记录上一次有效的 conversationId，用于区分「新建会话（undefined → id）」和「切换会话（id → id）」
+  const prevConversationIdRef = useRef<string | undefined>(undefined)
 
   const providerRef = useState(() => createGoferProvider())[0]
 
@@ -87,27 +89,39 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
     pendingSentRef.current = false
   }, [])
 
-  // 当 tab 首次绑定 conversationId 时，加载历史消息
+  // 当 tab 绑定 conversationId 时加载历史消息。
+  // - 新建会话（存在 pending message）：不清空，让 pending 自动发送的用户消息自然显示。
+  // - 切换/初始加载已有会话（无 pending）：先清空旧消息，避免加载新历史期间显示旧内容。
   useEffect(() => {
-    if (!conversationId) return
+    if (!conversationId) {
+      prevConversationIdRef.current = conversationId
+      return
+    }
 
     const conversationStore = useConversationStore.getState()
     const cached = conversationStore.conversationMap[conversationId]
 
     if (cached?.messages.length) {
       setMessages(messagesToMessageInfos(cached.messages))
+      prevConversationIdRef.current = conversationId
       return
     }
 
-    // 先清空旧会话消息，避免在加载新历史期间显示旧内容
-    setMessages([])
+    // 没有 pending 时（切换会话或刷新后直接加载），先清空旧消息
+    const pendingKey = getPendingMessageKey(conversationId)
+    const hasPending = !!sessionStorage.getItem(pendingKey)
+    if (!hasPending) {
+      setMessages([])
+    }
+
     let stale = false
     loadChatHistory(conversationId).then(() => {
       if (stale) return
       const fresh = useConversationStore.getState().conversationMap[conversationId]?.messages ?? []
-      setMessages(messagesToMessageInfos(fresh))
+      if (fresh.length) setMessages(messagesToMessageInfos(fresh))
     })
 
+    prevConversationIdRef.current = conversationId
     return () => {
       stale = true
     }
