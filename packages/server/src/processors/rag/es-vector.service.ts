@@ -9,6 +9,8 @@ export interface VectorOptions {
     kbIds?: string[]
     documentIds?: string[]
     metadata?: Record<string, unknown>
+    allowedUserIds?: string[]
+    allowedTeamIds?: string[]
   }
 }
 
@@ -53,6 +55,33 @@ export class EsVectorService {
           filterClauses.push({ term: { [field]: value } })
         }
       }
+    }
+
+    // ACL physical filter for vector search. Note: ES `knn.filter` is executed
+    // BEFORE the ANN traversal, which is the recommended mode for strong
+    // multi-tenant isolation (supplemental doc Trap 3).
+    if (options.filters?.allowedUserIds && options.filters.allowedUserIds.length > 0) {
+      filterClauses.push({
+        bool: {
+          should: [
+            { terms: { allowed_user_ids: options.filters.allowedUserIds } },
+            { bool: { must_not: { exists: { field: 'allowed_user_ids' } } } },
+          ],
+          minimum_should_match: 1,
+        },
+      })
+    }
+
+    if (options.filters?.allowedTeamIds && options.filters.allowedTeamIds.length > 0) {
+      filterClauses.push({
+        bool: {
+          should: [
+            { terms: { allowed_team_ids: options.filters.allowedTeamIds } },
+            { bool: { must_not: { exists: { field: 'allowed_team_ids' } } } },
+          ],
+          minimum_should_match: 1,
+        },
+      })
     }
 
     if (filterClauses.length > 0) {

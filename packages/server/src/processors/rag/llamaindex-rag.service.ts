@@ -7,6 +7,9 @@ import { EsKeywordService } from './es-keyword.service.js'
 import { EsVectorService } from './es-vector.service.js'
 import { BgeRerankService } from './bge-rerank.service.js'
 import { GroundingService } from './grounding.service.js'
+import { GuardrailService } from './guardrail.service.js'
+import { RouterService } from './router.service.js'
+import type { RouterDecision } from './router.service.js'
 import { QueryUnderstandingService } from './query-understanding.service.js'
 import type { GroundingResult } from './grounding.service.js'
 import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
@@ -36,6 +39,7 @@ export interface RagRetrieveOptions {
   userId?: string
   userTeams?: string[]
   resolveParents?: boolean
+  skipRouter?: boolean
 }
 
 export interface RagQueryOptions extends RagRetrieveOptions {
@@ -88,6 +92,8 @@ export class LlamaIndexRagService {
     private readonly vectorService: EsVectorService,
     private readonly reranker: BgeRerankService,
     private readonly groundingService: GroundingService,
+    private readonly guardrailService: GuardrailService,
+    private readonly routerService: RouterService,
     private readonly queryUnderstanding: QueryUnderstandingService,
     private readonly prisma: PrismaService,
     config: ConfigService,
@@ -169,45 +175,90 @@ export class LlamaIndexRagService {
       workingQuery = quResult.rewrittenQuery
     }
 
+    // Run Router to choose pipeline. Explicit option overrides router decision.
+    let routerDecision: RouterDecision | null = null
+    if (!options.skipRouter && !options.mode) {
+      routerDecision = this.routerService.decide(workingQuery)
+    }
+
+    const effectiveMode = options.mode ?? routerDecision?.pipeline.mode ?? 'hybrid'
+    const effectiveNeedRerank = options.needRerank ?? routerDecision?.pipeline.needRerank ?? false
+    const effectiveTopK = options.topK ?? routerDecision?.pipeline.topK ?? 5
+    const effectiveCandidateK =
+      options.candidateK ?? routerDecision?.pipeline.candidateK ?? Math.max(30, effectiveTopK * 6)
+    const effectiveVectorWeight = options.vectorWeight ?? routerDecision?.pipeline.vectorWeight ?? DEFAULT_VECTOR_WEIGHT
+    const effectiveBm25Weight = options.bm25Weight ?? routerDecision?.pipeline.bm25Weight ?? DEFAULT_BM25_WEIGHT
+    const effectiveResolveParents = options.resolveParents ?? routerDecision?.pipeline.needFullContext ?? true
+
+    if (routerDecision) {
+      this.logger.log(
+        `[Router] intent=${routerDecision.intent} mode=${effectiveMode} rerank=${effectiveNeedRerank} topK=${effectiveTopK}`,
+      )
+    }
+
     this.logger.log(
-      `Permission check: user=${options.userId ?? 'anonymous'} kbIds=${JSON.stringify(options.kbIds ?? [])} mode=${options.mode ?? 'hybrid'} lang=${quResult.language}`,
+      `Permission check: user=${options.userId ?? 'anonymous'} kbIds=${JSON.stringify(options.kbIds ?? [])} mode=${effectiveMode} lang=${quResult.language}`,
     )
 
-    const mode = options.mode ?? 'hybrid'
-    const candidateK = options.candidateK ?? Math.max(30, (options.topK ?? 5) * 6)
-
+    // ACL physical filter: inject user/team ids into ES query so that even
+    // if the application-level check is bypassed, unauthorized docs are
+    // filtered out at the index level.
     const filters = {
       kbIds: options.kbIds,
       documentIds: options.documentIds,
       metadata: options.metadata,
       language: quResult.language,
+      allowedUserIds: options.userId ? [options.userId] : undefined,
+      allowedTeamIds: options.userTeams,
     }
+
+    // Consume QU's synonym expansion by running parallel queries.
+    const queriesToRun =
+      quResult.expandedQueries && quResult.expandedQueries.length > 1
+        ? quResult.expandedQueries.slice(0, 3)
+        : [workingQuery]
 
     let hits: SearchHit[]
     let retrievalTime = 0
 
-    if (mode === 'vector') {
+    if (effectiveMode === 'vector') {
       const retrievalStart = Date.now()
-      const queryVector = await this.embeddings.embed(workingQuery)
-      hits = await this.vectorService.search(queryVector, {
-        topK: candidateK,
-        numCandidates: candidateK * 5,
-        filters,
-      })
+      const vectorHits: SearchHit[] = []
+      for (const q of queriesToRun) {
+        const queryVector = await this.embeddings.embed(q)
+        const h = await this.vectorService.search(queryVector, {
+          topK: Math.ceil(effectiveCandidateK / queriesToRun.length),
+          numCandidates: effectiveCandidateK,
+          filters,
+        })
+        vectorHits.push(...h)
+      }
+      hits = this.dedupeHits(vectorHits).slice(0, effectiveCandidateK)
       retrievalTime = Date.now() - retrievalStart
-    } else if (mode === 'bm25') {
+    } else if (effectiveMode === 'bm25') {
       const retrievalStart = Date.now()
-      hits = await this.keywordService.search(workingQuery, { topK: candidateK, filters })
+      const bm25Hits: SearchHit[] = []
+      for (const q of queriesToRun) {
+        const h = await this.keywordService.search(q, {
+          topK: Math.ceil(effectiveCandidateK / queriesToRun.length),
+          filters,
+        })
+        bm25Hits.push(...h)
+      }
+      hits = this.dedupeHits(bm25Hits).slice(0, effectiveCandidateK)
       retrievalTime = Date.now() - retrievalStart
     } else {
       const retrievalStart = Date.now()
-      hits = await this.retrieveHybrid(workingQuery, candidateK, filters, options)
+      hits = await this.retrieveHybrid(workingQuery, effectiveCandidateK, filters, {
+        ...options,
+        vectorWeight: effectiveVectorWeight,
+        bm25Weight: effectiveBm25Weight,
+      })
       retrievalTime = Date.now() - retrievalStart
     }
 
     let rerankTime = 0
-    const rerankEnabled = options.needRerank ?? (mode === 'hybrid' && hits.length > (options.topK ?? 5))
-    if (rerankEnabled && hits.length > 0) {
+    if (effectiveNeedRerank && hits.length > 0) {
       const rerankStart = Date.now()
       const reranked = await this.reranker.rerank(
         workingQuery,
@@ -217,7 +268,7 @@ export class LlamaIndexRagService {
           metadata: h.source.metadata,
           originalScore: h.score,
         })),
-        { topK: options.rerankTopK ?? options.topK ?? 5 },
+        { topK: options.rerankTopK ?? effectiveTopK },
       )
       const rerankMap = new Map(reranked.map((r) => [r.id, r.score]))
       hits = hits
@@ -226,13 +277,11 @@ export class LlamaIndexRagService {
       rerankTime = Date.now() - rerankStart
     }
 
-    const resolveParents = options.resolveParents ?? true
-
-    if (resolveParents) {
+    if (effectiveResolveParents) {
       hits = await this.resolveParentsFromHits(hits)
     }
 
-    const topK = options.topK ?? 5
+    const topK = effectiveTopK
     const minScore = options.minScore ?? 0
     const chunks = hits
       .filter((h) => h.score >= minScore)
@@ -247,10 +296,22 @@ export class LlamaIndexRagService {
       }))
 
     this.logger.log(
-      `[RAG] userId=${options.userId ?? 'anonymous'} queryLen=${workingQuery.length} mode=${mode} hits=${chunks.length} quMs=${quMs} retrievalMs=${retrievalTime} rerankMs=${rerankTime} totalMs=${Date.now() - startTs}`,
+      `[RAG] userId=${options.userId ?? 'anonymous'} queryLen=${workingQuery.length} mode=${effectiveMode} intent=${routerDecision?.intent ?? 'manual'} hits=${chunks.length} quMs=${quMs} retrievalMs=${retrievalTime} rerankMs=${rerankTime} totalMs=${Date.now() - startTs}`,
     )
 
     return chunks
+  }
+
+  private dedupeHits(hits: SearchHit[]): SearchHit[] {
+    const seen = new Set<string>()
+    const result: SearchHit[] = []
+    for (const h of hits) {
+      if (!seen.has(h.id)) {
+        seen.add(h.id)
+        result.push(h)
+      }
+    }
+    return result.sort((a, b) => b.score - a.score)
   }
 
   private async verifyKbOwnership(
@@ -412,7 +473,16 @@ export class LlamaIndexRagService {
 
   async query(question: string, options: RagQueryOptions = {}): Promise<RagQueryResult> {
     const chunks = await this.retrieve(question, options)
-    const answer = await this.generateAnswer(question, chunks, options.systemPrompt)
+    const rawAnswer = await this.generateAnswer(question, chunks, options.systemPrompt)
+    const guardrailOutcome = this.guardrailService.apply(rawAnswer)
+    const answer = guardrailOutcome.filteredText
+
+    if (guardrailOutcome.warnings.length > 0) {
+      this.logger.warn(
+        `[Guardrail] warnings during query: ${guardrailOutcome.warnings.join('; ')}`,
+      )
+    }
+
     const grounding = await this.groundingService.checkGrounding(
       answer,
       chunks.map((c) => ({ id: c.id, content: c.content })),
@@ -483,9 +553,13 @@ export class LlamaIndexRagService {
       }
     }
 
+    // Apply output guardrails before final grounding check. This ensures the
+    // streamed content is safe even though it was already delivered token-by-token.
+    const guardedBuffer = this.guardrailService.apply(buffer).filteredText
+
     try {
       const grounding = await this.groundingService.checkGrounding(
-        buffer,
+        guardedBuffer,
         chunks.map((c) => ({ id: c.id, content: c.content })),
       )
       yield { text: '', grounding }
@@ -525,19 +599,39 @@ export class LlamaIndexRagService {
     chunkSize?: number,
     overlap?: number,
     metadata?: Record<string, unknown>,
-    options?: { childChunkSize?: number; parentChild?: boolean },
+    options?: {
+      childChunkSize?: number
+      parentChild?: boolean
+      allowedUserIds?: string[]
+      allowedTeamIds?: string[]
+      documentTitle?: string
+      sectionPath?: string
+    },
   ): Promise<{ totalChunks: number }> {
     const parentChunkSize = chunkSize ?? this.parentChunkSize
     const parentOverlap = overlap ?? DEFAULT_PARENT_OVERLAP
     const childChunkSize = options?.childChunkSize ?? this.childChunkSize
     const parentChild = options?.parentChild ?? true
+    const allowedUserIds = options?.allowedUserIds
+    const allowedTeamIds = options?.allowedTeamIds
+    const documentTitle = options?.documentTitle ?? (metadata?.title as string | undefined)
+    const sectionPath = options?.sectionPath ?? (metadata?.section_path as string | undefined)
 
     this.logger.log(`[Upsert] deleting existing chunks for documentId=${documentId}`)
     await this.es.deleteByDocumentId(documentId)
 
+    const sharedMeta = {
+      metadata,
+      allowed_user_ids: allowedUserIds,
+      allowed_team_ids: allowedTeamIds,
+      document_title: documentTitle,
+      section_path: sectionPath,
+    }
+
     if (!parentChild) {
       const chunks = this.splitIntoChunks(content, parentChunkSize, parentOverlap)
-      const embeddings = await this.embeddings.embedBatch(chunks)
+      const embedTexts = this.buildEmbeddingTexts(chunks, documentTitle, sectionPath)
+      const embeddings = await this.embeddings.embedBatch(embedTexts)
 
       const now = new Date().toISOString()
       const docs: ChunkDocument[] = chunks.map((text, i) => ({
@@ -548,7 +642,7 @@ export class LlamaIndexRagService {
         chunk_index: i,
         token_count: Math.ceil(text.length / 4),
         embedding: embeddings[i],
-        metadata,
+        ...sharedMeta,
         created_at: now,
         updated_at: now,
       }))
@@ -568,7 +662,7 @@ export class LlamaIndexRagService {
       const parentContent = parentText
       const childChunks = this.splitIntoChunks(parentText, childChunkSize, DEFAULT_CHILD_OVERLAP)
 
-      childChunks.forEach((childText, _childIdx) => {
+      childChunks.forEach((childText) => {
         allChildTexts.push(childText)
         childMeta.push({ parentId, parentContent })
       })
@@ -578,7 +672,7 @@ export class LlamaIndexRagService {
       return { totalChunks: 0 }
     }
 
-    const embedTexts = this.buildEmbeddingTexts(allChildTexts)
+    const embedTexts = this.buildEmbeddingTexts(allChildTexts, documentTitle, sectionPath)
     this.logger.debug(
       `Embedding ${allChildTexts.length} chunks (contextual=${this.enableContextualEmbedding})`,
     )
@@ -594,7 +688,7 @@ export class LlamaIndexRagService {
       embedding: embeddings[i],
       parent_id: childMeta[i].parentId,
       parent_content: childMeta[i].parentContent,
-      metadata,
+      ...sharedMeta,
       created_at: now,
       updated_at: now,
     }))
@@ -603,9 +697,26 @@ export class LlamaIndexRagService {
     return { totalChunks: docs.length }
   }
 
-  private buildEmbeddingTexts(childTexts: string[]): string[] {
-    if (!this.enableContextualEmbedding || childTexts.length === 0) {
-      return childTexts
+  /**
+   * Build the text that gets embedded. Per the design doc, the contextual
+   * string is `{document_title} | {section_path} | {prefix} {current} {suffix}`
+   * so that the model picks up document-level context rather than sibling
+   * child-chunk noise.
+   */
+  private buildEmbeddingTexts(
+    childTexts: string[],
+    documentTitle?: string,
+    sectionPath?: string,
+  ): string[] {
+    if (childTexts.length === 0) return childTexts
+
+    const headerParts: string[] = []
+    if (documentTitle) headerParts.push(`文档：${documentTitle}`)
+    if (sectionPath) headerParts.push(`章节：${sectionPath}`)
+    const header = headerParts.length > 0 ? `${headerParts.join(' | ')} | ` : ''
+
+    if (!this.enableContextualEmbedding) {
+      return childTexts.map((t) => `${header}正文：${t}`)
     }
 
     const window = this.contextualWindow
@@ -622,7 +733,7 @@ export class LlamaIndexRagService {
       }
       const suffix = suffixParts.join(' ')
 
-      return `${prefix} ${current} ${suffix}`.replace(/\s+/g, ' ').trim()
+      return `${header}正文：${prefix} ${current} ${suffix}`.replace(/\s+/g, ' ').trim()
     })
   }
 

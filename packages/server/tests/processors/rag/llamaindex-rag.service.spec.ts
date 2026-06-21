@@ -62,6 +62,30 @@ function createService(overrides: Record<string, any> = {}): LlamaIndexRagServic
     checkGrounding: vi.fn().mockResolvedValue([]),
     ...overrides.groundingService,
   }
+  const guardrailService = {
+    apply: vi.fn().mockReturnValue({
+      safe: true,
+      filteredText: '',
+      redactions: [],
+      warnings: [],
+    }),
+    ...overrides.guardrailService,
+  }
+  const routerService = {
+    decide: vi.fn().mockReturnValue({
+      intent: 'general' as const,
+      pipeline: {
+        mode: 'hybrid' as const,
+        vectorWeight: 0.7,
+        bm25Weight: 0.3,
+        needRerank: true,
+        needFullContext: true,
+        topK: 5,
+        candidateK: 60,
+      },
+    }),
+    ...overrides.routerService,
+  }
   const queryUnderstanding = {
     process: vi.fn().mockResolvedValue({
       rewrittenQuery: 'hello',
@@ -91,6 +115,8 @@ function createService(overrides: Record<string, any> = {}): LlamaIndexRagServic
     vectorService as any,
     reranker as any,
     groundingService as any,
+    guardrailService as any,
+    routerService as any,
     queryUnderstanding as any,
     prisma as any,
     config,

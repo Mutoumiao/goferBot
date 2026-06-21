@@ -6,6 +6,8 @@ import { EsKeywordService } from './es-keyword.service.js'
 import { EsVectorService } from './es-vector.service.js'
 import { BgeRerankService } from './bge-rerank.service.js'
 import { GroundingService } from './grounding.service.js'
+import { GuardrailService } from './guardrail.service.js'
+import { RouterService } from './router.service.js'
 import { LlamaIndexRagService } from './llamaindex-rag.service.js'
 import { QueryUnderstandingService } from './query-understanding.service.js'
 import { RagController } from './rag.controller.js'
@@ -19,6 +21,8 @@ import { RagController } from './rag.controller.js'
     EsVectorService,
     BgeRerankService,
     GroundingService,
+    GuardrailService,
+    RouterService,
     LlamaIndexRagService,
     QueryUnderstandingService,
     SseResponseHelper,
@@ -29,6 +33,8 @@ import { RagController } from './rag.controller.js'
     EsVectorService,
     BgeRerankService,
     GroundingService,
+    GuardrailService,
+    RouterService,
     LlamaIndexRagService,
     QueryUnderstandingService,
   ],

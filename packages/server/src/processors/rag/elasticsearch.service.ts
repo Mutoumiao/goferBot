@@ -13,6 +13,10 @@ export interface ChunkDocument {
   parent_id?: string
   parent_content?: string
   metadata?: Record<string, unknown>
+  allowed_user_ids?: string[]
+  allowed_team_ids?: string[]
+  document_title?: string
+  section_path?: string
   created_at?: string
   updated_at?: string
 }
@@ -128,6 +132,14 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
               similarity: 'cosine',
             },
             metadata: { type: 'object', dynamic: true, enabled: false },
+            allowed_user_ids: { type: 'keyword' },
+            allowed_team_ids: { type: 'keyword' },
+            document_title: {
+              type: 'text',
+              analyzer: 'ik_max_word',
+              store: true,
+            },
+            section_path: { type: 'keyword' },
             created_at: { type: 'date' },
             updated_at: { type: 'date' },
           },

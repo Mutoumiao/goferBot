@@ -8,6 +8,8 @@ export interface Bm25Options {
     kbIds?: string[]
     documentIds?: string[]
     metadata?: Record<string, unknown>
+    allowedUserIds?: string[]
+    allowedTeamIds?: string[]
   }
 }
 
@@ -53,6 +55,34 @@ export class EsKeywordService {
           must.push({ term: { [field]: value } })
         }
       }
+    }
+
+    // ACL physical filter: documents can declare explicit user/team allow lists.
+    // When provided, only users matching the allow list (or docs without any
+    // allow list = public) are visible. Implements the supplemental doc
+    // "Trap 3: Multi-tenant isolation" recommendation.
+    if (options.filters?.allowedUserIds && options.filters.allowedUserIds.length > 0) {
+      must.push({
+        bool: {
+          should: [
+            { terms: { allowed_user_ids: options.filters.allowedUserIds } },
+            { bool: { must_not: { exists: { field: 'allowed_user_ids' } } } },
+          ],
+          minimum_should_match: 1,
+        },
+      })
+    }
+
+    if (options.filters?.allowedTeamIds && options.filters.allowedTeamIds.length > 0) {
+      must.push({
+        bool: {
+          should: [
+            { terms: { allowed_team_ids: options.filters.allowedTeamIds } },
+            { bool: { must_not: { exists: { field: 'allowed_team_ids' } } } },
+          ],
+          minimum_should_match: 1,
+        },
+      })
     }
 
     const body = {
