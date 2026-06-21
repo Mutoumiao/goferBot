@@ -1,26 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IndexingWorker } from '@/processors/queue/indexing.worker.js'
-
-// Mock @goferbot/rag-sdk 模块 — 使用 vi.hoisted 确保变量在 vi.mock 提升前初始化
-const { mockRunIndexing } = vi.hoisted(() => ({
-  mockRunIndexing: vi.fn(),
-}))
-
-vi.mock('@goferbot/rag-sdk', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as any),
-    runIndexing: mockRunIndexing,
-  }
-})
+import { LlamaIndexRagService } from '@/processors/rag/llamaindex-rag.service.js'
 
 describe('IndexingWorker', () => {
   let worker: IndexingWorker
   let mockPrisma: any
   let mockStorage: any
   let mockParser: any
-  let mockIndexer: any
-  let mockConfig: any
+  let mockRagService: any
 
   beforeEach(() => {
     vi.resetAllMocks()
@@ -36,13 +23,10 @@ describe('IndexingWorker', () => {
     mockParser = {
       parse: vi.fn().mockResolvedValue('test content'),
     }
-    mockIndexer = {}
-    mockConfig = {
-      get: vi.fn().mockReturnValue('mock-key'),
-      getOrThrow: vi.fn().mockReturnValue('mock-key'),
+    mockRagService = {
+      indexDocument: vi.fn().mockResolvedValue({ totalChunks: 10 }),
     }
-    // IndexingWorker 构造函数签名：(prisma, storage, parser, indexer, config)
-    worker = new IndexingWorker(mockPrisma, mockStorage, mockParser, mockIndexer, mockConfig)
+    worker = new IndexingWorker(mockPrisma, mockStorage, mockParser, mockRagService)
   })
 
   it('AC-02: handleIndexJob drives full pipeline and sets status to ready', async () => {
@@ -53,44 +37,10 @@ describe('IndexingWorker', () => {
       mimeType: 'text/plain',
       status: 'uploaded',
     })
-    // runIndexing 模拟：通过 onStageChange 回调更新状态，最终 resolve
-    // SDK 实际传递的是 IndexingStage[] 数组
-    mockRunIndexing.mockImplementation(async (_doc: any, options: any) => {
-      const { onStageChange } = options
-      await onStageChange?.([
-        { name: 'chunk', status: 'running' },
-        { name: 'embed', status: 'pending' },
-        { name: 'index', status: 'pending' },
-      ])
-      await onStageChange?.([
-        { name: 'chunk', status: 'completed' },
-        { name: 'embed', status: 'pending' },
-        { name: 'index', status: 'pending' },
-      ])
-      await onStageChange?.([
-        { name: 'chunk', status: 'completed' },
-        { name: 'embed', status: 'running' },
-        { name: 'index', status: 'pending' },
-      ])
-      await onStageChange?.([
-        { name: 'chunk', status: 'completed' },
-        { name: 'embed', status: 'completed' },
-        { name: 'index', status: 'pending' },
-      ])
-      await onStageChange?.([
-        { name: 'chunk', status: 'completed' },
-        { name: 'embed', status: 'completed' },
-        { name: 'index', status: 'running' },
-      ])
-      await onStageChange?.([
-        { name: 'chunk', status: 'completed' },
-        { name: 'embed', status: 'completed' },
-        { name: 'index', status: 'completed' },
-      ])
-    })
 
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
 
+    expect(mockRagService.indexDocument).toHaveBeenCalledWith('d1', 'kb1', 'test content')
     expect(mockPrisma.document.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'd1' },
@@ -113,28 +63,7 @@ describe('IndexingWorker', () => {
       return Promise.resolve({})
     })
 
-    mockRunIndexing.mockImplementation(async (_doc: any, options: any) => {
-      const { onStageChange } = options
-      await onStageChange?.([
-        { name: 'chunk', status: 'running' },
-        { name: 'embed', status: 'pending' },
-        { name: 'index', status: 'pending' },
-      ])
-      await onStageChange?.([
-        { name: 'chunk', status: 'completed' },
-        { name: 'embed', status: 'running' },
-        { name: 'index', status: 'pending' },
-      ])
-      await onStageChange?.([
-        { name: 'chunk', status: 'completed' },
-        { name: 'embed', status: 'completed' },
-        { name: 'index', status: 'running' },
-      ])
-    })
-
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
-    // runIndexing mock 中 onStageChange 被调用了 3 次，每次都有 running 状态
-    // worker 只在 running 时 updateStatus，所以 3 次 stage + 1 次 ready = 4 次
     expect(mockPrisma.document.update).toHaveBeenCalledTimes(4)
     expect(statusUpdates).toContain('chunking')
     expect(statusUpdates).toContain('embedding')
@@ -148,8 +77,7 @@ describe('IndexingWorker', () => {
     ).rejects.toThrow('Document not found')
   })
 
-  it('AC-05: runIndexing failure sets status to failed after retries exhausted', async () => {
-    // 模拟 WorkerService failed 事件处理器
+  it('AC-05: indexDocument failure sets status to failed after retries exhausted', async () => {
     const failedHandler = async (job: any, err: Error) => {
       if (job?.data?.documentId) {
         await mockPrisma.document.update({

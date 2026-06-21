@@ -1,10 +1,11 @@
-import { type DynamicModule, Global, Module, type Provider, type Type } from '@nestjs/common'
+import { type DynamicModule, forwardRef, Global, Module, type Provider, type Type } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { Job } from 'bullmq'
 import { type DocumentJobHandler, type EmbeddingJobHandler } from '../../queue/index.js'
 import type { DocumentJobData } from '../../queue/queues.js'
 import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
 import { DocumentParser } from '../parser/document.parser.js'
+import { RagModule } from '../rag/rag.module.js'
 import { IndexingWorker } from './indexing.worker.js'
 import { QueueService } from './queue.service.js'
 import { WorkerService } from './worker.service.js'
@@ -56,7 +57,7 @@ export class QueueModule {
     return {
       // biome-ignorelint: suspicious/noExplicitAny: NestJS 动态模块需要使用 Type<any>
       module: QueueModule as unknown as Type<any>,
-      imports: [ConfigModule],
+      imports: [ConfigModule, forwardRef(() => RagModule)],
       providers,
       exports: [QueueService, WorkerService],
       global: true,

@@ -1,26 +1,20 @@
 import { Injectable } from '@nestjs/common'
 import type { LlmProvider } from './llm-provider.interface.js'
-import { OpenAiCompatibleProvider } from './openai-compatible-provider.service.js'
+import { LlamaIndexProvider } from './llama-index-provider.service.js'
+import type { LlamaIndexProviderConfig } from './llama-index-provider.service.js'
 
-export interface LlmProviderConfig {
-  apiKey: string
-  model: string
-  baseURL?: string
-  timeout?: number
-  customHeaders?: Record<string, string>
-  organization?: string
-}
+export type LlmProviderConfig = LlamaIndexProviderConfig
 
 /**
  * LLM Provider 工厂。
- * 当前仅返回 OpenAI-compatible 实现；预留扩展分支用于后续 Claude/Gemini 等 provider。
+ * 通过 providerKey 选择实现。当前默认使用 LlamaIndex Provider，支持 openai-compatible 等多种后端。
  */
 @Injectable()
 export class LlmProviderFactory {
   create(providerKey: string, config: LlmProviderConfig): LlmProvider {
     switch (providerKey) {
       default:
-        return new OpenAiCompatibleProvider({
+        return new LlamaIndexProvider({
           apiKey: config.apiKey,
           model: config.model,
           baseURL: config.baseURL,
