@@ -62,6 +62,21 @@ function createService(overrides: Record<string, any> = {}): LlamaIndexRagServic
     checkGrounding: vi.fn().mockResolvedValue([]),
     ...overrides.groundingService,
   }
+  const queryUnderstanding = {
+    process: vi.fn().mockResolvedValue({
+      rewrittenQuery: 'hello',
+      language: 'en' as const,
+      expandedQueries: ['hello'],
+    }),
+    ...overrides.queryUnderstanding,
+  }
+  const prisma = {
+    knowledgeBase: {
+      count: vi.fn().mockResolvedValue(1),
+      ...(overrides.prisma?.knowledgeBase ?? {}),
+    },
+    ...overrides.prisma,
+  }
 
   const config = new ConfigService({
     RAG_LLM_API_KEY: 'test-key',
@@ -76,6 +91,8 @@ function createService(overrides: Record<string, any> = {}): LlamaIndexRagServic
     vectorService as any,
     reranker as any,
     groundingService as any,
+    queryUnderstanding as any,
+    prisma as any,
     config,
   )
 }
@@ -218,13 +235,116 @@ describe('LlamaIndexRagService', () => {
       expect(result).toBe('[1] first\n\n[2] second')
     })
 
-    it('handles single chunk', async () => {
+    it('deduplicates chunks by documentId', async () => {
       const service = createService()
       const chunks: RetrievedChunk[] = [
-        { id: 'a', documentId: 'd1', kbId: 'k1', content: 'only one', chunkIndex: 0, score: 0.9 },
+        { id: 'a', documentId: 'd1', kbId: 'k1', content: 'dup-a', chunkIndex: 0, score: 0.9 },
+        { id: 'b', documentId: 'd1', kbId: 'k1', content: 'dup-b', chunkIndex: 1, score: 0.85 },
+        { id: 'c', documentId: 'd2', kbId: 'k1', content: 'unique', chunkIndex: 2, score: 0.7 },
       ]
       const result = await service.buildContext(chunks)
-      expect(result).toBe('[1] only one')
+      const idsInOutput = result.match(/\[\d+\]/g) ?? []
+      expect(idsInOutput.length).toBe(2)
+      expect(result).toContain('dup-a')
+      expect(result).toContain('unique')
+    })
+
+    it('truncates chunks when exceeding token budget', async () => {
+      const service = createService()
+      const chunks: RetrievedChunk[] = [
+        { id: 'a', documentId: 'd1', kbId: 'k1', content: 'x'.repeat(4000), chunkIndex: 0, score: 0.9 },
+      ]
+      const result = await service.buildContext(chunks, 50)
+      expect(result.endsWith('...')).toBe(true)
+    })
+  })
+
+  describe('ACL + QueryUnderstanding integration', () => {
+    it('runs queryUnderstanding.process before retrieval', async () => {
+      const qu = {
+        process: vi.fn().mockResolvedValue({
+          rewrittenQuery: 'rewritten hello',
+          language: 'en' as const,
+          expandedQueries: ['rewritten hello'],
+        }),
+      }
+      const vs = { search: vi.fn().mockResolvedValue([]) }
+      const service = createService({ queryUnderstanding: qu, vectorService: vs })
+      await service.retrieve('hello', {
+        kbIds: ['kb-1'],
+        userId: 'user-1',
+        mode: 'vector',
+        topK: 5,
+        needRerank: false,
+        resolveParents: false,
+      })
+      expect(qu.process).toHaveBeenCalledWith('hello')
+      expect(vs.search).toHaveBeenCalled()
+    })
+
+    it('returns empty when user does not own kbId', async () => {
+      const prisma = {
+        knowledgeBase: { count: vi.fn().mockResolvedValue(0) },
+      }
+      const vs = { search: vi.fn() }
+      const service = createService({ prisma, vectorService: vs })
+      const result = await service.retrieve('hello', {
+        kbIds: ['kb-1'],
+        userId: 'user-1',
+        mode: 'vector',
+        needRerank: false,
+        resolveParents: false,
+      })
+      expect(result).toEqual([])
+      expect(vs.search).not.toHaveBeenCalled()
+    })
+
+    it('allows access when user owns all kbIds', async () => {
+      const prisma = {
+        knowledgeBase: { count: vi.fn().mockResolvedValue(2) },
+      }
+      const vs = { search: vi.fn().mockResolvedValue([makeHit('h1', 'ok', 0.9)]) }
+      const service = createService({ prisma, vectorService: vs })
+      const result = await service.retrieve('hello', {
+        kbIds: ['kb-1', 'kb-2'],
+        userId: 'user-1',
+        mode: 'vector',
+        topK: 5,
+        needRerank: false,
+        resolveParents: false,
+      })
+      expect(result.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('does not run ownership check when userId is absent', async () => {
+      const prisma = { knowledgeBase: { count: vi.fn() } }
+      const vs = { search: vi.fn().mockResolvedValue([]) }
+      const service = createService({ prisma, vectorService: vs })
+      await service.retrieve('hello', {
+        kbIds: ['kb-1'],
+        mode: 'vector',
+        needRerank: false,
+        resolveParents: false,
+      })
+      expect(prisma.knowledgeBase.count).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('indexDocument upsert', () => {
+    it('deletes existing chunks before indexing', async () => {
+      const es = {
+        bulkIndex: vi.fn().mockResolvedValue(undefined),
+        deleteByDocumentId: vi.fn().mockResolvedValue(undefined),
+      }
+      const embeddings = {
+        embedBatch: vi.fn().mockResolvedValue(new Array(5).fill(new Array(10).fill(0.1))),
+      }
+      const service = createService({ es, embeddings })
+      await service.indexDocument('doc-1', 'kb-1', 'hello world content for test')
+      expect(es.deleteByDocumentId).toHaveBeenCalledWith('doc-1')
+      const deleteOrder = es.deleteByDocumentId.mock.invocationCallOrder[0]
+      const bulkOrder = es.bulkIndex.mock.invocationCallOrder[0]
+      expect(deleteOrder).toBeLessThan(bulkOrder)
     })
   })
 

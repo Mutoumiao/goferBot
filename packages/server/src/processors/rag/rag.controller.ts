@@ -173,18 +173,26 @@ export class RagController {
   @HttpCode(200)
   async health() {
     try {
-      const info = await this.esService.getClient().info()
+      const [info, ikPlugin, docsCount] = await Promise.all([
+        this.esService.getClient().info(),
+        this.esService.checkIkPlugin(),
+        this.esService.getClient().count({ index: this.esService.getIndexName() } as any).then((r: any) => r.count ?? 0).catch(() => 0),
+      ])
       return {
         status: 'ok',
         elasticsearch: 'connected',
         esVersion: info.version.number,
+        ikPlugin,
         indexName: this.esService.getIndexName(),
+        docsCount,
       }
     } catch {
       return {
         status: 'degraded',
         elasticsearch: 'disconnected',
+        ikPlugin: 'missing',
         indexName: this.esService.getIndexName(),
+        docsCount: 0,
       }
     }
   }

@@ -43,6 +43,18 @@ export class EsVectorService {
       filterClauses.push({ terms: { document_id: options.filters.documentIds } })
     }
 
+    if (options.filters?.metadata) {
+      for (const [key, value] of Object.entries(options.filters.metadata)) {
+        if (value === undefined || value === null) continue
+        const field = `metadata.${key}`
+        if (Array.isArray(value)) {
+          filterClauses.push({ terms: { [field]: value } })
+        } else {
+          filterClauses.push({ term: { [field]: value } })
+        }
+      }
+    }
+
     if (filterClauses.length > 0) {
       knn.filter = filterClauses
     }

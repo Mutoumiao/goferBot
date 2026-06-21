@@ -7,10 +7,12 @@ import { EsKeywordService } from './es-keyword.service.js'
 import { EsVectorService } from './es-vector.service.js'
 import { BgeRerankService } from './bge-rerank.service.js'
 import { GroundingService } from './grounding.service.js'
+import { QueryUnderstandingService } from './query-understanding.service.js'
 import type { GroundingResult } from './grounding.service.js'
 import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
 import type { LlamaIndexProviderConfig } from '../../modules/chat/llm/llama-index-provider.service.js'
 import { ConfigService } from '@nestjs/config'
+import { PrismaService } from '../database/prisma.service.js'
 
 export type RetrievalMode = 'vector' | 'bm25' | 'hybrid'
 
@@ -62,7 +64,9 @@ const DEFAULT_CHILD_CHUNK_SIZE = 150
 const DEFAULT_PARENT_OVERLAP = 100
 const DEFAULT_CHILD_OVERLAP = 20
 const DEFAULT_CONTEXTUAL_WINDOW = 1
+const DEFAULT_CONTEXT_TOKEN_BUDGET = 3000
 const SSE_HEARTBEAT_MS = 60_000
+const MAX_QUERY_LENGTH = 2000
 
 type StreamOutcome =
   | { type: 'data'; result: IteratorResult<{ text: string }> }
@@ -84,6 +88,8 @@ export class LlamaIndexRagService {
     private readonly vectorService: EsVectorService,
     private readonly reranker: BgeRerankService,
     private readonly groundingService: GroundingService,
+    private readonly queryUnderstanding: QueryUnderstandingService,
+    private readonly prisma: PrismaService,
     config: ConfigService,
   ) {
     const apiKey = config.get<string>('RAG_LLM_API_KEY') ?? config.get<string>('LLM_API_KEY')
@@ -127,6 +133,14 @@ export class LlamaIndexRagService {
 
   async retrieve(query: string, options: RagRetrieveOptions = {}): Promise<RetrievedChunk[]> {
     const startTs = Date.now()
+    let workingQuery = query
+
+    if (workingQuery.length > MAX_QUERY_LENGTH) {
+      this.logger.warn(
+        `Query length ${workingQuery.length} exceeds limit ${MAX_QUERY_LENGTH}, truncating`,
+      )
+      workingQuery = workingQuery.slice(0, MAX_QUERY_LENGTH)
+    }
 
     if (options.kbIds !== undefined && options.kbIds.length === 0) {
       this.logger.warn(
@@ -135,8 +149,28 @@ export class LlamaIndexRagService {
       return []
     }
 
+    if (options.userId) {
+      const ownershipOk = await this.verifyKbOwnership(options.userId, options.kbIds)
+      if (!ownershipOk) {
+        this.logger.warn(
+          `Permission denied: user ${options.userId} does not own requested kbIds`,
+        )
+        return []
+      }
+    }
+
+    const quStart = Date.now()
+    const quResult = await this.queryUnderstanding.process(workingQuery)
+    const quMs = Date.now() - quStart
+    if (quResult.rewrittenQuery && quResult.rewrittenQuery !== workingQuery) {
+      this.logger.log(
+        `[QueryUnderstanding] rewritten: ${JSON.stringify(workingQuery)} -> ${JSON.stringify(quResult.rewrittenQuery)} (${quMs}ms)`,
+      )
+      workingQuery = quResult.rewrittenQuery
+    }
+
     this.logger.log(
-      `Permission check: user=${options.userId ?? 'anonymous'} kbIds=${JSON.stringify(options.kbIds ?? [])} mode=${options.mode ?? 'hybrid'}`,
+      `Permission check: user=${options.userId ?? 'anonymous'} kbIds=${JSON.stringify(options.kbIds ?? [])} mode=${options.mode ?? 'hybrid'} lang=${quResult.language}`,
     )
 
     const mode = options.mode ?? 'hybrid'
@@ -146,6 +180,7 @@ export class LlamaIndexRagService {
       kbIds: options.kbIds,
       documentIds: options.documentIds,
       metadata: options.metadata,
+      language: quResult.language,
     }
 
     let hits: SearchHit[]
@@ -153,7 +188,7 @@ export class LlamaIndexRagService {
 
     if (mode === 'vector') {
       const retrievalStart = Date.now()
-      const queryVector = await this.embeddings.embed(query)
+      const queryVector = await this.embeddings.embed(workingQuery)
       hits = await this.vectorService.search(queryVector, {
         topK: candidateK,
         numCandidates: candidateK * 5,
@@ -162,11 +197,11 @@ export class LlamaIndexRagService {
       retrievalTime = Date.now() - retrievalStart
     } else if (mode === 'bm25') {
       const retrievalStart = Date.now()
-      hits = await this.keywordService.search(query, { topK: candidateK, filters })
+      hits = await this.keywordService.search(workingQuery, { topK: candidateK, filters })
       retrievalTime = Date.now() - retrievalStart
     } else {
       const retrievalStart = Date.now()
-      hits = await this.retrieveHybrid(query, candidateK, filters)
+      hits = await this.retrieveHybrid(workingQuery, candidateK, filters, options)
       retrievalTime = Date.now() - retrievalStart
     }
 
@@ -175,7 +210,7 @@ export class LlamaIndexRagService {
     if (rerankEnabled && hits.length > 0) {
       const rerankStart = Date.now()
       const reranked = await this.reranker.rerank(
-        query,
+        workingQuery,
         hits.map((h) => ({
           id: h.id,
           content: h.source.content,
@@ -212,10 +247,28 @@ export class LlamaIndexRagService {
       }))
 
     this.logger.log(
-      `[RAG] userId=${options.userId ?? 'anonymous'} queryLen=${query.length} mode=${mode} hits=${chunks.length} retrievalMs=${retrievalTime} rerankMs=${rerankTime} totalMs=${Date.now() - startTs}`,
+      `[RAG] userId=${options.userId ?? 'anonymous'} queryLen=${workingQuery.length} mode=${mode} hits=${chunks.length} quMs=${quMs} retrievalMs=${retrievalTime} rerankMs=${rerankTime} totalMs=${Date.now() - startTs}`,
     )
 
     return chunks
+  }
+
+  private async verifyKbOwnership(
+    userId: string,
+    kbIds?: string[],
+  ): Promise<boolean> {
+    if (!kbIds || kbIds.length === 0) return true
+    try {
+      const ownedCount = await this.prisma.knowledgeBase.count({
+        where: { id: { in: kbIds }, userId },
+      })
+      return ownedCount === kbIds.length
+    } catch (err) {
+      this.logger.warn(
+        `Ownership check failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
+      return false
+    }
   }
 
   private async resolveParentsFromHits(hits: SearchHit[]): Promise<SearchHit[]> {
@@ -266,7 +319,8 @@ export class LlamaIndexRagService {
   private async retrieveHybrid(
     query: string,
     candidateK: number,
-    filters: { kbIds?: string[]; documentIds?: string[]; metadata?: Record<string, unknown> },
+    filters: { kbIds?: string[]; documentIds?: string[]; metadata?: Record<string, unknown>; language?: string },
+    options: RagRetrieveOptions = {},
   ): Promise<SearchHit[]> {
     const queryVector = await this.embeddings.embed(query)
     const [vectorHits, bm25Hits] = await Promise.all([
@@ -278,16 +332,17 @@ export class LlamaIndexRagService {
       this.keywordService.search(query, { topK: candidateK, filters }),
     ])
 
-    return this.reciprocalRankFusion(vectorHits, bm25Hits)
+    return this.reciprocalRankFusion(vectorHits, bm25Hits, options)
   }
 
   private reciprocalRankFusion(
     vectorHits: SearchHit[],
     bm25Hits: SearchHit[],
+    options: RagRetrieveOptions = {},
   ): SearchHit[] {
-    const vectorWeight = DEFAULT_VECTOR_WEIGHT
-    const bm25Weight = DEFAULT_BM25_WEIGHT
-    const rrfK = DEFAULT_RRF_K
+    const vectorWeight = options.vectorWeight ?? DEFAULT_VECTOR_WEIGHT
+    const bm25Weight = options.bm25Weight ?? DEFAULT_BM25_WEIGHT
+    const rrfK = options.rrfK ?? DEFAULT_RRF_K
 
     const scoreMap = new Map<string, number>()
     const hitMap = new Map<string, SearchHit>()
@@ -310,9 +365,49 @@ export class LlamaIndexRagService {
       .sort((a, b) => b.score - a.score)
   }
 
-  async buildContext(chunks: RetrievedChunk[]): Promise<string> {
+  async buildContext(chunks: RetrievedChunk[], tokenBudget: number = DEFAULT_CONTEXT_TOKEN_BUDGET): Promise<string> {
     if (chunks.length === 0) return ''
-    return chunks.map((c, i) => `[${i + 1}] ${c.content}`).join('\n\n')
+
+    const deduped = this.deduplicateByDocument(chunks)
+
+    const ordered = [...deduped].sort((a, b) => b.score - a.score)
+
+    const selected: RetrievedChunk[] = []
+    let usedTokens = 0
+
+    for (const chunk of ordered) {
+      const estimatedTokens = Math.max(1, Math.ceil(chunk.content.length / 4))
+      if (usedTokens + estimatedTokens > tokenBudget) {
+        const remaining = tokenBudget - usedTokens
+        if (remaining <= 0) break
+        const ratio = remaining / estimatedTokens
+        const truncated = chunk.content.slice(0, Math.floor(chunk.content.length * ratio))
+        if (truncated.trim().length > 0) {
+          selected.push({ ...chunk, content: `${truncated.trim()}...` })
+        }
+        break
+      }
+      selected.push(chunk)
+      usedTokens += estimatedTokens
+    }
+
+    this.logger.log(
+      `[ContextBuilder] chunks=${chunks.length} deduped=${deduped.length} selected=${selected.length} tokens=${usedTokens} budget=${tokenBudget}`,
+    )
+
+    return selected.map((c, i) => `[${i + 1}] ${c.content}`).join('\n\n')
+  }
+
+  private deduplicateByDocument(chunks: RetrievedChunk[]): RetrievedChunk[] {
+    const seenDocumentIds = new Set<string>()
+    const result: RetrievedChunk[] = []
+    for (const chunk of chunks) {
+      if (!seenDocumentIds.has(chunk.documentId)) {
+        seenDocumentIds.add(chunk.documentId)
+        result.push(chunk)
+      }
+    }
+    return result
   }
 
   async query(question: string, options: RagQueryOptions = {}): Promise<RagQueryResult> {
@@ -436,6 +531,9 @@ export class LlamaIndexRagService {
     const parentOverlap = overlap ?? DEFAULT_PARENT_OVERLAP
     const childChunkSize = options?.childChunkSize ?? this.childChunkSize
     const parentChild = options?.parentChild ?? true
+
+    this.logger.log(`[Upsert] deleting existing chunks for documentId=${documentId}`)
+    await this.es.deleteByDocumentId(documentId)
 
     if (!parentChild) {
       const chunks = this.splitIntoChunks(content, parentChunkSize, parentOverlap)

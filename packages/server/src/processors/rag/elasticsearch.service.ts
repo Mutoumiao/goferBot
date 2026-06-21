@@ -185,6 +185,53 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     })
   }
 
+  async countByDocumentId(documentId: string): Promise<number> {
+    try {
+      const response = await this.client.count({
+        index: this.indexName,
+        body: { query: { term: { document_id: documentId } } },
+      } as any)
+      return response.count ?? 0
+    } catch (err) {
+      this.logger.error(
+        `countByDocumentId failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
+      return 0
+    }
+  }
+
+  async countByKbId(kbId: string): Promise<number> {
+    try {
+      const response = await this.client.count({
+        index: this.indexName,
+        body: { query: { term: { kb_id: kbId } } },
+      } as any)
+      return response.count ?? 0
+    } catch (err) {
+      this.logger.error(
+        `countByKbId failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
+      return 0
+    }
+  }
+
+  async checkIkPlugin(): Promise<'installed' | 'missing'> {
+    try {
+      const response: any = await this.client.indices.getMapping({
+        index: this.indexName,
+      } as any)
+      const indexSettings: any = response?.[this.indexName]?.settings ?? {}
+      const analyzer: any = indexSettings?.analysis?.analyzer?.default ?? {}
+      const type: string = analyzer?.type ?? ''
+      return String(type).startsWith('ik_') ? 'installed' : 'missing'
+    } catch (err) {
+      this.logger.warn(
+        `IK plugin check failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
+      return 'missing'
+    }
+  }
+
   async getParentsByIds(parentIds: string[]): Promise<Map<string, string>> {
     const result = new Map<string, string>()
     if (!parentIds || parentIds.length === 0) return result

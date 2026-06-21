@@ -41,6 +41,20 @@ export class EsKeywordService {
       must.push({ terms: { document_id: options.filters.documentIds } })
     }
 
+    if (options.filters?.metadata) {
+      for (const [key, value] of Object.entries(options.filters.metadata)) {
+        if (value === undefined || value === null) continue
+        const field = `metadata.${key}`
+        if (Array.isArray(value)) {
+          must.push({ terms: { [field]: value } })
+        } else if (typeof value === 'number' && Number.isFinite(value)) {
+          must.push({ term: { [field]: value } })
+        } else {
+          must.push({ term: { [field]: value } })
+        }
+      }
+    }
+
     const body = {
       size: topK,
       _source: ['id', 'document_id', 'kb_id', 'content', 'chunk_index', 'token_count', 'parent_id', 'parent_content'],
