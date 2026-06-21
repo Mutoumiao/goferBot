@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common'
 import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
 import type { ChunkDocument } from './elasticsearch.service.js'
@@ -19,8 +19,17 @@ import { PrismaService } from '../database/prisma.service.js'
 
 export type RetrievalMode = 'vector' | 'bm25' | 'hybrid'
 
+export type RagMetadataValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | number[]
+  | boolean[]
+  | Array<string | number | boolean>
+
 export interface RagMetadataFilter {
-  [key: string]: string | number | boolean | string[] | number[]
+  [key: string]: RagMetadataValue
 }
 
 export interface RagRetrieveOptions {
@@ -606,8 +615,25 @@ export class LlamaIndexRagService {
       allowedTeamIds?: string[]
       documentTitle?: string
       sectionPath?: string
+      userId?: string
     },
   ): Promise<{ totalChunks: number }> {
+    // Authorization: only the owner of the target kb (or an admin) may index
+    // content into it. This protects POST /rag/index from being abused as an
+    // injection channel where an attacker plants chunks into a victim's kb.
+    const userId = options?.userId
+    if (userId) {
+      const ownedCount = await this.prisma.knowledgeBase.count({
+        where: { id: kbId, userId },
+      })
+      if (ownedCount === 0) {
+        this.logger.warn(
+          `Permission denied: user ${userId} cannot index into kbId=${kbId}`,
+        )
+        throw new ForbiddenException('无权向该知识库写入内容')
+      }
+    }
+
     const parentChunkSize = chunkSize ?? this.parentChunkSize
     const parentOverlap = overlap ?? DEFAULT_PARENT_OVERLAP
     const childChunkSize = options?.childChunkSize ?? this.childChunkSize
@@ -737,7 +763,32 @@ export class LlamaIndexRagService {
     })
   }
 
-  async removeDocument(documentId: string): Promise<void> {
+  async removeDocument(documentId: string, userId?: string): Promise<void> {
+    // Authorization: resolve the kb(s) the document lives in and make sure the
+    // caller actually owns one of them before deleting. This closes the IDOR
+    // on DELETE /rag/documents/:documentId that previously allowed any
+    // authenticated user to drop arbitrary documents by id.
+    if (userId) {
+      const kbIds = await this.es.getKbIdsByDocumentId(documentId)
+      if (kbIds.length === 0) {
+        // No visible evidence of the document. Treat as permission denied
+        // rather than leaking existence information.
+        this.logger.warn(
+          `Permission check on delete: documentId=${documentId} not found or inaccessible`,
+        )
+        throw new ForbiddenException('无权删除该文档')
+      }
+      const ownedCount = await this.prisma.knowledgeBase.count({
+        where: { id: { in: kbIds }, userId },
+      })
+      if (ownedCount === 0) {
+        this.logger.warn(
+          `Permission denied: user ${userId} cannot delete documentId=${documentId} (kbIds=${JSON.stringify(kbIds)})`,
+        )
+        throw new ForbiddenException('无权删除该文档')
+      }
+    }
+
     await this.es.deleteByDocumentId(documentId)
   }
 

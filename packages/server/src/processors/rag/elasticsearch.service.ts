@@ -227,6 +227,37 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * Resolve the kb_id(s) that a document currently belongs to. Returns an
+   * empty array when the document does not exist or the query fails. Used by
+   * the delete / index authorization guards to confirm the caller actually
+   * owns the underlying kb before mutating data.
+   */
+  async getKbIdsByDocumentId(documentId: string): Promise<string[]> {
+    try {
+      const response = await this.client.search({
+        index: this.indexName,
+        body: {
+          size: 1,
+          _source: ['kb_id'],
+          query: { bool: { must: [{ term: { document_id: documentId } }] } },
+        },
+      } as any)
+      const hits = (response.hits?.hits ?? []) as any[]
+      const kbIds: string[] = []
+      for (const hit of hits) {
+        const kbId = hit?._source?.kb_id
+        if (typeof kbId === 'string' && !kbIds.includes(kbId)) kbIds.push(kbId)
+      }
+      return kbIds
+    } catch (err) {
+      this.logger.warn(
+        `getKbIdsByDocumentId failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
+      return []
+    }
+  }
+
   async checkIkPlugin(): Promise<'installed' | 'missing'> {
     try {
       const response: any = await this.client.indices.getMapping({

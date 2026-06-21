@@ -16,20 +16,40 @@ export interface RerankResult {
   originalScore?: number
 }
 
+const ALLOWED_RERANK_MODEL_PREFIXES = ['BAAI/', 'Xorbits/', 'sentence-transformers/']
+const DEFAULT_RERANK_MODEL = 'BAAI/bge-reranker-v2-m3'
+
 @Injectable()
 export class BgeRerankService {
   private readonly logger = new Logger(BgeRerankService.name)
   private readonly modelId: string
   private readonly maxLength: number
 
+  constructor(private readonly config: ConfigService) {
+    const raw = config.get<string>('RERANK_MODEL')
+    // Allowlist gate for model id to avoid arbitrary HF repo injection via
+    // environment variables. Production must pin to one of the approved
+    // prefixes or rely on the safe default.
+    if (raw && this.isAllowedModelId(raw)) {
+      this.modelId = raw
+    } else {
+      if (raw) {
+        this.logger.warn(
+          `RERANK_MODEL="${raw}" 不在允许列表，已回退到默认 ${DEFAULT_RERANK_MODEL}`,
+        )
+      }
+      this.modelId = DEFAULT_RERANK_MODEL
+    }
+    this.maxLength = config.get<number>('RERANK_MAX_LENGTH', 512)
+  }
+
+  private isAllowedModelId(modelId: string): boolean {
+    return ALLOWED_RERANK_MODEL_PREFIXES.some((p) => modelId.startsWith(p))
+  }
+
   private initialized = false
   private tokenizer: any = null
   private model: any = null
-
-  constructor(private readonly config: ConfigService) {
-    this.modelId = config.get<string>('RERANK_MODEL', 'BAAI/bge-reranker-v2-m3')
-    this.maxLength = config.get<number>('RERANK_MAX_LENGTH', 512)
-  }
 
   async ensureInitialized(): Promise<void> {
     if (this.initialized) return

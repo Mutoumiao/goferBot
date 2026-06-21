@@ -372,6 +372,29 @@ describe('LlamaIndexRagService', () => {
       const bulkOrder = es.bulkIndex.mock.invocationCallOrder[0]
       expect(deleteOrder).toBeLessThan(bulkOrder)
     })
+
+    it('throws ForbiddenException when user does not own the target kb', async () => {
+      const prisma = { knowledgeBase: { count: vi.fn().mockResolvedValue(0) } }
+      const service = createService({ prisma })
+      await expect(
+        service.indexDocument('doc-1', 'kb-1', 'hello', undefined, undefined, undefined, { userId: 'user-2' }),
+      ).rejects.toThrow()
+    })
+
+    it('allows indexing when user owns the target kb', async () => {
+      const prisma = { knowledgeBase: { count: vi.fn().mockResolvedValue(1) } }
+      const es = {
+        bulkIndex: vi.fn().mockResolvedValue(undefined),
+        deleteByDocumentId: vi.fn().mockResolvedValue(undefined),
+      }
+      const embeddings = {
+        embedBatch: vi.fn().mockResolvedValue(new Array(2).fill(new Array(10).fill(0.1))),
+      }
+      const service = createService({ prisma, es, embeddings })
+      await expect(
+        service.indexDocument('doc-1', 'kb-1', 'hello world content for test', undefined, undefined, undefined, { userId: 'user-1' }),
+      ).resolves.not.toThrow()
+    })
   })
 
   describe('splitIntoChunks', () => {
@@ -409,12 +432,30 @@ describe('LlamaIndexRagService', () => {
   })
 
   describe('removeDocument', () => {
-    it('calls es.deleteByDocumentId', async () => {
-      const es = { deleteByDocumentId: vi.fn().mockResolvedValue(undefined) }
+    it('calls es.deleteByDocumentId when no userId is supplied (backward compat)', async () => {
+      const es = { deleteByDocumentId: vi.fn().mockResolvedValue(undefined), getKbIdsByDocumentId: vi.fn().mockResolvedValue([]) }
       const service = createService({ es })
       await service.removeDocument('doc-1')
       expect(es.deleteByDocumentId).toHaveBeenCalledWith('doc-1')
       expect(es.deleteByDocumentId).toHaveBeenCalledTimes(1)
+    })
+
+    it('throws ForbiddenException when user does not own the document', async () => {
+      const es = { getKbIdsByDocumentId: vi.fn().mockResolvedValue(['kb-1']) }
+      const prisma = { knowledgeBase: { count: vi.fn().mockResolvedValue(0) } }
+      const service = createService({ es, prisma })
+      await expect(service.removeDocument('doc-1', 'user-2')).rejects.toThrow()
+    })
+
+    it('calls delete when user owns the underlying kb', async () => {
+      const es = {
+        getKbIdsByDocumentId: vi.fn().mockResolvedValue(['kb-1']),
+        deleteByDocumentId: vi.fn().mockResolvedValue(undefined),
+      }
+      const prisma = { knowledgeBase: { count: vi.fn().mockResolvedValue(1) } }
+      const service = createService({ es, prisma })
+      await service.removeDocument('doc-1', 'user-1')
+      expect(es.deleteByDocumentId).toHaveBeenCalledWith('doc-1')
     })
   })
 })

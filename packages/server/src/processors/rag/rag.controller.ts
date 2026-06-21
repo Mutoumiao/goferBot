@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   Logger,
@@ -149,6 +150,12 @@ export class RagController {
   @Post('index')
   @HttpCode(200)
   async index(@Body() dto: RagIndexDto, @CurrentUser('id') userId: string) {
+    // Belt-and-suspenders: the service will re-check ownership, but we also
+    // short-circuit here when the caller cannot own the target kbId so that
+    // the attacker gets a deterministic 403 and we avoid any ES write.
+    if (!userId) {
+      throw new ForbiddenException('未认证用户无权写入')
+    }
     const result = await this.ragService.indexDocument(
       dto.documentId,
       dto.kbId,
@@ -156,6 +163,7 @@ export class RagController {
       dto.chunkSize,
       dto.overlap,
       dto.metadata,
+      { userId },
     )
     return result
   }
@@ -166,7 +174,10 @@ export class RagController {
     @Param('documentId') documentId: string,
     @CurrentUser('id') userId: string,
   ): Promise<void> {
-    await this.ragService.removeDocument(documentId)
+    if (!userId) {
+      throw new ForbiddenException('未认证用户无权删除')
+    }
+    await this.ragService.removeDocument(documentId, userId)
   }
 
   @Get('health')
