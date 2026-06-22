@@ -3,38 +3,20 @@ import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { ForbiddenPage } from '@/components/ForbiddenPage'
-
-function waitForInit(maxMs = 3000): Promise<void> {
-  return new Promise((resolve) => {
-    const start = Date.now()
-    const check = () => {
-      if (useAuthStore.getState().isInitialized) {
-        resolve()
-        return
-      }
-      if (Date.now() - start > maxMs) {
-        resolve()
-        return
-      }
-      setTimeout(check, 50)
-    }
-    check()
-  })
-}
+import { getAuthSnapshot, isAdmin, waitForAuthInit } from '@/utils/auth-guard'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async ({ location }) => {
-    await waitForInit()
-    const state = useAuthStore.getState()
-    const token = state.token
-    if (!token) {
+    await waitForAuthInit()
+    const snapshot = getAuthSnapshot()
+    if (!snapshot.token) {
       const redirectTo = location.pathname + location.search
       throw redirect({
         to: ROUTES_REGISTER.login.path,
         search: redirectTo !== '/login' ? { redirect: redirectTo } : undefined,
       })
     }
-    if (state.user?.role !== 'ADMIN') {
+    if (snapshot.role !== 'ADMIN') {
       throw new Error('FORBIDDEN')
     }
   },
@@ -42,8 +24,8 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function AppLayout() {
-  const state = useAuthStore()
-  if (state.user?.role !== 'ADMIN') {
+  const snapshot = useAuthStore((s) => ({ token: s.token, role: s.user?.role ?? null }))
+  if (!isAdmin(snapshot)) {
     return <ForbiddenPage />
   }
   return (

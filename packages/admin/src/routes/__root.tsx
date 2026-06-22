@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { ConfigProvider } from '@/components/ConfigProvider'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
+import { waitForAuthInit } from '@/utils/auth-guard'
 import appCss from '../globals.css?url'
 
 function NotFound() {
@@ -30,6 +31,7 @@ export const Route = createRootRoute({
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthStore((s) => s._hydrated)
+  const isInitialized = useAuthStore((s) => s.isInitialized)
   const appearance = useSettingsStore((s) => s.appearance)
 
   useEffect(() => {
@@ -43,16 +45,11 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   }, [appearance])
 
   useEffect(() => {
-    if (!hydrated || useAuthStore.getState().isInitialized) return
-    const token = useAuthStore.getState().token
-    if (token) {
-      useAuthStore.getState().setInitialized(true)
-    } else {
-      useAuthStore.getState().setInitialized(true)
+    if (hydrated) {
+      void waitForAuthInit()
     }
   }, [hydrated])
 
-  const isInitialized = useAuthStore((s) => s.isInitialized)
   if (!hydrated || !isInitialized) return null
   return <>{children}</>
 }

@@ -1,11 +1,13 @@
-import { Card, Table, Tag, Button, Space, Modal, Form, Input, App, Descriptions, Switch as AntSwitch } from 'antd'
-import { Plus, RefreshCw, Play, Key, Trash2, Edit } from 'lucide-react'
+import { Card, Table, Tag, Button, Space, Modal, App } from 'antd'
+import { RefreshCw, Play, Key, Trash2, Edit } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import type { ModelConfig } from '@/api/model'
-import { createModel, deleteModel, fetchModels, testConnection, updateModel } from '@/api/model'
+import { fetchModels, updateModel, deleteModel } from '@/api/model'
 import { confirmPasswordAction } from '@/utils/confirm-action'
+import { ModelConfigForm } from './ModelConfigForm'
+import { TestConnectionDrawer } from './TestConnectionDrawer'
 
 export function ModelList() {
   const { message } = App.useApp()
@@ -27,12 +29,7 @@ export function ModelList() {
   }, [load])
 
   const handleTest = async (model: ModelConfig) => {
-    const r = await testConnection(model.id)
-    if (r.success) {
-      message.success(`连接成功，耗时 ${r.latencyMs ?? 0}ms`)
-    } else {
-      message.error(r.message ?? '连接失败')
-    }
+    await TestConnectionDrawer(model)
   }
 
   const handleToggleActive = async (model: ModelConfig) => {
@@ -57,7 +54,7 @@ export function ModelList() {
   }
 
   const handleCreate = async () => {
-    const result = await ModelFormModal()
+    const result = await ModelConfigForm()
     if (result) {
       message.success('创建成功')
       void load()
@@ -91,7 +88,7 @@ export function ModelList() {
             <Button icon={<RefreshCw size={14} />} onClick={() => void load()}>
               刷新
             </Button>
-            <Button type="primary" icon={<Plus size={14} />} onClick={() => void handleCreate()}>
+            <Button type="primary" icon={<Edit size={14} />} onClick={() => void handleCreate()}>
               新建模型
             </Button>
           </Space>
@@ -179,77 +176,3 @@ export function ModelList() {
     </div>
   )
 }
-
-function ToggleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return <Edit {...props} />
-}
-
-interface FormValues {
-  provider: string
-  model: string
-  endpoint: string
-  apiKey: string
-}
-
-function ModelFormModal(): Promise<boolean> {
-  return new Promise((resolve) => {
-    const [form] = Form.useForm<FormValues>()
-    const modal = Modal.confirm({
-      title: '新建模型',
-      width: 480,
-      content: (
-        <Form
-          form={form}
-          layout="vertical"
-          preserve={false}
-          className="pt-2"
-          initialValues={{ provider: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1' }}
-        >
-          <Form.Item name="provider" label="Provider" rules={[{ required: true, message: '请输入 Provider' }]}>
-            <Input placeholder="例如：DeepSeek" />
-          </Form.Item>
-          <Form.Item name="model" label="Model" rules={[{ required: true, message: '请输入 Model' }]}>
-            <Input placeholder="例如：deepseek-chat" />
-          </Form.Item>
-          <Form.Item
-            name="endpoint"
-            label="Endpoint URL"
-            rules={[
-              { required: true, message: '请输入 Endpoint' },
-              {
-                validator: (_, value) => {
-                  if (!value || /^https?:\/\//.test(value)) return Promise.resolve()
-                  return Promise.reject(new Error('Endpoint 必须以 http:// 或 https:// 开头'))
-                },
-              },
-            ]}
-          >
-            <Input placeholder="https://api.example.com/v1" />
-          </Form.Item>
-          <Form.Item name="apiKey" label="API Key" rules={[{ required: true, message: '请输入 API Key' }]}>
-            <Input.Password placeholder="sk-..." />
-          </Form.Item>
-        </Form>
-      ),
-      okText: '创建',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          const values = await form.validateFields()
-          await createModel(values)
-          resolve(true)
-          modal.destroy()
-        } catch {
-          return Promise.reject(new Error('validation failed'))
-        }
-      },
-      onCancel: () => {
-        resolve(false)
-        modal.destroy()
-      },
-    })
-  })
-}
-
-// placeholder use of Descriptions to satisfy unused import if any
-void Descriptions
