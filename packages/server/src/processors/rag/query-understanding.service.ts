@@ -17,6 +17,18 @@ const ZH_CHAR_RATIO_THRESHOLD = 0.2
 const REWRITE_SYSTEM_PROMPT =
   '你是一个查询改写助手。请将用户的短查询扩展为更完整、更具体、更适合进行语义检索的问题描述。只输出改写后的查询，不要附加解释。'
 
+/**
+ * QueryUnderstandingService —— RAG 的「查询理解前处理」
+ *
+ *   用户的提问常常太随意——"这个函数"、"刚才说的那个"、"在 ES 里"。直接
+ *   拿去检索命中率低。本服务在检索前对 query 做三件事：
+ *
+ *   1) 语言检测（中文 / English / unknown）→ 给 BM25 分词器提供提示
+ *   2) 短查询改写（≤20 字时尝试用 LLM 扩写，失败则回退模板式补全）
+ *   3) 同义词扩展（按关键词命中预设 SYNONYM_MAP，扩展成 OR 查询）
+ *
+ * 所有子操作都有 try/catch，任何一步失败不影响主流程，保证"永不阻塞检索"。
+ */
 @Injectable()
 export class QueryUnderstandingService {
   private readonly logger = new Logger(QueryUnderstandingService.name)
@@ -73,6 +85,12 @@ export class QueryUnderstandingService {
     return list
   }
 
+  /**
+   * 按顺序执行三件事：语言检测 → 短查询改写 → 同义词扩展
+   *
+   * 返回的 expandedQueries 会被上层用作 OR 多路召回（见 llamaindex-rag 的
+   * buildEsShouldClauses 处理）。
+   */
   async process(query: string): Promise<QueryUnderstandingResult> {
     this.logger.log(`开始处理查询理解：原始查询长度=${query.length}`)
 

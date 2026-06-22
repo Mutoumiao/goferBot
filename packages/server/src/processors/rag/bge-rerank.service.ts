@@ -19,6 +19,21 @@ export interface RerankResult {
 const ALLOWED_RERANK_MODEL_PREFIXES = ['BAAI/', 'Xorbits/', 'sentence-transformers/']
 const DEFAULT_RERANK_MODEL = 'BAAI/bge-reranker-v2-m3'
 
+/**
+ * BgeRerankService —— RAG 的「二阶段重排器」
+ *
+ *   第一阶段（BM25 + 向量）只做粗排，可能有 30~100 个候选。本服务用
+ *   **Cross-Encoder**（query+doc 拼接联合编码）对候选做精排，精度更高但更慢。
+ *
+ * 工作模式：
+ *   1) 首次调用 `ensureInitialized()` 懒加载 BGE 模型（启动快）
+ *   2) `modelRerank` 按 batchSize=16 批量推理
+ *   3) 模型加载失败 → `fallbackRerank`（词法匹配 + 原始分数融合）
+ *
+ * 安全设计：
+ *   RERANK_MODEL 通过白名单校验（BAAI/、Xorbits/、sentence-transformers/）
+ *   防止通过环境变量注入任意 HF 仓库。
+ */
 @Injectable()
 export class BgeRerankService {
   private readonly logger = new Logger(BgeRerankService.name)
@@ -58,10 +73,10 @@ export class BgeRerankService {
         '@xenova/transformers'
       )
       this.logger.log(`Loading reranker model: ${this.modelId}`)
-      ;[this.tokenizer, this.model] = await Promise.all([
-        AutoTokenizer.from_pretrained(this.modelId),
-        AutoModelForSequenceClassification.from_pretrained(this.modelId),
-      ])
+        ;[this.tokenizer, this.model] = await Promise.all([
+          AutoTokenizer.from_pretrained(this.modelId),
+          AutoModelForSequenceClassification.from_pretrained(this.modelId),
+        ])
       this.initialized = true
       this.logger.log('Reranker model loaded successfully')
     } catch (err) {
@@ -133,6 +148,18 @@ export class BgeRerankService {
     return results.sort((a, b) => b.score - a.score).slice(0, topK)
   }
 
+  /**
+   * 降级重排（BGE 模型不可用时的兜底）
+   *
+   *   fusedScore = 0.4 * lexicalScore + 0.6 * originalScore
+   *
+   *   - lexicalScore：query 词在 content 中命中的比例
+   *   - originalScore：第一阶段的原始检索分数
+   *
+   *
+   *   不用模型也能工作，只是精度下降。这保证了在资源受限（如 Docker 环境）
+   *   下 RAG 仍可用，只是最终排名不如 Cross-Encoder 精细。
+   */
   private fallbackRerank(
     query: string,
     candidates: RerankCandidate[],

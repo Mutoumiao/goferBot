@@ -17,22 +17,40 @@ const SHORT_SENTENCE_THRESHOLD = 8
 const HIGH_CONFIDENCE_THRESHOLD = 0.55
 const MEDIUM_CONFIDENCE_THRESHOLD = 0.35
 
+/**
+ * GroundingService —— RAG 的「事实校验器」
+ *
+ *   LLM 会"幻觉"——可能说出检索文档里根本没有的内容。Grounding 的任务就是
+ *   把答案**按句子拆开**，检查每一句是否被检索 chunks 支撑。
+ *
+ * 核心算法（混合词汇蕴含判定）：
+ *     faithfulnessScore = 0.4 * overlapRatio + 0.6 * bigramRatio
+ *
+ *   - overlapRatio：句子 token 命中 chunk 的比例（长 token ≥4 字符 ×1.2 加权）
+ *   - bigramRatio：句子 bigram 在 chunk 中做子串匹配的比例
+ *   - MEDIUM_CONFIDENCE=0.35：低于此值视为 ungrounded
+ *   - 短句子（< 8 字符）自动 grounded，避免误判
+ *
+ * 为什么不用 LLM 做 Grounding？
+ *   成本高（每句都调 LLM）、延迟大、而且 LLM 可能对自己的生成"过度自信"。
+ *   基于统计的方法毫秒级返回、可解释，足够实用。
+ */
 @Injectable()
 export class GroundingService {
   private readonly logger = new Logger(GroundingService.name)
 
   /**
-   * Check whether each sentence in the answer is supported by the retrieved
-   * chunks. Implements a hybrid approach:
+   * 对答案逐句做 Grounding 检查
    *
-   *  1. NLI-style lexical entailment check (cheap, CPU-friendly) – tokens overlap
-   *     with chunk content AND semantic keyword coverage.
-   *  2. Faithfulness score based on weighted lexical/semantic match.
+   * 流程：
+   *   1) splitSentences 按中英文标点切分
+   *   2) tokenize 把句子拆成 token（ASCII 按空格+CJK 单字）
+   *   3) 对每个 chunk 调 computeEntailmentScore 打分
+   *   4) 取最高分作为句子 faithfulnessScore
+   *   5) 分数 ≥ MEDIUM_CONFIDENCE(0.35) 视为 grounded
    *
-   * This is a pragmatic substitute for a full NLI model (which would add
-   * ~100–200ms latency per sentence). It prevents the previous "30% token
-   * hit => grounded" fallacy by using stricter thresholds and multi-signal
-   * scoring.
+   * 新人观察：
+   *   短句子（<8 字符）自动 grounded，因为过短的句子算分容易误判。
    */
   async checkGrounding(
     answer: string,
@@ -95,9 +113,16 @@ export class GroundingService {
   }
 
   /**
-   * Composite entailment score:
-   *  - token overlap (Jaccard) 40%
-   *  - keyword hit (significant tokens present in chunk) 60%
+   * 混合词汇蕴含判定（单句子 ↔ 单 chunk 的打分核心）
+   *
+   *   score = 0.4 * overlapRatio + 0.6 * bigramRatio
+   *
+   *   ⚠️ 实现注意（与早期文档差异）：
+   *     - overlapRatio 是**有向匹配**（hitCount / sentenceCount），
+   *       不是 Jaccard（交集 / 并集）。这样能突出"chunk 包含句子全部词汇"的情况。
+   *     - 长 token（≥4 字符）命中时额外 ×1.2 加权，对关键术语更敏感。
+   *     - bigramRatio 用 chunkLower.includes(bigram) 做**子串匹配**，
+   *       捕捉短语级重合，比单纯集合匹配更宽松。
    */
   private computeEntailmentScore(tokens: string[], chunkText: string): number {
     if (tokens.length === 0) return 0

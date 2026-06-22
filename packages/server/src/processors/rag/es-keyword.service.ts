@@ -13,11 +13,28 @@ export interface Bm25Options {
   }
 }
 
+/**
+ * EsKeywordService —— RAG 的「BM25 关键词检索器」
+ *
+ *   本服务负责把用户的关键词查询转换成 ES 的 `match` 查询（ik_smart 分词），
+ *   返回词法最相关的 chunks。与向量检索的区别：BM25 对"精确术语""函数名"
+ *   更敏感，但不理解语义（"报错""异常"会匹配不到"error"）。
+ *
+ * 查询构建：
+ *   - 语言 = zh → ik_smart 分词
+ *   - 语言 = en → standard 分词
+ *   - multipleQueries → 用 `should` 子句合成 OR 召回
+ *
+ * ACL 过滤（与向量检索对称）：
+ *   - 行级：kb_ids / doc_ids / metadata
+ *   - 用户级：allowed_user_ids ∈ 命中 OR 字段不存在（默认可见）
+ *   - 团队级：allowed_team_ids ∈ 命中 OR 字段不存在
+ */
 @Injectable()
 export class EsKeywordService {
   private readonly logger = new Logger(EsKeywordService.name)
 
-  constructor(private readonly es: ElasticsearchService) {}
+  constructor(private readonly es: ElasticsearchService) { }
 
   async search(query: string, options: Bm25Options = {}): Promise<SearchHit[]> {
     if (!query || query.trim() === '') return []

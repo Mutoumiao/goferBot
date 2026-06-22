@@ -34,6 +34,22 @@ const PHONE_REGEX = /(?<!\d)(?:\+?\d{1,3}[- ]?)?\d{3}[- ]?\d{4}[- ]?\d{4}(?!\d)/
 const ID_CARD_REGEX = /(?<!\d)\d{17}[\dXx](?!\d)/g
 const BANK_CARD_REGEX = /(?<!\d)\d{16,19}(?!\d)/g
 
+/**
+ * GuardrailService —— RAG 的「输出安全护栏」
+ *
+ *   LLM 生成的答案可能含有敏感信息（邮箱、手机号、身份证、银行卡号）
+ *   或"密码""密钥""confidential"等敏感关键词。本服务在答案返回给
+ *   用户前做最后一道过滤。
+ *
+ * 三件事：
+ *   1) PII 脱敏：正则匹配 email/phone/id_card/bank_card → 替换为 [XXX REDACTED]
+ *   2) 敏感关键词检测：命中时追加 warning（**仅警告，不阻断**）
+ *   3) 领域免责声明：指定 domain 时自动追加对应声明（医疗/金融/法律）
+ *
+ * ⚠️ 已知风险：
+ *   流式场景下 Guardrail 是「事后过滤」——LLM 中间输出的 PII 会先经 SSE
+ *   传到客户端再被替换。改进方案是在 SseResponseHelper 层加滑动窗口过滤。
+ */
 @Injectable()
 export class GuardrailService {
   private readonly logger = new Logger(GuardrailService.name)
@@ -44,14 +60,18 @@ export class GuardrailService {
   }
 
   /**
-   * Apply output guardrails to LLM generated text.
-   * Performs:
-   *  - PII redaction (email, phone, id card, bank card)
-   *  - Sensitive keyword detection (warns if answer contains risk words)
-   *  - Disclaimer injection for high-risk content
+   * 执行输出安全过滤
    *
-   * The goal is NOT to censor valid answers but to prevent accidental
-   * leakage of credentials or personally identifiable information.
+   * 执行顺序：
+   *   1) 依次对 email / phone / id_card / bank_card 做正则脱敏
+   *      （每次替换都记录原始匹配，便于审计和给前端展示）
+   *   2) 检测敏感关键词 → 追加 warning（不阻断回答）
+   *   3) 若指定 domain（medical/financial/legal），追加对应免责声明
+   *
+   * 新人注意：
+   *   本服务**不是审查答案正确性**，只处理「不该泄漏的信息」。
+   *   safe=false 表示发生了脱敏，但答案依然可用；脱敏信息通过 redactions
+   *   返回给上层，用于审计日志。
    */
   apply(text: string, options: { domain?: 'medical' | 'financial' | 'legal' | 'general' } = {}): GuardrailResult {
     if (!text) {

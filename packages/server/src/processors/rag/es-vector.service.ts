@@ -14,11 +14,26 @@ export interface VectorOptions {
   }
 }
 
+/**
+ * EsVectorService —— RAG 的「向量检索器」
+ *
+ *   把用户 query 做 Embedding，在 ES 里用 `knn` 搜索 ANN 索引（HNSW），
+ *   返回语义最相似的 chunks。BM25 擅长"字面匹配"，本服务擅长"意思相近"。
+ *
+ * 关键参数：
+ *   - k：从 ANN 索引进多少近邻（默认 topK）
+ *   - num_candidates：召回后再精排的候选池大小（默认 100，越大越准但越慢）
+ *   - similarity：最小相似度阈值（0~1）
+ *
+ * ACL 物理隔离（重要安全点）：
+ *   `knn.filter` 在 ANN 遍历**之前**执行，而不是打分之后。这意味着
+ *   未授权文档根本不会进入候选集，比"事后过滤"更安全。
+ */
 @Injectable()
 export class EsVectorService {
   private readonly logger = new Logger(EsVectorService.name)
 
-  constructor(private readonly es: ElasticsearchService) {}
+  constructor(private readonly es: ElasticsearchService) { }
 
   async search(
     queryVector: number[],

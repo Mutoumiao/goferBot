@@ -85,6 +85,24 @@ type StreamOutcome =
   | { type: 'data'; result: IteratorResult<{ text: string }> }
   | { type: 'heartbeat' }
 
+/**
+ * LlamaIndexRagService —— RAG 系统的「大脑」与总编排器
+ *
+ *   本服务把一条用户提问变成了「带来源的答案」。整条链路分为 5 条主线：
+ *     1. retrieve()       只检索：拿到相关文档 chunks
+ *     2. query()           检索 + 生成 + 安全校验
+ *     3. streamQuery()     流式版本（SSE 逐 token 输出 + 心跳保活）
+ *     4. indexDocument()   把一篇文档切分、Embedding、写入 ES
+ *     5. removeDocument()  删除文档（带 IDOR 防护）
+ *
+ * 核心流水线：
+ *   查询理解 → 意图路由 → 混合检索(BM25+向量+RRF) → 二阶段重排
+ *     → Parent-Child 聚合 → 构建上下文 → LLM 生成 → Guardrail → Grounding
+ *
+ * 安全设计：
+ *   双层 ACL —— 应用层 verifyKbOwnership + 索引层 ES knn.filter 物理过滤
+ *   IDOR 防护 —— removeDocument 对"不存在"统一按无权处理，不暴露存在性
+ */
 @Injectable()
 export class LlamaIndexRagService {
   private readonly logger = new Logger(LlamaIndexRagService.name)
@@ -146,6 +164,25 @@ export class LlamaIndexRagService {
     }
   }
 
+  /**
+   * 检索主流程（RAG 第一步：只找相关文档，不生成答案）
+   *
+   * 调用顺序：
+   *   1) 输入校验：截断超长查询、空 kbIds 直接返回
+   *   2) 应用层 ACL：verifyKbOwnership（Prisma 校验 kb 归属）
+   *      ⚠️ 校验失败时记录警告并返回 []，不抛异常（调用方无感）
+   *   3) 查询理解：语言检测 → 短查询改写 → 同义词扩展
+   *   4) 意图路由：根据 query 选择检索模式（bm25/vector/hybrid）、权重、topK
+   *      ⚠️ 显式 options.mode 会覆盖路由决策
+   *   5) 组装 ES 过滤条件：kbIds / documentIds / metadata / ACL 用户+团队
+   *   6) 并行检索：
+   *        - vector 模式：仅 Dense Vector kNN
+   *        - bm25 模式：仅 ES match 查询（ik_smart 分词）
+   *        - hybrid 模式：两路并行 + RRF 融合
+   *   7) 二阶段重排：BGE Cross-Encoder（可选）
+   *   8) Parent-Child 聚合：命中 Child → 拉取 Parent 内容去重
+   *   9) minScore 过滤 + topK 截断
+   */
   async retrieve(query: string, options: RagRetrieveOptions = {}): Promise<RetrievedChunk[]> {
     const startTs = Date.now()
     let workingQuery = query
@@ -323,6 +360,17 @@ export class LlamaIndexRagService {
     return result.sort((a, b) => b.score - a.score)
   }
 
+  /**
+   * 应用层 ACL：校验 userId 是否真正拥有所有请求的 kbIds
+   *
+   *
+   *   这是 RAG 的第一道安全门。请求里带的 kbIds 不一定属于当前用户，
+   *   必须用 Prisma 去查数据库确认：ownedCount 必须 == kbIds.length，
+   *   才算"全部属于自己"。用 count 而非 findMany 是为了省内存。
+   *
+   * ⚠️ 注意：这只是"应用层校验"，真正的防线是 ES 索引层的 knn.filter，
+   *   后者会在向量检索之前就把未授权文档过滤掉。
+   */
   private async verifyKbOwnership(
     userId: string,
     kbIds?: string[],
@@ -405,6 +453,21 @@ export class LlamaIndexRagService {
     return this.reciprocalRankFusion(vectorHits, bm25Hits, options)
   }
 
+  /**
+   * RRF 融合（Reciprocal Rank Fusion）—— 混合检索的核心算法
+   *
+   * 为什么需要 RRF？
+   *   BM25 分数（0~20）和向量余弦分数（0~1）尺度完全不同，不能直接相加。
+   *   RRF 只看「排名位置」，不关心分数尺度，天然支持跨算法融合。
+   *
+   * 公式：score(d) = vectorWeight/(rrfK+rank_vector) + bm25Weight/(rrfK+rank_bm25)
+   *   - rrfK 默认 60（文献经验值，平衡头部与长尾）
+   *   - 排名从 1 开始，代码里用 idx+1 体现
+   *   - vectorWeight / bm25Weight 可按意图调整（如 code_search 偏重 BM25）
+   *
+   * 新人记忆：
+   *   「排名靠前 → 分数大」「被两路检索都命中 → 分数叠加」
+   */
   private reciprocalRankFusion(
     vectorHits: SearchHit[],
     bm25Hits: SearchHit[],
@@ -435,6 +498,20 @@ export class LlamaIndexRagService {
       .sort((a, b) => b.score - a.score)
   }
 
+  /**
+   * Context Builder —— 把检索结果打包成 LLM 的「上下文」
+   *
+   * 流程：
+   *   1) 按 documentId 去重（避免同文档多 chunk 浪费 token）
+   *   2) 按分数降序排列
+   *   3) 估算 token（中文粗略按 length/4）累加至 tokenBudget（默认 3000）
+   *   4) 最后一个 chunk 按比例截断，追加 "..."
+   *   5) 输出带编号引用格式：`[1] 内容\n\n[2] 内容`
+   *
+   *
+   *   LLM 有上下文窗口限制，不能把所有检索结果塞进去。本方法用
+   *   「贪心 + 按文档去重 + 比例截断」保证有限 token 里装最多样的信息。
+   */
   async buildContext(chunks: RetrievedChunk[], tokenBudget: number = DEFAULT_CONTEXT_TOKEN_BUDGET): Promise<string> {
     if (chunks.length === 0) return ''
 
@@ -480,6 +557,15 @@ export class LlamaIndexRagService {
     return result
   }
 
+  /**
+   * 完整 RAG 查询：检索 → 生成 → 输出安全 → 事实校验
+   *
+   * 流程：
+   *   retrieve → buildContext → LLM invoke → Guardrail 脱敏 → Grounding 校验
+   *
+   * ⚠️ 注意：Guardrail 在生成之后应用，如果 LLM 输出了 PII，会被脱敏；
+   *   Grounding 把答案拆成句子，逐句判断是否被检索内容支撑。
+   */
   async query(question: string, options: RagQueryOptions = {}): Promise<RagQueryResult> {
     const chunks = await this.retrieve(question, options)
     const rawAnswer = await this.generateAnswer(question, chunks, options.systemPrompt)
@@ -601,6 +687,20 @@ export class LlamaIndexRagService {
     }
   }
 
+  /**
+   * 索引一篇文档到 ES（包含 Upsert、分块、Embedding、批量写入）
+   *
+   * 流程：
+   *   1) 归属校验：只有 kb 所有者才能往里面写内容（防止"注入他人知识库"）
+   *   2) Upsert：先按 documentId 删除旧数据，保证幂等
+   *   3) Parent-Child 分块（默认开启）：
+   *        - Parent：800 tokens 大粒度
+   *        - Child：150 tokens 小粒度（真正被检索的是 Child）
+   *        - 每个 Child 携带 parent_id / parent_content，命中后聚合返回
+   *   4) Contextual Embedding：拼接文档标题、章节路径、前后文
+   *   5) embedBatch 批量向量化
+   *   6) bulkIndex 批量写入 ES
+   */
   async indexDocument(
     documentId: string,
     kbId: string,
@@ -724,10 +824,16 @@ export class LlamaIndexRagService {
   }
 
   /**
-   * Build the text that gets embedded. Per the design doc, the contextual
-   * string is `{document_title} | {section_path} | {prefix} {current} {suffix}`
-   * so that the model picks up document-level context rather than sibling
-   * child-chunk noise.
+   * Contextual Embedding：构造真正被 Embedding 的文本
+   *
+   * 格式：文档：{title} | 章节：{path} | 正文：{prefix} {current} {suffix}
+   *
+   * 为什么要这样做？
+   *   如果只嵌入当前 Child，那么不同文档里的"简介""设计"等同名章节
+   *   向量会非常接近。加入文档标题 + 前后文后，向量就能携带
+   *   「文档级上下文」，区分度显著提高。
+   *
+   * window 由 RAG_CONTEXTUAL_WINDOW 配置，默认 1（前后各 1 个兄弟分块）。
    */
   private buildEmbeddingTexts(
     childTexts: string[],
