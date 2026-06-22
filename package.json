@@ -8,6 +8,7 @@
     "dev:data": "pnpm --filter @goferbot/data dev",
     "dev": "pnpm -w run predev && concurrently -k \"pnpm dev:data\" \"pnpm dev:server\" \"pnpm dev:web\" --names data,server,web --prefix-colors yellow,cyan,green",
     "dev:web": "pnpm --filter @goferbot/web dev",
+    "dev:admin": "pnpm --filter @goferbot/admin dev",
     "dev:server": "pnpm --filter @goferbot/server dev",
     "build": "pnpm -r build",
     "test": "vitest",
