@@ -15,7 +15,7 @@ export function waitForAuthInit(maxMs = 3000): Promise<void> {
         return
       }
       if (Date.now() - start > maxMs) {
-        state.setInitialized(true)
+        useAuthStore.getState().setInitialized(true)
         resolve()
         return
       }
