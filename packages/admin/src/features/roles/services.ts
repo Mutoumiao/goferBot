@@ -45,6 +45,21 @@ export async function createRoleService(data: {
   }
 }
 
+export async function editRoleService(
+  id: string,
+  data: { name?: string; description?: string; permissions?: string[] },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await updateRoleApi(id, data).send()
+    toast.success('修改角色成功')
+    return { success: true }
+  } catch (err) {
+    const msg = mapErrorMessage(err)
+    toast.error(msg)
+    return { success: false, error: msg }
+  }
+}
+
 export async function updateRoleService(
   id: string,
   data: { name?: string; description?: string; permissions?: string[] },

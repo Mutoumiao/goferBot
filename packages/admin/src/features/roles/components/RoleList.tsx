@@ -34,6 +34,11 @@ export function RoleList() {
     if (success) void load()
   }
 
+  const handleEdit = async (role: Role) => {
+    const success = await RoleFormModal({ roleId: role.id })
+    if (success) void load()
+  }
+
   const handleDelete = async (role: Role) => {
     if (role.isBuiltIn) return
     const result = await confirmPasswordAction(
@@ -86,7 +91,7 @@ export function RoleList() {
             type="text"
             size="small"
             icon={<Edit size={14} />}
-            onClick={() => navigate({ to: `/_authenticated/roles/${record.id}` })}
+            onClick={() => void handleEdit(record)}
           >
             编辑
           </Button>

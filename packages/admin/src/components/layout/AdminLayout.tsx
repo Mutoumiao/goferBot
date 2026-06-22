@@ -4,9 +4,10 @@ import { LogOut, User as UserIcon, Settings as SettingsIcon, Bell } from 'lucide
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { MenuItemType } from 'antd/es/menu/interface'
-import { ROUTES_REGISTER, getNavItems } from '@/router-register'
+import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
+import { useMenuConfig } from './MenuConfig'
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -17,7 +18,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { token } = antdTheme.useToken()
   const [collapsed, setCollapsed] = useState(false)
 
-  const navItems = getNavItems()
+  const navItems = useMenuConfig()
 
   const menuItems: MenuItemType[] = navItems.map((item) => ({
     key: item.path,

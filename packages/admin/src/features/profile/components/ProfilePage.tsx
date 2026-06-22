@@ -2,7 +2,7 @@ import { Card, Descriptions, Form, Input, Button, Tabs, App, Table, Tag } from '
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { PageHeader } from '@/components/common/PageHeader'
-import { changePasswordService } from '@/features/auth/services'
+import { changePasswordService, fetchLoginHistory, type LoginHistoryItem } from '@/features/profile/services'
 
 interface PasswordFormValues {
   oldPassword: string
@@ -14,14 +14,10 @@ export function ProfilePage() {
   const user = useAuthStore((s) => s.user)
   const { message } = App.useApp()
   const [form] = Form.useForm<PasswordFormValues>()
-  const [history, setHistory] = useState<Array<{ id: string; ip: string; device: string; time: string }>>([])
+  const [history, setHistory] = useState<LoginHistoryItem[]>([])
 
   useEffect(() => {
-    setHistory([
-      { id: '1', ip: '192.168.1.100', device: 'Chrome / Windows', time: new Date(Date.now() - 3600000).toLocaleString('zh-CN') },
-      { id: '2', ip: '192.168.1.100', device: 'Chrome / Windows', time: new Date(Date.now() - 86400000).toLocaleString('zh-CN') },
-      { id: '3', ip: '10.0.0.5', device: 'Safari / macOS', time: new Date(Date.now() - 172800000).toLocaleString('zh-CN') },
-    ])
+    void fetchLoginHistory().then((list) => setHistory(list))
   }, [])
 
   const handleChangePassword = async () => {

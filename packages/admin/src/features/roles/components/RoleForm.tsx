@@ -1,16 +1,18 @@
 import { Form, Modal, Input } from 'antd'
-import { createRoleService } from '../services'
+import { createRoleService, editRoleService, fetchRole } from '../services'
 
 interface FormValues {
   name: string
   description?: string
 }
 
-export function RoleFormModal(): Promise<boolean> {
+export function RoleFormModal(props: { roleId?: string } = {}): Promise<boolean> {
   return new Promise((resolve) => {
     const [form] = Form.useForm<FormValues>()
+    const isEdit = !!props.roleId
+
     const modal = Modal.confirm({
-      title: '新建角色',
+      title: isEdit ? '编辑角色' : '新建角色',
       width: 420,
       content: (
         <Form
@@ -31,21 +33,36 @@ export function RoleFormModal(): Promise<boolean> {
           </Form.Item>
         </Form>
       ),
-      okText: '创建',
+      okText: isEdit ? '保存修改' : '创建',
       cancelText: '取消',
       onOk: async () => {
         try {
           const values = await form.validateFields()
-          const res = await createRoleService({
-            name: values.name,
-            description: values.description,
-            permissions: [],
-          })
-          if (res.success) {
-            resolve(true)
-            modal.destroy()
+          if (isEdit && props.roleId) {
+            const current = await fetchRole(props.roleId)
+            const res = await editRoleService(props.roleId, {
+              name: values.name,
+              description: values.description,
+              permissions: current?.permissions ?? [],
+            })
+            if (res.success) {
+              resolve(true)
+              modal.destroy()
+            } else {
+              return Promise.reject(new Error(res.error))
+            }
           } else {
-            return Promise.reject(new Error(res.error))
+            const res = await createRoleService({
+              name: values.name,
+              description: values.description,
+              permissions: [],
+            })
+            if (res.success) {
+              resolve(true)
+              modal.destroy()
+            } else {
+              return Promise.reject(new Error(res.error))
+            }
           }
         } catch {
           return Promise.reject(new Error('validation failed'))
@@ -56,5 +73,13 @@ export function RoleFormModal(): Promise<boolean> {
         modal.destroy()
       },
     })
+
+    if (isEdit && props.roleId) {
+      void fetchRole(props.roleId).then((r) => {
+        if (r) {
+          form.setFieldsValue({ name: r.name, description: r.description })
+        }
+      })
+    }
   })
 }

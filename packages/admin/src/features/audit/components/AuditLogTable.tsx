@@ -3,7 +3,7 @@ import { Download, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { AuditLog, AuditQuery } from '@/api/audit'
-import { exportAuditLogs, fetchAuditLogs } from '@/api/audit'
+import { exportAuditLogs, fetchAuditLogs } from '@/features/audit/services'
 
 export function AuditLogTable() {
   const [data, setData] = useState<AuditLog[]>([])

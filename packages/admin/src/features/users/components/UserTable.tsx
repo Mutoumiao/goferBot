@@ -1,6 +1,6 @@
 import { Avatar, Button, Card, Input, Select, Space, Switch, Table, Tag, Popconfirm, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { Plus, RefreshCw, Search, Edit, Trash2, KeyRound, UserCog } from 'lucide-react'
+import { Plus, RefreshCw, Search, Edit, Trash2, KeyRound, UserCog, Users } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -22,6 +22,7 @@ export function UserTable({ initialQuery }: UserTableProps) {
   const [data, setData] = useState<AdminUserResponse[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [query, setQuery] = useState<ListUsersQuery>({
     page: 1,
     pageSize: 10,
@@ -103,6 +104,50 @@ export function UserTable({ initialQuery }: UserTableProps) {
       await assignUserRole(user.id, role)
       void load(query)
     }
+  }
+
+  const handleBatchEnable = async () => {
+    const result = await confirmPasswordAction(
+      '批量启用用户',
+      <>确定要启用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？</>,
+    )
+    if (!result.confirmed) return
+    for (const key of selectedRowKeys) {
+      const u = data.find((d) => d.id === key)
+      if (u && !u.isActive) await toggleUserStatus(u.id, false)
+    }
+    message.success('批量启用成功')
+    setSelectedRowKeys([])
+    void load(query)
+  }
+
+  const handleBatchDisable = async () => {
+    const result = await confirmPasswordAction(
+      '批量禁用用户',
+      <>确定要禁用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？</>,
+    )
+    if (!result.confirmed) return
+    for (const key of selectedRowKeys) {
+      const u = data.find((d) => d.id === key)
+      if (u && u.isActive) await toggleUserStatus(u.id, true)
+    }
+    message.success('批量禁用成功')
+    setSelectedRowKeys([])
+    void load(query)
+  }
+
+  const handleBatchDelete = async () => {
+    const result = await confirmPasswordAction(
+      '批量删除用户',
+      <>确定要删除选中的 <b>{selectedRowKeys.length}</b> 个用户吗？该操作不可撤销。</>,
+    )
+    if (!result.confirmed) return
+    for (const key of selectedRowKeys) {
+      await deleteUserService(String(key))
+    }
+    message.success('批量删除成功')
+    setSelectedRowKeys([])
+    void load(query)
   }
 
   const columns: ColumnsType<AdminUserResponse> = [
@@ -260,8 +305,49 @@ export function UserTable({ initialQuery }: UserTableProps) {
           <Button onClick={handleReset}>重置</Button>
         </Space>
 
+        {selectedRowKeys.length > 0 && (
+          <Space wrap size="small" className="mb-4 rounded-md border border-indigo-200 bg-indigo-50 p-2">
+            <span className="text-sm text-indigo-700">
+              已选 <b>{selectedRowKeys.length}</b> 项
+            </span>
+            <Button
+              size="small"
+              icon={<Users size={14} />}
+              onClick={() => void handleBatchEnable()}
+            >
+              批量启用
+            </Button>
+            <Button
+              size="small"
+              icon={<Users size={14} />}
+              onClick={() => void handleBatchDisable()}
+            >
+              批量禁用
+            </Button>
+            <Button
+              size="small"
+              danger
+              icon={<Trash2 size={14} />}
+              onClick={() => void handleBatchDelete()}
+            >
+              批量删除
+            </Button>
+            <Button
+              size="small"
+              type="link"
+              onClick={() => setSelectedRowKeys([])}
+            >
+              取消选择
+            </Button>
+          </Space>
+        )}
+
         <Table<AdminUserResponse>
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
           loading={loading}
           dataSource={data}
           columns={columns}

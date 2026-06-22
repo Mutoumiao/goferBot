@@ -1,5 +1,7 @@
 import { Modal } from 'antd'
 import { useState } from 'react'
+import { verifyPassword } from '@/api/auth'
+import { mapErrorMessage } from '@/utils/error-mapper'
 
 export interface ConfirmPasswordResult {
   confirmed: boolean
@@ -7,11 +9,9 @@ export interface ConfirmPasswordResult {
 }
 
 /**
- * 危险操作二次确认（带密码）。
- * 返回 Promise：用户确认且密码验证通过 → resolve({ confirmed: true, password })；
+ * 危险操作二次确认（带密码 + 后端校验）。
+ * 返回 Promise：密码校验通过 → resolve({ confirmed: true, password })；
  * 取消或密码错误 → resolve({ confirmed: false })。
- *
- * 说明：真实项目中密码校验通常通过后端完成。这里只负责 UI 流程。
  */
 export function confirmPasswordAction(
   title: string,
@@ -41,7 +41,7 @@ export function confirmPasswordAction(
       okText: '确认执行',
       cancelText: '取消',
       okButtonProps: { danger: true },
-      onOk: () => {
+      onOk: async () => {
         if (!inputPassword) {
           modal.update({
             content: (
@@ -59,8 +59,48 @@ export function confirmPasswordAction(
           })
           return Promise.reject(new Error('password required'))
         }
-        resolve({ confirmed: true, password: inputPassword })
-        modal.destroy()
+        try {
+          const res = await verifyPassword({ password: inputPassword }).send()
+          if (res.success) {
+            resolve({ confirmed: true, password: inputPassword })
+            modal.destroy()
+            return
+          }
+          modal.update({
+            content: (
+              <div className="space-y-3">
+                {content ? <div>{content}</div> : null}
+                <div className="text-sm text-destructive">密码错误，请重新输入</div>
+                <PasswordInput
+                  onChange={(value, error) => {
+                    inputPassword = value
+                    passwordError = error ?? ''
+                  }}
+                />
+              </div>
+            ),
+          })
+          return Promise.reject(new Error('password invalid'))
+        } catch (err) {
+          const msg = mapErrorMessage(err)
+          modal.update({
+            content: (
+              <div className="space-y-3">
+                {content ? <div>{content}</div> : null}
+                <div className="text-sm text-destructive">
+                  {msg || '密码校验失败，请重试'}
+                </div>
+                <PasswordInput
+                  onChange={(value, error) => {
+                    inputPassword = value
+                    passwordError = error ?? ''
+                  }}
+                />
+              </div>
+            ),
+          })
+          return Promise.reject(new Error('verify failed'))
+        }
       },
       onCancel: () => {
         resolve({ confirmed: false })
