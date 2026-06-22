@@ -53,11 +53,10 @@ describe('roles services', () => {
     expect(toast.error).toHaveBeenCalledTimes(1)
   })
 
-  it('fetchPermissions falls back to mock', async () => {
+  it('fetchPermissions throws when api fails (no mock fallback)', async () => {
     mockListPermissions.mockRejectedValueOnce(new Error('offline'))
-    const list = await fetchPermissions()
-    expect(list.length).toBeGreaterThan(0)
-    expect(list.some((p: { key: string }) => p.key === 'user:read')).toBe(true)
+    await expect(fetchPermissions()).rejects.toThrow()
+    expect(toast.error).toHaveBeenCalled()
   })
 
   it('createRoleService returns success/error', async () => {

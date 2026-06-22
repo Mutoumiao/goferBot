@@ -12,10 +12,14 @@ export function PermissionMatrix({ roleId, onBack }: { roleId: string; onBack: (
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
-    const [r, perms] = await Promise.all([fetchRole(roleId), fetchPermissions()])
-    setRole(r)
-    setPermissions(perms)
-    setSelected(r?.permissions ?? [])
+    try {
+      const [r, perms] = await Promise.all([fetchRole(roleId), fetchPermissions()])
+      setRole(r)
+      setPermissions(perms)
+      setSelected(r?.permissions ?? [])
+    } catch (e) {
+      message.error('加载角色或权限列表失败，请刷新重试')
+    }
   }
 
   useEffect(() => {

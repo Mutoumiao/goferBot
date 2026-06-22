@@ -1,3 +1,6 @@
+import { fetchDashboardData as fetchDashboardApi } from '@/api/dashboard'
+import { mapErrorMessage } from '@/utils/error-mapper'
+
 export interface DashboardStats {
   userCount: number
   sessionCount: number
@@ -41,15 +44,14 @@ export interface DashboardData {
 
 /**
  * 获取 Dashboard 数据。
- * 首版支持 mock 数据；后端就绪后切换为真实 API。
+ * 优先调用真实接口；后端不可用时回退到 mock 数据以保持可演示。
  */
 export async function getDashboardData(): Promise<DashboardData> {
-  // 尝试真实接口，失败时回退到 mock
   try {
-    const { alovaInstance } = await import('@/utils/server')
-    const data = await alovaInstance.Get<DashboardData>('/admin/dashboard').send()
+    const data = await fetchDashboardApi()
     return data
-  } catch {
+  } catch (err) {
+    console.warn('[dashboard] real api unreachable, falling back to mock:', mapErrorMessage(err))
     return getMockData()
   }
 }

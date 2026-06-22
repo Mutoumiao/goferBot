@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useCallback } from 'react'
 import { DashboardView } from '@/features/dashboard/components/DashboardView'
 import type { DashboardData } from '@/features/dashboard/services'
 import { getDashboardData } from '@/features/dashboard/services'
+import { useQueryWithRetry } from '@/hooks/useQueryWithRetry'
 import { ROUTES_REGISTER } from '@/router-register'
-import { useCallback, useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
@@ -11,24 +12,22 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 })
 
 function DashboardPage() {
-  const [data, setData] = useState<DashboardData | undefined>()
-  const [loading, setLoading] = useState(true)
+  const { data, loading, error, run } = useQueryWithRetry<DashboardData>(
+    getDashboardData,
+    [],
+    true,
+  )
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const d = await getDashboardData()
-      setData(d)
-    } catch {
-      setData(undefined)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const handleRefresh = useCallback(() => {
+    void run()
+  }, [run])
 
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  return <DashboardView data={data} loading={loading} onRefresh={() => void load()} />
+  return (
+    <DashboardView
+      data={data ?? undefined}
+      loading={loading}
+      error={error}
+      onRefresh={handleRefresh}
+    />
+  )
 }

@@ -20,6 +20,8 @@ export function RoleList() {
     try {
       const roles = await fetchRoles()
       setData(roles)
+    } catch {
+      setData([])
     } finally {
       setLoading(false)
     }

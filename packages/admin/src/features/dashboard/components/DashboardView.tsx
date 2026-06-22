@@ -1,4 +1,5 @@
-import { Col, Row, Spin } from 'antd'
+import { Card, Col, Row, Alert, Button } from 'antd'
+import { RefreshCw } from 'lucide-react'
 import { StatCards } from './StatCards'
 import { RecentActivities } from './RecentActivities'
 import { SystemHealth } from './SystemHealth'
@@ -9,19 +10,44 @@ import type { DashboardData } from '../services'
 export interface DashboardViewProps {
   data?: DashboardData
   loading?: boolean
+  error?: string | null
   onRefresh?: () => void
 }
 
-export function DashboardView({ data, loading, onRefresh }: DashboardViewProps) {
+export function DashboardView({ data, loading, error, onRefresh }: DashboardViewProps) {
   return (
     <div className="space-y-4">
       <PageHeader
         title="控制台"
         description="查看系统整体运行状态与核心指标"
-        extra={<button onClick={onRefresh}>刷新</button>}
+        extra={
+          <Button
+            icon={<RefreshCw size={14} />}
+            onClick={onRefresh}
+            loading={loading}
+          >
+            刷新
+          </Button>
+        }
       />
 
-      <Spin spinning={loading}>
+      {error && !data && (
+        <Alert
+          type="error"
+          showIcon
+          message={error}
+          action={
+            <Button size="small" type="primary" onClick={onRefresh}>
+              重试
+            </Button>
+          }
+        />
+      )}
+
+      <div
+        aria-busy={loading}
+        style={{ opacity: loading ? 0.6 : 1, transition: 'opacity 200ms' }}
+      >
         <StatCards stats={data?.stats} />
 
         <Row gutter={[16, 16]} className="mt-2">
@@ -36,7 +62,7 @@ export function DashboardView({ data, loading, onRefresh }: DashboardViewProps) 
             </div>
           </Col>
         </Row>
-      </Spin>
+      </div>
     </div>
   )
 }
