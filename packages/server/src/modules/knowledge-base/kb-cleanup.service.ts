@@ -60,13 +60,28 @@ export class KbCleanupService {
     })
 
     if (chunks.length > 0) {
-      try {
-        await this.vectorService.deleteByIds(chunks.map((c) => c.id))
-      } catch (err) {
-        this.logger.warn(
-          `文档 ${documentId} 的向量数据清理失败，继续清理存储与记录`,
-          err instanceof Error ? err.stack : String(err),
-        )
+      // C5: 向量删除失败时重试一次，仍失败则标记孤儿数据
+      let vectorDeleted = false
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await this.vectorService.deleteByIds(chunks.map((c) => c.id))
+          vectorDeleted = true
+          break
+        } catch (err) {
+          this.logger.warn(
+            `文档 ${documentId} 的向量数据清理失败（尝试 ${attempt}/2）`,
+            err instanceof Error ? err.stack : String(err),
+          )
+          if (attempt === 2) {
+            this.logger.error(
+              `文档 ${documentId} 的向量数据清理最终失败，产生孤儿向量数据。chunkIds=${chunks.map((c) => c.id).join(',')}`,
+            )
+          }
+        }
+      }
+      if (!vectorDeleted) {
+        // 标记孤儿数据：记录到日志，便于后续定期清理任务扫描
+        this.logger.warn(`ORPHAN_VECTOR: documentId=${documentId} chunkCount=${chunks.length}`)
       }
     }
 

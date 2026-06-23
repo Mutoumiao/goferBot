@@ -107,14 +107,18 @@ export class KnowledgeBaseService {
       })
     }
 
+    const MAX_SEARCH_RESULTS = 100
+
     const [folders, documents] = await Promise.all([
       this.prisma.folder.findMany({
         where: { kbId, name: { contains: trimmed, mode: 'insensitive' } },
         orderBy: { createdAt: 'asc' },
+        take: MAX_SEARCH_RESULTS,
       }),
       this.prisma.document.findMany({
         where: { kbId, name: { contains: trimmed, mode: 'insensitive' } },
         orderBy: { createdAt: 'desc' },
+        take: MAX_SEARCH_RESULTS,
       }),
     ])
 

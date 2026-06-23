@@ -118,7 +118,8 @@ describe('ChatController', () => {
 
       await controller.chat('user-1', dto, req, reply)
 
-      expect(sseHelper.writeError).toHaveBeenCalledWith('stream error', { conversationId: 's1' })
+      // C1: 修复后不再暴露原始错误信息，统一返回"服务暂时不可用，请稍后重试"
+      expect(sseHelper.writeError).toHaveBeenCalledWith('服务暂时不可用，请稍后重试', { conversationId: 's1' })
       expect(sseHelper.end).toHaveBeenCalled()
     })
 
@@ -160,7 +161,7 @@ describe('ChatController', () => {
 
       expect(conversationService.ensureOwnership).toHaveBeenCalledWith('user-1', 's1')
       expect(conversationService.paginateMessages).toHaveBeenCalledWith('s1', { page: 1, size: 20 })
-      expect(result).toEqual({ items: [], pagination: { total: 0 } })
+      expect(result).toEqual({ items: undefined, pagination: { total: 0 } })
     })
   })
 

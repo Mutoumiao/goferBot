@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Logger, Post, Query, Req, Res, UseGuards } from '@nestjs/common'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
@@ -12,6 +12,8 @@ import { ModelRegistryService } from './model-registry.service.js'
 @Controller('chat-messages')
 @UseGuards(JwtAuthGuard)
 export class ChatController {
+  private readonly logger = new Logger(ChatController.name)
+
   constructor(
     private readonly chatService: ChatService,
     private readonly conversationService: ConversationService,
@@ -39,8 +41,9 @@ export class ChatController {
         }
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '未知错误'
-      this.sseHelper.writeError(message, {
+      // C1: 过滤敏感信息，避免将 LLM 错误详情（可能含 API Key 提示）暴露给客户端
+      this.logger.error(`SSE 流异常: ${err instanceof Error ? err.message : '未知错误'}`)
+      this.sseHelper.writeError('服务暂时不可用，请稍后重试', {
         conversationId: dto.conversation_id,
       })
     } finally {

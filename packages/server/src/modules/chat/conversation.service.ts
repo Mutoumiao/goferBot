@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import type { Message } from '@prisma/client'
 import { MessageRepository } from '../..//modules/session/repositories/message.repository.js'
 import { SessionRepository } from '../../modules/session/repositories/session.repository.js'
@@ -11,6 +11,8 @@ export interface ConversationContext {
 
 @Injectable()
 export class ConversationService {
+  private readonly logger = new Logger(ConversationService.name)
+
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly messageRepository: MessageRepository,
@@ -110,11 +112,20 @@ export class ConversationService {
     ]
 
     try {
-      const title = await provider.invoke(messages)
+      // H3: 添加 10 秒超时，防止标题生成阻塞
+      const title = await Promise.race([
+        provider.invoke(messages),
+        new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error('TITLE_TIMEOUT')), 10_000),
+        ),
+      ])
       const cleanedTitle = this.cleanTitle(title)
       await this.sessionRepository.update(sessionId, { title: cleanedTitle })
-    } catch {
+    } catch (err) {
       // 标题生成失败不影响主流程
+      if (err instanceof Error && err.message === 'TITLE_TIMEOUT') {
+        this.logger?.warn(`生成标题超时 sessionId=${sessionId}`)
+      }
     }
   }
 

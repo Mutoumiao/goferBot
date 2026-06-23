@@ -109,10 +109,12 @@ describe('KnowledgeBaseService', () => {
       expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
         where: { kbId: 'kb1', name: { contains: 'notes', mode: 'insensitive' } },
         orderBy: { createdAt: 'asc' },
+        take: 100,
       })
       expect(mockPrisma.document.findMany).toHaveBeenCalledWith({
         where: { kbId: 'kb1', name: { contains: 'notes', mode: 'insensitive' } },
         orderBy: { createdAt: 'desc' },
+        take: 100,
       })
     })
 
@@ -127,6 +129,7 @@ describe('KnowledgeBaseService', () => {
       expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
         where: { kbId: 'kb1', name: { contains: 'notes', mode: 'insensitive' } },
         orderBy: { createdAt: 'asc' },
+        take: 100,
       })
     })
 

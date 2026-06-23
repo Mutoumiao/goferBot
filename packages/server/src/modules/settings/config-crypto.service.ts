@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 const MASK_PREFIX = 'MASKED:'
@@ -10,11 +10,16 @@ export interface ConfigCryptoOptions {
 
 @Injectable()
 export class ConfigCryptoService {
+  private cachedKey: Buffer | undefined
+
   constructor(private readonly configService: ConfigService) {}
 
   private getEncryptionKey(): Buffer {
-    const envKey = this.configService.getOrThrow<string>('SETTINGS_ENCRYPTION_KEY')
-    return Buffer.from(envKey, 'base64')
+    if (!this.cachedKey) {
+      const envKey = this.configService.getOrThrow<string>('SETTINGS_ENCRYPTION_KEY')
+      this.cachedKey = Buffer.from(envKey, 'base64')
+    }
+    return this.cachedKey
   }
 
   encrypt(text: string): string {
@@ -29,7 +34,12 @@ export class ConfigCryptoService {
   decrypt(encryptedText: string): string {
     const key = this.getEncryptionKey()
     const parts = encryptedText.split(':')
-    if (parts.length !== 3) throw new Error('Invalid encrypted format')
+    if (parts.length !== 3) {
+      throw new BadRequestException({
+        code: 'INVALID_ENCRYPTED_FORMAT',
+        message: '加密格式无效，预期为 "iv:authTag:encrypted"',
+      })
+    }
     const iv = Buffer.from(parts[0], 'base64')
     const authTag = Buffer.from(parts[1], 'base64')
     const encrypted = Buffer.from(parts[2], 'base64')

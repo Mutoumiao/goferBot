@@ -8,7 +8,7 @@ export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listUsers(query: AdminUserListQueryDto) {
-    const { page, size, search, isActive } = query
+    const { page, pageSize, search, isActive } = query
 
     const where: Record<string, unknown> = {}
 
@@ -35,7 +35,7 @@ export class AdminService {
           updatedAt: true,
         },
       },
-      { page: page ?? 1, size: size ?? 10 },
+      { page: page ?? 1, size: pageSize ?? 10 },
     )
 
     return result

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { ConfigCryptoService } from './config-crypto.service.js'
 import type { SettingsDto } from './dto/settings.dto.js'
@@ -74,6 +74,17 @@ export class SettingsService {
   }
 
   async saveSettings(userId: string, dto: SettingsDto): Promise<Record<string, unknown>> {
+    // C3: 字段白名单校验，仅允许 DEFAULT_CONFIG 中定义的顶层字段
+    const allowedKeys = Object.keys(DEFAULT_CONFIG)
+    const dtoKeys = Object.keys(dto)
+    const extraKeys = dtoKeys.filter((k) => !allowedKeys.includes(k))
+    if (extraKeys.length > 0) {
+      throw new BadRequestException({
+        code: 'INVALID_CONFIG_FIELDS',
+        message: `不允许的配置字段: ${extraKeys.join(', ')}`,
+      })
+    }
+
     const existing = await this.prisma.setting.findUnique({
       where: { userId_key: { userId, key: CONFIG_KEY } },
     })

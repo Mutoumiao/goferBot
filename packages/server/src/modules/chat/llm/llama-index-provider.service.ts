@@ -39,11 +39,14 @@ export class LlamaIndexProvider implements LlmProvider {
 
   async *stream(
     messages: LlmMessage[],
-    _options?: LlmStreamOptions,
+    options?: LlmStreamOptions,
   ): AsyncIterable<LlmStreamChunk> {
     const response = await this.client.chat({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       stream: true,
+      // M7: 传递 temperature 和 signal 到 LLM 调用
+      ...(options?.temperature !== undefined && { temperature: options.temperature }),
+      ...(options?.abortSignal && { signal: options.abortSignal }),
     })
 
     if (!this.isAsyncIterable(response)) return
@@ -56,9 +59,11 @@ export class LlamaIndexProvider implements LlmProvider {
     }
   }
 
-  async invoke(messages: LlmMessage[], _options?: LlmInvokeOptions): Promise<string> {
+  async invoke(messages: LlmMessage[], options?: LlmInvokeOptions): Promise<string> {
     const response = await this.client.chat({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      // M7: 传递 temperature 到 LLM 调用
+      ...(options?.temperature !== undefined && { temperature: options.temperature }),
     })
 
     return this.extractText(response.message.content)

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
@@ -37,6 +38,8 @@ function normalizeParentId(parentId?: string | null): string | null | undefined 
 
 @Injectable()
 export class FolderService {
+  private readonly logger = new Logger(FolderService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly cleanupService: KbCleanupService,
@@ -259,8 +262,27 @@ export class FolderService {
     )
 
     // 在事务外复制文档，确保目标 folder 已提交，DocumentService 能正常校验目标 folder。
-    for (const [srcFolderId, copiedFolderId] of folderMap) {
-      await this.copyDocumentsInFolder(userId, srcKbId, srcFolderId, targetKbId, copiedFolderId)
+    // C3: 添加补偿机制 — 文档复制失败时回滚已创建的 folder 树。
+    const copiedFolderIds: string[] = []
+    try {
+      for (const [srcFolderId, copiedFolderId] of folderMap) {
+        copiedFolderIds.push(copiedFolderId)
+        await this.copyDocumentsInFolder(userId, srcKbId, srcFolderId, targetKbId, copiedFolderId)
+      }
+    } catch (err) {
+      this.logger.warn(
+        `文件夹复制失败，回滚已创建的 folder 树。targetKbId=${targetKbId} error=${err instanceof Error ? err.message : String(err)}`,
+      )
+      // 补偿：删除已创建的 folder 树（级联删除子 folder 和文档）
+      for (const folderId of copiedFolderIds) {
+        await this.prisma.folder.delete({ where: { id: folderId } }).catch(() => {
+          // 忽略回滚失败，避免补偿失败阻塞
+        })
+      }
+      throw new BadRequestException({
+        code: 'COPY_FAILED',
+        message: '文件夹复制失败，已回滚',
+      })
     }
 
     const copiedRootId = folderMap.get(sourceRoot.id)
@@ -382,20 +404,20 @@ export class FolderService {
   async findAncestors(
     folderId: string,
   ): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
-    const ancestors: Array<{ id: string; name: string; parentId: string | null }> = []
-    let current = await this.prisma.folder.findUnique({ where: { id: folderId } })
-
-    while (current) {
-      ancestors.unshift({
-        id: current.id,
-        name: current.name,
-        parentId: current.parentId,
-      })
-      if (!current.parentId) break
-      current = await this.prisma.folder.findUnique({ where: { id: current.parentId } })
-    }
-
-    return ancestors
+    // H3: 使用递归 CTE 替代循环查询，避免 N+1 问题
+    const result = await this.prisma.$queryRaw`
+      WITH RECURSIVE ancestors AS (
+        SELECT id, name, "parentId"
+        FROM "Folder"
+        WHERE id = ${folderId}
+        UNION ALL
+        SELECT f.id, f.name, f."parentId"
+        FROM "Folder" f
+        INNER JOIN ancestors a ON f.id = a."parentId"
+      )
+      SELECT id, name, "parentId" FROM ancestors
+    ` as Array<{ id: string; name: string; parentId: string | null }>
+    return result.reverse()
   }
 
   async isDescendant(ancestorId: string, descendantId: string): Promise<boolean> {

@@ -21,6 +21,7 @@ describe('FolderService', () => {
         findFirst: vi.fn(),
         findUnique: vi.fn(),
       },
+      $queryRaw: vi.fn(),
     }
     mockCleanup = {
       cleanupFolder: vi.fn().mockResolvedValue(undefined),
@@ -142,9 +143,10 @@ describe('FolderService', () => {
     it('returns ancestors when folderId provided', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.folder.findFirst.mockResolvedValueOnce({ id: 'c1', kbId: 'kb1', parentId: 'p1' })
-      mockPrisma.folder.findUnique
-        .mockResolvedValueOnce({ id: 'c1', name: 'Child', parentId: 'p1' })
-        .mockResolvedValueOnce({ id: 'p1', name: 'Parent', parentId: null })
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { id: 'c1', name: 'Child', parentId: 'p1' },
+        { id: 'p1', name: 'Parent', parentId: null },
+      ])
 
       const result = await folderService.getBreadcrumbs('u1', 'kb1', 'c1')
 
@@ -172,9 +174,10 @@ describe('FolderService', () => {
 
   describe('findAncestors', () => {
     it('returns ancestor chain', async () => {
-      mockPrisma.folder.findUnique
-        .mockResolvedValueOnce({ id: 'c1', name: 'Child', parentId: 'p1' })
-        .mockResolvedValueOnce({ id: 'p1', name: 'Parent', parentId: null })
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { id: 'c1', name: 'Child', parentId: 'p1' },
+        { id: 'p1', name: 'Parent', parentId: null },
+      ])
 
       const result = await folderService.findAncestors('c1')
 

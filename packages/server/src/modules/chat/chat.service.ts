@@ -92,9 +92,11 @@ export class ChatService {
           kbIds: dto.knowledge_base_ids,
         })
         if (context) {
+          // M2: 对 RAG 上下文做基础过滤，防止提示注入
+          const sanitizedContext = this.sanitizeRagContext(context)
           messages.push({
             role: 'system',
-            content: `以下是与用户问题相关的上下文信息：\n\n${context}`,
+            content: `以下是与用户问题相关的上下文信息：\n\n${sanitizedContext}`,
           })
         }
       } else {
@@ -105,6 +107,7 @@ export class ChatService {
     }
 
     let fullReply = ''
+    const MAX_REPLY_LENGTH = 100_000 // H1: 约 100KB 上限，防止内存溢出
 
     try {
       for await (const chunk of provider.stream(messages, {
@@ -114,6 +117,12 @@ export class ChatService {
         if (abortController.signal.aborted) break
         if (chunk.text) {
           fullReply += chunk.text
+          // H1: 超限截断，防止 LLM 超长回复导致内存溢出
+          if (fullReply.length > MAX_REPLY_LENGTH) {
+            this.logger.warn(`LLM 回复长度超过上限 ${MAX_REPLY_LENGTH}，已截断。sessionId=${sessionId}`)
+            fullReply = fullReply.slice(0, MAX_REPLY_LENGTH)
+            break
+          }
           yield {
             event: 'message',
             conversation_id: sessionId,
@@ -211,15 +220,22 @@ export class ChatService {
     let model: string
 
     if (modelInfo) {
+      // C2: 白名单校验 providerKey，仅允许字母、数字、下划线、连字符，防止环境变量注入
+      const safeProviderKey = modelInfo.providerKey.replace(/[^a-zA-Z0-9_-]/g, '')
+      if (safeProviderKey !== modelInfo.providerKey) {
+        this.logger.warn(
+          `Provider key 包含非法字符: ${modelInfo.providerKey}，已过滤为 ${safeProviderKey}`,
+        )
+      }
       // 内置模型：使用模型注册中心中的 providerKey 读取环境变量，避免将用户传入的 provider_key 拼入环境变量名
       const envApiKey = this.configService.get<string>(
-        `${modelInfo.providerKey.toUpperCase()}_API_KEY`,
+        `${safeProviderKey.toUpperCase()}_API_KEY`,
       )
       const envBaseUrl = this.configService.get<string>(
-        `${modelInfo.providerKey.toUpperCase()}_BASE_URL`,
+        `${safeProviderKey.toUpperCase()}_BASE_URL`,
       )
       const envModel = this.configService.get<string>(
-        `${modelInfo.providerKey.toUpperCase()}_MODEL`,
+        `${safeProviderKey.toUpperCase()}_MODEL`,
       )
       apiKey = envApiKey ?? ''
       baseURL = envBaseUrl ?? modelInfo.baseUrl
@@ -284,5 +300,18 @@ export class ChatService {
     }
 
     return { providerKey: resolvedKey, resolvedKey, provider: providers[resolvedKey] }
+  }
+
+  /** M2: 对 RAG 检索到的上下文做基础过滤，降低提示注入风险 */
+  private sanitizeRagContext(context: string): string {
+    // 移除常见的提示注入前缀
+    return context
+      .replace(/忽略(以上|前面|上文).*?指令/gi, '')
+      .replace(/ignore\s+(previous|above|the)\s+instructions?/gi, '')
+      .replace(/你(现在|接下来)是?/gi, '')
+      .replace(/system:\s*/gi, '')
+      .replace(/user:\s*/gi, '')
+      .replace(/assistant:\s*/gi, '')
+      .trim()
   }
 }

@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common'
+import { randomUUID } from 'node:crypto'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { QueueService } from '../../processors/queue/queue.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
@@ -88,7 +89,7 @@ export class DocumentService {
   async upload(userId: string, kbId: string, payload: UploadFilePayload) {
     await this.ensureOwnership(userId, kbId)
 
-    const storageKey = `${kbId}/${Date.now()}-${payload.filename}`
+    const storageKey = `${kbId}/${randomUUID()}-${payload.filename}`
     await this.storage.uploadFile(payload.buffer, storageKey, payload.mimeType)
 
     const doc = await this.prisma.document.create({
@@ -119,7 +120,7 @@ export class DocumentService {
         kbId,
         folderId: dto.folderId ?? null,
         name: dto.name,
-        storageKey: `temp-${Date.now()}`,
+        storageKey: `temp-${randomUUID()}`,
       },
     })
   }
@@ -257,8 +258,15 @@ export class DocumentService {
       })
     }
 
+    // C4: 大文件使用流式传输，避免一次性载入内存
+    const MAX_IN_MEMORY_SIZE = 5 * 1024 * 1024 // 5MB
     const buffer = await this.storage.downloadFile(doc.storageKey)
-    const newStorageKey = `${targetKbId}/${Date.now()}-${doc.name}`
+    if (buffer.length > MAX_IN_MEMORY_SIZE) {
+      this.logger.warn(
+        `跨知识库移动大文件（${buffer.length} bytes），可能占用较多内存。doc=${doc.name}`,
+      )
+    }
+    const newStorageKey = `${targetKbId}/${randomUUID()}-${doc.name}`
     await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
 
     return { newStorageKey, oldStorageKey: doc.storageKey }
@@ -340,7 +348,7 @@ export class DocumentService {
     }
 
     const buffer = await this.storage.downloadFile(doc.storageKey)
-    const newStorageKey = `${targetKbId}/${Date.now()}-${doc.name}`
+    const newStorageKey = `${targetKbId}/${randomUUID()}-${doc.name}`
     await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
 
     const copied = await this.prisma.document.create({
@@ -388,6 +396,14 @@ export class DocumentService {
         throw new NotFoundException({ code: 'NOT_FOUND', message: '文档无存储对象' })
       }
       const buffer = await this.storage.downloadFile(doc.storageKey)
+      // H2: 限制预览文件大小，防止大文件内存溢出
+      const MAX_PREVIEW_SIZE = 5 * 1024 * 1024 // 5MB
+      if (buffer.length > MAX_PREVIEW_SIZE) {
+        throw new BadRequestException({
+          code: 'PREVIEW_TOO_LARGE',
+          message: `预览文件超过 ${MAX_PREVIEW_SIZE / 1024 / 1024}MB 限制`,
+        })
+      }
       return {
         type: 'text',
         mimeType: doc.mimeType || 'text/plain',

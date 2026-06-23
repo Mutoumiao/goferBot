@@ -106,13 +106,21 @@ export class FileValidationPipe implements PipeTransform {
   }
 
   private sanitizeFilename(name: string): string {
-    if (name.includes('..') || name.includes('/') || name.includes('\\')) {
+    // H7: 先解码 URL 编码，防止 %2e%2e 等绕过
+    let decoded = name
+    try {
+      decoded = decodeURIComponent(name)
+    } catch {
+      // 解码失败则使用原始值继续校验
+    }
+    // 拒绝路径遍历字符（.. / \）以及空字符
+    if (decoded.includes('..') || decoded.includes('/') || decoded.includes('\\')) {
       throw new UnsupportedMediaTypeException({
         code: 'UNSUPPORTED_TYPE',
         message: '文件名包含非法字符',
       })
     }
-    const clean = name.replace(/[\x00-\x1f\x7f]/g, '').trim()
+    const clean = decoded.replace(/[\x00-\x1f\x7f]/g, '').trim()
     if (!clean) {
       throw new UnsupportedMediaTypeException({
         code: 'UNSUPPORTED_TYPE',
