@@ -36,7 +36,7 @@ export class PdfParser implements IDocumentParser {
 
   async parse(input: ParserInput): Promise<ParseResult> {
     const raw = await this.extractText(input)
-    const structured = await this.extractor.extract(raw, input.filename)
+    const structured = this.extractor.extract(raw, input.filename)
 
     return {
       content: raw,

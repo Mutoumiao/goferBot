@@ -23,10 +23,10 @@ export class TextParser implements IDocumentParser {
 
   constructor(private readonly extractor: StructureExtractor = new StructureExtractor()) { }
 
-  async parse(input: ParserInput): Promise<ParseResult> {
+  parse(input: ParserInput): Promise<ParseResult> {
     const raw = input.buffer?.toString('utf-8') ?? ''
-    const structured = await this.extractor.extract(raw, input.filename)
-    return {
+    const structured = this.extractor.extract(raw, input.filename)
+    return Promise.resolve({
       content: raw,
       title: structured.title,
       hierarchyPath: structured.hierarchyPath,
@@ -36,6 +36,6 @@ export class TextParser implements IDocumentParser {
         mimeType: input.mimeType,
         filename: input.filename,
       },
-    }
+    })
   }
 }

@@ -7,7 +7,8 @@
  *     - 代码块
  *     - 扁平化的层级路径（如 ["React18", "并发渲染"]）
  *
- *   目前支持 Markdown 语法识别。后续可扩展 org-mode / reStructuredText。
+ *   ponytail: 当前仅支持 Markdown 语法识别。若后续需要 org-mode / rst，
+ *   再扩展分词器；不要为"未来可能的格式"提前抽象策略类。
  *
  *   本类**无副作用**，可在任意环境（CLI、Web Worker、测试）中运行。
  */
@@ -30,9 +31,9 @@ export class StructureExtractor {
    * 从原始文本提取结构
    *
    * @param text 原始文本（Markdown / 纯文本）
-   * @param _filename 文件名（可选，用于后续按扩展名切换规则）
+   * @param _filename 文件名（可选，保留参数位以便后续按扩展名切换规则；当前未使用）
    */
-  async extract(text: string, _filename?: string): Promise<ExtractedStructure> {
+  extract(text: string, _filename?: string): ExtractedStructure {
     if (!text || text.trim().length === 0) {
       return { hierarchyPath: [], sections: [], codeBlocks: [] }
     }
@@ -48,8 +49,12 @@ export class StructureExtractor {
     let codeLanguage = ''
     let codeLines: string[] = []
     let docTitle: string | undefined
-    const headingStack: Array<{ level: number; title: string }> = []
+    // ponytail: hierarchyTitles 作为"全量标题序列"，而非"当前路径栈"。
+    // 同级兄弟都会保留，以便每个 section 能拿到完整的文档路径用于 Contextual Embedding。
+    // 这比维护多棵兄弟树更简单，且满足 embedding 需求。
     const hierarchyTitles: string[] = []
+    // headingStack 仅用于层级比较（栈顶同级或更深 → 弹出），不参与结果输出
+    const headingLevels: number[] = []
 
     const flushSection = () => {
       const content = currentContentLines.join('\n').trim()
@@ -63,12 +68,11 @@ export class StructureExtractor {
     }
 
     const pushHeading = (level: number, title: string) => {
-      // 栈维护当前路径（同级替换，更深清空）
-      // hierarchyTitles 追加所有标题（保留兄弟节点的全量历史）
-      while (headingStack.length > 0 && headingStack[headingStack.length - 1].level >= level) {
-        headingStack.pop()
+      // 清理同级或更深层级（同级替换旧兄弟，更深清空后代）
+      while (headingLevels.length > 0 && headingLevels[headingLevels.length - 1] >= level) {
+        headingLevels.pop()
       }
-      headingStack.push({ level, title })
+      headingLevels.push(level)
       hierarchyTitles.push(title)
     }
 
@@ -77,18 +81,15 @@ export class StructureExtractor {
       const fenceMatch = line.match(MD_CODE_FENCE_RE)
       if (fenceMatch) {
         if (!inCodeFence) {
-          // 开启代码块
           inCodeFence = true
           codeLanguage = fenceMatch[1]?.trim() || 'plaintext'
           codeLines = []
-          // 先 flush 当前 section
           flushSection()
           currentHeading = undefined
           currentLevel = 0
           currentContentLines = []
           continue
         } else {
-          // 关闭代码块
           inCodeFence = false
           if (codeLines.length > 0) {
             codeBlocks.push({
@@ -108,7 +109,6 @@ export class StructureExtractor {
       // 标题处理
       const headingMatch = line.match(MD_HEADING_RE)
       if (headingMatch) {
-        // 遇到新标题，先 flush 当前 section
         flushSection()
         currentContentLines = []
 
@@ -128,17 +128,13 @@ export class StructureExtractor {
       currentContentLines.push(line)
     }
 
-    // 最后的 section
     flushSection()
 
-    // hierarchyTitles 记录所有遇到的标题（包括同级兄弟），
-    // headingStack 记录"当前路径"。这里用全量标题作为 hierarchyPath，
-    // 以支持"文档标题 / 章节A / 章节B / 章节C"的完整结构。
-    const hierarchyPath = hierarchyTitles
-
+    // hierarchyTitles 保留所有遇到的标题（含同级兄弟），
+    // 作为全量层级路径供 Contextual Embedding 使用。
     return {
       title: docTitle,
-      hierarchyPath,
+      hierarchyPath: hierarchyTitles,
       sections,
       codeBlocks,
     }

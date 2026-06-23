@@ -124,7 +124,15 @@ export class DocumentParser {
   }
 }
 
-/** 扩展名 → MIME 类型映射（兜底推断） */
+/**
+ * 扩展名 → MIME 类型映射（兜底推断）
+ *
+ * ponytail: 这里不引入 `mime-types`/`mime` 库——
+ *   1) 实际业务只用到这几种格式，手写几行映射比加一个依赖更简单；
+ *   2) 新增格式的频率极低（按年计），到时候再决定是否引入库；
+ *   3) 映射表稳定，不会因为引入新库而减少维护成本。
+ *   如果未来需要支持几十种格式，再换成 mime-types。
+ */
 const EXT_TO_MIME: Record<string, string> = {
   pdf: 'application/pdf',
   md: 'text/markdown',
