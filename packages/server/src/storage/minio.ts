@@ -61,6 +61,20 @@ export class MinIOStorageProvider {
     return `${this.endpointUrl}/${this.bucket}/${key}`
   }
 
+  extractKeyFromUrl(url: string): string | null {
+    try {
+      const parsed = new URL(url)
+      // MinIO URL 格式：{endpoint}/{bucket}/{key}
+      const parts = parsed.pathname.split('/').filter(Boolean)
+      if (parts.length >= 2 && parts[0] === this.bucket) {
+        return parts.slice(1).join('/')
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
   async getPresignedUploadUrl(key: string, expiry: number = 3600): Promise<string> {
     return this.client.presignedPutObject(this.bucket, key, expiry)
   }

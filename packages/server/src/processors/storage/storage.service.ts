@@ -26,6 +26,10 @@ export class StorageService implements IStorageProvider {
     return this.provider.getUrl(key)
   }
 
+  extractKeyFromUrl(url: string): string | null {
+    return this.provider.extractKeyFromUrl(url)
+  }
+
   async getPresignedUploadUrl(key: string, expiry?: number): Promise<string> {
     return this.provider.getPresignedUploadUrl(key, expiry)
   }

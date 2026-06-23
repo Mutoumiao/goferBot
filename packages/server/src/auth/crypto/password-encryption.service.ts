@@ -1,19 +1,30 @@
 import { constants, generateKeyPairSync, privateDecrypt } from 'node:crypto'
 import { Injectable, OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class PasswordEncryptionService implements OnModuleInit {
   private privateKey: string | null = null
   private publicKeyPem: string | null = null
 
+  constructor(private readonly configService: ConfigService) {}
+
   onModuleInit() {
-    const { publicKey, privateKey } = generateKeyPairSync('rsa', {
-      modulusLength: 4096,
-      publicKeyEncoding: { type: 'spki', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-    })
-    this.publicKeyPem = publicKey
-    this.privateKey = privateKey
+    const privateKeyEnv = this.configService.get<string>('RSA_PRIVATE_KEY')
+    const publicKeyEnv = this.configService.get<string>('RSA_PUBLIC_KEY')
+
+    if (privateKeyEnv && publicKeyEnv) {
+      this.privateKey = privateKeyEnv.replace(/\\n/g, '\n')
+      this.publicKeyPem = publicKeyEnv.replace(/\\n/g, '\n')
+    } else {
+      const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+        modulusLength: 4096,
+        publicKeyEncoding: { type: 'spki', format: 'pem' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+      })
+      this.publicKeyPem = publicKey
+      this.privateKey = privateKey
+    }
   }
 
   getPublicKeyPem(): string {

@@ -2,12 +2,14 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { UserService } from '../modules/user/user.service.js'
 import { StorageService } from '../processors/storage/storage.service.js'
+import { AuthRedisService } from './auth-redis.service.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
 
 export interface TokenPair {
@@ -29,12 +31,15 @@ export interface JwtRefreshPayload {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
     private readonly storageService: StorageService,
-  ) {}
+    private readonly authRedis: AuthRedisService,
+  ) { }
 
   async register(email: string, password: string, name?: string) {
     const user = await this.userService.create(email, password, name)
@@ -91,11 +96,35 @@ export class AuthService {
       if (err instanceof UnauthorizedException) {
         throw err
       }
+      // 开发环境保留原始错误信息用于调试
+      const isDev = process.env.NODE_ENV === 'development'
       throw new UnauthorizedException({
         code: 'INVALID_REFRESH_TOKEN',
         message: '刷新令牌无效或已过期',
+        details: isDev && err instanceof Error ? err.message : undefined,
       })
     }
+  }
+
+  /** 将 access token 加入黑名单 */
+  async blacklistToken(token: string): Promise<void> {
+    const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '2h'
+    const ttlSeconds = this.parseExpiresInToSeconds(expiresIn)
+    await this.authRedis.blacklistToken(token, ttlSeconds)
+  }
+
+  /** 清除指定用户的 Redis 缓存 */
+  async invalidateUserCache(userId: string): Promise<void> {
+    await this.authRedis.invalidateUserCache(userId)
+  }
+
+  private parseExpiresInToSeconds(expiresIn: string): number {
+    const match = expiresIn.match(/^(\d+)([smhd])$/)
+    if (!match) return 7200 // 默认 2h
+    const value = parseInt(match[1], 10)
+    const unit = match[2]
+    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 }
+    return value * (multipliers[unit] || 3600)
   }
 
   async me(userId: string) {
@@ -169,30 +198,17 @@ export class AuthService {
     // 上传新头像成功后，删除旧头像文件
     if (currentUser.avatar) {
       try {
-        const oldKey = this.extractKeyFromUrl(currentUser.avatar)
+        const oldKey = this.storageService.extractKeyFromUrl(currentUser.avatar)
         if (oldKey) {
           await this.storageService.deleteFile(oldKey)
         }
-      } catch {
-        // 旧头像删除失败不影响新头像更新结果
+      } catch (err) {
+        // 旧头像删除失败不影响新头像更新结果，但记录日志以便排查
+        this.logger.warn(`旧头像删除失败: ${currentUser.avatar} — ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 
     return { avatarUrl }
-  }
-
-  private extractKeyFromUrl(url: string): string | null {
-    try {
-      const parsed = new URL(url)
-      // MinIO URL 格式：{endpoint}/{bucket}/{key}
-      const parts = parsed.pathname.split('/').filter(Boolean)
-      if (parts.length >= 2) {
-        return parts.slice(1).join('/')
-      }
-      return null
-    } catch {
-      return null
-    }
   }
 
   private async generateTokens(userId: string, email: string): Promise<TokenPair> {
@@ -208,16 +224,35 @@ export class AuthService {
       type: 'refresh',
     }
 
+    const accessExpiresIn = this.validateExpiresIn(
+      this.configService.get<string>('JWT_EXPIRES_IN') || '2h',
+      'JWT_EXPIRES_IN',
+    )
+    const refreshExpiresIn = this.validateExpiresIn(
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
+      'JWT_REFRESH_EXPIRES_IN',
+    )
+
     const accessToken = this.jwtService.sign(accessPayload, {
       secret: this.configService.getOrThrow<string>('JWT_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '2h',
+      expiresIn: accessExpiresIn,
     })
 
     const refreshToken = this.jwtService.sign(refreshPayload, {
       secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
+      expiresIn: refreshExpiresIn,
     })
 
     return { accessToken, refreshToken }
+  }
+
+  private validateExpiresIn(value: string, configName: string): string {
+    if (!/^(\d+)([smhd])$/.test(value)) {
+      this.logger.warn(
+        `${configName}="${value}" 格式无效，预期为 "数字+单位"（如 15m、2h、7d）。回退到安全默认值。`,
+      )
+      return configName === 'JWT_EXPIRES_IN' ? '2h' : '7d'
+    }
+    return value
   }
 }

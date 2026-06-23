@@ -29,6 +29,13 @@ export interface IStorageProvider {
   getUrl(key: string): string
 
   /**
+   * 从公开访问 URL 中提取存储键。
+   * @param url — 公开访问 URL
+   * @returns 存储键，解析失败返回 null
+   */
+  extractKeyFromUrl(url: string): string | null
+
+  /**
    * 获取预签名上传 URL（预留）。
    * @param key — 存储键
    * @param expiry — 过期时间（秒）

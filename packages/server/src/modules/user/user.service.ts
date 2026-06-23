@@ -1,10 +1,14 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common'
 import { compare, hash } from 'bcrypt'
+import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
@@ -37,10 +41,12 @@ export class UserService {
       })
     }
 
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 12
+
     return this.prisma.user.create({
       data: {
         email,
-        password: await hash(password, 12),
+        password: await hash(password, saltRounds),
         name: name || null,
       },
       select: {
@@ -62,7 +68,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException({
+      throw new UnauthorizedException({
         code: 'AUTH_FAIL',
         message: '邮箱或密码错误',
       })
@@ -70,7 +76,7 @@ export class UserService {
 
     const isValid = await compare(password, user.password)
     if (!isValid) {
-      throw new NotFoundException({
+      throw new UnauthorizedException({
         code: 'AUTH_FAIL',
         message: '邮箱或密码错误',
       })

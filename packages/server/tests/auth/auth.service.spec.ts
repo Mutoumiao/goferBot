@@ -24,12 +24,14 @@ describe('AuthService', () => {
       findById: vi.fn(),
     }
     mockStorageService = {}
+    const mockAuthRedis = {} as any
 
     authService = new AuthService(
       mockJwtService,
       mockConfigService,
       mockUserService,
       mockStorageService,
+      mockAuthRedis,
     )
   })
 
@@ -155,6 +157,97 @@ describe('AuthService', () => {
         expect.any(Object),
         expect.objectContaining({ expiresIn: '2h' }),
       )
+    })
+
+    it('AC-03l: falls back to safe default when JWT_EXPIRES_IN is invalid', async () => {
+      mockConfigService.get.mockReturnValue('invalid')
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'test@gofer.bot',
+        isActive: true,
+      })
+
+      const result = await authService.login('test@gofer.bot', 'password123')
+
+      expect(result.accessToken).toBe('mock-token')
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ expiresIn: '2h' }),
+      )
+    })
+
+    it('AC-03m: uses config value when JWT_EXPIRES_IN is valid', async () => {
+      mockConfigService.get.mockReturnValue('30m')
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'test@gofer.bot',
+        isActive: true,
+      })
+
+      const result = await authService.login('test@gofer.bot', 'password123')
+
+      expect(result.accessToken).toBe('mock-token')
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ expiresIn: '30m' }),
+      )
+    })
+  })
+
+  describe('blacklistToken', () => {
+    it('AC-03n: delegates to authRedis with parsed TTL', async () => {
+      mockConfigService.get.mockReturnValue('2h')
+      const mockAuthRedis = {
+        blacklistToken: vi.fn().mockResolvedValue(undefined),
+      } as any
+      authService = new AuthService(
+        mockJwtService,
+        mockConfigService,
+        mockUserService,
+        mockStorageService,
+        mockAuthRedis,
+      )
+
+      await authService.blacklistToken('token-abc')
+
+      expect(mockAuthRedis.blacklistToken).toHaveBeenCalledWith('token-abc', 7200)
+    })
+
+    it('AC-03o: defaults to 7200 seconds when config is missing', async () => {
+      mockConfigService.get.mockReturnValue(undefined)
+      const mockAuthRedis = {
+        blacklistToken: vi.fn().mockResolvedValue(undefined),
+      } as any
+      authService = new AuthService(
+        mockJwtService,
+        mockConfigService,
+        mockUserService,
+        mockStorageService,
+        mockAuthRedis,
+      )
+
+      await authService.blacklistToken('token-abc')
+
+      expect(mockAuthRedis.blacklistToken).toHaveBeenCalledWith('token-abc', 7200)
+    })
+  })
+
+  describe('invalidateUserCache', () => {
+    it('AC-03p: delegates to authRedis.invalidateUserCache', async () => {
+      const mockAuthRedis = {
+        invalidateUserCache: vi.fn().mockResolvedValue(undefined),
+      } as any
+      authService = new AuthService(
+        mockJwtService,
+        mockConfigService,
+        mockUserService,
+        mockStorageService,
+        mockAuthRedis,
+      )
+
+      await authService.invalidateUserCache('u1')
+
+      expect(mockAuthRedis.invalidateUserCache).toHaveBeenCalledWith('u1')
     })
   })
 

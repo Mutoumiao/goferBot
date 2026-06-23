@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport'
 import { UserModule } from '../modules/user/user.module.js'
 import { StorageModule } from '../processors/storage/storage.module.js'
 import { AuthController } from './auth.controller.js'
+import { AuthRedisService } from './auth-redis.service.js'
 import { AuthService } from './auth.service.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { JwtStrategy } from './strategies/jwt.strategy.js'
@@ -25,8 +26,8 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     UserModule,
     StorageModule,
   ],
-  providers: [AuthService, PasswordEncryptionService, JwtStrategy],
+  providers: [AuthService, PasswordEncryptionService, JwtStrategy, AuthRedisService],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, AuthRedisService],
 })
 export class AuthModule {}
