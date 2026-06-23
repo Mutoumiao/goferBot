@@ -121,6 +121,7 @@ export class DocumentService {
         folderId: dto.folderId ?? null,
         name: dto.name,
         storageKey: `temp-${randomUUID()}`,
+        status: 'created',
       },
     })
   }

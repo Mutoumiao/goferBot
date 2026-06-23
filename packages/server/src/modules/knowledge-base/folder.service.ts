@@ -252,7 +252,9 @@ export class FolderService {
     targetKbId: string,
     targetParentId: string | null,
   ) {
-    const sourceRoot = await this.prisma.folder.findUnique({ where: { id: srcFolderId } })
+    const sourceRoot = await this.prisma.folder.findFirst({
+      where: { id: srcFolderId, kbId: srcKbId },
+    })
     if (!sourceRoot) throw new NotFoundException('源文件夹不存在')
 
     const folderMap = await this.copyFolderNodesInTransaction(
@@ -421,12 +423,21 @@ export class FolderService {
   }
 
   async isDescendant(ancestorId: string, descendantId: string): Promise<boolean> {
-    let current = await this.prisma.folder.findUnique({ where: { id: descendantId } })
-    while (current?.parentId) {
-      if (current.parentId === ancestorId) return true
-      current = await this.prisma.folder.findUnique({ where: { id: current.parentId } })
-    }
-    return false
+    // H4: 使用递归 CTE 替代循环查询，避免 N+1 问题
+    const result = await this.prisma.$queryRaw`
+      WITH RECURSIVE descendants AS (
+        SELECT id, "parentId"
+        FROM "Folder"
+        WHERE id = ${descendantId}
+        UNION ALL
+        SELECT f.id, f."parentId"
+        FROM "Folder" f
+        INNER JOIN descendants d ON f.id = d."parentId"
+      )
+      SELECT 1 as found FROM descendants WHERE id = ${ancestorId} AND id != ${descendantId}
+      LIMIT 1
+    ` as Array<{ found: number }>
+    return result.length > 0
   }
 
   private async ensureOwnership(userId: string, kbId: string) {

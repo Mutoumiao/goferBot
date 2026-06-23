@@ -15,6 +15,7 @@ describe('KnowledgeBaseService', () => {
         update: vi.fn(),
         delete: vi.fn(),
         findUnique: vi.fn(),
+        count: vi.fn(),
       },
       folder: {
         findMany: vi.fn(),
@@ -31,18 +32,40 @@ describe('KnowledgeBaseService', () => {
   })
 
   describe('list', () => {
-    it('AC-04a: returns knowledge bases for user sorted by pinned first', async () => {
+    it('AC-04a: returns paginated knowledge bases for user sorted by pinned first', async () => {
       mockPrisma.knowledgeBase.findMany.mockResolvedValue([
         { id: 'kb1', name: 'Test KB', userId: 'u1' },
       ])
+      mockPrisma.knowledgeBase.count.mockResolvedValue(1)
 
-      const result = await kbService.list('u1')
+      const result = await kbService.list('u1', 1, 20)
 
-      expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('Test KB')
+      expect(result.items).toHaveLength(1)
+      expect(result.items[0].name).toBe('Test KB')
+      expect(result.total).toBe(1)
+      expect(result.page).toBe(1)
+      expect(result.size).toBe(20)
       expect(mockPrisma.knowledgeBase.findMany).toHaveBeenCalledWith({
         where: { userId: 'u1' },
         orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
+        skip: 0,
+        take: 20,
+      })
+    })
+
+    it('returns second page with correct skip', async () => {
+      mockPrisma.knowledgeBase.findMany.mockResolvedValue([])
+      mockPrisma.knowledgeBase.count.mockResolvedValue(25)
+
+      const result = await kbService.list('u1', 2, 10)
+
+      expect(result.page).toBe(2)
+      expect(result.size).toBe(10)
+      expect(mockPrisma.knowledgeBase.findMany).toHaveBeenCalledWith({
+        where: { userId: 'u1' },
+        orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
+        skip: 10,
+        take: 10,
       })
     })
   })

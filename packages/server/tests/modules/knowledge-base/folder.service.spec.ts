@@ -189,17 +189,16 @@ describe('FolderService', () => {
 
   describe('isDescendant', () => {
     it('returns true for descendant', async () => {
-      mockPrisma.folder.findUnique
-        .mockResolvedValueOnce({ id: 'c1', parentId: 'p1' })
-        .mockResolvedValueOnce({ id: 'p1', parentId: null })
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ found: 1 }])
 
       const result = await folderService.isDescendant('p1', 'c1')
 
       expect(result).toBe(true)
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled()
     })
 
     it('returns false for unrelated folder', async () => {
-      mockPrisma.folder.findUnique.mockResolvedValue({ id: 'c1', parentId: null })
+      mockPrisma.$queryRaw.mockResolvedValueOnce([])
 
       const result = await folderService.isDescendant('p1', 'c1')
 

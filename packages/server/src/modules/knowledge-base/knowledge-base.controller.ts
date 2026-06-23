@@ -1,10 +1,21 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { CreateKbDto } from './dto/create-kb.dto.js'
 import { UpdateKbDto } from './dto/update-kb.dto.js'
 import { FolderService } from './folder.service.js'
 import { KnowledgeBaseService } from './knowledge-base.service.js'
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function validateUuid(value: string, fieldName: string): void {
+  if (!UUID_REGEX.test(value)) {
+    throw new BadRequestException({
+      code: 'VALIDATION_ERROR',
+      message: `${fieldName} 格式不正确，应为 UUID`,
+    })
+  }
+}
 
 @Controller('knowledge-bases')
 @UseGuards(JwtAuthGuard)
@@ -15,19 +26,26 @@ export class KnowledgeBaseController {
   ) {}
 
   @Get()
-  async list(@CurrentUser('id') userId: string) {
-    const entries = await this.kbService.list(userId)
-    // TODO: 当前知识库列表未实现真实分页，固定返回第一页全量数据。
-    // 接入真实分页时，应解析 page/size 查询参数并返回对应切片。
+  async list(
+    @CurrentUser('id') userId: string,
+    @Query('page') pageStr?: string,
+    @Query('size') sizeStr?: string,
+  ) {
+    const page = Math.max(1, parseInt(pageStr || '1', 10) || 1)
+    const size = Math.max(1, Math.min(100, parseInt(sizeStr || '20', 10) || 20))
+
+    const { items, total } = await this.kbService.list(userId, page, size)
+    const totalPage = Math.ceil(total / size) || 1
+
     return {
-      items: entries,
+      items,
       pagination: {
-        total: entries.length,
-        size: entries.length,
-        currentPage: 1,
-        totalPage: 1,
-        hasNextPage: false,
-        hasPrevPage: false,
+        total,
+        size,
+        currentPage: page,
+        totalPage,
+        hasNextPage: page < totalPage,
+        hasPrevPage: page > 1,
       },
     }
   }
@@ -48,11 +66,13 @@ export class KnowledgeBaseController {
     @Param('id') id: string,
     @Body() dto: UpdateKbDto,
   ) {
+    validateUuid(id, 'id')
     return this.kbService.update(userId, id, dto)
   }
 
   @Delete(':id')
   async remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    validateUuid(id, 'id')
     return this.kbService.remove(userId, id)
   }
 
@@ -62,6 +82,10 @@ export class KnowledgeBaseController {
     @Param('kbId') kbId: string,
     @Query('folderId') folderId?: string,
   ) {
+    validateUuid(kbId, 'kbId')
+    if (folderId !== undefined) {
+      validateUuid(folderId, 'folderId')
+    }
     return this.folderService.getBreadcrumbs(userId, kbId, folderId)
   }
 
@@ -71,6 +95,7 @@ export class KnowledgeBaseController {
     @Param('kbId') kbId: string,
     @Query('q') query?: string,
   ) {
+    validateUuid(kbId, 'kbId')
     const q = (query ?? '').trim()
     if (!q) {
       return { folders: [], documents: [] }

@@ -21,11 +21,21 @@ export class KnowledgeBaseService {
 
   // ---- 知识库 ----
 
-  async list(userId: string) {
-    return this.prisma.knowledgeBase.findMany({
-      where: { userId },
-      orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
-    })
+  async list(userId: string, page: number, size: number) {
+    const skip = (page - 1) * size
+    const take = size
+
+    const [items, total] = await Promise.all([
+      this.prisma.knowledgeBase.findMany({
+        where: { userId },
+        orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take,
+      }),
+      this.prisma.knowledgeBase.count({ where: { userId } }),
+    ])
+
+    return { items, total, page, size }
   }
 
   async listForSelector(userId: string) {
