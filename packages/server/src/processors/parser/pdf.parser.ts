@@ -117,7 +117,6 @@ export class PdfParser implements IDocumentParser {
       this.logger.warn('LlamaIndex PDFReader requires filePath; falling back to buffer raw extraction')
       return this.extractViaRawBuffer(input)
     }
-
     try {
       // 动态 import：运行时加载，不影响冷启动
       // eslint-disable-next-line @typescript-eslint/no-var-requires

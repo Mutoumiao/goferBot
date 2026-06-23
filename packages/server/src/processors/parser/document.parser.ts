@@ -19,10 +19,12 @@
  *   后续的 Chunking / Embedding / Indexing 都会用到这些结构化信息。
  */
 import { Injectable, Logger } from '@nestjs/common'
-import type {
-  IDocumentParser,
-  ParseResult,
-  ParserInput,
+import {
+  parseResultSchema,
+  parserInputSchema,
+  type IDocumentParser,
+  type ParseResult,
+  type ParserInput,
 } from './parser.types.js'
 import { TextParser } from './text.parser.js'
 import { PdfParser } from './pdf.parser.js'
@@ -68,17 +70,29 @@ export class DocumentParser {
    *   1) 精确匹配 MIME（已注册的解析器）
    *   2) 未命中 → 尝试按文件扩展名推断（如 .pdf → application/pdf）
    *   3) 仍未命中 → 兜底为 UTF-8 文本解析
+   *
+   * 校验：
+   *   - 入参通过 parserInputSchema 校验（Buffer 与 filePath 至少一个）
+   *   - 解析结果通过 parseResultSchema 校验（content 非空、限制上限）
+   *   - 校验失败时抛 ZodError，Worker 捕获后标记文档为 failed
    */
   async parse(input: ParserInput): Promise<ParseResult> {
-    const parser = this.resolveParser(input.mimeType, input.filename)
+    // 入口：Zod 校验，防止非法输入流入解析器
+    // ponytail: 显式 cast——data 包用 zod v3、server 用 zod v4，z.infer 在跨版本传递时丢失类型
+    const parsedInput = parserInputSchema.parse(input) as ParserInput
+
+    const parser = this.resolveParser(parsedInput.mimeType, parsedInput.filename)
 
     if (!parser) {
-      this.logger.warn(`No parser for mime="${input.mimeType}", fallback to raw UTF-8`)
-      return this.fallbackParse(input)
+      this.logger.warn(`No parser for mime="${parsedInput.mimeType}", fallback to raw UTF-8`)
+      const fallback = await this.fallbackParse(parsedInput)
+      return parseResultSchema.parse(fallback) as ParseResult
     }
 
-    this.logger.debug(`Using parser "${parser.name}" for mime="${input.mimeType}"`)
-    return parser.parse(input)
+    this.logger.debug(`Using parser "${parser.name}" for mime="${parsedInput.mimeType}"`)
+    const result = await parser.parse(parsedInput)
+    // 出口：Zod 校验，确保自定义解析器返回的结构合法
+    return parseResultSchema.parse(result) as ParseResult
   }
 
   /** 保留旧接口签名（只返回纯文本），供快速兼容 */

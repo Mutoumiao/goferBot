@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
+import { ZodError } from 'zod'
 import type { DocumentJobData } from '../../queue/queues.js'
 import { PrismaService } from '../database/prisma.service.js'
 import { DocumentParser } from '../parser/document.parser.js'
@@ -66,8 +67,14 @@ export class IndexingWorker {
       this.logger.log(`Indexed document ${documentId}: ${result.totalChunks} chunks (source=${mimeType})`)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      this.logger.error(`Indexing failed for document ${documentId}: ${message}`)
-      await this.updateStatus(doc.id, 'failed', message)
+      // ponytail: ZodError 单独处理——说明输入或解析结果违反了契约，
+      // 应该记录详细的 issues 以便定位，而不是简单地吞掉错误信息。
+      const details =
+        err instanceof ZodError
+          ? ` | schema=${err.issues.map((i) => `${i.path.join('.')}:${i.message}`).join(';')}`
+          : ''
+      this.logger.error(`Indexing failed for document ${documentId}: ${message}${details}`)
+      await this.updateStatus(doc.id, 'failed', `${message}${details}`)
       throw err
     }
   }
@@ -77,7 +84,9 @@ export class IndexingWorker {
     if (parsed.hierarchyPath && parsed.hierarchyPath.length > 0) {
       return parsed.hierarchyPath.join(' / ')
     }
-    const firstHeading = parsed.sections.find((s) => s.heading)?.heading
+    const firstHeading = parsed.sections.find(
+      (s: ParseResult['sections'][number]) => s.heading,
+    )?.heading
     return firstHeading
   }
 

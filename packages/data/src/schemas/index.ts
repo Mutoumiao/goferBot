@@ -63,3 +63,23 @@ export {
   settingsResponseSchema,
   settingsSchema,
 } from './settings.schema.js'
+
+export {
+  codeBlockSchema,
+  indexOptionsSchema,
+  indexRequestSchema,
+  indexResultSchema,
+  parseResultSchema,
+  parserInputSchema,
+  parserMetaSchema,
+  sectionBlockSchema,
+} from './rag.schema.js'
+export type {
+  CodeBlock,
+  IndexOptions,
+  IndexRequest,
+  IndexResult,
+  ParseResult,
+  ParserInput,
+  SectionBlock,
+} from './rag.schema.js'
