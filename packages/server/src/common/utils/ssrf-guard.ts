@@ -1,4 +1,4 @@
-const ALLOWED_HOSTNAMES = ['api.openai.com', 'api.deepseek.com', 'api.anthropic.com']
+let _allowedHostnames: string[] = ['api.openai.com', 'api.deepseek.com', 'api.anthropic.com']
 
 const BLOCKED_HOSTNAMES = ['127.0.0.1', '0.0.0.0', '[::1]', '[::]']
 const BLOCKED_IP_PREFIXES = [
@@ -54,13 +54,18 @@ export function validateBaseUrl(url: string, options: SsrfGuardOptions = {}): bo
     }
 
     // 白名单校验
-    return ALLOWED_HOSTNAMES.includes(hostname)
+    return _allowedHostnames.includes(hostname)
   } catch {
     return false
   }
 }
 
-/** 获取人类可读的白名单域名列表 */
+/** 从外部配置动态设置白名单（供应用启动时注入） */
+export function setAllowedHostnames(hostnames: string[]): void {
+  _allowedHostnames = hostnames
+}
+
+/** 获取当前白名单域名列表 */
 export function getAllowedHostnames(): readonly string[] {
-  return ALLOWED_HOSTNAMES
+  return _allowedHostnames
 }

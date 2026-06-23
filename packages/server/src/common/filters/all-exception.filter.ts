@@ -50,7 +50,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
         details = obj.details
       }
     } else if (exception instanceof Error) {
-      message = exception.message
+      // 非 HttpException 的 Error 不暴露原始 message，防止敏感信息泄露
+      message = '服务器内部错误'
+      if (_isDevelopment) {
+        details = exception.message
+      }
     }
 
     const errorResponse: ErrorResponse = {
@@ -81,6 +85,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       [HttpStatus.UNAUTHORIZED]: 'AUTH_ERROR',
       [HttpStatus.FORBIDDEN]: 'FORBIDDEN',
       [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
+      [HttpStatus.CONFLICT]: 'CONFLICT',
       [HttpStatus.PAYLOAD_TOO_LARGE]: 'PAYLOAD_TOO_LARGE',
       [HttpStatus.UNPROCESSABLE_ENTITY]: 'VALIDATION_ERROR',
       [HttpStatus.TOO_MANY_REQUESTS]: 'RATE_LIMIT_EXCEEDED',

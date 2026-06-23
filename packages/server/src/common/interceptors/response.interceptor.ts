@@ -15,7 +15,8 @@ export interface ApiResponse<T> {
  */
 function serializeBigInt(value: unknown): unknown {
   if (typeof value === 'bigint') {
-    return Number(value)
+    // ponytail: 使用字符串保留精度；超过 MAX_SAFE_INTEGER 时 Number() 会丢失精度
+    return value.toString()
   }
   if (Array.isArray(value)) {
     return value.map(serializeBigInt)
