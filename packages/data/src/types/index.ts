@@ -3,6 +3,10 @@ import {
   adminUserListQuerySchema,
   adminUserListResponseSchema,
   adminUserSchema,
+  assignRoleRequestSchema,
+  createAdminUserRequestSchema,
+  resetPasswordRequestSchema,
+  updateAdminUserRequestSchema,
   updateUserStatusRequestSchema,
 } from '../schemas/admin.schema.js'
 import {
@@ -100,6 +104,10 @@ export type AdminUser = z.infer<typeof adminUserSchema>
 export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>
 export type UpdateUserStatusRequest = z.infer<typeof updateUserStatusRequestSchema>
 export type AdminUserListResponse = z.infer<typeof adminUserListResponseSchema>
+export type CreateAdminUserRequest = z.infer<typeof createAdminUserRequestSchema>
+export type UpdateAdminUserRequest = z.infer<typeof updateAdminUserRequestSchema>
+export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>
+export type AssignRoleRequest = z.infer<typeof assignRoleRequestSchema>
 
 export type Settings = z.infer<typeof settingsSchema>
 export type SettingsResponse = z.infer<typeof settingsResponseSchema>
@@ -108,10 +116,12 @@ export {
   adminUserListQuerySchema,
   adminUserListResponseSchema,
   adminUserSchema,
+  assignRoleRequestSchema,
   authResponseSchema,
   chatMessagesChunkSchema,
   chatMessagesRequestSchema,
   chatProvidersResponseSchema,
+  createAdminUserRequestSchema,
   createDocumentRequestSchema,
   createFolderRequestSchema,
   createKbRequestSchema,
@@ -136,10 +146,12 @@ export {
   providerListItemSchema,
   publicKeyResponseSchema,
   registerRequestSchema,
+  resetPasswordRequestSchema,
   sessionListResponseSchema,
   sessionSchema,
   settingsResponseSchema,
   settingsSchema,
+  updateAdminUserRequestSchema,
   updateDocumentRequestSchema,
   updateFolderRequestSchema,
   updateKbRequestSchema,
