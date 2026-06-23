@@ -83,6 +83,7 @@ describe('roles services', () => {
     expect(await fetchRole('1')).toEqual({ id: '1' })
 
     mockGetRole.mockRejectedValueOnce(new Error('not found'))
-    expect(await fetchRole('x')).toBeNull()
+    await expect(fetchRole('x')).rejects.toThrow()
+    expect(toast.error).toHaveBeenCalled()
   })
 })

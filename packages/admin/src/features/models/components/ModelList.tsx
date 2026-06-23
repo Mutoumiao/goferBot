@@ -3,11 +3,15 @@ import { RefreshCw, Play, Key, Trash2, Edit } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
-import type { ModelConfig } from '@/api/model'
-import { fetchModels, updateModel, deleteModel } from '@/api/model'
+import type { ModelConfig } from '../services'
+import {
+  deleteModelService,
+  getModels,
+  testModelConnection,
+  updateModelService,
+} from '../services'
 import { confirmPasswordAction } from '@/utils/confirm-action'
 import { ModelConfigForm } from './ModelConfigForm'
-import { TestConnectionDrawer } from './TestConnectionDrawer'
 
 export function ModelList() {
   const { message } = App.useApp()
@@ -17,7 +21,7 @@ export function ModelList() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const models = await fetchModels()
+      const models = await getModels()
       setData(models)
     } finally {
       setLoading(false)
@@ -29,13 +33,14 @@ export function ModelList() {
   }, [load])
 
   const handleTest = async (model: ModelConfig) => {
-    await TestConnectionDrawer(model)
+    await testModelConnection(model.id)
   }
 
   const handleToggleActive = async (model: ModelConfig) => {
-    await updateModel(model.id, { isActive: !model.isActive })
-    message.success(model.isActive ? '已禁用' : '已启用')
-    void load()
+    const result = await updateModelService(model.id, { isActive: !model.isActive })
+    if (result.success) {
+      void load()
+    }
   }
 
   const handleDelete = async (model: ModelConfig) => {
@@ -48,15 +53,15 @@ export function ModelList() {
       <>确定要删除模型 <b>{model.model}</b> 吗？</>,
     )
     if (!result.confirmed) return
-    await deleteModel(model.id)
-    message.success('模型已删除')
-    void load()
+    const deleteResult = await deleteModelService(model.id)
+    if (deleteResult.success) {
+      void load()
+    }
   }
 
   const handleCreate = async () => {
     const result = await ModelConfigForm()
     if (result) {
-      message.success('创建成功')
       void load()
     }
   }

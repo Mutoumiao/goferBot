@@ -100,6 +100,7 @@ describe('users services', () => {
     expect(await fetchUser('u1')).toEqual({ id: 'u1' })
 
     mockGetUser.mockRejectedValueOnce(new Error('x'))
-    expect(await fetchUser('miss')).toBeNull()
+    await expect(fetchUser('miss')).rejects.toThrow()
+    expect(toast.error).toHaveBeenCalled()
   })
 })

@@ -1,57 +1,19 @@
 import { fetchDashboardData as fetchDashboardApi } from '@/api/dashboard'
-import { mapErrorMessage } from '@/utils/error-mapper'
+import type {
+  DashboardData,
+  DashboardStats,
+  RecentActivity,
+  SystemHealth,
+  RagStats,
+} from '@/api/dashboard'
 
-export interface DashboardStats {
-  userCount: number
-  sessionCount: number
-  documentCount: number
-  ragTaskCount: number
-  userGrowth: number
-  sessionGrowth: number
-  documentGrowth: number
-  ragTaskGrowth: number
-}
+export type { DashboardData, DashboardStats, RecentActivity, SystemHealth, RagStats }
 
-export interface RecentActivity {
-  id: string
-  title: string
-  description: string
-  time: string
-  icon: 'login' | 'create' | 'delete' | 'rag'
-}
-
-export interface SystemHealth {
-  cpu: number
-  memory: number
-  disk: number
-  queueStatus: 'running' | 'idle' | 'stopped'
-}
-
-export interface RagStats {
-  total: number
-  running: number
-  succeeded: number
-  failed: number
-  pending: number
-}
-
-export interface DashboardData {
-  stats: DashboardStats
-  activities: RecentActivity[]
-  health: SystemHealth
-  ragStats: RagStats
-}
-
-/**
- * 获取 Dashboard 数据。
- * 优先调用真实接口；后端不可用时回退到 mock 数据以保持可演示。
- */
 export async function getDashboardData(): Promise<DashboardData> {
   try {
     const data = await fetchDashboardApi()
     return data
-  } catch (err) {
-    console.warn('[dashboard] real api unreachable, falling back to mock:', mapErrorMessage(err))
+  } catch {
     return getMockData()
   }
 }

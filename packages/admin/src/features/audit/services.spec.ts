@@ -8,8 +8,8 @@ const { mockFetch, mockExport } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/api/audit', () => ({
-  fetchAuditLogs: mockFetch,
-  exportAuditLogs: mockExport,
+  fetchAuditLogs: () => ({ send: () => mockFetch() }),
+  exportAuditLogs: () => ({ send: () => mockExport() }),
 }))
 
 vi.mock('sonner', () => ({

@@ -6,7 +6,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import { StatusTag } from '@/components/common/StatusTag'
-import type { AdminUserResponse, ListUsersQuery } from '@/api/admin'
+import type { AdminUserResponse, ListUsersQuery } from '../services'
 import { assignUserRole, deleteUserService, fetchUsers, toggleUserStatus } from '../services'
 import { createUserModal } from './UserCreateForm'
 import { resetPasswordModal } from './ResetPasswordDialog'
@@ -112,10 +112,12 @@ export function UserTable({ initialQuery }: UserTableProps) {
       <>确定要启用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？</>,
     )
     if (!result.confirmed) return
-    for (const key of selectedRowKeys) {
-      const u = data.find((d) => d.id === key)
-      if (u && !u.isActive) await toggleUserStatus(u.id, false)
-    }
+    await Promise.all(
+      selectedRowKeys.map(async (key) => {
+        const u = data.find((d) => d.id === key)
+        if (u && !u.isActive) await toggleUserStatus(u.id, false)
+      }),
+    )
     message.success('批量启用成功')
     setSelectedRowKeys([])
     void load(query)
@@ -127,10 +129,12 @@ export function UserTable({ initialQuery }: UserTableProps) {
       <>确定要禁用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？</>,
     )
     if (!result.confirmed) return
-    for (const key of selectedRowKeys) {
-      const u = data.find((d) => d.id === key)
-      if (u && u.isActive) await toggleUserStatus(u.id, true)
-    }
+    await Promise.all(
+      selectedRowKeys.map(async (key) => {
+        const u = data.find((d) => d.id === key)
+        if (u && u.isActive) await toggleUserStatus(u.id, true)
+      }),
+    )
     message.success('批量禁用成功')
     setSelectedRowKeys([])
     void load(query)
@@ -142,9 +146,9 @@ export function UserTable({ initialQuery }: UserTableProps) {
       <>确定要删除选中的 <b>{selectedRowKeys.length}</b> 个用户吗？该操作不可撤销。</>,
     )
     if (!result.confirmed) return
-    for (const key of selectedRowKeys) {
-      await deleteUserService(String(key))
-    }
+    await Promise.all(
+      selectedRowKeys.map((key) => deleteUserService(String(key))),
+    )
     message.success('批量删除成功')
     setSelectedRowKeys([])
     void load(query)

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Button, Card, Descriptions, Form, Input, Select, Space, Tag, App } from 'antd'
 import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
-import type { AdminUserResponse } from '@/api/admin'
+import type { AdminUserResponse } from '@/features/users/services'
 import { fetchUser, updateUserService } from '@/features/users/services'
 import { isConflict } from '@/utils/error-mapper'
 
@@ -17,6 +17,7 @@ function UserDetailPage() {
   const [user, setUser] = useState<AdminUserResponse | null>(null)
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [form] = Form.useForm()
 
   useEffect(() => {
@@ -26,12 +27,18 @@ function UserDetailPage() {
 
   const load = async () => {
     setLoading(true)
-    const u = await fetchUser(params.id)
-    setUser(u)
-    if (u) {
-      form.setFieldsValue({ name: u.name, role: u.role })
+    setLoadError(false)
+    try {
+      const u = await fetchUser(params.id)
+      setUser(u)
+      if (u) {
+        form.setFieldsValue({ name: u.name, role: u.role })
+      }
+    } catch {
+      setLoadError(true)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleSave = async () => {
@@ -77,7 +84,9 @@ function UserDetailPage() {
       />
 
       <Card loading={loading}>
-        {!user ? (
+        {loadError ? (
+          <div className="py-16 text-center text-slate-400">加载失败</div>
+        ) : !user ? (
           <div className="py-16 text-center text-slate-400">用户不存在</div>
         ) : !editing ? (
           <Descriptions column={1} bordered>

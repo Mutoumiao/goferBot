@@ -1,10 +1,45 @@
 import { alovaInstance } from '@/utils/server'
-import type { DashboardData } from '@/features/dashboard/services'
 
-/**
- * 从后端拉取 Dashboard 聚合数据。
- * 后端尚未就绪时会抛出异常，由 dashboard/services 的上层回退至 mock。
- */
-export function fetchDashboardData(): Promise<DashboardData> {
-  return alovaInstance.Get<DashboardData>('/admin/dashboard').send()
+export interface DashboardStats {
+  userCount: number
+  sessionCount: number
+  documentCount: number
+  ragTaskCount: number
+  userGrowth: number
+  sessionGrowth: number
+  documentGrowth: number
+  ragTaskGrowth: number
 }
+
+export interface RecentActivity {
+  id: string
+  title: string
+  description: string
+  time: string
+  icon: 'login' | 'create' | 'delete' | 'rag'
+}
+
+export interface SystemHealth {
+  cpu: number
+  memory: number
+  disk: number
+  queueStatus: 'running' | 'idle' | 'stopped'
+}
+
+export interface RagStats {
+  total: number
+  running: number
+  succeeded: number
+  failed: number
+  pending: number
+}
+
+export interface DashboardData {
+  stats: DashboardStats
+  activities: RecentActivity[]
+  health: SystemHealth
+  ragStats: RagStats
+}
+
+export const fetchDashboardData = () =>
+  alovaInstance.Get<DashboardData>('/admin/dashboard')

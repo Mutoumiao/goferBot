@@ -6,10 +6,11 @@ import {
   listPermissions as listPermissionsApi,
   listRoles as listRolesApi,
   updateRole as updateRoleApi,
-  type Permission,
-  type Role,
 } from '@/api/role'
+import type { Permission, Role } from '@/api/role'
 import { mapErrorMessage } from '@/utils/error-mapper'
+
+export type { Permission, Role }
 
 export async function fetchRoles(): Promise<Role[]> {
   try {
@@ -89,10 +90,12 @@ export async function deleteRoleService(id: string): Promise<{ success: boolean;
   }
 }
 
-export async function fetchRole(id: string): Promise<Role | null> {
+export async function fetchRole(id: string): Promise<Role> {
   try {
     return await getRoleApi(id).send()
-  } catch {
-    return null
+  } catch (err) {
+    const msg = mapErrorMessage(err)
+    toast.error(msg)
+    throw err
   }
 }

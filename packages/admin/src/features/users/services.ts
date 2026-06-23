@@ -8,11 +8,15 @@ import {
   resetPassword as resetPasswordApi,
   updateUserStatus as updateUserStatusApi,
   updateUser as updateUserApi,
-  type AdminUserResponse,
-  type ListUsersQuery,
-  type PagedResponse,
+} from '@/api/admin'
+import type {
+  AdminUserResponse,
+  ListUsersQuery,
+  PagedResponse,
 } from '@/api/admin'
 import { isConflict, isForbidden, mapErrorMessage } from '@/utils/error-mapper'
+
+export type { AdminUserResponse, ListUsersQuery, PagedResponse }
 
 export interface UsersState {
   list: AdminUserResponse[]
@@ -126,10 +130,12 @@ export async function assignUserRole(
   }
 }
 
-export async function fetchUser(id: string): Promise<AdminUserResponse | null> {
+export async function fetchUser(id: string): Promise<AdminUserResponse> {
   try {
     return await getUserApi(id).send()
-  } catch {
-    return null
+  } catch (err) {
+    const msg = mapErrorMessage(err)
+    toast.error(msg)
+    throw err
   }
 }

@@ -1,5 +1,5 @@
 import { Modal, Form, Input } from 'antd'
-import { createModel } from '@/api/model'
+import { createModelService } from '../services'
 
 interface FormValues {
   provider: string
@@ -53,9 +53,13 @@ export function ModelConfigForm(): Promise<boolean> {
       onOk: async () => {
         try {
           const values = await form.validateFields()
-          await createModel(values)
-          resolve(true)
-          modal.destroy()
+          const result = await createModelService(values)
+          if (result.success) {
+            resolve(true)
+            modal.destroy()
+          } else {
+            return Promise.reject(new Error(result.error || '创建失败'))
+          }
         } catch {
           return Promise.reject(new Error('validation failed'))
         }

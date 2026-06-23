@@ -2,7 +2,7 @@ import { Input, Modal } from 'antd'
 import { useState } from 'react'
 import { resetUserPassword } from '../services'
 import { confirmPasswordAction } from '@/utils/confirm-action'
-import type { AdminUserResponse } from '@/api/admin'
+import type { AdminUserResponse } from '../services'
 
 export function resetPasswordModal(user: AdminUserResponse): Promise<boolean> {
   return new Promise((resolve) => {

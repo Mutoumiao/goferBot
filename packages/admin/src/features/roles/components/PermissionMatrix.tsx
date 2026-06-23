@@ -1,7 +1,7 @@
 import { Card, Checkbox, Collapse, Form, Input, Tag, App } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
-import type { Permission, Role } from '@/api/role'
+import type { Permission, Role } from '../services'
 import { fetchPermissions, fetchRole, updateRoleService } from '../services'
 
 export function PermissionMatrix({ roleId, onBack }: { roleId: string; onBack: () => void }) {
