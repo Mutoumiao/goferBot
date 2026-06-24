@@ -20,7 +20,7 @@ export class KbCleanupService {
       select: { id: true, storageKey: true },
     })
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const doc of docs) {
         await this.cleanupDocumentTx(tx, doc.id)
       }
@@ -40,7 +40,7 @@ export class KbCleanupService {
   async cleanupFolder(kbId: string, folderId: string): Promise<void> {
     const docs: { id: string; storageKey?: string | null }[] = []
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const stack: string[] = [folderId]
 
       while (stack.length > 0) {
@@ -95,7 +95,7 @@ export class KbCleanupService {
   }
 
   async cleanupDocument(documentId: string, storageKey?: string | null): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await this.cleanupDocumentTx(tx, documentId)
     })
     if (storageKey) {

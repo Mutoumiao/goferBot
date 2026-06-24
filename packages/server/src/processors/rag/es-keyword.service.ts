@@ -10,6 +10,7 @@ export interface Bm25Options {
     metadata?: Record<string, unknown>
     allowedUserIds?: string[]
     allowedTeamIds?: string[]
+    language?: string
   }
 }
 
