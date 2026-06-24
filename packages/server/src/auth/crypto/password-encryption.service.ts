@@ -1,9 +1,10 @@
 import { constants, generateKeyPairSync, privateDecrypt } from 'node:crypto'
-import { Injectable, OnModuleInit } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class PasswordEncryptionService implements OnModuleInit {
+  private readonly logger = new Logger(PasswordEncryptionService.name)
   private privateKey: string | null = null
   private publicKeyPem: string | null = null
 
@@ -17,6 +18,8 @@ export class PasswordEncryptionService implements OnModuleInit {
       this.privateKey = privateKeyEnv.replace(/\\n/g, '\n')
       this.publicKeyPem = publicKeyEnv.replace(/\\n/g, '\n')
     } else {
+      // ponytail: 开发环境自动生成密钥，但警告提示持久化到环境变量
+      // 生产环境应配置 RSA_PRIVATE_KEY / RSA_PUBLIC_KEY 避免重启失效
       const { publicKey, privateKey } = generateKeyPairSync('rsa', {
         modulusLength: 4096,
         publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -24,6 +27,9 @@ export class PasswordEncryptionService implements OnModuleInit {
       })
       this.publicKeyPem = publicKey
       this.privateKey = privateKey
+      this.logger.warn(
+        'RSA keys generated on-the-fly. Set RSA_PRIVATE_KEY and RSA_PUBLIC_KEY in environment to persist across restarts.'
+      )
     }
   }
 
