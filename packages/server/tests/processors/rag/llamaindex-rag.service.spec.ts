@@ -19,7 +19,7 @@ const makeHit = (
     content,
     chunk_index: 0,
     token_count: 10,
-    embedding: new Array(10).fill(0),
+    embedding: new Array(1536).fill(0),
     parent_id: opts.parent_id,
     parent_content: opts.parent_content,
   },
@@ -27,7 +27,7 @@ const makeHit = (
 
 function createService(overrides: Record<string, any> = {}): LlamaIndexRagService {
   const embeddings = {
-    embed: vi.fn().mockResolvedValue(new Array(10).fill(0.1)),
+    embed: vi.fn().mockResolvedValue(new Array(1536).fill(0.1)),
     embedBatch: vi.fn().mockResolvedValue([]),
     ...overrides.embeddings,
   }
@@ -364,7 +364,7 @@ describe('LlamaIndexRagService', () => {
         deleteByDocumentId: vi.fn().mockResolvedValue(undefined),
       }
       const embeddings = {
-        embedBatch: vi.fn().mockResolvedValue(new Array(5).fill(new Array(10).fill(0.1))),
+        embedBatch: vi.fn().mockResolvedValue(new Array(5).fill(new Array(1536).fill(0.1))),
       }
       const service = createService({ es, embeddings })
       await service.indexDocument('doc-1', 'kb-1', 'hello world content for test')
@@ -389,7 +389,7 @@ describe('LlamaIndexRagService', () => {
         deleteByDocumentId: vi.fn().mockResolvedValue(undefined),
       }
       const embeddings = {
-        embedBatch: vi.fn().mockResolvedValue(new Array(2).fill(new Array(10).fill(0.1))),
+        embedBatch: vi.fn().mockResolvedValue(new Array(2).fill(new Array(1536).fill(0.1))),
       }
       const service = createService({ prisma, es, embeddings })
       await expect(
