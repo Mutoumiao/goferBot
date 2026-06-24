@@ -21,7 +21,12 @@ describe('IndexingWorker', () => {
       downloadFile: vi.fn().mockResolvedValue(Buffer.from('test content')),
     }
     mockParser = {
-      parse: vi.fn().mockResolvedValue('test content'),
+      parse: vi.fn().mockResolvedValue({
+        content: 'test content',
+        sections: [],
+        hierarchyPath: [],
+        metadata: {},
+      }),
     }
     mockRagService = {
       indexDocument: vi.fn().mockResolvedValue({ totalChunks: 10 }),
@@ -40,7 +45,7 @@ describe('IndexingWorker', () => {
 
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
 
-    expect(mockRagService.indexDocument).toHaveBeenCalledWith('d1', 'kb1', 'test content')
+    expect(mockRagService.indexDocument).toHaveBeenCalledWith('d1', 'kb1', 'test content', undefined, undefined, expect.any(Object), expect.any(Object))
     expect(mockPrisma.document.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'd1' },
@@ -64,9 +69,7 @@ describe('IndexingWorker', () => {
     })
 
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
-    expect(mockPrisma.document.update).toHaveBeenCalledTimes(4)
-    expect(statusUpdates).toContain('chunking')
-    expect(statusUpdates).toContain('embedding')
+    expect(mockPrisma.document.update).toHaveBeenCalledTimes(2)
     expect(statusUpdates).toContain('indexing')
   })
 

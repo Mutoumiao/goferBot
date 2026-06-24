@@ -19,10 +19,6 @@ import { KbCleanupService } from './kb-cleanup.service.js'
 
 const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
-function normalizeDocSize(size: bigint | number | null): number | null {
-  return size !== null ? Number(size) : null
-}
-
 export interface UploadFilePayload {
   filename: string
   ext: string
@@ -193,7 +189,7 @@ export class DocumentService {
       where: { id: docId },
       data: { folderId: targetFolderId },
     })
-    return { ...updated, size: normalizeDocSize(updated.size) }
+    return { ...updated }
   }
 
   private async moveCrossKb(
@@ -235,7 +231,7 @@ export class DocumentService {
     await this.cleanupOldStorageAfterMove(docId, oldStorageKey)
     await this.enqueueReindex(docId)
 
-    return { ...updated, size: normalizeDocSize(updated.size) }
+    return { ...updated }
   }
 
   private assertCrossKbSize(doc: { size: bigint | number | null }) {
@@ -370,7 +366,7 @@ export class DocumentService {
       await this.queueService?.addDocumentJob(copied.id, 'index')
     }
 
-    return { ...copied, size: normalizeDocSize(copied.size) }
+    return { ...copied }
   }
 
   async remove(userId: string, kbId: string, docId: string) {

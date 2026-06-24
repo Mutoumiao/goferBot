@@ -432,7 +432,7 @@ describe('ChatService', () => {
       expect(chunks.filter((c) => c.event === 'message')).toHaveLength(2)
       expect(chunks.filter((c) => c.event === 'error')).toHaveLength(1)
       expect(chunks.filter((c) => c.event === 'message_end')).toHaveLength(0)
-      expect(chunks[chunks.length - 1].error).toContain('回复保存失败')
+      expect(chunks[chunks.length - 1].error).toContain('服务暂时不可用')
       expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('保存 assistant 消息失败'))
 
       errorSpy.mockRestore()
@@ -514,7 +514,7 @@ describe('ChatService', () => {
 
       expect(chunks).toHaveLength(1)
       expect(chunks[0].event).toBe('error')
-      expect(chunks[0].error).toBe('stream broken')
+      expect(chunks[0].error).toBe('服务暂时不可用，请稍后重试')
     })
 
     it('triggers title generation after successful stream', async () => {

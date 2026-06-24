@@ -144,14 +144,14 @@ export class ChatService {
         }
         return
       }
-      const message = err instanceof Error ? err.message : '未知错误'
+      this.logger.error(`LLM 流异常 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`)
       yield {
         event: 'error',
         conversation_id: sessionId,
         message_id: messageId,
         answer: '',
         done: true,
-        error: message,
+        error: '服务暂时不可用，请稍后重试',
       }
       return
     }
@@ -172,15 +172,14 @@ export class ChatService {
     try {
       await this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '未知错误'
-      this.logger.error(`保存 assistant 消息失败 sessionId=${sessionId}: ${message}`)
+      this.logger.error(`保存 assistant 消息失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`)
       yield {
         event: 'error',
         conversation_id: sessionId,
         message_id: messageId,
         answer: '',
         done: true,
-        error: `回复保存失败: ${message}`,
+        error: '服务暂时不可用，请稍后重试',
       }
       return
     }
@@ -304,14 +303,11 @@ export class ChatService {
 
   /** M2: 对 RAG 检索到的上下文做基础过滤，降低提示注入风险 */
   private sanitizeRagContext(context: string): string {
-    // 移除常见的提示注入前缀
+    // ponytail: 仅移除明显的 System Prompt 残留行，不过度清洗
     return context
-      .replace(/忽略(以上|前面|上文).*?指令/gi, '')
-      .replace(/ignore\s+(previous|above|the)\s+instructions?/gi, '')
-      .replace(/你(现在|接下来)是?/gi, '')
-      .replace(/system:\s*/gi, '')
-      .replace(/user:\s*/gi, '')
-      .replace(/assistant:\s*/gi, '')
+      .split('\n')
+      .filter(line => !/^\s*(system|user|assistant)\s*:/i.test(line))
+      .join('\n')
       .trim()
   }
 }

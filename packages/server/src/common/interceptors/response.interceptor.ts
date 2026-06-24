@@ -24,7 +24,7 @@ function serializeBigInt(value: unknown): unknown {
   if (value !== null && typeof value === 'object') {
     // 仅处理普通对象，保留 Date 等内建类型原样（由序列化层自行处理）
     if (Object.getPrototypeOf(value) === Object.prototype) {
-      const out: Record<string, unknown> = {}
+      const out: Record<string, unknown> = {} 
       for (const [key, val] of Object.entries(value)) {
         out[key] = serializeBigInt(val)
       }

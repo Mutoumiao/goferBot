@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum DocumentStatus {
+  uploaded
+  chunking
+  embedding
+  indexing
+  ready
+  failed
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -69,8 +78,7 @@ model Document {
   mimeType     String?  @map("mime_type")
   size         BigInt?
   storageKey   String   @map("storage_key")
-  hash         String?
-  status       String   @default("uploaded")
+  status       DocumentStatus @default(uploaded)
   errorMessage String?  @map("error_message")
   indexedAt    DateTime? @map("indexed_at")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -92,6 +100,7 @@ model Chunk {
   chunkIndex Int      @map("chunk_index")
   embedding  Unsupported("vector(1536)")?
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
   knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)

@@ -608,6 +608,7 @@ export class LlamaIndexRagService {
 
     let buffer = ''
     let lastDataTs = Date.now()
+    let lastHeartbeatTs = 0
 
     async function* withHeartbeat(
       stream: AsyncIterable<{ text: string }>,
@@ -626,7 +627,9 @@ export class LlamaIndexRagService {
         const outcome = await Promise.race<StreamOutcome>([dataPromise, heartbeatPromise])
 
         if (outcome.type === 'heartbeat') {
-          if (Date.now() - lastDataTs >= SSE_HEARTBEAT_MS) {
+          // ponytail: 双时间戳判定，防止连续心跳
+          if (Date.now() - lastDataTs >= SSE_HEARTBEAT_MS && Date.now() - lastHeartbeatTs >= SSE_HEARTBEAT_MS) {
+            lastHeartbeatTs = Date.now()
             yield { text: '', heartbeat: true }
           }
           continue

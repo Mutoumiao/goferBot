@@ -10,7 +10,7 @@ describe('QueueService', () => {
     const service = new QueueService(mockConfig as any, mockWorkerService as any)
     // 直接设置内部 documentQueue 以绕过 isEnabled() 检查
     ;(service as any).documentQueue = mockQueue
-    ;(service as any).redis = {} as any // 让 isEnabled() 返回 true
+    ;(service as any).redis = { status: 'ready' } as any // 让 isEnabled() 返回 true
 
     await service.addDocumentJob('d1', 'index')
     expect(mockQueue.add).toHaveBeenCalledWith('index', { documentId: 'd1', type: 'index' })
