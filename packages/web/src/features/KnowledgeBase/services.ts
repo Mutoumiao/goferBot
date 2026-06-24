@@ -99,6 +99,10 @@ function isFolderItem(item: Folder | DocumentItem): item is Folder {
   return !('status' in item)
 }
 
+// ============================================================================
+// 知识库操作
+// ============================================================================
+
 export async function fetchKbList(): Promise<{ success: boolean; error?: string }> {
   const { setEntries, setKbLoading } = useKbStore.getState()
   setKbLoading(true)
@@ -202,6 +206,10 @@ export async function loadKbItems(
     }
   }
 }
+
+// ============================================================================
+// 文件操作
+// ============================================================================
 
 export async function removeDocument(docId: string) {
   const { currentKbId, documents, setDocuments, setFileLoading, setFileError } =
@@ -511,6 +519,10 @@ export async function addFolder(kbId: string, name: string, parentId?: string | 
     setFileLoading(false)
   }
 }
+
+// ============================================================================
+// 上传操作
+// ============================================================================
 
 // ponytail: 允许的文件类型和大小限制
 const ALLOWED_MIME_TYPES = [

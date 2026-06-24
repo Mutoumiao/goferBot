@@ -1,5 +1,5 @@
 import { Plus, X } from 'lucide-react'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ROUTES_REGISTER } from '@/router-register'
 import { tabManager } from '@/stores/tabManager'
@@ -29,6 +29,26 @@ export function TabBar({ className }: { className?: string }) {
   const handleNewTab = useCallback(() => {
     void tabManager.openNewChat()
   }, [])
+
+  // ponytail: Ctrl+Tab 切换标签，Ctrl+Shift+Tab 反向切换
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.ctrlKey || e.key !== 'Tab') return
+
+      e.preventDefault()
+      const currentIndex = tabs.findIndex((t) => t.id === activeTabId)
+      if (currentIndex === -1 || tabs.length <= 1) return
+
+      const nextIndex = e.shiftKey
+        ? (currentIndex - 1 + tabs.length) % tabs.length
+        : (currentIndex + 1) % tabs.length
+
+      void tabManager.switchTab(tabs[nextIndex].id)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [tabs, activeTabId])
 
   return (
     <div className={cn('flex h-13 items-center gap-1 bg-surface-secondary px-2 pt-1', className)}>

@@ -104,6 +104,7 @@ export async function loadChatHistory(sessionId: string) {
  */
 export async function resolveSessionById(sessionId: string): Promise<Session | undefined> {
   const { setActiveSession, setError } = useChatStore.getState()
+  setError(null)
   try {
     const session = await getSessionById(sessionId).send()
     setActiveSession(session)

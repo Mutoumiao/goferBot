@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { ConfigProvider } from '@/components/ConfigProvider'
 import { IconSidebar } from '@/components/sidebar/Sidebar'
 import { TabBar } from '@/components/tab-bar/TabBar'
 import { TabRouteSync } from '@/components/tab-bar/TabRouteSync'
@@ -53,17 +52,15 @@ function AppLayout() {
   useAppearanceEffect()
 
   return (
-    <ConfigProvider>
-      <div className="flex h-screen bg-surface-2">
-        <IconSidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <TabRouteSync />
-          <TabBar />
-          <main className="flex-1 overflow-auto">
-            <Outlet />
-          </main>
-        </div>
+    <div className="flex h-screen bg-surface-2">
+      <IconSidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <TabRouteSync />
+        <TabBar />
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
       </div>
-    </ConfigProvider>
+    </div>
   )
 }
