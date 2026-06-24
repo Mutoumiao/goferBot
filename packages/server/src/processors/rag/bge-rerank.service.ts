@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 export interface RerankCandidate {
@@ -35,7 +35,7 @@ const DEFAULT_RERANK_MODEL = 'BAAI/bge-reranker-v2-m3'
  *   防止通过环境变量注入任意 HF 仓库。
  */
 @Injectable()
-export class BgeRerankService {
+export class BgeRerankService implements OnModuleInit {
   private readonly logger = new Logger(BgeRerankService.name)
   private readonly modelId: string
   private readonly maxLength: number
@@ -65,6 +65,15 @@ export class BgeRerankService {
   private initialized = false
   private tokenizer: any = null
   private model: any = null
+
+  async onModuleInit(): Promise<void> {
+    // H4: 启动时预加载模型，避免首次请求延迟
+    const eagerLoad = this.config.get<string>('RERANK_EAGER_LOAD')
+    if (eagerLoad === 'true' || eagerLoad === '1') {
+      this.logger.log('Eager loading reranker model on startup...')
+      await this.ensureInitialized()
+    }
+  }
 
   async ensureInitialized(): Promise<void> {
     if (this.initialized) return

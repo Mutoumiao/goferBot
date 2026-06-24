@@ -33,8 +33,10 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
   }
 
   async findAll(options?: RepositoryOptions): Promise<T[]> {
+    const take = options?.size ?? 100
     return this.model.findMany({
       orderBy: options?.orderBy,
+      take,
     })
   }
 
@@ -62,10 +64,10 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
       orderBy?: Record<string, 'asc' | 'desc'>
     },
   ): Promise<PaginationResult<T>> {
-    return this.model.paginate({ where, orderBy: options.orderBy } as never, {
-      page: options.page,
-      size: options.size,
-    })
+    return this.model.paginate(
+      { where, orderBy: options.orderBy },
+      { page: options.page, size: options.size },
+    )
   }
 
   async exists(where: Record<string, unknown>): Promise<boolean> {

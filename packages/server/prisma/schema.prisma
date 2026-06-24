@@ -12,7 +12,7 @@ model User {
   email         String         @unique
   name          String?
   avatar        String?
-  password      String
+  password      String         @db.VarChar(60)
   role          String         @default("USER")
   isActive      Boolean        @default(true) @map("is_active")
   createdAt     DateTime       @default(now()) @map("created_at")
@@ -28,7 +28,7 @@ model User {
 model KnowledgeBase {
   id          String    @id @default(uuid())
   userId      String    @map("user_id")
-  name        String
+  name        String    @db.VarChar(100)
   description String?
   isPinned    Boolean   @default(false) @map("is_pinned")
   sortOrder   Int       @default(autoincrement()) @map("sort_order")
@@ -88,10 +88,10 @@ model Chunk {
   documentId String   @map("document_id")
   kbId       String   @map("kb_id")
   content    String
-  tokenCount Int?                      @map("token_count")
-  chunkIndex Int                       @map("chunk_index")
+  tokenCount Int?     @map("token_count")
+  chunkIndex Int      @map("chunk_index")
   embedding  Unsupported("vector(1536)")?
-  createdAt  DateTime                  @default(now()) @map("created_at")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
   knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
@@ -120,6 +120,7 @@ model Message {
   role      String
   content   String
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 

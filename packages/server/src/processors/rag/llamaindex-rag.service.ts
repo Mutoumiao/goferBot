@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common'
 import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
@@ -207,7 +208,7 @@ export class LlamaIndexRagService {
         this.logger.warn(
           `Permission denied: user ${options.userId} does not own requested kbIds`,
         )
-        return []
+        throw new ForbiddenException('无权访问指定的知识库')
       }
     }
 
@@ -523,7 +524,8 @@ export class LlamaIndexRagService {
     let usedTokens = 0
 
     for (const chunk of ordered) {
-      const estimatedTokens = Math.max(1, Math.ceil(chunk.content.length / 4))
+      // C2: 中文 token 比例通常 1:2~1:3，使用更保守的 length/2 估算
+      const estimatedTokens = Math.max(1, Math.ceil(chunk.content.length / 2))
       if (usedTokens + estimatedTokens > tokenBudget) {
         const remaining = tokenBudget - usedTokens
         if (remaining <= 0) break
@@ -643,7 +645,11 @@ export class LlamaIndexRagService {
         continue
       }
       if (chunk.text) {
-        buffer += chunk.text
+        // C1: 限制 buffer 累积长度，防止超长回复内存溢出
+        const MAX_BUFFER_LENGTH = 100_000
+        if (buffer.length < MAX_BUFFER_LENGTH) {
+          buffer += chunk.text
+        }
         yield { text: chunk.text }
       }
     }
@@ -760,8 +766,9 @@ export class LlamaIndexRagService {
       const embeddings = await this.embeddings.embedBatch(embedTexts)
 
       const now = new Date().toISOString()
+      // C3: 使用 randomUUID() 生成唯一 chunk ID，避免重建索引时 ID 冲突
       const docs: ChunkDocument[] = chunks.map((text, i) => ({
-        id: `${documentId}-${i}`,
+        id: randomUUID(),
         document_id: documentId,
         kb_id: kbId,
         content: text,
@@ -805,7 +812,7 @@ export class LlamaIndexRagService {
     const embeddings = await this.embeddings.embedBatch(embedTexts)
 
     const docs: ChunkDocument[] = allChildTexts.map((text, i) => ({
-      id: `${documentId}-child-${i}`,
+      id: randomUUID(),
       document_id: documentId,
       kb_id: kbId,
       content: text,
@@ -919,14 +926,35 @@ export class LlamaIndexRagService {
       }
 
       if (para.length > chunkSize) {
-        for (let i = 0; i < para.length; i += chunkSize - overlap) {
-          const piece = para.slice(i, i + chunkSize)
-          if (piece.trim()) result.push(piece.trim())
-          if (i + chunkSize >= para.length) {
-            buffer = ''
-            break
+        // H3: 长段落按 chunkSize 切分，优先在句子边界切断
+        let pos = 0
+        while (pos < para.length) {
+          const end = Math.min(pos + chunkSize, para.length)
+          let cut = end
+          // 如果不是最后一段，尝试在句子边界切断
+          if (end < para.length) {
+            const searchRange = para.slice(Math.max(pos, end - 100), end)
+            const lastSentenceEnd = Math.max(
+              searchRange.lastIndexOf('。'),
+              searchRange.lastIndexOf('．'),
+              searchRange.lastIndexOf('.'),
+              searchRange.lastIndexOf('！'),
+              searchRange.lastIndexOf('?'),
+              searchRange.lastIndexOf('？'),
+              searchRange.lastIndexOf('\n'),
+            )
+            if (lastSentenceEnd > 0) {
+              cut = Math.max(pos, end - 100) + lastSentenceEnd + 1
+            }
           }
+          const piece = para.slice(pos, cut)
+          if (piece.trim()) result.push(piece.trim())
+          const nextPos = cut - overlap
+          // 防止无限循环：确保至少前进 1 个字符
+          pos = nextPos > pos ? nextPos : cut
+          if (pos >= para.length) break
         }
+        buffer = ''
       } else {
         buffer = para
       }

@@ -163,7 +163,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     } as any)
   }
 
-  async bulkIndex(docs: ChunkDocument[]): Promise<void> {
+  async bulkIndex(docs: ChunkDocument[], refresh: boolean | 'wait_for' = false): Promise<void> {
     if (docs.length === 0) return
     const now = new Date().toISOString()
     const operations = docs.flatMap((doc) => [
@@ -174,7 +174,8 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
         updated_at: doc.updated_at ?? now,
       },
     ])
-    await this.client.bulk({ body: operations, refresh: false } as any)
+    // C4: 默认 refresh=false 保持性能，但支持显式配置
+    await this.client.bulk({ body: operations, refresh } as any)
   }
 
   async deleteById(id: string): Promise<void> {

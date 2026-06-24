@@ -138,9 +138,8 @@ export class RagController {
 
       this.sseHelper.write({ event: 'message_end', data: { answer: '', done: true } })
     } catch (err) {
-      const message = err instanceof Error ? err.message : '未知错误'
-      this.logger.error(`RAG stream failed: ${message}`)
-      this.sseHelper.writeError(message)
+      this.logger.error(`RAG stream failed: ${err instanceof Error ? err.message : '未知错误'}`)
+      this.sseHelper.writeError('服务暂时不可用，请稍后重试')
     } finally {
       this.sseHelper.end()
     }

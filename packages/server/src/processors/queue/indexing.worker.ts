@@ -37,8 +37,7 @@ export class IndexingWorker {
     })
 
     try {
-      await this.updateStatus(doc.id, 'chunking')
-      await this.updateStatus(doc.id, 'embedding')
+      // H10: 合并状态更新为单次 DB 写，减少数据库往返
       await this.updateStatus(doc.id, 'indexing')
 
       // 把解析器输出的结构信息传递给 RAG 服务

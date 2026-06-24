@@ -38,16 +38,23 @@ export class KeywordService implements IKeywordStore {
     if (!query || query.trim() === '') return []
     if (!kbIds || kbIds.length === 0) return []
 
-    const config = this.useChineseConfig ? 'chinese' : 'simple'
-    const limit = topK ?? 10
     const trimmedQuery = query.trim()
+    // C7: 限制查询长度，防止超长输入导致性能问题或潜在注入
+    const MAX_QUERY_LENGTH = 2000
+    if (trimmedQuery.length > MAX_QUERY_LENGTH) {
+      this.logger.warn(`Query length ${trimmedQuery.length} exceeds limit ${MAX_QUERY_LENGTH}, truncating`)
+    }
+    const safeQuery = trimmedQuery.slice(0, MAX_QUERY_LENGTH)
+
+    const config = this.useChineseConfig ? 'chinese' : 'simple'
+    const limit = Math.min(topK ?? 10, 100)
 
     const results = (await this.prisma.$queryRaw`
       SELECT id, document_id, kb_id, content, chunk_index,
-        ts_rank_cd(to_tsvector(${config}, content), plainto_tsquery(${config}, ${trimmedQuery})) as rank
+        ts_rank_cd(to_tsvector(${config}, content), plainto_tsquery(${config}, ${safeQuery})) as rank
       FROM chunks
       WHERE kb_id = ANY(${kbIds}::uuid[])
-        AND to_tsvector(${config}, content) @@ plainto_tsquery(${config}, ${trimmedQuery})
+        AND to_tsvector(${config}, content) @@ plainto_tsquery(${config}, ${safeQuery})
       ORDER BY rank DESC
       LIMIT ${limit}
     `) as Array<{

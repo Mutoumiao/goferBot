@@ -308,20 +308,21 @@ describe('LlamaIndexRagService', () => {
       expect(vs.search).toHaveBeenCalled()
     })
 
-    it('returns empty when user does not own kbId', async () => {
+    it('throws ForbiddenException when user does not own kbId', async () => {
       const prisma = {
         knowledgeBase: { count: vi.fn().mockResolvedValue(0) },
       }
       const vs = { search: vi.fn() }
       const service = createService({ prisma, vectorService: vs })
-      const result = await service.retrieve('hello', {
-        kbIds: ['kb-1'],
-        userId: 'user-1',
-        mode: 'vector',
-        needRerank: false,
-        resolveParents: false,
-      })
-      expect(result).toEqual([])
+      await expect(
+        service.retrieve('hello', {
+          kbIds: ['kb-1'],
+          userId: 'user-1',
+          mode: 'vector',
+          needRerank: false,
+          resolveParents: false,
+        }),
+      ).rejects.toThrow('无权访问指定的知识库')
       expect(vs.search).not.toHaveBeenCalled()
     })
 

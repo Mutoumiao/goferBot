@@ -5,7 +5,7 @@ import type { SettingsDto } from './dto/settings.dto.js'
 
 const CONFIG_KEY = 'app_config'
 
-const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG: Record<string, unknown> = {
   providers: {
     openai: { name: 'OpenAI', apiKey: '', model: 'gpt-4o', baseUrl: '' },
     claude: { name: 'Claude', apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
@@ -25,6 +25,8 @@ const DEFAULT_CONFIG = {
 
 @Injectable()
 export class SettingsService {
+  private readonly defaultConfig = DEFAULT_CONFIG
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly crypto: ConfigCryptoService,
@@ -48,7 +50,7 @@ export class SettingsService {
     })
 
     if (!row) {
-      return this.maskConfig(DEFAULT_CONFIG)
+      return this.maskConfig(this.defaultConfig)
     }
 
     const parsed = JSON.parse(row.value) as Record<string, unknown>
@@ -66,7 +68,7 @@ export class SettingsService {
     })
 
     if (!row) {
-      return JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as Record<string, unknown>
+      return JSON.parse(JSON.stringify(this.defaultConfig)) as Record<string, unknown>
     }
 
     const parsed = JSON.parse(row.value) as Record<string, unknown>
@@ -74,8 +76,8 @@ export class SettingsService {
   }
 
   async saveSettings(userId: string, dto: SettingsDto): Promise<Record<string, unknown>> {
-    // C3: 字段白名单校验，仅允许 DEFAULT_CONFIG 中定义的顶层字段
-    const allowedKeys = Object.keys(DEFAULT_CONFIG)
+    // C3: 字段白名单校验，仅允许 defaultConfig 中定义的顶层字段
+    const allowedKeys = Object.keys(this.defaultConfig)
     const dtoKeys = Object.keys(dto)
     const extraKeys = dtoKeys.filter((k) => !allowedKeys.includes(k))
     if (extraKeys.length > 0) {
@@ -94,34 +96,18 @@ export class SettingsService {
     if (existing) {
       const existingParsed = JSON.parse(existing.value) as Record<string, unknown>
       const decrypted = this.decryptConfig(existingParsed)
-
-      // 将 dto 合并到现有配置，保留未修改的加密字段
-      const merged = JSON.parse(JSON.stringify(dto)) as Record<string, unknown>
-      const mergedProviders = merged.providers as Record<string, Record<string, unknown>>
-      const existingProviders = decrypted.providers as Record<string, Record<string, unknown>>
-
-      for (const key of Object.keys(mergedProviders)) {
-        const newApiKey = mergedProviders[key].apiKey as string
-        if (this.crypto.isMasked(newApiKey)) {
-          mergedProviders[key].apiKey = existingProviders[key]?.apiKey ?? ''
-        }
-      }
-
-      const newEmbApiKey = (merged.embeddingProvider as Record<string, unknown>).apiKey as string
-      if (this.crypto.isMasked(newEmbApiKey)) {
-        ;(merged.embeddingProvider as Record<string, unknown>).apiKey =
-          (decrypted.embeddingProvider as Record<string, unknown>)?.apiKey ?? ''
-      }
-
-      configToSave = this.encryptConfig(merged)
+      configToSave = { ...decrypted, ...dto }
     } else {
-      configToSave = this.encryptConfig(dto as unknown as Record<string, unknown>)
+      configToSave = { ...this.defaultConfig, ...dto }
     }
+
+    const encrypted = this.encryptConfig(configToSave)
+    const value = JSON.stringify(encrypted)
 
     await this.prisma.setting.upsert({
       where: { userId_key: { userId, key: CONFIG_KEY } },
-      create: { userId, key: CONFIG_KEY, value: JSON.stringify(configToSave) },
-      update: { value: JSON.stringify(configToSave) },
+      create: { userId, key: CONFIG_KEY, value },
+      update: { value },
     })
 
     return this.maskConfig(configToSave)

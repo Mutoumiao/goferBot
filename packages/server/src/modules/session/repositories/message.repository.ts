@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { NotFoundException, Injectable } from '@nestjs/common'
 import type { Message, Prisma } from '@prisma/client'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
 
@@ -24,7 +24,7 @@ export class MessageRepository extends BaseRepository<
   ): Promise<Message[]> {
     const target = await this.findById(messageId)
     if (!target || target.sessionId !== sessionId) {
-      return []
+      throw new NotFoundException('消息不存在')
     }
     return this.model.findMany({
       where: {

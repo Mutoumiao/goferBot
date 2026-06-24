@@ -197,7 +197,7 @@ describe('RagController — cross-tenant authorization', () => {
       await expect(
         controller.stream({ query: 'secret' } as any, req, reply, 'user-2'),
       ).resolves.toBeUndefined()
-      expect(sseHelper.writeError).toHaveBeenCalledWith('无权访问')
+      expect(sseHelper.writeError).toHaveBeenCalledWith('服务暂时不可用，请稍后重试')
       expect(sseHelper.end).toHaveBeenCalledTimes(1)
     })
   })

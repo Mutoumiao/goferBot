@@ -99,7 +99,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await this.client.$disconnect()
+    try {
+      await this.client.$disconnect()
+    } catch (err) {
+      // ponytail: 忽略关闭连接时的异常，避免中断应用关闭流程
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn(`Prisma disconnect warning: ${msg}`)
+    }
   }
 
   // 代理所有 PrismaClient 方法

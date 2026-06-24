@@ -10,23 +10,32 @@ const METADATA_BLOCKED_PREFIXES = ['__', '$', '.']
 
 /**
  * Allowed metadata field allowlist. Keep this conservative: only whitelisted
- * business fields may be used as structured filters. Everything else must be
- * explicitly added to this list before it becomes queryable.
+ * business fields may be used as structured filters. Everything else must
+ * be explicitly added to this list before it becomes queryable.
+ *
+ * M7: 支持通过环境变量 METADATA_ALLOWED_KEYS 扩展，以逗号分隔。
+ * 默认值保持原有硬编码列表以确保向后兼容。
  */
-export const METADATA_ALLOWED_KEYS = [
-  'year',
-  'status',
-  'type',
-  'category',
-  'source',
-  'language',
-  'author',
-  'priority',
-  'department',
-  'project',
-  'tags',
-  'version',
-] as const
+function getMetadataAllowedKeys(): string[] {
+  const envKeys = process.env.METADATA_ALLOWED_KEYS
+  if (envKeys) {
+    return envKeys.split(',').map((k) => k.trim()).filter(Boolean)
+  }
+  return [
+    'year',
+    'status',
+    'type',
+    'category',
+    'source',
+    'language',
+    'author',
+    'priority',
+    'department',
+    'project',
+    'tags',
+    'version',
+  ]
+}
 
 const METADATA_KEY_PATTERN = /^[a-z][a-z0-9_]{0,63}$/i
 
@@ -45,7 +54,7 @@ const metadataKeySchema = z.string().superRefine((key, ctx) => {
     })
     return
   }
-  const allowlist = new Set<string>(METADATA_ALLOWED_KEYS)
+  const allowlist = new Set<string>(getMetadataAllowedKeys())
   if (!allowlist.has(key)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

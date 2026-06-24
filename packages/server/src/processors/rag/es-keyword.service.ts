@@ -40,12 +40,16 @@ export class EsKeywordService {
     if (!query || query.trim() === '') return []
 
     const topK = options.topK ?? 20
+    const language = options.filters?.language ?? 'zh'
+    // M3: 根据 language 动态切换分词器
+    const analyzer = language === 'en' ? 'standard' : 'ik_smart'
+
     const must: unknown[] = [
       {
         match: {
           content: {
             query,
-            analyzer: 'ik_smart',
+            analyzer,
             operator: 'or',
           },
         },

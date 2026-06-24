@@ -23,7 +23,6 @@ export class FolderRepository extends BaseRepository<
   }
 
   async hasChildren(id: string): Promise<boolean> {
-    const count = await this.model.count({ where: { parentId: id } })
-    return count > 0
+    return this.model.exists({ where: { parentId: id } })
   }
 }

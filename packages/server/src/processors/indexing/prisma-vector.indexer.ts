@@ -20,16 +20,18 @@ export class PrismaVectorIndexer implements IIndexer {
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (let i = 0; i < chunks.length; i++) {
+        const c = chunks[i]
+        const v = vectors[i]
         await tx.$executeRaw`
           INSERT INTO chunks (id, document_id, kb_id, content, token_count, chunk_index, embedding)
           VALUES (
-            ${chunks[i].id}::uuid,
-            ${chunks[i].documentId}::uuid,
-            ${chunks[i].kbId}::uuid,
-            ${chunks[i].content},
+            ${c.id}::uuid,
+            ${c.documentId}::uuid,
+            ${c.kbId}::uuid,
+            ${c.content},
             ${tokenCounts[i]},
-            ${chunks[i].chunkIndex},
-            ${vectors[i]}::vector
+            ${c.chunkIndex},
+            ${v}::vector
           )
           ON CONFLICT (id) DO UPDATE SET
             document_id = EXCLUDED.document_id,
