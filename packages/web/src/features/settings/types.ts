@@ -17,5 +17,5 @@ export function isCustomProviderKey(key: string): boolean {
 }
 
 export function generateCustomProviderKey(): string {
-  return `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+  return `custom_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`
 }

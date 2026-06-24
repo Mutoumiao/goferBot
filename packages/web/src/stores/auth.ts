@@ -57,10 +57,11 @@ export const useAuthStore = create<AuthState>()(
       }),
       /** rehydrate 后同步 raw localStorage + 标记 hydration 完成 */
       onRehydrateStorage: () => {
-        return (state) => {
+        return (state, _error) => {
           if (!state) return
           const rawToken = getAccessToken()
           // raw localStorage 无 token → 登录态已被清理，同步清除 Zustand 持久化数据
+          // ponytail: 直接修改 state 属性，persist 会合并更新
           if (!rawToken && state.token) {
             state.token = null
             state.isAuthenticated = false

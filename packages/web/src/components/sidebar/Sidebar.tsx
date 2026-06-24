@@ -64,7 +64,7 @@ export function IconSidebar({ className }: { className?: string }) {
             type="button"
             onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
+              'flex h-10 w-10 items-center justify-center rounded-xl text-text-primary transition-colors hover:bg-surface-3',
             )}
             title={label}
           >
@@ -81,7 +81,7 @@ export function IconSidebar({ className }: { className?: string }) {
             type="button"
             onClick={() => handleNavClick(key)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl text-[#1F2328] transition-colors hover:bg-[#D1D5DB]',
+              'flex h-10 w-10 items-center justify-center rounded-xl text-text-primary transition-colors hover:bg-surface-3',
             )}
             title={label}
           >

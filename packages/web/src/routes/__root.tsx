@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 import { fetchCurrentUser } from '@/features/auth/services'
 import { OverlayHost } from '@/overlays/host/OverlayHost'
 import { useAuthStore } from '@/stores/auth'
+import { ROUTES_REGISTER } from '@/router-register'
 import appCss from '../globals.css?url'
 
 /* ========== ahooks 响应式断点全局配置 ========== */
@@ -48,7 +49,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
       fetchCurrentUser().then((ok) => {
         if (!ok) {
           useAuthStore.getState().clearAuth()
-          window.location.replace('/login')
+          window.location.href = ROUTES_REGISTER.login.path
           return
         }
         useAuthStore.getState().setInitialized(true)
@@ -74,15 +75,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AuthInitializer>{children}</AuthInitializer>
         {/* Overlay Portal 系统 — 所有 Dialog/ContextMenu 渲染在此 */}
         <OverlayHost />
-        <TanStackDevtools
-          config={{ position: 'bottom-right' }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        {import.meta.env.DEV && (
+          <TanStackDevtools
+            config={{ position: 'bottom-right' }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        )}
         <Scripts />
       </body>
     </html>

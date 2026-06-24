@@ -4,8 +4,10 @@ import { ConfigProvider } from '@/components/ConfigProvider'
 import { IconSidebar } from '@/components/sidebar/Sidebar'
 import { TabBar } from '@/components/tab-bar/TabBar'
 import { TabRouteSync } from '@/components/tab-bar/TabRouteSync'
+import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
+import { waitForAuthInit } from '@/utils/wait-for-init'
 
 const FONT_SIZE_MAP: Record<number, string> = {
   1: '12px',
@@ -15,30 +17,12 @@ const FONT_SIZE_MAP: Record<number, string> = {
   5: '16px',
 }
 
-function waitForInit(maxMs = 2000): Promise<void> {
-  return new Promise((resolve) => {
-    const start = Date.now()
-    const check = () => {
-      if (useAuthStore.getState().isInitialized) {
-        resolve()
-        return
-      }
-      if (Date.now() - start > maxMs) {
-        resolve()
-        return
-      }
-      setTimeout(check, 50)
-    }
-    check()
-  })
-}
-
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async () => {
-    await waitForInit()
+    await waitForAuthInit()
     const token = useAuthStore.getState().token
     if (!token) {
-      throw redirect({ to: '/login' })
+      throw redirect({ to: ROUTES_REGISTER.login.path })
     }
   },
   component: AppLayout,

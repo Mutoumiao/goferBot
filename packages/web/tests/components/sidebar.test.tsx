@@ -88,6 +88,6 @@ describe('IconSidebar', () => {
     render(<IconSidebar />)
 
     const historyBtn = screen.getByTitle('会话历史')
-    expect(historyBtn.className).toContain('bg-[#D1D5DB]')
+    expect(historyBtn.className).toContain('text-text-primary')
   })
 })

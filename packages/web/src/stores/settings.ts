@@ -133,7 +133,9 @@ export const useSettingsStore = create<SettingsState>()(
           const { [key]: _, ...rest } = state.config.providers
           const updates: Partial<AppConfig> = { providers: rest }
           if (state.config.defaultChatProvider === key) {
-            updates.defaultChatProvider = 'deepseek'
+            // ponytail: 选择第一个已配置的 provider 作为默认值
+            const configured = Object.keys(rest).filter((k) => rest[k].apiKey)
+            updates.defaultChatProvider = configured[0] || ''
           }
           return { config: { ...state.config, ...updates } }
         })

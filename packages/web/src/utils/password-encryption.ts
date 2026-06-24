@@ -1,6 +1,13 @@
 import { getPublicKey } from '@/api/auth'
 
 let cachedPublicKey: CryptoKey | null = null
+let cacheTimestamp = 0
+// ponytail: 公钥缓存有效期 1 小时，服务器公钥轮换时需手动清除或等待过期
+const CACHE_TTL_MS = 60 * 60 * 1000
+
+function isCacheExpired(): boolean {
+  return cacheTimestamp === 0 || Date.now() - cacheTimestamp > CACHE_TTL_MS
+}
 
 function pemToArrayBuffer(pem: string): ArrayBuffer {
   const b64 = pem
@@ -16,7 +23,7 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 }
 
 export async function fetchPublicKey(): Promise<CryptoKey> {
-  if (cachedPublicKey) {
+  if (cachedPublicKey && !isCacheExpired()) {
     return cachedPublicKey
   }
   try {
@@ -29,6 +36,7 @@ export async function fetchPublicKey(): Promise<CryptoKey> {
       false,
       ['encrypt'],
     )
+    cacheTimestamp = Date.now()
     return cachedPublicKey
   } catch (e) {
     if (e instanceof PasswordEncryptionError) throw e

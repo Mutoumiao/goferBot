@@ -8,6 +8,7 @@ import { ProviderSelect } from '@/features/settings/components/ProviderSelect'
 import { SettingsRow } from '@/features/settings/components/SettingsRow'
 import { SettingsSection } from '@/features/settings/components/SettingsSection'
 import { useSettingsServices } from '@/features/settings/services'
+import { ConfirmDialog } from '@/overlays/dialogs/ConfirmDialog'
 import { ROUTES_REGISTER } from '@/router-register'
 import type { ProviderConfig } from '@/utils/llm-config'
 import { configuredProviders } from '@/utils/llm-config'
@@ -23,10 +24,13 @@ function SettingsPage() {
   const svc = useSettingsServices()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletingKey, setDeletingKey] = useState<string | null>(null)
 
   useEffect(() => {
     svc.loadSettings()
-  }, [svc.loadSettings])
+    // ponytail: 设置加载只需在挂载时执行一次，使用空依赖数组
+  }, [])
 
   const providerOptions = configuredProviders(svc.config)
   const editingProvider = editingKey ? svc.config.providers[editingKey] : undefined
@@ -42,8 +46,13 @@ function SettingsPage() {
   }
 
   const handleDelete = (key: string) => {
-    if (confirm('确定删除该模型吗？')) {
-      svc.removeCustomProvider(key)
+    setDeletingKey(key)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (deletingKey) {
+      svc.removeCustomProvider(deletingKey)
     }
   }
 
@@ -100,6 +109,15 @@ function SettingsPage() {
         onOpenChange={setDialogOpen}
         initialData={editingProvider}
         onSubmit={handleSubmit}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="删除模型"
+        description="确定删除该模型吗？此操作不可撤销。"
+        confirmText="删除"
+        onConfirm={handleConfirmDelete}
       />
     </div>
   )

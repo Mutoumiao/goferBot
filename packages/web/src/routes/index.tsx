@@ -2,28 +2,11 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { tabManager } from '@/stores/tabManager'
-
-function waitForInit(maxMs = 2000): Promise<void> {
-  return new Promise((resolve) => {
-    const start = Date.now()
-    const check = () => {
-      if (useAuthStore.getState().isInitialized) {
-        resolve()
-        return
-      }
-      if (Date.now() - start > maxMs) {
-        resolve()
-        return
-      }
-      setTimeout(check, 50)
-    }
-    check()
-  })
-}
+import { waitForAuthInit } from '@/utils/wait-for-init'
 
 export const Route = createFileRoute('/')({
   beforeLoad: async () => {
-    await waitForInit()
+    await waitForAuthInit()
     if (!useAuthStore.getState().isAuthenticated) {
       throw redirect({ to: ROUTES_REGISTER.login.path })
     }

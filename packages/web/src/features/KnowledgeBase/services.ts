@@ -372,6 +372,13 @@ export async function searchKbItems(query: string) {
     return { folders: [], documents: [] }
   }
 
+  // ponytail: 限制搜索查询长度，避免过长查询导致性能问题
+  const MAX_QUERY_LENGTH = 200
+  if (trimmed.length > MAX_QUERY_LENGTH) {
+    setFileError(`搜索关键词过长（最大${MAX_QUERY_LENGTH}字符）`)
+    return { folders: [], documents: [] }
+  }
+
   const thisSearchId = ++currentSearchId
 
   setFileLoading(true)
@@ -505,6 +512,32 @@ export async function addFolder(kbId: string, name: string, parentId?: string | 
   }
 }
 
+// ponytail: 允许的文件类型和大小限制
+const ALLOWED_MIME_TYPES = [
+  'text/plain',
+  'text/markdown',
+  'text/html',
+  'text/csv',
+  'application/pdf',
+  'application/json',
+  'application/xml',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+
+function validateFile(file: File): { valid: boolean; error?: string } {
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: `文件 "${file.name}" 超过 50MB 限制` }
+  }
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return { valid: false, error: `文件 "${file.name}" 类型不支持` }
+  }
+  return { valid: true }
+}
+
 export async function uploadFiles(
   kbId: string,
   files: File[],
@@ -522,6 +555,13 @@ export async function uploadFiles(
 
   if (files.length === 0) return []
 
+  // ponytail: 客户端文件校验
+  const invalidFiles = files.filter((f) => !validateFile(f).valid)
+  if (invalidFiles.length > 0) {
+    toast.error(invalidFiles.map((f) => validateFile(f).error).join('\n'))
+    return []
+  }
+
   const uploadOne = async (file: File): Promise<string> => {
     const taskId = addUploadTask({
       fileName: file.name,
@@ -538,9 +578,18 @@ export async function uploadFiles(
     startUploadTask(taskId)
 
     try {
-      // 模拟上传进度（实际应由 API 进度回调驱动）
-      updateUploadProgress(taskId, 50)
+      // ponytail: 简化进度模拟（0% -> 90%），真实进度需要服务器支持 XHR progress 事件
+      // 长期方案：后端使用 chunked upload 并返回实时进度
+      let progress = 0
+      const progressInterval = setInterval(() => {
+        progress = Math.min(progress + 10, 90)
+        updateUploadProgress(taskId, progress)
+      }, 200)
+
       await apiUploadFile(kbId, formData).send()
+
+      clearInterval(progressInterval)
+      updateUploadProgress(taskId, 100)
       markUploadComplete(taskId)
     } catch (e) {
       markUploadFailed(taskId, e instanceof Error ? e.message : '上传失败')

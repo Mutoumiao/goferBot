@@ -19,5 +19,23 @@ export default defineConfig({
       'tests/**/*.test.tsx',
     ],
     environment: 'happy-dom',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/**',
+        'tests/**',
+        '**/*.config.*',
+        '**/*.d.ts',
+        '**/*.md',
+      ],
+      thresholds: {
+        // ponytail: 设置 80% 覆盖率阈值
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+    },
   },
 })
