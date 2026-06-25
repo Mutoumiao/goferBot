@@ -58,6 +58,19 @@ export {
 } from './session.schema.js'
 
 export {
+  companionListQuerySchema,
+  conversationListQuerySchema,
+  createCompanionSchema,
+  createConversationSchema,
+  createFeedbackSchema,
+  createMemorySchema,
+  memoryListQuerySchema,
+  messageListQuerySchema as companionMessageListQuerySchema,
+  sendMessageSchema,
+  updateCompanionSchema,
+} from './companion.schema.js'
+
+export {
   embeddingProviderSchema,
   providerSchema,
   settingsResponseSchema,
