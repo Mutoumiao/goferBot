@@ -1,4 +1,16 @@
-import { Avatar, Button, Card, Input, Select, Space, Switch, Table, Tag, Popconfirm, message } from 'antd'
+import {
+  Avatar,
+  Button,
+  Card,
+  Input,
+  Select,
+  Space,
+  Switch,
+  Table,
+  Tag,
+  Popconfirm,
+  message,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Plus, RefreshCw, Search, Edit, Trash2, KeyRound, UserCog, Users } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -57,8 +69,7 @@ export function UserTable({ initialQuery }: UserTableProps) {
       page: 1,
       search: searchInput.trim() || undefined,
       role: roleFilter === 'all' ? undefined : roleFilter,
-      isActive:
-        statusFilter === 'all' ? undefined : statusFilter === 'active' ? true : false,
+      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active' ? true : false,
     }
     void load(q)
   }
@@ -109,7 +120,9 @@ export function UserTable({ initialQuery }: UserTableProps) {
   const handleBatchEnable = async () => {
     const result = await confirmPasswordAction(
       '批量启用用户',
-      <>确定要启用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？</>,
+      <>
+        确定要启用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？
+      </>,
     )
     if (!result.confirmed) return
     await Promise.all(
@@ -126,7 +139,9 @@ export function UserTable({ initialQuery }: UserTableProps) {
   const handleBatchDisable = async () => {
     const result = await confirmPasswordAction(
       '批量禁用用户',
-      <>确定要禁用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？</>,
+      <>
+        确定要禁用选中的 <b>{selectedRowKeys.length}</b> 个用户吗？
+      </>,
     )
     if (!result.confirmed) return
     await Promise.all(
@@ -143,12 +158,12 @@ export function UserTable({ initialQuery }: UserTableProps) {
   const handleBatchDelete = async () => {
     const result = await confirmPasswordAction(
       '批量删除用户',
-      <>确定要删除选中的 <b>{selectedRowKeys.length}</b> 个用户吗？该操作不可撤销。</>,
+      <>
+        确定要删除选中的 <b>{selectedRowKeys.length}</b> 个用户吗？该操作不可撤销。
+      </>,
     )
     if (!result.confirmed) return
-    await Promise.all(
-      selectedRowKeys.map((key) => deleteUserService(String(key))),
-    )
+    await Promise.all(selectedRowKeys.map((key) => deleteUserService(String(key))))
     message.success('批量删除成功')
     setSelectedRowKeys([])
     void load(query)
@@ -200,7 +215,9 @@ export function UserTable({ initialQuery }: UserTableProps) {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 160,
-      render: (v: string) => <span className="text-sm text-slate-500">{new Date(v).toLocaleString('zh-CN')}</span>,
+      render: (v: string) => (
+        <span className="text-sm text-slate-500">{new Date(v).toLocaleString('zh-CN')}</span>
+      ),
     },
     {
       title: '操作',
@@ -310,7 +327,11 @@ export function UserTable({ initialQuery }: UserTableProps) {
         </Space>
 
         {selectedRowKeys.length > 0 && (
-          <Space wrap size="small" className="mb-4 rounded-md border border-indigo-200 bg-indigo-50 p-2">
+          <Space
+            wrap
+            size="small"
+            className="mb-4 rounded-md border border-indigo-200 bg-indigo-50 p-2"
+          >
             <span className="text-sm text-indigo-700">
               已选 <b>{selectedRowKeys.length}</b> 项
             </span>
@@ -336,11 +357,7 @@ export function UserTable({ initialQuery }: UserTableProps) {
             >
               批量删除
             </Button>
-            <Button
-              size="small"
-              type="link"
-              onClick={() => setSelectedRowKeys([])}
-            >
+            <Button size="small" type="link" onClick={() => setSelectedRowKeys([])}>
               取消选择
             </Button>
           </Space>
@@ -367,7 +384,13 @@ export function UserTable({ initialQuery }: UserTableProps) {
             },
           }}
           locale={{
-            emptyText: <EmptyState description="暂无用户数据" actionText="新建第一个用户" onAction={handleCreate} />,
+            emptyText: (
+              <EmptyState
+                description="暂无用户数据"
+                actionText="新建第一个用户"
+                onAction={handleCreate}
+              />
+            ),
           }}
           scroll={{ x: 1200 }}
         />

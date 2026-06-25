@@ -39,8 +39,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     root.classList.remove('light', 'dark')
     const isDark =
       appearance === 'dark' ||
-      (appearance === 'system' &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches)
+      (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     root.classList.add(isDark ? 'dark' : 'light')
   }, [appearance])
 

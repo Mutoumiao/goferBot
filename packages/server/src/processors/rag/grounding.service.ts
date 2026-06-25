@@ -52,10 +52,7 @@ export class GroundingService {
    * 新人观察：
    *   短句子（<8 字符）自动 grounded，因为过短的句子算分容易误判。
    */
-  async checkGrounding(
-    answer: string,
-    chunks: GroundingChunk[],
-  ): Promise<GroundingResult[]> {
+  async checkGrounding(answer: string, chunks: GroundingChunk[]): Promise<GroundingResult[]> {
     if (!answer || !answer.trim()) {
       return []
     }
@@ -87,7 +84,9 @@ export class GroundingService {
       }
 
       const bestScore = chunkScores.reduce((m, s) => Math.max(m, s.score), 0)
-      const matchedChunkIds = chunkScores.filter((s) => s.score >= MEDIUM_CONFIDENCE_THRESHOLD).map((s) => s.id)
+      const matchedChunkIds = chunkScores
+        .filter((s) => s.score >= MEDIUM_CONFIDENCE_THRESHOLD)
+        .map((s) => s.id)
 
       const grounded = bestScore >= MEDIUM_CONFIDENCE_THRESHOLD
       results.push({
@@ -101,9 +100,7 @@ export class GroundingService {
 
     const groundedCount = results.filter((r) => r.grounded).length
     const avgScore =
-      results.length > 0
-        ? results.reduce((m, r) => m + r.faithfulnessScore, 0) / results.length
-        : 0
+      results.length > 0 ? results.reduce((m, r) => m + r.faithfulnessScore, 0) / results.length : 0
 
     this.logger.debug(
       `[Grounding] grounded=${groundedCount}/${results.length} avgFaithfulness=${avgScore.toFixed(3)}`,

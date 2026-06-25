@@ -87,9 +87,7 @@ export function AuditLogTable() {
             value={filters.sensitiveOnly ? 'yes' : undefined}
             onChange={(v) => setFilters((f) => ({ ...f, sensitiveOnly: v === 'yes' }))}
             style={{ width: 140 }}
-            options={[
-              { value: 'yes', label: '仅敏感操作' },
-            ]}
+            options={[{ value: 'yes', label: '仅敏感操作' }]}
           />
           <DatePicker.RangePicker
             showTime
@@ -138,9 +136,27 @@ export function AuditLogTable() {
               ),
             },
             { title: '资源', dataIndex: 'resource', key: 'resource', width: 120 },
-            { title: '资源 ID', dataIndex: 'resourceId', key: 'resourceId', width: 160, render: (v?: string) => v ?? '—' },
-            { title: 'IP', dataIndex: 'ip', key: 'ip', width: 140, render: (v?: string) => v ?? '—' },
-            { title: '时间', dataIndex: 'createdAt', key: 'createdAt', width: 180, render: (v: string) => new Date(v).toLocaleString('zh-CN') },
+            {
+              title: '资源 ID',
+              dataIndex: 'resourceId',
+              key: 'resourceId',
+              width: 160,
+              render: (v?: string) => v ?? '—',
+            },
+            {
+              title: 'IP',
+              dataIndex: 'ip',
+              key: 'ip',
+              width: 140,
+              render: (v?: string) => v ?? '—',
+            },
+            {
+              title: '时间',
+              dataIndex: 'createdAt',
+              key: 'createdAt',
+              width: 180,
+              render: (v: string) => new Date(v).toLocaleString('zh-CN'),
+            },
           ]}
         />
       </Card>

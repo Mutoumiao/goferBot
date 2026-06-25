@@ -39,4 +39,4 @@ import { RagController } from './rag.controller.js'
     QueryUnderstandingService,
   ],
 })
-export class RagModule { }
+export class RagModule {}

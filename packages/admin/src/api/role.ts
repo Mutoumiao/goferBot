@@ -24,6 +24,7 @@ export const updateRole = (
   id: string,
   data: { name?: string; description?: string; permissions?: string[] },
 ) => alovaInstance.Patch<Role>(`/admin/roles/${id}`, data)
-export const deleteRole = (id: string) => alovaInstance.Delete<{ success: boolean }>(`/admin/roles/${id}`)
+export const deleteRole = (id: string) =>
+  alovaInstance.Delete<{ success: boolean }>(`/admin/roles/${id}`)
 export const getRole = (id: string) => alovaInstance.Get<Role>(`/admin/roles/${id}`)
 export const listPermissions = () => alovaInstance.Get<Permission[]>('/admin/permissions')

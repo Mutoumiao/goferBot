@@ -38,9 +38,15 @@ vi.mock('sonner', () => ({
 vi.mock('@/utils/error-mapper', () => ({
   mapErrorMessage: (err: unknown) => (err instanceof Error ? err.message : '操作失败'),
   isConflict: (err: unknown) =>
-    typeof err === 'object' && err !== null && 'status' in err && (err as { status?: number }).status === 409,
+    typeof err === 'object' &&
+    err !== null &&
+    'status' in err &&
+    (err as { status?: number }).status === 409,
   isForbidden: (err: unknown) =>
-    typeof err === 'object' && err !== null && 'status' in err && (err as { status?: number }).status === 403,
+    typeof err === 'object' &&
+    err !== null &&
+    'status' in err &&
+    (err as { status?: number }).status === 403,
 }))
 
 describe('users services', () => {

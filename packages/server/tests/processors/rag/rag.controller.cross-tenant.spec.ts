@@ -46,11 +46,7 @@ describe('RagController — cross-tenant authorization', () => {
       end: vi.fn(),
     } as unknown as SseResponseHelper
 
-    controller = new RagController(
-      ragService as any,
-      esService as any,
-      sseHelper,
-    )
+    controller = new RagController(ragService as any, esService as any, sseHelper)
   })
 
   describe('POST /rag/index', () => {
@@ -105,17 +101,12 @@ describe('RagController — cross-tenant authorization', () => {
 
     it('throws ForbiddenException when user-2 tries to delete document owned by user-1', async () => {
       // Service resolves kbIds via ES, then Prisma count returns 0 for user-2.
-      ragService.removeDocument.mockRejectedValueOnce(
-        new ForbiddenException('无权删除该文档'),
-      )
+      ragService.removeDocument.mockRejectedValueOnce(new ForbiddenException('无权删除该文档'))
       await expect(controller.removeDocument('doc-owned-by-user-1', 'user-2')).rejects.toThrow(
         ForbiddenException,
       )
       // No delete should occur: the service rejects before any ES delete.
-      expect(ragService.removeDocument).toHaveBeenCalledWith(
-        'doc-owned-by-user-1',
-        'user-2',
-      )
+      expect(ragService.removeDocument).toHaveBeenCalledWith('doc-owned-by-user-1', 'user-2')
     })
 
     it('returns void when user-1 deletes own document', async () => {
@@ -123,21 +114,16 @@ describe('RagController — cross-tenant authorization', () => {
       await expect(
         controller.removeDocument('doc-owned-by-user-1', 'user-1'),
       ).resolves.toBeUndefined()
-      expect(ragService.removeDocument).toHaveBeenCalledWith(
-        'doc-owned-by-user-1',
-        'user-1',
-      )
+      expect(ragService.removeDocument).toHaveBeenCalledWith('doc-owned-by-user-1', 'user-1')
     })
 
     it('throws on attempting to delete a document that does not exist (no information leak)', async () => {
       // Service should NOT distinguish between "document missing" and "not owner";
       // both paths yield 403 to avoid leaking document existence.
-      ragService.removeDocument.mockRejectedValueOnce(
-        new ForbiddenException('无权删除该文档'),
+      ragService.removeDocument.mockRejectedValueOnce(new ForbiddenException('无权删除该文档'))
+      await expect(controller.removeDocument('nonexistent-doc', 'user-1')).rejects.toThrow(
+        ForbiddenException,
       )
-      await expect(
-        controller.removeDocument('nonexistent-doc', 'user-1'),
-      ).rejects.toThrow(ForbiddenException)
     })
   })
 
@@ -169,18 +155,21 @@ describe('RagController — cross-tenant authorization', () => {
       ragService.query.mockResolvedValueOnce({ answer: 'ok', grounding: [] })
       const dto = { query: 'hello' }
       await controller.query(dto as any, 'user-1')
-      expect(ragService.query).toHaveBeenCalledWith('hello', expect.objectContaining({
-        userId: 'user-1',
-      }))
+      expect(ragService.query).toHaveBeenCalledWith(
+        'hello',
+        expect.objectContaining({
+          userId: 'user-1',
+        }),
+      )
     })
 
     it('service rejects query for non-owned kb by returning empty/filtered results', async () => {
       // The service layer is responsible for ACL pre-filtering; here we verify
       // the controller does NOT mask a ForbiddenException bubbled up from it.
       ragService.query.mockRejectedValueOnce(new UnauthorizedException('forbidden'))
-      await expect(
-        controller.query({ query: 'secret' } as any, 'user-2'),
-      ).rejects.toThrow(UnauthorizedException)
+      await expect(controller.query({ query: 'secret' } as any, 'user-2')).rejects.toThrow(
+        UnauthorizedException,
+      )
     })
   })
 

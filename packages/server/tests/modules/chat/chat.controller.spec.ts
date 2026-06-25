@@ -119,7 +119,9 @@ describe('ChatController', () => {
       await controller.chat('user-1', dto, req, reply)
 
       // C1: 修复后不再暴露原始错误信息，统一返回"服务暂时不可用，请稍后重试"
-      expect(sseHelper.writeError).toHaveBeenCalledWith('服务暂时不可用，请稍后重试', { conversationId: 's1' })
+      expect(sseHelper.writeError).toHaveBeenCalledWith('服务暂时不可用，请稍后重试', {
+        conversationId: 's1',
+      })
       expect(sseHelper.end).toHaveBeenCalled()
     })
 

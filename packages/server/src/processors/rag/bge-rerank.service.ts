@@ -49,9 +49,7 @@ export class BgeRerankService implements OnModuleInit {
       this.modelId = raw
     } else {
       if (raw) {
-        this.logger.warn(
-          `RERANK_MODEL="${raw}" 不在允许列表，已回退到默认 ${DEFAULT_RERANK_MODEL}`,
-        )
+        this.logger.warn(`RERANK_MODEL="${raw}" 不在允许列表，已回退到默认 ${DEFAULT_RERANK_MODEL}`)
       }
       this.modelId = DEFAULT_RERANK_MODEL
     }
@@ -82,10 +80,10 @@ export class BgeRerankService implements OnModuleInit {
         '@xenova/transformers'
       )
       this.logger.log(`Loading reranker model: ${this.modelId}`)
-        ;[this.tokenizer, this.model] = await Promise.all([
-          AutoTokenizer.from_pretrained(this.modelId),
-          AutoModelForSequenceClassification.from_pretrained(this.modelId),
-        ])
+      ;[this.tokenizer, this.model] = await Promise.all([
+        AutoTokenizer.from_pretrained(this.modelId),
+        AutoModelForSequenceClassification.from_pretrained(this.modelId),
+      ])
       this.initialized = true
       this.logger.log('Reranker model loaded successfully')
     } catch (err) {

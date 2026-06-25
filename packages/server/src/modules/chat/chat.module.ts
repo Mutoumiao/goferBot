@@ -82,7 +82,7 @@ function createModelRegistry(config: ConfigService): ModelRegistryService {
             userId: opts.userId,
             mode: 'hybrid',
           })
-          return { context: chunks.map(c => c.content).join('\n\n') }
+          return { context: chunks.map((c) => c.content).join('\n\n') }
         },
       }),
     },

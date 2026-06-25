@@ -202,15 +202,14 @@ describe('LlamaIndexRagService', () => {
     })
 
     it('runs rerank when needRerank is true', async () => {
-      const hits = [
-        makeHit('h1', 'first document', 0.5),
-        makeHit('h2', 'second document', 0.4),
-      ]
+      const hits = [makeHit('h1', 'first document', 0.5), makeHit('h2', 'second document', 0.4)]
       const vs = { search: vi.fn().mockResolvedValue(hits) }
       const rerank = {
-        rerank: vi.fn().mockImplementation(async (_q: string, candidates: any[]) =>
-          candidates.map((c: any, i: number) => ({ ...c, score: 1 - i * 0.25 })),
-        ),
+        rerank: vi
+          .fn()
+          .mockImplementation(async (_q: string, candidates: any[]) =>
+            candidates.map((c: any, i: number) => ({ ...c, score: 1 - i * 0.25 })),
+          ),
       }
       const service = createService({ vectorService: vs, reranker: rerank })
       const result = await service.retrieve('hello', {
@@ -278,7 +277,14 @@ describe('LlamaIndexRagService', () => {
     it('truncates chunks when exceeding token budget', async () => {
       const service = createService()
       const chunks: RetrievedChunk[] = [
-        { id: 'a', documentId: 'd1', kbId: 'k1', content: 'x'.repeat(4000), chunkIndex: 0, score: 0.9 },
+        {
+          id: 'a',
+          documentId: 'd1',
+          kbId: 'k1',
+          content: 'x'.repeat(4000),
+          chunkIndex: 0,
+          score: 0.9,
+        },
       ]
       const result = await service.buildContext(chunks, 50)
       expect(result.endsWith('...')).toBe(true)
@@ -378,7 +384,9 @@ describe('LlamaIndexRagService', () => {
       const prisma = { knowledgeBase: { count: vi.fn().mockResolvedValue(0) } }
       const service = createService({ prisma })
       await expect(
-        service.indexDocument('doc-1', 'kb-1', 'hello', undefined, undefined, undefined, { userId: 'user-2' }),
+        service.indexDocument('doc-1', 'kb-1', 'hello', undefined, undefined, undefined, {
+          userId: 'user-2',
+        }),
       ).rejects.toThrow()
     })
 
@@ -393,7 +401,15 @@ describe('LlamaIndexRagService', () => {
       }
       const service = createService({ prisma, es, embeddings })
       await expect(
-        service.indexDocument('doc-1', 'kb-1', 'hello world content for test', undefined, undefined, undefined, { userId: 'user-1' }),
+        service.indexDocument(
+          'doc-1',
+          'kb-1',
+          'hello world content for test',
+          undefined,
+          undefined,
+          undefined,
+          { userId: 'user-1' },
+        ),
       ).resolves.not.toThrow()
     })
   })
@@ -401,13 +417,21 @@ describe('LlamaIndexRagService', () => {
   describe('splitIntoChunks', () => {
     it('returns empty array for empty string', () => {
       const service = createService()
-      const split = (service as any).splitIntoChunks as (t: string, c: number, o: number) => string[]
+      const split = (service as any).splitIntoChunks as (
+        t: string,
+        c: number,
+        o: number,
+      ) => string[]
       expect(split('', 100, 10)).toEqual([])
     })
 
     it('splits by paragraph boundaries', () => {
       const service = createService()
-      const split = (service as any).splitIntoChunks as (t: string, c: number, o: number) => string[]
+      const split = (service as any).splitIntoChunks as (
+        t: string,
+        c: number,
+        o: number,
+      ) => string[]
       const text = 'aaa\nbbb\n\nccc\nddd\n\nEEE'
       const result = split(text, 20, 5)
       expect(result.length).toBeGreaterThan(0)
@@ -416,7 +440,11 @@ describe('LlamaIndexRagService', () => {
 
     it('splits long paragraphs by chunkSize', () => {
       const service = createService()
-      const split = (service as any).splitIntoChunks as (t: string, c: number, o: number) => string[]
+      const split = (service as any).splitIntoChunks as (
+        t: string,
+        c: number,
+        o: number,
+      ) => string[]
       const long = 'x'.repeat(100)
       const result = split(long, 30, 5)
       expect(result.length).toBeGreaterThan(1)
@@ -425,7 +453,11 @@ describe('LlamaIndexRagService', () => {
 
     it('respects chunk size', () => {
       const service = createService()
-      const split = (service as any).splitIntoChunks as (t: string, c: number, o: number) => string[]
+      const split = (service as any).splitIntoChunks as (
+        t: string,
+        c: number,
+        o: number,
+      ) => string[]
       const text = 'short'
       const result = split(text, 100, 10)
       expect(result).toEqual(['short'])
@@ -434,7 +466,10 @@ describe('LlamaIndexRagService', () => {
 
   describe('removeDocument', () => {
     it('calls es.deleteByDocumentId when no userId is supplied (backward compat)', async () => {
-      const es = { deleteByDocumentId: vi.fn().mockResolvedValue(undefined), getKbIdsByDocumentId: vi.fn().mockResolvedValue([]) }
+      const es = {
+        deleteByDocumentId: vi.fn().mockResolvedValue(undefined),
+        getKbIdsByDocumentId: vi.fn().mockResolvedValue([]),
+      }
       const service = createService({ es })
       await service.removeDocument('doc-1')
       expect(es.deleteByDocumentId).toHaveBeenCalledWith('doc-1')

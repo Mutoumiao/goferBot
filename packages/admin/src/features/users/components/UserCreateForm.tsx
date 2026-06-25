@@ -50,11 +50,7 @@ export function createUserModal(): Promise<boolean> {
             <Input.Password placeholder="至少 8 位" />
           </Form.Item>
 
-          <Form.Item
-            name="role"
-            label="角色"
-            rules={[{ required: true, message: '请选择角色' }]}
-          >
+          <Form.Item name="role" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
             <Select
               options={[
                 { value: 'USER', label: '普通用户' },

@@ -8,7 +8,9 @@ import { fetchRagTasks } from '../services'
 
 export function RAGStatusBoard() {
   const [tasks, setTasks] = useState<RagTask[]>([])
-  const [status, setStatus] = useState<'all' | 'pending' | 'running' | 'succeeded' | 'failed'>('all')
+  const [status, setStatus] = useState<'all' | 'pending' | 'running' | 'succeeded' | 'failed'>(
+    'all',
+  )
   const [loading, setLoading] = useState(false)
 
   const load = async () => {
@@ -112,7 +114,13 @@ export function RAGStatusBoard() {
           locale={{ emptyText: <EmptyState description="暂无任务" /> }}
           columns={[
             { title: '任务 ID', dataIndex: 'id', key: 'id', width: 180 },
-            { title: '类型', dataIndex: 'type', key: 'type', width: 120, render: (t: string) => <Tag>{t}</Tag> },
+            {
+              title: '类型',
+              dataIndex: 'type',
+              key: 'type',
+              width: 120,
+              render: (t: string) => <Tag>{t}</Tag>,
+            },
             {
               title: '状态',
               dataIndex: 'status',
@@ -120,7 +128,13 @@ export function RAGStatusBoard() {
               width: 120,
               render: (s: string) => {
                 const color =
-                  s === 'succeeded' ? 'green' : s === 'failed' ? 'red' : s === 'running' ? 'blue' : 'default'
+                  s === 'succeeded'
+                    ? 'green'
+                    : s === 'failed'
+                      ? 'red'
+                      : s === 'running'
+                        ? 'blue'
+                        : 'default'
                 return <Tag color={color}>{s}</Tag>
               },
             },
@@ -131,7 +145,13 @@ export function RAGStatusBoard() {
               width: 160,
               render: (v: number) => <Progress percent={v} size="small" showInfo={false} />,
             },
-            { title: '耗时', dataIndex: 'durationMs', key: 'durationMs', width: 100, render: (v: number) => `${(v / 1000).toFixed(1)}s` },
+            {
+              title: '耗时',
+              dataIndex: 'durationMs',
+              key: 'durationMs',
+              width: 100,
+              render: (v: number) => `${(v / 1000).toFixed(1)}s`,
+            },
             {
               title: '错误',
               dataIndex: 'error',

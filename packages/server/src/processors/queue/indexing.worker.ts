@@ -63,7 +63,9 @@ export class IndexingWorker {
       )
 
       await this.updateStatus(doc.id, 'ready')
-      this.logger.log(`Indexed document ${documentId}: ${result.totalChunks} chunks (source=${mimeType})`)
+      this.logger.log(
+        `Indexed document ${documentId}: ${result.totalChunks} chunks (source=${mimeType})`,
+      )
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       // ponytail: ZodError 单独处理——说明输入或解析结果违反了契约，

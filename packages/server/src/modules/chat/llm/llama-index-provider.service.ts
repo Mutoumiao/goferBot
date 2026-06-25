@@ -37,10 +37,7 @@ export class LlamaIndexProvider implements LlmProvider {
     })
   }
 
-  async *stream(
-    messages: LlmMessage[],
-    options?: LlmStreamOptions,
-  ): AsyncIterable<LlmStreamChunk> {
+  async *stream(messages: LlmMessage[], options?: LlmStreamOptions): AsyncIterable<LlmStreamChunk> {
     const response = await this.client.chat({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       stream: true,
@@ -80,6 +77,8 @@ export class LlamaIndexProvider implements LlmProvider {
   }
 
   private isAsyncIterable(value: unknown): value is AsyncIterable<{ delta: string }> {
-    return typeof (value as { [Symbol.asyncIterator]?: unknown })?.[Symbol.asyncIterator] === 'function'
+    return (
+      typeof (value as { [Symbol.asyncIterator]?: unknown })?.[Symbol.asyncIterator] === 'function'
+    )
   }
 }

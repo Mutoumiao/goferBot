@@ -41,5 +41,4 @@ export interface DashboardData {
   ragStats: RagStats
 }
 
-export const fetchDashboardData = () =>
-  alovaInstance.Get<DashboardData>('/admin/dashboard')
+export const fetchDashboardData = () => alovaInstance.Get<DashboardData>('/admin/dashboard')

@@ -42,8 +42,7 @@ export const listSessions = (query: ListSessionsQuery = {}) =>
     params: query,
   })
 
-export const getSession = (id: string) =>
-  alovaInstance.Get<SessionItem>(`/admin/sessions/${id}`)
+export const getSession = (id: string) => alovaInstance.Get<SessionItem>(`/admin/sessions/${id}`)
 
 export const listSessionMessages = (sessionId: string) =>
   alovaInstance.Get<SessionMessage[]>(`/admin/sessions/${sessionId}/messages`)

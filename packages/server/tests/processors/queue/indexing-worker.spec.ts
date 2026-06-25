@@ -45,7 +45,15 @@ describe('IndexingWorker', () => {
 
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
 
-    expect(mockRagService.indexDocument).toHaveBeenCalledWith('d1', 'kb1', 'test content', undefined, undefined, expect.any(Object), expect.any(Object))
+    expect(mockRagService.indexDocument).toHaveBeenCalledWith(
+      'd1',
+      'kb1',
+      'test content',
+      undefined,
+      undefined,
+      expect.any(Object),
+      expect.any(Object),
+    )
     expect(mockPrisma.document.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'd1' },

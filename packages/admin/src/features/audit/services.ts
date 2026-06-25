@@ -1,11 +1,16 @@
 import { toast } from 'sonner'
-import { fetchAuditLogs as fetchAuditLogsApi, exportAuditLogs as exportAuditLogsApi } from '@/api/audit'
+import {
+  fetchAuditLogs as fetchAuditLogsApi,
+  exportAuditLogs as exportAuditLogsApi,
+} from '@/api/audit'
 import type { AuditLog, AuditQuery } from '@/api/audit'
 import { mapErrorMessage } from '@/utils/error-mapper'
 
 export type { AuditLog, AuditQuery }
 
-export async function fetchAuditLogs(query: AuditQuery = {}): Promise<{ items: AuditLog[]; total: number }> {
+export async function fetchAuditLogs(
+  query: AuditQuery = {},
+): Promise<{ items: AuditLog[]; total: number }> {
   try {
     return await fetchAuditLogsApi(query).send()
   } catch (err) {

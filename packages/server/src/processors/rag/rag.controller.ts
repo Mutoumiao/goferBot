@@ -16,11 +16,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
-import {
-  RagIndexDto,
-  RagQueryDto,
-  RagRetrieveDto,
-} from './dto/rag.dto.js'
+import { RagIndexDto, RagQueryDto, RagRetrieveDto } from './dto/rag.dto.js'
 import { LlamaIndexRagService } from './llamaindex-rag.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
 
@@ -33,7 +29,7 @@ export class RagController {
     private readonly ragService: LlamaIndexRagService,
     private readonly esService: ElasticsearchService,
     private readonly sseHelper: SseResponseHelper,
-  ) { }
+  ) {}
 
   @Post('retrieve')
   @HttpCode(200)
@@ -145,7 +141,6 @@ export class RagController {
     }
   }
 
-  
   @Post('index')
   @HttpCode(200)
   async index(@Body() dto: RagIndexDto, @CurrentUser('id') userId: string) {
@@ -186,7 +181,11 @@ export class RagController {
       const [info, ikPlugin, docsCount] = await Promise.all([
         this.esService.getClient().info(),
         this.esService.checkIkPlugin(),
-        this.esService.getClient().count({ index: this.esService.getIndexName() } as any).then((r: any) => r.count ?? 0).catch(() => 0),
+        this.esService
+          .getClient()
+          .count({ index: this.esService.getIndexName() } as any)
+          .then((r: any) => r.count ?? 0)
+          .catch(() => 0),
       ])
       return {
         status: 'ok',

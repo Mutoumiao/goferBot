@@ -18,7 +18,8 @@ export function SystemHealth({ health }: SystemHealthProps) {
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-slate-600">服务状态</span>
               <span className="flex items-center gap-1 text-emerald-500">
-                <CheckCircle2 size={14} />正常
+                <CheckCircle2 size={14} />
+                正常
               </span>
             </div>
             <div className="flex gap-2">

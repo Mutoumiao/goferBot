@@ -31,7 +31,9 @@ export class KbCleanupService {
     for (const doc of docs) {
       if (doc.storageKey) {
         await this.storage.deleteFile(doc.storageKey).catch((err: unknown) => {
-          this.logger.warn(`Storage delete failed for ${doc.storageKey}: ${err instanceof Error ? err.message : String(err)}`)
+          this.logger.warn(
+            `Storage delete failed for ${doc.storageKey}: ${err instanceof Error ? err.message : String(err)}`,
+          )
         })
       }
     }
@@ -74,16 +76,15 @@ export class KbCleanupService {
     for (const doc of docs) {
       if (doc.storageKey) {
         await this.storage.deleteFile(doc.storageKey).catch((err: unknown) => {
-          this.logger.warn(`Storage delete failed for ${doc.storageKey}: ${err instanceof Error ? err.message : String(err)}`)
+          this.logger.warn(
+            `Storage delete failed for ${doc.storageKey}: ${err instanceof Error ? err.message : String(err)}`,
+          )
         })
       }
     }
   }
 
-  private async cleanupDocumentTx(
-    tx: Prisma.TransactionClient,
-    documentId: string,
-  ): Promise<void> {
+  private async cleanupDocumentTx(tx: Prisma.TransactionClient, documentId: string): Promise<void> {
     const chunks = await tx.chunk.findMany({
       where: { documentId },
       select: { id: true },
@@ -100,7 +101,9 @@ export class KbCleanupService {
     })
     if (storageKey) {
       await this.storage.deleteFile(storageKey).catch((err: unknown) => {
-        this.logger.warn(`Storage delete failed for ${storageKey}: ${err instanceof Error ? err.message : String(err)}`)
+        this.logger.warn(
+          `Storage delete failed for ${storageKey}: ${err instanceof Error ? err.message : String(err)}`,
+        )
       })
     }
   }

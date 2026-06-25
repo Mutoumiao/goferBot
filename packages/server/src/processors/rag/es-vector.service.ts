@@ -33,12 +33,9 @@ export interface VectorOptions {
 export class EsVectorService {
   private readonly logger = new Logger(EsVectorService.name)
 
-  constructor(private readonly es: ElasticsearchService) { }
+  constructor(private readonly es: ElasticsearchService) {}
 
-  async search(
-    queryVector: number[],
-    options: VectorOptions = {},
-  ): Promise<SearchHit[]> {
+  async search(queryVector: number[], options: VectorOptions = {}): Promise<SearchHit[]> {
     if (!queryVector || queryVector.length === 0) return []
 
     const topK = options.topK ?? 20
@@ -105,7 +102,16 @@ export class EsVectorService {
 
     const body = {
       size: topK,
-      _source: ['id', 'document_id', 'kb_id', 'content', 'chunk_index', 'token_count', 'parent_id', 'parent_content'],
+      _source: [
+        'id',
+        'document_id',
+        'kb_id',
+        'content',
+        'chunk_index',
+        'token_count',
+        'parent_id',
+        'parent_content',
+      ],
       query: {
         knn,
       },
@@ -136,9 +142,7 @@ export class EsVectorService {
       const maxScore = hits.reduce((m, h) => Math.max(m, h.score), 0) || 1
       return hits.map((h) => ({ ...h, score: h.score / maxScore }))
     } catch (err) {
-      this.logger.error(
-        `Vector search failed: ${err instanceof Error ? err.message : String(err)}`,
-      )
+      this.logger.error(`Vector search failed: ${err instanceof Error ? err.message : String(err)}`)
       return []
     }
   }

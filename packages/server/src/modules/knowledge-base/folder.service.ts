@@ -407,7 +407,7 @@ export class FolderService {
     folderId: string,
   ): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
     // H3: 使用递归 CTE 替代循环查询，避免 N+1 问题
-    const result = await this.prisma.$queryRaw`
+    const result = (await this.prisma.$queryRaw`
       WITH RECURSIVE ancestors AS (
         SELECT id, name, "parentId"
         FROM "Folder"
@@ -418,13 +418,13 @@ export class FolderService {
         INNER JOIN ancestors a ON f.id = a."parentId"
       )
       SELECT id, name, "parentId" FROM ancestors
-    ` as Array<{ id: string; name: string; parentId: string | null }>
+    `) as Array<{ id: string; name: string; parentId: string | null }>
     return result.reverse()
   }
 
   async isDescendant(ancestorId: string, descendantId: string): Promise<boolean> {
     // H4: 使用递归 CTE 替代循环查询，避免 N+1 问题
-    const result = await this.prisma.$queryRaw`
+    const result = (await this.prisma.$queryRaw`
       WITH RECURSIVE descendants AS (
         SELECT id, "parentId"
         FROM "Folder"
@@ -436,7 +436,7 @@ export class FolderService {
       )
       SELECT 1 as found FROM descendants WHERE id = ${ancestorId} AND id != ${descendantId}
       LIMIT 1
-    ` as Array<{ found: number }>
+    `) as Array<{ found: number }>
     return result.length > 0
   }
 

@@ -141,9 +141,7 @@ export function LoginForm() {
             placeholder="请输入密码（至少 8 位）"
             status={passwordError ? 'error' : undefined}
             size="large"
-            iconRender={(visible) =>
-              visible ? <EyeOff size={16} /> : <Eye size={16} />
-            }
+            iconRender={(visible) => (visible ? <EyeOff size={16} /> : <Eye size={16} />)}
             onFocus={() => setShowPassword(true)}
           />
           {passwordError && <p className="mt-1 text-xs text-red-500">{passwordError}</p>}
@@ -180,14 +178,7 @@ export function LoginForm() {
         </button>
       </div>
 
-      {error && (
-        <Alert
-          type="error"
-          message={error}
-          showIcon
-          className="rounded-lg"
-        />
-      )}
+      {error && <Alert type="error" message={error} showIcon className="rounded-lg" />}
 
       <Button
         type="primary"

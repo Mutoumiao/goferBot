@@ -87,9 +87,7 @@ export function confirmPasswordAction(
             content: (
               <div className="space-y-3">
                 {content ? <div>{content}</div> : null}
-                <div className="text-sm text-destructive">
-                  {msg || '密码校验失败，请重试'}
-                </div>
+                <div className="text-sm text-destructive">{msg || '密码校验失败，请重试'}</div>
                 <PasswordInput
                   onChange={(value, error) => {
                     inputPassword = value
@@ -110,11 +108,7 @@ export function confirmPasswordAction(
   })
 }
 
-function PasswordInput({
-  onChange,
-}: {
-  onChange: (value: string, error?: string) => void
-}) {
+function PasswordInput({ onChange }: { onChange: (value: string, error?: string) => void }) {
   const [value, setValue] = useState('')
   return (
     <input

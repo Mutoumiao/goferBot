@@ -15,12 +15,7 @@ export function RoleFormModal(props: { roleId?: string } = {}): Promise<boolean>
       title: isEdit ? '编辑角色' : '新建角色',
       width: 420,
       content: (
-        <Form
-          form={form}
-          layout="vertical"
-          preserve={false}
-          className="pt-2"
-        >
+        <Form form={form} layout="vertical" preserve={false} className="pt-2">
           <Form.Item
             name="name"
             label="角色名称"

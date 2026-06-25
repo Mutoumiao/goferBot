@@ -42,7 +42,9 @@ export class KeywordService implements IKeywordStore {
     // C7: 限制查询长度，防止超长输入导致性能问题或潜在注入
     const MAX_QUERY_LENGTH = 2000
     if (trimmedQuery.length > MAX_QUERY_LENGTH) {
-      this.logger.warn(`Query length ${trimmedQuery.length} exceeds limit ${MAX_QUERY_LENGTH}, truncating`)
+      this.logger.warn(
+        `Query length ${trimmedQuery.length} exceeds limit ${MAX_QUERY_LENGTH}, truncating`,
+      )
     }
     const safeQuery = trimmedQuery.slice(0, MAX_QUERY_LENGTH)
 

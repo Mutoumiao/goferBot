@@ -33,10 +33,10 @@ export const parserInputSchema = z
     buffer: z.instanceof(Buffer).optional(),
     filePath: z.string().min(1).max(1024).optional(),
   })
-  .refine(
-    ({ buffer, filePath }) => buffer !== undefined || filePath !== undefined,
-    { message: 'buffer 与 filePath 至少提供一个', path: ['buffer'] },
-  )
+  .refine(({ buffer, filePath }) => buffer !== undefined || filePath !== undefined, {
+    message: 'buffer 与 filePath 至少提供一个',
+    path: ['buffer'],
+  })
 
 /** 解析结果 */
 export const parseResultSchema = z.object({

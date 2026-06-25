@@ -19,7 +19,10 @@ const METADATA_BLOCKED_PREFIXES = ['__', '$', '.']
 function getMetadataAllowedKeys(): string[] {
   const envKeys = process.env.METADATA_ALLOWED_KEYS
   if (envKeys) {
-    return envKeys.split(',').map((k) => k.trim()).filter(Boolean)
+    return envKeys
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean)
   }
   return [
     'year',
@@ -63,16 +66,9 @@ const metadataKeySchema = z.string().superRefine((key, ctx) => {
   }
 })
 
-const metadataScalarSchema = z.union([
-  z.string().max(500),
-  z.number().finite(),
-  z.boolean(),
-])
+const metadataScalarSchema = z.union([z.string().max(500), z.number().finite(), z.boolean()])
 
-const metadataValueSchema = z.union([
-  metadataScalarSchema,
-  z.array(metadataScalarSchema).max(20),
-])
+const metadataValueSchema = z.union([metadataScalarSchema, z.array(metadataScalarSchema).max(20)])
 
 export const metadataFilterSchema = z.record(metadataKeySchema, metadataValueSchema)
 

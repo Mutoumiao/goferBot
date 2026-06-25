@@ -35,5 +35,4 @@ export const resetPassword = (id: string, data: ResetPasswordRequest) =>
 export const assignRole = (id: string, data: AssignRoleRequest) =>
   alovaInstance.Post<{ success: boolean }>(`/admin/users/${id}/role`, data)
 
-export const getUser = (id: string) =>
-  alovaInstance.Get<AdminUserResponse>(`/admin/users/${id}`)
+export const getUser = (id: string) => alovaInstance.Get<AdminUserResponse>(`/admin/users/${id}`)

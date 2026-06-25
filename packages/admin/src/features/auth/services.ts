@@ -10,10 +10,7 @@ export interface LoginResult {
   error?: string
 }
 
-export async function loginService(
-  email: string,
-  password: string,
-): Promise<LoginResult> {
+export async function loginService(email: string, password: string): Promise<LoginResult> {
   if (!email.trim() || !password) {
     return { success: false, error: '请输入邮箱和密码' }
   }

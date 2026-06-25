@@ -36,7 +36,7 @@ export interface Bm25Options {
 export class EsKeywordService {
   private readonly logger = new Logger(EsKeywordService.name)
 
-  constructor(@Inject(ElasticsearchService) private readonly es: ElasticsearchService) { }
+  constructor(@Inject(ElasticsearchService) private readonly es: ElasticsearchService) {}
 
   async search(query: string, options: Bm25Options = {}): Promise<SearchHit[]> {
     if (!query || query.trim() === '') return []
@@ -110,7 +110,16 @@ export class EsKeywordService {
 
     const body = {
       size: topK,
-      _source: ['id', 'document_id', 'kb_id', 'content', 'chunk_index', 'token_count', 'parent_id', 'parent_content'],
+      _source: [
+        'id',
+        'document_id',
+        'kb_id',
+        'content',
+        'chunk_index',
+        'token_count',
+        'parent_id',
+        'parent_content',
+      ],
       query: {
         bool: { must } as { must: unknown[] },
       },
@@ -145,9 +154,7 @@ export class EsKeywordService {
         .map((h) => ({ ...h, score: h.score / maxScore }))
         .filter((h) => h.score >= minScore)
     } catch (err) {
-      this.logger.error(
-        `BM25 search failed: ${err instanceof Error ? err.message : String(err)}`,
-      )
+      this.logger.error(`BM25 search failed: ${err instanceof Error ? err.message : String(err)}`)
       return []
     }
   }

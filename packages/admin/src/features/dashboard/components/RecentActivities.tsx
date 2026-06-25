@@ -26,9 +26,7 @@ export function RecentActivities({ activities }: RecentActivitiesProps) {
               title={
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-700">{item.title}</span>
-                  <span className="text-xs text-slate-400">
-                    {formatRelative(item.time)}
-                  </span>
+                  <span className="text-xs text-slate-400">{formatRelative(item.time)}</span>
                 </div>
               }
               description={item.description}

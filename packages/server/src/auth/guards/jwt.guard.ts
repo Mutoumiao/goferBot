@@ -6,9 +6,7 @@ import { AuthRedisService } from '../auth-redis.service.js'
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(
-    @Inject(AuthRedisService) private readonly authRedis: AuthRedisService,
-  ) {
+  constructor(@Inject(AuthRedisService) private readonly authRedis: AuthRedisService) {
     super()
   }
 

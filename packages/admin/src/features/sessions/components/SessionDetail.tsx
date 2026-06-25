@@ -15,18 +15,21 @@ export function SessionDetail() {
   const [loading, setLoading] = useState(false)
   const [masked, setMasked] = useState(true)
 
-  const load = useCallback(async (id: string) => {
-    setLoading(true)
-    try {
-      const [s, m] = await Promise.all([fetchSession(id), fetchSessionMessages(id)])
-      setSession(s)
-      setMessages(m)
-    } catch {
-      message.error('加载会话详情失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [message])
+  const load = useCallback(
+    async (id: string) => {
+      setLoading(true)
+      try {
+        const [s, m] = await Promise.all([fetchSession(id), fetchSessionMessages(id)])
+        setSession(s)
+        setMessages(m)
+      } catch {
+        message.error('加载会话详情失败')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [message],
+  )
 
   useEffect(() => {
     if (params.id) {
@@ -37,10 +40,7 @@ export function SessionDetail() {
   if (!session) {
     return (
       <div className="space-y-4">
-        <PageHeader
-          title="会话详情"
-          onBack={() => navigate({ to: '/sessions' })}
-        />
+        <PageHeader title="会话详情" onBack={() => navigate({ to: '/sessions' })} />
         <Card loading={loading}>
           <Empty description="会话不存在" />
         </Card>
@@ -64,7 +64,10 @@ export function SessionDetail() {
                 {masked ? '显示明文' : '隐藏敏感信息'}
               </Button>
             </Tooltip>
-            <Button icon={<RefreshCw size={14} />} onClick={() => params.id && void load(params.id)}>
+            <Button
+              icon={<RefreshCw size={14} />}
+              onClick={() => params.id && void load(params.id)}
+            >
               刷新
             </Button>
           </div>
@@ -79,8 +82,20 @@ export function SessionDetail() {
             <Tag>{session.model}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="状态">
-            <Tag color={session.status === 'active' ? 'green' : session.status === 'archived' ? 'default' : 'red'}>
-              {session.status === 'active' ? '进行中' : session.status === 'archived' ? '已归档' : '已停止'}
+            <Tag
+              color={
+                session.status === 'active'
+                  ? 'green'
+                  : session.status === 'archived'
+                    ? 'default'
+                    : 'red'
+              }
+            >
+              {session.status === 'active'
+                ? '进行中'
+                : session.status === 'archived'
+                  ? '已归档'
+                  : '已停止'}
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="创建时间" span={2}>

@@ -127,9 +127,11 @@ export class LlamaIndexRagService {
     config: ConfigService,
   ) {
     const apiKey = config.get<string>('RAG_LLM_API_KEY') ?? config.get<string>('LLM_API_KEY')
-    const model = config.get<string>('RAG_LLM_MODEL') ?? config.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
+    const model =
+      config.get<string>('RAG_LLM_MODEL') ?? config.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
     const baseURL = config.get<string>('RAG_LLM_BASE_URL') ?? config.get<string>('LLM_BASE_URL')
-    const timeout = config.get<number>('RAG_LLM_TIMEOUT_MS') ?? config.get<number>('LLM_TIMEOUT_MS') ?? 60_000
+    const timeout =
+      config.get<number>('RAG_LLM_TIMEOUT_MS') ?? config.get<number>('LLM_TIMEOUT_MS') ?? 60_000
 
     if (!apiKey) {
       throw new Error('RAG LLM 未配置：请设置 RAG_LLM_API_KEY 或 LLM_API_KEY 环境变量')
@@ -159,9 +161,7 @@ export class LlamaIndexRagService {
     )
 
     if (this.enableContextualEmbedding) {
-      this.logger.log(
-        `Contextual embedding enabled (window=${this.contextualWindow})`,
-      )
+      this.logger.log(`Contextual embedding enabled (window=${this.contextualWindow})`)
     }
   }
 
@@ -205,9 +205,7 @@ export class LlamaIndexRagService {
     if (options.userId) {
       const ownershipOk = await this.verifyKbOwnership(options.userId, options.kbIds)
       if (!ownershipOk) {
-        this.logger.warn(
-          `Permission denied: user ${options.userId} does not own requested kbIds`,
-        )
+        this.logger.warn(`Permission denied: user ${options.userId} does not own requested kbIds`)
         throw new ForbiddenException('无权访问指定的知识库')
       }
     }
@@ -233,9 +231,12 @@ export class LlamaIndexRagService {
     const effectiveTopK = options.topK ?? routerDecision?.pipeline.topK ?? 5
     const effectiveCandidateK =
       options.candidateK ?? routerDecision?.pipeline.candidateK ?? Math.max(30, effectiveTopK * 6)
-    const effectiveVectorWeight = options.vectorWeight ?? routerDecision?.pipeline.vectorWeight ?? DEFAULT_VECTOR_WEIGHT
-    const effectiveBm25Weight = options.bm25Weight ?? routerDecision?.pipeline.bm25Weight ?? DEFAULT_BM25_WEIGHT
-    const effectiveResolveParents = options.resolveParents ?? routerDecision?.pipeline.needFullContext ?? true
+    const effectiveVectorWeight =
+      options.vectorWeight ?? routerDecision?.pipeline.vectorWeight ?? DEFAULT_VECTOR_WEIGHT
+    const effectiveBm25Weight =
+      options.bm25Weight ?? routerDecision?.pipeline.bm25Weight ?? DEFAULT_BM25_WEIGHT
+    const effectiveResolveParents =
+      options.resolveParents ?? routerDecision?.pipeline.needFullContext ?? true
 
     if (routerDecision) {
       this.logger.log(
@@ -372,10 +373,7 @@ export class LlamaIndexRagService {
    * ⚠️ 注意：这只是"应用层校验"，真正的防线是 ES 索引层的 knn.filter，
    *   后者会在向量检索之前就把未授权文档过滤掉。
    */
-  private async verifyKbOwnership(
-    userId: string,
-    kbIds?: string[],
-  ): Promise<boolean> {
+  private async verifyKbOwnership(userId: string, kbIds?: string[]): Promise<boolean> {
     if (!kbIds || kbIds.length === 0) return true
     try {
       const ownedCount = await this.prisma.knowledgeBase.count({
@@ -393,17 +391,11 @@ export class LlamaIndexRagService {
   private async resolveParentsFromHits(hits: SearchHit[]): Promise<SearchHit[]> {
     if (hits.length === 0) return hits
 
-    const hasParents = hits.some(
-      (h) => h.source.parent_id && h.source.parent_content,
-    )
+    const hasParents = hits.some((h) => h.source.parent_id && h.source.parent_content)
     if (!hasParents) return hits
 
     const parentIds = Array.from(
-      new Set(
-        hits
-          .filter((h) => h.source.parent_id)
-          .map((h) => h.source.parent_id as string),
-      ),
+      new Set(hits.filter((h) => h.source.parent_id).map((h) => h.source.parent_id as string)),
     )
 
     const parentMap = await this.es.getParentsByIds(parentIds)
@@ -438,7 +430,12 @@ export class LlamaIndexRagService {
   private async retrieveHybrid(
     query: string,
     candidateK: number,
-    filters: { kbIds?: string[]; documentIds?: string[]; metadata?: Record<string, unknown>; language?: string },
+    filters: {
+      kbIds?: string[]
+      documentIds?: string[]
+      metadata?: Record<string, unknown>
+      language?: string
+    },
     options: RagRetrieveOptions = {},
   ): Promise<SearchHit[]> {
     const queryVector = await this.embeddings.embed(query)
@@ -513,7 +510,10 @@ export class LlamaIndexRagService {
    *   LLM 有上下文窗口限制，不能把所有检索结果塞进去。本方法用
    *   「贪心 + 按文档去重 + 比例截断」保证有限 token 里装最多样的信息。
    */
-  async buildContext(chunks: RetrievedChunk[], tokenBudget: number = DEFAULT_CONTEXT_TOKEN_BUDGET): Promise<string> {
+  async buildContext(
+    chunks: RetrievedChunk[],
+    tokenBudget: number = DEFAULT_CONTEXT_TOKEN_BUDGET,
+  ): Promise<string> {
     if (chunks.length === 0) return ''
 
     const deduped = this.deduplicateByDocument(chunks)
@@ -575,9 +575,7 @@ export class LlamaIndexRagService {
     const answer = guardrailOutcome.filteredText
 
     if (guardrailOutcome.warnings.length > 0) {
-      this.logger.warn(
-        `[Guardrail] warnings during query: ${guardrailOutcome.warnings.join('; ')}`,
-      )
+      this.logger.warn(`[Guardrail] warnings during query: ${guardrailOutcome.warnings.join('; ')}`)
     }
 
     const grounding = await this.groundingService.checkGrounding(
@@ -590,13 +588,18 @@ export class LlamaIndexRagService {
   async *streamQuery(
     question: string,
     options: RagQueryOptions = {},
-  ): AsyncIterable<{ text: string; sourceChunks?: RetrievedChunk[]; grounding?: GroundingResult[] }> {
+  ): AsyncIterable<{
+    text: string
+    sourceChunks?: RetrievedChunk[]
+    grounding?: GroundingResult[]
+  }> {
     const chunks = await this.retrieve(question, options)
 
     yield { text: '', sourceChunks: chunks }
 
     const context = await this.buildContext(chunks)
-    const system = options.systemPrompt ?? '你是一个基于知识库的问答助手。请根据给定的上下文回答问题。'
+    const system =
+      options.systemPrompt ?? '你是一个基于知识库的问答助手。请根据给定的上下文回答问题。'
     const userPrompt = context
       ? `上下文：\n\n${context}\n\n问题：${question}\n\n请仅根据上下文内容回答。如果上下文没有相关信息，请直接说"没有相关信息"。`
       : `问题：${question}\n\n知识库中没有检索到相关内容，请直接说"没有相关信息"。`
@@ -628,7 +631,10 @@ export class LlamaIndexRagService {
 
         if (outcome.type === 'heartbeat') {
           // ponytail: 双时间戳判定，防止连续心跳
-          if (Date.now() - lastDataTs >= SSE_HEARTBEAT_MS && Date.now() - lastHeartbeatTs >= SSE_HEARTBEAT_MS) {
+          if (
+            Date.now() - lastDataTs >= SSE_HEARTBEAT_MS &&
+            Date.now() - lastHeartbeatTs >= SSE_HEARTBEAT_MS
+          ) {
             lastHeartbeatTs = Date.now()
             yield { text: '', heartbeat: true }
           }
@@ -736,9 +742,7 @@ export class LlamaIndexRagService {
         where: { id: kbId, userId },
       })
       if (ownedCount === 0) {
-        this.logger.warn(
-          `Permission denied: user ${userId} cannot index into kbId=${kbId}`,
-        )
+        this.logger.warn(`Permission denied: user ${userId} cannot index into kbId=${kbId}`)
         throw new ForbiddenException('无权向该知识库写入内容')
       }
     }

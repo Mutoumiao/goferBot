@@ -12,7 +12,12 @@ export async function bootstrap(app: NestFastifyApplication) {
   // 注入 SSRF 白名单（支持通过环境变量扩展 LLM Provider）
   const ssrfAllowedHosts = configService.get<string>('SSRF_ALLOWED_HOSTNAMES')
   if (ssrfAllowedHosts) {
-    setAllowedHostnames(ssrfAllowedHosts.split(',').map((h) => h.trim()).filter(Boolean))
+    setAllowedHostnames(
+      ssrfAllowedHosts
+        .split(',')
+        .map((h) => h.trim())
+        .filter(Boolean),
+    )
   }
 
   // 1. Helmet 安全头
@@ -38,13 +43,13 @@ export async function bootstrap(app: NestFastifyApplication) {
       ? [envOrigin]
       : []
     : [
-      'http://localhost:1420',
-      'http://localhost:1421',
-      'tauri://localhost',
-      'http://localhost:3000',
-      'http://localhost:5173',
-      ...(envOrigin ? [envOrigin] : []),
-    ]
+        'http://localhost:1420',
+        'http://localhost:1421',
+        'tauri://localhost',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        ...(envOrigin ? [envOrigin] : []),
+      ]
 
   await app.register(cors, {
     origin: (origin, callback) => {

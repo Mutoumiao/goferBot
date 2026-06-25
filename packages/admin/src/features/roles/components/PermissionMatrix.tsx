@@ -63,10 +63,7 @@ export function PermissionMatrix({ roleId, onBack }: { roleId: string; onBack: (
         title={role ? `编辑角色：${role.name}` : '编辑角色'}
         onBack={onBack}
         extra={
-          <button
-            disabled={saving || !isDirty}
-            onClick={() => void handleSave()}
-          >
+          <button disabled={saving || !isDirty} onClick={() => void handleSave()}>
             {saving ? '保存中...' : isDirty ? '保存修改' : '已保存'}
           </button>
         }
@@ -83,10 +80,7 @@ export function PermissionMatrix({ roleId, onBack }: { roleId: string; onBack: (
         </Form>
       </Card>
 
-      <Card
-        title="权限点配置"
-        extra={<Tag color="blue">已选择 {selected.length} 项</Tag>}
-      >
+      <Card title="权限点配置" extra={<Tag color="blue">已选择 {selected.length} 项</Tag>}>
         <Collapse
           items={grouped.map(([group, list]) => ({
             key: group,
@@ -106,9 +100,7 @@ export function PermissionMatrix({ roleId, onBack }: { roleId: string; onBack: (
                   >
                     <span className="text-sm text-slate-700">{p.name}</span>
                     {p.description && (
-                      <span className="ml-2 text-xs text-slate-400">
-                        — {p.description}
-                      </span>
+                      <span className="ml-2 text-xs text-slate-400">— {p.description}</span>
                     )}
                   </Checkbox>
                 ))}

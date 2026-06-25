@@ -4,12 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import type { ModelConfig } from '../services'
-import {
-  deleteModelService,
-  getModels,
-  testModelConnection,
-  updateModelService,
-} from '../services'
+import { deleteModelService, getModels, testModelConnection, updateModelService } from '../services'
 import { confirmPasswordAction } from '@/utils/confirm-action'
 import { ModelConfigForm } from './ModelConfigForm'
 
@@ -50,7 +45,9 @@ export function ModelList() {
     }
     const result = await confirmPasswordAction(
       '删除模型',
-      <>确定要删除模型 <b>{model.model}</b> 吗？</>,
+      <>
+        确定要删除模型 <b>{model.model}</b> 吗？
+      </>,
     )
     if (!result.confirmed) return
     const deleteResult = await deleteModelService(model.id)
@@ -107,7 +104,13 @@ export function ModelList() {
           dataSource={data}
           pagination={false}
           locale={{
-            emptyText: <EmptyState description="暂无模型" actionText="新建第一个模型" onAction={handleCreate} />,
+            emptyText: (
+              <EmptyState
+                description="暂无模型"
+                actionText="新建第一个模型"
+                onAction={handleCreate}
+              />
+            ),
           }}
           columns={[
             {
@@ -123,7 +126,12 @@ export function ModelList() {
               ),
             },
             { title: 'Model', dataIndex: 'model', key: 'model', width: 160 },
-            { title: 'Endpoint', dataIndex: 'endpoint', key: 'endpoint', render: (v: string) => <span className="font-mono text-xs">{v}</span> },
+            {
+              title: 'Endpoint',
+              dataIndex: 'endpoint',
+              key: 'endpoint',
+              render: (v: string) => <span className="font-mono text-xs">{v}</span>,
+            },
             {
               title: 'API Key',
               dataIndex: 'apiKeyMasked',
@@ -132,7 +140,12 @@ export function ModelList() {
               render: (v: string, r) => (
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-slate-500">{v}</span>
-                  <Button type="link" size="small" icon={<Key size={12} />} onClick={() => void handleRevealKey(r)}>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<Key size={12} />}
+                    onClick={() => void handleRevealKey(r)}
+                  >
                     查看
                   </Button>
                 </div>
@@ -169,7 +182,14 @@ export function ModelList() {
                   >
                     {r.isActive ? '禁用' : '启用'}
                   </Button>
-                  <Button type="text" size="small" danger icon={<Trash2 size={14} />} disabled={r.isBuiltIn} onClick={() => void handleDelete(r)}>
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<Trash2 size={14} />}
+                    disabled={r.isBuiltIn}
+                    onClick={() => void handleDelete(r)}
+                  >
                     删除
                   </Button>
                 </Space>

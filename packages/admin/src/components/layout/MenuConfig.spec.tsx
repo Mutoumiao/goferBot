@@ -12,8 +12,11 @@ vi.mock('@/stores/auth', () => ({
 import { useMenuConfig } from '@/components/layout/MenuConfig'
 
 function selectUser(role: 'ADMIN' | 'USER' | null) {
-  return (selector: (s: { user: { role: string; id: string; email: string; isActive: boolean } | null }) => unknown) =>
-    selector({ user: role ? { role, id: '1', email: 'a@b.com', isActive: true } : null })
+  return (
+    selector: (s: {
+      user: { role: string; id: string; email: string; isActive: boolean } | null
+    }) => unknown,
+  ) => selector({ user: role ? { role, id: '1', email: 'a@b.com', isActive: true } : null })
 }
 
 describe('MenuConfig', () => {

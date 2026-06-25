@@ -51,7 +51,9 @@ export async function updateModelService(
   }
 }
 
-export async function deleteModelService(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteModelService(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteModelApi(id).send()
     toast.success('模型已删除')

@@ -3,9 +3,7 @@ import { useState } from 'react'
 import type { AdminUserResponse } from '../services'
 import { confirmPasswordAction } from '@/utils/confirm-action'
 
-export function assignRoleModal(
-  user: AdminUserResponse,
-): Promise<'ADMIN' | 'USER' | null> {
+export function assignRoleModal(user: AdminUserResponse): Promise<'ADMIN' | 'USER' | null> {
   return new Promise((resolve) => {
     const [role, setRole] = useState<'ADMIN' | 'USER'>(user.role)
     const [error, setError] = useState<string | null>(null)

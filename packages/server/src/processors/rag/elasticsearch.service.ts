@@ -49,12 +49,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
     this.indexName = config.get<string>('ELASTICSEARCH_INDEX', DEFAULT_INDEX)
     this.embeddingDimensions = config.get<number>('EMBEDDING_DIMENSIONS', 1536)
 
-    const auth =
-      apiKey
-        ? { apiKey }
-        : username && password
-          ? { username, password }
-          : undefined
+    const auth = apiKey ? { apiKey } : username && password ? { username, password } : undefined
 
     this.client = new Client({ node, auth }) as ElasticClient
   }
@@ -221,9 +216,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
       } as any)
       return response.count ?? 0
     } catch (err) {
-      this.logger.error(
-        `countByKbId failed: ${err instanceof Error ? err.message : String(err)}`,
-      )
+      this.logger.error(`countByKbId failed: ${err instanceof Error ? err.message : String(err)}`)
       return 0
     }
   }
@@ -288,10 +281,7 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
           _source: ['parent_id', 'parent_content'],
           query: {
             bool: {
-              must: [
-                { terms: { parent_id: parentIds } },
-                { exists: { field: 'parent_content' } },
-              ],
+              must: [{ terms: { parent_id: parentIds } }, { exists: { field: 'parent_content' } }],
             },
           },
           collapse: { field: 'parent_id' },

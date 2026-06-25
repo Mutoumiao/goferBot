@@ -53,7 +53,8 @@ const createTestStore = () =>
             return { config: { ...s.config, providers: newProviders } }
           }),
         setAppearance: (value) => set((s) => ({ config: { ...s.config, appearance: value } })),
-        setFontSizeLevel: (value) => set((s) => ({ config: { ...s.config, fontSizeLevel: value } })),
+        setFontSizeLevel: (value) =>
+          set((s) => ({ config: { ...s.config, fontSizeLevel: value } })),
         setDefaultChatProvider: (value) =>
           set((s) => ({ config: { ...s.config, defaultChatProvider: value } })),
         loadConfig: () => {},

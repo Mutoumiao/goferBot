@@ -82,7 +82,9 @@ export function RoleList() {
       title: '更新时间',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
-      render: (v: string) => <span className="text-slate-500">{new Date(v).toLocaleString('zh-CN')}</span>,
+      render: (v: string) => (
+        <span className="text-slate-500">{new Date(v).toLocaleString('zh-CN')}</span>
+      ),
     },
     {
       title: '操作',
@@ -144,7 +146,15 @@ export function RoleList() {
           dataSource={data}
           columns={columns}
           pagination={false}
-          locale={{ emptyText: <EmptyState description="暂无角色" actionText="新建第一个角色" onAction={handleCreate} /> }}
+          locale={{
+            emptyText: (
+              <EmptyState
+                description="暂无角色"
+                actionText="新建第一个角色"
+                onAction={handleCreate}
+              />
+            ),
+          }}
         />
       </Card>
     </div>

@@ -32,17 +32,11 @@ export function EmptyState({
         />
         <Space>
           {onRetry && (
-            <Button
-              type="primary"
-              icon={<RefreshCw size={14} />}
-              onClick={onRetry}
-            >
+            <Button type="primary" icon={<RefreshCw size={14} />} onClick={onRetry}>
               {retryText}
             </Button>
           )}
-          {actionText && onAction && (
-            <Button onClick={onAction}>{actionText}</Button>
-          )}
+          {actionText && onAction && <Button onClick={onAction}>{actionText}</Button>}
         </Space>
       </div>
     )

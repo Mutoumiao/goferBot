@@ -39,7 +39,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly storageService: StorageService,
     private readonly authRedis: AuthRedisService,
-  ) { }
+  ) {}
 
   async register(email: string, password: string, name?: string) {
     const user = await this.userService.create(email, password, name)
@@ -204,7 +204,9 @@ export class AuthService {
         }
       } catch (err) {
         // 旧头像删除失败不影响新头像更新结果，但记录日志以便排查
-        this.logger.warn(`旧头像删除失败: ${currentUser.avatar} — ${err instanceof Error ? err.message : String(err)}`)
+        this.logger.warn(
+          `旧头像删除失败: ${currentUser.avatar} — ${err instanceof Error ? err.message : String(err)}`,
+        )
       }
     }
 

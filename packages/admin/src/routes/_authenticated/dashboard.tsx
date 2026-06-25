@@ -12,11 +12,7 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 })
 
 function DashboardPage() {
-  const { data, loading, error, run } = useQueryWithRetry<DashboardData>(
-    getDashboardData,
-    [],
-    true,
-  )
+  const { data, loading, error, run } = useQueryWithRetry<DashboardData>(getDashboardData, [], true)
 
   const handleRefresh = useCallback(() => {
     void run()

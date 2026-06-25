@@ -12,8 +12,7 @@ export interface ModelConfig {
   updatedAt: string
 }
 
-export const fetchModels = () =>
-  alovaInstance.Get<ModelConfig[]>('/admin/models')
+export const fetchModels = () => alovaInstance.Get<ModelConfig[]>('/admin/models')
 
 export const createModel = (data: {
   provider: string

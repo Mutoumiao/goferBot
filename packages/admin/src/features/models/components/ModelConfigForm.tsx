@@ -22,10 +22,18 @@ export function ModelConfigForm(): Promise<boolean> {
           className="pt-2"
           initialValues={{ provider: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1' }}
         >
-          <Form.Item name="provider" label="Provider" rules={[{ required: true, message: '请输入 Provider' }]}>
+          <Form.Item
+            name="provider"
+            label="Provider"
+            rules={[{ required: true, message: '请输入 Provider' }]}
+          >
             <Input placeholder="例如：DeepSeek" />
           </Form.Item>
-          <Form.Item name="model" label="Model" rules={[{ required: true, message: '请输入 Model' }]}>
+          <Form.Item
+            name="model"
+            label="Model"
+            rules={[{ required: true, message: '请输入 Model' }]}
+          >
             <Input placeholder="例如：deepseek-chat" />
           </Form.Item>
           <Form.Item
@@ -43,7 +51,11 @@ export function ModelConfigForm(): Promise<boolean> {
           >
             <Input placeholder="https://api.example.com/v1" />
           </Form.Item>
-          <Form.Item name="apiKey" label="API Key" rules={[{ required: true, message: '请输入 API Key' }]}>
+          <Form.Item
+            name="apiKey"
+            label="API Key"
+            rules={[{ required: true, message: '请输入 API Key' }]}
+          >
             <Input.Password placeholder="sk-..." />
           </Form.Item>
         </Form>

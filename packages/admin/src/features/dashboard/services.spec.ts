@@ -16,7 +16,16 @@ describe('dashboard services', () => {
 
   it('returns real data when api succeeds', async () => {
     const fake = {
-      stats: { userCount: 1, sessionCount: 0, documentCount: 0, ragTaskCount: 0, userGrowth: 0, sessionGrowth: 0, documentGrowth: 0, ragTaskGrowth: 0 },
+      stats: {
+        userCount: 1,
+        sessionCount: 0,
+        documentCount: 0,
+        ragTaskCount: 0,
+        userGrowth: 0,
+        sessionGrowth: 0,
+        documentGrowth: 0,
+        ragTaskGrowth: 0,
+      },
       activities: [],
       health: { cpu: 0, memory: 0, disk: 0, queueStatus: 'idle' as const },
       ragStats: { total: 0, running: 0, succeeded: 0, failed: 0, pending: 0 },
@@ -39,7 +48,16 @@ describe('dashboard services', () => {
     mockFetch.mockRejectedValueOnce(new Error('network down'))
     const data = await getDashboardData()
     expect(Object.keys(data.stats).sort()).toEqual(
-      ['documentCount', 'documentGrowth', 'ragTaskCount', 'ragTaskGrowth', 'sessionCount', 'sessionGrowth', 'userCount', 'userGrowth'].sort(),
+      [
+        'documentCount',
+        'documentGrowth',
+        'ragTaskCount',
+        'ragTaskGrowth',
+        'sessionCount',
+        'sessionGrowth',
+        'userCount',
+        'userGrowth',
+      ].sort(),
     )
     expect(Object.keys(data.health).sort()).toEqual(['cpu', 'disk', 'memory', 'queueStatus'].sort())
     for (const a of data.activities) {

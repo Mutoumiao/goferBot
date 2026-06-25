@@ -36,9 +36,11 @@ export class QueryUnderstandingService {
 
   constructor(private readonly config: ConfigService) {
     const apiKey = config.get<string>('RAG_LLM_API_KEY') ?? config.get<string>('LLM_API_KEY')
-    const model = config.get<string>('RAG_LLM_MODEL') ?? config.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
+    const model =
+      config.get<string>('RAG_LLM_MODEL') ?? config.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
     const baseURL = config.get<string>('RAG_LLM_BASE_URL') ?? config.get<string>('LLM_BASE_URL')
-    const timeout = config.get<number>('RAG_LLM_TIMEOUT_MS') ?? config.get<number>('LLM_TIMEOUT_MS') ?? 60_000
+    const timeout =
+      config.get<number>('RAG_LLM_TIMEOUT_MS') ?? config.get<number>('LLM_TIMEOUT_MS') ?? 60_000
 
     if (apiKey) {
       this.llm = new LlamaIndexProvider({ apiKey, model, baseURL, timeout })
@@ -114,7 +116,9 @@ export class QueryUnderstandingService {
   private async rewriteShortQuery(query: string): Promise<string> {
     const estimatedTokens = Math.max(1, Math.ceil(query.length / 4))
     if (estimatedTokens > SHORT_QUERY_TOKEN_THRESHOLD) {
-      this.logger.debug(`查询 token 估算 ${estimatedTokens} > ${SHORT_QUERY_TOKEN_THRESHOLD}，跳过改写`)
+      this.logger.debug(
+        `查询 token 估算 ${estimatedTokens} > ${SHORT_QUERY_TOKEN_THRESHOLD}，跳过改写`,
+      )
       return query
     }
 
@@ -160,7 +164,9 @@ export class QueryUnderstandingService {
     return null
   }
 
-  private normalizeSynonymDict(raw: Record<string, unknown>): Record<Language, Record<string, string[]>> | null {
+  private normalizeSynonymDict(
+    raw: Record<string, unknown>,
+  ): Record<Language, Record<string, string[]>> | null {
     const result: Partial<Record<Language, Record<string, string[]>>> = {}
 
     for (const lang of ['zh', 'en'] as const) {

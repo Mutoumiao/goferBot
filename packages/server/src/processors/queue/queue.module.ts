@@ -1,4 +1,11 @@
-import { type DynamicModule, forwardRef, Global, Module, type Provider, type Type } from '@nestjs/common'
+import {
+  type DynamicModule,
+  forwardRef,
+  Global,
+  Module,
+  type Provider,
+  type Type,
+} from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { Job } from 'bullmq'
 import { type DocumentJobHandler, type EmbeddingJobHandler } from '../../queue/index.js'

@@ -20,11 +20,7 @@
  *   ```
  */
 import { Logger } from '@nestjs/common'
-import type {
-  IDocumentParser,
-  ParseResult,
-  ParserInput,
-} from './parser.types.js'
+import type { IDocumentParser, ParseResult, ParserInput } from './parser.types.js'
 import { StructureExtractor } from './structure-extractor.js'
 
 export class PdfParser implements IDocumentParser {
@@ -32,7 +28,7 @@ export class PdfParser implements IDocumentParser {
   readonly mimeTypes = ['application/pdf']
   private readonly logger = new Logger(PdfParser.name)
 
-  constructor(private readonly extractor: StructureExtractor = new StructureExtractor()) { }
+  constructor(private readonly extractor: StructureExtractor = new StructureExtractor()) {}
 
   async parse(input: ParserInput): Promise<ParseResult> {
     const raw = await this.extractText(input)
@@ -96,7 +92,9 @@ export class PdfParser implements IDocumentParser {
       // ignore
     }
 
-    this.logger.warn('PDF backend degraded to raw-buffer (install @llamaindex/readers or pdf-parse for production)')
+    this.logger.warn(
+      'PDF backend degraded to raw-buffer (install @llamaindex/readers or pdf-parse for production)',
+    )
     return 'fallback'
   }
 
@@ -114,13 +112,19 @@ export class PdfParser implements IDocumentParser {
   private async extractViaLlamaIndex(input: ParserInput): Promise<string> {
     const filePath = input.filePath
     if (!filePath) {
-      this.logger.warn('LlamaIndex PDFReader requires filePath; falling back to buffer raw extraction')
+      this.logger.warn(
+        'LlamaIndex PDFReader requires filePath; falling back to buffer raw extraction',
+      )
       return this.extractViaRawBuffer(input)
     }
     try {
       // 动态 import：运行时加载，不影响冷启动
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('@llamaindex/readers') as { PDFReader?: new () => { loadData: (path: string) => Promise<Array<{ getContent: () => string }>> } }
+      const mod = require('@llamaindex/readers') as {
+        PDFReader?: new () => {
+          loadData: (path: string) => Promise<Array<{ getContent: () => string }>>
+        }
+      }
       const ReaderCtor = mod.PDFReader
       if (!ReaderCtor) {
         throw new Error('PDFReader not found in @llamaindex/readers')

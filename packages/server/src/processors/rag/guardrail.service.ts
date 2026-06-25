@@ -73,7 +73,10 @@ export class GuardrailService {
    *   safe=false 表示发生了脱敏，但答案依然可用；脱敏信息通过 redactions
    *   返回给上层，用于审计日志。
    */
-  apply(text: string, options: { domain?: 'medical' | 'financial' | 'legal' | 'general' } = {}): GuardrailResult {
+  apply(
+    text: string,
+    options: { domain?: 'medical' | 'financial' | 'legal' | 'general' } = {},
+  ): GuardrailResult {
     if (!text) {
       return { safe: true, filteredText: '', redactions: [], warnings: [] }
     }

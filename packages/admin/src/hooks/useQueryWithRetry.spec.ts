@@ -29,10 +29,9 @@ describe('useQueryWithRetry', () => {
 
   it('runs on deps change', async () => {
     const fetcher = vi.fn().mockResolvedValue('v1')
-    const { result, rerender } = renderHook(
-      ({ deps }) => useQueryWithRetry(fetcher, deps, true),
-      { initialProps: { deps: [1] as unknown[] } },
-    )
+    const { result, rerender } = renderHook(({ deps }) => useQueryWithRetry(fetcher, deps, true), {
+      initialProps: { deps: [1] as unknown[] },
+    })
     await waitFor(() => {
       expect(result.current.data).toBe('v1')
     })

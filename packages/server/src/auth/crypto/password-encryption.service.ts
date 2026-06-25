@@ -28,7 +28,7 @@ export class PasswordEncryptionService implements OnModuleInit {
       this.publicKeyPem = publicKey
       this.privateKey = privateKey
       this.logger.warn(
-        'RSA keys generated on-the-fly. Set RSA_PRIVATE_KEY and RSA_PUBLIC_KEY in environment to persist across restarts.'
+        'RSA keys generated on-the-fly. Set RSA_PRIVATE_KEY and RSA_PUBLIC_KEY in environment to persist across restarts.',
       )
     }
   }

@@ -21,11 +21,7 @@ export function DashboardView({ data, loading, error, onRefresh }: DashboardView
         title="控制台"
         description="查看系统整体运行状态与核心指标"
         extra={
-          <Button
-            icon={<RefreshCw size={14} />}
-            onClick={onRefresh}
-            loading={loading}
-          >
+          <Button icon={<RefreshCw size={14} />} onClick={onRefresh} loading={loading}>
             刷新
           </Button>
         }
@@ -44,10 +40,7 @@ export function DashboardView({ data, loading, error, onRefresh }: DashboardView
         />
       )}
 
-      <div
-        aria-busy={loading}
-        style={{ opacity: loading ? 0.6 : 1, transition: 'opacity 200ms' }}
-      >
+      <div aria-busy={loading} style={{ opacity: loading ? 0.6 : 1, transition: 'opacity 200ms' }}>
         <StatCards stats={data?.stats} />
 
         <Row gutter={[16, 16]} className="mt-2">

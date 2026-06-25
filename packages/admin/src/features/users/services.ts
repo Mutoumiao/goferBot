@@ -9,11 +9,7 @@ import {
   updateUserStatus as updateUserStatusApi,
   updateUser as updateUserApi,
 } from '@/api/admin'
-import type {
-  AdminUserResponse,
-  ListUsersQuery,
-  PagedResponse,
-} from '@/api/admin'
+import type { AdminUserResponse, ListUsersQuery, PagedResponse } from '@/api/admin'
 import { isConflict, isForbidden, mapErrorMessage } from '@/utils/error-mapper'
 
 export type { AdminUserResponse, ListUsersQuery, PagedResponse }
@@ -27,7 +23,9 @@ export interface UsersState {
 
 export interface ListUsersOptions extends ListUsersQuery {}
 
-export async function fetchUsers(query: ListUsersOptions): Promise<PagedResponse<AdminUserResponse>> {
+export async function fetchUsers(
+  query: ListUsersOptions,
+): Promise<PagedResponse<AdminUserResponse>> {
   try {
     return await listUsersApi(query).send()
   } catch (err) {

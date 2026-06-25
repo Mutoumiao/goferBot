@@ -119,7 +119,9 @@ export class ChatService {
           fullReply += chunk.text
           // H1: 超限截断，防止 LLM 超长回复导致内存溢出
           if (fullReply.length > MAX_REPLY_LENGTH) {
-            this.logger.warn(`LLM 回复长度超过上限 ${MAX_REPLY_LENGTH}，已截断。sessionId=${sessionId}`)
+            this.logger.warn(
+              `LLM 回复长度超过上限 ${MAX_REPLY_LENGTH}，已截断。sessionId=${sessionId}`,
+            )
             fullReply = fullReply.slice(0, MAX_REPLY_LENGTH)
             break
           }
@@ -144,7 +146,9 @@ export class ChatService {
         }
         return
       }
-      this.logger.error(`LLM 流异常 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`)
+      this.logger.error(
+        `LLM 流异常 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`,
+      )
       yield {
         event: 'error',
         conversation_id: sessionId,
@@ -172,7 +176,9 @@ export class ChatService {
     try {
       await this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply)
     } catch (err: unknown) {
-      this.logger.error(`保存 assistant 消息失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`)
+      this.logger.error(
+        `保存 assistant 消息失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`,
+      )
       yield {
         event: 'error',
         conversation_id: sessionId,
@@ -227,15 +233,9 @@ export class ChatService {
         )
       }
       // 内置模型：使用模型注册中心中的 providerKey 读取环境变量，避免将用户传入的 provider_key 拼入环境变量名
-      const envApiKey = this.configService.get<string>(
-        `${safeProviderKey.toUpperCase()}_API_KEY`,
-      )
-      const envBaseUrl = this.configService.get<string>(
-        `${safeProviderKey.toUpperCase()}_BASE_URL`,
-      )
-      const envModel = this.configService.get<string>(
-        `${safeProviderKey.toUpperCase()}_MODEL`,
-      )
+      const envApiKey = this.configService.get<string>(`${safeProviderKey.toUpperCase()}_API_KEY`)
+      const envBaseUrl = this.configService.get<string>(`${safeProviderKey.toUpperCase()}_BASE_URL`)
+      const envModel = this.configService.get<string>(`${safeProviderKey.toUpperCase()}_MODEL`)
       apiKey = envApiKey ?? ''
       baseURL = envBaseUrl ?? modelInfo.baseUrl
       model = dtoModel ?? envModel ?? resolvedKey
@@ -306,7 +306,7 @@ export class ChatService {
     // ponytail: 仅移除明显的 System Prompt 残留行，不过度清洗
     return context
       .split('\n')
-      .filter(line => !/^\s*(system|user|assistant)\s*:/i.test(line))
+      .filter((line) => !/^\s*(system|user|assistant)\s*:/i.test(line))
       .join('\n')
       .trim()
   }

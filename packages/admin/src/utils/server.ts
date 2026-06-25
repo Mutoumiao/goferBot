@@ -2,7 +2,12 @@ import { createAlova } from 'alova'
 import adapterFetch from 'alova/fetch'
 import ReactHook from 'alova/react'
 import { useAuthStore } from '@/stores/auth'
-import { buildAuthHeader, getRefreshToken, setAccessToken, setRefreshToken } from '@/utils/auth-token'
+import {
+  buildAuthHeader,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from '@/utils/auth-token'
 
 let isRefreshing = false
 let refreshSubscribers: Array<(token: string) => void> = []
@@ -42,7 +47,10 @@ function addSubscriber(cb: (token: string) => void) {
   refreshSubscribers.push(cb)
 }
 
-async function doRefreshAndRetry(method: { send: () => unknown; config: { headers: Record<string, string> } }) {
+async function doRefreshAndRetry(method: {
+  send: () => unknown
+  config: { headers: Record<string, string> }
+}) {
   if (!isRefreshing) {
     isRefreshing = true
     try {
@@ -71,7 +79,10 @@ function isUnauthorized(status: number) {
 }
 
 const responded = {
-  onSuccess(response: Response, method: { send: () => unknown; config: { headers: Record<string, string> } }) {
+  onSuccess(
+    response: Response,
+    method: { send: () => unknown; config: { headers: Record<string, string> } },
+  ) {
     if (isUnauthorized(response.status)) {
       return doRefreshAndRetry(method)
     }
@@ -103,7 +114,10 @@ const responded = {
     }
     return response.json().then((json: Record<string, unknown>) => json.data ?? json)
   },
-  onError(error: { status?: number }, method: { send: () => unknown; config: { headers: Record<string, string> } }) {
+  onError(
+    error: { status?: number },
+    method: { send: () => unknown; config: { headers: Record<string, string> } },
+  ) {
     const status = error.status
     if (status && isUnauthorized(status)) {
       return doRefreshAndRetry(method) as Promise<void>

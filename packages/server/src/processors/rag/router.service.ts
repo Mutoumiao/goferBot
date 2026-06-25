@@ -82,7 +82,7 @@ const CHITCHAT_PATTERNS = [
 export class RouterService {
   private readonly logger = new Logger(RouterService.name)
 
-  constructor() { }
+  constructor() {}
 
   /**
    * Rule-based intent router. Zero-cost heuristic that avoids unnecessary

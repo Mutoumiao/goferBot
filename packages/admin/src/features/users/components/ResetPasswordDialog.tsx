@@ -56,10 +56,7 @@ export function resetPasswordModal(user: AdminUserResponse): Promise<boolean> {
           setError('两次密码不一致')
           return Promise.reject(new Error('mismatch'))
         }
-        const result = await confirmPasswordAction(
-          '重置密码',
-          '请输入当前登录密码以确认',
-        )
+        const result = await confirmPasswordAction('重置密码', '请输入当前登录密码以确认')
         if (!result.confirmed) {
           resolve(false)
           modal.destroy()

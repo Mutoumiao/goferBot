@@ -30,9 +30,7 @@ export class AuthRedisService implements OnModuleInit, OnModuleDestroy {
       await conn.ping()
       this.logger.log('Auth Redis connection established')
     } catch {
-      this.logger.warn(
-        `Auth Redis 连接失败 (${host}:${port})，令牌黑名单与用户缓存已禁用。`,
-      )
+      this.logger.warn(`Auth Redis 连接失败 (${host}:${port})，令牌黑名单与用户缓存已禁用。`)
       await conn.quit().catch(() => {})
       this.redis = undefined
     }

@@ -22,10 +22,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const menuItems: MenuItemType[] = navItems.map((item) => ({
     key: item.path,
-    icon: item.icon ? (() => {
-      const Icon = item.icon
-      return <Icon size={16} />
-    })() : undefined,
+    icon: item.icon
+      ? (() => {
+          const Icon = item.icon
+          return <Icon size={16} />
+        })()
+      : undefined,
     label: item.title,
   }))
 
@@ -54,14 +56,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       onCollapse={setCollapsed}
       menuHeaderRender={() => (
         <div className="flex items-center gap-2 px-2 py-3">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold"
-          >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
             G
           </div>
-          {!collapsed && (
-            <span className="text-base font-semibold text-white">GoferBot Admin</span>
-          )}
+          {!collapsed && <span className="text-base font-semibold text-white">GoferBot Admin</span>}
         </div>
       )}
       rightContentRender={() => (
@@ -100,24 +98,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             placement="bottomRight"
           >
             <Space className="cursor-pointer rounded-md px-2 py-1 hover:bg-black/50">
-              <Avatar
-                size="small"
-                style={{ backgroundColor: token.colorPrimary }}
-              >
+              <Avatar size="small" style={{ backgroundColor: token.colorPrimary }}>
                 {user?.name?.[0]?.toUpperCase() ?? 'A'}
               </Avatar>
-              <span className="text-sm text-slate-200">
-                {user?.name ?? user?.email ?? 'Admin'}
-              </span>
+              <span className="text-sm text-slate-200">{user?.name ?? user?.email ?? 'Admin'}</span>
             </Space>
           </Dropdown>
         </div>
       )}
       breadcrumbRender={(routers = []) =>
-        [
-          { path: '/', breadcrumbName: '首页' },
-          ...routers,
-        ] as any
+        [{ path: '/', breadcrumbName: '首页' }, ...routers] as any
       }
     >
       {children}

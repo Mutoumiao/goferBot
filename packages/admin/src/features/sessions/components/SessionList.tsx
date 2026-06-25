@@ -106,9 +106,20 @@ export function SessionList() {
           }}
           locale={{ emptyText: <EmptyState description="暂无会话" /> }}
           columns={[
-            { title: '会话标题', dataIndex: 'title', key: 'title', render: (v: string) => <span className="font-medium">{v}</span> },
+            {
+              title: '会话标题',
+              dataIndex: 'title',
+              key: 'title',
+              render: (v: string) => <span className="font-medium">{v}</span>,
+            },
             { title: '用户', dataIndex: 'userEmail', key: 'userEmail', width: 180 },
-            { title: '模型', dataIndex: 'model', key: 'model', width: 120, render: (v: string) => <Tag>{v}</Tag> },
+            {
+              title: '模型',
+              dataIndex: 'model',
+              key: 'model',
+              width: 120,
+              render: (v: string) => <Tag>{v}</Tag>,
+            },
             { title: '消息数', dataIndex: 'messageCount', key: 'messageCount', width: 100 },
             {
               title: '状态',
@@ -117,10 +128,20 @@ export function SessionList() {
               width: 120,
               render: (s: string) => {
                 const color = s === 'active' ? 'green' : s === 'archived' ? 'default' : 'red'
-                return <Tag color={color}>{s === 'active' ? '进行中' : s === 'archived' ? '已归档' : '已停止'}</Tag>
+                return (
+                  <Tag color={color}>
+                    {s === 'active' ? '进行中' : s === 'archived' ? '已归档' : '已停止'}
+                  </Tag>
+                )
               },
             },
-            { title: '最近更新', dataIndex: 'updatedAt', key: 'updatedAt', width: 180, render: (v: string) => new Date(v).toLocaleString('zh-CN') },
+            {
+              title: '最近更新',
+              dataIndex: 'updatedAt',
+              key: 'updatedAt',
+              width: 180,
+              render: (v: string) => new Date(v).toLocaleString('zh-CN'),
+            },
             {
               title: '操作',
               key: 'actions',

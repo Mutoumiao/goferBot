@@ -12,8 +12,6 @@ export interface RagTask {
   documentId?: string
 }
 
-export const listRagTasks = () =>
-  alovaInstance.Get<RagTask[]>('/admin/rag/tasks')
+export const listRagTasks = () => alovaInstance.Get<RagTask[]>('/admin/rag/tasks')
 
-export const getRagTask = (id: string) =>
-  alovaInstance.Get<RagTask>(`/admin/rag/tasks/${id}`)
+export const getRagTask = (id: string) => alovaInstance.Get<RagTask>(`/admin/rag/tasks/${id}`)

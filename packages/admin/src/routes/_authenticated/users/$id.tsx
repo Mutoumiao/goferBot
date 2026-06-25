@@ -94,18 +94,10 @@ function UserDetailPage() {
             <Descriptions.Item label="邮箱">{user.email}</Descriptions.Item>
             <Descriptions.Item label="昵称">{user.name ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="角色">
-              {user.role === 'ADMIN' ? (
-                <Tag color="purple">管理员</Tag>
-              ) : (
-                <Tag>普通用户</Tag>
-              )}
+              {user.role === 'ADMIN' ? <Tag color="purple">管理员</Tag> : <Tag>普通用户</Tag>}
             </Descriptions.Item>
             <Descriptions.Item label="状态">
-              {user.isActive ? (
-                <Tag color="green">已启用</Tag>
-              ) : (
-                <Tag color="default">已禁用</Tag>
-              )}
+              {user.isActive ? <Tag color="green">已启用</Tag> : <Tag color="default">已禁用</Tag>}
             </Descriptions.Item>
             <Descriptions.Item label="创建时间">
               {new Date(user.createdAt).toLocaleString('zh-CN')}
@@ -122,11 +114,7 @@ function UserDetailPage() {
             <Form.Item name="name" label="昵称">
               <Input placeholder="选填" />
             </Form.Item>
-            <Form.Item
-              name="role"
-              label="角色"
-              rules={[{ required: true, message: '请选择角色' }]}
-            >
+            <Form.Item name="role" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
               <Select
                 options={[
                   { value: 'USER', label: '普通用户' },

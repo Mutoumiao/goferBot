@@ -48,11 +48,7 @@ describe('AuthRedisService', () => {
 
       await service.blacklistToken('token-abc', 7200)
 
-      expect(mockRedis.setex).toHaveBeenCalledWith(
-        'token:blacklist:token-abc',
-        7200,
-        '1',
-      )
+      expect(mockRedis.setex).toHaveBeenCalledWith('token:blacklist:token-abc', 7200, '1')
     })
 
     it('AR-01b: Redis 未连接时静默跳过', async () => {
@@ -107,11 +103,7 @@ describe('AuthRedisService', () => {
       await service.cacheUser('u1', user)
       const cached = await service.getCachedUser('u1')
 
-      expect(mockRedis.setex).toHaveBeenCalledWith(
-        'auth:user:u1',
-        300,
-        JSON.stringify(user),
-      )
+      expect(mockRedis.setex).toHaveBeenCalledWith('auth:user:u1', 300, JSON.stringify(user))
       expect(cached).toEqual(user)
     })
 

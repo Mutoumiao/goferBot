@@ -22,13 +22,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/**',
-        'tests/**',
-        '**/*.config.*',
-        '**/*.d.ts',
-        '**/*.md',
-      ],
+      exclude: ['node_modules/**', 'tests/**', '**/*.config.*', '**/*.d.ts', '**/*.md'],
       thresholds: {
         // ponytail: 设置 80% 覆盖率阈值
         statements: 80,
