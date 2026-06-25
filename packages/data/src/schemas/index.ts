@@ -71,6 +71,33 @@ export {
 } from './companion.schema.js'
 
 export {
+  MEMORY_EXTRACTION_LIMIT,
+  MEMORY_INJECTION_LIMIT,
+  MESSAGE_FEEDBACK_INJECTION_LIMIT,
+  MEMORY_KEYWORD_REGEX,
+  RECENT_MESSAGE_LIMIT,
+  INITIAL_HISTORY_LIMIT,
+  agentMemoryCandidateSchema,
+  agentMemoryExtractionSchema,
+  companionIntentPrimarySchema,
+  conversationEmotionSchema,
+  conversationRelationshipStageSchema,
+  conversationSafetySchema,
+  conversationSummarySchema,
+  conversationIntentSchema,
+  emotionRouteSchema,
+  fallbackEmotion,
+  fallbackEmotionRoute,
+  fallbackIntent,
+  fallbackReplyPolicy,
+  fallbackReplyQualityGuard,
+  fallbackRelationshipStage,
+  fallbackSafety,
+  replyPolicySchema,
+  replyQualityGuardSchema,
+} from './companion-pipeline.schema.js'
+
+export {
   embeddingProviderSchema,
   providerSchema,
   settingsResponseSchema,

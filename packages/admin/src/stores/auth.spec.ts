@@ -36,15 +36,13 @@ describe('auth store', () => {
   })
 
   it('setUser updates user only', () => {
-    useAuthStore
-      .getState()
-      .setAuth('token-1', {
-        id: 'u1',
-        email: 'a@b.com',
-        name: 'Old',
-        role: 'ADMIN' as const,
-        isActive: true,
-      })
+    useAuthStore.getState().setAuth('token-1', {
+      id: 'u1',
+      email: 'a@b.com',
+      name: 'Old',
+      role: 'ADMIN' as const,
+      isActive: true,
+    })
     useAuthStore
       .getState()
       .setUser({ id: 'u1', email: 'a@b.com', name: 'New', role: 'ADMIN' as const, isActive: true })
