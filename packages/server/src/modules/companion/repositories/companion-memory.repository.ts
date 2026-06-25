@@ -27,6 +27,10 @@ export class CompanionMemoryRepository {
     })
   }
 
+  async findByUser(userId: string, companionId: string, limit = 12): Promise<CompanionMemory[]> {
+    return this.findActiveByCompanion(userId, companionId, limit)
+  }
+
   async findByUserId(
     userId: string,
     options?: {

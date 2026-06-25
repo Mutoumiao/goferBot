@@ -34,13 +34,13 @@ export class GenerateNode {
         chunks.push(chunk.text)
       }
       const reply = chunks.join('').trim()
-      this.logger.debug(`[generateNode] stage=success length=${reply.length}`)
-      return { assistantReply: reply }
+      this.logger.log(`[generateNode] stage=success length=${reply.length}`)
+      return { assistantReply: reply, partialTokens: reply }
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         this.logger.warn('[generateNode] stage=aborted')
       } else {
-        this.logger.error(`[generateNode] stage=error error=${(err as Error).message}`)
+        this.logger.error(`[generateNode] stage=error code=GENERATE_ERROR`)
       }
       const fallback = this.buildFallbackReply(state)
       return { assistantReply: fallback, lastFallback: 'generate-error' }

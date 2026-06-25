@@ -29,6 +29,23 @@ export class CompanionConversationRepository {
     })
   }
 
+  async getOrCreate(
+    id: string | undefined,
+    userId: string,
+    companionId: string,
+  ): Promise<CompanionConversation> {
+    if (id) {
+      const found = await this.findById(id)
+      if (found) return found
+    }
+    const existing = await this.findByUserAndCompanion(userId, companionId)
+    if (existing) return existing
+    return this.create({
+      user: { connect: { id: userId } },
+      companion: { connect: { id: companionId } },
+    })
+  }
+
   async findByUserId(
     userId: string,
     options?: { page?: number; size?: number; companionId?: string },
@@ -76,6 +93,13 @@ export class CompanionConversationRepository {
         messageCount: { increment: 1 },
         lastMessageAtMs: BigInt(Date.now()),
       },
+    })
+  }
+
+  async updateSummary(id: string, summaryText: string): Promise<CompanionConversation> {
+    return this.prisma.companionConversation.update({
+      where: { id },
+      data: { summary: summaryText },
     })
   }
 

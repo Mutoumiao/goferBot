@@ -213,11 +213,11 @@ export class PolicyNode {
 
     const pack = POLICY_PACKS[route]
     if (!pack) {
-      this.logger.debug(`[policyNode] no policy pack for route=${route}, using fallback`)
+      this.logger.log(`[policyNode] no policy pack for route=X, using fallback`)
       return { policy: fallbackReplyPolicy as PolicyResult }
     }
 
-    this.logger.debug(`[policyNode] matched policy pack policy=${pack.policy}`)
+    this.logger.log(`[policyNode] matched policy pack policy=${pack.policy}`)
     const result = replyPolicySchema.parse({
       policy: pack.policy,
       sentenceBudget: pack.sentenceBudget,

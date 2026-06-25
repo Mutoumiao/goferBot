@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common'
+import { CompanionChatService } from './companion-chat.service.js'
 import { LlmConfigService } from './config/llm-config.service.js'
 import { LangChainLlmService } from './langchain/langchain-llm.service.js'
 import { StructuredOutputService } from './langchain/structured-output.service.js'
+import { CompanionGraphService } from './langgraph/graph.js'
 import {
   EmotionNode,
   GenerateNode,
@@ -20,6 +22,7 @@ import { CompanionRepository } from './repositories/companion.repository.js'
 import { CompanionConversationRepository } from './repositories/companion-conversation.repository.js'
 import { CompanionFeedbackRepository } from './repositories/companion-feedback.repository.js'
 import { CompanionMemoryRepository } from './repositories/companion-memory.repository.js'
+import { CompanionMessageRepository } from './repositories/companion-message.repository.js'
 
 @Module({
   imports: [],
@@ -40,9 +43,12 @@ import { CompanionMemoryRepository } from './repositories/companion-memory.repos
     MemoryCandidateNode,
     MemoryExtractionNode,
     SummaryNode,
+    CompanionGraphService,
+    CompanionChatService,
     CompanionRepository,
     CompanionConversationRepository,
     CompanionMemoryRepository,
+    CompanionMessageRepository,
     CompanionFeedbackRepository,
   ],
   exports: [
@@ -61,9 +67,12 @@ import { CompanionMemoryRepository } from './repositories/companion-memory.repos
     MemoryCandidateNode,
     MemoryExtractionNode,
     SummaryNode,
+    CompanionGraphService,
+    CompanionChatService,
     CompanionRepository,
     CompanionConversationRepository,
     CompanionMemoryRepository,
+    CompanionMessageRepository,
     CompanionFeedbackRepository,
   ],
 })

@@ -310,6 +310,8 @@ export type ConversationSummary = {
   updatedAt: Date
 }
 
+export type TokenSink = (delta: string) => void
+
 export interface NodeExecutionContext {
   userId: string
   companionId: string
@@ -338,6 +340,7 @@ export interface CompanionState {
   extractedMemories?: MemoryItem[]
   summary?: ConversationSummary
   assistantReply?: string
+  partialTokens?: string
   existingMemories?: Array<{
     id: string
     type: string

@@ -40,10 +40,10 @@ export class SharedNodeFactory {
         promptText,
         ctx.signal,
       )) as T
-      this.logger.debug(`[${config.name}] stage=success`)
+      this.logger.log(`[${config.name}] stage=success`)
       return result
-    } catch (err) {
-      this.logger.warn(`[${config.name}] stage=fallback error=${(err as Error).message}`)
+    } catch (_err) {
+      this.logger.warn(`[${config.name}] stage=fallback`)
       return fallback
     }
   }
