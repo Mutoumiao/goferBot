@@ -35,10 +35,9 @@ export class DocumentParser {
   private readonly parsers = new Map<string, IDocumentParser>()
   private readonly mimeIndex = new Map<string, IDocumentParser>()
 
-  constructor(parsers: IDocumentParser[] = []) {
-    // 默认注册内置解析器
+  constructor() {
     const defaults: IDocumentParser[] = [new TextParser(), new PdfParser()]
-      ;[...defaults, ...parsers].forEach((p) => this.register(p))
+    defaults.forEach((p) => this.register(p))
   }
 
   /** 注册一个解析器（重复注册会覆盖同名解析器） */

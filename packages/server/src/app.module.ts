@@ -10,6 +10,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js'
 import { AdminModule } from './modules/admin/admin.module.js'
 import { ChatModule } from './modules/chat/chat.module.js'
+import { CompanionModule } from './modules/companion/companion.module.js'
 import { HealthModule } from './modules/health/health.module.js'
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module.js'
 import { RagModule } from './processors/rag/rag.module.js'
@@ -49,6 +50,7 @@ import { VectorModule } from './processors/vector/vector.module.js'
     KnowledgeBaseModule,
     SessionModule,
     ChatModule,
+    CompanionModule,
     SettingsModule,
     AdminModule,
     RagModule,

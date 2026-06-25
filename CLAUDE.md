@@ -28,34 +28,15 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的
 3. **Token 预算**：单任务≤8k，超 80% 暂停压缩，超 95% 终止
 4. **落笔先阅读**：通读导出接口、调用方、公共工具；代码探索优先用 codegraph
 5. **检查点**：每关键步骤输出 `[CHECKPOINT] ✅|🔍|⏳|🚨`
-6. **显式失败**：置信度<90% 输出 `[UNCERTAIN]` 并征求指令
-
-**禁止行为**：不修改 BACKLOG.md/CHANGELOG.md / 不提交 console.log / 不全文加载文档 / 不并行未声明优先级的 skill
-
-## 语言要求
-
-- 所有回复内容（包括解释、代码注释、思考过程、错误提示、补充说明等）必须**全程使用简体中文**。
-
-## 必读文档（按顺序）
-
-| 阶段     | 文档                                                                           |
-|----------|--------------------------------------------------------------------------------|
-| 了解流程 | `docs/guide/workflow.md`                                                       |
-| 了解产品 | `docs/prd/v2-cloud-native.md`                                                  |
-| 前端规范 | `.claude/rules/frontend-rules.md` → `web-package-rules.md` → `architecture.md` |
-| 后端规范 | `.claude/rules/backend-rules.md`                                               |
-| 领取任务 | `docs/issues/{prefix}-{NN}-{slug}/issue.md`                                    |
-| 编码前   | `docs/issues/{prefix}-{NN}-{slug}/specs/`                                      |
+6. **显式失败**：置信度<90% 输出 `[UNCERTAIN]` 并征求指令                            |
 
 ## 项目结构
 
 ```
 ├── packages/
 │   ├── web/           # React 前端（主前端）
-│   ├── webui/         # Vue 前端（冻结，待删除）
 │   ├── server/        # NestJS API 服务端
 │   ├── data/          # 共享数据契约（Zod schemas）
-│   └── rag-sdk/       # RAG 工具库
 ├── docs/              # 文档（guide/prd/issues/adrs/design）
 ├── tests/             # 测试（unit/integration/e2e）
 ├── BACKLOG.md         # 待办（open / in-progress）
@@ -92,15 +73,16 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 2. **再读 frontmatter** — 读 `docs/issues/{dir}/issue.md` 的 YAML 头部获取状态
 3. **按需深入正文** — 仅当相关且非 closed/deprecated 时才读正文
 
-
 ## 代码约定
 
 ### 文件命名
+
 - **React 组件**: PascalCase（如 `ChatPage.tsx`）
 - **TypeScript/TSX 文件**: camelCase（如 `auth.service.ts`）
 - **路由文件**: kebab-case（如 `knowledge-base.tsx`）
 
 ### 代码模式
+
 - **前端状态管理**: Zustand stores（`stores/` 目录）
 - **后端模块**: NestJS 模块模式（Controller + Service + DTO）
 - **数据验证**: Zod schemas（共享在 `@goferbot/data` 包）
@@ -108,22 +90,26 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 - **错误处理**: 统一异常过滤器 + ZodValidationPipe
 
 ### 测试约定
+
 - **单元测试**: `*.spec.ts` 放在源文件同目录
 - **集成测试**: `vitest.integration.config.ts`，`tests/` 目录
 - **Mock 风格**: Jest mocks / nock
 
 ### Git 提交约定
+
 - 使用简体中文描述
 - 格式: `type(scope): description`
 - type: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`
 - 示例: `fix(chat): 修复消息列表刷新问题`
 
 ### 数据库约定
+
 - Prisma schema 位于 `packages/server/prisma/schema.prisma`
-- 命名: snake_case（数据库层）、camelCase（TypeScript）
+- 命名: snake\_case（数据库层）、camelCase（TypeScript）
 - 迁移: `pnpm prisma:migrate`
 
 ### 环境变量
+
 - 根目录: `.env.example`（模板）
 - 服务端: `packages/server/.env.example`
 - 前端: `packages/web/.env.example`
@@ -145,3 +131,4 @@ Setting
 - **Chunk**: 文档切片（用于 RAG 检索，向量存储在 pgvector）
 - **Session**: 聊天会话
 - **Setting**: 用户设置
+

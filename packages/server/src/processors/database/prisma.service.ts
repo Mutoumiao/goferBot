@@ -141,6 +141,46 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.setting
   }
 
+  get companion() {
+    return this.client.companion
+  }
+
+  get companionConversation() {
+    return this.client.companionConversation
+  }
+
+  get companionMessage() {
+    return this.client.companionMessage
+  }
+
+  get companionMemory() {
+    return this.client.companionMemory
+  }
+
+  get companionMessageFeedback() {
+    return this.client.companionMessageFeedback
+  }
+
+  get companionCarePlan() {
+    return this.client.companionCarePlan
+  }
+
+  get companionCareEvent() {
+    return this.client.companionCareEvent
+  }
+
+  get groupChat() {
+    return this.client.groupChat
+  }
+
+  get groupChatMember() {
+    return this.client.groupChatMember
+  }
+
+  get groupChatMessage() {
+    return this.client.groupChatMessage
+  }
+
   // 通用代理方法
   $connect() {
     return this.client.$connect()

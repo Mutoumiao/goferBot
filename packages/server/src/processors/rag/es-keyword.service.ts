@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
-import type { ElasticsearchService, SearchHit } from './elasticsearch.service.js'
+import { Injectable, Logger, Inject } from '@nestjs/common'
+import { ElasticsearchService } from './elasticsearch.service.js'
+import type { SearchHit } from './elasticsearch.service.js'
 
 export interface Bm25Options {
   topK?: number
@@ -35,7 +36,7 @@ export interface Bm25Options {
 export class EsKeywordService {
   private readonly logger = new Logger(EsKeywordService.name)
 
-  constructor(private readonly es: ElasticsearchService) { }
+  constructor(@Inject(ElasticsearchService) private readonly es: ElasticsearchService) { }
 
   async search(query: string, options: Bm25Options = {}): Promise<SearchHit[]> {
     if (!query || query.trim() === '') return []

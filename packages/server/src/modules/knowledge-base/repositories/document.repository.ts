@@ -25,7 +25,7 @@ export class DocumentRepository extends BaseRepository<
     return this.model.findFirst({ where: { id, kbId } })
   }
 
-  async updateStatus(id: string, status: string, errorMessage?: string | null): Promise<Document> {
+  async updateStatus(id: string, status: Prisma.DocumentUpdateInput['status'], errorMessage?: string | null): Promise<Document> {
     const data: Prisma.DocumentUpdateInput = { status }
     if (errorMessage !== undefined) {
       data.errorMessage = errorMessage

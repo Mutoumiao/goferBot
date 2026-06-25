@@ -17,33 +17,43 @@ enum DocumentStatus {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  name          String?
-  avatar        String?
-  password      String         @db.VarChar(60)
-  role          String         @default("USER")
-  isActive      Boolean        @default(true) @map("is_active")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  password  String   @db.VarChar(60)
+  role      String   @default("USER")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  knowledgeBases KnowledgeBase[]
-  sessions       Session[]
-  settings       Setting[]
+  knowledgeBases            KnowledgeBase[]
+  sessions                  Session[]
+  settings                  Setting[]
+  companions                Companion[]
+  companionConversations    CompanionConversation[]
+  companionMessages         CompanionMessage[]
+  companionMemories         CompanionMemory[]
+  companionMessageFeedbacks CompanionMessageFeedback[]
+  companionCarePlans        CompanionCarePlan[]
+  companionCareEvents       CompanionCareEvent[]
+  groupChats                GroupChat[]
+  groupChatMembers          GroupChatMember[]
+  groupChatMessages         GroupChatMessage[]
 
   @@map("users")
 }
 
 model KnowledgeBase {
-  id          String    @id @default(uuid())
-  userId      String    @map("user_id")
-  name        String    @db.VarChar(100)
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String   @db.VarChar(100)
   description String?
-  isPinned    Boolean   @default(false) @map("is_pinned")
-  sortOrder   Int       @default(autoincrement()) @map("sort_order")
+  isPinned    Boolean  @default(false) @map("is_pinned")
+  sortOrder   Int      @default(autoincrement()) @map("sort_order")
   icon        String?
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   folders   Folder[]
@@ -70,19 +80,19 @@ model Folder {
 }
 
 model Document {
-  id           String   @id @default(uuid())
-  kbId         String   @map("kb_id")
-  folderId     String?  @map("folder_id")
+  id           String         @id @default(uuid())
+  kbId         String         @map("kb_id")
+  folderId     String?        @map("folder_id")
   name         String
   ext          String?
-  mimeType     String?  @map("mime_type")
+  mimeType     String?        @map("mime_type")
   size         BigInt?
-  storageKey   String   @map("storage_key")
+  storageKey   String         @map("storage_key")
   status       DocumentStatus @default(uploaded)
-  errorMessage String?  @map("error_message")
-  indexedAt    DateTime? @map("indexed_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  errorMessage String?        @map("error_message")
+  indexedAt    DateTime?      @map("indexed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
 
   knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
   folder        Folder?       @relation(fields: [folderId], references: [id], onDelete: Cascade)
@@ -92,15 +102,15 @@ model Document {
 }
 
 model Chunk {
-  id         String   @id @default(uuid())
-  documentId String   @map("document_id")
-  kbId       String   @map("kb_id")
+  id         String                       @id @default(uuid())
+  documentId String                       @map("document_id")
+  kbId       String                       @map("kb_id")
   content    String
-  tokenCount Int?     @map("token_count")
-  chunkIndex Int      @map("chunk_index")
+  tokenCount Int?                         @map("token_count")
+  chunkIndex Int                          @map("chunk_index")
   embedding  Unsupported("vector(1536)")?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdAt  DateTime                     @default(now()) @map("created_at")
+  updatedAt  DateTime                     @updatedAt @map("updated_at")
 
   document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
   knowledgeBase KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
@@ -148,4 +158,280 @@ model Setting {
 
   @@unique([userId, key])
   @@map("settings")
+}
+
+// ==================== Companion Module ====================
+
+enum CompanionStatus {
+  draft
+  published
+  archived
+}
+
+enum ConversationMessageStatus {
+  completed
+  failed
+}
+
+enum MemoryType {
+  preference
+  boundary
+  relationship_goal
+  conversation_style
+  important_fact
+}
+
+enum MemoryStatus {
+  active
+  disabled
+  deleted
+}
+
+enum FeedbackRating {
+  positive
+  negative
+}
+
+enum CareFrequency {
+  daily
+  weekly
+  monthly
+  custom
+}
+
+enum CareStatus {
+  pending
+  sent
+  read
+  failed
+}
+
+enum GroupMemberStatus {
+  active
+  removed
+}
+
+enum SenderType {
+  user
+  agent
+}
+
+model Companion {
+  id                       String          @id @default(uuid())
+  userId                   String          @map("user_id")
+  name                     String
+  headline                 String?
+  description              String?
+  personality              String?
+  tone                     String?
+  boundaries               String?
+  guardrailsPrompt         String?         @map("guardrails_prompt")
+  defaultPrompt            String?         @map("default_prompt")
+  avatarKey                String?         @map("avatar_key")
+  backgroundStory          String?         @map("background_story")
+  openingMessage           String?         @map("opening_message")
+  visibility               String?
+  status                   CompanionStatus @default(draft)
+  lastAssistantMessage     String?         @map("last_assistant_message")
+  lastAssistantMessageAtMs BigInt?         @map("last_assistant_message_at_ms")
+  createdAt                DateTime        @default(now()) @map("created_at")
+  updatedAt                DateTime        @updatedAt @map("updated_at")
+
+  user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations            CompanionConversation[]
+  messages                 CompanionMessage[]
+  memories                 CompanionMemory[]
+  feedbacks                CompanionMessageFeedback[]
+  carePlans                CompanionCarePlan[]
+  careEvents               CompanionCareEvent[]
+  groupChatMembers         GroupChatMember[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@map("companions")
+}
+
+model CompanionConversation {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  companionId     String   @map("companion_id")
+  title           String?
+  summary         String?  @db.VarChar(1600)
+  messageCount    Int      @default(0) @map("message_count")
+  lastMessageAtMs BigInt?  @map("last_message_at_ms")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companion                Companion                  @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  messages                 CompanionMessage[]
+  feedbacks                CompanionMessageFeedback[]
+  careEvents               CompanionCareEvent[]
+
+  @@unique([userId, companionId])
+  @@index([userId, updatedAt])
+  @@map("companion_conversations")
+}
+
+model CompanionMessage {
+  id             String                    @id @default(uuid())
+  conversationId String                    @map("conversation_id")
+  userId         String                    @map("user_id")
+  companionId    String                    @map("companion_id")
+  role           String
+  content        String
+  status         ConversationMessageStatus @default(completed)
+  metadata       String?
+  createdAt      DateTime                  @default(now()) @map("created_at")
+
+  conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companion    Companion             @relation(fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([userId, companionId, createdAt])
+  @@map("companion_messages")
+}
+
+model CompanionMemory {
+  id              String       @id @default(uuid())
+  userId          String       @map("user_id")
+  companionId     String       @map("companion_id")
+  type            MemoryType
+  content         String
+  importance      Int          @default(3)
+  status          MemoryStatus @default(active)
+  sourceMessageId String?      @map("source_message_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companion Companion @relation(fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, companionId, status, importance, updatedAt])
+  @@index([sourceMessageId])
+  @@map("companion_memories")
+}
+
+model CompanionMessageFeedback {
+  id             String         @id @default(uuid())
+  userId         String         @map("user_id")
+  companionId    String         @map("companion_id")
+  conversationId String         @map("conversation_id")
+  messageId      String         @map("message_id")
+  rating         FeedbackRating
+  reason         String?
+  note           String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companion    Companion             @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+  @@index([userId, companionId, updatedAt])
+  @@index([messageId])
+  @@map("companion_message_feedbacks")
+}
+
+model CompanionCarePlan {
+  id            String        @id @default(uuid())
+  userId        String        @map("user_id")
+  companionId   String        @map("companion_id")
+  enabled       Boolean       @default(true)
+  frequency     CareFrequency
+  preferredTime String?       @map("preferred_time")
+  scenesJson    String        @map("scenes_json")
+  tone          String
+  customPrompt  String?       @map("custom_prompt")
+  nextRunAtMs   BigInt?       @map("next_run_at_ms")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companion Companion @relation(fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companionId])
+  @@index([enabled, nextRunAtMs])
+  @@map("companion_care_plans")
+}
+
+model CompanionCareEvent {
+  id             String     @id @default(uuid())
+  userId         String     @map("user_id")
+  companionId    String     @map("companion_id")
+  carePlanId     String?    @map("care_plan_id")
+  conversationId String     @map("conversation_id")
+  messageId      String     @map("message_id")
+  scene          String
+  status         CareStatus @default(pending)
+  message        String
+  metadataJson   String?    @map("metadata_json")
+  generatedAtMs  BigInt     @map("generated_at_ms")
+  readAtMs       BigInt?    @map("read_at_ms")
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companion    Companion             @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, companionId, generatedAtMs])
+  @@map("companion_care_events")
+}
+
+model GroupChat {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  title           String
+  summary         String?
+  messageCount    Int      @default(0) @map("message_count")
+  lastMessageAtMs BigInt?  @map("last_message_at_ms")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members          GroupChatMember[]
+  messages         GroupChatMessage[]
+
+  @@index([userId, updatedAt])
+  @@map("group_chats")
+}
+
+model GroupChatMember {
+  id           String            @id @default(uuid())
+  groupChatId  String            @map("group_chat_id")
+  userId       String            @map("user_id")
+  companionId  String            @map("companion_id")
+  displayOrder Int               @default(0) @map("display_order")
+  status       GroupMemberStatus @default(active)
+  joinedAt     DateTime          @default(now()) @map("joined_at")
+  removedAt    DateTime?         @map("removed_at")
+
+  groupChat GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companion Companion @relation(fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@unique([groupChatId, companionId])
+  @@index([groupChatId, status, displayOrder])
+  @@map("group_chat_members")
+}
+
+model GroupChatMessage {
+  id           String                    @id @default(uuid())
+  groupChatId  String                    @map("group_chat_id")
+  userId       String                    @map("user_id")
+  senderType   SenderType                @map("sender_type")
+  companionId  String?                   @map("companion_id")
+  content      String
+  status       ConversationMessageStatus @default(completed)
+  turnIndex    Int                       @map("turn_index")
+  metadataJson String?                   @map("metadata_json")
+  createdAt    DateTime                  @default(now()) @map("created_at")
+
+  groupChat GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groupChatId, createdAt])
+  @@index([userId, groupChatId, createdAt])
+  @@map("group_chat_messages")
 }
