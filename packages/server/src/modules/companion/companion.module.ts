@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common'
+import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
+import { CompanionController } from './companion.controller.js'
+import { CompanionChatController } from './companion-chat.controller.js'
 import { CompanionChatService } from './companion-chat.service.js'
 import { LlmConfigService } from './config/llm-config.service.js'
 import { LangChainLlmService } from './langchain/langchain-llm.service.js'
@@ -26,7 +29,7 @@ import { CompanionMessageRepository } from './repositories/companion-message.rep
 
 @Module({
   imports: [],
-  controllers: [],
+  controllers: [CompanionChatController, CompanionController],
   providers: [
     LlmConfigService,
     LangChainLlmService,
@@ -45,6 +48,7 @@ import { CompanionMessageRepository } from './repositories/companion-message.rep
     SummaryNode,
     CompanionGraphService,
     CompanionChatService,
+    SseResponseHelper,
     CompanionRepository,
     CompanionConversationRepository,
     CompanionMemoryRepository,

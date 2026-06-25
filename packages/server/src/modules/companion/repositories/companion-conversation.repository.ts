@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { CompanionConversation, CompanionMessage, Prisma } from '@prisma/client'
 import { PrismaService } from '../../../processors/database/prisma.service.js'
 import type { PaginationResult } from '../../../shared/interfaces/paginator.interface.js'
@@ -105,5 +105,15 @@ export class CompanionConversationRepository {
 
   async delete(id: string): Promise<CompanionConversation> {
     return this.prisma.companionConversation.delete({ where: { id } })
+  }
+
+  async findByIdAndAuthorize(id: string, userId: string): Promise<CompanionConversation> {
+    const conversation = await this.prisma.companionConversation.findUnique({
+      where: { id },
+      select: { userId: true, id: true, companionId: true },
+    })
+    if (!conversation) throw new NotFoundException('会话不存在')
+    if (conversation.userId !== userId) throw new ForbiddenException('无权访问此会话')
+    return conversation as CompanionConversation
   }
 }

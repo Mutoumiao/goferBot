@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { CompanionMessage, Prisma } from '@prisma/client'
 import { PrismaService } from '../../../processors/database/prisma.service.js'
+import type { PaginationResult } from '../../../shared/interfaces/paginator.interface.js'
 
 @Injectable()
 export class CompanionMessageRepository {
@@ -72,5 +73,59 @@ export class CompanionMessageRepository {
 
   async findRecent(conversationId: string, limit = 20): Promise<CompanionMessage[]> {
     return this.findByConversation(conversationId, { limit })
+  }
+
+  async findByIdAndAuthorize(
+    id: string,
+    userId: string,
+  ): Promise<
+    CompanionMessage & {
+      conversation: { userId: string; companionId: string; conversationId?: string }
+    }
+  > {
+    const message = await this.prisma.companionMessage.findUnique({
+      where: { id },
+      include: { conversation: { select: { userId: true, companionId: true, id: true } } },
+    })
+    if (!message) throw new NotFoundException('消息不存在')
+    if (message.conversation.userId !== userId) throw new ForbiddenException('无权访问此消息')
+    return message as CompanionMessage & {
+      conversation: { userId: string; companionId: string; conversationId?: string }
+    }
+  }
+
+  async findByUserAndConversation(
+    conversationId: string,
+    userId: string,
+    options?: { page?: number; size?: number },
+  ): Promise<PaginationResult<CompanionMessage>> {
+    const where: Prisma.CompanionMessageWhereInput = {
+      conversationId,
+      conversation: { userId },
+    }
+
+    if (options?.page && options?.size) {
+      const result = await this.prisma.companionMessage.paginate(
+        { where, orderBy: { createdAt: 'asc' } },
+        { page: options.page, size: options.size },
+      )
+      return result as unknown as PaginationResult<CompanionMessage>
+    }
+
+    const data = await this.prisma.companionMessage.findMany({
+      where,
+      orderBy: { createdAt: 'asc' },
+    })
+    return {
+      data,
+      pagination: {
+        total: data.length,
+        size: data.length,
+        totalPage: 1,
+        currentPage: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    }
   }
 }

@@ -9,11 +9,13 @@ import {
   memoryListQuerySchema,
   sendMessageSchema,
   updateCompanionSchema,
+  updateCompanionStatusSchema,
 } from '@goferbot/data/schemas'
 import { createZodDto } from 'nestjs-zod'
 
 export class CreateCompanionDto extends createZodDto(createCompanionSchema) {}
 export class UpdateCompanionDto extends createZodDto(updateCompanionSchema) {}
+export class UpdateCompanionStatusDto extends createZodDto(updateCompanionStatusSchema) {}
 export class CompanionListQueryDto extends createZodDto(companionListQuerySchema) {}
 
 export class CreateConversationDto extends createZodDto(createConversationSchema) {}

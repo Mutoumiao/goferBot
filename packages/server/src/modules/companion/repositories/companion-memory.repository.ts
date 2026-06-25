@@ -70,6 +70,14 @@ export class CompanionMemoryRepository {
     }
   }
 
+  async findByCompanionAndUser(
+    companionId: string,
+    userId: string,
+    options?: { page?: number; size?: number; status?: 'active' | 'disabled' | 'deleted' },
+  ): Promise<PaginationResult<CompanionMemory>> {
+    return this.findByUserId(userId, { companionId, ...options })
+  }
+
   async update(id: string, data: Prisma.CompanionMemoryUpdateInput): Promise<CompanionMemory> {
     return this.prisma.companionMemory.update({ where: { id }, data })
   }

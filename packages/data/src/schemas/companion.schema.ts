@@ -42,7 +42,6 @@ export const sendMessageSchema = z.object({
 export const messageListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   size: z.coerce.number().int().min(1).max(100).optional(),
-  conversationId: z.string().min(1),
 })
 
 export const createMemorySchema = z.object({
@@ -71,4 +70,8 @@ export const createFeedbackSchema = z.object({
   rating: z.enum(['positive', 'negative']),
   reason: z.string().max(500).optional(),
   note: z.string().max(2000).optional(),
+})
+
+export const updateCompanionStatusSchema = z.object({
+  status: z.enum(['draft', 'published', 'archived']),
 })

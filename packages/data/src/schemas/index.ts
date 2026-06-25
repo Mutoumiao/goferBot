@@ -68,6 +68,7 @@ export {
   messageListQuerySchema as companionMessageListQuerySchema,
   sendMessageSchema,
   updateCompanionSchema,
+  updateCompanionStatusSchema,
 } from './companion.schema.js'
 
 export {

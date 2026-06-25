@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { Companion, Prisma } from '@prisma/client'
 import { PrismaService } from '../../../processors/database/prisma.service.js'
 import type { PaginationResult } from '../../../shared/interfaces/paginator.interface.js'
@@ -58,5 +58,20 @@ export class CompanionRepository {
 
   async exists(id: string): Promise<boolean> {
     return this.prisma.companion.exists({ where: { id } })
+  }
+
+  async findByIdAndAuthorize(id: string, userId: string): Promise<Companion> {
+    const companion = await this.findById(id)
+    if (!companion) throw new NotFoundException('伴侣不存在')
+    if (companion.userId !== userId) throw new ForbiddenException('无权访问此伴侣')
+    return companion
+  }
+
+  async softDelete(id: string, userId: string): Promise<void> {
+    await this.findByIdAndAuthorize(id, userId)
+    await this.prisma.companion.update({
+      where: { id },
+      data: { status: 'archived' },
+    })
   }
 }
