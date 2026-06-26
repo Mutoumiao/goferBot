@@ -57,7 +57,7 @@ export class CompanionSseClient {
   private baseUrl: string
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl ?? (import.meta.env.VITE_API_BASE_URL ?? '/api')
+    this.baseUrl = baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? '/api'
   }
 
   async chat(params: {

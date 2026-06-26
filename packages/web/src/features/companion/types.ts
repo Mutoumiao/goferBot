@@ -106,9 +106,13 @@ export interface Feedback {
 export interface Memory {
   id: string
   companionId: string
+  type: MemoryType
   content: string
   importance: number
+  status: 'active' | 'disabled'
   createdAt: string
+  updatedAt: string
+  sourceMessageId?: string
 }
 
 export interface MemoryListResponse {
@@ -125,4 +129,38 @@ export interface FetchParams {
   page?: number
   size?: number
   status?: CompanionStatus
+}
+
+export type CompanionMessageRole = 'user' | 'assistant' | 'system'
+
+export interface CompanionMessage {
+  id: string
+  conversationId: string
+  role: CompanionMessageRole
+  content: string
+  createdAt: string
+  feedback?: CompanionMessageFeedback | null
+  streaming?: boolean
+}
+
+export interface CompanionMessageFeedback {
+  rating: 'up' | 'down'
+  comment?: string
+}
+
+export type MemoryType =
+  | 'preference'
+  | 'boundary'
+  | 'relationship_goal'
+  | 'conversation_style'
+  | 'important_fact'
+
+export type MemoryFilter = 'all' | MemoryType
+
+export const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {
+  preference: '偏好',
+  boundary: '边界',
+  relationship_goal: '关系目标',
+  conversation_style: '对话风格',
+  important_fact: '重要事实',
 }

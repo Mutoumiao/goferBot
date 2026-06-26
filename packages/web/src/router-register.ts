@@ -1,12 +1,13 @@
 import {
   BookOpen,
+  Brain,
   Clock,
+  Heart,
   type LucideIcon,
   MessageCircle,
   Settings,
   Trash2,
   User,
-  Heart,
 } from 'lucide-react'
 import type { FileRoutesByFullPath } from '@/routeTree.gen'
 
@@ -16,6 +17,8 @@ export type RouteKey =
   | 'login'
   | 'chat'
   | 'companion'
+  | 'companionChat'
+  | 'companionMemories'
   | 'knowledgeBase'
   | 'history'
   | 'settings'
@@ -64,6 +67,26 @@ export const ROUTES_REGISTER = {
     path: '/companions',
     icon: Heart,
     navSection: 'primary',
+  },
+  companionChat: {
+    key: 'companionChat',
+    title: '伴侣对话',
+    singleton: false,
+    closable: true,
+    path: '/companions/$companionId/chat',
+    icon: MessageCircle,
+    navSection: null,
+    bindTo: (id: string) => `/companions/${id}/chat`,
+  },
+  companionMemories: {
+    key: 'companionMemories',
+    title: '记忆库',
+    singleton: false,
+    closable: true,
+    path: '/companions/$companionId/memories',
+    icon: Brain,
+    navSection: null,
+    bindTo: (id: string) => `/companions/${id}/memories`,
   },
   knowledgeBase: {
     key: 'knowledgeBase',

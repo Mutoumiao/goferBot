@@ -13,8 +13,8 @@ import type {
   CreateCompanionPayload,
   CreateConversationPayload,
   CreateFeedbackPayload,
-  FetchParams,
   Feedback,
+  FetchParams,
   MemoryListResponse,
   MessageListResponse,
   UpdateCompanionPayload,
@@ -47,14 +47,8 @@ export function deleteCompanion(id: string) {
   return alovaInstance.Delete<void>(`${BASE}/companions/${id}`)
 }
 
-export function updateCompanionStatus(
-  id: string,
-  payload: UpdateCompanionStatusPayload,
-) {
-  return alovaInstance.Patch<Companion>(
-    `${BASE}/companions/${id}/status`,
-    payload,
-  )
+export function updateCompanionStatus(id: string, payload: UpdateCompanionStatusPayload) {
+  return alovaInstance.Patch<Companion>(`${BASE}/companions/${id}/status`, payload)
 }
 
 // ---- 会话管理 ----
@@ -75,30 +69,18 @@ export function getConversation(id: string) {
 
 // ---- 聊天 / 消息 / 反馈 / 记忆 ----
 
-export function listMessages(
-  conversationId: string,
-  params?: { page?: number; size?: number },
-) {
+export function listMessages(conversationId: string, params?: { page?: number; size?: number }) {
   return alovaInstance.Get<MessageListResponse>(
     `${BASE}/companion/conversations/${conversationId}/messages`,
     { params },
   )
 }
 
-export function submitFeedback(
-  messageId: string,
-  payload: CreateFeedbackPayload,
-) {
-  return alovaInstance.Post<Feedback>(
-    `${BASE}/companion/messages/${messageId}/feedback`,
-    payload,
-  )
+export function submitFeedback(messageId: string, payload: CreateFeedbackPayload) {
+  return alovaInstance.Post<Feedback>(`${BASE}/companion/messages/${messageId}/feedback`, payload)
 }
 
-export function listMemories(
-  companionId: string,
-  params?: { page?: number; size?: number },
-) {
+export function listMemories(companionId: string, params?: { page?: number; size?: number }) {
   return alovaInstance.Get<MemoryListResponse>(`${BASE}/companion/memories`, {
     params: { ...params, companionId },
   })

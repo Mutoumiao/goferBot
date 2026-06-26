@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from '@/components/ui/empty'
-import { Spinner } from '@/components/ui/spinner'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useNavigate } from '@tanstack/react-router'
+import { Plus } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,13 +12,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from '@/components/ui/empty'
+import { Spinner } from '@/components/ui/spinner'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { deleteCompanion, listCompanions } from '../services'
 import { useCompanionStore } from '../store'
-import { listCompanions, deleteCompanion } from '../services'
+import type { Companion, CompanionStatus } from '../types'
 import { CompanionCard } from './CompanionCard'
 import { CompanionForm } from './CompanionForm'
-import type { Companion, CompanionStatus } from '../types'
-import { Plus } from 'lucide-react'
-import { toast } from 'sonner'
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'all', label: '全部' },
@@ -31,14 +32,9 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 type StatusFilter = (typeof STATUS_FILTERS)[number]['value']
 
 export function CompanionListPage() {
-  const {
-    companions,
-    isLoading,
-    setCompanions,
-    setIsLoading,
-    setError,
-    removeCompanion,
-  } = useCompanionStore()
+  const navigate = useNavigate()
+  const { companions, isLoading, setCompanions, setIsLoading, setError, removeCompanion } =
+    useCompanionStore()
 
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [formVisible, setFormVisible] = useState(false)
@@ -66,8 +62,10 @@ export function CompanionListPage() {
   }, [fetchCompanions])
 
   const handleSelect = (id: string) => {
-    // ponytail: 通过 tabManager 打开聊天页，由 Task 13 实现具体路由
-    console.log('[Companion] select companion:', id)
+    navigate({
+      to: '/companions/$companionId/chat',
+      params: { companionId: id },
+    })
   }
 
   const handleEdit = (id: string) => {
@@ -100,9 +98,7 @@ export function CompanionListPage() {
   }
 
   const filteredCompanions =
-    filter === 'all'
-      ? companions
-      : companions.filter((c) => c.status === filter)
+    filter === 'all' ? companions : companions.filter((c) => c.status === filter)
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -137,9 +133,7 @@ export function CompanionListPage() {
           <EmptyContent>
             <EmptyTitle>暂无伴侣</EmptyTitle>
             <EmptyDescription>
-              {filter === 'all'
-                ? '点击上方按钮创建第一个伴侣'
-                : '该状态下暂无伴侣'}
+              {filter === 'all' ? '点击上方按钮创建第一个伴侣' : '该状态下暂无伴侣'}
             </EmptyDescription>
             {filter === 'all' && (
               <Button
@@ -180,18 +174,17 @@ export function CompanionListPage() {
         }}
       />
 
-      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
+      <AlertDialog
+        open={!!deleteTargetId}
+        onOpenChange={(open) => !open && setDeleteTargetId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              删除后无法恢复，是否继续？
-            </AlertDialogDescription>
+            <AlertDialogDescription>删除后无法恢复，是否继续？</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteTargetId(null)}>
-              取消
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteTargetId(null)}>取消</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleDelete}>
               删除
             </AlertDialogAction>

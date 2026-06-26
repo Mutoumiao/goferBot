@@ -1,5 +1,6 @@
-import { Card, CardContent } from '@/components/ui/card'
+import { MessageCircle, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +9,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type { Companion } from '../types'
 import { CompanionStatusTag } from './CompanionStatusTag'
-import { MessageCircle, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
 
 interface CompanionCardProps {
   companion: Companion
@@ -69,11 +69,7 @@ export function CompanionCard({ companion, onSelect, onEdit, onDelete }: Compani
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <Button variant="ghost" size="icon-sm" onClick={(e) => e.stopPropagation()}>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -82,10 +78,7 @@ export function CompanionCard({ companion, onSelect, onEdit, onDelete }: Compani
                     <Pencil className="h-4 w-4 mr-2" />
                     编辑
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() => onDelete(companion.id)}
-                  >
+                  <DropdownMenuItem variant="destructive" onClick={() => onDelete(companion.id)}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     删除
                   </DropdownMenuItem>

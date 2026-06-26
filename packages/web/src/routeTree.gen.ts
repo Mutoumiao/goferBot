@@ -19,6 +19,8 @@ import { Route as AuthenticatedKnowledgeBaseRouteImport } from './routes/_authen
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedCompanionsRouteImport } from './routes/_authenticated/companions'
 import { Route as AuthenticatedChatTabIdRouteImport } from './routes/_authenticated/chat/$tabId'
+import { Route as AuthenticatedCompanionsCompanionIdMemoriesRouteImport } from './routes/_authenticated/companions/$companionId.memories'
+import { Route as AuthenticatedCompanionsCompanionIdChatRouteImport } from './routes/_authenticated/companions/$companionId.chat'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -70,41 +72,59 @@ const AuthenticatedChatTabIdRoute = AuthenticatedChatTabIdRouteImport.update({
   path: '/chat/$tabId',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCompanionsCompanionIdMemoriesRoute =
+  AuthenticatedCompanionsCompanionIdMemoriesRouteImport.update({
+    id: '/$companionId/memories',
+    path: '/$companionId/memories',
+    getParentRoute: () => AuthenticatedCompanionsRoute,
+  } as any)
+const AuthenticatedCompanionsCompanionIdChatRoute =
+  AuthenticatedCompanionsCompanionIdChatRouteImport.update({
+    id: '/$companionId/chat',
+    path: '/$companionId/chat',
+    getParentRoute: () => AuthenticatedCompanionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/companions': typeof AuthenticatedCompanionsRoute
+  '/companions': typeof AuthenticatedCompanionsRouteWithChildren
   '/history': typeof AuthenticatedHistoryRoute
   '/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/recycle': typeof AuthenticatedRecycleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/chat/$tabId': typeof AuthenticatedChatTabIdRoute
+  '/companions/$companionId/chat': typeof AuthenticatedCompanionsCompanionIdChatRoute
+  '/companions/$companionId/memories': typeof AuthenticatedCompanionsCompanionIdMemoriesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/companions': typeof AuthenticatedCompanionsRoute
+  '/companions': typeof AuthenticatedCompanionsRouteWithChildren
   '/history': typeof AuthenticatedHistoryRoute
   '/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/recycle': typeof AuthenticatedRecycleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/chat/$tabId': typeof AuthenticatedChatTabIdRoute
+  '/companions/$companionId/chat': typeof AuthenticatedCompanionsCompanionIdChatRoute
+  '/companions/$companionId/memories': typeof AuthenticatedCompanionsCompanionIdMemoriesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/_authenticated/companions': typeof AuthenticatedCompanionsRoute
+  '/_authenticated/companions': typeof AuthenticatedCompanionsRouteWithChildren
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/recycle': typeof AuthenticatedRecycleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/chat/$tabId': typeof AuthenticatedChatTabIdRoute
+  '/_authenticated/companions/$companionId/chat': typeof AuthenticatedCompanionsCompanionIdChatRoute
+  '/_authenticated/companions/$companionId/memories': typeof AuthenticatedCompanionsCompanionIdMemoriesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,6 +138,8 @@ export interface FileRouteTypes {
     | '/recycle'
     | '/settings'
     | '/chat/$tabId'
+    | '/companions/$companionId/chat'
+    | '/companions/$companionId/memories'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -129,6 +151,8 @@ export interface FileRouteTypes {
     | '/recycle'
     | '/settings'
     | '/chat/$tabId'
+    | '/companions/$companionId/chat'
+    | '/companions/$companionId/memories'
   id:
     | '__root__'
     | '/'
@@ -141,6 +165,8 @@ export interface FileRouteTypes {
     | '/_authenticated/recycle'
     | '/_authenticated/settings'
     | '/_authenticated/chat/$tabId'
+    | '/_authenticated/companions/$companionId/chat'
+    | '/_authenticated/companions/$companionId/memories'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -221,11 +247,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatTabIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/companions/$companionId/memories': {
+      id: '/_authenticated/companions/$companionId/memories'
+      path: '/$companionId/memories'
+      fullPath: '/companions/$companionId/memories'
+      preLoaderRoute: typeof AuthenticatedCompanionsCompanionIdMemoriesRouteImport
+      parentRoute: typeof AuthenticatedCompanionsRoute
+    }
+    '/_authenticated/companions/$companionId/chat': {
+      id: '/_authenticated/companions/$companionId/chat'
+      path: '/$companionId/chat'
+      fullPath: '/companions/$companionId/chat'
+      preLoaderRoute: typeof AuthenticatedCompanionsCompanionIdChatRouteImport
+      parentRoute: typeof AuthenticatedCompanionsRoute
+    }
   }
 }
 
+interface AuthenticatedCompanionsRouteChildren {
+  AuthenticatedCompanionsCompanionIdChatRoute: typeof AuthenticatedCompanionsCompanionIdChatRoute
+  AuthenticatedCompanionsCompanionIdMemoriesRoute: typeof AuthenticatedCompanionsCompanionIdMemoriesRoute
+}
+
+const AuthenticatedCompanionsRouteChildren: AuthenticatedCompanionsRouteChildren =
+  {
+    AuthenticatedCompanionsCompanionIdChatRoute:
+      AuthenticatedCompanionsCompanionIdChatRoute,
+    AuthenticatedCompanionsCompanionIdMemoriesRoute:
+      AuthenticatedCompanionsCompanionIdMemoriesRoute,
+  }
+
+const AuthenticatedCompanionsRouteWithChildren =
+  AuthenticatedCompanionsRoute._addFileChildren(
+    AuthenticatedCompanionsRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedCompanionsRoute: typeof AuthenticatedCompanionsRoute
+  AuthenticatedCompanionsRoute: typeof AuthenticatedCompanionsRouteWithChildren
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedKnowledgeBaseRoute: typeof AuthenticatedKnowledgeBaseRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -235,7 +293,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedCompanionsRoute: AuthenticatedCompanionsRoute,
+  AuthenticatedCompanionsRoute: AuthenticatedCompanionsRouteWithChildren,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedKnowledgeBaseRoute: AuthenticatedKnowledgeBaseRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
