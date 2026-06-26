@@ -1,5 +1,4 @@
 import { BadRequestException, type Logger } from '@nestjs/common'
-import type { ConfigService } from '@nestjs/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatService } from '@/modules/chat/chat.service.js'
 import type { ConversationService } from '@/modules/chat/conversation.service.js'
@@ -7,35 +6,72 @@ import type { ChatContextRetriever } from '@/modules/chat/interfaces/chat-contex
 import type { LlmProviderFactory } from '@/modules/chat/llm/llm-provider.factory.js'
 import type { LlmProvider } from '@/modules/chat/llm/llm-provider.interface.js'
 import type { ModelRegistryService } from '@/modules/chat/model-registry.service.js'
+import { MODEL_PROVIDER_ERROR_CODES } from '@/modules/settings/constants.js'
+import type { Settings } from '@/modules/settings/dto/settings.dto.js'
+import type { ModelProviderService } from '@/modules/settings/model-provider.service.js'
 import type { SettingsService } from '@/modules/settings/settings.service.js'
 
-function createMockConfigService(overrides = {}) {
+function createMockSettings(overrides: Partial<Settings> = {}): Settings {
   return {
-    get: vi.fn().mockImplementation((key: string, defaultValue?: any) => {
-      if (key === 'LLM_TIMEOUT_MS') return 300_000
-      if (key === 'DEEPSEEK_API_KEY') return 'deepseek-key'
-      if (key === 'DEEPSEEK_BASE_URL') return 'https://api.deepseek.com'
-      return defaultValue
-    }),
+    providers: {
+      deepseek: {
+        id: 'deepseek',
+        name: 'DeepSeek',
+        type: 'llm',
+        enabled: true,
+        apiKey: 'key',
+        model: 'deepseek-chat',
+        baseUrl: 'https://api.deepseek.com',
+        timeoutMs: 300_000,
+      },
+    },
+    chat: {
+      defaultProvider: 'deepseek',
+      enabledProviders: ['deepseek'],
+      temperature: 0.7,
+    },
+    rag: {
+      llmProvider: '',
+      embeddingProvider: '',
+      timeoutMs: 60_000,
+      rerankerAllowedModelPrefixes: ['BAAI/', 'Xorbits/', 'sentence-transformers/'],
+    },
+    companion: {},
+    indexing: {
+      contextualEmbedding: true,
+      contextualWindow: 1,
+      parentChunkSize: 800,
+      childChunkSize: 150,
+      synonymDict: { zh: {}, en: {} },
+    },
+    appearance: { mode: 'light', fontSizeLevel: 3 },
     ...overrides,
   }
 }
 
 function createMockSettingsService(overrides = {}) {
-  const settings = {
-    providers: {
-      deepseek: {
-        name: 'DeepSeek',
-        apiKey: 'key',
-        model: 'deepseek-chat',
-        baseUrl: 'https://api.deepseek.com',
-      },
-    },
-    defaultChatProvider: 'deepseek',
-  }
+  const settings = createMockSettings()
   return {
     getSettings: vi.fn().mockResolvedValue(settings),
     getDecryptedSettings: vi.fn().mockResolvedValue(settings),
+    ...overrides,
+  }
+}
+
+function createMockModelProviderService(overrides = {}) {
+  return {
+    resolveProvider: vi
+      .fn()
+      .mockImplementation((_path: string, _type: string, config: Settings) => {
+        const provider = config.providers.deepseek
+        if (!provider) {
+          throw new BadRequestException({
+            code: MODEL_PROVIDER_ERROR_CODES.NOT_FOUND,
+            message: 'provider not found',
+          })
+        }
+        return provider
+      }),
     ...overrides,
   }
 }
@@ -83,8 +119,8 @@ function createMockProvider(overrides = {}): LlmProvider {
 
 describe('ChatService', () => {
   let service: ChatService
-  let configService: ReturnType<typeof createMockConfigService>
   let settingsService: ReturnType<typeof createMockSettingsService>
+  let modelProviderService: ReturnType<typeof createMockModelProviderService>
   let modelRegistry: ReturnType<typeof createMockModelRegistry>
   let conversationService: ReturnType<typeof createMockConversationService>
   let llmFactory: ReturnType<typeof createMockLlmFactory>
@@ -92,8 +128,8 @@ describe('ChatService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    configService = createMockConfigService()
     settingsService = createMockSettingsService()
+    modelProviderService = createMockModelProviderService()
     modelRegistry = createMockModelRegistry()
     conversationService = createMockConversationService()
     llmFactory = createMockLlmFactory()
@@ -104,8 +140,8 @@ describe('ChatService', () => {
     llmFactory.create.mockReturnValue(createMockProvider())
 
     service = new ChatService(
-      configService as unknown as ConfigService,
       settingsService as unknown as SettingsService,
+      modelProviderService as unknown as ModelProviderService,
       modelRegistry as unknown as ModelRegistryService,
       conversationService as unknown as ConversationService,
       llmFactory as unknown as LlmProviderFactory,
@@ -278,8 +314,8 @@ describe('ChatService', () => {
     it('warns and skips retrieval when no retriever registered', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       service = new ChatService(
-        configService as unknown as ConfigService,
         settingsService as unknown as SettingsService,
+        modelProviderService as unknown as ModelProviderService,
         modelRegistry as unknown as ModelRegistryService,
         conversationService as unknown as ConversationService,
         llmFactory as unknown as LlmProviderFactory,
@@ -462,10 +498,12 @@ describe('ChatService', () => {
 
     it('does not load history when provider config is invalid', async () => {
       // 回归：provider 校验失败时，不该再去查历史，减小 DB 压力
-      settingsService.getDecryptedSettings.mockResolvedValue({
-        providers: {},
-        defaultChatProvider: '',
-      } as any)
+      settingsService.getDecryptedSettings.mockResolvedValue(
+        createMockSettings({
+          providers: {},
+          chat: { defaultProvider: '', enabledProviders: [], temperature: 0.7 },
+        }),
+      )
       const abortController = new AbortController()
 
       try {
@@ -478,7 +516,7 @@ describe('ChatService', () => {
         }
       } catch (err) {
         expect(err).toBeInstanceOf(BadRequestException)
-        expect((err as any).response?.code).toBe('PROVIDER_INVALID')
+        expect((err as any).response?.code).toBe(MODEL_PROVIDER_ERROR_CODES.NOT_FOUND)
       }
 
       // 关键断言：loadHistory 不应被调用
@@ -531,15 +569,11 @@ describe('ChatService', () => {
       expect(conversationService.generateTitle).toHaveBeenCalled()
     })
 
-    it('uses builtin model registry when provider is a model id', async () => {
+    it('uses model registry to resolve provider by model id', async () => {
       modelRegistry.lookup.mockReturnValue({
         providerKey: 'deepseek',
         providerName: 'DeepSeek',
         baseUrl: 'https://api.deepseek.com',
-      } as any)
-      settingsService.getDecryptedSettings.mockResolvedValue({
-        providers: {},
-        defaultChatProvider: '',
       } as any)
 
       const abortController = new AbortController()

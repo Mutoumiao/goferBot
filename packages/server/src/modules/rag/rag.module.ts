@@ -1,8 +1,10 @@
 import { DefaultRetrievalPostprocessor, HybridRetriever, OpenAIEmbedder } from '@goferbot/rag-sdk'
 import { Module } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { KeywordService } from '../../processors/keyword/keyword.service.js'
 import { VectorService } from '../../processors/vector/vector.service.js'
+import { ModelProviderService } from '../settings/model-provider.service.js'
+import { SettingsModule } from '../settings/settings.module.js'
+import { SystemConfigService } from '../settings/system-config.service.js'
 import { RagService } from './rag.service.js'
 
 /**
@@ -10,21 +12,29 @@ import { RagService } from './rag.service.js'
  * 不暴露任何 HTTP Controller，不依赖 ChatModule，也不被 ChatModule 依赖。
  */
 @Module({
+  imports: [SettingsModule],
   providers: [
     RagService,
     {
       provide: HybridRetriever,
-      useFactory: (
+      useFactory: async (
         vectorService: VectorService,
         keywordService: KeywordService,
-        config: ConfigService,
+        systemConfigService: SystemConfigService,
+        modelProviderService: ModelProviderService,
       ) => {
+        const config = await systemConfigService.getDecryptedSystemConfig()
+        const provider = modelProviderService.resolveProvider(
+          'rag.embeddingProvider',
+          'embedding',
+          config,
+        )
         const embedder = new OpenAIEmbedder({
-          provider: 'openai',
-          apiKey: config.getOrThrow<string>('EMBEDDING_API_KEY'),
-          baseUrl: config.get<string>('EMBEDDING_BASE_URL') ?? undefined,
-          model: config.get<string>('EMBEDDING_MODEL', 'text-embedding-3-small'),
-          dimension: config.get<number>('EMBEDDING_DIMENSIONS', 1536),
+          provider: provider.id,
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl || undefined,
+          model: provider.model,
+          dimension: provider.dimensions ?? 1536,
         })
         return new HybridRetriever({
           vectorStore: vectorService,
@@ -32,7 +42,7 @@ import { RagService } from './rag.service.js'
           embedder,
         })
       },
-      inject: [VectorService, KeywordService, ConfigService],
+      inject: [VectorService, KeywordService, SystemConfigService, ModelProviderService],
     },
     {
       provide: DefaultRetrievalPostprocessor,

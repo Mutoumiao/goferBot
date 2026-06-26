@@ -1,7 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import { OnEvent } from '@nestjs/event-emitter'
 import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
 import type { LlmMessage } from '../../modules/chat/llm/llm-provider.interface.js'
+import { ConfigChangedEvent } from '../../modules/settings/constants.js'
+import type { ModelProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
+import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
+import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 
 export type Language = 'zh' | 'en'
 
@@ -12,7 +16,7 @@ export interface QueryUnderstandingResult {
 }
 
 const SHORT_QUERY_TOKEN_THRESHOLD = 5
-const CHINESE_CHAR_REGEX = /[\u4e00-\u9fff]/
+const CHINESE_CHAR_REGEX = /[一-鿿㐀-䶿぀-ヿ]/
 const ZH_CHAR_RATIO_THRESHOLD = 0.2
 const REWRITE_SYSTEM_PROMPT =
   '你是一个查询改写助手。请将用户的短查询扩展为更完整、更具体、更适合进行语义检索的问题描述。只输出改写后的查询，不要附加解释。'
@@ -30,23 +34,68 @@ const REWRITE_SYSTEM_PROMPT =
  * 所有子操作都有 try/catch，任何一步失败不影响主流程，保证"永不阻塞检索"。
  */
 @Injectable()
-export class QueryUnderstandingService {
+export class QueryUnderstandingService implements OnModuleInit {
   private readonly logger = new Logger(QueryUnderstandingService.name)
-  private readonly llm: LlamaIndexProvider | null = null
+  private llm: LlamaIndexProvider | null = null
+  private synonymDict: Settings['indexing']['synonymDict'] = { zh: {}, en: {} }
 
-  constructor(private readonly config: ConfigService) {
-    const apiKey = config.get<string>('RAG_LLM_API_KEY') ?? config.get<string>('LLM_API_KEY')
-    const model =
-      config.get<string>('RAG_LLM_MODEL') ?? config.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
-    const baseURL = config.get<string>('RAG_LLM_BASE_URL') ?? config.get<string>('LLM_BASE_URL')
-    const timeout =
-      config.get<number>('RAG_LLM_TIMEOUT_MS') ?? config.get<number>('LLM_TIMEOUT_MS') ?? 60_000
+  constructor(
+    private readonly systemConfigService: SystemConfigService,
+    private readonly modelProviderService: ModelProviderService,
+  ) {}
 
-    if (apiKey) {
-      this.llm = new LlamaIndexProvider({ apiKey, model, baseURL, timeout })
-    } else {
-      this.logger.warn('RAG LLM 未配置，短查询改写功能将不可用')
+  async onModuleInit(): Promise<void> {
+    await this.refreshConfig()
+  }
+
+  @OnEvent('config.changed')
+  async handleConfigChanged(event: ConfigChangedEvent): Promise<void> {
+    if (
+      event.category === 'rag' ||
+      event.category === 'indexing' ||
+      event.category === 'providers'
+    ) {
+      await this.refreshConfig()
     }
+  }
+
+  private async refreshConfig(): Promise<void> {
+    const config = await this.systemConfigService.getDecryptedSystemConfig()
+    this.applyRagConfig(config)
+    this.synonymDict = config.indexing.synonymDict
+  }
+
+  private applyRagConfig(config: Settings): void {
+    const providerId = config.rag.llmProvider
+    if (!providerId) {
+      this.logger.warn('RAG LLM 未配置，短查询改写功能将不可用')
+      this.llm = null
+      return
+    }
+
+    let provider: ModelProvider
+    try {
+      provider = this.modelProviderService.resolveProvider('rag.llmProvider', 'llm', config)
+    } catch (err) {
+      this.logger.warn(
+        `RAG LLM provider 解析失败：${err instanceof Error ? err.message : String(err)}`,
+      )
+      this.llm = null
+      return
+    }
+
+    if (!provider.apiKey) {
+      this.logger.warn('RAG LLM 未配置，缺少 API Key，短查询改写功能将不可用')
+      this.llm = null
+      return
+    }
+
+    this.llm = new LlamaIndexProvider({
+      apiKey: provider.apiKey,
+      model: provider.model,
+      baseURL: provider.baseUrl || undefined,
+      timeout: config.rag.timeoutMs ?? provider.timeoutMs,
+    })
   }
 
   detectLanguage(text: string): Language {
@@ -59,13 +108,7 @@ export class QueryUnderstandingService {
   }
 
   expandSynonyms(query: string, language: Language): string[] {
-    const dict = this.loadSynonymDict()
-    if (!dict) {
-      this.logger.debug('未配置 RAG_SYNONYM_DICT，跳过同义词扩展')
-      return [query]
-    }
-
-    const langDict = dict[language]
+    const langDict = this.synonymDict[language]
     if (!langDict) {
       this.logger.debug(`未找到 ${language} 的同义词配置`)
       return [query]
@@ -82,39 +125,40 @@ export class QueryUnderstandingService {
       }
     }
 
-    const list = Array.from(results)
-    this.logger.debug(`同义词扩展：[${query}] -> ${JSON.stringify(list)}`)
-    return list
+    return Array.from(results)
   }
 
-  /**
-   * 按顺序执行三件事：语言检测 → 短查询改写 → 同义词扩展
-   *
-   * 返回的 expandedQueries 会被上层用作 OR 多路召回（见 llamaindex-rag 的
-   * buildEsShouldClauses 处理）。
-   */
   async process(query: string): Promise<QueryUnderstandingResult> {
-    this.logger.log(`开始处理查询理解：原始查询长度=${query.length}`)
-
     const language = this.detectLanguage(query)
-    this.logger.debug(`语言检测结果：${language}`)
 
-    const rewrittenQuery = await this.rewriteShortQuery(query)
-    if (rewrittenQuery !== query) {
-      this.logger.log(`短查询改写：${JSON.stringify(query)} -> ${JSON.stringify(rewrittenQuery)}`)
+    let rewrittenQuery = query
+    try {
+      rewrittenQuery = await this.rewriteShortQuery(query, language)
+    } catch (err) {
+      this.logger.warn(
+        `查询改写失败：${err instanceof Error ? err.message : String(err)}，保持原查询不变`,
+      )
     }
 
-    const expandedQueries = this.expandSynonyms(rewrittenQuery, language)
+    let expandedQueries: string[]
+    try {
+      expandedQueries = this.expandSynonyms(rewrittenQuery, language)
+    } catch (err) {
+      this.logger.warn(
+        `同义词扩展失败：${err instanceof Error ? err.message : String(err)}，保持改写后查询不变`,
+      )
+      expandedQueries = [rewrittenQuery]
+    }
 
-    this.logger.log(
-      `查询理解完成：language=${language}, rewritten=${JSON.stringify(rewrittenQuery)}, expandedCount=${expandedQueries.length}`,
-    )
-
-    return { rewrittenQuery, language, expandedQueries }
+    return {
+      rewrittenQuery,
+      language,
+      expandedQueries,
+    }
   }
 
-  private async rewriteShortQuery(query: string): Promise<string> {
-    const estimatedTokens = Math.max(1, Math.ceil(query.length / 4))
+  private async rewriteShortQuery(query: string, language: Language): Promise<string> {
+    const estimatedTokens = this.estimateTokens(query, language)
     if (estimatedTokens > SHORT_QUERY_TOKEN_THRESHOLD) {
       this.logger.debug(
         `查询 token 估算 ${estimatedTokens} > ${SHORT_QUERY_TOKEN_THRESHOLD}，跳过改写`,
@@ -143,46 +187,12 @@ export class QueryUnderstandingService {
     }
   }
 
-  private loadSynonymDict(): Record<Language, Record<string, string[]>> | null {
-    const raw = this.config.get<unknown>('RAG_SYNONYM_DICT')
-    if (!raw) return null
-
-    if (typeof raw === 'string') {
-      try {
-        const parsed = JSON.parse(raw)
-        return this.normalizeSynonymDict(parsed)
-      } catch {
-        this.logger.warn('RAG_SYNONYM_DICT JSON 解析失败')
-        return null
-      }
+  private estimateTokens(text: string, language: Language): number {
+    if (language === 'zh') {
+      // 中文按字估算，保守按 1:1
+      return text.length
     }
-
-    if (typeof raw === 'object' && raw !== null) {
-      return this.normalizeSynonymDict(raw as Record<string, unknown>)
-    }
-
-    return null
-  }
-
-  private normalizeSynonymDict(
-    raw: Record<string, unknown>,
-  ): Record<Language, Record<string, string[]>> | null {
-    const result: Partial<Record<Language, Record<string, string[]>>> = {}
-
-    for (const lang of ['zh', 'en'] as const) {
-      const langEntry = raw[lang]
-      if (!langEntry || typeof langEntry !== 'object') continue
-
-      const langDict: Record<string, string[]> = {}
-      for (const [trigger, value] of Object.entries(langEntry as Record<string, unknown>)) {
-        if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
-          langDict[trigger] = value as string[]
-        }
-      }
-      result[lang] = langDict
-    }
-
-    if (!result.zh && !result.en) return null
-    return result as Record<Language, Record<string, string[]>>
+    // 英文按空格分词估算
+    return text.split(/\s+/).filter(Boolean).length
   }
 }

@@ -1,44 +1,70 @@
 import { ChatOpenAI } from '@langchain/openai'
-import { Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import { OnEvent } from '@nestjs/event-emitter'
+import { ConfigChangedEvent, MODEL_PROVIDER_ERROR_CODES } from '../../settings/constants.js'
+import type { Settings } from '../../settings/dto/settings.dto.js'
+import { ModelProviderService } from '../../settings/model-provider.service.js'
+import { SystemConfigService } from '../../settings/system-config.service.js'
 
 @Injectable()
-export class LlmConfigService {
+export class LlmConfigService implements OnModuleInit {
   private readonly logger = new Logger(LlmConfigService.name)
+  private companionConfig: Settings['companion'] | null = null
+  private settings: Settings | null = null
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly systemConfigService: SystemConfigService,
+    private readonly modelProviderService: ModelProviderService,
+  ) {}
 
-  /**
-   * 获取统一的 LLM 配置
-   * 复用现有 RAG_LLM_* 环境变量
-   */
-  getLlmConfig(): { apiKey: string; model: string; baseURL?: string; timeout: number } {
-    const apiKey =
-      this.configService.get<string>('RAG_LLM_API_KEY') ??
-      this.configService.get<string>('LLM_API_KEY')
-    const model =
-      this.configService.get<string>('RAG_LLM_MODEL') ??
-      this.configService.get<string>('LLM_MODEL') ??
-      'gpt-4o-mini'
-    const baseURL =
-      this.configService.get<string>('RAG_LLM_BASE_URL') ??
-      this.configService.get<string>('LLM_BASE_URL')
-    const timeout =
-      this.configService.get<number>('RAG_LLM_TIMEOUT_MS') ??
-      this.configService.get<number>('LLM_TIMEOUT_MS') ??
-      60_000
-
-    if (!apiKey) {
-      throw new Error('Companion LLM 未配置：请设置 RAG_LLM_API_KEY 或 LLM_API_KEY 环境变量')
-    }
-
-    return { apiKey, model, baseURL, timeout }
+  async onModuleInit(): Promise<void> {
+    await this.refreshConfig()
   }
 
-  /**
-   * 创建 LangChain ChatModel 实例
-   * 为 companion 模块提供独立的 LLM 客户端
-   */
+  @OnEvent('config.changed')
+  async handleConfigChanged(event: ConfigChangedEvent): Promise<void> {
+    if (event.category === 'companion' || event.category === 'providers') {
+      await this.refreshConfig()
+    }
+  }
+
+  private async refreshConfig(): Promise<void> {
+    const config = await this.systemConfigService.getDecryptedSystemConfig()
+    this.companionConfig = config.companion
+    this.settings = config
+    const providerId = config.companion.provider
+    this.logger.debug(`Companion LLM config refreshed: ${providerId ?? '未配置'}`)
+  }
+
+  private getLlmConfig(): { apiKey: string; model: string; baseURL?: string; timeout: number } {
+    if (!this.settings || !this.companionConfig) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_CONFIGURED,
+        message: 'Companion LLM 未配置：请先在管理后台配置 companion 模型',
+      })
+    }
+
+    const provider = this.modelProviderService.resolveProvider(
+      'companion.provider',
+      'llm',
+      this.settings,
+    )
+
+    if (!provider.apiKey) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_CONFIGURED,
+        message: 'Companion LLM 未配置：缺少 API Key',
+      })
+    }
+
+    return {
+      apiKey: provider.apiKey,
+      model: provider.model,
+      baseURL: provider.baseUrl || undefined,
+      timeout: provider.timeoutMs,
+    }
+  }
+
   createLangChainChatModel(
     overrides?: Partial<ConstructorParameters<typeof ChatOpenAI>[0]>,
   ): ChatOpenAI {

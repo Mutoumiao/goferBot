@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { ChatMessagesChunk } from '@goferbot/data'
 import { BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+import { MODEL_PROVIDER_ERROR_CODES } from '../settings/constants.js'
+import { ModelProviderService } from '../settings/model-provider.service.js'
 import { SettingsService } from '../settings/settings.service.js'
 import { ConversationService } from './conversation.service.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
@@ -11,7 +12,7 @@ import {
 } from './interfaces/chat-context-retriever.interface.js'
 import { LlmProviderFactory } from './llm/llm-provider.factory.js'
 import type { LlmMessage, LlmProvider } from './llm/llm-provider.interface.js'
-import { type ModelInfo, ModelRegistryService } from './model-registry.service.js'
+import { ModelRegistryService } from './model-registry.service.js'
 
 function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
   return m.role === 'system' || m.role === 'user' || m.role === 'assistant'
@@ -19,22 +20,18 @@ function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
 
 @Injectable()
 export class ChatService {
-  private readonly llmTimeoutMs: number
   private readonly logger = new Logger(ChatService.name)
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly settingsService: SettingsService,
+    private readonly modelProviderService: ModelProviderService,
     private readonly modelRegistry: ModelRegistryService,
     private readonly conversationService: ConversationService,
     private readonly llmFactory: LlmProviderFactory,
     @Inject(CHAT_CONTEXT_RETRIEVER)
     @Optional()
     private readonly contextRetriever?: ChatContextRetriever,
-  ) {
-    const parsed = this.configService.get<number>('LLM_TIMEOUT_MS', 300_000)
-    this.llmTimeoutMs = Number.isNaN(parsed) ? 300_000 : parsed
-  }
+  ) {}
 
   async validateChatAccess(userId: string, dto: ChatMessagesDto): Promise<void> {
     const sessionId = dto.conversation_id
@@ -72,7 +69,7 @@ export class ChatService {
     }
 
     // 先解析 provider（失败时无需加载历史消息，减少无效数据库压力）
-    const provider = await this.createProvider(userId, dto.provider_key, dto.model)
+    const { provider, timeoutMs } = await this.resolveProvider(userId, dto.provider_key, dto.model)
     const history = await this.conversationService.loadHistory(sessionId, {
       beforeMessageId: dto.parent_message_id ?? undefined,
     })
@@ -142,7 +139,7 @@ export class ChatService {
           message_id: messageId,
           answer: '',
           done: true,
-          error: `LLM 请求超时（${this.llmTimeoutMs / 1000} 秒）`,
+          error: `LLM 请求超时（${timeoutMs / 1000} 秒）`,
         }
         return
       }
@@ -210,95 +207,70 @@ export class ChatService {
   }
 
   private async createProvider(
-    userId: string,
-    providerKey?: string,
-    dtoModel?: string,
+    providerConfig: { id: string; apiKey: string; model: string; baseUrl: string },
+    model: string,
+    timeoutMs: number,
   ): Promise<LlmProvider> {
-    const {
-      resolvedKey,
-      provider: providerConfig,
-      modelInfo,
-    } = await this.resolveProvider(userId, providerKey)
-
-    let apiKey: string
-    let baseURL: string
-    let model: string
-
-    if (modelInfo) {
-      // C2: 白名单校验 providerKey，仅允许字母、数字、下划线、连字符，防止环境变量注入
-      const safeProviderKey = modelInfo.providerKey.replace(/[^a-zA-Z0-9_-]/g, '')
-      if (safeProviderKey !== modelInfo.providerKey) {
-        this.logger.warn(
-          `Provider key 包含非法字符: ${modelInfo.providerKey}，已过滤为 ${safeProviderKey}`,
-        )
-      }
-      // 内置模型：使用模型注册中心中的 providerKey 读取环境变量，避免将用户传入的 provider_key 拼入环境变量名
-      const envApiKey = this.configService.get<string>(`${safeProviderKey.toUpperCase()}_API_KEY`)
-      const envBaseUrl = this.configService.get<string>(`${safeProviderKey.toUpperCase()}_BASE_URL`)
-      const envModel = this.configService.get<string>(`${safeProviderKey.toUpperCase()}_MODEL`)
-      apiKey = envApiKey ?? ''
-      baseURL = envBaseUrl ?? modelInfo.baseUrl
-      model = dtoModel ?? envModel ?? resolvedKey
-    } else {
-      // 用户自定义 provider：使用 settings 中的配置，不再读取环境变量，防止通过 provider_key 探测服务端 secrets
-      apiKey = providerConfig.apiKey ?? ''
-      baseURL = providerConfig.baseUrl ?? 'https://api.openai.com'
-      model = dtoModel ?? providerConfig.model ?? 'gpt-3.5-turbo'
-    }
-
-    if (!apiKey) {
+    if (!providerConfig.apiKey) {
       throw new BadRequestException({ code: 'LLM_NOT_CONFIGURED', message: '未配置 LLM API Key' })
     }
 
     return this.llmFactory.create('openai-compatible', {
-      apiKey,
+      apiKey: providerConfig.apiKey,
       model,
-      baseURL,
-      timeout: this.llmTimeoutMs,
+      baseURL: providerConfig.baseUrl || 'https://api.openai.com',
+      timeout: timeoutMs,
     })
   }
 
   private async resolveProvider(
     userId: string,
     providerKey?: string,
+    dtoModel?: string,
   ): Promise<{
-    providerKey: string
-    resolvedKey: string
-    provider: { name: string; apiKey: string; model: string; baseUrl: string }
-    modelInfo?: ModelInfo
+    provider: LlmProvider
+    model: string
+    timeoutMs: number
   }> {
     const settings = await this.settingsService.getDecryptedSettings(userId)
-    const providers = settings.providers as Record<
-      string,
-      { name: string; apiKey: string; model: string; baseUrl: string }
-    >
-    const defaultProvider = settings.defaultChatProvider as string
+    const resolvedKey = providerKey?.trim() || settings.chat.defaultProvider
 
-    const resolvedKey = providerKey?.trim() || defaultProvider
-
-    const modelInfo = this.modelRegistry.lookup(resolvedKey)
-    if (modelInfo) {
-      return {
-        providerKey: modelInfo.providerKey,
-        resolvedKey,
-        provider: {
-          name: modelInfo.providerName,
-          apiKey: '',
-          model: resolvedKey,
-          baseUrl: modelInfo.baseUrl,
-        },
-        modelInfo,
-      }
-    }
-
-    if (!resolvedKey || !providers || !Object.hasOwn(providers, resolvedKey)) {
+    if (!resolvedKey) {
       throw new BadRequestException({
-        code: 'PROVIDER_INVALID',
-        message: `未配置的 provider: ${resolvedKey ?? '空'}`,
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_CONFIGURED,
+        message: '未配置 Chat 默认模型提供商',
       })
     }
 
-    return { providerKey: resolvedKey, resolvedKey, provider: providers[resolvedKey] }
+    let providerId = resolvedKey
+    const modelInfo = this.modelRegistry.lookup(resolvedKey)
+    if (modelInfo) {
+      providerId = modelInfo.providerKey
+    }
+
+    const enabledProviders = settings.chat.enabledProviders
+    if (
+      enabledProviders.length > 0 &&
+      !enabledProviders.includes(providerId) &&
+      !enabledProviders.includes(resolvedKey)
+    ) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_ENABLED,
+        message: `该模型提供商未在 Chat 中启用：${resolvedKey}`,
+      })
+    }
+
+    const provider = this.modelProviderService.resolveProvider(
+      `providers.${providerId}`,
+      'llm',
+      settings,
+    )
+    const timeoutMs = provider.timeoutMs
+    return {
+      provider: await this.createProvider(provider, dtoModel ?? provider.model, timeoutMs),
+      model: dtoModel ?? provider.model,
+      timeoutMs,
+    }
   }
 
   /** M2: 对 RAG 检索到的上下文做基础过滤，降低提示注入风险 */

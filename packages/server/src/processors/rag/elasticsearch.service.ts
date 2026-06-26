@@ -1,6 +1,7 @@
 import { Client } from '@elastic/elasticsearch'
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
 
 export interface ChunkDocument {
   id: string
@@ -40,14 +41,17 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   readonly indexName: string
   readonly embeddingDimensions: number
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly embeddings: LlamaIndexEmbeddingService,
+  ) {
     const node = config.get<string>('ELASTICSEARCH_NODE', 'http://localhost:9200')
     const apiKey = config.get<string>('ELASTICSEARCH_API_KEY')
     const username = config.get<string>('ELASTICSEARCH_USERNAME')
     const password = config.get<string>('ELASTICSEARCH_PASSWORD')
 
     this.indexName = config.get<string>('ELASTICSEARCH_INDEX', DEFAULT_INDEX)
-    this.embeddingDimensions = config.get<number>('EMBEDDING_DIMENSIONS', 1536)
+    this.embeddingDimensions = embeddings.getDimensions() ?? 1536
 
     const auth = apiKey ? { apiKey } : username && password ? { username, password } : undefined
 

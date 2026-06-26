@@ -8,12 +8,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from '@/components/
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCompanion, listMemories } from '../services'
-import {
-  type Companion,
-  type Memory,
-  MEMORY_TYPE_LABELS,
-  type MemoryFilter,
-} from '../types'
+import { type Companion, type Memory, MEMORY_TYPE_LABELS, type MemoryFilter } from '../types'
 import { CompanionStatusTag } from './CompanionStatusTag'
 
 interface CompanionMemoriesPageProps {

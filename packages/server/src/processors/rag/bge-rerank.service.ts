@@ -1,5 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { OnEvent } from '@nestjs/event-emitter'
+import { ConfigChangedEvent } from '../../modules/settings/constants.js'
+import type { ModelProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
+import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
+import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 
 export interface RerankCandidate {
   id: string
@@ -16,9 +21,6 @@ export interface RerankResult {
   originalScore?: number
 }
 
-const ALLOWED_RERANK_MODEL_PREFIXES = ['BAAI/', 'Xorbits/', 'sentence-transformers/']
-const DEFAULT_RERANK_MODEL = 'BAAI/bge-reranker-v2-m3'
-
 /**
  * BgeRerankService —— RAG 的「二阶段重排器」
  *
@@ -31,40 +33,25 @@ const DEFAULT_RERANK_MODEL = 'BAAI/bge-reranker-v2-m3'
  *   3) 模型加载失败 → `fallbackRerank`（词法匹配 + 原始分数融合）
  *
  * 安全设计：
- *   RERANK_MODEL 通过白名单校验（BAAI/、Xorbits/、sentence-transformers/）
- *   防止通过环境变量注入任意 HF 仓库。
+ *   Reranker 模型通过 rag.rerankerAllowedModelPrefixes 白名单校验，
+ *   防止通过配置注入任意 HF 仓库。
  */
 @Injectable()
 export class BgeRerankService implements OnModuleInit {
   private readonly logger = new Logger(BgeRerankService.name)
-  private readonly modelId: string
-  private readonly maxLength: number
+  private modelId: string | null = null
+  private maxLength = 512
+  private allowedPrefixes: string[] = ['BAAI/', 'Xorbits/', 'sentence-transformers/']
 
-  constructor(private readonly config: ConfigService) {
-    const raw = config.get<string>('RERANK_MODEL')
-    // Allowlist gate for model id to avoid arbitrary HF repo injection via
-    // environment variables. Production must pin to one of the approved
-    // prefixes or rely on the safe default.
-    if (raw && this.isAllowedModelId(raw)) {
-      this.modelId = raw
-    } else {
-      if (raw) {
-        this.logger.warn(`RERANK_MODEL="${raw}" 不在允许列表，已回退到默认 ${DEFAULT_RERANK_MODEL}`)
-      }
-      this.modelId = DEFAULT_RERANK_MODEL
-    }
-    this.maxLength = config.get<number>('RERANK_MAX_LENGTH', 512)
-  }
-
-  private isAllowedModelId(modelId: string): boolean {
-    return ALLOWED_RERANK_MODEL_PREFIXES.some((p) => modelId.startsWith(p))
-  }
-
-  private initialized = false
-  private tokenizer: any = null
-  private model: any = null
+  constructor(
+    private readonly config: ConfigService,
+    private readonly systemConfigService: SystemConfigService,
+    private readonly modelProviderService: ModelProviderService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
+    await this.refreshConfig()
+
     // H4: 启动时预加载模型，避免首次请求延迟
     const eagerLoad = this.config.get<string>('RERANK_EAGER_LOAD')
     if (eagerLoad === 'true' || eagerLoad === '1') {
@@ -73,8 +60,79 @@ export class BgeRerankService implements OnModuleInit {
     }
   }
 
+  @OnEvent('config.changed')
+  async handleConfigChanged(event: ConfigChangedEvent): Promise<void> {
+    if (event.category === 'rag' || event.category === 'providers') {
+      await this.refreshConfig()
+    }
+  }
+
+  async reload(): Promise<void> {
+    await this.refreshConfig()
+  }
+
+  private async refreshConfig(): Promise<void> {
+    const config = await this.systemConfigService.getDecryptedSystemConfig()
+    this.applyRerankerConfig(config)
+  }
+
+  private applyRerankerConfig(config: Settings): void {
+    this.allowedPrefixes = config.rag.rerankerAllowedModelPrefixes
+
+    const providerId = config.rag.rerankerProvider
+    if (!providerId) {
+      this.logger.warn('Reranker 未配置：请在管理后台配置 rag.rerankerProvider')
+      this.modelId = null
+      this.resetModel()
+      return
+    }
+
+    let provider: ModelProvider
+    try {
+      provider = this.modelProviderService.resolveProvider(
+        'rag.rerankerProvider',
+        'reranker',
+        config,
+      )
+    } catch (err) {
+      this.logger.warn(
+        `Reranker provider 解析失败：${err instanceof Error ? err.message : String(err)}`,
+      )
+      this.modelId = null
+      this.resetModel()
+      return
+    }
+
+    const raw = provider.model
+    if (raw && this.isAllowedModelId(raw)) {
+      this.modelId = raw
+    } else {
+      if (raw) {
+        this.logger.warn(`Reranker 模型 "${raw}" 不在允许列表，将使用 fallback 重排`)
+      }
+      this.modelId = null
+    }
+    this.maxLength = provider.maxLength ?? 512
+    this.resetModel()
+  }
+
+  private isAllowedModelId(modelId: string): boolean {
+    return this.allowedPrefixes.some((p) => modelId.startsWith(p))
+  }
+
+  private resetModel(): void {
+    this.initialized = false
+    this.tokenizer = null
+    this.model = null
+  }
+
+  private initialized = false
+  private tokenizer: any = null
+  private model: any = null
+
   async ensureInitialized(): Promise<void> {
     if (this.initialized) return
+    if (!this.modelId) return
     try {
       const { AutoTokenizer, AutoModelForSequenceClassification } = await import(
         '@xenova/transformers'
@@ -102,6 +160,10 @@ export class BgeRerankService implements OnModuleInit {
   ): Promise<RerankResult[]> {
     if (candidates.length === 0) return []
 
+    if (!this.modelId) {
+      return this.fallbackRerank(query, candidates, options)
+    }
+
     await this.ensureInitialized()
 
     if (!this.initialized || !this.model || !this.tokenizer) {
@@ -112,7 +174,7 @@ export class BgeRerankService implements OnModuleInit {
       return await this.modelRerank(query, candidates, options)
     } catch (err) {
       this.logger.warn(
-        `Model rerank failed, falling back: ${err instanceof Error ? err.message : String(err)}`,
+        `Model rerank failed: ${err instanceof Error ? err.message : String(err)}. Falling back.`,
       )
       return this.fallbackRerank(query, candidates, options)
     }
@@ -121,82 +183,69 @@ export class BgeRerankService implements OnModuleInit {
   private async modelRerank(
     query: string,
     candidates: RerankCandidate[],
-    options: { topK?: number },
+    options: { topK?: number } = {},
   ): Promise<RerankResult[]> {
-    const pairs: [string, string][] = candidates.map((c) => [query, c.content])
+    const topK = options.topK ?? candidates.length
     const batchSize = 16
     const scores: number[] = []
 
-    for (let i = 0; i < pairs.length; i += batchSize) {
-      const batch = pairs.slice(i, i + batchSize)
-      const encoded = await this.tokenizer(batch, {
+    for (let i = 0; i < candidates.length; i += batchSize) {
+      const batch = candidates.slice(i, i + batchSize)
+      const inputs = batch.map((c) => [query, c.content.slice(0, this.maxLength)])
+
+      const encoded = this.tokenizer(inputs, {
         padding: true,
         truncation: true,
         max_length: this.maxLength,
-        return_tensors: 'tf',
       })
-      const output = await this.model(encoded)
-      const logits = output.logits
-      const arr = await logits.array()
-      const flat = Array.isArray(arr) ? arr.flat() : [Number(arr)]
-      scores.push(...flat.map((n) => Number(n)))
+
+      const result = await this.model(encoded)
+      const batchScores = Array.from(result.logits.data as Float32Array)
+      scores.push(...batchScores)
     }
 
-    const maxScore = scores.reduce((m, s) => Math.max(m, s), 0) || 1
-    const results: RerankResult[] = candidates.map((c, idx) => ({
+    const ranked = candidates
+      .map((c, idx) => ({
+        ...c,
+        score: scores[idx],
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK)
+
+    return ranked.map((c) => ({
       id: c.id,
+      score: c.score,
       content: c.content,
       metadata: c.metadata,
       originalScore: c.originalScore,
-      score: scores[idx] / maxScore,
     }))
-
-    const topK = options.topK ?? results.length
-    return results.sort((a, b) => b.score - a.score).slice(0, topK)
   }
 
-  /**
-   * 降级重排（BGE 模型不可用时的兜底）
-   *
-   *   fusedScore = 0.4 * lexicalScore + 0.6 * originalScore
-   *
-   *   - lexicalScore：query 词在 content 中命中的比例
-   *   - originalScore：第一阶段的原始检索分数
-   *
-   *
-   *   不用模型也能工作，只是精度下降。这保证了在资源受限（如 Docker 环境）
-   *   下 RAG 仍可用，只是最终排名不如 Cross-Encoder 精细。
-   */
   private fallbackRerank(
     query: string,
     candidates: RerankCandidate[],
-    options: { topK?: number },
-  ): Promise<RerankResult[]> {
-    const queryLower = query.toLowerCase()
-    const terms = queryLower
-      .split(/\s+/)
-      .map((t) => t.trim())
-      .filter((t) => t.length > 1)
+    options: { topK?: number } = {},
+  ): RerankResult[] {
+    const topK = options.topK ?? candidates.length
+    const queryTerms = query.toLowerCase().split(/\s+/)
 
     const scored = candidates.map((c) => {
-      const contentLower = c.content.toLowerCase()
-      let hitCount = 0
-      for (const term of terms) {
-        if (contentLower.includes(term)) hitCount += 1
-      }
-      const lexicalScore = terms.length > 0 ? hitCount / terms.length : 0
-      const originalScore = c.originalScore ?? 0
-      const fusedScore = 0.4 * lexicalScore + 0.6 * originalScore
-      return {
-        id: c.id,
-        content: c.content,
-        metadata: c.metadata,
-        originalScore,
-        score: fusedScore,
-      }
+      const contentTerms = c.content.toLowerCase().split(/\s+/)
+      const matches = queryTerms.filter((term) => contentTerms.includes(term)).length
+      const lexicalScore = queryTerms.length > 0 ? matches / queryTerms.length : 0
+      const combinedScore = (c.originalScore ?? 0) * 0.5 + lexicalScore * 0.5
+      return { ...c, score: combinedScore }
     })
 
-    const topK = options.topK ?? scored.length
-    return Promise.resolve(scored.sort((a, b) => b.score - a.score).slice(0, topK))
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK)
+      .map((c) => ({
+        id: c.id,
+        score: c.score,
+        content: c.content,
+        metadata: c.metadata,
+        originalScore: c.originalScore,
+      }))
   }
 }

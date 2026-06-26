@@ -1,22 +1,31 @@
 import { randomUUID } from 'node:crypto'
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common'
-import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common'
+import { OnEvent } from '@nestjs/event-emitter'
+import type { LlamaIndexProviderConfig } from '../../modules/chat/llm/llama-index-provider.service.js'
+import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
+import { ConfigChangedEvent, MODEL_PROVIDER_ERROR_CODES } from '../../modules/settings/constants.js'
+import type { ModelProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
+import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
+import { SystemConfigService } from '../../modules/settings/system-config.service.js'
+import { PrismaService } from '../database/prisma.service.js'
+import { BgeRerankService } from './bge-rerank.service.js'
+import type { ChunkDocument, SearchHit } from './elasticsearch.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
-import type { ChunkDocument } from './elasticsearch.service.js'
-import type { SearchHit } from './elasticsearch.service.js'
 import { EsKeywordService } from './es-keyword.service.js'
 import { EsVectorService } from './es-vector.service.js'
-import { BgeRerankService } from './bge-rerank.service.js'
+import type { GroundingResult } from './grounding.service.js'
 import { GroundingService } from './grounding.service.js'
 import { GuardrailService } from './guardrail.service.js'
-import { RouterService } from './router.service.js'
-import type { RouterDecision } from './router.service.js'
+import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
 import { QueryUnderstandingService } from './query-understanding.service.js'
-import type { GroundingResult } from './grounding.service.js'
-import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
-import type { LlamaIndexProviderConfig } from '../../modules/chat/llm/llama-index-provider.service.js'
-import { ConfigService } from '@nestjs/config'
-import { PrismaService } from '../database/prisma.service.js'
+import type { RouterDecision } from './router.service.js'
+import { RouterService } from './router.service.js'
 
 export type RetrievalMode = 'vector' | 'bm25' | 'hybrid'
 
@@ -105,13 +114,13 @@ type StreamOutcome =
  *   IDOR 防护 —— removeDocument 对"不存在"统一按无权处理，不暴露存在性
  */
 @Injectable()
-export class LlamaIndexRagService {
+export class LlamaIndexRagService implements OnModuleInit {
   private readonly logger = new Logger(LlamaIndexRagService.name)
-  private readonly llm: LlamaIndexProvider
-  readonly parentChunkSize: number
-  readonly childChunkSize: number
-  readonly enableContextualEmbedding: boolean
-  readonly contextualWindow: number
+  private llm: LlamaIndexProvider | null = null
+  private parentChunkSize = DEFAULT_PARENT_CHUNK_SIZE
+  private childChunkSize = DEFAULT_CHILD_CHUNK_SIZE
+  private enableContextualEmbedding = true
+  private contextualWindow = DEFAULT_CONTEXTUAL_WINDOW
 
   constructor(
     private readonly embeddings: LlamaIndexEmbeddingService,
@@ -124,45 +133,84 @@ export class LlamaIndexRagService {
     private readonly routerService: RouterService,
     private readonly queryUnderstanding: QueryUnderstandingService,
     private readonly prisma: PrismaService,
-    config: ConfigService,
-  ) {
-    const apiKey = config.get<string>('RAG_LLM_API_KEY') ?? config.get<string>('LLM_API_KEY')
-    const model =
-      config.get<string>('RAG_LLM_MODEL') ?? config.get<string>('LLM_MODEL') ?? 'gpt-3.5-turbo'
-    const baseURL = config.get<string>('RAG_LLM_BASE_URL') ?? config.get<string>('LLM_BASE_URL')
-    const timeout =
-      config.get<number>('RAG_LLM_TIMEOUT_MS') ?? config.get<number>('LLM_TIMEOUT_MS') ?? 60_000
+    private readonly systemConfigService: SystemConfigService,
+    private readonly modelProviderService: ModelProviderService,
+  ) {}
 
-    if (!apiKey) {
-      throw new Error('RAG LLM 未配置：请设置 RAG_LLM_API_KEY 或 LLM_API_KEY 环境变量')
+  async onModuleInit(): Promise<void> {
+    await this.refreshConfig()
+  }
+
+  @OnEvent('config.changed')
+  async handleConfigChanged(event: ConfigChangedEvent): Promise<void> {
+    if (
+      event.category === 'rag' ||
+      event.category === 'indexing' ||
+      event.category === 'providers'
+    ) {
+      await this.refreshConfig()
+    }
+  }
+
+  private async refreshConfig(): Promise<void> {
+    const config = await this.systemConfigService.getDecryptedSystemConfig()
+    this.applyRagConfig(config)
+    this.applyIndexingConfig(config.indexing)
+  }
+
+  private applyRagConfig(config: Settings): void {
+    const providerId = config.rag.llmProvider
+    if (!providerId) {
+      this.logger.warn('RAG LLM 未配置：请在管理后台配置 rag.llmProvider')
+      this.llm = null
+      return
+    }
+
+    let provider: ModelProvider
+    try {
+      provider = this.modelProviderService.resolveProvider('rag.llmProvider', 'llm', config)
+    } catch (err) {
+      this.logger.warn(
+        `RAG LLM provider 解析失败：${err instanceof Error ? err.message : String(err)}`,
+      )
+      this.llm = null
+      return
+    }
+
+    if (!provider.apiKey) {
+      this.logger.warn('RAG LLM 未配置：缺少 API Key')
+      this.llm = null
+      return
     }
 
     this.llm = new LlamaIndexProvider({
-      apiKey,
-      model,
-      baseURL,
-      timeout,
+      apiKey: provider.apiKey,
+      model: provider.model,
+      baseURL: provider.baseUrl || undefined,
+      timeout: config.rag.timeoutMs ?? provider.timeoutMs,
     } satisfies LlamaIndexProviderConfig)
+    this.logger.debug(`RAG LLM refreshed: ${provider.model}`)
+  }
 
-    this.parentChunkSize = config.get<number>('RAG_PARENT_CHUNK_SIZE', DEFAULT_PARENT_CHUNK_SIZE)
-    this.childChunkSize = config.get<number>('RAG_CHILD_CHUNK_SIZE', DEFAULT_CHILD_CHUNK_SIZE)
-
-    const contextualCfg = config.get<string>('RAG_CONTEXTUAL_EMBEDDING')
-    if (contextualCfg === undefined) {
-      this.enableContextualEmbedding = true
-    } else {
-      this.enableContextualEmbedding = ['true', '1', 'yes', 'on'].includes(
-        contextualCfg.trim().toLowerCase(),
-      )
-    }
-    this.contextualWindow = Math.max(
-      1,
-      config.get<number>('RAG_CONTEXTUAL_WINDOW', DEFAULT_CONTEXTUAL_WINDOW),
-    )
+  private applyIndexingConfig(config: Settings['indexing']): void {
+    this.parentChunkSize = config.parentChunkSize
+    this.childChunkSize = config.childChunkSize
+    this.contextualWindow = Math.max(1, config.contextualWindow)
+    this.enableContextualEmbedding = config.contextualEmbedding
 
     if (this.enableContextualEmbedding) {
       this.logger.log(`Contextual embedding enabled (window=${this.contextualWindow})`)
     }
+  }
+
+  private getLlm(): LlamaIndexProvider {
+    if (!this.llm) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_CONFIGURED,
+        message: 'RAG LLM 未配置：请在管理后台配置 rag.llmProvider',
+      })
+    }
+    return this.llm
   }
 
   /**
@@ -490,9 +538,11 @@ export class LlamaIndexRagService {
 
     return Array.from(scoreMap.entries())
       .map(([id, score]) => {
-        const hit = hitMap.get(id)!
+        const hit = hitMap.get(id)
+        if (!hit) return null
         return { ...hit, score }
       })
+      .filter((h): h is SearchHit => h !== null)
       .sort((a, b) => b.score - a.score)
   }
 
@@ -604,7 +654,7 @@ export class LlamaIndexRagService {
       ? `上下文：\n\n${context}\n\n问题：${question}\n\n请仅根据上下文内容回答。如果上下文没有相关信息，请直接说"没有相关信息"。`
       : `问题：${question}\n\n知识库中没有检索到相关内容，请直接说"没有相关信息"。`
 
-    const llmStream = this.llm.stream([
+    const llmStream = this.getLlm().stream([
       { role: 'system', content: system },
       { role: 'user', content: userPrompt },
     ])
@@ -692,7 +742,7 @@ export class LlamaIndexRagService {
       : `问题：${question}\n\n知识库中没有检索到相关内容，请直接说"没有相关信息"。`
 
     try {
-      return await this.llm.invoke([
+      return await this.getLlm().invoke([
         { role: 'system', content: system },
         { role: 'user', content: userPrompt },
       ])
@@ -921,7 +971,7 @@ export class LlamaIndexRagService {
     let buffer = ''
 
     for (const para of paragraphs) {
-      if ((buffer + '\n\n' + para).length <= chunkSize) {
+      if (`${buffer}\n\n${para}`.length <= chunkSize) {
         buffer = buffer ? `${buffer}\n\n${para}` : para
         continue
       }

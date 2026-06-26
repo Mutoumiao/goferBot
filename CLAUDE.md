@@ -110,9 +110,11 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 
 ### 环境变量
 
-- 根目录: `.env.example`（模板）
-- 服务端: `packages/server/.env.example`
-- 前端: `packages/web/.env.example`
+- 根目录 `.env.example`：项目唯一的完整环境变量模板，包含基础设施、安全策略、服务端应用配置、过渡期模型配置。
+- `packages/server/.env.example`：服务端独立覆盖说明文件，通常无需填写；完整变量清单与注释见根目录 `.env.example`。
+- `packages/web/.env.example`：前端 Vite 专属配置。
+- 加载顺序（服务端）：`packages/server/.env` → 根目录 `.env`，后加载的覆盖先加载的同名变量。
+- 配置管理指南：`docs/guide/backend/configuration-guide.md`
 
 ## 数据库模型（核心）
 

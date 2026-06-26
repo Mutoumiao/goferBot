@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { SettingsModule } from '../../modules/settings/settings.module.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
@@ -13,6 +14,7 @@ import { QueryUnderstandingService } from './query-understanding.service.js'
 import { RagController } from './rag.controller.js'
 
 @Module({
+  imports: [SettingsModule],
   controllers: [RagController],
   providers: [
     LlamaIndexEmbeddingService,
