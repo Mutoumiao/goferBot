@@ -17,6 +17,7 @@ import { Route as AuthenticatedRecycleRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedKnowledgeBaseRouteImport } from './routes/_authenticated/knowledgeBase'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedCompanionsRouteImport } from './routes/_authenticated/companions'
 import { Route as AuthenticatedChatTabIdRouteImport } from './routes/_authenticated/chat/$tabId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -59,6 +60,11 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCompanionsRoute = AuthenticatedCompanionsRouteImport.update({
+  id: '/companions',
+  path: '/companions',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedChatTabIdRoute = AuthenticatedChatTabIdRouteImport.update({
   id: '/chat/$tabId',
   path: '/chat/$tabId',
@@ -68,6 +74,7 @@ const AuthenticatedChatTabIdRoute = AuthenticatedChatTabIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/companions': typeof AuthenticatedCompanionsRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/companions': typeof AuthenticatedCompanionsRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/companions': typeof AuthenticatedCompanionsRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/knowledgeBase': typeof AuthenticatedKnowledgeBaseRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/companions'
     | '/history'
     | '/knowledgeBase'
     | '/profile'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/companions'
     | '/history'
     | '/knowledgeBase'
     | '/profile'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/companions'
     | '/_authenticated/history'
     | '/_authenticated/knowledgeBase'
     | '/_authenticated/profile'
@@ -195,6 +207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/companions': {
+      id: '/_authenticated/companions'
+      path: '/companions'
+      fullPath: '/companions'
+      preLoaderRoute: typeof AuthenticatedCompanionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/chat/$tabId': {
       id: '/_authenticated/chat/$tabId'
       path: '/chat/$tabId'
@@ -206,6 +225,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedCompanionsRoute: typeof AuthenticatedCompanionsRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedKnowledgeBaseRoute: typeof AuthenticatedKnowledgeBaseRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -215,6 +235,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedCompanionsRoute: AuthenticatedCompanionsRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedKnowledgeBaseRoute: AuthenticatedKnowledgeBaseRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
@@ -235,12 +256,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

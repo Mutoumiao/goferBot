@@ -6,6 +6,7 @@ import {
   Settings,
   Trash2,
   User,
+  Heart,
 } from 'lucide-react'
 import type { FileRoutesByFullPath } from '@/routeTree.gen'
 
@@ -14,6 +15,7 @@ type RoutePath = keyof FileRoutesByFullPath
 export type RouteKey =
   | 'login'
   | 'chat'
+  | 'companion'
   | 'knowledgeBase'
   | 'history'
   | 'settings'
@@ -53,6 +55,15 @@ export const ROUTES_REGISTER = {
     icon: MessageCircle,
     navSection: null,
     bindTo: (tabId: string) => `/chat/${tabId}`,
+  },
+  companion: {
+    key: 'companion',
+    title: 'AI 伴侣',
+    singleton: true,
+    closable: true,
+    path: '/companions',
+    icon: Heart,
+    navSection: 'primary',
   },
   knowledgeBase: {
     key: 'knowledgeBase',
