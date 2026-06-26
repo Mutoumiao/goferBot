@@ -11,6 +11,7 @@
 
 | 阶段 | 文档 | 必读 | 说明 |
 |------|------|------|------|
+| 配置管理 | [configuration-guide.md](./configuration-guide.md) | ✅ 是 | 环境变量与配置中心（数据库）的分层原则、迁移路线图 |
 | 编码约定 | [conventions.md](./conventions.md) | ✅ 是 | 验证方案、响应格式、DTO 模式、错误处理、分页规范 |
 | 架构合规 | [architecture-compliance.md](./architecture-compliance.md) | 审查时 | 审查检查清单、常见违规模式速查 |
 | API 测试 | [api-testing-guide.md](./api-testing-guide.md) | 按需 | API 测试编写指南（如不存在则跳过） |
