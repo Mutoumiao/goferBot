@@ -44,7 +44,9 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
   }
 
   startWorkers(redis: Redis): void {
-    const concurrency = this.configService.get<number>('QUEUE_CONCURRENCY', 2)
+    const raw = this.configService.get<string>('QUEUE_CONCURRENCY') ?? '2'
+    const parsed = Number.parseInt(raw, 10)
+    const concurrency = Number.isFinite(parsed) && parsed > 0 ? parsed : 2
 
     if (this.documentHandler) {
       this.documentWorker = createDocumentWorker(redis, this.documentHandler, concurrency)
