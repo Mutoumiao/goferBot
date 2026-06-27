@@ -247,9 +247,22 @@ RERANK_EAGER_LOAD=false
 - `POST /admin/providers`
 - `DELETE /admin/providers/:id`
 
-只读接口（普通用户）：
+只读接口（普通用户）按模块返回已勾选且已启用的 provider 列表：
 
-- `GET /settings/providers`（仅返回启用的 provider，API Key 已掩码）
+- `GET /settings/chat/providers` — Chat 可用 LLM 列表
+- `GET /settings/rag/providers` — RAG 可用 LLM 列表
+- `GET /settings/companion/providers` — Companion 可用 LLM 列表
+
+返回结构预留 `builtIn` 与 `custom` 数组，当前 `custom` 固定为空数组：
+
+```json
+{
+  "builtIn": [
+    { "id": "qwen", "name": "Qwen", "type": "llm", "model": "qwen-turbo", ... }
+  ],
+  "custom": []
+}
+```
 
 ### 4.2 模块分类配置
 
@@ -263,10 +276,15 @@ RERANK_EAGER_LOAD=false
 | `indexing`  | `contextualEmbedding`, `contextualWindow`, `parentChunkSize`, `childChunkSize`, `synonymDict` | 索引切分与同义词策略 |
 | `appearance`| `mode`, `fontSizeLevel`                                                  | 外观与字体                    |
 
-用户端点：
+用户只读端点：
 
 - `GET /settings/:category`
-- `POST /settings/:category`
+
+用户可写端点（仅限 `appearance`）：
+
+- `POST /settings/appearance`
+
+`chat` / `rag` / `companion` / `indexing` 由 admin 后台统一配置，用户端只读。
 
 ADMIN 系统默认端点：
 
@@ -291,8 +309,8 @@ ADMIN 系统默认端点：
 `SettingsService.getMergedConfig(userId)` 的合并顺序：
 
 1. 非模型字段兜底（`indexing`、`appearance`）。
-2. 系统配置 `system_config` 覆盖。
-3. 用户配置 `app_config` 覆盖（忽略 `providers`）。
+2. 系统配置 `system_config` 覆盖（含 `providers` 与系统模块配置）。
+3. 用户配置 `app_config` 覆盖（忽略 `providers`，当前 `providers` 字段仅做自定义模型预留）。
 4. 校验 `chat` / `rag` / `companion` 中引用的 provider 是否存在、类型匹配且已启用。
 
 删除 provider 前，`SystemConfigService.deleteProvider` 会检查是否仍被系统或用户配置引用，若存在引用则抛出 `PROVIDER_IN_USE` 错误。
@@ -318,9 +336,9 @@ ADMIN 系统默认端点：
 ### 第三期：前端适配（已完成）
 
 - [x] 更新前端 Settings 类型与 API，支持 provider 池与分类配置。
-- [x] 重构设置页为 General / Chat / RAG / Companion 四个 Tab。
-- [x] 新增 `/admin/model-providers` 页面，ADMIN 可管理 provider 池。
-- [x] 根据用户角色在 Sidebar 显示 ADMIN 入口。
+- [x] 在 `packages/admin/` 实现模型提供商管理页与模块配置页。
+- [x] `packages/web` 只读消费可用模型列表，用于 chat / rag / companion 会话页模型选择。
+- [x] `packages/web` 设置页保留 `appearance` 等用户偏好与本地自定义模型入口（自定义模型持久化后续扩展）。
 
 ### 第四期：环境变量清理（已完成）
 
@@ -381,7 +399,10 @@ ADMIN 系统默认端点：
 - 配置加密：`packages/server/src/modules/settings/config-crypto.service.ts`
 - 配置表模型：`packages/server/prisma/schema.prisma` → `Setting`
 - 前端设置 API：`packages/web/src/api/settings.ts`
-- 前端 ADMIN API：`packages/web/src/api/admin-config.ts`
+- 前端 chat 模型列表 API：`packages/web/src/api/chat.ts`
 - 前端设置 Store：`packages/web/src/stores/settings.ts`
 - 前端设置页：`packages/web/src/routes/_authenticated/settings.tsx`
-- 前端 ADMIN provider 页：`packages/web/src/routes/_authenticated/admin/model-providers.tsx`
+- 前端 chat 模型选择器：`packages/web/src/features/chat/components/ProviderSelector.tsx`
+- 管理后台 API：`packages/admin/src/api/system-config.ts`
+- 管理后台模型提供商页：`packages/admin/src/features/model-providers/components/ProviderList.tsx`
+- 管理后台模块配置页：`packages/admin/src/features/module-settings/components/ModuleSettingsLayout.tsx`
