@@ -102,10 +102,11 @@ LOG_LEVEL=debug
 ```bash
 # PostgreSQL 连接串，Prisma 与 pgvector 共用
 # 格式：postgresql://用户名:密码@主机:端口/数据库名
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/goferbot
+# 开发环境使用 127.0.0.1，避免 Windows 上 Prisma engine 对 localhost 的 IPv6 解析问题
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/goferbot
 
 # 测试数据库管理连接串，用于创建/删除测试数据库，需要超级用户权限
-TEST_DATABASE_ADMIN_URL=postgresql://postgres:postgres@localhost:5432/postgres
+TEST_DATABASE_ADMIN_URL=postgresql://postgres:postgres@127.0.0.1:5432/postgres
 ```
 
 ### 3.3 缓存与队列
