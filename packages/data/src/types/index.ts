@@ -56,7 +56,20 @@ import {
   sessionSchema,
   updateSessionRequestSchema,
 } from '../schemas/session.schema.js'
-import { settingsResponseSchema, settingsSchema } from '../schemas/settings.schema.js'
+import {
+  appearanceConfigSchema,
+  availableProvidersResponseSchema,
+  type CategorySettingsMap,
+  chatConfigSchema,
+  companionConfigSchema,
+  indexingConfigSchema,
+  modelProviderSchema,
+  providerTypeSchema,
+  ragConfigSchema,
+  settingCategorySchema,
+  settingsResponseSchema,
+  settingsSchema,
+} from '../schemas/settings.schema.js'
 
 export type PagerRequest = z.infer<typeof pagerRequestSchema>
 export type Pagination = z.infer<typeof paginationSchema>
@@ -111,16 +124,30 @@ export type AssignRoleRequest = z.infer<typeof assignRoleRequestSchema>
 
 export type Settings = z.infer<typeof settingsSchema>
 export type SettingsResponse = z.infer<typeof settingsResponseSchema>
+export type ProviderType = z.infer<typeof providerTypeSchema>
+export type ModelProvider = z.infer<typeof modelProviderSchema>
+export type ChatSettings = z.infer<typeof chatConfigSchema>
+export type RagSettings = z.infer<typeof ragConfigSchema>
+export type CompanionSettings = z.infer<typeof companionConfigSchema>
+export type IndexingSettings = z.infer<typeof indexingConfigSchema>
+export type AppearanceSettings = z.infer<typeof appearanceConfigSchema>
+export type SettingCategory = z.infer<typeof settingCategorySchema>
+export type AvailableProvidersResponse = z.infer<typeof availableProvidersResponseSchema>
+export type { CategorySettingsMap }
 
 export {
   adminUserListQuerySchema,
   adminUserListResponseSchema,
   adminUserSchema,
+  appearanceConfigSchema,
   assignRoleRequestSchema,
   authResponseSchema,
+  availableProvidersResponseSchema,
+  chatConfigSchema,
   chatMessagesChunkSchema,
   chatMessagesRequestSchema,
   chatProvidersResponseSchema,
+  companionConfigSchema,
   createAdminUserRequestSchema,
   createDocumentRequestSchema,
   createFolderRequestSchema,
@@ -130,6 +157,7 @@ export {
   documentStatusResponseSchema,
   documentStatusSchema,
   folderSchema,
+  indexingConfigSchema,
   kbDetailResponseSchema,
   kbEntrySchema,
   kbListResponseSchema,
@@ -139,16 +167,20 @@ export {
   messageListQuerySchema,
   messageListResponseSchema,
   messageSchema,
+  modelProviderSchema,
   moveDocumentRequestSchema,
   moveFolderRequestSchema,
   pagerRequestSchema,
   paginationSchema,
   providerListItemSchema,
+  providerTypeSchema,
   publicKeyResponseSchema,
+  ragConfigSchema,
   registerRequestSchema,
   resetPasswordRequestSchema,
   sessionListResponseSchema,
   sessionSchema,
+  settingCategorySchema,
   settingsResponseSchema,
   settingsSchema,
   updateAdminUserRequestSchema,

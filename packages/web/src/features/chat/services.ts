@@ -1,4 +1,4 @@
-import type { Message, Session } from '@goferbot/data'
+import type { Message, ProviderListItem, Session } from '@goferbot/data'
 import {
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
@@ -197,8 +197,19 @@ export async function fetchProviders(): Promise<void> {
   store.setInitError(null)
   try {
     const res = await getChatProviders().send()
-    const providers = res?.providers ?? []
-    store.setAvailableProviders(providers)
+    const builtIn: ProviderListItem[] = (res?.builtIn ?? []).map((p) => ({
+      key: p.id,
+      name: p.name,
+      model: p.model,
+      isBuiltin: true,
+    }))
+    const custom: ProviderListItem[] = (res?.custom ?? []).map((p) => ({
+      key: p.id,
+      name: p.name,
+      model: p.model,
+      isBuiltin: false,
+    }))
+    store.setAvailableProviders([...builtIn, ...custom])
   } catch (e) {
     store.setInitError(e instanceof Error ? e.message : '初始化失败')
   } finally {

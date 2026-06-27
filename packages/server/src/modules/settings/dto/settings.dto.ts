@@ -23,7 +23,6 @@ export const modelProviderSchema = z.object({
   dimensions: z.number().int().min(1).optional(),
   maxLength: z.number().int().min(1).optional(),
 })
-
 export type ModelProvider = z.infer<typeof modelProviderSchema>
 
 const chatConfigSchema = z.object({
@@ -78,7 +77,6 @@ export const settingsSchema = z.object({
   }),
   appearance: appearanceConfigSchema.default({ mode: 'light', fontSizeLevel: 3 }),
 })
-
 export type Settings = z.infer<typeof settingsSchema>
 
 export class SettingsDto extends createZodDto(settingsSchema) {}

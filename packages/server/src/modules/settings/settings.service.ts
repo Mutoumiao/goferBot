@@ -8,7 +8,7 @@ import {
   SYSTEM_CONFIG_KEY,
   SYSTEM_USER_ID,
 } from './constants.js'
-import type { CategoryDto, Settings } from './dto/settings.dto.js'
+import type { CategoryDto, ModelProvider, Settings } from './dto/settings.dto.js'
 import { settingsSchema } from './dto/settings.dto.js'
 import { ModelProviderService } from './model-provider.service.js'
 
@@ -262,9 +262,57 @@ export class SettingsService {
     return this.getMergedConfig(userId)
   }
 
+  async getAvailableProviders(
+    userId: string,
+    category: SettingCategory,
+  ): Promise<{ builtIn: ModelProvider[]; custom: ModelProvider[] }> {
+    const config = await this.getMergedConfig(userId)
+    const masked = this.maskConfig(config) as Settings
+    const providers = masked.providers
+    const builtIn: ModelProvider[] = []
+
+    switch (category) {
+      case 'chat': {
+        for (const id of masked.chat.enabledProviders) {
+          const provider = providers[id]
+          if (provider && provider.type === 'llm' && provider.enabled) {
+            builtIn.push(provider)
+          }
+        }
+        break
+      }
+      case 'rag': {
+        const ragLlmId = masked.rag.llmProvider
+        if (ragLlmId) {
+          const provider = providers[ragLlmId]
+          if (provider && provider.type === 'llm' && provider.enabled) {
+            builtIn.push(provider)
+          }
+        }
+        break
+      }
+      case 'companion': {
+        const companionId = masked.companion.provider
+        if (companionId) {
+          const provider = providers[companionId]
+          if (provider && provider.type === 'llm' && provider.enabled) {
+            builtIn.push(provider)
+          }
+        }
+        break
+      }
+      default:
+        break
+    }
+
+    // ponytail: 用户自定义 provider 预留扩展，本次返回空数组
+    return { builtIn, custom: [] }
+  }
+
   async getCategory(userId: string, category: SettingCategory): Promise<Settings[SettingCategory]> {
     const config = await this.getMergedConfig(userId)
-    return config[category]
+    const masked = this.maskConfig(config) as Settings
+    return masked[category]
   }
 
   async saveCategory(
@@ -272,6 +320,12 @@ export class SettingsService {
     category: SettingCategory,
     dto: CategoryDto,
   ): Promise<Settings> {
+    if (category !== 'appearance') {
+      throw new BadRequestException({
+        code: 'CATEGORY_READ_ONLY',
+        message: `用户端不允许修改分类: ${category}，请通过管理后台配置`,
+      })
+    }
     const validated = this.validateCategory(category, dto)
     const existing = await this.getRawUserConfig(userId)
     const merged = { ...(existing ?? this.cloneDefault()), [category]: validated }
@@ -284,18 +338,17 @@ export class SettingsService {
    * 保留旧版全量保存接口，用于前端尚未迁移到分类接口时的兼容。
    */
   async saveSettings(userId: string, dto: Partial<Settings>): Promise<Settings> {
-    const allowedKeys = Object.keys(this.defaultConfig)
-    const dtoKeys = Object.keys(dto)
+    const allowedKeys: Array<keyof Settings> = ['appearance']
+    const dtoKeys = Object.keys(dto) as Array<keyof Settings>
     const extraKeys = dtoKeys.filter((k) => !allowedKeys.includes(k))
     if (extraKeys.length > 0) {
       throw new BadRequestException({
         code: 'INVALID_CONFIG_FIELDS',
-        message: `不允许的配置字段: ${extraKeys.join(', ')}`,
+        message: `用户端不允许保存以下字段: ${extraKeys.join(', ')}`,
       })
     }
 
     const parsed = settingsSchema.partial().parse(dto)
-    delete parsed.providers
     const existing = await this.getRawUserConfig(userId)
     const merged = { ...(existing ?? this.cloneDefault()), ...parsed }
     this.modelProviderService.validateProviderReferences(merged as Settings)
@@ -316,7 +369,8 @@ export class SettingsService {
 
   async getSystemCategory(category: SettingCategory): Promise<Settings[SettingCategory]> {
     const config = await this.getMergedSystemConfig()
-    return config[category]
+    const masked = this.maskConfig(config) as Settings
+    return masked[category]
   }
 
   async saveSystemCategory(category: SettingCategory, dto: CategoryDto): Promise<Settings> {

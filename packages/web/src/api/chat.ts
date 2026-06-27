@@ -1,15 +1,19 @@
 import type {
-  ChatProvidersResponse,
+  AvailableProvidersResponse,
   CreateSessionRequest,
   MessageListResponse,
+  ModelProvider,
   Session,
   SessionListResponse,
 } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
-/** 获取模型列表 */
+export type ChatAvailableProvider = ModelProvider
+export type ChatAvailableProvidersResponse = AvailableProvidersResponse
+
+/** 获取当前用户可用的 chat 模型列表（内置 + 自定义预留） */
 export const getChatProviders = () =>
-  alovaInstance.Get<ChatProvidersResponse>('/chat-messages/providers')
+  alovaInstance.Get<ChatAvailableProvidersResponse>('/settings/chat/providers')
 
 /** 获取消息历史 — Dify 风格 */
 export const getMessages = (conversationId: string, page = 1, size = 20) =>

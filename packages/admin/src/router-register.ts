@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Cpu,
   FileText,
   LayoutDashboard,
   MessageSquare,
@@ -7,7 +8,6 @@ import {
   User,
   Users,
   Settings as SettingsIcon,
-  Cpu,
   type LucideIcon,
 } from 'lucide-react'
 import type { FileRoutesByFullPath } from './routeTree.gen'
@@ -24,9 +24,10 @@ export type RouteKey =
   | 'rag'
   | 'sessions'
   | 'sessionDetail'
-  | 'models'
   | 'audit'
   | 'profile'
+  | 'modelProviders'
+  | 'moduleSettings'
 
 export interface RouteMeta {
   key: RouteKey
@@ -100,13 +101,6 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     icon: MessageSquare,
     nav: false,
   },
-  models: {
-    key: 'models',
-    title: '模型设置',
-    path: '/models' as RoutePath,
-    icon: Cpu,
-    nav: true,
-  },
   audit: {
     key: 'audit',
     title: '审计日志',
@@ -120,6 +114,20 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/profile' as RoutePath,
     icon: SettingsIcon,
     nav: false,
+  },
+  modelProviders: {
+    key: 'modelProviders',
+    title: '模型提供商',
+    path: '/model-providers' as RoutePath,
+    icon: Cpu,
+    nav: true,
+  },
+  moduleSettings: {
+    key: 'moduleSettings',
+    title: '模块配置',
+    path: '/module-settings' as RoutePath,
+    icon: SettingsIcon,
+    nav: true,
   },
 }
 

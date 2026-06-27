@@ -41,12 +41,6 @@ export class SettingsController {
     return this.settingsService.getSettings(userId)
   }
 
-  @Get('providers')
-  async getProviders(@CurrentUser('id') userId: string): Promise<ModelProvider[]> {
-    const settings = await this.settingsService.getSettings(userId)
-    return Object.values(settings.providers).filter((p) => p.enabled)
-  }
-
   @Get(':category')
   async getCategory(
     @CurrentUser('id') userId: string,
@@ -54,6 +48,21 @@ export class SettingsController {
   ): Promise<Settings[SettingCategory]> {
     this.validateCategory(category)
     return this.settingsService.getCategory(userId, category)
+  }
+
+  @Get(':category/providers')
+  async getAvailableProviders(
+    @CurrentUser('id') userId: string,
+    @Param('category') category: SettingCategory,
+  ): Promise<{ builtIn: ModelProvider[]; custom: ModelProvider[] }> {
+    this.validateCategory(category)
+    if (!['chat', 'rag', 'companion'].includes(category)) {
+      throw new BadRequestException({
+        code: 'INVALID_PROVIDER_CATEGORY',
+        message: `该分类不支持读取可用模型: ${category}`,
+      })
+    }
+    return this.settingsService.getAvailableProviders(userId, category)
   }
 
   @Post()
@@ -73,6 +82,12 @@ export class SettingsController {
     @Body() dto: CategoryDtoMap[SettingCategory],
   ): Promise<Settings> {
     this.validateCategory(category)
+    if (category !== 'appearance') {
+      throw new BadRequestException({
+        code: 'CATEGORY_READ_ONLY',
+        message: `用户端不允许修改分类: ${category}，请通过管理后台配置`,
+      })
+    }
     return this.settingsService.saveCategory(
       userId,
       category,

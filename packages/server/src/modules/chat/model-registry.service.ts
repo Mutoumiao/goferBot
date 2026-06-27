@@ -37,9 +37,10 @@ export class ModelRegistryService implements OnModuleInit {
 
   async refresh(): Promise<void> {
     const config = await this.systemConfigService.getDecryptedSystemConfig()
-    const providers = Object.values(config.providers).filter(
-      (p): p is ModelProvider => p?.type === 'llm' && p.enabled,
-    )
+    const enabledIds = config.chat?.enabledProviders ?? []
+    const providers = enabledIds
+      .map((id) => config.providers[id])
+      .filter((p): p is ModelProvider => p?.type === 'llm' && p.enabled)
 
     this.models.clear()
     for (const provider of providers) {

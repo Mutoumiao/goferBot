@@ -19,9 +19,22 @@ type PermissionKey =
   | 'models'
   | 'audit'
   | 'profile'
+  | 'modelProviders'
+  | 'moduleSettings'
 
 const ALLOWED_MENU_BY_ROLE: Record<'ADMIN' | 'USER', PermissionKey[]> = {
-  ADMIN: ['dashboard', 'users', 'roles', 'rag', 'sessions', 'models', 'audit', 'profile'],
+  ADMIN: [
+    'dashboard',
+    'users',
+    'roles',
+    'rag',
+    'sessions',
+    'models',
+    'audit',
+    'profile',
+    'modelProviders',
+    'moduleSettings',
+  ],
   USER: ['dashboard', 'profile'],
 }
 

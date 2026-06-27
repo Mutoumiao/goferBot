@@ -30,33 +30,24 @@ export interface LLMConfig {
 }
 
 // ---- 常量 ----
+// ponytail: 不再硬编码任何默认模型/provider，所有模型由后端配置中心提供
 export const DEFAULT_CONFIG: AppConfig = {
-  providers: {
-    openai: { name: 'OpenAI', apiKey: '', model: 'gpt-4o', baseUrl: '' },
-    claude: { name: 'Claude', apiKey: '', model: 'claude-3-5-sonnet-20241022', baseUrl: '' },
-    deepseek: { name: 'DeepSeek', apiKey: '', model: 'deepseek-chat', baseUrl: '' },
-  },
+  providers: {},
   embeddingProvider: {
-    provider: 'openai',
+    provider: '',
     apiKey: '',
-    model: 'text-embedding-3-small',
+    model: '',
     baseUrl: '',
   },
   temperature: 0.7,
-  defaultChatProvider: 'deepseek',
+  defaultChatProvider: '',
   appearance: 'light',
   fontSizeLevel: 3,
 }
 
-const PROVIDER_NAMES: Record<string, string> = {
-  openai: 'OpenAI',
-  claude: 'Claude',
-  deepseek: 'DeepSeek',
-}
-
 // ---- 纯函数工具 ----
 
-/** 获取 LLM 调用所需的 provider/model/baseUrl/apiKey */
+/** 获取 LLM 调用所需的 provider/model/baseUrl/apiKey（已废弃，保留兼容） */
 export function getLLMConfig(config: AppConfig, providerKey?: string): LLMConfig | null {
   const key = providerKey || config.defaultChatProvider
   const pc = config.providers[key]
@@ -64,14 +55,14 @@ export function getLLMConfig(config: AppConfig, providerKey?: string): LLMConfig
   return { provider: key, model: pc.model, baseUrl: pc.baseUrl, apiKey: pc.apiKey }
 }
 
-/** 获取已配置的 provider 列表（apiKey 非空） */
+/** 获取已配置的 provider 列表（apiKey 非空）— 仅用于本地自定义模型 */
 export function configuredProviders(
   config: AppConfig,
 ): { key: string; name: string; model: string }[] {
   const list: { key: string; name: string; model: string }[] = []
   for (const [key, p] of Object.entries(config.providers)) {
     if (p.apiKey) {
-      list.push({ key, name: p.name || PROVIDER_NAMES[key] || key, model: p.model })
+      list.push({ key, name: p.name || key, model: p.model })
     }
   }
   return list

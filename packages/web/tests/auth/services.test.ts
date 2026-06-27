@@ -32,6 +32,7 @@ const mockUser: User = {
   id: 'u1',
   email: 'user@example.com',
   name: 'User',
+  role: 'USER',
   createdAt: '',
   updatedAt: '',
 }

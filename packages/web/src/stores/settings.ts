@@ -75,7 +75,12 @@ export const useSettingsStore = create<SettingsState>()(
         set({ isLoading: true, error: null })
         try {
           const data = await alovaInstance.Get<AppConfig>('/settings').send()
-          const merged = mergeAppConfig(DEFAULT_CONFIG, data)
+          // ponytail: 用户端只使用后端返回的 appearance/fontSizeLevel，providers 保留本地自定义
+          const userEditable: Partial<AppConfig> = {
+            appearance: data.appearance,
+            fontSizeLevel: data.fontSizeLevel,
+          }
+          const merged = mergeAppConfig(DEFAULT_CONFIG, userEditable)
           set({ config: merged, savedConfig: merged, isLoading: false })
         } catch (e) {
           set({ isLoading: false, error: e instanceof Error ? e.message : '加载设置失败' })
@@ -85,10 +90,27 @@ export const useSettingsStore = create<SettingsState>()(
       saveConfig: async (updates) => {
         set({ isLoading: true, error: null })
         const body = updates ? mergeAppConfig(get().config, updates) : get().config
+        // ponytail: 用户端只允许保存 appearance/fontSizeLevel，其他字段由 admin 后台管理
+        const userEditable: Partial<AppConfig> = {
+          appearance: body.appearance,
+          fontSizeLevel: body.fontSizeLevel,
+        }
 
         try {
-          await alovaInstance.Post<AppConfig>('/settings', body).send()
-          set({ config: body, savedConfig: body, isLoading: false })
+          await alovaInstance.Post<AppConfig>('/settings', userEditable).send()
+          set((s) => ({
+            config: {
+              ...body,
+              providers: s.config.providers,
+              defaultChatProvider: s.config.defaultChatProvider,
+            },
+            savedConfig: {
+              ...body,
+              providers: s.config.providers,
+              defaultChatProvider: s.config.defaultChatProvider,
+            },
+            isLoading: false,
+          }))
           return true
         } catch (e) {
           set({

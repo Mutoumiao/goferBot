@@ -22,6 +22,8 @@ vi.mock('lucide-react', () => ({
   Settings: () => <svg data-testid="icon-settings" />,
   Trash2: () => <svg data-testid="icon-trash" />,
   User: () => <svg data-testid="icon-user" />,
+  Heart: () => <svg data-testid="icon-heart" />,
+  Brain: () => <svg data-testid="icon-brain" />,
 }))
 
 vi.mock('@/components/ui/button', () => ({

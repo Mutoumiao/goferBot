@@ -60,14 +60,14 @@ describe('KnowledgeBaseSelector', () => {
     expect(onSelect).toHaveBeenCalledWith(null)
   })
 
-  it('marks selected item with aria-checked', async () => {
+  it('marks selected item with aria-pressed', async () => {
     const user = userEvent.setup()
     render(<KnowledgeBaseSelector selectedId="kb2" onSelect={onSelect} />)
 
     await user.click(screen.getByTestId('kb-selector-trigger'))
     const items = screen.getAllByTestId('kb-selector-item')
-    expect(items[0].getAttribute('aria-checked')).toBe('false')
-    expect(items[1].getAttribute('aria-checked')).toBe('true')
+    expect(items[0].getAttribute('aria-pressed')).toBe('false')
+    expect(items[1].getAttribute('aria-pressed')).toBe('true')
   })
 
   it('shows retry button on error', async () => {

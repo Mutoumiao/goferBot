@@ -4,14 +4,12 @@ import { AppearanceSelect } from '@/features/settings/components/AppearanceSelec
 import { CustomProviderList } from '@/features/settings/components/CustomProviderList'
 import { FontSizeSlider } from '@/features/settings/components/FontSizeSlider'
 import { ProviderDialog } from '@/features/settings/components/ProviderDialog'
-import { ProviderSelect } from '@/features/settings/components/ProviderSelect'
 import { SettingsRow } from '@/features/settings/components/SettingsRow'
 import { SettingsSection } from '@/features/settings/components/SettingsSection'
 import { useSettingsServices } from '@/features/settings/services'
 import { ConfirmDialog } from '@/overlays/dialogs/ConfirmDialog'
 import { ROUTES_REGISTER } from '@/router-register'
 import type { ProviderConfig } from '@/utils/llm-config'
-import { configuredProviders } from '@/utils/llm-config'
 
 export const Route = createFileRoute('/_authenticated/settings')({
   component: SettingsPage,
@@ -32,7 +30,6 @@ function SettingsPage() {
     // ponytail: 设置加载只需在挂载时执行一次，使用空依赖数组
   }, [])
 
-  const providerOptions = configuredProviders(svc.config)
   const editingProvider = editingKey ? svc.config.providers[editingKey] : undefined
 
   const handleAdd = () => {
@@ -78,17 +75,7 @@ function SettingsPage() {
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection title="首选模型">
-          <SettingsRow label="默认模型" showDivider={false}>
-            <ProviderSelect
-              value={svc.config.defaultChatProvider}
-              options={providerOptions}
-              onChange={svc.saveDefaultProvider}
-            />
-          </SettingsRow>
-        </SettingsSection>
-
-        <SettingsSection title="自定义模型">
+        <SettingsSection title="我的模型">
           <CustomProviderList
             providers={svc.config.providers}
             onEdit={handleEdit}

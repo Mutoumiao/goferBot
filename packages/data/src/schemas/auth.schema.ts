@@ -21,10 +21,13 @@ export const updateProfileRequestSchema = z.object({
   name: z.string().min(1, '昵称不能为空').max(50, '昵称过长').describe('用户昵称'),
 })
 
+export const userRoleSchema = z.enum(['USER', 'ADMIN'])
+
 export const userSchema = z.object({
   id: z.string(),
   email: z.string().email(),
   name: z.string(),
+  role: userRoleSchema.default('USER'),
   avatarUrl: z.string().nullable().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),

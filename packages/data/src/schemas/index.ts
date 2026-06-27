@@ -29,6 +29,45 @@ export {
   paginationSchema,
 } from './common.schema.js'
 export {
+  companionListQuerySchema,
+  conversationListQuerySchema,
+  createCompanionSchema,
+  createConversationSchema,
+  createFeedbackSchema,
+  createMemorySchema,
+  memoryListQuerySchema,
+  messageListQuerySchema as companionMessageListQuerySchema,
+  sendMessageSchema,
+  updateCompanionSchema,
+  updateCompanionStatusSchema,
+} from './companion.schema.js'
+export {
+  agentMemoryCandidateSchema,
+  agentMemoryExtractionSchema,
+  companionIntentPrimarySchema,
+  conversationEmotionSchema,
+  conversationIntentSchema,
+  conversationRelationshipStageSchema,
+  conversationSafetySchema,
+  conversationSummarySchema,
+  emotionRouteSchema,
+  fallbackEmotion,
+  fallbackEmotionRoute,
+  fallbackIntent,
+  fallbackRelationshipStage,
+  fallbackReplyPolicy,
+  fallbackReplyQualityGuard,
+  fallbackSafety,
+  INITIAL_HISTORY_LIMIT,
+  MEMORY_EXTRACTION_LIMIT,
+  MEMORY_INJECTION_LIMIT,
+  MEMORY_KEYWORD_REGEX,
+  MESSAGE_FEEDBACK_INJECTION_LIMIT,
+  RECENT_MESSAGE_LIMIT,
+  replyPolicySchema,
+  replyQualityGuardSchema,
+} from './companion-pipeline.schema.js'
+export {
   copyDocumentRequestSchema,
   createDocumentRequestSchema,
   documentSchema,
@@ -51,60 +90,15 @@ export {
   kbListResponseSchema,
   updateKbRequestSchema,
 } from './kb.schema.js'
-export {
-  createSessionRequestSchema,
-  sessionSchema,
-  updateSessionRequestSchema,
-} from './session.schema.js'
-
-export {
-  companionListQuerySchema,
-  conversationListQuerySchema,
-  createCompanionSchema,
-  createConversationSchema,
-  createFeedbackSchema,
-  createMemorySchema,
-  memoryListQuerySchema,
-  messageListQuerySchema as companionMessageListQuerySchema,
-  sendMessageSchema,
-  updateCompanionSchema,
-  updateCompanionStatusSchema,
-} from './companion.schema.js'
-
-export {
-  MEMORY_EXTRACTION_LIMIT,
-  MEMORY_INJECTION_LIMIT,
-  MESSAGE_FEEDBACK_INJECTION_LIMIT,
-  MEMORY_KEYWORD_REGEX,
-  RECENT_MESSAGE_LIMIT,
-  INITIAL_HISTORY_LIMIT,
-  agentMemoryCandidateSchema,
-  agentMemoryExtractionSchema,
-  companionIntentPrimarySchema,
-  conversationEmotionSchema,
-  conversationRelationshipStageSchema,
-  conversationSafetySchema,
-  conversationSummarySchema,
-  conversationIntentSchema,
-  emotionRouteSchema,
-  fallbackEmotion,
-  fallbackEmotionRoute,
-  fallbackIntent,
-  fallbackReplyPolicy,
-  fallbackReplyQualityGuard,
-  fallbackRelationshipStage,
-  fallbackSafety,
-  replyPolicySchema,
-  replyQualityGuardSchema,
-} from './companion-pipeline.schema.js'
-
-export {
-  embeddingProviderSchema,
-  providerSchema,
-  settingsResponseSchema,
-  settingsSchema,
-} from './settings.schema.js'
-
+export type {
+  CodeBlock,
+  IndexOptions,
+  IndexRequest,
+  IndexResult,
+  ParseResult,
+  ParserInput,
+  SectionBlock,
+} from './rag.schema.js'
 export {
   codeBlockSchema,
   indexOptionsSchema,
@@ -115,12 +109,32 @@ export {
   parserMetaSchema,
   sectionBlockSchema,
 } from './rag.schema.js'
+export {
+  createSessionRequestSchema,
+  sessionSchema,
+  updateSessionRequestSchema,
+} from './session.schema.js'
 export type {
-  CodeBlock,
-  IndexOptions,
-  IndexRequest,
-  IndexResult,
-  ParseResult,
-  ParserInput,
-  SectionBlock,
-} from './rag.schema.js'
+  AppearanceSettings,
+  CategorySettingsMap,
+  ChatSettings,
+  CompanionSettings,
+  IndexingSettings,
+  ModelProvider,
+  ProviderType,
+  RagSettings,
+  SettingCategory,
+  Settings,
+  SettingsResponse,
+} from './settings.schema.js'
+export {
+  appearanceConfigSchema,
+  chatConfigSchema,
+  companionConfigSchema,
+  indexingConfigSchema,
+  modelProviderSchema,
+  providerTypeSchema,
+  ragConfigSchema,
+  settingsResponseSchema,
+  settingsSchema,
+} from './settings.schema.js'
