@@ -100,7 +100,8 @@ routes  →  features/components  →  features/services  →  api  →  alovaIn
 | `/rag-observability` | RAG 观测 | ADMIN | 任务队列状态 / 失败明细 |
 | `/sessions` | 会话观测 | ADMIN | 会话列表 / 脱敏展示 |
 | `/sessions/$id` | 会话详情 | ADMIN | 消息流 / 检索片段 |
-| `/models` | 模型设置 | ADMIN | Provider/Model/Endpoint 管理 |
+| `/model-providers` | 模型提供商 | ADMIN | Provider/Model/Endpoint 管理 |
+| `/module-settings` | 模块配置 | ADMIN | Chat/RAG/Companion 模型选择 |
 | `/audit` | 审计日志 | ADMIN | 管理员操作记录 |
 | `/profile` | 个人中心 | ADMIN/USER | 修改密码 / 登录历史 |
 
@@ -237,7 +238,7 @@ Lines        82.45%
 
 ### 调用后端真实接口
 - 已就绪接口：`/auth/*`、`/admin/users/*`、`/admin/dashboard`、`/admin/roles*`、`/admin/permissions`
-- 待后端补齐：`/admin/rag/tasks`、`/admin/sessions*`、`/admin/models*`、`/admin/audit`
+- 待后端补齐：`/admin/rag/tasks`、`/admin/sessions*`、`/admin/audit`
 
 ### 安全红线
 - 敏感操作必须走 `confirmPasswordAction`

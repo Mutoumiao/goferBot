@@ -16,7 +16,6 @@ type PermissionKey =
   | 'roles'
   | 'rag'
   | 'sessions'
-  | 'models'
   | 'audit'
   | 'profile'
   | 'modelProviders'
@@ -29,7 +28,6 @@ const ALLOWED_MENU_BY_ROLE: Record<'ADMIN' | 'USER', PermissionKey[]> = {
     'roles',
     'rag',
     'sessions',
-    'models',
     'audit',
     'profile',
     'modelProviders',
