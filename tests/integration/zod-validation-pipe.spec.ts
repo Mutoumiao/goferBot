@@ -96,31 +96,18 @@ describe('ZodValidationPipe', () => {
   it('AC-15: returns 400 for invalid number range', async () => {
     const res = await app.inject({
       method: 'POST',
-      url: '/api/settings',
+      url: '/api/settings/appearance',
       headers: { authorization: `Bearer ${token}` },
       payload: {
-        providers: {
-          openai: { apiKey: 'sk-test', model: 'gpt-4', baseUrl: '' },
-          claude: { apiKey: 'sk-test', model: 'claude-3', baseUrl: '' },
-          deepseek: { apiKey: 'sk-test', model: 'deepseek-chat', baseUrl: '' },
-          custom: { apiKey: 'sk-test', model: 'custom', baseUrl: '' },
-          ollama: { enabled: false, url: 'http://localhost:11434', model: 'llama2', baseUrl: '' },
-        },
-        embeddingProvider: {
-          provider: 'openai',
-          apiKey: 'sk-test',
-          model: 'text-embedding-3',
-          baseUrl: '',
-        },
-        temperature: 3,
-        defaultChatProvider: 'openai',
+        mode: 'light',
+        fontSizeLevel: 10,
       },
     })
     expect(res.statusCode).toBe(400)
     const body = res.json()
     expect(body.error.code).toBe('VALIDATION_ERROR')
-    const tempError = body.error.details.find((d: any) => d.field === 'temperature')
-    expect(tempError).toBeDefined()
-    expect(tempError.issue).toContain('范围')
+    const fontSizeError = body.error.details.find((d: any) => d.field === 'fontSizeLevel')
+    expect(fontSizeError).toBeDefined()
+    expect(fontSizeError.issue).toContain('范围')
   })
 })

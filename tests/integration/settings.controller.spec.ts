@@ -1,91 +1,168 @@
 /**
  * SettingsController 集成测试
- * 覆盖端点：GET /api/settings, POST /api/settings
- * 场景：happy path、Zod 验证失败、认证缺失/无效、边界条件
+ * 覆盖新的 provider-pool 架构下的用户只读端点：
+ * - GET /api/settings
+ * - GET /api/settings/:category
+ * - GET /api/settings/:category/providers
+ * - POST /api/settings/:category（仅 appearance 可写）
+ *
+ * 同时通过 ADMIN 端点播种 system_config，验证用户端读取结果。
  */
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { Role } from '../../packages/server/src/auth/enums/role.enum.js'
+import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 import { AuthFixtures } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
 
-const nextIp = createIpGenerator(11)
+const nextIp = createIpGenerator(20)
 
-describe('SettingsController', () => {
+const openaiProvider = {
+  id: 'openai',
+  name: 'OpenAI',
+  type: 'llm',
+  enabled: true,
+  model: 'gpt-4',
+  apiKey: 'sk-test',
+  baseUrl: '',
+  timeoutMs: 300_000,
+}
+
+const claudeProvider = {
+  id: 'claude',
+  name: 'Claude',
+  type: 'llm',
+  enabled: true,
+  model: 'claude-3',
+  apiKey: 'sk-test',
+  baseUrl: '',
+  timeoutMs: 300_000,
+}
+
+const disabledProvider = {
+  id: 'deepseek',
+  name: 'DeepSeek',
+  type: 'llm',
+  enabled: false,
+  model: 'deepseek-chat',
+  apiKey: 'sk-test',
+  baseUrl: '',
+  timeoutMs: 300_000,
+}
+
+describe('SettingsController (provider-pool)', () => {
   let app: NestFastifyApplication
   let dbManager: TestDatabaseManager
   let dbUrl: string
   let dbName: string
-  let token: string
+  let adminToken: string
+  let userToken: string
 
   beforeAll(async () => {
     dbManager = new TestDatabaseManager()
-    dbUrl = await dbManager.createDatabase('settings_ctrl')
+    dbUrl = await dbManager.createDatabase('settings_pool')
     dbName = new URL(dbUrl).pathname.slice(1)
     app = await TestAppFactory.create(dbUrl)
 
+    const timestamp = Date.now()
+    const adminEmail = `settings-admin-${timestamp}@test.gofer`
+    const userEmail = `settings-user-${timestamp}@test.gofer`
+
+    // 创建管理员并设置角色
+    await AuthFixtures.createUser(app, {
+      email: adminEmail,
+      password: 'Test1234!',
+      name: 'Settings Admin',
+    })
+    const prisma = app.get(PrismaService)
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: { role: Role.ADMIN },
+    })
+    adminToken = await AuthFixtures.loginAs(app, {
+      email: adminEmail,
+      password: 'Test1234!',
+    })
+
+    // 创建普通用户
     const user = await AuthFixtures.createUser(
       app,
       {
-        email: `settings-${Date.now()}@test.gofer`,
+        email: userEmail,
         password: 'Test1234!',
-        name: 'Settings Test',
+        name: 'Settings User',
       },
       { remoteAddress: nextIp() },
     )
-    token = await AuthFixtures.loginAs(
+    userToken = await AuthFixtures.loginAs(
       app,
       { email: user.email, password: 'Test1234!' },
       { remoteAddress: nextIp() },
     )
-  }, 60000)
+
+    // 管理员播种 provider 池与 chat 模块配置
+    const providerRes1 = await app.inject({
+      method: 'POST',
+      url: '/api/admin/providers',
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: openaiProvider,
+      remoteAddress: nextIp(),
+    })
+    expect(providerRes1.statusCode).toBe(200)
+
+    const providerRes2 = await app.inject({
+      method: 'POST',
+      url: '/api/admin/providers',
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: claudeProvider,
+      remoteAddress: nextIp(),
+    })
+    expect(providerRes2.statusCode).toBe(200)
+
+    const providerRes3 = await app.inject({
+      method: 'POST',
+      url: '/api/admin/providers',
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: disabledProvider,
+      remoteAddress: nextIp(),
+    })
+    expect(providerRes3.statusCode).toBe(200)
+
+    const chatConfigRes = await app.inject({
+      method: 'POST',
+      url: '/api/admin/system-config/chat',
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: {
+        defaultProvider: 'openai',
+        enabledProviders: ['openai', 'claude'],
+        temperature: 0.7,
+      },
+      remoteAddress: nextIp(),
+    })
+    expect(chatConfigRes.statusCode).toBe(200)
+  }, 120000)
 
   afterAll(async () => {
     if (app) await app.close()
     if (dbManager && dbName) await dbManager.dropDatabase(dbName)
   })
 
-  const validSettings = {
-    providers: {
-      openai: { apiKey: 'sk-test', model: 'gpt-4', baseUrl: '' },
-      claude: { apiKey: 'sk-test', model: 'claude-3', baseUrl: '' },
-      deepseek: { apiKey: 'sk-test', model: 'deepseek-chat', baseUrl: '' },
-      custom: { apiKey: 'sk-test', model: 'custom', baseUrl: '' },
-      ollama: { enabled: false, url: 'http://localhost:11434', model: 'llama2', baseUrl: '' },
-    },
-    embeddingProvider: {
-      provider: 'openai',
-      apiKey: 'sk-test',
-      model: 'text-embedding-3',
-      baseUrl: '',
-    },
-    temperature: 0.7,
-    defaultChatProvider: 'openai',
-  }
-
   describe('GET /api/settings', () => {
-    it('AC-18: returns settings for authenticated user', async () => {
-      // 先保存设置
-      await app.inject({
-        method: 'POST',
-        url: '/api/settings',
-        headers: { authorization: `Bearer ${token}` },
-        payload: validSettings,
-        remoteAddress: nextIp(),
-      })
-
+    it('AC-18: returns merged settings for authenticated user', async () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/settings',
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
       expect(body.data).toBeDefined()
-      // 验证保存的值被正确返回
-      expect(body.data.defaultChatProvider).toBe('openai')
+      expect(body.data.chat.defaultProvider).toBe('openai')
+      expect(body.data.chat.enabledProviders).toEqual(['openai', 'claude'])
+      expect(body.data.appearance.mode).toBeDefined()
     })
 
     it('AC-19: returns 401 without token', async () => {
@@ -97,80 +174,101 @@ describe('SettingsController', () => {
     })
   })
 
-  describe('POST /api/settings', () => {
-    it('AC-20: saves settings with valid data', async () => {
+  describe('GET /api/settings/:category', () => {
+    it('returns chat settings for authenticated user', async () => {
       const res = await app.inject({
-        method: 'POST',
-        url: '/api/settings',
-        headers: { authorization: `Bearer ${token}` },
-        payload: validSettings,
+        method: 'GET',
+        url: '/api/settings/chat',
+        headers: { authorization: `Bearer ${userToken}` },
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
-      expect(body.data.defaultChatProvider).toBe('openai')
-      expect(body.data.temperature).toBe(0.7)
+      expect(body.data.defaultProvider).toBe('openai')
+      expect(body.data.enabledProviders).toEqual(['openai', 'claude'])
     })
 
-    it('AC-21: returns 400 for missing providers', async () => {
+    it('returns 400 for invalid category', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/settings/invalid-category',
+        headers: { authorization: `Bearer ${userToken}` },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('INVALID_CONFIG_CATEGORY')
+    })
+  })
+
+  describe('GET /api/settings/:category/providers', () => {
+    it('returns enabled builtIn providers for chat', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/settings/chat/providers',
+        headers: { authorization: `Bearer ${userToken}` },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.data.builtIn).toHaveLength(2)
+      expect(body.data.builtIn.map((p: { id: string }) => p.id)).toEqual(['openai', 'claude'])
+      expect(body.data.builtIn[0].apiKey).toMatch(/^MASKED:/)
+      expect(body.data.custom).toEqual([])
+    })
+
+    it('returns 400 for non-provider category', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/settings/indexing/providers',
+        headers: { authorization: `Bearer ${userToken}` },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('INVALID_PROVIDER_CATEGORY')
+    })
+  })
+
+  describe('POST /api/settings/:category', () => {
+    it('AC-20: saves appearance settings for user', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/settings',
-        headers: { authorization: `Bearer ${token}` },
-        payload: { ...validSettings, providers: undefined },
+        url: '/api/settings/appearance',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { mode: 'dark', fontSizeLevel: 4 },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.data.appearance.mode).toBe('dark')
+      expect(body.data.appearance.fontSizeLevel).toBe(4)
+    })
+
+    it('returns 400 when saving read-only category from user endpoint', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/settings/chat',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { defaultProvider: 'claude', enabledProviders: ['claude'], temperature: 0.5 },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('CATEGORY_READ_ONLY')
+    })
+
+    it('returns 400 for invalid appearance payload', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/settings/appearance',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { mode: 'invalid', fontSizeLevel: 10 },
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
       expect(body.error.code).toBe('VALIDATION_ERROR')
     })
 
-    it('AC-22: returns 400 for invalid temperature (out of range)', async () => {
+    it('returns 401 without token', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/settings',
-        headers: { authorization: `Bearer ${token}` },
-        payload: { ...validSettings, temperature: 3 },
-      })
-      expect(res.statusCode).toBe(400)
-      const body = res.json()
-      expect(body.error.code).toBe('VALIDATION_ERROR')
-    })
-
-    it('AC-23: returns 400 for invalid defaultChatProvider', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/settings',
-        headers: { authorization: `Bearer ${token}` },
-        payload: { ...validSettings, defaultChatProvider: 'invalid-provider' },
-      })
-      expect(res.statusCode).toBe(400)
-      const body = res.json()
-      expect(body.error.code).toBe('VALIDATION_ERROR')
-    })
-
-    it('AC-24: returns 400 for invalid baseUrl (SSRF)', async () => {
-      const badSettings = {
-        ...validSettings,
-        providers: {
-          ...validSettings.providers,
-          openai: { apiKey: 'sk-test', model: 'gpt-4', baseUrl: 'http://192.168.1.1' },
-        },
-      }
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/settings',
-        headers: { authorization: `Bearer ${token}` },
-        payload: badSettings,
-      })
-      expect(res.statusCode).toBe(400)
-      const body = res.json()
-      expect(body.error.code).toBe('VALIDATION_ERROR')
-    })
-
-    it('AC-25: returns 401 without token', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/settings',
-        payload: validSettings,
+        url: '/api/settings/appearance',
+        payload: { mode: 'light' },
       })
       expect(res.statusCode).toBe(401)
     })

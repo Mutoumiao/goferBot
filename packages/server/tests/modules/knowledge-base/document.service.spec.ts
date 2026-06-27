@@ -168,21 +168,21 @@ describe('DocumentService', () => {
   })
 
   describe('create', () => {
-    it('AC-04m: creates document with valid data and status created', async () => {
+    it('AC-04m: creates document with valid data and status uploaded', async () => {
       mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
       mockPrisma.document.create.mockResolvedValue({
         id: 'd1',
         name: 'New Doc',
         kbId: 'kb1',
         folderId: null,
-        status: 'created',
+        status: 'uploaded',
       })
 
       const result = await docService.create('u1', 'kb1', { name: 'New Doc' })
 
       expect(result.name).toBe('New Doc')
       expect(mockPrisma.document.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ status: 'created' }),
+        data: expect.objectContaining({ status: 'uploaded' }),
       })
     })
   })
