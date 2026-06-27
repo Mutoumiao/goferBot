@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
@@ -22,11 +24,18 @@ import { QueueModule } from './processors/queue/queue.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
 import { VectorModule } from './processors/vector/vector.module.js'
 
+// ponytail: 使用 import.meta.url 定位 .env，避免 nest start --watch 在 dist/ 目录运行时 process.cwd() 漂移导致找不到根目录 .env
+// 编译后 app.module.js 位于 packages/server/dist/，到根目录需要上溯三层：dist → server → knowledge-base
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '../.env'],
+      envFilePath: [
+        resolve(__dirname, '../.env'),
+        resolve(__dirname, '../../../.env'),
+      ],
     }),
     ThrottlerModule.forRoot({
       throttlers: [
