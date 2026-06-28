@@ -1,4 +1,9 @@
-export const AVATAR_ALLOWED_MIME_TYPES: readonly string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+export const AVATAR_ALLOWED_MIME_TYPES: readonly string[] = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]
 
 export const AVATAR_EXT_MAP: Record<string, string> = {
   'image/jpeg': 'jpg',

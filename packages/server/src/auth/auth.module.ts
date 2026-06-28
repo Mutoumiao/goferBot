@@ -27,7 +27,13 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     UserModule,
     StorageModule,
   ],
-  providers: [AuthService, AuthRepository, PasswordEncryptionService, JwtStrategy, AuthRedisService],
+  providers: [
+    AuthService,
+    AuthRepository,
+    PasswordEncryptionService,
+    JwtStrategy,
+    AuthRedisService,
+  ],
   controllers: [AuthController],
   exports: [AuthService, AuthRepository, AuthRedisService],
 })

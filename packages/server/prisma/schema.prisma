@@ -463,6 +463,7 @@ model RefreshToken {
   jtiHash           String    @unique @map("jti_hash")
   usedAt            DateTime? @map("used_at")
   replacedByTokenId String?   @map("replaced_by_token_id")
+  parentTokenId     String?   @map("parent_token_id")
   revokedAt         DateTime? @map("revoked_at")
   createdAt         DateTime  @default(now()) @map("created_at")
 

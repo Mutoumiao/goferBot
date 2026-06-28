@@ -92,7 +92,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const userRoles = await this.authRepository.getRolesForUserByApp(user.id, payload.app)
     const roles = userRoles.map((r) => r.role)
 
-    await this.authRedis.cacheUser(user.id, { ...user, roles } as unknown as Record<string, unknown>)
+    await this.authRedis.cacheUser(user.id, { ...user, roles } as unknown as Record<
+      string,
+      unknown
+    >)
     await this.authRepository.updateLastSeen(payload.sid)
 
     return {

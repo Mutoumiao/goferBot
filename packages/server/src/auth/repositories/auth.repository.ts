@@ -7,12 +7,7 @@ import type { AuthApp } from '../types/auth-app.type.js'
 export class AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createSession(data: {
-    userId: string
-    app: AuthApp
-    userAgent?: string
-    ip?: string
-  }) {
+  async createSession(data: { userId: string; app: AuthApp; userAgent?: string; ip?: string }) {
     return this.prisma.authSession.create({
       data: {
         userId: data.userId,
@@ -40,14 +35,12 @@ export class AuthRepository {
     })
   }
 
-  async insertRefreshToken(data: {
-    sessionId: string
-    jtiHash: string
-  }) {
+  async insertRefreshToken(data: { sessionId: string; jtiHash: string; parentTokenId?: string }) {
     return this.prisma.refreshToken.create({
       data: {
         sessionId: data.sessionId,
         jtiHash: data.jtiHash,
+        parentTokenId: data.parentTokenId,
       },
     })
   }
@@ -59,14 +52,41 @@ export class AuthRepository {
     })
   }
 
-  async markRefreshTokenUsed(jtiHash: string, replacedByTokenId?: string) {
-    return this.prisma.refreshToken.update({
-      where: { jtiHash },
+  /**
+   * 原子标记 refresh token 为已使用。
+   * 使用 UPDATE ... WHERE usedAt IS NULL 确保并发安全：
+   * 只有第一个请求能成功更新，其余请求返回 null（触发重放检测）。
+   */
+  async markRefreshTokenUsed(
+    jtiHash: string,
+    replacedByTokenId?: string,
+  ): Promise<{ id: string; usedAt: Date } | null> {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: {
+        jtiHash,
+        usedAt: null,
+      },
       data: {
         usedAt: new Date(),
         replacedByTokenId,
       },
     })
+
+    // updateMany 只返回 count，需要再查询获取具体数据
+    if (result.count === 0) {
+      return null
+    }
+
+    const token = await this.prisma.refreshToken.findUnique({
+      where: { jtiHash },
+      select: { id: true, usedAt: true },
+    })
+
+    if (!token) {
+      return null
+    }
+
+    return { id: token.id, usedAt: token.usedAt! }
   }
 
   async updateLastSeen(sessionId: string) {

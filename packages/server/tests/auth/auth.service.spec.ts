@@ -1,4 +1,5 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common'
+import { AppException } from '@/lib/app-error.js'
+import { UnauthorizedException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthService } from '@/auth/auth.service.js'
 
@@ -31,7 +32,7 @@ describe('AuthService', () => {
       createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
       insertRefreshToken: vi.fn().mockResolvedValue(undefined),
       findRefreshTokenByJtiHash: vi.fn(),
-      markRefreshTokenUsed: vi.fn().mockResolvedValue(undefined),
+      markRefreshTokenUsed: vi.fn().mockResolvedValue({ id: 'rt-1', usedAt: new Date() }),
       revokeSession: vi.fn().mockResolvedValue(undefined),
       getRolesForUserByApp: vi.fn().mockResolvedValue([]),
     }
@@ -92,7 +93,7 @@ describe('AuthService', () => {
       expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'web')
     })
 
-    it('AC-03c: throws ForbiddenException when account is disabled', async () => {
+    it('AC-03c: throws AppException when account is disabled', async () => {
       mockUserService.validatePassword.mockResolvedValue({
         id: 'u1',
         email: 'test@gofer.bot',
@@ -100,7 +101,7 @@ describe('AuthService', () => {
       })
 
       await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
-        ForbiddenException,
+        AppException,
       )
     })
 
@@ -118,7 +119,7 @@ describe('AuthService', () => {
       expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'admin')
     })
 
-    it('AC-03b-admin-deny: throws ForbiddenException when admin has no admin role', async () => {
+    it('AC-03b-admin-deny: throws AppException when admin has no admin role', async () => {
       mockUserService.validatePassword.mockResolvedValue({
         id: 'u1',
         email: 'admin@gofer.bot',
@@ -127,7 +128,7 @@ describe('AuthService', () => {
       mockAuthRepository.getRolesForUserByApp.mockResolvedValue([])
 
       await expect(authService.login('admin@gofer.bot', 'password123', 'admin')).rejects.toThrow(
-        ForbiddenException,
+        AppException,
       )
     })
   })
@@ -190,7 +191,39 @@ describe('AuthService', () => {
       expect(mockAuthRepository.insertRefreshToken).toHaveBeenCalledWith({
         sessionId: 'session-1',
         jtiHash: expect.any(String),
+        parentTokenId: 'rt-1',
       })
+    })
+
+    it('AC-03d-race: revokes session when concurrent refresh race is lost', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'u1',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
+        type: 'refresh',
+      })
+      mockUserService.findById.mockResolvedValue({
+        id: 'u1',
+        email: 'test@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.findRefreshTokenByJtiHash.mockResolvedValue({
+        id: 'rt-1',
+        jtiHash: 'hash-jti-1',
+        sessionId: 'session-1',
+        usedAt: null,
+        revokedAt: null,
+        session: { id: 'session-1', revokedAt: null },
+      })
+      // 模拟并发竞争失败：另一个请求已经标记了此 token
+      mockAuthRepository.markRefreshTokenUsed.mockResolvedValue(null)
+
+      await expect(authService.refresh('valid-refresh-token')).rejects.toThrow(AppException)
+      expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith(
+        'session-1',
+        'token_replay_detected',
+      )
     })
 
     it('AC-03d-replay: revokes session when refresh token is reused (replay attack)', async () => {
@@ -210,8 +243,11 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: null },
       })
 
-      await expect(authService.refresh('reused-token')).rejects.toThrow(UnauthorizedException)
-      expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith('session-1', 'token_replay_detected')
+      await expect(authService.refresh('reused-token')).rejects.toThrow(AppException)
+      expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith(
+        'session-1',
+        'token_replay_detected',
+      )
     })
 
     it('AC-03d-revoked: throws when refresh token is revoked', async () => {
@@ -231,7 +267,7 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: null },
       })
 
-      await expect(authService.refresh('revoked-token')).rejects.toThrow(UnauthorizedException)
+      await expect(authService.refresh('revoked-token')).rejects.toThrow(AppException)
     })
 
     it('AC-03d-session-revoked: throws when session is revoked', async () => {
@@ -251,10 +287,10 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: new Date() },
       })
 
-      await expect(authService.refresh('session-revoked-token')).rejects.toThrow(UnauthorizedException)
+      await expect(authService.refresh('session-revoked-token')).rejects.toThrow(AppException)
     })
 
-    it('AC-03e: throws UnauthorizedException for invalid token type', async () => {
+    it('AC-03e: throws AppException for invalid token type', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
         sid: 'session-1',
@@ -263,10 +299,10 @@ describe('AuthService', () => {
         type: 'access',
       })
 
-      await expect(authService.refresh('access-token')).rejects.toThrow(UnauthorizedException)
+      await expect(authService.refresh('access-token')).rejects.toThrow(AppException)
     })
 
-    it('AC-03f: throws UnauthorizedException when user not found', async () => {
+    it('AC-03f: throws AppException when user not found', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
         sid: 'session-1',
@@ -276,15 +312,15 @@ describe('AuthService', () => {
       })
       mockUserService.findById.mockResolvedValue(null)
 
-      await expect(authService.refresh('valid-token')).rejects.toThrow(UnauthorizedException)
+      await expect(authService.refresh('valid-token')).rejects.toThrow(AppException)
     })
 
-    it('AC-03g: throws UnauthorizedException for expired/invalid token', async () => {
+    it('AC-03g: throws AppException for expired/invalid token', async () => {
       mockJwtService.verify.mockImplementation(() => {
         throw new Error('jwt expired')
       })
 
-      await expect(authService.refresh('expired-token')).rejects.toThrow(UnauthorizedException)
+      await expect(authService.refresh('expired-token')).rejects.toThrow(AppException)
     })
   })
 
@@ -413,10 +449,10 @@ describe('AuthService', () => {
       expect(result.email).toBe('test@gofer.bot')
     })
 
-    it('AC-03i: throws UnauthorizedException when user not found', async () => {
+    it('AC-03i: throws AppException when user not found', async () => {
       mockUserService.findById.mockResolvedValue(null)
 
-      await expect(authService.me('u1')).rejects.toThrow(UnauthorizedException)
+      await expect(authService.me('u1')).rejects.toThrow(AppException)
     })
   })
 })

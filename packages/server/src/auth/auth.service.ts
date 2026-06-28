@@ -1,18 +1,24 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { createHash, randomUUID } from 'node:crypto'
+import { AppException } from '../lib/app-error.js'
 import { UserService } from '../modules/user/user.service.js'
 import { StorageService } from '../processors/storage/storage.service.js'
 import { AuthRedisService } from './auth-redis.service.js'
 import { AVATAR_ALLOWED_MIME_TYPES, AVATAR_EXT_MAP, AVATAR_MAX_SIZE } from './constants.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
+import {
+  accountDisabledError,
+  invalidRefreshTokenError,
+  invalidTokenTypeError,
+  noAdminRoleError,
+  sessionRevokedError,
+  tokenNotFoundError,
+  tokenReplayError,
+  tokenRevokedError,
+  userNotFoundError,
+} from './errors.js'
 import { AuthRepository } from './repositories/auth.repository.js'
 import type { AuthApp } from './types/auth-app.type.js'
 import type { TokenPair } from './types/token-pair.type.js'
@@ -61,20 +67,14 @@ export class AuthService {
     const user = await this.userService.validatePassword(email, password)
 
     if (!user.isActive) {
-      throw new ForbiddenException({
-        code: 'ACCOUNT_DISABLED',
-        message: '账号已被禁用',
-      })
+      throw accountDisabledError()
     }
 
     const roles = await this.authRepository.getRolesForUserByApp(user.id, app)
 
     // admin 端无角色拒绝登录
     if (app === 'admin' && roles.length === 0) {
-      throw new ForbiddenException({
-        code: 'NO_ADMIN_ROLE',
-        message: '无权访问管理后台',
-      })
+      throw noAdminRoleError()
     }
 
     const tokens = await this.createSession(user.id, app, meta)
@@ -89,60 +89,39 @@ export class AuthService {
       })
 
       if (payload.type !== 'refresh') {
-        throw new UnauthorizedException({
-          code: 'INVALID_TOKEN_TYPE',
-          message: '无效的刷新令牌',
-        })
+        throw invalidTokenTypeError()
       }
 
       const jtiHash = this.hashJti(payload.jti)
       const tokenRecord = await this.authRepository.findRefreshTokenByJtiHash(jtiHash)
 
       if (!tokenRecord) {
-        throw new UnauthorizedException({
-          code: 'TOKEN_NOT_FOUND',
-          message: '刷新令牌无效',
-        })
+        throw tokenNotFoundError()
       }
 
       // 重放检测：token 已被使用过
       if (tokenRecord.usedAt) {
         await this.authRepository.revokeSession(tokenRecord.sessionId, 'token_replay_detected')
-        throw new UnauthorizedException({
-          code: 'TOKEN_REPLAY',
-          message: '检测到令牌重放攻击，会话已撤销',
-        })
+        throw tokenReplayError()
       }
 
       // token 已撤销
       if (tokenRecord.revokedAt) {
-        throw new UnauthorizedException({
-          code: 'TOKEN_REVOKED',
-          message: '刷新令牌已撤销',
-        })
+        throw tokenRevokedError()
       }
 
       // session 已撤销
       if (tokenRecord.session.revokedAt) {
-        throw new UnauthorizedException({
-          code: 'SESSION_REVOKED',
-          message: '会话已撤销',
-        })
+        throw sessionRevokedError()
       }
 
       const user = await this.userService.findById(payload.sub)
       if (!user) {
-        throw new UnauthorizedException({
-          code: 'USER_NOT_FOUND',
-          message: '用户不存在',
-        })
+        throw userNotFoundError()
       }
 
       if (!user.isActive) {
-        throw new ForbiddenException({
-          code: 'ACCOUNT_DISABLED',
-          message: '账号已被禁用',
-        })
+        throw accountDisabledError()
       }
 
       // 标记旧 token 为 used，生成新 token
@@ -168,14 +147,18 @@ export class AuthService {
       await this.authRepository.insertRefreshToken({
         sessionId: payload.sid,
         jtiHash: newJtiHash,
+        parentTokenId: tokenRecord.id,
       })
 
-      // 标记旧 token 为 used（必须在生成新 token 之后，避免并发时新 token 的 jtiHash 还未入库）
-      // ponytail: 这里先 insert 新 token 再 mark used，确保并发 refresh 时如果另一个请求也拿到同一个旧 token，
-      // 它的 findRefreshTokenByJtiHash 会返回 usedAt=null 但 markRefreshTokenUsed 会失败（因为已经被标记）
-      // 实际上更好的并发安全是在数据库层用原子操作：UPDATE ... WHERE usedAt IS NULL
-      // 当前实现依赖 Prisma 的 update 在并发时只有一个成功
-      await this.authRepository.markRefreshTokenUsed(jtiHash, newJtiHash)
+      // 原子标记旧 token 为 used（UPDATE ... WHERE usedAt IS NULL）
+      // 只有第一个并发请求能成功，其余返回 null（触发重放检测）
+      const markResult = await this.authRepository.markRefreshTokenUsed(jtiHash, newJtiHash)
+      if (!markResult) {
+        // 并发竞争失败：另一个请求已经标记了此 token
+        // 撤销整条 session 作为安全防御
+        await this.authRepository.revokeSession(tokenRecord.sessionId, 'token_replay_detected')
+        throw tokenReplayError()
+      }
 
       const accessPayload: JwtAccessPayload = {
         sub: payload.sub,
@@ -196,15 +179,11 @@ export class AuthService {
 
       return { accessToken, refreshToken: newRefreshToken, sessionId: payload.sid }
     } catch (err) {
-      if (err instanceof UnauthorizedException || err instanceof ForbiddenException) {
+      if (err instanceof UnauthorizedException || err instanceof AppException) {
         throw err
       }
       const isDev = process.env.NODE_ENV === 'development'
-      throw new UnauthorizedException({
-        code: 'INVALID_REFRESH_TOKEN',
-        message: '刷新令牌无效或已过期',
-        details: isDev && err instanceof Error ? err.message : undefined,
-      })
+      throw invalidRefreshTokenError(isDev && err instanceof Error ? err.message : undefined)
     }
   }
 
@@ -215,22 +194,16 @@ export class AuthService {
       })
 
       if (payload.type !== 'refresh') {
-        throw new UnauthorizedException({
-          code: 'INVALID_TOKEN_TYPE',
-          message: '无效的刷新令牌',
-        })
+        throw invalidTokenTypeError()
       }
 
       await this.authRepository.revokeSession(payload.sid, 'logout')
       await this.authRedis.invalidateUserCache(payload.sub)
     } catch (err) {
-      if (err instanceof UnauthorizedException) {
+      if (err instanceof UnauthorizedException || err instanceof AppException) {
         throw err
       }
-      throw new UnauthorizedException({
-        code: 'INVALID_REFRESH_TOKEN',
-        message: '刷新令牌无效或已过期',
-      })
+      throw invalidRefreshTokenError()
     }
   }
 
@@ -249,10 +222,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.userService.findById(userId)
     if (!user) {
-      throw new UnauthorizedException({
-        code: 'USER_NOT_FOUND',
-        message: '用户不存在',
-      })
+      throw userNotFoundError()
     }
     return user
   }
@@ -260,10 +230,7 @@ export class AuthService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const user = await this.userService.updateName(userId, dto.name)
     if (!user) {
-      throw new UnauthorizedException({
-        code: 'USER_NOT_FOUND',
-        message: '用户不存在',
-      })
+      throw userNotFoundError()
     }
     return user
   }
@@ -288,10 +255,7 @@ export class AuthService {
 
     const currentUser = await this.userService.findById(userId)
     if (!currentUser) {
-      throw new UnauthorizedException({
-        code: 'USER_NOT_FOUND',
-        message: '用户不存在',
-      })
+      throw userNotFoundError()
     }
 
     await this.storageService.uploadFile(file.buffer, key, file.mimetype)
@@ -299,10 +263,7 @@ export class AuthService {
 
     const user = await this.userService.updateAvatar(userId, avatarUrl)
     if (!user) {
-      throw new UnauthorizedException({
-        code: 'USER_NOT_FOUND',
-        message: '用户不存在',
-      })
+      throw userNotFoundError()
     }
 
     if (currentUser.avatar) {

@@ -10,7 +10,8 @@ interface PublicKeyResponse {
 /**
  * 登录 — 返回 accessToken + user
  */
-export const login = (data: LoginRequest) => alovaInstance.Post<AuthResponse>('/auth/web/login', data)
+export const login = (data: LoginRequest) =>
+  alovaInstance.Post<AuthResponse>('/auth/web/login', data)
 
 /**
  * 登出 — 携带 refreshToken 撤销服务端会话

@@ -42,12 +42,7 @@ describe('DocumentService', () => {
       cleanupDocument: vi.fn().mockResolvedValue(undefined),
     }
 
-    docService = new DocumentService(
-      mockPrisma,
-      mockStorage,
-      mockCleanupService,
-      mockQueueService,
-    )
+    docService = new DocumentService(mockPrisma, mockStorage, mockCleanupService, mockQueueService)
   })
 
   describe('list', () => {

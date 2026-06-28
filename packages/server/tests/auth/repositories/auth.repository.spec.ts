@@ -136,6 +136,32 @@ describe('AuthRepository', () => {
         data: {
           sessionId: 'session-1',
           jtiHash: 'hash-abc',
+          parentTokenId: undefined,
+        },
+      })
+    })
+
+    it('creates a refresh token with parentTokenId for rotation chain', async () => {
+      const mockToken = {
+        id: 'rt-2',
+        sessionId: 'session-1',
+        jtiHash: 'hash-def',
+        parentTokenId: 'rt-1',
+      }
+      mockPrismaService.refreshToken.create.mockResolvedValue(mockToken)
+
+      const result = await authRepository.insertRefreshToken({
+        sessionId: 'session-1',
+        jtiHash: 'hash-def',
+        parentTokenId: 'rt-1',
+      })
+
+      expect(result).toEqual(mockToken)
+      expect(mockPrismaService.refreshToken.create).toHaveBeenCalledWith({
+        data: {
+          sessionId: 'session-1',
+          jtiHash: 'hash-def',
+          parentTokenId: 'rt-1',
         },
       })
     })
@@ -169,41 +195,46 @@ describe('AuthRepository', () => {
   })
 
   describe('markRefreshTokenUsed', () => {
-    it('updates refresh token with usedAt only', async () => {
-      const mockToken = { id: 'rt-1', jtiHash: 'hash-abc', usedAt: new Date() }
-      mockPrismaService.refreshToken.update.mockResolvedValue(mockToken)
+    beforeEach(() => {
+      mockPrismaService.refreshToken.updateMany = vi.fn()
+      mockPrismaService.refreshToken.findUnique = vi.fn()
+    })
+
+    it('atomically updates refresh token with usedAt only and returns token', async () => {
+      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 })
+      const mockToken = { id: 'rt-1', usedAt: new Date('2024-01-01T00:00:00Z') }
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockToken)
 
       const result = await authRepository.markRefreshTokenUsed('hash-abc')
 
       expect(result).toEqual(mockToken)
-      expect(mockPrismaService.refreshToken.update).toHaveBeenCalledWith({
-        where: { jtiHash: 'hash-abc' },
-        data: {
-          usedAt: expect.any(Date),
-          replacedByTokenId: undefined,
-        },
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { jtiHash: 'hash-abc', usedAt: null },
+        data: { usedAt: expect.any(Date), replacedByTokenId: undefined },
       })
     })
 
-    it('updates refresh token with usedAt and replacedByTokenId', async () => {
-      const mockToken = {
-        id: 'rt-1',
-        jtiHash: 'hash-abc',
-        usedAt: new Date(),
-        replacedByTokenId: 'rt-2',
-      }
-      mockPrismaService.refreshToken.update.mockResolvedValue(mockToken)
+    it('atomically updates refresh token with usedAt and replacedByTokenId', async () => {
+      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 })
+      const mockToken = { id: 'rt-1', usedAt: new Date('2024-01-01T00:00:00Z') }
+      mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockToken)
 
       const result = await authRepository.markRefreshTokenUsed('hash-abc', 'rt-2')
 
       expect(result).toEqual(mockToken)
-      expect(mockPrismaService.refreshToken.update).toHaveBeenCalledWith({
-        where: { jtiHash: 'hash-abc' },
-        data: {
-          usedAt: expect.any(Date),
-          replacedByTokenId: 'rt-2',
-        },
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { jtiHash: 'hash-abc', usedAt: null },
+        data: { usedAt: expect.any(Date), replacedByTokenId: 'rt-2' },
       })
+    })
+
+    it('returns null when token is already used (concurrent race lost)', async () => {
+      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 0 })
+
+      const result = await authRepository.markRefreshTokenUsed('hash-abc')
+
+      expect(result).toBeNull()
+      expect(mockPrismaService.refreshToken.findUnique).not.toHaveBeenCalled()
     })
   })
 

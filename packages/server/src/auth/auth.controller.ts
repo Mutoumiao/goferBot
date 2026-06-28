@@ -26,6 +26,8 @@ import { validatePassword } from './dto/password.schema.js'
 import { WebLoginDto } from './dto/web-login.dto.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
 
+import { extractRequestContext } from './request-context.js'
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -57,9 +59,10 @@ export class AuthController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async webLogin(@Body() dto: WebLoginDto, @Req() req: FastifyRequest) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
+    const ctx = extractRequestContext(req)
     return this.authService.login(dto.email, password, 'web', {
-      userAgent: req.headers['user-agent'],
-      ip: req.ip,
+      userAgent: ctx.userAgent,
+      ip: ctx.ip,
     })
   }
 
@@ -68,9 +71,10 @@ export class AuthController {
   @Throttle({ default: { ttl: 60000, limit: 3 } })
   async adminLogin(@Body() dto: AdminLoginDto, @Req() req: FastifyRequest) {
     validatePassword(dto.password)
+    const ctx = extractRequestContext(req)
     return this.authService.login(dto.email, dto.password, 'admin', {
-      userAgent: req.headers['user-agent'],
-      ip: req.ip,
+      userAgent: ctx.userAgent,
+      ip: ctx.ip,
     })
   }
 
@@ -80,9 +84,10 @@ export class AuthController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async legacyLogin(@Body() dto: LoginDto, @Req() req: FastifyRequest) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
+    const ctx = extractRequestContext(req)
     return this.authService.login(dto.email, password, 'web', {
-      userAgent: req.headers['user-agent'],
-      ip: req.ip,
+      userAgent: ctx.userAgent,
+      ip: ctx.ip,
     })
   }
 
