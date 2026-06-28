@@ -4,11 +4,15 @@ import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { AuthRedisService } from '../auth-redis.service.js'
+import { AuthRepository } from '../repositories/auth.repository.js'
 import { Role } from '../enums/role.enum.js'
+import type { AuthApp } from '../types/auth-app.type.js'
 
 export interface JwtPayload {
   sub: string
-  email: string
+  email?: string
+  sid: string
+  app: AuthApp
   type: 'access' | 'refresh'
 }
 
@@ -18,6 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     @Inject(ConfigService) readonly configService: ConfigService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuthRedisService) private readonly authRedis: AuthRedisService,
+    @Inject(AuthRepository) private readonly authRepository: AuthRepository,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -31,7 +36,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('无效的令牌类型')
     }
 
-    // 1. 尝试从 Redis 缓存获取用户信息
+    if (!payload.sid || !payload.app) {
+      throw new UnauthorizedException('无效的令牌声明')
+    }
+
+    const session = await this.prisma.authSession.findUnique({
+      where: { id: payload.sid },
+    })
+
+    if (!session || session.revokedAt) {
+      throw new UnauthorizedException('会话已失效')
+    }
+
     const cached = await this.authRedis.getCachedUser(payload.sub)
     if (cached) {
       if (!cached.isActive) {
@@ -46,10 +62,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         isActive: cached.isActive as boolean,
         createdAt: cached.createdAt as Date,
         updatedAt: cached.updatedAt as Date,
+        sessionId: payload.sid,
+        app: payload.app,
       }
     }
 
-    // 2. 缓存未命中，查询数据库并写入缓存
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -73,10 +90,13 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     await this.authRedis.cacheUser(user.id, user as unknown as Record<string, unknown>)
+    await this.authRepository.updateLastSeen(payload.sid)
 
     return {
       ...user,
       role: user.role as Role,
+      sessionId: payload.sid,
+      app: payload.app,
     }
   }
 }
