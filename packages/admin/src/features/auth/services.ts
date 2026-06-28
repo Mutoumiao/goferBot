@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { changePassword, getCurrentUser, login as loginApi, refresh } from '@/api/auth'
+import { changePassword, getCurrentUser, login as loginApi, logout, refresh } from '@/api/auth'
 import type { AdminUser } from '@/stores/auth'
 import { useAuthStore } from '@/stores/auth'
 import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from '@/utils/auth-token'
@@ -37,7 +37,11 @@ export async function loginService(email: string, password: string): Promise<Log
 
 export async function refreshAuth(): Promise<boolean> {
   try {
-    const res = await refresh().send()
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) {
+      return false
+    }
+    const res = await refresh({ refreshToken }).send()
     const token = res.accessToken
     const newRefreshToken = res.refreshToken
     if (token) {
@@ -65,10 +69,19 @@ export async function fetchCurrentUser(): Promise<boolean> {
   }
 }
 
-export function logoutService(): void {
-  clearTokens()
-  useAuthStore.getState().clearAuth()
-  toast.success('已退出登录')
+export async function logoutService(): Promise<void> {
+  try {
+    const refreshToken = getRefreshToken()
+    if (refreshToken) {
+      await logout({ refreshToken }).send()
+    }
+  } catch {
+    // 即使后端登出失败也继续清理本地状态
+  } finally {
+    clearTokens()
+    useAuthStore.getState().clearAuth()
+    toast.success('已退出登录')
+  }
 }
 
 export async function changePasswordService(
@@ -78,7 +91,7 @@ export async function changePasswordService(
   try {
     await changePassword({ oldPassword, newPassword }).send()
     toast.success('密码已修改，请重新登录')
-    logoutService()
+    await logoutService()
     return { success: true }
   } catch (err) {
     const msg = mapErrorMessage(err)

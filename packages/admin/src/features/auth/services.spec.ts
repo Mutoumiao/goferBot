@@ -20,6 +20,7 @@ const {
   mockSetRefreshToken,
   mockClearTokens,
   mockGetRefreshToken,
+  mockLogout,
   mockSetAuth,
   mockSetUser,
   mockClearAuth,
@@ -32,6 +33,7 @@ const {
   mockSetRefreshToken: vi.fn(),
   mockClearTokens: vi.fn(),
   mockGetRefreshToken: vi.fn(),
+  mockLogout: vi.fn(),
   mockSetAuth: vi.fn(),
   mockSetUser: vi.fn(),
   mockClearAuth: vi.fn(),
@@ -39,6 +41,7 @@ const {
 
 vi.mock('@/api/auth', () => ({
   login: (d: unknown) => ({ send: () => mockLogin(d) }),
+  logout: (d: unknown) => ({ send: () => mockLogout(d) }),
   refresh: () => ({ send: mockRefresh }),
   getCurrentUser: () => ({ send: mockGetCurrentUser }),
   changePassword: (d: unknown) => ({ send: () => mockChangePassword(d) }),
@@ -94,7 +97,13 @@ describe('auth services', () => {
   })
 
   it('refreshAuth returns false on error', async () => {
+    mockGetRefreshToken.mockReturnValueOnce('rt')
     mockRefresh.mockRejectedValueOnce(new Error('bad'))
+    expect(await refreshAuth()).toBe(false)
+  })
+
+  it('refreshAuth returns false when no refresh token exists', async () => {
+    mockGetRefreshToken.mockReturnValueOnce(null)
     expect(await refreshAuth()).toBe(false)
   })
 
@@ -104,8 +113,10 @@ describe('auth services', () => {
     expect(mockClearAuth).toHaveBeenCalled()
   })
 
-  it('logoutService clears tokens', () => {
-    logoutService()
+  it('logoutService clears tokens', async () => {
+    mockGetRefreshToken.mockReturnValueOnce('rt')
+    mockLogout.mockResolvedValueOnce(undefined)
+    await logoutService()
     expect(mockClearTokens).toHaveBeenCalled()
     expect(mockClearAuth).toHaveBeenCalled()
     expect(toast.success).toHaveBeenCalled()
