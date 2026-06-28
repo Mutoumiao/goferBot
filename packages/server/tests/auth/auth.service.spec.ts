@@ -8,6 +8,8 @@ describe('AuthService', () => {
   let mockConfigService: any
   let mockUserService: any
   let mockStorageService: any
+  let mockAuthRedis: any
+  let mockAuthRepository: any
 
   beforeEach(() => {
     mockJwtService = {
@@ -24,7 +26,11 @@ describe('AuthService', () => {
       findById: vi.fn(),
     }
     mockStorageService = {}
-    const mockAuthRedis = {} as any
+    mockAuthRedis = {}
+    mockAuthRepository = {
+      createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
+      insertRefreshToken: vi.fn().mockResolvedValue(undefined),
+    }
 
     authService = new AuthService(
       mockJwtService,
@@ -32,6 +38,7 @@ describe('AuthService', () => {
       mockUserService,
       mockStorageService,
       mockAuthRedis,
+      mockAuthRepository,
     )
   })
 
@@ -73,7 +80,7 @@ describe('AuthService', () => {
         isActive: true,
       })
 
-      const result = await authService.login('test@gofer.bot', 'password123')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web')
 
       expect(result.user.id).toBe('u1')
       expect(result.accessToken).toBe('mock-token')
@@ -96,7 +103,9 @@ describe('AuthService', () => {
     it('AC-03d: returns new tokens for valid refresh token', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
-        email: 'test@gofer.bot',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
         type: 'refresh',
       })
       mockUserService.findById.mockResolvedValue({
@@ -114,7 +123,9 @@ describe('AuthService', () => {
     it('AC-03e: throws UnauthorizedException for invalid token type', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
-        email: 'test@gofer.bot',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
         type: 'access',
       })
 
@@ -124,7 +135,9 @@ describe('AuthService', () => {
     it('AC-03f: throws UnauthorizedException when user not found', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
-        email: 'test@gofer.bot',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
         type: 'refresh',
       })
       mockUserService.findById.mockResolvedValue(null)
@@ -150,7 +163,7 @@ describe('AuthService', () => {
         isActive: true,
       })
 
-      const result = await authService.login('test@gofer.bot', 'password123')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web')
 
       expect(result.accessToken).toBe('mock-token')
       expect(mockJwtService.sign).toHaveBeenCalledWith(
@@ -167,7 +180,7 @@ describe('AuthService', () => {
         isActive: true,
       })
 
-      const result = await authService.login('test@gofer.bot', 'password123')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web')
 
       expect(result.accessToken).toBe('mock-token')
       expect(mockJwtService.sign).toHaveBeenCalledWith(
@@ -184,7 +197,7 @@ describe('AuthService', () => {
         isActive: true,
       })
 
-      const result = await authService.login('test@gofer.bot', 'password123')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web')
 
       expect(result.accessToken).toBe('mock-token')
       expect(mockJwtService.sign).toHaveBeenCalledWith(
@@ -206,6 +219,7 @@ describe('AuthService', () => {
         mockUserService,
         mockStorageService,
         mockAuthRedis,
+        mockAuthRepository,
       )
 
       await authService.blacklistToken('token-abc')
@@ -224,6 +238,7 @@ describe('AuthService', () => {
         mockUserService,
         mockStorageService,
         mockAuthRedis,
+        mockAuthRepository,
       )
 
       await authService.blacklistToken('token-abc')
@@ -243,6 +258,7 @@ describe('AuthService', () => {
         mockUserService,
         mockStorageService,
         mockAuthRedis,
+        mockAuthRepository,
       )
 
       await authService.invalidateUserCache('u1')

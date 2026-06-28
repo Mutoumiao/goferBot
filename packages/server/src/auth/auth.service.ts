@@ -7,25 +7,27 @@ import {
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
+import { createHash, randomUUID } from 'node:crypto'
 import { UserService } from '../modules/user/user.service.js'
 import { StorageService } from '../processors/storage/storage.service.js'
 import { AuthRedisService } from './auth-redis.service.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
-
-export interface TokenPair {
-  accessToken: string
-  refreshToken: string
-}
+import { AuthRepository } from './repositories/auth.repository.js'
+import type { AuthApp } from './types/auth-app.type.js'
+import type { TokenPair } from './types/token-pair.type.js'
 
 export interface JwtAccessPayload {
   sub: string
-  email: string
+  sid: string
+  app: AuthApp
   type: 'access'
 }
 
 export interface JwtRefreshPayload {
   sub: string
-  email: string
+  sid: string
+  app: AuthApp
+  jti: string
   type: 'refresh'
 }
 
@@ -39,16 +41,22 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly storageService: StorageService,
     private readonly authRedis: AuthRedisService,
+    private readonly authRepository: AuthRepository,
   ) {}
 
   async register(email: string, password: string, name?: string) {
     const user = await this.userService.create(email, password, name)
-    const tokens = await this.generateTokens(user.id, user.email)
+    const tokens = await this.createSession(user.id, 'web')
 
     return { user, ...tokens }
   }
 
-  async login(email: string, password: string) {
+  async login(
+    email: string,
+    password: string,
+    app: AuthApp,
+    meta?: { userAgent?: string; ip?: string },
+  ) {
     const user = await this.userService.validatePassword(email, password)
 
     if (!user.isActive) {
@@ -58,7 +66,7 @@ export class AuthService {
       })
     }
 
-    const tokens = await this.generateTokens(user.id, user.email)
+    const tokens = await this.createSession(user.id, app, meta)
 
     return { user, ...tokens }
   }
@@ -91,17 +99,44 @@ export class AuthService {
         })
       }
 
-      return this.generateTokens(user.id, user.email)
+      // Phase 1 临时实现：刷新时创建新会话，保证 access token 中的 sid 有效
+      // Phase 2 将改为 refresh token rotation，复用同一 session
+      return this.createSession(user.id, payload.app)
     } catch (err) {
       if (err instanceof UnauthorizedException) {
         throw err
       }
-      // 开发环境保留原始错误信息用于调试
       const isDev = process.env.NODE_ENV === 'development'
       throw new UnauthorizedException({
         code: 'INVALID_REFRESH_TOKEN',
         message: '刷新令牌无效或已过期',
         details: isDev && err instanceof Error ? err.message : undefined,
+      })
+    }
+  }
+
+  async logoutByRefreshToken(refreshToken: string): Promise<void> {
+    try {
+      const payload = this.jwtService.verify<JwtRefreshPayload>(refreshToken, {
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+      })
+
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException({
+          code: 'INVALID_TOKEN_TYPE',
+          message: '无效的刷新令牌',
+        })
+      }
+
+      await this.authRepository.revokeSession(payload.sid, 'logout')
+      await this.authRedis.invalidateUserCache(payload.sub)
+    } catch (err) {
+      if (err instanceof UnauthorizedException) {
+        throw err
+      }
+      throw new UnauthorizedException({
+        code: 'INVALID_REFRESH_TOKEN',
+        message: '刷新令牌无效或已过期',
       })
     }
   }
@@ -116,15 +151,6 @@ export class AuthService {
   /** 清除指定用户的 Redis 缓存 */
   async invalidateUserCache(userId: string): Promise<void> {
     await this.authRedis.invalidateUserCache(userId)
-  }
-
-  private parseExpiresInToSeconds(expiresIn: string): number {
-    const match = expiresIn.match(/^(\d+)([smhd])$/)
-    if (!match) return 7200 // 默认 2h
-    const value = parseInt(match[1], 10)
-    const unit = match[2]
-    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 }
-    return value * (multipliers[unit] || 3600)
   }
 
   async me(userId: string) {
@@ -195,7 +221,6 @@ export class AuthService {
       })
     }
 
-    // 上传新头像成功后，删除旧头像文件
     if (currentUser.avatar) {
       try {
         const oldKey = this.storageService.extractKeyFromUrl(currentUser.avatar)
@@ -203,7 +228,6 @@ export class AuthService {
           await this.storageService.deleteFile(oldKey)
         }
       } catch (err) {
-        // 旧头像删除失败不影响新头像更新结果，但记录日志以便排查
         this.logger.warn(
           `旧头像删除失败: ${currentUser.avatar} — ${err instanceof Error ? err.message : String(err)}`,
         )
@@ -213,16 +237,45 @@ export class AuthService {
     return { avatarUrl }
   }
 
-  private async generateTokens(userId: string, email: string): Promise<TokenPair> {
+  private hashJti(jti: string): string {
+    return createHash('sha256').update(jti).digest('hex')
+  }
+
+  private generateJti(): string {
+    return randomUUID()
+  }
+
+  private async createSession(
+    userId: string,
+    app: AuthApp,
+    meta?: { userAgent?: string; ip?: string },
+  ): Promise<TokenPair & { sessionId: string }> {
+    const session = await this.authRepository.createSession({
+      userId,
+      app,
+      userAgent: meta?.userAgent,
+      ip: meta?.ip,
+    })
+
+    const jti = this.generateJti()
+    const jtiHash = this.hashJti(jti)
+    await this.authRepository.insertRefreshToken({
+      sessionId: session.id,
+      jtiHash,
+    })
+
     const accessPayload: JwtAccessPayload = {
       sub: userId,
-      email,
+      sid: session.id,
+      app,
       type: 'access',
     }
 
     const refreshPayload: JwtRefreshPayload = {
       sub: userId,
-      email,
+      sid: session.id,
+      app,
+      jti,
       type: 'refresh',
     }
 
@@ -245,7 +298,16 @@ export class AuthService {
       expiresIn: refreshExpiresIn,
     })
 
-    return { accessToken, refreshToken }
+    return { accessToken, refreshToken, sessionId: session.id }
+  }
+
+  private parseExpiresInToSeconds(expiresIn: string): number {
+    const match = expiresIn.match(/^(\d+)([smhd])$/)
+    if (!match) return 7200
+    const value = parseInt(match[1], 10)
+    const unit = match[2]
+    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 }
+    return value * (multipliers[unit] || 3600)
   }
 
   private validateExpiresIn(value: string, configName: string): string {

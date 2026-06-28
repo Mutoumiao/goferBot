@@ -181,6 +181,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.groupChatMessage
   }
 
+  get authSession() {
+    return this.client.authSession
+  }
+
+  get refreshToken() {
+    return this.client.refreshToken
+  }
+
+  get userRole() {
+    return this.client.userRole
+  }
+
   // 通用代理方法
   $connect() {
     return this.client.$connect()
