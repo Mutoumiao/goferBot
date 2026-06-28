@@ -1,8 +1,8 @@
 import type { User } from '@goferbot/data'
 import { toast } from 'sonner'
-import { getMe, login, refresh, register, updateMe, uploadAvatar } from '@/api/auth'
+import { getMe, login, logout, refresh, register, updateMe, uploadAvatar } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
-import { clearTokens, setAccessToken, setRefreshToken } from '@/utils/auth-token'
+import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from '@/utils/auth-token'
 import { clearPublicKeyCache, encryptPassword } from '@/utils/password-encryption'
 
 export interface LoginResult {
@@ -119,13 +119,17 @@ export async function registerUser(
 
 export async function refreshAuth(): Promise<boolean> {
   try {
-    const res = await refresh().send()
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) {
+      return false
+    }
+    const res = await refresh({ refreshToken }).send()
     const token = res.accessToken
-    const refreshToken = (res as unknown as { refreshToken?: string }).refreshToken
+    const newRefreshToken = (res as unknown as { refreshToken?: string }).refreshToken
     if (token) {
       setAccessToken(token)
-      if (refreshToken) {
-        setRefreshToken(refreshToken)
+      if (newRefreshToken) {
+        setRefreshToken(newRefreshToken)
       }
       return true
     }
@@ -150,10 +154,19 @@ export async function fetchCurrentUser(): Promise<boolean> {
   }
 }
 
-export function logoutUser(): void {
-  clearTokens()
-  useAuthStore.getState().clearAuth()
-  toast.success('已退出登录')
+export async function logoutUser(): Promise<void> {
+  try {
+    const refreshToken = getRefreshToken()
+    if (refreshToken) {
+      await logout({ refreshToken }).send()
+    }
+  } catch {
+    // 即使后端登出失败也继续清理本地状态
+  } finally {
+    clearTokens()
+    useAuthStore.getState().clearAuth()
+    toast.success('已退出登录')
+  }
 }
 
 export function getRememberedEmail(): string | null {
