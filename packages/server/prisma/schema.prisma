@@ -40,6 +40,8 @@ model User {
   groupChats                GroupChat[]
   groupChatMembers          GroupChatMember[]
   groupChatMessages         GroupChatMessage[]
+  authSessions              AuthSession[]
+  roles                     UserRole[]
 
   @@map("users")
 }
@@ -434,4 +436,53 @@ model GroupChatMessage {
   @@index([groupChatId, createdAt])
   @@index([userId, groupChatId, createdAt])
   @@map("group_chat_messages")
+}
+
+model AuthSession {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  app           String
+  userAgent     String?   @map("user_agent")
+  ip            String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastSeenAt    DateTime  @default(now()) @map("last_seen_at")
+  revokedAt     DateTime? @map("revoked_at")
+  revokedReason String?   @map("revoked_reason")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([app])
+  @@index([revokedAt])
+  @@map("auth_sessions")
+}
+
+model RefreshToken {
+  id                String    @id @default(cuid())
+  sessionId         String    @map("session_id")
+  jtiHash           String    @unique @map("jti_hash")
+  usedAt            DateTime? @map("used_at")
+  replacedByTokenId String?   @map("replaced_by_token_id")
+  revokedAt         DateTime? @map("revoked_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  session AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([jtiHash])
+  @@map("refresh_tokens")
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  app    String
+  role   String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, app, role])
+  @@index([userId, app])
+  @@map("user_roles")
 }
