@@ -58,7 +58,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         email: cached.email as string,
         name: cached.name as string | null,
         avatar: cached.avatar as string | null,
-        role: cached.role as Role,
+        roles: cached.roles as string[],
         isActive: cached.isActive as boolean,
         createdAt: cached.createdAt as Date,
         updatedAt: cached.updatedAt as Date,
@@ -74,7 +74,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         email: true,
         name: true,
         avatar: true,
-        role: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -89,12 +88,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('账号已被禁用')
     }
 
-    await this.authRedis.cacheUser(user.id, user as unknown as Record<string, unknown>)
+    // 从 UserRole 表按应用拉取角色
+    const userRoles = await this.authRepository.getRolesForUserByApp(user.id, payload.app)
+    const roles = userRoles.map((r) => r.role)
+
+    await this.authRedis.cacheUser(user.id, { ...user, roles } as unknown as Record<string, unknown>)
     await this.authRepository.updateLastSeen(payload.sid)
 
     return {
       ...user,
-      role: user.role as Role,
+      roles,
       sessionId: payload.sid,
       app: payload.app,
     }

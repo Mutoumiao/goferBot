@@ -7,12 +7,18 @@ import {
   Logger,
 } from '@nestjs/common'
 import { FastifyReply, FastifyRequest } from 'fastify'
+import { AppException } from '../../lib/app-error.js'
 
 export interface ErrorResponse {
+  success: false
   error: {
     code: string
     message: string
     details?: unknown
+  }
+  meta: {
+    requestId: string
+    timestamp: string
   }
 }
 
@@ -24,6 +30,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<FastifyReply>()
     const request = ctx.getRequest<FastifyRequest>()
+    const requestId = (request as any).requestId || 'unknown'
 
     if (request.method === 'OPTIONS') {
       response.status(HttpStatus.OK).send()
@@ -39,7 +46,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let message = '服务器内部错误'
     let details: unknown | undefined
 
-    if (exception instanceof HttpException) {
+    if (exception instanceof AppException) {
+      code = exception.code
+      const res = exception.getResponse() as { error: { message: string; details?: unknown } }
+      message = res.error.message
+      details = res.error.details
+    } else if (exception instanceof HttpException) {
       const res = exception.getResponse()
       if (typeof res === 'string') {
         message = res
@@ -58,9 +70,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const errorResponse: ErrorResponse = {
+      success: false,
       error: {
         code,
         message,
+      },
+      meta: {
+        requestId,
+        timestamp: new Date().toISOString(),
       },
     }
 
@@ -70,10 +87,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
-        `${request.method} ${request.url} ${exception instanceof Error ? exception.stack : String(exception)}`,
+        `[${requestId}] ${request.method} ${request.url} ${exception instanceof Error ? exception.stack : String(exception)}`,
       )
     } else {
-      this.logger.warn(`${request.method} ${request.url} ${status} ${message}`)
+      this.logger.warn(`[${requestId}] ${request.method} ${request.url} ${status} ${message}`)
     }
 
     response.status(status).type('application/json').send(errorResponse)

@@ -75,4 +75,11 @@ export class AuthRepository {
       data: { lastSeenAt: new Date() },
     })
   }
+
+  async getRolesForUserByApp(userId: string, app: AuthApp) {
+    return this.prisma.userRole.findMany({
+      where: { userId, app },
+      select: { role: true },
+    })
+  }
 }

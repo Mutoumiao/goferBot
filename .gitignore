@@ -72,6 +72,7 @@ docs/superpowers/*
 .codegraph/
 
 .claude/*
+.trellis/*
 
 .archived/
 
@@ -83,3 +84,4 @@ e2e/artifacts/.last-run.json
 .trae/
 .zed/
 .cursor/
+

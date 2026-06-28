@@ -15,10 +15,11 @@ export class LoggingInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest()
     const method = request.method
     const url = request.url
+    const requestId = request.requestId || 'unknown'
     const now = Date.now()
 
     this.logger.debug(
-      `+++ Request: ${method} ${url} (ip: ${request.ip ?? request.socket?.remoteAddress ?? 'unknown'})`,
+      `[${requestId}] +++ Request: ${method} ${url} (ip: ${request.ip ?? request.socket?.remoteAddress ?? 'unknown'})`,
     )
 
     return next.handle().pipe(
@@ -26,7 +27,7 @@ export class LoggingInterceptor implements NestInterceptor {
         const response = context.switchToHttp().getResponse()
         const statusCode = response.statusCode || 200
         const duration = Date.now() - now
-        this.logger.debug(`--- Response: ${method} ${url} ${statusCode} +${duration}ms`)
+        this.logger.debug(`[${requestId}] --- Response: ${method} ${url} ${statusCode} +${duration}ms`)
       }),
     )
   }

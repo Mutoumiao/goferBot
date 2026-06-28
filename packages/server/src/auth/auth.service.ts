@@ -66,6 +66,16 @@ export class AuthService {
       })
     }
 
+    const roles = await this.authRepository.getRolesForUserByApp(user.id, app)
+
+    // admin 端无角色拒绝登录
+    if (app === 'admin' && roles.length === 0) {
+      throw new ForbiddenException({
+        code: 'NO_ADMIN_ROLE',
+        message: '无权访问管理后台',
+      })
+    }
+
     const tokens = await this.createSession(user.id, app, meta)
 
     return { user, ...tokens }
@@ -84,6 +94,41 @@ export class AuthService {
         })
       }
 
+      const jtiHash = this.hashJti(payload.jti)
+      const tokenRecord = await this.authRepository.findRefreshTokenByJtiHash(jtiHash)
+
+      if (!tokenRecord) {
+        throw new UnauthorizedException({
+          code: 'TOKEN_NOT_FOUND',
+          message: '刷新令牌无效',
+        })
+      }
+
+      // 重放检测：token 已被使用过
+      if (tokenRecord.usedAt) {
+        await this.authRepository.revokeSession(tokenRecord.sessionId, 'token_replay_detected')
+        throw new UnauthorizedException({
+          code: 'TOKEN_REPLAY',
+          message: '检测到令牌重放攻击，会话已撤销',
+        })
+      }
+
+      // token 已撤销
+      if (tokenRecord.revokedAt) {
+        throw new UnauthorizedException({
+          code: 'TOKEN_REVOKED',
+          message: '刷新令牌已撤销',
+        })
+      }
+
+      // session 已撤销
+      if (tokenRecord.session.revokedAt) {
+        throw new UnauthorizedException({
+          code: 'SESSION_REVOKED',
+          message: '会话已撤销',
+        })
+      }
+
       const user = await this.userService.findById(payload.sub)
       if (!user) {
         throw new UnauthorizedException({
@@ -99,11 +144,58 @@ export class AuthService {
         })
       }
 
-      // Phase 1 临时实现：刷新时创建新会话，保证 access token 中的 sid 有效
-      // Phase 2 将改为 refresh token rotation，复用同一 session
-      return this.createSession(user.id, payload.app)
+      // 标记旧 token 为 used，生成新 token
+      const newJti = this.generateJti()
+      const newJtiHash = this.hashJti(newJti)
+      const newRefreshToken = this.jwtService.sign(
+        {
+          sub: payload.sub,
+          sid: payload.sid,
+          app: payload.app,
+          jti: newJti,
+          type: 'refresh',
+        } as JwtRefreshPayload,
+        {
+          secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+          expiresIn: this.validateExpiresIn(
+            this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
+            'JWT_REFRESH_EXPIRES_IN',
+          ),
+        },
+      )
+
+      await this.authRepository.insertRefreshToken({
+        sessionId: payload.sid,
+        jtiHash: newJtiHash,
+      })
+
+      // 标记旧 token 为 used（必须在生成新 token 之后，避免并发时新 token 的 jtiHash 还未入库）
+      // ponytail: 这里先 insert 新 token 再 mark used，确保并发 refresh 时如果另一个请求也拿到同一个旧 token，
+      // 它的 findRefreshTokenByJtiHash 会返回 usedAt=null 但 markRefreshTokenUsed 会失败（因为已经被标记）
+      // 实际上更好的并发安全是在数据库层用原子操作：UPDATE ... WHERE usedAt IS NULL
+      // 当前实现依赖 Prisma 的 update 在并发时只有一个成功
+      await this.authRepository.markRefreshTokenUsed(jtiHash, newJtiHash)
+
+      const accessPayload: JwtAccessPayload = {
+        sub: payload.sub,
+        sid: payload.sid,
+        app: payload.app,
+        type: 'access',
+      }
+
+      const accessExpiresIn = this.validateExpiresIn(
+        this.configService.get<string>('JWT_EXPIRES_IN') || '2h',
+        'JWT_EXPIRES_IN',
+      )
+
+      const accessToken = this.jwtService.sign(accessPayload, {
+        secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+        expiresIn: accessExpiresIn,
+      })
+
+      return { accessToken, refreshToken: newRefreshToken, sessionId: payload.sid }
     } catch (err) {
-      if (err instanceof UnauthorizedException) {
+      if (err instanceof UnauthorizedException || err instanceof ForbiddenException) {
         throw err
       }
       const isDev = process.env.NODE_ENV === 'development'

@@ -30,6 +30,10 @@ describe('AuthService', () => {
     mockAuthRepository = {
       createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
       insertRefreshToken: vi.fn().mockResolvedValue(undefined),
+      findRefreshTokenByJtiHash: vi.fn(),
+      markRefreshTokenUsed: vi.fn().mockResolvedValue(undefined),
+      revokeSession: vi.fn().mockResolvedValue(undefined),
+      getRolesForUserByApp: vi.fn().mockResolvedValue([]),
     }
 
     authService = new AuthService(
@@ -79,11 +83,13 @@ describe('AuthService', () => {
         email: 'test@gofer.bot',
         isActive: true,
       })
+      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
 
       const result = await authService.login('test@gofer.bot', 'password123', 'web')
 
       expect(result.user.id).toBe('u1')
       expect(result.accessToken).toBe('mock-token')
+      expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'web')
     })
 
     it('AC-03c: throws ForbiddenException when account is disabled', async () => {
@@ -94,6 +100,33 @@ describe('AuthService', () => {
       })
 
       await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
+        ForbiddenException,
+      )
+    })
+
+    it('AC-03b-admin: returns tokens for admin with admin role', async () => {
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'admin@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'ADMIN' }])
+
+      const result = await authService.login('admin@gofer.bot', 'password123', 'admin')
+
+      expect(result.user.id).toBe('u1')
+      expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'admin')
+    })
+
+    it('AC-03b-admin-deny: throws ForbiddenException when admin has no admin role', async () => {
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'admin@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([])
+
+      await expect(authService.login('admin@gofer.bot', 'password123', 'admin')).rejects.toThrow(
         ForbiddenException,
       )
     })
@@ -113,11 +146,112 @@ describe('AuthService', () => {
         email: 'test@gofer.bot',
         isActive: true,
       })
+      mockAuthRepository.findRefreshTokenByJtiHash.mockResolvedValue({
+        id: 'rt-1',
+        jtiHash: 'hash-jti-1',
+        sessionId: 'session-1',
+        usedAt: null,
+        revokedAt: null,
+        session: { id: 'session-1', revokedAt: null },
+      })
 
       const result = await authService.refresh('valid-refresh-token')
 
       expect(result.accessToken).toBe('mock-token')
+      expect(result.refreshToken).toBe('mock-token')
       expect(mockJwtService.verify).toHaveBeenCalledWith('valid-refresh-token', expect.any(Object))
+    })
+
+    it('AC-03d-rot: marks old refresh token as used and creates new one', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'u1',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
+        type: 'refresh',
+      })
+      mockUserService.findById.mockResolvedValue({
+        id: 'u1',
+        email: 'test@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.findRefreshTokenByJtiHash.mockResolvedValue({
+        id: 'rt-1',
+        jtiHash: 'hash-jti-1',
+        sessionId: 'session-1',
+        usedAt: null,
+        revokedAt: null,
+        session: { id: 'session-1', revokedAt: null },
+      })
+
+      await authService.refresh('valid-refresh-token')
+
+      expect(mockAuthRepository.markRefreshTokenUsed).toHaveBeenCalledTimes(1)
+      expect(mockAuthRepository.insertRefreshToken).toHaveBeenCalledWith({
+        sessionId: 'session-1',
+        jtiHash: expect.any(String),
+      })
+    })
+
+    it('AC-03d-replay: revokes session when refresh token is reused (replay attack)', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'u1',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
+        type: 'refresh',
+      })
+      mockAuthRepository.findRefreshTokenByJtiHash.mockResolvedValue({
+        id: 'rt-1',
+        jtiHash: 'hash-jti-1',
+        sessionId: 'session-1',
+        usedAt: new Date(),
+        revokedAt: null,
+        session: { id: 'session-1', revokedAt: null },
+      })
+
+      await expect(authService.refresh('reused-token')).rejects.toThrow(UnauthorizedException)
+      expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith('session-1', 'token_replay_detected')
+    })
+
+    it('AC-03d-revoked: throws when refresh token is revoked', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'u1',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
+        type: 'refresh',
+      })
+      mockAuthRepository.findRefreshTokenByJtiHash.mockResolvedValue({
+        id: 'rt-1',
+        jtiHash: 'hash-jti-1',
+        sessionId: 'session-1',
+        usedAt: null,
+        revokedAt: new Date(),
+        session: { id: 'session-1', revokedAt: null },
+      })
+
+      await expect(authService.refresh('revoked-token')).rejects.toThrow(UnauthorizedException)
+    })
+
+    it('AC-03d-session-revoked: throws when session is revoked', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'u1',
+        sid: 'session-1',
+        app: 'web',
+        jti: 'jti-1',
+        type: 'refresh',
+      })
+      mockAuthRepository.findRefreshTokenByJtiHash.mockResolvedValue({
+        id: 'rt-1',
+        jtiHash: 'hash-jti-1',
+        sessionId: 'session-1',
+        usedAt: null,
+        revokedAt: null,
+        session: { id: 'session-1', revokedAt: new Date() },
+      })
+
+      await expect(authService.refresh('session-revoked-token')).rejects.toThrow(UnauthorizedException)
     })
 
     it('AC-03e: throws UnauthorizedException for invalid token type', async () => {

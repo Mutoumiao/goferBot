@@ -21,11 +21,12 @@ import { LoginDto } from './dto/login.dto.js'
 import { LogoutDto } from './dto/logout.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
+import { validatePassword } from './dto/password.schema.js'
 import { WebLoginDto } from './dto/web-login.dto.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
 
-const PASSWORD_MIN = 6
 // ponytail: bcrypt 在 72 字节处截断，超过部分不参与哈希；限制 72 避免用户误以为长密码更安全
+const PASSWORD_MIN = 6
 const PASSWORD_MAX = 72
 const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)/
 
@@ -68,7 +69,7 @@ export class AuthController {
 
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   async adminLogin(@Body() dto: AdminLoginDto, @Req() req: FastifyRequest) {
     this.validatePassword(dto.password)
     return this.authService.login(dto.email, dto.password, 'admin', {
@@ -99,7 +100,7 @@ export class AuthController {
         message: '密码解密失败，请刷新页面后重试',
       })
     }
-    this.validatePassword(password)
+    validatePassword(password)
     return password
   }
 

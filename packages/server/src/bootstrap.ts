@@ -4,6 +4,7 @@ import multipart from '@fastify/multipart'
 import { ConfigService } from '@nestjs/config'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
+import { RequestIdMiddleware } from './middleware/request-id.middleware.js'
 import { setAllowedHostnames } from './common/utils/ssrf-guard.js'
 
 export async function bootstrap(app: NestFastifyApplication) {
@@ -60,7 +61,7 @@ export async function bootstrap(app: NestFastifyApplication) {
       callback(new Error('Not allowed by CORS'), false)
     },
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-Request-Id'],
     credentials: true,
   })
 
@@ -68,6 +69,9 @@ export async function bootstrap(app: NestFastifyApplication) {
   app.setGlobalPrefix('api', {
     exclude: ['/health'],
   })
+
+  // 3.5 RequestId 中间件
+  app.use(new RequestIdMiddleware().use)
 
   // 4. 开发环境日志拦截器
   if (process.env.NODE_ENV !== 'production') {

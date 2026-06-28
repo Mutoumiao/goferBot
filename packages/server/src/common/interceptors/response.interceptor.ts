@@ -5,7 +5,12 @@ import { map } from 'rxjs/operators'
 import { BYPASS_RESPONSE_KEY } from '../decorators/bypass-response.decorator.js'
 
 export interface ApiResponse<T> {
+  success: true
   data: T
+  meta: {
+    requestId: string
+    timestamp: string
+  }
 }
 
 /**
@@ -41,6 +46,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
   intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ApiResponse<T>> {
     const handler = context.getHandler()
     const bypass = this.reflector.get<boolean>(BYPASS_RESPONSE_KEY, handler)
+    const request = context.switchToHttp().getRequest()
+    const requestId = request.requestId || 'unknown'
 
     if (bypass) {
       return next.handle() as Observable<ApiResponse<T>>
@@ -49,10 +56,24 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
     return next.handle().pipe(
       map((data) => {
         if (typeof data === 'undefined') {
-          return { data: null } as ApiResponse<T>
+          return {
+            success: true as const,
+            data: null,
+            meta: {
+              requestId,
+              timestamp: new Date().toISOString(),
+            },
+          } as ApiResponse<T>
         }
 
-        return { data: serializeBigInt(data) } as ApiResponse<T>
+        return {
+          success: true as const,
+          data: serializeBigInt(data) as T,
+          meta: {
+            requestId,
+            timestamp: new Date().toISOString(),
+          },
+        } as ApiResponse<T>
       }),
     )
   }
