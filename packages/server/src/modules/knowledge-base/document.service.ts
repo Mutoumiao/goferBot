@@ -10,7 +10,6 @@ import {
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { QueueService } from '../../processors/queue/queue.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
-import { VectorService } from '../../processors/vector/vector.service.js'
 import type { CopyDocumentDto } from './dto/copy-document.dto.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { MoveDocumentDto } from './dto/move-document.dto.js'
@@ -57,7 +56,6 @@ export class DocumentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-    readonly _vectorService: VectorService,
     private readonly cleanupService: KbCleanupService,
     @Optional() private readonly queueService?: QueueService,
   ) {}

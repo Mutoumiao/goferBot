@@ -141,6 +141,26 @@ export class GuardrailService {
     }
   }
 
+  /**
+   * 流式实时过滤：对单个 token/chunk 做轻量 PII 脱敏
+   *
+   * 与 apply() 的区别：
+   *   - apply() 处理完整文本，可做多轮替换 + 关键词检测 + 免责声明追加
+   *   - applyStream() 只处理当前 chunk，只做 PII 正则替换（不做关键词检测和免责声明）
+   *   - 不累积 redactions（流式场景下 redactions 在 apply() 事后统计）
+   *
+   * 使用场景：SSE 逐 token 输出时，在 yield 之前调用本方法过滤当前 chunk。
+   */
+  applyStream(text: string): string {
+    if (!text) return text
+    let filtered = text
+    filtered = filtered.replace(EMAIL_REGEX, '[EMAIL REDACTED]')
+    filtered = filtered.replace(PHONE_REGEX, '[PHONE REDACTED]')
+    filtered = filtered.replace(ID_CARD_REGEX, '[ID CARD REDACTED]')
+    filtered = filtered.replace(BANK_CARD_REGEX, '[BANK CARD REDACTED]')
+    return filtered
+  }
+
   private redactPattern(text: string, regex: RegExp, replacer: (match: string) => string): string {
     let result = text
     const matches = text.match(regex) ?? []

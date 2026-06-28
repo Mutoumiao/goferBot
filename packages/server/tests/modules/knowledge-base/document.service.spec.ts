@@ -44,7 +44,6 @@ describe('DocumentService', () => {
     docService = new DocumentService(
       mockPrisma,
       mockStorage,
-      mockVectorService,
       mockCleanupService,
       mockQueueService,
     )

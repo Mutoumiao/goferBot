@@ -305,8 +305,9 @@ describe('ChatService', () => {
         kbIds: ['kb1', 'kb2'],
       })
       const streamCall = vi.mocked(provider.stream).mock.calls[0]
+      // 上下文已拼接到 user message 中，不再使用 system message
       expect(streamCall[0]).toContainEqual({
-        role: 'system',
+        role: 'user',
         content: expect.stringContaining('retrieved context'),
       })
     })
@@ -614,10 +615,10 @@ describe('ChatService', () => {
       }
 
       const streamCall = vi.mocked(provider.stream).mock.calls[0]
-      expect(streamCall[0]).toHaveLength(2)
-      expect(streamCall[0]).toContainEqual({ role: 'user', content: 'hello' })
+      // 上下文已拼接到 user message 中，不再使用 system message，因此只有 1 条 message
+      expect(streamCall[0]).toHaveLength(1)
       expect(streamCall[0]).toContainEqual({
-        role: 'system',
+        role: 'user',
         content: expect.stringContaining('ctx'),
       })
     })

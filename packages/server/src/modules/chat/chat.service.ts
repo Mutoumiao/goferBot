@@ -91,10 +91,15 @@ export class ChatService {
         if (context) {
           // M2: 对 RAG 上下文做基础过滤，防止提示注入
           const sanitizedContext = this.sanitizeRagContext(context)
-          messages.push({
-            role: 'system',
-            content: `以下是与用户问题相关的上下文信息：\n\n${sanitizedContext}`,
-          })
+          // 将上下文拼接到当前 user message 中，而非追加 system message
+          // 原因：部分 LLM 对末尾 system message 关注度低，拼接到 user message 可确保上下文被重视
+          const userMsgIndex = messages.length - 1
+          if (userMsgIndex >= 0 && messages[userMsgIndex].role === 'user') {
+            messages[userMsgIndex] = {
+              role: 'user',
+              content: `${messages[userMsgIndex].content}\n\n以下是与问题相关的上下文信息：\n\n${sanitizedContext}`,
+            }
+          }
         }
       } else {
         this.logger.warn(

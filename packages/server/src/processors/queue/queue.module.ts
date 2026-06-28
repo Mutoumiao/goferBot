@@ -10,7 +10,6 @@ import { ConfigModule } from '@nestjs/config'
 import { Job } from 'bullmq'
 import { type DocumentJobHandler, type EmbeddingJobHandler } from '../../queue/index.js'
 import type { DocumentJobData } from '../../queue/queues.js'
-import { PrismaVectorIndexer } from '../indexing/prisma-vector.indexer.js'
 import { DocumentParser } from '../parser/document.parser.js'
 import { RagModule } from '../rag/rag.module.js'
 import { IndexingWorker } from './indexing.worker.js'
@@ -39,7 +38,6 @@ export class QueueModule {
       WorkerService,
       IndexingWorker,
       DocumentParser,
-      PrismaVectorIndexer,
       {
         provide: 'DOCUMENT_JOB_HANDLER',
         useFactory: (indexingWorker: IndexingWorker): DocumentJobHandler => {

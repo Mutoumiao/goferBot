@@ -709,7 +709,9 @@ export class LlamaIndexRagService implements OnModuleInit {
         if (buffer.length < MAX_BUFFER_LENGTH) {
           buffer += chunk.text
         }
-        yield { text: chunk.text }
+        // 流式实时 PII 过滤：在 yield 前对当前 chunk 做轻量脱敏
+        const filteredText = this.guardrailService.applyStream(chunk.text)
+        yield { text: filteredText }
       }
     }
 
