@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import type { Permission, Role } from '@/api/role'
 import {
   createRole as createRoleApi,
   deleteRole as deleteRoleApi,
@@ -7,7 +8,6 @@ import {
   listRoles as listRolesApi,
   updateRole as updateRoleApi,
 } from '@/api/role'
-import type { Permission, Role } from '@/api/role'
 import { mapErrorMessage } from '@/utils/error-mapper'
 
 export type { Permission, Role }

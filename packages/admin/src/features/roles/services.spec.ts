@@ -1,14 +1,14 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import {
-  fetchRoles,
-  fetchPermissions,
-  createRoleService,
-  editRoleService,
-  updateRoleService,
-  deleteRoleService,
-  fetchRole,
-} from '@/features/roles/services'
 import { toast } from 'sonner'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createRoleService,
+  deleteRoleService,
+  editRoleService,
+  fetchPermissions,
+  fetchRole,
+  fetchRoles,
+  updateRoleService,
+} from '@/features/roles/services'
 
 const mockListRoles = vi.fn()
 const mockListPermissions = vi.fn()

@@ -38,3 +38,16 @@ export function getAuthSnapshot(): AuthStateSnapshot {
 export function isAdmin(snapshot: AuthStateSnapshot) {
   return snapshot.role === 'ADMIN' && !!snapshot.token
 }
+
+/**
+ * 构建跳转到登录页时的 search 参数（用于登录成功后回跳原地址）。
+ *
+ * 注意：TanStack 的 `location.search` 是解析后的对象（可能是 null 原型），
+ * 直接字符串拼接会抛 `TypeError: Cannot convert object to primitive value`。
+ * 这里使用 `location.href`——它本身就是 `pathname + searchStr + hash` 的完整字符串。
+ */
+export function buildLoginRedirectSearch(location: {
+  href: string
+}): { redirect: string } | undefined {
+  return location.href !== '/login' ? { redirect: location.href } : undefined
+}

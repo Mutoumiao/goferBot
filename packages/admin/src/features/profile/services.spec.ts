@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { changePasswordService, fetchLoginHistory } from '@/features/profile/services'
 import { toast } from 'sonner'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { changePasswordService, fetchLoginHistory } from '@/features/profile/services'
 
 const mockChange = vi.fn()
 const mockSend = vi.fn()

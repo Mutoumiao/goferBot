@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { ElasticsearchService } from './elasticsearch.service.js'
 import type { SearchHit } from './elasticsearch.service.js'
+import { ElasticsearchService } from './elasticsearch.service.js'
 
 export interface VectorOptions {
   topK?: number

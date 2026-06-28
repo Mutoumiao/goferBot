@@ -1,6 +1,11 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useAuthStore } from '@/stores/auth'
-import { isAdmin, getAuthSnapshot, waitForAuthInit } from '@/utils/auth-guard'
+import {
+  buildLoginRedirectSearch,
+  getAuthSnapshot,
+  isAdmin,
+  waitForAuthInit,
+} from '@/utils/auth-guard'
 
 describe('auth-guard', () => {
   beforeEach(() => {
@@ -48,4 +53,18 @@ describe('auth-guard', () => {
     expect(elapsed).toBeGreaterThanOrEqual(140)
     expect(useAuthStore.getState().isInitialized).toBe(true)
   }, 5000)
+
+  it('buildLoginRedirectSearch 不会因 null 原型 search 对象崩溃（回归 #beforeLoad-crash）', () => {
+    // Arrange: 还原触发崩溃的真实场景——location 同时带 href 与 null 原型 search
+    const nullProtoSearch = Object.assign(Object.create(null), { foo: 'bar' })
+    const location = { href: '/dashboard?foo=bar', search: nullProtoSearch }
+
+    // Act + Assert: 旧实现 `pathname + search` 会抛 TypeError，新实现用 href 不会
+    expect(() => buildLoginRedirectSearch(location)).not.toThrow()
+    expect(buildLoginRedirectSearch(location)).toEqual({ redirect: '/dashboard?foo=bar' })
+  })
+
+  it('buildLoginRedirectSearch 在登录页自身返回 undefined（避免回跳到 /login）', () => {
+    expect(buildLoginRedirectSearch({ href: '/login' })).toBeUndefined()
+  })
 })

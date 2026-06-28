@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
-import type { ReactElement } from 'react'
 import { ConfigProvider } from 'antd'
+import type { ReactElement } from 'react'
 
 export function renderWithProviders(ui: ReactElement) {
   return render(<ConfigProvider>{ui}</ConfigProvider>)

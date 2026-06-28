@@ -1,4 +1,4 @@
-import { Timeline, Tag, Empty } from 'antd'
+import { Empty, Tag, Timeline } from 'antd'
 import type { SessionMessage } from '../services'
 
 export interface MessageStreamProps {

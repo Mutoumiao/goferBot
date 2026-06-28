@@ -5,8 +5,8 @@ import { configResponsive } from 'ahooks'
 import { useEffect } from 'react'
 import { fetchCurrentUser } from '@/features/auth/services'
 import { OverlayHost } from '@/overlays/host/OverlayHost'
-import { useAuthStore } from '@/stores/auth'
 import { ROUTES_REGISTER } from '@/router-register'
+import { useAuthStore } from '@/stores/auth'
 import appCss from '../globals.css?url'
 
 /* ========== ahooks 响应式断点全局配置 ========== */

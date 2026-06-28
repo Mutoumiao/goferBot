@@ -1,15 +1,15 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import {
-  fetchUsers,
-  toggleUserStatus,
-  createUserService,
-  updateUserService,
-  deleteUserService,
-  resetUserPassword,
-  assignUserRole,
-  fetchUser,
-} from '@/features/users/services'
 import { toast } from 'sonner'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assignUserRole,
+  createUserService,
+  deleteUserService,
+  fetchUser,
+  fetchUsers,
+  resetUserPassword,
+  toggleUserStatus,
+  updateUserService,
+} from '@/features/users/services'
 
 const mockListUsers = vi.fn()
 const mockUpdateUserStatus = vi.fn()

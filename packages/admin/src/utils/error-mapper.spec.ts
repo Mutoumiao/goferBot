@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapErrorMessage, isConflict, isForbidden } from '@/utils/error-mapper'
+import { isConflict, isForbidden, mapErrorMessage } from '@/utils/error-mapper'
 
 describe('error-mapper', () => {
   it('maps known codes', () => {

@@ -1,5 +1,5 @@
 import { Card, List, Tag } from 'antd'
-import { Activity, FileText, AlertCircle, Workflow } from 'lucide-react'
+import { Activity, AlertCircle, FileText, Workflow } from 'lucide-react'
 import type { RecentActivity } from '../services'
 
 export interface RecentActivitiesProps {

@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import type { AdminUserResponse, ListUsersQuery, PagedResponse } from '@/api/admin'
 import {
   assignRole as assignRoleApi,
   createUser as createUserApi,
@@ -6,10 +7,9 @@ import {
   getUser as getUserApi,
   listUsers as listUsersApi,
   resetPassword as resetPasswordApi,
-  updateUserStatus as updateUserStatusApi,
   updateUser as updateUserApi,
+  updateUserStatus as updateUserStatusApi,
 } from '@/api/admin'
-import type { AdminUserResponse, ListUsersQuery, PagedResponse } from '@/api/admin'
 import { isConflict, isForbidden, mapErrorMessage } from '@/utils/error-mapper'
 
 export type { AdminUserResponse, ListUsersQuery, PagedResponse }

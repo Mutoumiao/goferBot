@@ -1,5 +1,5 @@
 import { Card, Col, Row, Statistic } from 'antd'
-import { Users, MessageSquare, FileText, Workflow, TrendingUp } from 'lucide-react'
+import { FileText, MessageSquare, TrendingUp, Users, Workflow } from 'lucide-react'
 import type { DashboardData } from '../services'
 
 export interface StatCardsProps {

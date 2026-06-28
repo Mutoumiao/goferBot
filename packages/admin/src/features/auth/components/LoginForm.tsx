@@ -1,7 +1,8 @@
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Alert, Button, Checkbox, Form, Input, Progress } from 'antd'
 import { Eye, EyeOff, Loader2, Lock, User2 } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { ROUTES_REGISTER } from '@/router-register'
 import { getRememberedEmail, loginService, setRememberedEmail } from '../services'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -94,7 +95,7 @@ export function LoginForm() {
         setRememberedEmail(null)
       }
       navigate({
-        to: search.redirect || '/_authenticated/dashboard',
+        to: search.redirect || ROUTES_REGISTER.dashboard.path,
         replace: true,
       })
     } else {

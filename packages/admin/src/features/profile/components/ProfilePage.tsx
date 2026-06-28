@@ -1,8 +1,8 @@
 import { Tabs } from 'antd'
 import { PageHeader } from '@/components/common/PageHeader'
 import { BasicInfoCard } from './BasicInfoCard'
-import { PasswordChangeForm } from './PasswordChangeForm'
 import { LoginHistoryList } from './LoginHistoryList'
+import { PasswordChangeForm } from './PasswordChangeForm'
 
 export function ProfilePage() {
   return (

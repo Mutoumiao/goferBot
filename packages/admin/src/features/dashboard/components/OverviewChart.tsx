@@ -1,5 +1,5 @@
 import { Card, Progress } from 'antd'
-import { Clock, CheckCircle2, AlertCircle, PauseCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Clock, PauseCircle } from 'lucide-react'
 import type { DashboardData } from '../services'
 
 export interface OverviewChartProps {

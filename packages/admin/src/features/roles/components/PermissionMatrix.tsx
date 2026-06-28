@@ -1,4 +1,4 @@
-import { Card, Checkbox, Collapse, Form, Input, Tag, App } from 'antd'
+import { App, Card, Checkbox, Collapse, Form, Input, Tag } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { Permission, Role } from '../services'

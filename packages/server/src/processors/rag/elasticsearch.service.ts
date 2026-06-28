@@ -1,5 +1,5 @@
 import { Client } from '@elastic/elasticsearch'
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
 

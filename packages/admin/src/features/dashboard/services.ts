@@ -1,13 +1,13 @@
-import { fetchDashboardData as fetchDashboardApi } from '@/api/dashboard'
 import type {
   DashboardData,
   DashboardStats,
+  RagStats,
   RecentActivity,
   SystemHealth,
-  RagStats,
 } from '@/api/dashboard'
+import { fetchDashboardData as fetchDashboardApi } from '@/api/dashboard'
 
-export type { DashboardData, DashboardStats, RecentActivity, SystemHealth, RagStats }
+export type { DashboardData, DashboardStats, RagStats, RecentActivity, SystemHealth }
 
 export async function getDashboardData(): Promise<DashboardData> {
   try {

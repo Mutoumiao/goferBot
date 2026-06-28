@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common'
-import { RagController } from '@/processors/rag/rag.controller.js'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SseResponseHelper } from '@/common/helpers/sse-response.helper.js'
+import { RagController } from '@/processors/rag/rag.controller.js'
 
 /**
  * Cross-tenant authorization tests for the RAG controller.

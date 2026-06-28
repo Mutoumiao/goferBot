@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
@@ -15,12 +15,12 @@ import { ChatModule } from './modules/chat/chat.module.js'
 import { CompanionModule } from './modules/companion/companion.module.js'
 import { HealthModule } from './modules/health/health.module.js'
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module.js'
-import { RagModule } from './processors/rag/rag.module.js'
 import { SessionModule } from './modules/session/session.module.js'
 import { SettingsModule } from './modules/settings/settings.module.js'
 import { UserModule } from './modules/user/user.module.js'
 import { KeywordModule } from './processors/keyword/keyword.module.js'
 import { QueueModule } from './processors/queue/queue.module.js'
+import { RagModule } from './processors/rag/rag.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
 import { VectorModule } from './processors/vector/vector.module.js'
 
@@ -32,10 +32,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        resolve(__dirname, '../.env'),
-        resolve(__dirname, '../../../.env'),
-      ],
+      envFilePath: [resolve(__dirname, '../.env'), resolve(__dirname, '../../../.env')],
     }),
     ThrottlerModule.forRoot({
       throttlers: [

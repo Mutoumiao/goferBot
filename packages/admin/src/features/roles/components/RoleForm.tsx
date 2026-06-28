@@ -1,4 +1,4 @@
-import { Form, Modal, Input } from 'antd'
+import { Form, Input, Modal } from 'antd'
 import { createRoleService, editRoleService, fetchRole } from '../services'
 
 interface FormValues {

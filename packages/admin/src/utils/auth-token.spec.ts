@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getAccessToken, setAccessToken, clearTokens, buildAuthHeader } from '@/utils/auth-token'
+import { buildAuthHeader, clearTokens, getAccessToken, setAccessToken } from '@/utils/auth-token'
 
 describe('auth-token (admin namespace)', () => {
   it('uses admin-specific keys', () => {

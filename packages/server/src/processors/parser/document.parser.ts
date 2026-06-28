@@ -20,14 +20,14 @@
  */
 import { Injectable, Logger } from '@nestjs/common'
 import {
-  parseResultSchema,
-  parserInputSchema,
   type IDocumentParser,
   type ParseResult,
   type ParserInput,
+  parseResultSchema,
+  parserInputSchema,
 } from './parser.types.js'
-import { TextParser } from './text.parser.js'
 import { PdfParser } from './pdf.parser.js'
+import { TextParser } from './text.parser.js'
 
 @Injectable()
 export class DocumentParser {

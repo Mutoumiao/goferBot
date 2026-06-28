@@ -162,7 +162,7 @@ export class GroundingService {
 
   private splitSentences(text: string): string[] {
     return text
-      .split(/(?<=[。！？!?\.])\s*/g)
+      .split(/(?<=[。！？!?.])\s*/g)
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
   }
@@ -170,7 +170,7 @@ export class GroundingService {
   private tokenize(text: string): string[] {
     const lower = text.toLowerCase()
     const asciiTokens = lower
-      .split(/[\s,.;:，。！？!?、；："'""''()（）\[\]【】\/\\]+/)
+      .split(/[\s,.;:，。！？!?、；："'""''()（）[\]【】/\\]+/)
       .map((t) => t.trim())
       .filter((t) => t.length >= 2)
 

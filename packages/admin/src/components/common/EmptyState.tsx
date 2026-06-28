@@ -1,5 +1,5 @@
-import { Empty, Button, Space, Alert } from 'antd'
-import { Inbox, RefreshCw, AlertCircle } from 'lucide-react'
+import { Alert, Button, Empty, Space } from 'antd'
+import { AlertCircle, Inbox, RefreshCw } from 'lucide-react'
 
 export interface EmptyStateProps {
   description?: string

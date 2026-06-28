@@ -3,12 +3,12 @@ import {
   Cpu,
   FileText,
   LayoutDashboard,
+  type LucideIcon,
   MessageSquare,
+  Settings as SettingsIcon,
   Shield,
   User,
   Users,
-  Settings as SettingsIcon,
-  type LucideIcon,
 } from 'lucide-react'
 import type { FileRoutesByFullPath } from './routeTree.gen'
 

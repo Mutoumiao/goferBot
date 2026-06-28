@@ -1,6 +1,6 @@
 import { Button, Space } from 'antd'
-import type { ReactNode } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 export interface PageHeaderProps {
   title: string

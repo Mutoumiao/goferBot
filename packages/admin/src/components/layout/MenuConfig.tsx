@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
-import { useAuthStore } from '@/stores/auth'
 import { ROUTES_REGISTER, type RouteKey, type RouteMeta } from '@/router-register'
+import { useAuthStore } from '@/stores/auth'
 
 export interface MenuItem {
   key: RouteKey

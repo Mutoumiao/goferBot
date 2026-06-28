@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
-import { Shield, Lock } from 'lucide-react'
+import { Lock, Shield } from 'lucide-react'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { ROUTES_REGISTER } from '@/router-register'
 

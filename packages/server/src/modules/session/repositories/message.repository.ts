@@ -1,4 +1,4 @@
-import { NotFoundException, Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import type { Message, Prisma } from '@prisma/client'
 import { BaseRepository } from '../../../shared/repositories/base.repository.js'
 

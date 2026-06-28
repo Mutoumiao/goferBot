@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import type { LlmProvider } from './llm-provider.interface.js'
-import { LlamaIndexProvider } from './llama-index-provider.service.js'
 import type { LlamaIndexProviderConfig } from './llama-index-provider.service.js'
+import { LlamaIndexProvider } from './llama-index-provider.service.js'
+import type { LlmProvider } from './llm-provider.interface.js'
 
 export type LlmProviderConfig = LlamaIndexProviderConfig
 

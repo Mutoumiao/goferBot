@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { LlmProviderFactory } from '@/modules/chat/llm/llm-provider.factory.js'
 import { LlamaIndexProvider } from '@/modules/chat/llm/llama-index-provider.service.js'
+import { LlmProviderFactory } from '@/modules/chat/llm/llm-provider.factory.js'
 
 describe('LlmProviderFactory', () => {
   const factory = new LlmProviderFactory()

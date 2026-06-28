@@ -1,5 +1,5 @@
-import { Form, Input, Modal, Select } from 'antd'
 import type { FormInstance } from 'antd'
+import { Form, Input, Modal, Select } from 'antd'
 import { createUserService } from '../services'
 
 interface FormValues {

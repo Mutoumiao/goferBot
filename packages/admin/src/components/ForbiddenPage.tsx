@@ -1,6 +1,6 @@
-import { Button, Result, App } from 'antd'
-import { useAuthStore } from '@/stores/auth'
 import { useRouter } from '@tanstack/react-router'
+import { App, Button, Result } from 'antd'
+import { useAuthStore } from '@/stores/auth'
 
 export function ForbiddenPage() {
   const clearAuth = useAuthStore((s) => s.clearAuth)

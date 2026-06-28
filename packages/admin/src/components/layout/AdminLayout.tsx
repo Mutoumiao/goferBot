@@ -1,9 +1,9 @@
 import { ProLayout } from '@ant-design/pro-components'
-import { Avatar, Dropdown, Space, theme as antdTheme } from 'antd'
-import { LogOut, User as UserIcon, Settings as SettingsIcon, Bell } from 'lucide-react'
 import { useNavigate, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { Avatar, theme as antdTheme, Dropdown, Space } from 'antd'
 import type { MenuItemType } from 'antd/es/menu/interface'
+import { Bell, LogOut, Settings as SettingsIcon, User as UserIcon } from 'lucide-react'
+import { useState } from 'react'
 import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
@@ -56,7 +56,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       onCollapse={setCollapsed}
       menuHeaderRender={() => (
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 text-white font-bold">
             G
           </div>
           {!collapsed && <span className="text-base font-semibold text-white">GoferBot Admin</span>}

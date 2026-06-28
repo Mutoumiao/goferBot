@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
-import { SettingsModule } from '../settings/settings.module.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
+import { SettingsModule } from '../settings/settings.module.js'
 import { CompanionController } from './companion.controller.js'
 import { CompanionChatController } from './companion-chat.controller.js'
 import { CompanionChatService } from './companion-chat.service.js'

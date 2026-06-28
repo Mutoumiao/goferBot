@@ -1,7 +1,7 @@
 import { Modal, Select } from 'antd'
 import { useState } from 'react'
-import type { AdminUserResponse } from '../services'
 import { confirmPasswordAction } from '@/utils/confirm-action'
+import type { AdminUserResponse } from '../services'
 
 export function assignRoleModal(user: AdminUserResponse): Promise<'ADMIN' | 'USER' | null> {
   return new Promise((resolve) => {

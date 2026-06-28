@@ -1,6 +1,6 @@
-import { Injectable, Logger, Inject } from '@nestjs/common'
-import { ElasticsearchService } from './elasticsearch.service.js'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { SearchHit } from './elasticsearch.service.js'
+import { ElasticsearchService } from './elasticsearch.service.js'
 
 export interface Bm25Options {
   topK?: number

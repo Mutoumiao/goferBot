@@ -1,4 +1,4 @@
-import { Card, Form, Input, Button, App } from 'antd'
+import { App, Button, Card, Form, Input } from 'antd'
 import { changePasswordService } from '@/features/profile/services'
 
 interface PasswordFormValues {

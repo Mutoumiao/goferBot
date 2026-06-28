@@ -17,8 +17,8 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { RagIndexDto, RagQueryDto, RagRetrieveDto } from './dto/rag.dto.js'
-import { LlamaIndexRagService } from './llamaindex-rag.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
+import { LlamaIndexRagService } from './llamaindex-rag.service.js'
 
 @Controller('rag')
 @UseGuards(JwtAuthGuard)

@@ -1,15 +1,15 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import {
-  loginService,
-  refreshAuth,
-  fetchCurrentUser,
-  logoutService,
-  changePasswordService,
-  getRememberedEmail,
-  setRememberedEmail,
-  hasRefreshToken,
-} from '@/features/auth/services'
 import { toast } from 'sonner'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  changePasswordService,
+  fetchCurrentUser,
+  getRememberedEmail,
+  hasRefreshToken,
+  loginService,
+  logoutService,
+  refreshAuth,
+  setRememberedEmail,
+} from '@/features/auth/services'
 
 const {
   mockLogin,

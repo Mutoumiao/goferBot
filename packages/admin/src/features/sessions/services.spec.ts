@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockSend = vi.fn()
 const mockGet = vi.fn(() => ({ send: mockSend }))
@@ -8,7 +8,7 @@ vi.mock('@/utils/server', () => ({
   },
 }))
 
-import { fetchSessions, fetchSessionMessages, fetchSession } from '@/features/sessions/services'
+import { fetchSession, fetchSessionMessages, fetchSessions } from '@/features/sessions/services'
 
 describe('sessions services', () => {
   beforeEach(() => {

@@ -1,11 +1,11 @@
-import { Card, Col, Row, Alert, Button } from 'antd'
+import { Alert, Button, Card, Col, Row } from 'antd'
 import { RefreshCw } from 'lucide-react'
-import { StatCards } from './StatCards'
-import { RecentActivities } from './RecentActivities'
-import { SystemHealth } from './SystemHealth'
-import { OverviewChart } from './OverviewChart'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { DashboardData } from '../services'
+import { OverviewChart } from './OverviewChart'
+import { RecentActivities } from './RecentActivities'
+import { StatCards } from './StatCards'
+import { SystemHealth } from './SystemHealth'
 
 export interface DashboardViewProps {
   data?: DashboardData

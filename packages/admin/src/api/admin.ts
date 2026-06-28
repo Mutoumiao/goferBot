@@ -1,4 +1,3 @@
-import { alovaInstance } from '@/utils/server'
 import type {
   AdminUser,
   AdminUserListQuery,
@@ -9,6 +8,7 @@ import type {
   UpdateAdminUserRequest,
   UpdateUserStatusRequest,
 } from '@goferbot/data'
+import { alovaInstance } from '@/utils/server'
 
 export type AdminUserResponse = AdminUser
 export type ListUsersQuery = AdminUserListQuery

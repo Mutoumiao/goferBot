@@ -1,7 +1,7 @@
 import { ConfigProvider as AntConfigProvider, App, theme } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import type { ReactNode } from 'react'
-import { useSettingsStore, type AppearanceMode } from '@/stores/settings'
+import { type AppearanceMode, useSettingsStore } from '@/stores/settings'
 
 function resolveAntTheme(appearance: AppearanceMode) {
   if (appearance === 'dark') {

@@ -1,4 +1,4 @@
-import { Card, Descriptions, App, Tag } from 'antd'
+import { App, Card, Descriptions, Tag } from 'antd'
 import { useAuthStore } from '@/stores/auth'
 
 export function BasicInfoCard() {

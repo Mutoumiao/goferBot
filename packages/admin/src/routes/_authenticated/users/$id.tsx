@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Button, Card, Descriptions, Form, Input, Select, Space, Tag, App } from 'antd'
+import { App, Button, Card, Descriptions, Form, Input, Select, Space, Tag } from 'antd'
 import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { AdminUserResponse } from '@/features/users/services'

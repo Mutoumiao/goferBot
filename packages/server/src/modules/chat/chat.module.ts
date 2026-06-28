@@ -1,7 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
-import { RagModule } from '../../processors/rag/rag.module.js'
 import { LlamaIndexRagService } from '../../processors/rag/llamaindex-rag.service.js'
+import { RagModule } from '../../processors/rag/rag.module.js'
 import { SessionModule } from '../session/session.module.js'
 import { SettingsModule } from '../settings/settings.module.js'
 import { ChatController } from './chat.controller.js'

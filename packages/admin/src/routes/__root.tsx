@@ -1,6 +1,6 @@
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
-import { Toaster } from 'sonner'
 import { useEffect } from 'react'
+import { Toaster } from 'sonner'
 import { ConfigProvider } from '@/components/ConfigProvider'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
