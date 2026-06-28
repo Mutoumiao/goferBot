@@ -193,23 +193,23 @@ describe('auth services', () => {
   })
 
   describe('logoutUser', () => {
-    it('clears auth state', () => {
+    it('clears auth state', async () => {
       useAuthStore.setState({ token: 'token-1', user: mockUser, isAuthenticated: true })
       localStorage.setItem('goferbot_access_token', 'token-1')
 
-      logoutUser()
+      await logoutUser()
 
       expect(useAuthStore.getState().isAuthenticated).toBe(false)
       expect(useAuthStore.getState().token).toBeNull()
       expect(useAuthStore.getState().user).toBeNull()
     })
 
-    it('clears refresh token from localStorage', () => {
+    it('clears refresh token from localStorage', async () => {
       useAuthStore.setState({ token: 'token-1', user: mockUser, isAuthenticated: true })
       localStorage.setItem('goferbot_access_token', 'token-1')
       localStorage.setItem('goferbot_refresh_token', 'refresh-1')
 
-      logoutUser()
+      await logoutUser()
 
       expect(localStorage.getItem('goferbot_access_token')).toBeNull()
       expect(localStorage.getItem('goferbot_refresh_token')).toBeNull()
@@ -218,6 +218,7 @@ describe('auth services', () => {
 
   describe('refreshAuth', () => {
     it('returns true and stores tokens on success', async () => {
+      localStorage.setItem('goferbot_refresh_token', 'old-refresh')
       vi.mocked(refresh).mockReturnValue({
         send: vi.fn().mockResolvedValue({ accessToken: 'new-token', refreshToken: 'new-refresh' }),
       } as any)
@@ -229,7 +230,14 @@ describe('auth services', () => {
       expect(localStorage.getItem('goferbot_refresh_token')).toBe('new-refresh')
     })
 
+    it('returns false when no refresh token exists', async () => {
+      localStorage.removeItem('goferbot_refresh_token')
+      const result = await refreshAuth()
+      expect(result).toBe(false)
+    })
+
     it('returns false when no accessToken in response', async () => {
+      localStorage.setItem('goferbot_refresh_token', 'old-refresh')
       vi.mocked(refresh).mockReturnValue({
         send: vi.fn().mockResolvedValue({ refreshToken: 'new-refresh' }),
       } as any)
@@ -240,6 +248,7 @@ describe('auth services', () => {
     })
 
     it('returns false on api failure', async () => {
+      localStorage.setItem('goferbot_refresh_token', 'old-refresh')
       vi.mocked(refresh).mockReturnValue({
         send: vi.fn().mockRejectedValue(new Error('invalid refresh token')),
       } as any)

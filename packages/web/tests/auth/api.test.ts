@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getMe, getPublicKey, login, refresh, register } from '@/api/auth'
+import { getMe, getPublicKey, login, logout, refresh, register } from '@/api/auth'
 
 vi.mock('@/utils/server', () => ({
   alovaInstance: {
@@ -22,11 +22,19 @@ describe('auth api', () => {
     vi.clearAllMocks()
   })
 
-  it('login sends POST to /auth/login with encryptedPassword', async () => {
+  it('login sends POST to /auth/web/login with encryptedPassword', async () => {
     const method = login({ email: 'a@b.com', encryptedPassword: 'enc-pwd' })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/login', {
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/login', {
       email: 'a@b.com',
       encryptedPassword: 'enc-pwd',
+    })
+    expect(method.send).toBeDefined()
+  })
+
+  it('logout sends POST to /auth/web/logout with refreshToken', async () => {
+    const method = logout({ refreshToken: 'rt' })
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/logout', {
+      refreshToken: 'rt',
     })
     expect(method.send).toBeDefined()
   })
@@ -47,9 +55,11 @@ describe('auth api', () => {
     expect(method.send).toBeDefined()
   })
 
-  it('refresh sends POST to /auth/refresh', async () => {
-    const method = refresh()
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/refresh')
+  it('refresh sends POST to /auth/web/refresh with refreshToken', async () => {
+    const method = refresh({ refreshToken: 'rt' })
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/refresh', {
+      refreshToken: 'rt',
+    })
     expect(method.send).toBeDefined()
   })
 
