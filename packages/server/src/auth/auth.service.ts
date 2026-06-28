@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { createHash, randomUUID } from 'node:crypto'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-import { createHash, randomUUID } from 'node:crypto'
 import { AppException } from '../lib/app-error.js'
 import { UserService } from '../modules/user/user.service.js'
 import { StorageService } from '../processors/storage/storage.service.js'
@@ -124,6 +124,13 @@ export class AuthService {
         throw accountDisabledError()
       }
 
+      // 重新加载角色，权限变更即时生效
+      const roles = await this.authRepository.getRolesForUserByApp(user.id, payload.app)
+      if (payload.app === 'admin' && roles.length === 0) {
+        await this.authRepository.revokeSession(tokenRecord.sessionId, 'admin_role_missing')
+        throw noAdminRoleError()
+      }
+
       // 标记旧 token 为 used，生成新 token
       const newJti = this.generateJti()
       const newJtiHash = this.hashJti(newJti)
@@ -151,9 +158,9 @@ export class AuthService {
       })
 
       // 原子标记旧 token 为 used（UPDATE ... WHERE usedAt IS NULL）
-      // 只有第一个并发请求能成功，其余返回 null（触发重放检测）
-      const markResult = await this.authRepository.markRefreshTokenUsed(jtiHash, newJtiHash)
-      if (!markResult) {
+      // 只有第一个并发请求能成功，其余返回 false（触发重放检测）
+      const marked = await this.authRepository.markRefreshTokenUsed(jtiHash, newJtiHash)
+      if (!marked) {
         // 并发竞争失败：另一个请求已经标记了此 token
         // 撤销整条 session 作为安全防御
         await this.authRepository.revokeSession(tokenRecord.sessionId, 'token_replay_detected')
@@ -179,7 +186,7 @@ export class AuthService {
 
       return { accessToken, refreshToken: newRefreshToken, sessionId: payload.sid }
     } catch (err) {
-      if (err instanceof UnauthorizedException || err instanceof AppException) {
+      if (err instanceof AppException) {
         throw err
       }
       const isDev = process.env.NODE_ENV === 'development'
@@ -200,7 +207,7 @@ export class AuthService {
       await this.authRepository.revokeSession(payload.sid, 'logout')
       await this.authRedis.invalidateUserCache(payload.sub)
     } catch (err) {
-      if (err instanceof UnauthorizedException || err instanceof AppException) {
+      if (err instanceof AppException) {
         throw err
       }
       throw invalidRefreshTokenError()

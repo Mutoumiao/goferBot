@@ -42,8 +42,8 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
   readonly embeddingDimensions: number
 
   constructor(
-    private readonly config: ConfigService,
-    private readonly embeddings: LlamaIndexEmbeddingService,
+    readonly config: ConfigService,
+    readonly embeddings: LlamaIndexEmbeddingService,
   ) {
     const node = config.get<string>('ELASTICSEARCH_NODE', 'http://localhost:9200')
     const apiKey = config.get<string>('ELASTICSEARCH_API_KEY')

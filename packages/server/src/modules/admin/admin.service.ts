@@ -1,16 +1,33 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
+import type { Prisma } from '@prisma/client'
+import { AuthRepository } from '../../auth/repositories/auth.repository.js'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import { userNotFoundError } from '../user/errors.js'
 import { AdminUserListQueryDto } from './dto/admin-user-list-query.dto.js'
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js'
 
+const USER_LIST_SELECT = {
+  id: true,
+  email: true,
+  name: true,
+  avatar: true,
+  role: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
+
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authRepository: AuthRepository,
+  ) {}
 
   async listUsers(query: AdminUserListQueryDto) {
     const { page, pageSize, search, isActive } = query
 
-    const where: Record<string, unknown> = {}
+    const where: Prisma.UserWhereInput = {}
 
     if (search) {
       where.email = { contains: search, mode: 'insensitive' }
@@ -24,47 +41,47 @@ export class AdminService {
       {
         where,
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          avatar: true,
-          role: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: USER_LIST_SELECT,
       },
       { page: page ?? 1, size: pageSize ?? 10 },
     )
 
-    return result
+    const items = result.data.filter((user): user is NonNullable<typeof user> => user !== null)
+
+    return {
+      items: items.map((user) => ({
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      })),
+      pagination: result.pagination,
+    }
   }
 
   async updateUserStatus(userId: string, dto: UpdateUserStatusDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true },
+      select: { id: true, isActive: true },
     })
 
     if (!user) {
-      throw new NotFoundException({
-        code: 'NOT_FOUND',
-        message: '用户不存在',
-      })
+      throw userNotFoundError()
     }
 
-    return this.prisma.user.update({
+    if (dto.isActive === false && user.isActive === true) {
+      await this.authRepository.revokeAllSessionsForUser(userId, 'user_disabled')
+    }
+
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: dto.isActive },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        updatedAt: true,
-      },
+      select: USER_LIST_SELECT,
     })
+
+    return {
+      ...updated,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    }
   }
 }

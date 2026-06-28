@@ -4,8 +4,8 @@ import multipart from '@fastify/multipart'
 import { ConfigService } from '@nestjs/config'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
-import { RequestIdMiddleware } from './middleware/request-id.middleware.js'
 import { setAllowedHostnames } from './common/utils/ssrf-guard.js'
+import { RequestIdMiddleware } from './middleware/request-id.middleware.js'
 
 export async function bootstrap(app: NestFastifyApplication) {
   const configService = app.get(ConfigService)

@@ -4,56 +4,37 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { CreateKbDto } from './dto/create-kb.dto.js'
 import type { UpdateKbDto } from './dto/update-kb.dto.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
+import { DocumentRepository } from './repositories/document.repository.js'
+import { FolderRepository } from './repositories/folder.repository.js'
+import { KbRepository } from './repositories/kb.repository.js'
 
 const MAX_SEARCH_QUERY_LENGTH = 100
 const MAX_SELECTOR_ITEMS = 100
+const MAX_SEARCH_RESULTS = 100
 
 @Injectable()
 export class KnowledgeBaseService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly kbRepository: KbRepository,
+    private readonly folderRepository: FolderRepository,
+    private readonly documentRepository: DocumentRepository,
     private readonly cleanupService: KbCleanupService,
   ) {}
 
-  // ---- 知识库 ----
-
   async list(userId: string, page: number, size: number) {
-    const skip = (page - 1) * size
-    const take = size
-
     const [items, total] = await Promise.all([
-      this.prisma.knowledgeBase.findMany({
-        where: { userId },
-        orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
-        skip,
-        take,
-      }),
-      this.prisma.knowledgeBase.count({ where: { userId } }),
+      this.kbRepository.findManyByUserIdWithPagination(userId, page, size),
+      this.kbRepository.countByUserId(userId),
     ])
 
     return { items, total, page, size }
   }
 
   async listForSelector(userId: string) {
-    const rows = await this.prisma.knowledgeBase.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        name: true,
-        icon: true,
-        isPinned: true,
-        sortOrder: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: { select: { documents: true } },
-      },
-      orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
-      take: MAX_SELECTOR_ITEMS,
-    })
+    const rows = await this.kbRepository.findManyForSelector(userId, MAX_SELECTOR_ITEMS)
 
     return rows.map((kb) => ({
       id: kb.id,
@@ -61,42 +42,37 @@ export class KnowledgeBaseService {
       icon: kb.icon ?? undefined,
       isPinned: kb.isPinned,
       sortOrder: kb.sortOrder,
-      fileCount: kb._count.documents,
+      fileCount: kb._count?.documents ?? 0,
       createdAt: kb.createdAt.toISOString(),
       updatedAt: kb.updatedAt.toISOString(),
     }))
   }
 
   async create(userId: string, dto: CreateKbDto) {
-    return this.prisma.knowledgeBase.create({
-      data: {
-        userId,
-        name: dto.name,
-        description: dto.description ?? null,
-        icon: dto.icon ?? null,
-      },
+    return this.kbRepository.create({
+      userId,
+      name: dto.name,
+      description: dto.description ?? null,
+      icon: dto.icon ?? null,
     })
   }
 
   async update(userId: string, id: string, dto: UpdateKbDto) {
     await this.ensureOwnership(userId, id)
 
-    return this.prisma.knowledgeBase.update({
-      where: { id },
-      data: {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
-        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
-        ...(dto.icon !== undefined && { icon: dto.icon }),
-      },
+    return this.kbRepository.update(id, {
+      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.description !== undefined && { description: dto.description }),
+      ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
+      ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+      ...(dto.icon !== undefined && { icon: dto.icon }),
     })
   }
 
   async remove(userId: string, id: string) {
     await this.ensureOwnership(userId, id)
     await this.cleanupService.cleanupKnowledgeBase(id)
-    await this.prisma.knowledgeBase.delete({ where: { id } })
+    await this.kbRepository.delete(id)
     return { id, deleted: true }
   }
 
@@ -117,31 +93,16 @@ export class KnowledgeBaseService {
       })
     }
 
-    const MAX_SEARCH_RESULTS = 100
-
     const [folders, documents] = await Promise.all([
-      this.prisma.folder.findMany({
-        where: { kbId, name: { contains: trimmed, mode: 'insensitive' } },
-        orderBy: { createdAt: 'asc' },
-        take: MAX_SEARCH_RESULTS,
-      }),
-      this.prisma.document.findMany({
-        where: { kbId, name: { contains: trimmed, mode: 'insensitive' } },
-        orderBy: { createdAt: 'desc' },
-        take: MAX_SEARCH_RESULTS,
-      }),
+      this.folderRepository.searchByKbName(kbId, trimmed, MAX_SEARCH_RESULTS),
+      this.documentRepository.searchByKbName(kbId, trimmed, MAX_SEARCH_RESULTS),
     ])
 
     return { folders, documents }
   }
 
-  // ---- 私有方法 ----
-
   private async ensureOwnership(userId: string, kbId: string) {
-    const kb = await this.prisma.knowledgeBase.findUnique({
-      where: { id: kbId },
-      select: { userId: true },
-    })
+    const kb = await this.kbRepository.findById(kbId)
 
     if (!kb) {
       throw new NotFoundException({

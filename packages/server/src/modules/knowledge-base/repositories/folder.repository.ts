@@ -25,4 +25,12 @@ export class FolderRepository extends BaseRepository<
   async hasChildren(id: string): Promise<boolean> {
     return this.model.exists({ where: { parentId: id } })
   }
+
+  async searchByKbName(kbId: string, keyword: string, limit: number): Promise<Folder[]> {
+    return this.model.findMany({
+      where: { kbId, name: { contains: keyword, mode: 'insensitive' } },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+    })
+  }
 }

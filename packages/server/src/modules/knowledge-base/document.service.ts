@@ -7,16 +7,20 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common'
-import { PrismaService } from '../../processors/database/prisma.service.js'
+import type { Prisma } from '@prisma/client'
 import { QueueService } from '../../processors/queue/queue.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
 import type { CopyDocumentDto } from './dto/copy-document.dto.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { MoveDocumentDto } from './dto/move-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
+import type { DocUpdateData } from './repositories/document.repository.js'
+import { DocumentRepository } from './repositories/document.repository.js'
+import { FolderRepository } from './repositories/folder.repository.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
+import { KbRepository } from './repositories/kb.repository.js'
 
-const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024
 
 export interface UploadFilePayload {
   filename: string
@@ -54,7 +58,9 @@ export class DocumentService {
   private readonly logger = new Logger(DocumentService.name)
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly documentRepository: DocumentRepository,
+    private readonly folderRepository: FolderRepository,
+    private readonly kbRepository: KbRepository,
     private readonly storage: StorageService,
     private readonly cleanupService: KbCleanupService,
     @Optional() private readonly queueService?: QueueService,
@@ -74,21 +80,23 @@ export class DocumentService {
     const { sortBy: by, sortOrder: order } = parseDocumentSort(sortBy, sortOrder)
     const effectiveFolderId = normalizeFolderId(folderId)
 
-    const orderBy = by === 'type' ? [{ ext: order }, { mimeType: order }] : { [by]: order }
+    const orderBy:
+      | Prisma.DocumentOrderByWithRelationInput
+      | Prisma.DocumentOrderByWithRelationInput[] =
+      by === 'type' ? [{ ext: order }, { mimeType: order }] : { [by]: order }
 
     const effectivePage = Math.max(1, page ?? 1)
     const effectivePageSize = Math.min(100, Math.max(1, pageSize ?? 20))
 
     const [items, total] = await Promise.all([
-      this.prisma.document.findMany({
-        where: { kbId, folderId: effectiveFolderId ?? null },
+      this.documentRepository.findManyByKbIdWithPagination(
+        kbId,
+        effectiveFolderId ?? null,
         orderBy,
-        skip: (effectivePage - 1) * effectivePageSize,
-        take: effectivePageSize,
-      }),
-      this.prisma.document.count({
-        where: { kbId, folderId: effectiveFolderId ?? null },
-      }),
+        (effectivePage - 1) * effectivePageSize,
+        effectivePageSize,
+      ),
+      this.documentRepository.countByKbId(kbId, effectiveFolderId ?? null),
     ])
 
     return { items, total, page: effectivePage, pageSize: effectivePageSize }
@@ -100,17 +108,15 @@ export class DocumentService {
     const storageKey = `${kbId}/${randomUUID()}-${payload.filename}`
     await this.storage.uploadFile(payload.buffer, storageKey, payload.mimeType)
 
-    const doc = await this.prisma.document.create({
-      data: {
-        kbId,
-        folderId: payload.folderId,
-        name: payload.filename,
-        ext: payload.ext,
-        mimeType: payload.mimeType,
-        size: BigInt(payload.size),
-        storageKey,
-        status: 'uploaded',
-      },
+    const doc = await this.documentRepository.create({
+      kbId,
+      folderId: payload.folderId,
+      name: payload.filename,
+      ext: payload.ext,
+      mimeType: payload.mimeType,
+      size: BigInt(payload.size),
+      storageKey,
+      status: 'uploaded',
     })
 
     const queueHealthy = await this.queueService?.isHealthy()
@@ -123,53 +129,46 @@ export class DocumentService {
 
   async create(userId: string, kbId: string, dto: CreateDocumentDto) {
     await this.ensureOwnership(userId, kbId)
-    return this.prisma.document.create({
-      data: {
-        kbId,
-        folderId: dto.folderId ?? null,
-        name: dto.name,
-        storageKey: `temp-${randomUUID()}`,
-        status: 'uploaded',
-      },
+    return this.documentRepository.create({
+      kbId,
+      folderId: dto.folderId ?? null,
+      name: dto.name,
+      storageKey: `temp-${randomUUID()}`,
+      status: 'uploaded',
     })
   }
 
   async update(userId: string, kbId: string, docId: string, dto: UpdateDocumentDto) {
     await this.ensureOwnership(userId, kbId)
-    const doc = await this.prisma.document.findUnique({ where: { id: docId } })
+    const doc = await this.documentRepository.findById(docId)
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
 
-    const data: Partial<{ name: string; folderId: string | null }> = {}
-    if (dto.name !== undefined) data.name = dto.name
+    const patch: DocUpdateData = {}
+    if (dto.name !== undefined) patch.name = dto.name
 
     if (dto.folderId !== undefined) {
       const targetFolderId = normalizeFolderId(dto.folderId)
       if (targetFolderId === null) {
-        data.folderId = null
-      } else {
-        const folder = await this.prisma.folder.findFirst({
-          where: { id: targetFolderId, kbId },
-        })
+        patch.folderId = null
+      } else if (targetFolderId) {
+        const folder = await this.folderRepository.findByIdAndKb(targetFolderId, kbId)
         if (!folder) {
           throw new NotFoundException({
             code: 'NOT_FOUND',
             message: '目标文件夹不存在',
           })
         }
-        data.folderId = targetFolderId
+        patch.folderId = targetFolderId
       }
     }
 
-    return this.prisma.document.update({
-      where: { id: docId },
-      data,
-    })
+    return this.documentRepository.update(docId, patch)
   }
 
   async move(userId: string, kbId: string, docId: string, dto: MoveDocumentDto) {
     await this.ensureOwnership(userId, kbId)
 
-    const doc = await this.prisma.document.findUnique({ where: { id: docId } })
+    const doc = await this.documentRepository.findById(docId)
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
 
     const targetKbId = dto.targetKbId ?? kbId
@@ -179,9 +178,7 @@ export class DocumentService {
 
     const targetFolderId = dto.targetFolderId ?? null
     if (targetFolderId !== null) {
-      const folder = await this.prisma.folder.findFirst({
-        where: { id: targetFolderId, kbId: targetKbId },
-      })
+      const folder = await this.folderRepository.findByIdAndKb(targetFolderId, targetKbId)
       if (!folder) {
         throw new NotFoundException({
           code: 'NOT_FOUND',
@@ -197,10 +194,7 @@ export class DocumentService {
   }
 
   private async moveWithinKb(docId: string, targetFolderId: string | null) {
-    const updated = await this.prisma.document.update({
-      where: { id: docId },
-      data: { folderId: targetFolderId },
-    })
+    const updated = await this.documentRepository.update(docId, { folderId: targetFolderId })
     return { ...updated }
   }
 
@@ -220,9 +214,8 @@ export class DocumentService {
 
     const { newStorageKey, oldStorageKey } = await this.reuploadForCrossKb(doc, targetKbId)
 
-    // 删除旧 chunk 记录（向量随文档级联删除或 cleanupDocument 清理）
     try {
-      await this.prisma.chunk.deleteMany({ where: { documentId: docId } })
+      await this.documentRepository.deleteChunksByDocumentId(docId)
     } catch (e) {
       this.logger.warn(
         `文档 ${docId} 跨知识库移动时删除旧 chunk 记录失败`,
@@ -230,14 +223,11 @@ export class DocumentService {
       )
     }
 
-    const updated = await this.prisma.document.update({
-      where: { id: docId },
-      data: {
-        kbId: targetKbId,
-        folderId: targetFolderId,
-        storageKey: newStorageKey,
-        status: 'uploaded',
-      },
+    const updated = await this.documentRepository.update(docId, {
+      kbId: targetKbId,
+      folderId: targetFolderId,
+      storageKey: newStorageKey,
+      status: 'uploaded',
     })
 
     await this.cleanupOldStorageAfterMove(docId, oldStorageKey)
@@ -267,8 +257,7 @@ export class DocumentService {
       })
     }
 
-    // C4: 大文件使用流式传输，避免一次性载入内存
-    const MAX_IN_MEMORY_SIZE = 5 * 1024 * 1024 // 5MB
+    const MAX_IN_MEMORY_SIZE = 5 * 1024 * 1024
     const buffer = await this.storage.downloadFile(doc.storageKey)
     if (buffer.length > MAX_IN_MEMORY_SIZE) {
       this.logger.warn(
@@ -302,7 +291,7 @@ export class DocumentService {
   async copy(userId: string, kbId: string, docId: string, dto: CopyDocumentDto) {
     await this.ensureOwnership(userId, kbId)
 
-    const doc = await this.prisma.document.findUnique({ where: { id: docId } })
+    const doc = await this.documentRepository.findById(docId)
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
 
     const targetKbId = dto.targetKbId ?? kbId
@@ -312,9 +301,7 @@ export class DocumentService {
 
     const targetFolderId = dto.targetFolderId ?? null
     if (targetFolderId !== null) {
-      const folder = await this.prisma.folder.findFirst({
-        where: { id: targetFolderId, kbId: targetKbId },
-      })
+      const folder = await this.folderRepository.findByIdAndKb(targetFolderId, targetKbId)
       if (!folder) {
         throw new NotFoundException({
           code: 'NOT_FOUND',
@@ -360,17 +347,15 @@ export class DocumentService {
     const newStorageKey = `${targetKbId}/${randomUUID()}-${doc.name}`
     await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
 
-    const copied = await this.prisma.document.create({
-      data: {
-        kbId: targetKbId,
-        folderId: targetFolderId,
-        name: doc.name,
-        ext: doc.ext,
-        mimeType: doc.mimeType,
-        size: doc.size,
-        storageKey: newStorageKey,
-        status: 'uploaded',
-      },
+    const copied = await this.documentRepository.create({
+      kbId: targetKbId,
+      folderId: targetFolderId,
+      name: doc.name,
+      ext: doc.ext,
+      mimeType: doc.mimeType,
+      size: doc.size !== null ? BigInt(doc.size) : null,
+      storageKey: newStorageKey,
+      status: 'uploaded',
     })
 
     const queueHealthy = await this.queueService?.isHealthy()
@@ -383,18 +368,18 @@ export class DocumentService {
 
   async remove(userId: string, kbId: string, docId: string) {
     await this.ensureOwnership(userId, kbId)
-    const doc = await this.prisma.document.findUnique({ where: { id: docId } })
+    const doc = await this.documentRepository.findById(docId)
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
 
     await this.cleanupService.cleanupDocument(doc.id, doc.storageKey)
-    await this.prisma.document.delete({ where: { id: docId } })
+    await this.documentRepository.delete(docId)
     return { id: docId, deleted: true }
   }
 
   async preview(userId: string, kbId: string, docId: string) {
     await this.ensureOwnership(userId, kbId)
 
-    const doc = await this.prisma.document.findUnique({ where: { id: docId } })
+    const doc = await this.documentRepository.findById(docId)
     if (!doc || doc.kbId !== kbId) {
       throw new NotFoundException({ code: 'NOT_FOUND', message: '文档不存在' })
     }
@@ -405,8 +390,7 @@ export class DocumentService {
         throw new NotFoundException({ code: 'NOT_FOUND', message: '文档无存储对象' })
       }
       const buffer = await this.storage.downloadFile(doc.storageKey)
-      // H2: 限制预览文件大小，防止大文件内存溢出
-      const MAX_PREVIEW_SIZE = 5 * 1024 * 1024 // 5MB
+      const MAX_PREVIEW_SIZE = 5 * 1024 * 1024
       if (buffer.length > MAX_PREVIEW_SIZE) {
         throw new BadRequestException({
           code: 'PREVIEW_TOO_LARGE',
@@ -436,10 +420,7 @@ export class DocumentService {
   }
 
   private async ensureOwnership(userId: string, kbId: string) {
-    const kb = await this.prisma.knowledgeBase.findUnique({
-      where: { id: kbId },
-      select: { userId: true },
-    })
+    const kb = await this.kbRepository.findById(kbId)
     if (!kb) throw new NotFoundException('知识库不存在')
     if (kb.userId !== userId) throw new ForbiddenException('无权访问')
   }

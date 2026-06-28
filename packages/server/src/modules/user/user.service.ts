@@ -1,54 +1,53 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { Prisma } from '@prisma/client'
 import { compare, hash } from 'bcrypt'
+import { AuthRepository } from '../../auth/repositories/auth.repository.js'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import {
+  emailAlreadyExistsError,
+  forbiddenError,
+  invalidCredentialsError,
+  passwordChangeFailedError,
+} from './errors.js'
+
+const USER_PROFILE_SELECT = {
+  id: true,
+  email: true,
+  name: true,
+  avatar: true,
+  role: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly authRepository: AuthRepository,
   ) {}
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_PROFILE_SELECT,
     })
   }
 
   async findById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_PROFILE_SELECT,
     })
   }
 
   async create(email: string, password: string, name?: string) {
     const existing = await this.findByEmail(email)
     if (existing) {
-      throw new ConflictException({
-        code: 'USER_EXISTS',
-        message: '该邮箱已被注册',
-      })
+      throw emailAlreadyExistsError()
     }
 
     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 12
@@ -59,16 +58,7 @@ export class UserService {
         password: await hash(password, saltRounds),
         name: name || null,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_PROFILE_SELECT,
     })
   }
 
@@ -78,18 +68,12 @@ export class UserService {
     })
 
     if (!user) {
-      throw new UnauthorizedException({
-        code: 'AUTH_FAIL',
-        message: '邮箱或密码错误',
-      })
+      throw invalidCredentialsError()
     }
 
     const isValid = await compare(password, user.password)
     if (!isValid) {
-      throw new UnauthorizedException({
-        code: 'AUTH_FAIL',
-        message: '邮箱或密码错误',
-      })
+      throw invalidCredentialsError()
     }
 
     return {
@@ -108,16 +92,7 @@ export class UserService {
     return this.prisma.user.update({
       where: { id },
       data: { name },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_PROFILE_SELECT,
     })
   }
 
@@ -125,16 +100,58 @@ export class UserService {
     return this.prisma.user.update({
       where: { id },
       data: { avatar },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_PROFILE_SELECT,
+    })
+  }
+
+  async updatePassword(
+    callerId: string,
+    targetUserId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    if (callerId !== targetUserId) {
+      throw forbiddenError()
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, password: true },
+    })
+
+    if (!user) {
+      throw passwordChangeFailedError()
+    }
+
+    const isValid = await compare(currentPassword, user.password)
+    if (!isValid) {
+      throw passwordChangeFailedError()
+    }
+
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 12
+    const hashed = await hash(newPassword, saltRounds)
+
+    // 原子事务：密码更新与会话撤销必须同时成功，避免状态不一致
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const now = new Date()
+
+      const updated = await tx.user.update({
+        where: { id: targetUserId },
+        data: { password: hashed },
+        select: USER_PROFILE_SELECT,
+      })
+
+      // 仅在密码更新成功后撤销会话，防止合法用户因密码更新失败被错误锁死
+      await tx.authSession.updateMany({
+        where: { userId: targetUserId, revokedAt: null },
+        data: { revokedAt: now, revokedReason: 'password_changed' },
+      })
+      await tx.refreshToken.updateMany({
+        where: { session: { userId: targetUserId }, revokedAt: null },
+        data: { revokedAt: now },
+      })
+
+      return updated
     })
   }
 }

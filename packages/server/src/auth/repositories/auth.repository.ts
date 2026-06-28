@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { AuthApp } from '../types/auth-app.type.js'
 
@@ -35,6 +34,20 @@ export class AuthRepository {
     })
   }
 
+  async revokeAllSessionsForUser(userId: string, reason: string): Promise<void> {
+    const now = new Date()
+    await this.prisma.$transaction([
+      this.prisma.authSession.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now, revokedReason: reason },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { session: { userId }, revokedAt: null },
+        data: { revokedAt: now },
+      }),
+    ])
+  }
+
   async insertRefreshToken(data: { sessionId: string; jtiHash: string; parentTokenId?: string }) {
     return this.prisma.refreshToken.create({
       data: {
@@ -55,12 +68,9 @@ export class AuthRepository {
   /**
    * 原子标记 refresh token 为已使用。
    * 使用 UPDATE ... WHERE usedAt IS NULL 确保并发安全：
-   * 只有第一个请求能成功更新，其余请求返回 null（触发重放检测）。
+   * 只有第一个请求能成功更新（count > 0），其余请求返回 false（触发重放检测）。
    */
-  async markRefreshTokenUsed(
-    jtiHash: string,
-    replacedByTokenId?: string,
-  ): Promise<{ id: string; usedAt: Date } | null> {
+  async markRefreshTokenUsed(jtiHash: string, replacedByTokenId?: string): Promise<boolean> {
     const result = await this.prisma.refreshToken.updateMany({
       where: {
         jtiHash,
@@ -72,21 +82,7 @@ export class AuthRepository {
       },
     })
 
-    // updateMany 只返回 count，需要再查询获取具体数据
-    if (result.count === 0) {
-      return null
-    }
-
-    const token = await this.prisma.refreshToken.findUnique({
-      where: { jtiHash },
-      select: { id: true, usedAt: true },
-    })
-
-    if (!token) {
-      return null
-    }
-
-    return { id: token.id, usedAt: token.usedAt! }
+    return result.count > 0
   }
 
   async updateLastSeen(sessionId: string) {

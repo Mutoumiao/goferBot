@@ -1,7 +1,6 @@
-import { AppException } from '@/lib/app-error.js'
-import { UnauthorizedException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthService } from '@/auth/auth.service.js'
+import { AppException } from '@/lib/app-error.js'
 
 describe('AuthService', () => {
   let authService: AuthService
@@ -32,7 +31,7 @@ describe('AuthService', () => {
       createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
       insertRefreshToken: vi.fn().mockResolvedValue(undefined),
       findRefreshTokenByJtiHash: vi.fn(),
-      markRefreshTokenUsed: vi.fn().mockResolvedValue({ id: 'rt-1', usedAt: new Date() }),
+      markRefreshTokenUsed: vi.fn().mockResolvedValue(true),
       revokeSession: vi.fn().mockResolvedValue(undefined),
       getRolesForUserByApp: vi.fn().mockResolvedValue([]),
     }
@@ -161,6 +160,8 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('mock-token')
       expect(result.refreshToken).toBe('mock-token')
       expect(mockJwtService.verify).toHaveBeenCalledWith('valid-refresh-token', expect.any(Object))
+      // ✅ 验证角色重新加载被调用
+      expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'web')
     })
 
     it('AC-03d-rot: marks old refresh token as used and creates new one', async () => {
@@ -217,7 +218,7 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: null },
       })
       // 模拟并发竞争失败：另一个请求已经标记了此 token
-      mockAuthRepository.markRefreshTokenUsed.mockResolvedValue(null)
+      mockAuthRepository.markRefreshTokenUsed.mockResolvedValue(false)
 
       await expect(authService.refresh('valid-refresh-token')).rejects.toThrow(AppException)
       expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith(
@@ -321,6 +322,38 @@ describe('AuthService', () => {
       })
 
       await expect(authService.refresh('expired-token')).rejects.toThrow(AppException)
+    })
+
+    // ✅ 新增：admin 角色缺失测试
+    it('AC-03d-admin-role: revokes session when admin role is removed after token issued', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'u1',
+        sid: 'session-1',
+        app: 'admin',
+        jti: 'jti-1',
+        type: 'refresh',
+      })
+      mockUserService.findById.mockResolvedValue({
+        id: 'u1',
+        email: 'admin@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.findRefreshTokenByJtiHash.mockResolvedValue({
+        id: 'rt-1',
+        jtiHash: 'hash-jti-1',
+        sessionId: 'session-1',
+        usedAt: null,
+        revokedAt: null,
+        session: { id: 'session-1', revokedAt: null },
+      })
+      // 模拟 admin 角色被撤销
+      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([])
+
+      await expect(authService.refresh('admin-refresh-token')).rejects.toThrow(AppException)
+      expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith(
+        'session-1',
+        'admin_role_missing',
+      )
     })
   })
 
