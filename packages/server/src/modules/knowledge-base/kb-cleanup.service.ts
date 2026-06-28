@@ -20,12 +20,17 @@ export class KbCleanupService {
       select: { id: true, storageKey: true },
     })
 
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      for (const doc of docs) {
-        await this.cleanupDocumentTx(tx, doc.id)
-      }
-      await tx.knowledgeBase.delete({ where: { id: kbId } })
-    })
+    // 批量删除 chunks 和 documents，避免长事务内循环删除
+    const docIds = docs.map((d) => d.id)
+    if (docIds.length > 0) {
+      await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        await tx.chunk.deleteMany({ where: { documentId: { in: docIds } } })
+        await tx.document.deleteMany({ where: { id: { in: docIds } } })
+        await tx.knowledgeBase.delete({ where: { id: kbId } })
+      })
+    } else {
+      await this.prisma.knowledgeBase.delete({ where: { id: kbId } })
+    }
 
     // 删除 ES 索引数据（事务外执行，避免外部存储失败导致事务回滚）
     await this.es.deleteByKbId(kbId).catch((err: unknown) => {
@@ -47,35 +52,36 @@ export class KbCleanupService {
   }
 
   async cleanupFolder(kbId: string, folderId: string): Promise<void> {
+    // 先收集所有需要删除的文档（事务外），避免事务内逐层查询
     const docs: { id: string; storageKey?: string | null }[] = []
+    const stack: string[] = [folderId]
 
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const stack: string[] = [folderId]
+    while (stack.length > 0) {
+      const currentFolderId = stack.pop()
+      if (!currentFolderId) continue
 
-      while (stack.length > 0) {
-        const currentFolderId = stack.pop()
-        if (!currentFolderId) break
+      const documents = await this.prisma.document.findMany({
+        where: { kbId, folderId: currentFolderId },
+        select: { id: true, storageKey: true },
+      })
+      docs.push(...documents)
 
-        const documents = await tx.document.findMany({
-          where: { kbId, folderId: currentFolderId },
-          select: { id: true, storageKey: true },
-        })
-
-        for (const doc of documents) {
-          docs.push(doc)
-          await this.cleanupDocumentTx(tx, doc.id)
-        }
-
-        const children = await tx.folder.findMany({
-          where: { parentId: currentFolderId },
-          select: { id: true },
-        })
-
-        for (const child of children) {
-          stack.push(child.id)
-        }
+      const children = await this.prisma.folder.findMany({
+        where: { parentId: currentFolderId },
+        select: { id: true },
+      })
+      for (const child of children) {
+        stack.push(child.id)
       }
+    }
 
+    // 批量删除 chunks、documents 和 folder，避免长事务内循环删除
+    const docIds = docs.map((d) => d.id)
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (docIds.length > 0) {
+        await tx.chunk.deleteMany({ where: { documentId: { in: docIds } } })
+        await tx.document.deleteMany({ where: { id: { in: docIds } } })
+      }
       await tx.folder.delete({ where: { id: folderId } })
     })
 

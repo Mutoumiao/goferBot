@@ -162,11 +162,6 @@ export class GuardrailService {
   }
 
   private redactPattern(text: string, regex: RegExp, replacer: (match: string) => string): string {
-    let result = text
-    const matches = text.match(regex) ?? []
-    for (const match of matches) {
-      result = result.replace(match, replacer(match))
-    }
-    return result
+    return text.replace(regex, (match) => replacer(match))
   }
 }

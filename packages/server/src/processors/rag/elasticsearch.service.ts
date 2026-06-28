@@ -316,4 +316,55 @@ export class ElasticsearchService implements OnModuleInit, OnModuleDestroy {
 
     return result
   }
+
+  /**
+   * 执行 kNN 向量搜索
+   */
+  async searchKnn(knn: Record<string, unknown>, topK: number): Promise<SearchHit[]> {
+    const body = {
+      size: topK,
+      _source: [
+        'id',
+        'document_id',
+        'kb_id',
+        'content',
+        'chunk_index',
+        'token_count',
+        'parent_id',
+        'parent_content',
+      ],
+      query: {
+        knn,
+      },
+      track_scores: true,
+    }
+
+    try {
+      const response = await this.client.search({
+        index: this.indexName,
+        body,
+      } as any)
+
+      const hits = (response.hits.hits as unknown[]).map((hit: any) => ({
+        id: hit._id,
+        score: hit._score ?? 0,
+        source: {
+          ...hit._source,
+          id: hit._source.id ?? hit._id,
+          document_id: hit._source.document_id,
+          kb_id: hit._source.kb_id,
+          content: hit._source.content,
+          chunk_index: hit._source.chunk_index,
+          token_count: hit._source.token_count,
+          embedding: [],
+        },
+      })) as SearchHit[]
+
+      const maxScore = hits.reduce((m, h) => Math.max(m, h.score), 0) || 1
+      return hits.map((h) => ({ ...h, score: h.score / maxScore }))
+    } catch (err) {
+      this.logger.error(`KNN search failed: ${err instanceof Error ? err.message : String(err)}`)
+      return []
+    }
+  }
 }

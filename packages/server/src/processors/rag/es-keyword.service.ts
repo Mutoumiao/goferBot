@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { SearchHit } from './elasticsearch.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
+import { EsFilterBuilder } from './es-filter.builder.js'
 
 export interface Bm25Options {
   topK?: number
@@ -36,7 +37,10 @@ export interface Bm25Options {
 export class EsKeywordService {
   private readonly logger = new Logger(EsKeywordService.name)
 
-  constructor(@Inject(ElasticsearchService) private readonly es: ElasticsearchService) {}
+  constructor(
+    @Inject(ElasticsearchService) private readonly es: ElasticsearchService,
+    private readonly filterBuilder: EsFilterBuilder,
+  ) {}
 
   async search(query: string, options: Bm25Options = {}): Promise<SearchHit[]> {
     if (!query || query.trim() === '') return []
@@ -58,55 +62,7 @@ export class EsKeywordService {
       },
     ]
 
-    if (options.filters?.kbIds && options.filters.kbIds.length > 0) {
-      must.push({ terms: { kb_id: options.filters.kbIds } })
-    }
-
-    if (options.filters?.documentIds && options.filters.documentIds.length > 0) {
-      must.push({ terms: { document_id: options.filters.documentIds } })
-    }
-
-    if (options.filters?.metadata) {
-      for (const [key, value] of Object.entries(options.filters.metadata)) {
-        if (value === undefined || value === null) continue
-        const field = `metadata.${key}`
-        if (Array.isArray(value)) {
-          must.push({ terms: { [field]: value } })
-        } else if (typeof value === 'number' && Number.isFinite(value)) {
-          must.push({ term: { [field]: value } })
-        } else {
-          must.push({ term: { [field]: value } })
-        }
-      }
-    }
-
-    // ACL physical filter: documents can declare explicit user/team allow lists.
-    // When provided, only users matching the allow list (or docs without any
-    // allow list = public) are visible. Implements the supplemental doc
-    // "Trap 3: Multi-tenant isolation" recommendation.
-    if (options.filters?.allowedUserIds && options.filters.allowedUserIds.length > 0) {
-      must.push({
-        bool: {
-          should: [
-            { terms: { allowed_user_ids: options.filters.allowedUserIds } },
-            { bool: { must_not: { exists: { field: 'allowed_user_ids' } } } },
-          ],
-          minimum_should_match: 1,
-        },
-      })
-    }
-
-    if (options.filters?.allowedTeamIds && options.filters.allowedTeamIds.length > 0) {
-      must.push({
-        bool: {
-          should: [
-            { terms: { allowed_team_ids: options.filters.allowedTeamIds } },
-            { bool: { must_not: { exists: { field: 'allowed_team_ids' } } } },
-          ],
-          minimum_should_match: 1,
-        },
-      })
-    }
+    must.push(...this.filterBuilder.buildMustClauses(options.filters ?? {}))
 
     const body = {
       size: topK,

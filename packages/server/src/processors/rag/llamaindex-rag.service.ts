@@ -319,28 +319,34 @@ export class LlamaIndexRagService implements OnModuleInit {
 
     if (effectiveMode === 'vector') {
       const retrievalStart = Date.now()
-      const vectorHits: SearchHit[] = []
-      for (const q of queriesToRun) {
-        const queryVector = await this.embeddings.embed(q)
-        const h = await this.vectorService.search(queryVector, {
-          topK: Math.ceil(effectiveCandidateK / queriesToRun.length),
-          numCandidates: effectiveCandidateK,
-          filters,
-        })
-        vectorHits.push(...h)
-      }
+      // 并行执行多个查询的 embedding + 向量检索，降低延迟
+      const vectorHits = (
+        await Promise.all(
+          queriesToRun.map(async (q) => {
+            const queryVector = await this.embeddings.embed(q)
+            return this.vectorService.search(queryVector, {
+              topK: Math.ceil(effectiveCandidateK / queriesToRun.length),
+              numCandidates: effectiveCandidateK,
+              filters,
+            })
+          }),
+        )
+      ).flat()
       hits = this.dedupeHits(vectorHits).slice(0, effectiveCandidateK)
       retrievalTime = Date.now() - retrievalStart
     } else if (effectiveMode === 'bm25') {
       const retrievalStart = Date.now()
-      const bm25Hits: SearchHit[] = []
-      for (const q of queriesToRun) {
-        const h = await this.keywordService.search(q, {
-          topK: Math.ceil(effectiveCandidateK / queriesToRun.length),
-          filters,
-        })
-        bm25Hits.push(...h)
-      }
+      // 并行执行多个查询的 BM25 检索，降低延迟
+      const bm25Hits = (
+        await Promise.all(
+          queriesToRun.map((q) =>
+            this.keywordService.search(q, {
+              topK: Math.ceil(effectiveCandidateK / queriesToRun.length),
+              filters,
+            }),
+          ),
+        )
+      ).flat()
       hits = this.dedupeHits(bm25Hits).slice(0, effectiveCandidateK)
       retrievalTime = Date.now() - retrievalStart
     } else {

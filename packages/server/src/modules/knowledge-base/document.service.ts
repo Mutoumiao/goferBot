@@ -66,6 +66,8 @@ export class DocumentService {
     folderId?: string | null,
     sortBy?: string,
     sortOrder?: string,
+    page?: number,
+    pageSize?: number,
   ) {
     await this.ensureOwnership(userId, kbId)
 
@@ -74,10 +76,22 @@ export class DocumentService {
 
     const orderBy = by === 'type' ? [{ ext: order }, { mimeType: order }] : { [by]: order }
 
-    return this.prisma.document.findMany({
-      where: { kbId, folderId: effectiveFolderId ?? null },
-      orderBy,
-    })
+    const effectivePage = Math.max(1, page ?? 1)
+    const effectivePageSize = Math.min(100, Math.max(1, pageSize ?? 20))
+
+    const [items, total] = await Promise.all([
+      this.prisma.document.findMany({
+        where: { kbId, folderId: effectiveFolderId ?? null },
+        orderBy,
+        skip: (effectivePage - 1) * effectivePageSize,
+        take: effectivePageSize,
+      }),
+      this.prisma.document.count({
+        where: { kbId, folderId: effectiveFolderId ?? null },
+      }),
+    ])
+
+    return { items, total, page: effectivePage, pageSize: effectivePageSize }
   }
 
   async upload(userId: string, kbId: string, payload: UploadFilePayload) {

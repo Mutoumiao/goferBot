@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import type { SearchHit } from './elasticsearch.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
+import { EsFilterBuilder } from './es-filter.builder.js'
 
 export interface VectorOptions {
   topK?: number
@@ -33,7 +34,10 @@ export interface VectorOptions {
 export class EsVectorService {
   private readonly logger = new Logger(EsVectorService.name)
 
-  constructor(private readonly es: ElasticsearchService) {}
+  constructor(
+    private readonly es: ElasticsearchService,
+    private readonly filterBuilder: EsFilterBuilder,
+  ) {}
 
   async search(queryVector: number[], options: VectorOptions = {}): Promise<SearchHit[]> {
     if (!queryVector || queryVector.length === 0) return []
@@ -49,101 +53,13 @@ export class EsVectorService {
       boost: 1.0,
     }
 
-    const filterClauses: unknown[] = []
-    if (options.filters?.kbIds && options.filters.kbIds.length > 0) {
-      filterClauses.push({ terms: { kb_id: options.filters.kbIds } })
-    }
-    if (options.filters?.documentIds && options.filters.documentIds.length > 0) {
-      filterClauses.push({ terms: { document_id: options.filters.documentIds } })
-    }
-
-    if (options.filters?.metadata) {
-      for (const [key, value] of Object.entries(options.filters.metadata)) {
-        if (value === undefined || value === null) continue
-        const field = `metadata.${key}`
-        if (Array.isArray(value)) {
-          filterClauses.push({ terms: { [field]: value } })
-        } else {
-          filterClauses.push({ term: { [field]: value } })
-        }
-      }
-    }
-
-    // ACL physical filter for vector search. Note: ES `knn.filter` is executed
-    // BEFORE the ANN traversal, which is the recommended mode for strong
-    // multi-tenant isolation (supplemental doc Trap 3).
-    if (options.filters?.allowedUserIds && options.filters.allowedUserIds.length > 0) {
-      filterClauses.push({
-        bool: {
-          should: [
-            { terms: { allowed_user_ids: options.filters.allowedUserIds } },
-            { bool: { must_not: { exists: { field: 'allowed_user_ids' } } } },
-          ],
-          minimum_should_match: 1,
-        },
-      })
-    }
-
-    if (options.filters?.allowedTeamIds && options.filters.allowedTeamIds.length > 0) {
-      filterClauses.push({
-        bool: {
-          should: [
-            { terms: { allowed_team_ids: options.filters.allowedTeamIds } },
-            { bool: { must_not: { exists: { field: 'allowed_team_ids' } } } },
-          ],
-          minimum_should_match: 1,
-        },
-      })
-    }
+    const filterClauses = this.filterBuilder.buildFilterClauses(options.filters ?? {})
 
     if (filterClauses.length > 0) {
-      knn.filter = filterClauses
+      knn.filter = { bool: { filter: filterClauses } }
     }
 
-    const body = {
-      size: topK,
-      _source: [
-        'id',
-        'document_id',
-        'kb_id',
-        'content',
-        'chunk_index',
-        'token_count',
-        'parent_id',
-        'parent_content',
-      ],
-      query: {
-        knn,
-      },
-      track_scores: true,
-    }
-
-    try {
-      const response = await this.es.getClient().search({
-        index: this.es.getIndexName(),
-        body,
-      } as any)
-
-      const hits = (response.hits.hits as unknown[]).map((hit: any) => ({
-        id: hit._id,
-        score: hit._score ?? 0,
-        source: {
-          ...hit._source,
-          id: hit._source.id ?? hit._id,
-          document_id: hit._source.document_id,
-          kb_id: hit._source.kb_id,
-          content: hit._source.content,
-          chunk_index: hit._source.chunk_index,
-          token_count: hit._source.token_count,
-          embedding: [],
-        },
-      })) as SearchHit[]
-
-      const maxScore = hits.reduce((m, h) => Math.max(m, h.score), 0) || 1
-      return hits.map((h) => ({ ...h, score: h.score / maxScore }))
-    } catch (err) {
-      this.logger.error(`Vector search failed: ${err instanceof Error ? err.message : String(err)}`)
-      return []
-    }
+    this.logger.debug(`ES vector search: k=${topK}, num_candidates=${numCandidates}`)
+    return this.es.searchKnn(knn, topK)
   }
 }

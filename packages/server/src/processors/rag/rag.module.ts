@@ -3,6 +3,7 @@ import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { SettingsModule } from '../../modules/settings/settings.module.js'
 import { BgeRerankService } from './bge-rerank.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
+import { EsFilterBuilder } from './es-filter.builder.js'
 import { EsKeywordService } from './es-keyword.service.js'
 import { EsVectorService } from './es-vector.service.js'
 import { GroundingService } from './grounding.service.js'
@@ -19,6 +20,7 @@ import { RouterService } from './router.service.js'
   providers: [
     LlamaIndexEmbeddingService,
     ElasticsearchService,
+    EsFilterBuilder,
     EsKeywordService,
     EsVectorService,
     BgeRerankService,
@@ -31,6 +33,7 @@ import { RouterService } from './router.service.js'
   ],
   exports: [
     ElasticsearchService,
+    EsFilterBuilder,
     EsKeywordService,
     EsVectorService,
     BgeRerankService,
