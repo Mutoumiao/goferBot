@@ -1,4 +1,3 @@
-import { DefaultRetrievalPostprocessor, HybridRetriever } from '@goferbot/rag-sdk'
 import { Injectable, Logger } from '@nestjs/common'
 
 export interface RetrievalResult {
@@ -18,29 +17,10 @@ export interface RetrievalQuery {
 export class RagService {
   private readonly logger = new Logger(RagService.name)
 
-  constructor(
-    private readonly retriever: HybridRetriever,
-    private readonly postprocessor: DefaultRetrievalPostprocessor,
-  ) {}
+  constructor() {}
 
-  async retrieveContext(query: RetrievalQuery): Promise<RetrievalResult> {
-    try {
-      const candidates = await this.retriever.retrieve(query, 10)
-      const processed = await this.postprocessor.process(candidates, query)
-
-      const validCandidates = processed.candidates.filter(
-        (c) => c.chunk.content && c.chunk.content.trim().length > 0,
-      )
-
-      if (validCandidates.length === 0) {
-        return { context: null }
-      }
-
-      const context = validCandidates.map((c) => c.chunk.content).join('\n---\n')
-      return { context }
-    } catch (err) {
-      this.logger.warn(`Retrieval failed: ${err instanceof Error ? err.message : String(err)}`)
-      return { context: null }
-    }
+  async retrieveContext(_query: RetrievalQuery): Promise<RetrievalResult> {
+    this.logger.warn('RagService.retrieveContext is deprecated and always returns null context')
+    return { context: null }
   }
 }

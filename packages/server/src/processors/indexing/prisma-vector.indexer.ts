@@ -1,8 +1,24 @@
-import type { Chunk, IIndexer, TokenUsage } from '@goferbot/rag-sdk'
-import { ValidationError } from '@goferbot/rag-sdk'
 import { Injectable } from '@nestjs/common'
 import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../database/prisma.service.js'
+import { ValidationError } from '../../interfaces/errors.js'
+
+export interface Chunk {
+  id: string
+  documentId: string
+  kbId: string
+  content: string
+  chunkIndex: number
+  tokenCount?: number
+}
+
+export interface TokenUsage {
+  promptTokens: number
+}
+
+export interface IIndexer {
+  index(chunks: Chunk[], vectors: number[][], usage?: TokenUsage[]): Promise<void>
+}
 
 @Injectable()
 export class PrismaVectorIndexer implements IIndexer {

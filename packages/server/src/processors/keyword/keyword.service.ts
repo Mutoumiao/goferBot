@@ -1,6 +1,21 @@
-import type { IKeywordStore, RetrievalCandidate } from '@goferbot/rag-sdk'
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../database/prisma.service.js'
+
+export interface RetrievalCandidate {
+  chunk: {
+    id: string
+    documentId: string
+    kbId: string
+    content: string
+    chunkIndex: number
+  }
+  score: number
+  source: 'keyword' | 'vector'
+}
+
+export interface IKeywordStore {
+  search(query: string, kbIds: string[], topK?: number): Promise<RetrievalCandidate[]>
+}
 
 @Injectable()
 export class KeywordService implements IKeywordStore {
