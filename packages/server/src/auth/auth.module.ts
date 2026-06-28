@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller.js'
 import { AuthService } from './auth.service.js'
 import { AuthRedisService } from './auth-redis.service.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
+import { AuthRepository } from './repositories/auth.repository.js'
 import { JwtStrategy } from './strategies/jwt.strategy.js'
 
 @Module({
@@ -26,8 +27,8 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     UserModule,
     StorageModule,
   ],
-  providers: [AuthService, PasswordEncryptionService, JwtStrategy, AuthRedisService],
+  providers: [AuthService, AuthRepository, PasswordEncryptionService, JwtStrategy, AuthRedisService],
   controllers: [AuthController],
-  exports: [AuthService, AuthRedisService],
+  exports: [AuthService, AuthRepository, AuthRedisService],
 })
 export class AuthModule {}
