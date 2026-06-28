@@ -11,6 +11,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { UserService } from '../modules/user/user.service.js'
 import { StorageService } from '../processors/storage/storage.service.js'
 import { AuthRedisService } from './auth-redis.service.js'
+import { AVATAR_ALLOWED_MIME_TYPES, AVATAR_EXT_MAP, AVATAR_MAX_SIZE } from './constants.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
 import { AuthRepository } from './repositories/auth.repository.js'
 import type { AuthApp } from './types/auth-app.type.js'
@@ -268,30 +269,21 @@ export class AuthService {
   }
 
   async uploadAvatar(userId: string, file: { buffer: Buffer; mimetype: string; size: number }) {
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-    const extMap: Record<string, string> = {
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/gif': 'gif',
-      'image/webp': 'webp',
-    }
-
-    if (!allowedMimeTypes.includes(file.mimetype)) {
+    if (!AVATAR_ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',
         message: '仅支持 JPEG、PNG、GIF、WebP 格式的图片',
       })
     }
 
-    const maxSize = 5 * 1024 * 1024
-    if (file.size > maxSize) {
+    if (file.size > AVATAR_MAX_SIZE) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',
         message: '头像文件大小不能超过 5MB',
       })
     }
 
-    const ext = extMap[file.mimetype]
+    const ext = AVATAR_EXT_MAP[file.mimetype]
     const key = `avatars/${userId}/${Date.now()}.${ext}`
 
     const currentUser = await this.userService.findById(userId)

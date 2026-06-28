@@ -14,6 +14,7 @@ import {
 import { Throttle } from '@nestjs/throttler'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AuthService } from './auth.service.js'
+import { AVATAR_ALLOWED_MIME_TYPES, AVATAR_MAX_SIZE } from './constants.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { CurrentUser } from './decorators/current-user.decorator.js'
 import { AdminLoginDto } from './dto/admin-login.dto.js'
@@ -24,11 +25,6 @@ import { UpdateProfileDto } from './dto/update-profile.dto.js'
 import { validatePassword } from './dto/password.schema.js'
 import { WebLoginDto } from './dto/web-login.dto.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
-
-// ponytail: bcrypt 在 72 字节处截断，超过部分不参与哈希；限制 72 避免用户误以为长密码更安全
-const PASSWORD_MIN = 6
-const PASSWORD_MAX = 72
-const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)/
 
 @Controller('auth')
 export class AuthController {
@@ -71,7 +67,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
   async adminLogin(@Body() dto: AdminLoginDto, @Req() req: FastifyRequest) {
-    this.validatePassword(dto.password)
+    validatePassword(dto.password)
     return this.authService.login(dto.email, dto.password, 'admin', {
       userAgent: req.headers['user-agent'],
       ip: req.ip,
@@ -102,21 +98,6 @@ export class AuthController {
     }
     validatePassword(password)
     return password
-  }
-
-  private validatePassword(password: string): void {
-    if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
-      throw new BadRequestException({
-        code: 'VALIDATION_ERROR',
-        message: `密码长度需在 ${PASSWORD_MIN}-${PASSWORD_MAX} 个字符之间`,
-      })
-    }
-    if (!PASSWORD_REGEX.test(password)) {
-      throw new BadRequestException({
-        code: 'VALIDATION_ERROR',
-        message: '密码需同时包含字母和数字',
-      })
-    }
   }
 
   @Post('web/refresh')
@@ -193,8 +174,7 @@ export class AuthController {
       })
     }
 
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-    if (!allowedMimeTypes.includes(data.mimetype)) {
+    if (!AVATAR_ALLOWED_MIME_TYPES.includes(data.mimetype)) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',
         message: '仅支持 JPEG、PNG、GIF、WebP 格式的图片',
