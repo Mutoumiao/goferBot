@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 import { setAllowedHostnames } from './common/utils/ssrf-guard.js'
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware.js'
 import { RequestIdMiddleware } from './middleware/request-id.middleware.js'
 
 export async function bootstrap(app: NestFastifyApplication) {
@@ -72,6 +73,9 @@ export async function bootstrap(app: NestFastifyApplication) {
 
   // 3.5 RequestId 中间件
   app.use(new RequestIdMiddleware().use)
+
+  // 3.6 RequestContext 中间件（AsyncLocalStorage 隐式传递上下文）
+  app.use(new RequestContextMiddleware().use)
 
   // 4. 开发环境日志拦截器
   if (process.env.NODE_ENV !== 'production') {

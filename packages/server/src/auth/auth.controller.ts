@@ -26,8 +26,6 @@ import { UpdateProfileDto } from './dto/update-profile.dto.js'
 import { WebLoginDto } from './dto/web-login.dto.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
 
-import { extractRequestContext } from './request-context.js'
-
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -57,38 +55,26 @@ export class AuthController {
   @Post('web/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async webLogin(@Body() dto: WebLoginDto, @Req() req: FastifyRequest) {
+  async webLogin(@Body() dto: WebLoginDto) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
-    const ctx = extractRequestContext(req)
-    return this.authService.login(dto.email, password, 'web', {
-      userAgent: ctx.userAgent,
-      ip: ctx.ip,
-    })
+    return this.authService.login(dto.email, password, 'web')
   }
 
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
-  async adminLogin(@Body() dto: AdminLoginDto, @Req() req: FastifyRequest) {
+  async adminLogin(@Body() dto: AdminLoginDto) {
     validatePassword(dto.password)
-    const ctx = extractRequestContext(req)
-    return this.authService.login(dto.email, dto.password, 'admin', {
-      userAgent: ctx.userAgent,
-      ip: ctx.ip,
-    })
+    return this.authService.login(dto.email, dto.password, 'admin')
   }
 
   /** @deprecated 旧登录入口，前端切走后移除 */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async legacyLogin(@Body() dto: LoginDto, @Req() req: FastifyRequest) {
+  async legacyLogin(@Body() dto: LoginDto) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
-    const ctx = extractRequestContext(req)
-    return this.authService.login(dto.email, password, 'web', {
-      userAgent: ctx.userAgent,
-      ip: ctx.ip,
-    })
+    return this.authService.login(dto.email, password, 'web')
   }
 
   private decryptAndValidate(encryptedPassword: string): string {

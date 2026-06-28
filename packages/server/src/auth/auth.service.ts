@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
+import { getRequestContext } from '../common/request-context-storage.js'
 import { AppException } from '../lib/app-error.js'
 import { UserService } from '../modules/user/user.service.js'
 import { StorageService } from '../processors/storage/storage.service.js'
@@ -62,7 +63,6 @@ export class AuthService {
     email: string,
     password: string,
     app: AuthApp,
-    meta?: { userAgent?: string; ip?: string },
   ) {
     const user = await this.userService.validatePassword(email, password)
 
@@ -77,6 +77,8 @@ export class AuthService {
       throw noAdminRoleError()
     }
 
+    const ctx = getRequestContext()
+    const meta = ctx ? { userAgent: ctx.userAgent, ip: ctx.ip } : undefined
     const tokens = await this.createSession(user.id, app, meta)
 
     return { user, ...tokens }

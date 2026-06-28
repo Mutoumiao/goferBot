@@ -67,22 +67,24 @@ export class AuthRepository {
 
   /**
    * 原子标记 refresh token 为已使用。
-   * 使用 UPDATE ... WHERE usedAt IS NULL 确保并发安全：
-   * 只有第一个请求能成功更新（count > 0），其余请求返回 false（触发重放检测）。
+   * 使用 $queryRaw 执行 UPDATE ... RETURNING，确保并发安全：
+   * 只有第一个请求能成功更新并返回行，其余请求返回空数组（触发重放检测）。
    */
-  async markRefreshTokenUsed(jtiHash: string, replacedByTokenId?: string): Promise<boolean> {
-    const result = await this.prisma.refreshToken.updateMany({
-      where: {
-        jtiHash,
-        usedAt: null,
-      },
-      data: {
-        usedAt: new Date(),
-        replacedByTokenId,
-      },
-    })
-
-    return result.count > 0
+  async markRefreshTokenUsed(
+    jtiHash: string,
+    replacedByTokenId?: string,
+  ): Promise<boolean> {
+    const now = new Date()
+    const result = (await this.prisma.$queryRaw`
+      UPDATE "RefreshToken"
+      SET "usedAt" = ${now},
+          "replacedByTokenId" = ${replacedByTokenId ?? null}
+      WHERE "jtiHash" = ${jtiHash}
+        AND "usedAt" IS NULL
+        AND "revokedAt" IS NULL
+      RETURNING "id"
+    `) as Array<{ id: string }>
+    return result.length > 0
   }
 
   async updateLastSeen(sessionId: string) {

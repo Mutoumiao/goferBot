@@ -1,6 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { tap } from 'rxjs/operators'
+import { getRequestContext } from '../request-context-storage.js'
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -15,12 +16,12 @@ export class LoggingInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest()
     const method = request.method
     const url = request.url
-    const requestId = request.requestId || 'unknown'
+    const ctx = getRequestContext()
+    const requestId = ctx?.requestId || 'unknown'
+    const ip = ctx?.ip || 'unknown'
     const now = Date.now()
 
-    this.logger.debug(
-      `[${requestId}] +++ Request: ${method} ${url} (ip: ${request.ip ?? request.socket?.remoteAddress ?? 'unknown'})`,
-    )
+    this.logger.debug(`[${requestId}] +++ Request: ${method} ${url} (ip: ${ip})`)
 
     return next.handle().pipe(
       tap(() => {

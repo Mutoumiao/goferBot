@@ -18,6 +18,7 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
 import { SessionModule } from './modules/session/session.module.js'
 import { SettingsModule } from './modules/settings/settings.module.js'
 import { UserModule } from './modules/user/user.module.js'
+import { validateEnv } from './env.js'
 import { QueueModule } from './processors/queue/queue.module.js'
 import { RagModule } from './processors/rag/rag.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
@@ -31,6 +32,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [resolve(__dirname, '../.env'), resolve(__dirname, '../../../.env')],
+      // 整理好环境变量后再开启验证
+      // validate: () => validateEnv(),
     }),
     ThrottlerModule.forRoot({
       throttlers: [
@@ -90,4 +93,4 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
