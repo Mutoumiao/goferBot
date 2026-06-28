@@ -16,9 +16,12 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AuthService } from './auth.service.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { CurrentUser } from './decorators/current-user.decorator.js'
+import { AdminLoginDto } from './dto/admin-login.dto.js'
 import { LoginDto } from './dto/login.dto.js'
+import { LogoutDto } from './dto/logout.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
+import { WebLoginDto } from './dto/web-login.dto.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
 
 const PASSWORD_MIN = 6
@@ -52,12 +55,38 @@ export class AuthController {
     return this.authService.register(dto.email, password, dto.name)
   }
 
+  @Post('web/login')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async webLogin(@Body() dto: WebLoginDto, @Req() req: FastifyRequest) {
+    const password = this.decryptAndValidate(dto.encryptedPassword)
+    return this.authService.login(dto.email, password, 'web', {
+      userAgent: req.headers['user-agent'],
+      ip: req.ip,
+    })
+  }
+
+  @Post('admin/login')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async adminLogin(@Body() dto: AdminLoginDto, @Req() req: FastifyRequest) {
+    this.validatePassword(dto.password)
+    return this.authService.login(dto.email, dto.password, 'admin', {
+      userAgent: req.headers['user-agent'],
+      ip: req.ip,
+    })
+  }
+
+  /** @deprecated 旧登录入口，前端切走后移除 */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async login(@Body() dto: LoginDto) {
+  async legacyLogin(@Body() dto: LoginDto, @Req() req: FastifyRequest) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
-    return this.authService.login(dto.email, password)
+    return this.authService.login(dto.email, password, 'web', {
+      userAgent: req.headers['user-agent'],
+      ip: req.ip,
+    })
   }
 
   private decryptAndValidate(encryptedPassword: string): string {
@@ -70,6 +99,11 @@ export class AuthController {
         message: '密码解密失败，请刷新页面后重试',
       })
     }
+    this.validatePassword(password)
+    return password
+  }
+
+  private validatePassword(password: string): void {
     if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',
@@ -82,26 +116,53 @@ export class AuthController {
         message: '密码需同时包含字母和数字',
       })
     }
-    return password
   }
 
-  @Post('refresh')
+  @Post('web/refresh')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async refresh(@Body() dto: { refreshToken: string }) {
+  async webRefresh(@Body() dto: { refreshToken: string }) {
     return this.authService.refresh(dto.refreshToken)
   }
 
+  @Post('admin/refresh')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async adminRefresh(@Body() dto: { refreshToken: string }) {
+    return this.authService.refresh(dto.refreshToken)
+  }
+
+  /** @deprecated 旧刷新入口，前端切走后移除 */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async legacyRefresh(@Body() dto: { refreshToken: string }) {
+    return this.authService.refresh(dto.refreshToken)
+  }
+
+  @Post('web/logout')
+  @HttpCode(HttpStatus.OK)
+  async webLogout(@Body() dto: LogoutDto) {
+    await this.authService.logoutByRefreshToken(dto.refreshToken)
+    return { success: true }
+  }
+
+  @Post('admin/logout')
+  @HttpCode(HttpStatus.OK)
+  async adminLogout(@Body() dto: LogoutDto) {
+    await this.authService.logoutByRefreshToken(dto.refreshToken)
+    return { success: true }
+  }
+
+  /** @deprecated 旧登出入口，使用 access token 黑名单，前端切走后移除 */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  async logout(@CurrentUser('id') userId: string, @Req() req: FastifyRequest) {
+  async legacyLogout(@CurrentUser('id') userId: string, @Req() req: FastifyRequest) {
     const authHeader = req.headers.authorization
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7)
-      // 将 token 加入黑名单，过期时间与 access token 一致（默认 2h）
       await this.authService.blacklistToken(token)
-      // 清除用户缓存，确保登出后状态即时生效
       await this.authService.invalidateUserCache(userId)
     }
     return { success: true }
@@ -131,7 +192,6 @@ export class AuthController {
       })
     }
 
-    // 前置校验：文件类型与大小（在流读取前拦截）
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedMimeTypes.includes(data.mimetype)) {
       throw new BadRequestException({
@@ -146,7 +206,6 @@ export class AuthController {
     }
     const buffer = Buffer.concat(chunks)
 
-    // 校验是否因大小限制被截断
     if (data.file.truncated) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',

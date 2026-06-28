@@ -93,7 +93,7 @@ describe('AuthService', () => {
         isActive: false,
       })
 
-      await expect(authService.login('test@gofer.bot', 'password123')).rejects.toThrow(
+      await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
         ForbiddenException,
       )
     })
