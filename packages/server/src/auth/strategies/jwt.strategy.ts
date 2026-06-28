@@ -5,7 +5,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { AuthRedisService } from '../auth-redis.service.js'
 import { AuthRepository } from '../repositories/auth.repository.js'
-import { Role } from '../enums/role.enum.js'
 import type { AuthApp } from '../types/auth-app.type.js'
 
 export interface JwtPayload {

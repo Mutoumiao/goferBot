@@ -47,20 +47,20 @@ export class AuthRedisService implements OnModuleInit, OnModuleDestroy {
   /** 将 access token 加入黑名单，过期时间与 token 剩余有效期一致 */
   async blacklistToken(token: string, ttlSeconds: number): Promise<void> {
     if (!this.isEnabled()) return
-    await this.redis!.setex(`${TOKEN_BLACKLIST_PREFIX}${token}`, ttlSeconds, '1')
+    await this.redis?.setex(`${TOKEN_BLACKLIST_PREFIX}${token}`, ttlSeconds, '1')
   }
 
   /** 检查 token 是否在黑名单中 */
   async isTokenBlacklisted(token: string): Promise<boolean> {
     if (!this.isEnabled()) return false
-    const result = await this.redis!.get(`${TOKEN_BLACKLIST_PREFIX}${token}`)
+    const result = await this.redis?.get(`${TOKEN_BLACKLIST_PREFIX}${token}`)
     return result !== null
   }
 
   /** 缓存用户信息 */
   async cacheUser(userId: string, user: Record<string, unknown>): Promise<void> {
     if (!this.isEnabled()) return
-    await this.redis!.setex(
+    await this.redis?.setex(
       `${USER_CACHE_PREFIX}${userId}`,
       USER_CACHE_TTL_SECONDS,
       JSON.stringify(user),
@@ -70,7 +70,7 @@ export class AuthRedisService implements OnModuleInit, OnModuleDestroy {
   /** 获取缓存的用户信息 */
   async getCachedUser(userId: string): Promise<Record<string, unknown> | null> {
     if (!this.isEnabled()) return null
-    const data = await this.redis!.get(`${USER_CACHE_PREFIX}${userId}`)
+    const data = await this.redis?.get(`${USER_CACHE_PREFIX}${userId}`)
     if (!data) return null
     try {
       return JSON.parse(data) as Record<string, unknown>
@@ -82,6 +82,6 @@ export class AuthRedisService implements OnModuleInit, OnModuleDestroy {
   /** 清除用户缓存（如账号状态变更时） */
   async invalidateUserCache(userId: string): Promise<void> {
     if (!this.isEnabled()) return
-    await this.redis!.del(`${USER_CACHE_PREFIX}${userId}`)
+    await this.redis?.del(`${USER_CACHE_PREFIX}${userId}`)
   }
 }

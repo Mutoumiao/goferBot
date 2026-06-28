@@ -11,7 +11,7 @@ describe('validatePassword', () => {
   })
 
   it('AC-06c: rejects password longer than 72 chars', () => {
-    expect(() => validatePassword('a'.repeat(73) + '1')).toThrow('密码长度需在 6-72 个字符之间')
+    expect(() => validatePassword(`${'a'.repeat(73)}1`)).toThrow('密码长度需在 6-72 个字符之间')
   })
 
   it('AC-06d: rejects password without digits', () => {
@@ -23,6 +23,6 @@ describe('validatePassword', () => {
   })
 
   it('AC-06f: accepts exactly 72 chars', () => {
-    expect(() => validatePassword('a'.repeat(71) + '1')).not.toThrow()
+    expect(() => validatePassword(`${'a'.repeat(71)}1`)).not.toThrow()
   })
 })

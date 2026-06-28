@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common'
 import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../../processors/database/prisma.service.js'
-import { StorageService } from '../../processors/storage/storage.service.js'
 import { ElasticsearchService } from '../../processors/rag/elasticsearch.service.js'
+import { StorageService } from '../../processors/storage/storage.service.js'
 
 @Injectable()
 export class KbCleanupService {

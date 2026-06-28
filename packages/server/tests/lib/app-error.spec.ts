@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { AppException } from '@/lib/app-error.js'
 
 describe('AppException', () => {

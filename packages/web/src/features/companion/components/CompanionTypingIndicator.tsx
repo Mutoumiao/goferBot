@@ -19,7 +19,7 @@ export function CompanionTypingIndicator({
 
   useEffect(() => {
     setDisplayedCount(0)
-  }, [content])
+  }, [])
 
   useEffect(() => {
     if (displayedCount >= content.length) {

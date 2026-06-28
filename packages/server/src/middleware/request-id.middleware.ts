@@ -1,6 +1,6 @@
-import { Injectable, NestMiddleware } from '@nestjs/common'
-import type { FastifyRequest, FastifyReply } from 'fastify'
 import { randomUUID } from 'node:crypto'
+import { Injectable, NestMiddleware } from '@nestjs/common'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 
 declare module 'fastify' {
   interface FastifyRequest {

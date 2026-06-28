@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IndexingWorker } from '@/processors/queue/indexing.worker.js'
-import { LlamaIndexRagService } from '@/processors/rag/llamaindex-rag.service.js'
 
 describe('IndexingWorker', () => {
   let worker: IndexingWorker
