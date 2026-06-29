@@ -4,6 +4,10 @@ import type { SystemConfigService } from '@/modules/settings/system-config.servi
 import type { SearchHit } from '@/processors/rag/elasticsearch.service.js'
 import type { RetrievedChunk } from '@/processors/rag/llamaindex-rag.service.js'
 import { LlamaIndexRagService } from '@/processors/rag/llamaindex-rag.service.js'
+import { RagContextService } from '@/processors/rag/rag-context.service.js'
+import { RagGenerationService } from '@/processors/rag/rag-generation.service.js'
+import { RagIndexingService } from '@/processors/rag/rag-indexing.service.js'
+import { RagRetrievalService } from '@/processors/rag/rag-retrieval.service.js'
 
 const makeHit = (
   id: string,
@@ -37,6 +41,7 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
     bulkIndex: vi.fn().mockResolvedValue(undefined),
     deleteByDocumentId: vi.fn().mockResolvedValue(undefined),
     getParentsByIds: vi.fn().mockResolvedValue(new Map()),
+    getKbIdsByDocumentId: vi.fn().mockResolvedValue([]),
     ...overrides.es,
   }
   const keywordService = {
@@ -71,6 +76,7 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
       redactions: [],
       warnings: [],
     }),
+    applyStream: vi.fn().mockImplementation((t: string) => t),
     ...overrides.guardrailService,
   }
   const routerService = {
@@ -179,20 +185,32 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
     ...overrides.cacheService,
   }
 
-  const service = new LlamaIndexRagService(
+  const retrievalService = new RagRetrievalService(
     embeddings as any,
     es as any,
     keywordService as any,
     vectorService as any,
     reranker as any,
-    groundingService as any,
-    guardrailService as any,
     routerService as any,
     queryUnderstanding as any,
     prisma as any,
+    cacheService as any,
+  )
+  const contextService = new RagContextService()
+  const indexingService = new RagIndexingService(es as any, embeddings as any, prisma as any)
+  const generationService = new RagGenerationService(
+    guardrailService as any,
+    groundingService as any,
+    contextService,
+  )
+
+  const service = new LlamaIndexRagService(
+    retrievalService,
+    contextService,
+    generationService,
+    indexingService,
     systemConfigService as unknown as SystemConfigService,
     modelProviderService as unknown as ModelProviderService,
-    cacheService as any,
   )
   await service.onModuleInit()
   return service
@@ -270,7 +288,7 @@ describe('LlamaIndexRagService', () => {
     it('returns empty when ACL kbIds is empty', async () => {
       const service = await createService()
       const vs = { search: vi.fn() }
-      ;(service as any).vectorService = vs
+      ;(service as any).retrievalService.vectorService = vs
       const result = await service.retrieve('hello', { kbIds: [] })
       expect(result).toEqual([])
       expect(vs.search).not.toHaveBeenCalled()
@@ -492,7 +510,7 @@ describe('LlamaIndexRagService', () => {
   describe('splitIntoChunks', () => {
     it('returns empty array for empty string', async () => {
       const service = await createService()
-      const split = (service as any).splitIntoChunks as (
+      const split = service.splitIntoChunks.bind(service) as (
         t: string,
         c: number,
         o: number,
@@ -502,7 +520,7 @@ describe('LlamaIndexRagService', () => {
 
     it('splits by paragraph boundaries', async () => {
       const service = await createService()
-      const split = (service as any).splitIntoChunks as (
+      const split = service.splitIntoChunks.bind(service) as (
         t: string,
         c: number,
         o: number,
@@ -515,7 +533,7 @@ describe('LlamaIndexRagService', () => {
 
     it('splits long paragraphs by chunkSize', async () => {
       const service = await createService()
-      const split = (service as any).splitIntoChunks as (
+      const split = service.splitIntoChunks.bind(service) as (
         t: string,
         c: number,
         o: number,
@@ -528,7 +546,7 @@ describe('LlamaIndexRagService', () => {
 
     it('respects chunk size', async () => {
       const service = await createService()
-      const split = (service as any).splitIntoChunks as (
+      const split = service.splitIntoChunks.bind(service) as (
         t: string,
         c: number,
         o: number,

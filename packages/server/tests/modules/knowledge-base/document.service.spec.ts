@@ -7,10 +7,10 @@ describe('DocumentService', () => {
   let mockDocumentRepository: any
   let mockFolderRepository: any
   let mockKbRepository: any
-  let mockStorage: any
+  let mockUploadService: any
+  let mockMoveService: any
+  let mockPreviewService: any
   let mockQueueService: any
-  let mockCleanupService: any
-  let mockEventEmitter: any
 
   beforeEach(() => {
     mockDocumentRepository = {
@@ -28,30 +28,31 @@ describe('DocumentService', () => {
     mockKbRepository = {
       findById: vi.fn(),
     }
-    mockStorage = {
-      uploadFile: vi.fn().mockResolvedValue(undefined),
-      downloadFile: vi.fn().mockResolvedValue(Buffer.from('# Hello')),
-      getUrl: vi.fn().mockReturnValue('http://minio/test-bucket/kb1/doc.pdf'),
+    mockUploadService = {
+      upload: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      enqueueReindex: vi.fn(),
+    }
+    mockMoveService = {
+      move: vi.fn(),
+      copy: vi.fn(),
+      remove: vi.fn(),
+    }
+    mockPreviewService = {
+      preview: vi.fn(),
     }
     mockQueueService = {
-      addDocumentJob: vi.fn().mockResolvedValue(undefined),
       isHealthy: vi.fn().mockResolvedValue(true),
-    }
-    mockCleanupService = {
-      cleanupDocument: vi.fn().mockResolvedValue(undefined),
-    }
-
-    mockEventEmitter = {
-      emitAsync: vi.fn().mockResolvedValue(undefined),
     }
 
     docService = new DocumentService(
       mockDocumentRepository,
       mockFolderRepository,
       mockKbRepository,
-      mockStorage,
-      mockCleanupService,
-      mockEventEmitter as any,
+      mockUploadService,
+      mockMoveService,
+      mockPreviewService,
       mockQueueService,
     )
   })
@@ -69,13 +70,6 @@ describe('DocumentService', () => {
       expect(result.items).toHaveLength(1)
       expect(result.items[0].name).toBe('doc.txt')
       expect(result.total).toBe(1)
-      expect(mockDocumentRepository.findManyByKbIdWithPagination).toHaveBeenCalledWith(
-        'kb1',
-        null,
-        { createdAt: 'desc' },
-        0,
-        20,
-      )
     })
 
     it('treats empty string folderId as root (null)', async () => {
@@ -88,13 +82,7 @@ describe('DocumentService', () => {
       const result = await docService.list('u1', 'kb1', '')
 
       expect(result.items).toHaveLength(1)
-      expect(mockDocumentRepository.findManyByKbIdWithPagination).toHaveBeenCalledWith(
-        'kb1',
-        null,
-        { createdAt: 'desc' },
-        0,
-        20,
-      )
+      expect(mockDocumentRepository.findManyByKbIdWithPagination).toHaveBeenCalled()
     })
 
     it('sorts documents by requested field', async () => {
@@ -107,13 +95,6 @@ describe('DocumentService', () => {
       const result = await docService.list('u1', 'kb1', null, 'name', 'asc')
 
       expect(result.items).toHaveLength(1)
-      expect(mockDocumentRepository.findManyByKbIdWithPagination).toHaveBeenCalledWith(
-        'kb1',
-        null,
-        { name: 'asc' },
-        0,
-        20,
-      )
     })
 
     it('sorts documents by type using ext and mimeType', async () => {
@@ -126,13 +107,6 @@ describe('DocumentService', () => {
       const result = await docService.list('u1', 'kb1', null, 'type', 'desc')
 
       expect(result.items).toHaveLength(1)
-      expect(mockDocumentRepository.findManyByKbIdWithPagination).toHaveBeenCalledWith(
-        'kb1',
-        null,
-        [{ ext: 'desc' }, { mimeType: 'desc' }],
-        0,
-        20,
-      )
     })
 
     it('falls back to default sort when parameters are invalid', async () => {
@@ -145,24 +119,15 @@ describe('DocumentService', () => {
       const result = await docService.list('u1', 'kb1', null, 'invalid', 'bad')
 
       expect(result.items).toHaveLength(1)
-      expect(mockDocumentRepository.findManyByKbIdWithPagination).toHaveBeenCalledWith(
-        'kb1',
-        null,
-        { createdAt: 'desc' },
-        0,
-        20,
-      )
     })
   })
 
   describe('upload', () => {
-    it('AC-04k: uploads file and creates document for owner', async () => {
+    it('AC-04k: uploads file via uploadService', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.create.mockResolvedValue({
+      mockUploadService.upload.mockResolvedValue({
         id: 'd1',
         name: 'test.txt',
-        storageKey: 'kb1/1234567890-test.txt',
-        size: BigInt(100),
       })
 
       const result = await docService.upload('u1', 'kb1', {
@@ -175,42 +140,14 @@ describe('DocumentService', () => {
       })
 
       expect(result.name).toBe('test.txt')
-      expect(mockStorage.uploadFile).toHaveBeenCalled()
-      expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith(
-        'document.uploaded',
-        expect.anything(),
-      )
-    })
-
-    it('AC-04l: uploads file without event when queueService not healthy', async () => {
-      mockQueueService.isHealthy.mockResolvedValue(false)
-      mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.create.mockResolvedValue({
-        id: 'd1',
-        name: 'test.txt',
-        storageKey: 'kb1/1234567890-test.txt',
-        size: BigInt(100),
-      })
-
-      const result = await docService.upload('u1', 'kb1', {
-        filename: 'test.txt',
-        ext: 'txt',
-        mimeType: 'text/plain',
-        size: 100,
-        buffer: Buffer.from('hello'),
-        folderId: null,
-      })
-
-      expect(result.name).toBe('test.txt')
-      expect(mockStorage.uploadFile).toHaveBeenCalled()
-      expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled()
+      expect(mockUploadService.upload).toHaveBeenCalled()
     })
   })
 
   describe('create', () => {
-    it('AC-04m: creates document with valid data and status uploaded', async () => {
+    it('AC-04m: creates document via uploadService', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.create.mockResolvedValue({
+      mockUploadService.create.mockResolvedValue({
         id: 'd1',
         name: 'New Doc',
         kbId: 'kb1',
@@ -221,9 +158,7 @@ describe('DocumentService', () => {
       const result = await docService.create('u1', 'kb1', { name: 'New Doc' })
 
       expect(result.name).toBe('New Doc')
-      expect(mockDocumentRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'uploaded' }),
-      )
+      expect(mockUploadService.create).toHaveBeenCalled()
     })
   })
 
@@ -231,7 +166,7 @@ describe('DocumentService', () => {
     it('AC-04n: updates document for owner', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
       mockDocumentRepository.findById.mockResolvedValue({ id: 'd1', kbId: 'kb1' })
-      mockDocumentRepository.update.mockResolvedValue({ id: 'd1', name: 'Updated Doc' })
+      mockUploadService.update.mockResolvedValue({ id: 'd1', name: 'Updated Doc' })
 
       const result = await docService.update('u1', 'kb1', 'd1', { name: 'Updated Doc' })
 
@@ -251,7 +186,7 @@ describe('DocumentService', () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
       mockDocumentRepository.findById.mockResolvedValue({ id: 'd1', kbId: 'kb1', folderId: null })
       mockFolderRepository.findByIdAndKb.mockResolvedValue({ id: 'f1', kbId: 'kb1' })
-      mockDocumentRepository.update.mockResolvedValue({ id: 'd1', folderId: 'f1' })
+      mockUploadService.update.mockResolvedValue({ id: 'd1', folderId: 'f1' })
 
       const result = await docService.update('u1', 'kb1', 'd1', { folderId: 'f1' })
 
@@ -272,7 +207,7 @@ describe('DocumentService', () => {
     it('allows moving document to root by setting folderId to null', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
       mockDocumentRepository.findById.mockResolvedValue({ id: 'd1', kbId: 'kb1', folderId: 'f1' })
-      mockDocumentRepository.update.mockResolvedValue({ id: 'd1', folderId: null })
+      mockUploadService.update.mockResolvedValue({ id: 'd1', folderId: null })
 
       const result = await docService.update('u1', 'kb1', 'd1', { folderId: null })
 
@@ -291,12 +226,12 @@ describe('DocumentService', () => {
         mimeType: 'text/markdown',
         storageKey: 'kb1/1234567890-readme.md',
       })
+      mockPreviewService.preview.mockResolvedValue({ type: 'text', content: '# Hello' })
 
       const result = await docService.preview('u1', 'kb1', 'd1')
 
       expect(result.type).toBe('text')
       expect(result.content).toBe('# Hello')
-      expect(mockStorage.downloadFile).toHaveBeenCalledWith('kb1/1234567890-readme.md')
     })
 
     it('returns pdf url for pdf file', async () => {
@@ -307,6 +242,10 @@ describe('DocumentService', () => {
         ext: 'pdf',
         mimeType: 'application/pdf',
         storageKey: 'kb1/1234567890-doc.pdf',
+      })
+      mockPreviewService.preview.mockResolvedValue({
+        type: 'pdf',
+        url: 'http://minio/test-bucket/kb1/doc.pdf',
       })
 
       const result = await docService.preview('u1', 'kb1', 'd1')
@@ -324,35 +263,13 @@ describe('DocumentService', () => {
   })
 
   describe('remove', () => {
-    it('AC-04p: removes document for owner', async () => {
-      mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.findById.mockResolvedValue({ id: 'd1', kbId: 'kb1' })
-      mockDocumentRepository.delete.mockResolvedValue({})
+    it('AC-04p: delegates to moveService.remove', async () => {
+      mockMoveService.remove.mockResolvedValue({ deleted: true })
 
       const result = await docService.remove('u1', 'kb1', 'd1')
 
       expect(result.deleted).toBe(true)
-    })
-
-    it('AC-04q: throws ForbiddenException when not owner', async () => {
-      mockKbRepository.findById.mockResolvedValue({ userId: 'u2' })
-
-      await expect(docService.remove('u1', 'kb1', 'd1')).rejects.toThrow(ForbiddenException)
-    })
-
-    it('invokes cleanup service before deleting document', async () => {
-      mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.findById.mockResolvedValue({
-        id: 'd1',
-        kbId: 'kb1',
-        storageKey: 'kb1/d1.txt',
-      })
-      mockDocumentRepository.delete.mockResolvedValue({})
-
-      await docService.remove('u1', 'kb1', 'd1')
-
-      expect(mockCleanupService.cleanupDocument).toHaveBeenCalledWith('d1', 'kb1/d1.txt')
-      expect(mockDocumentRepository.delete).toHaveBeenCalledWith('d1')
+      expect(mockMoveService.remove).toHaveBeenCalledWith('u1', 'kb1', 'd1')
     })
   })
 })

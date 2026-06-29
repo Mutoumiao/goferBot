@@ -26,6 +26,11 @@ export class IndexingWorker {
     const doc = await this.prisma.document.findUnique({ where: { id: documentId } })
     if (!doc) throw new Error(`Document not found: ${documentId}`)
 
+    const kb = doc.kbId
+      ? await this.prisma.knowledgeBase.findUnique({ where: { id: doc.kbId } })
+      : null
+    const ownerUserId = kb?.userId
+
     const buffer = await this.storage.downloadFile(doc.storageKey)
     const mimeType = doc.mimeType ?? 'text/plain'
 
@@ -59,6 +64,8 @@ export class IndexingWorker {
           documentTitle: parsed.title,
           // 选择第一个顶层 section 的 heading 作为章节路径（可后续升级为完整路径）
           sectionPath: this.resolveSectionPath(parsed),
+          userId: ownerUserId,
+          allowedUserIds: ownerUserId ? [ownerUserId] : undefined,
         },
       )
 

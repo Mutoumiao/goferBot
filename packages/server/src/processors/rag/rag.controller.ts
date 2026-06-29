@@ -16,6 +16,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
+import { PrismaService } from '../database/prisma.service.js'
 import { RagIndexDto, RagQueryDto, RagRetrieveDto } from './dto/rag.dto.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
 import { LlamaIndexRagService } from './llamaindex-rag.service.js'
@@ -29,13 +30,27 @@ export class RagController {
     private readonly ragService: LlamaIndexRagService,
     private readonly esService: ElasticsearchService,
     private readonly sseHelper: SseResponseHelper,
+    private readonly prisma: PrismaService,
   ) {}
+
+  private async resolveKbIds(userId: string, kbIds?: string[]): Promise<string[]> {
+    if (kbIds && kbIds.length > 0) return kbIds
+    const owned = await this.prisma.knowledgeBase.findMany({
+      where: { userId },
+      select: { id: true },
+    })
+    return owned.map((kb) => kb.id)
+  }
 
   @Post('retrieve')
   @HttpCode(200)
   async retrieve(@Body() dto: RagRetrieveDto, @CurrentUser('id') userId: string) {
+    const resolvedKbIds = await this.resolveKbIds(userId, dto.kbIds)
+    if (resolvedKbIds.length === 0) {
+      return { chunks: [], total: 0 }
+    }
     const chunks = await this.ragService.retrieve(dto.query, {
-      kbIds: dto.kbIds,
+      kbIds: resolvedKbIds,
       documentIds: dto.documentIds,
       topK: dto.topK,
       candidateK: dto.candidateK,
@@ -55,8 +70,12 @@ export class RagController {
   @Post('query')
   @HttpCode(200)
   async query(@Body() dto: RagQueryDto, @CurrentUser('id') userId: string) {
+    const resolvedKbIds = await this.resolveKbIds(userId, dto.kbIds)
+    if (resolvedKbIds.length === 0) {
+      return { answer: '', grounding: [] }
+    }
     const result = await this.ragService.query(dto.query, {
-      kbIds: dto.kbIds,
+      kbIds: resolvedKbIds,
       documentIds: dto.documentIds,
       topK: dto.topK,
       candidateK: dto.candidateK,
@@ -84,8 +103,14 @@ export class RagController {
     this.sseHelper.init(req, reply)
 
     try {
+      const resolvedKbIds = await this.resolveKbIds(userId, dto.kbIds)
+      if (resolvedKbIds.length === 0) {
+        this.sseHelper.write({ event: 'message', data: { answer: '', done: true } })
+        this.sseHelper.end()
+        return
+      }
       for await (const frame of this.ragService.streamQuery(dto.query, {
-        kbIds: dto.kbIds,
+        kbIds: resolvedKbIds,
         documentIds: dto.documentIds,
         topK: dto.topK,
         candidateK: dto.candidateK,

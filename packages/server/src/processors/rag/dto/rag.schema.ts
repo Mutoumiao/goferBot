@@ -76,7 +76,7 @@ export const retrievalModeSchema = z.enum(['vector', 'bm25', 'hybrid']).optional
 
 export const ragRetrieveSchema = z.object({
   query: z.string().min(1, 'query 不能为空').max(2000, 'query 长度不能超过 2000'),
-  kbIds: z.array(z.string().uuid()).optional(),
+  kbIds: z.array(z.string().uuid()).min(1, 'kbIds 不能为空').optional(),
   documentIds: z.array(z.string().uuid()).optional(),
   topK: z.number().int().min(1).max(50).optional(),
   candidateK: z.number().int().min(5).max(500).optional(),

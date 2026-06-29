@@ -1,6 +1,7 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SseResponseHelper } from '@/common/helpers/sse-response.helper.js'
+import { PrismaService } from '@/processors/database/prisma.service.js'
 import { RagController } from '@/processors/rag/rag.controller.js'
 
 /**
@@ -29,16 +30,24 @@ class MockEsService {
   checkIkPlugin = vi.fn().mockResolvedValue(true)
 }
 
+class MockPrismaService {
+  knowledgeBase = {
+    findMany: vi.fn().mockResolvedValue([]),
+  }
+}
+
 describe('RagController — cross-tenant authorization', () => {
   let controller: RagController
   let ragService: MockRagService
   let esService: MockEsService
+  let prismaService: MockPrismaService
   let sseHelper: SseResponseHelper
 
   beforeEach(() => {
     vi.clearAllMocks()
     ragService = new MockRagService()
     esService = new MockEsService()
+    prismaService = new MockPrismaService()
     sseHelper = {
       init: vi.fn(),
       write: vi.fn(),
@@ -46,7 +55,12 @@ describe('RagController — cross-tenant authorization', () => {
       end: vi.fn(),
     } as unknown as SseResponseHelper
 
-    controller = new RagController(ragService as any, esService as any, sseHelper)
+    controller = new RagController(
+      ragService as any,
+      esService as any,
+      sseHelper,
+      prismaService as unknown as PrismaService,
+    )
   })
 
   describe('POST /rag/index', () => {
@@ -153,12 +167,13 @@ describe('RagController — cross-tenant authorization', () => {
   describe('POST /rag/query — cross-tenant rejection surface', () => {
     it('forwards userId to service.query where ACL pre-filtering is applied', async () => {
       ragService.query.mockResolvedValueOnce({ answer: 'ok', grounding: [] })
-      const dto = { query: 'hello' }
+      const dto = { query: 'hello', kbIds: ['kb-1'] }
       await controller.query(dto as any, 'user-1')
       expect(ragService.query).toHaveBeenCalledWith(
         'hello',
         expect.objectContaining({
           userId: 'user-1',
+          kbIds: ['kb-1'],
         }),
       )
     })
@@ -167,9 +182,9 @@ describe('RagController — cross-tenant authorization', () => {
       // The service layer is responsible for ACL pre-filtering; here we verify
       // the controller does NOT mask a ForbiddenException bubbled up from it.
       ragService.query.mockRejectedValueOnce(new UnauthorizedException('forbidden'))
-      await expect(controller.query({ query: 'secret' } as any, 'user-2')).rejects.toThrow(
-        UnauthorizedException,
-      )
+      await expect(
+        controller.query({ query: 'secret', kbIds: ['kb-2'] } as any, 'user-2'),
+      ).rejects.toThrow(UnauthorizedException)
     })
   })
 
@@ -184,7 +199,7 @@ describe('RagController — cross-tenant authorization', () => {
       const req: any = {}
       const reply: any = {}
       await expect(
-        controller.stream({ query: 'secret' } as any, req, reply, 'user-2'),
+        controller.stream({ query: 'secret', kbIds: ['kb-2'] } as any, req, reply, 'user-2'),
       ).resolves.toBeUndefined()
       expect(sseHelper.writeError).toHaveBeenCalledWith('服务暂时不可用，请稍后重试')
       expect(sseHelper.end).toHaveBeenCalledTimes(1)

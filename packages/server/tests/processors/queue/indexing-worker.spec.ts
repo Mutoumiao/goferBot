@@ -15,6 +15,9 @@ describe('IndexingWorker', () => {
         findUnique: vi.fn(),
         update: vi.fn().mockResolvedValue({}),
       },
+      knowledgeBase: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
     }
     mockStorage = {
       downloadFile: vi.fn().mockResolvedValue(Buffer.from('test content')),
@@ -41,6 +44,7 @@ describe('IndexingWorker', () => {
       mimeType: 'text/plain',
       status: 'uploaded',
     })
+    mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ id: 'kb1', userId: 'user1' })
 
     await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
 
@@ -50,8 +54,13 @@ describe('IndexingWorker', () => {
       'test content',
       undefined,
       undefined,
-      expect.any(Object),
-      expect.any(Object),
+      expect.objectContaining({
+        source_mime: 'text/plain',
+      }),
+      expect.objectContaining({
+        userId: 'user1',
+        allowedUserIds: ['user1'],
+      }),
     )
     expect(mockPrisma.document.update).toHaveBeenCalledWith(
       expect.objectContaining({

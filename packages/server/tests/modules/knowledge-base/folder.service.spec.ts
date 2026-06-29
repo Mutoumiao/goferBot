@@ -4,112 +4,59 @@ import { FolderService } from '@/modules/knowledge-base/folder.service.js'
 
 describe('FolderService', () => {
   let folderService: FolderService
-  let mockPrisma: any
+  let mockTreeService: any
+  let mockMoveService: any
   let mockCleanup: any
-  let mockDocumentService: any
-  let mockTransactionManager: any
 
   beforeEach(() => {
-    mockPrisma = {
-      knowledgeBase: {
-        findUnique: vi.fn(),
-      },
-      folder: {
-        findMany: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        delete: vi.fn(),
-        findFirst: vi.fn(),
-        findUnique: vi.fn(),
-      },
-      $queryRaw: vi.fn(),
+    mockTreeService = {
+      list: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+      getBreadcrumbs: vi.fn(),
+      findAncestors: vi.fn(),
+      isDescendant: vi.fn(),
+      ensureOwnership: vi.fn().mockResolvedValue(undefined),
+    }
+    mockMoveService = {
+      move: vi.fn(),
+      copy: vi.fn(),
+      deleteFolder: vi.fn(),
     }
     mockCleanup = {
       cleanupFolder: vi.fn().mockResolvedValue(undefined),
     }
-    mockDocumentService = {
-      // empty mock for FolderService constructor
-    }
-    mockTransactionManager = {
-      run: vi.fn().mockImplementation(async (work: any) => work(mockPrisma)),
-    }
 
-    folderService = new FolderService(
-      mockPrisma,
-      mockCleanup,
-      mockDocumentService,
-      mockTransactionManager,
-    )
+    folderService = new FolderService(mockTreeService, mockMoveService, mockCleanup)
   })
 
   describe('list', () => {
-    it('lists folders under parent with default sort', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'Folder' }])
+    it('delegates to treeService.list', async () => {
+      mockTreeService.list.mockResolvedValue([{ id: 'f1', name: 'Folder' }])
 
       const result = await folderService.list('u1', 'kb1', 'p1')
 
       expect(result).toHaveLength(1)
-      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
-        where: { kbId: 'kb1', parentId: 'p1' },
-        orderBy: { createdAt: 'asc' },
-      })
-    })
-
-    it('treats empty string parentId as root (null)', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'Root Folder' }])
-
-      const result = await folderService.list('u1', 'kb1', '')
-
-      expect(result).toHaveLength(1)
-      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
-        where: { kbId: 'kb1', parentId: null },
-        orderBy: { createdAt: 'asc' },
-      })
-    })
-
-    it('sorts folders by requested field and order', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'A' }])
-
-      const result = await folderService.list('u1', 'kb1', 'p1', 'name', 'desc')
-
-      expect(result).toHaveLength(1)
-      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
-        where: { kbId: 'kb1', parentId: 'p1' },
-        orderBy: { name: 'desc' },
-      })
-    })
-
-    it('falls back to default sort when parameters are invalid', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findMany.mockResolvedValue([{ id: 'f1', name: 'A' }])
-
-      const result = await folderService.list('u1', 'kb1', 'p1', 'size', 'bad')
-
-      expect(result).toHaveLength(1)
-      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
-        where: { kbId: 'kb1', parentId: 'p1' },
-        orderBy: { createdAt: 'asc' },
-      })
+      expect(mockTreeService.list).toHaveBeenCalledWith('u1', 'kb1', 'p1', undefined, undefined)
     })
   })
 
   describe('create', () => {
-    it('creates folder with valid parent', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValue({ id: 'p1', kbId: 'kb1' })
-      mockPrisma.folder.create.mockResolvedValue({ id: 'f1', name: 'New Folder' })
+    it('delegates to treeService.create', async () => {
+      mockTreeService.create.mockResolvedValue({ id: 'f1', name: 'New Folder' })
 
       const result = await folderService.create('u1', 'kb1', { name: 'New Folder', parentId: 'p1' })
 
       expect(result.name).toBe('New Folder')
+      expect(mockTreeService.create).toHaveBeenCalledWith('u1', 'kb1', {
+        name: 'New Folder',
+        parentId: 'p1',
+      })
     })
 
     it('throws NotFoundException when parent folder not found', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValue(null)
+      mockTreeService.create.mockRejectedValue(new NotFoundException('父文件夹不存在'))
 
       await expect(
         folderService.create('u1', 'kb1', { name: 'New', parentId: 'p1' }),
@@ -118,10 +65,8 @@ describe('FolderService', () => {
   })
 
   describe('update', () => {
-    it('renames folder', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValue({ id: 'f1', kbId: 'kb1' })
-      mockPrisma.folder.update.mockResolvedValue({ id: 'f1', name: 'Renamed' })
+    it('delegates to treeService.update', async () => {
+      mockTreeService.update.mockResolvedValue({ id: 'f1', name: 'Renamed' })
 
       const result = await folderService.update('u1', 'kb1', 'f1', { name: 'Renamed' })
 
@@ -131,43 +76,28 @@ describe('FolderService', () => {
 
   describe('remove', () => {
     it('removes folder and cleans up', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValue({ id: 'f1', kbId: 'kb1' })
-      mockPrisma.folder.delete.mockResolvedValue({})
+      mockTreeService.remove.mockResolvedValue({ id: 'f1' })
+      mockMoveService.deleteFolder.mockResolvedValue({ id: 'f1', deleted: true })
 
       const result = await folderService.remove('u1', 'kb1', 'f1')
 
       expect(mockCleanup.cleanupFolder).toHaveBeenCalledWith('kb1', 'f1')
+      expect(mockMoveService.deleteFolder).toHaveBeenCalledWith('f1')
       expect(result.deleted).toBe(true)
     })
   })
 
   describe('getBreadcrumbs', () => {
-    it('returns empty array for root folder', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
+    it('delegates to treeService.getBreadcrumbs', async () => {
+      mockTreeService.getBreadcrumbs.mockResolvedValue([])
 
       const result = await folderService.getBreadcrumbs('u1', 'kb1')
 
       expect(result).toHaveLength(0)
     })
 
-    it('returns ancestors when folderId provided', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValueOnce({ id: 'c1', kbId: 'kb1', parentId: 'p1' })
-      mockPrisma.$queryRaw.mockResolvedValueOnce([
-        { id: 'c1', name: 'Child', parentId: 'p1' },
-        { id: 'p1', name: 'Parent', parentId: null },
-      ])
-
-      const result = await folderService.getBreadcrumbs('u1', 'kb1', 'c1')
-
-      expect(result).toHaveLength(2)
-      expect(result.map((f) => f.name)).toEqual(['Parent', 'Child'])
-    })
-
     it('throws NotFoundException when folder not in KB', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u1' })
-      mockPrisma.folder.findFirst.mockResolvedValue(null)
+      mockTreeService.getBreadcrumbs.mockRejectedValue(new NotFoundException('文件夹不存在'))
 
       await expect(folderService.getBreadcrumbs('u1', 'kb1', 'c1')).rejects.toThrow(
         NotFoundException,
@@ -175,7 +105,7 @@ describe('FolderService', () => {
     })
 
     it('throws ForbiddenException when not owner', async () => {
-      mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ userId: 'u2' })
+      mockTreeService.getBreadcrumbs.mockRejectedValue(new ForbiddenException('无权访问'))
 
       await expect(folderService.getBreadcrumbs('u1', 'kb1', 'c1')).rejects.toThrow(
         ForbiddenException,
@@ -184,36 +114,28 @@ describe('FolderService', () => {
   })
 
   describe('findAncestors', () => {
-    it('returns ancestor chain', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([
-        { id: 'c1', name: 'Child', parentId: 'p1' },
-        { id: 'p1', name: 'Parent', parentId: null },
+    it('delegates to treeService.findAncestors after ownership check', async () => {
+      mockTreeService.findAncestors.mockResolvedValue([
+        { id: 'p1', name: 'Parent' },
+        { id: 'c1', name: 'Child' },
       ])
 
-      const result = await folderService.findAncestors('c1')
+      const result = await folderService.findAncestors('u1', 'kb1', 'c1')
 
+      expect(mockTreeService.ensureOwnership).toHaveBeenCalledWith('u1', 'kb1')
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('p1')
-      expect(result[1].id).toBe('c1')
     })
   })
 
   describe('isDescendant', () => {
-    it('returns true for descendant', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ found: 1 }])
+    it('delegates to treeService.isDescendant after ownership check', async () => {
+      mockTreeService.isDescendant.mockResolvedValue(true)
 
-      const result = await folderService.isDescendant('p1', 'c1')
+      const result = await folderService.isDescendant('u1', 'kb1', 'p1', 'c1')
 
+      expect(mockTreeService.ensureOwnership).toHaveBeenCalledWith('u1', 'kb1')
       expect(result).toBe(true)
-      expect(mockPrisma.$queryRaw).toHaveBeenCalled()
-    })
-
-    it('returns false for unrelated folder', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([])
-
-      const result = await folderService.isDescendant('p1', 'c1')
-
-      expect(result).toBe(false)
     })
   })
 })

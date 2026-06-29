@@ -14,6 +14,10 @@ import { LlamaIndexEmbeddingService } from './llamaindex-embedding.service.js'
 import { LlamaIndexRagService } from './llamaindex-rag.service.js'
 import { QueryUnderstandingService } from './query-understanding.service.js'
 import { RagController } from './rag.controller.js'
+import { RagContextService } from './rag-context.service.js'
+import { RagGenerationService } from './rag-generation.service.js'
+import { RagIndexingService } from './rag-indexing.service.js'
+import { RagRetrievalService } from './rag-retrieval.service.js'
 import { RouterService } from './router.service.js'
 
 @Module({
@@ -29,6 +33,10 @@ import { RouterService } from './router.service.js'
     GroundingService,
     GuardrailService,
     RouterService,
+    RagRetrievalService,
+    RagContextService,
+    RagGenerationService,
+    RagIndexingService,
     LlamaIndexRagService,
     QueryUnderstandingService,
     SseResponseHelper,
@@ -43,6 +51,10 @@ import { RouterService } from './router.service.js'
     GroundingService,
     GuardrailService,
     RouterService,
+    RagRetrievalService,
+    RagContextService,
+    RagGenerationService,
+    RagIndexingService,
     LlamaIndexRagService,
     QueryUnderstandingService,
   ],

@@ -1,37 +1,19 @@
-import { randomUUID } from 'node:crypto'
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common'
-import { EventEmitter2 } from '@nestjs/event-emitter'
-import type { Prisma } from '@prisma/client'
-import { QueueService } from '../../processors/queue/queue.service.js'
-import { StorageService } from '../../processors/storage/storage.service.js'
+import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
+import { DocumentMoveService } from './document-move.service.js'
+import { DocumentPreviewService } from './document-preview.service.js'
+import type { UploadFilePayload } from './document-upload.service.js'
+import { DocumentUploadService } from './document-upload.service.js'
 import type { CopyDocumentDto } from './dto/copy-document.dto.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { MoveDocumentDto } from './dto/move-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
-import { DocumentUploadedEvent } from './events/document-uploaded.event.js'
-import { KbCleanupService } from './kb-cleanup.service.js'
 import type { DocUpdateData } from './repositories/document.repository.js'
 import { DocumentRepository } from './repositories/document.repository.js'
 import { FolderRepository } from './repositories/folder.repository.js'
 import { KbRepository } from './repositories/kb.repository.js'
 
-const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024
-
-export interface UploadFilePayload {
-  filename: string
-  ext: string
-  mimeType: string
-  size: number
-  buffer: Buffer
-  folderId: string | null
-}
+export type { UploadFilePayload }
 
 type SortOrder = 'asc' | 'desc'
 type DocumentSortBy = 'name' | 'createdAt' | 'updatedAt' | 'size' | 'type'
@@ -57,16 +39,14 @@ function normalizeFolderId(folderId?: string | null): string | null | undefined 
 
 @Injectable()
 export class DocumentService {
-  private readonly logger = new Logger(DocumentService.name)
-
   constructor(
     private readonly documentRepository: DocumentRepository,
     private readonly folderRepository: FolderRepository,
     private readonly kbRepository: KbRepository,
-    private readonly storage: StorageService,
-    private readonly cleanupService: KbCleanupService,
-    private readonly eventEmitter: EventEmitter2,
-    @Optional() private readonly queueService?: QueueService,
+    private readonly uploadService: DocumentUploadService,
+    private readonly moveService: DocumentMoveService,
+    private readonly previewService: DocumentPreviewService,
+    @Optional() private readonly queueService?: { isHealthy: () => Promise<boolean> },
   ) {}
 
   async list(
@@ -106,42 +86,11 @@ export class DocumentService {
   }
 
   async upload(userId: string, kbId: string, payload: UploadFilePayload) {
-    await this.ensureOwnership(userId, kbId)
-
-    const storageKey = `${kbId}/${randomUUID()}-${payload.filename}`
-    await this.storage.uploadFile(payload.buffer, storageKey, payload.mimeType)
-
-    const doc = await this.documentRepository.create({
-      kbId,
-      folderId: payload.folderId,
-      name: payload.filename,
-      ext: payload.ext,
-      mimeType: payload.mimeType,
-      size: BigInt(payload.size),
-      storageKey,
-      status: 'uploaded',
-    })
-
-    const queueHealthy = await this.queueService?.isHealthy()
-    if (queueHealthy) {
-      await this.eventEmitter.emitAsync(
-        DocumentUploadedEvent.eventType,
-        new DocumentUploadedEvent(doc.id, kbId, userId),
-      )
-    }
-
-    return { ...doc, size: doc.size !== null ? Number(doc.size) : null }
+    return this.uploadService.upload(userId, kbId, payload)
   }
 
   async create(userId: string, kbId: string, dto: CreateDocumentDto) {
-    await this.ensureOwnership(userId, kbId)
-    return this.documentRepository.create({
-      kbId,
-      folderId: dto.folderId ?? null,
-      name: dto.name,
-      storageKey: `temp-${randomUUID()}`,
-      status: 'uploaded',
-    })
+    return this.uploadService.create(userId, kbId, dto)
   }
 
   async update(userId: string, kbId: string, docId: string, dto: UpdateDocumentDto) {
@@ -159,270 +108,37 @@ export class DocumentService {
       } else if (targetFolderId) {
         const folder = await this.folderRepository.findByIdAndKb(targetFolderId, kbId)
         if (!folder) {
-          throw new NotFoundException({
-            code: 'NOT_FOUND',
-            message: '目标文件夹不存在',
-          })
+          throw new NotFoundException({ code: 'NOT_FOUND', message: '目标文件夹不存在' })
         }
         patch.folderId = targetFolderId
       }
     }
 
-    return this.documentRepository.update(docId, patch)
+    return this.uploadService.update(userId, kbId, docId, patch)
   }
 
   async move(userId: string, kbId: string, docId: string, dto: MoveDocumentDto) {
-    await this.ensureOwnership(userId, kbId)
-
-    const doc = await this.documentRepository.findById(docId)
-    if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
-
-    const targetKbId = dto.targetKbId ?? kbId
-    if (targetKbId !== kbId) {
-      await this.ensureOwnership(userId, targetKbId)
-    }
-
-    const targetFolderId = dto.targetFolderId ?? null
-    if (targetFolderId !== null) {
-      const folder = await this.folderRepository.findByIdAndKb(targetFolderId, targetKbId)
-      if (!folder) {
-        throw new NotFoundException({
-          code: 'NOT_FOUND',
-          message: '目标文件夹不存在',
-        })
-      }
-    }
-
-    if (targetKbId === kbId) {
-      return this.moveWithinKb(docId, targetFolderId)
-    }
-    return this.moveCrossKb(doc, targetKbId, targetFolderId)
-  }
-
-  private async moveWithinKb(docId: string, targetFolderId: string | null) {
-    const updated = await this.documentRepository.update(docId, { folderId: targetFolderId })
-    return { ...updated }
-  }
-
-  private async moveCrossKb(
-    doc: {
-      id: string
-      size: bigint | number | null
-      storageKey: string | null
-      name: string
-      mimeType: string | null
-    },
-    targetKbId: string,
-    targetFolderId: string | null,
-  ) {
-    const docId = doc.id
-    this.assertCrossKbSize(doc)
-
-    const { newStorageKey, oldStorageKey } = await this.reuploadForCrossKb(doc, targetKbId)
-
-    try {
-      await this.documentRepository.deleteChunksByDocumentId(docId)
-    } catch (e) {
-      this.logger.warn(
-        `文档 ${docId} 跨知识库移动时删除旧 chunk 记录失败`,
-        e instanceof Error ? e.stack : undefined,
-      )
-    }
-
-    const updated = await this.documentRepository.update(docId, {
-      kbId: targetKbId,
-      folderId: targetFolderId,
-      storageKey: newStorageKey,
-      status: 'uploaded',
-    })
-
-    await this.cleanupOldStorageAfterMove(docId, oldStorageKey)
-    await this.enqueueReindex(docId)
-
-    return { ...updated }
-  }
-
-  private assertCrossKbSize(doc: { size: bigint | number | null }) {
-    const size = doc.size !== null ? Number(doc.size) : 0
-    if (size > MAX_CROSS_KB_FILE_SIZE) {
-      throw new BadRequestException({
-        code: 'PAYLOAD_TOO_LARGE',
-        message: '跨知识库移动文件大小不能超过 50MB',
-      })
-    }
-  }
-
-  private async reuploadForCrossKb(
-    doc: { storageKey: string | null; name: string; mimeType: string | null },
-    targetKbId: string,
-  ) {
-    if (!doc.storageKey) {
-      throw new BadRequestException({
-        code: 'BAD_REQUEST',
-        message: '文档无存储对象，无法跨知识库移动',
-      })
-    }
-
-    const MAX_IN_MEMORY_SIZE = 5 * 1024 * 1024
-    const buffer = await this.storage.downloadFile(doc.storageKey)
-    if (buffer.length > MAX_IN_MEMORY_SIZE) {
-      this.logger.warn(
-        `跨知识库移动大文件（${buffer.length} bytes），可能占用较多内存。doc=${doc.name}`,
-      )
-    }
-    const newStorageKey = `${targetKbId}/${randomUUID()}-${doc.name}`
-    await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
-
-    return { newStorageKey, oldStorageKey: doc.storageKey }
-  }
-
-  private async cleanupOldStorageAfterMove(docId: string, oldStorageKey: string) {
-    try {
-      await this.cleanupService.cleanupDocument(docId, oldStorageKey)
-    } catch (e) {
-      this.logger.warn(
-        `文档 ${docId} 跨知识库移动后清理原存储/向量失败`,
-        e instanceof Error ? e.stack : undefined,
-      )
-    }
-  }
-
-  private async enqueueReindex(docId: string) {
-    const queueHealthy = await this.queueService?.isHealthy()
-    if (queueHealthy) {
-      await this.queueService?.addDocumentJob(docId, 'index')
-    }
+    return this.moveService.move(userId, kbId, docId, dto, (id) =>
+      this.uploadService.enqueueReindex(id),
+    )
   }
 
   async copy(userId: string, kbId: string, docId: string, dto: CopyDocumentDto) {
-    await this.ensureOwnership(userId, kbId)
-
-    const doc = await this.documentRepository.findById(docId)
-    if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
-
-    const targetKbId = dto.targetKbId ?? kbId
-    if (targetKbId !== kbId) {
-      await this.ensureOwnership(userId, targetKbId)
-    }
-
-    const targetFolderId = dto.targetFolderId ?? null
-    if (targetFolderId !== null) {
-      const folder = await this.folderRepository.findByIdAndKb(targetFolderId, targetKbId)
-      if (!folder) {
-        throw new NotFoundException({
-          code: 'NOT_FOUND',
-          message: '目标文件夹不存在',
-        })
-      }
-    }
-
-    return this.copyDocument(doc, targetKbId, targetFolderId, targetKbId !== kbId)
-  }
-
-  private async copyDocument(
-    doc: {
-      id: string
-      size: bigint | number | null
-      storageKey: string | null
-      name: string
-      mimeType: string | null
-      ext: string | null
-    },
-    targetKbId: string,
-    targetFolderId: string | null,
-    isCrossKb: boolean,
-  ) {
-    if (isCrossKb) {
-      const size = doc.size !== null ? Number(doc.size) : 0
-      if (size > MAX_CROSS_KB_FILE_SIZE) {
-        throw new BadRequestException({
-          code: 'PAYLOAD_TOO_LARGE',
-          message: '跨知识库复制文件大小不能超过 50MB',
-        })
-      }
-    }
-
-    if (!doc.storageKey) {
-      throw new BadRequestException({
-        code: 'BAD_REQUEST',
-        message: '文档无存储对象，无法复制',
-      })
-    }
-
-    const buffer = await this.storage.downloadFile(doc.storageKey)
-    const newStorageKey = `${targetKbId}/${randomUUID()}-${doc.name}`
-    await this.storage.uploadFile(buffer, newStorageKey, doc.mimeType || 'application/octet-stream')
-
-    const copied = await this.documentRepository.create({
-      kbId: targetKbId,
-      folderId: targetFolderId,
-      name: doc.name,
-      ext: doc.ext,
-      mimeType: doc.mimeType,
-      size: doc.size !== null ? BigInt(doc.size) : null,
-      storageKey: newStorageKey,
-      status: 'uploaded',
-    })
-
-    const queueHealthy = await this.queueService?.isHealthy()
-    if (queueHealthy) {
-      await this.queueService?.addDocumentJob(copied.id, 'index')
-    }
-
-    return { ...copied }
+    return this.moveService.copy(userId, kbId, docId, dto, (id) =>
+      this.uploadService.enqueueReindex(id),
+    )
   }
 
   async remove(userId: string, kbId: string, docId: string) {
-    await this.ensureOwnership(userId, kbId)
-    const doc = await this.documentRepository.findById(docId)
-    if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
-
-    await this.cleanupService.cleanupDocument(doc.id, doc.storageKey)
-    await this.documentRepository.delete(docId)
-    return { id: docId, deleted: true }
+    return this.moveService.remove(userId, kbId, docId)
   }
 
   async preview(userId: string, kbId: string, docId: string) {
-    await this.ensureOwnership(userId, kbId)
-
     const doc = await this.documentRepository.findById(docId)
     if (!doc || doc.kbId !== kbId) {
       throw new NotFoundException({ code: 'NOT_FOUND', message: '文档不存在' })
     }
-
-    const textExts = new Set(['md', 'txt', 'html', 'csv', 'json'])
-    if (doc.ext && textExts.has(doc.ext.toLowerCase())) {
-      if (!doc.storageKey) {
-        throw new NotFoundException({ code: 'NOT_FOUND', message: '文档无存储对象' })
-      }
-      const buffer = await this.storage.downloadFile(doc.storageKey)
-      const MAX_PREVIEW_SIZE = 5 * 1024 * 1024
-      if (buffer.length > MAX_PREVIEW_SIZE) {
-        throw new BadRequestException({
-          code: 'PREVIEW_TOO_LARGE',
-          message: `预览文件超过 ${MAX_PREVIEW_SIZE / 1024 / 1024}MB 限制`,
-        })
-      }
-      return {
-        type: 'text',
-        mimeType: doc.mimeType || 'text/plain',
-        content: buffer.toString('utf-8'),
-      }
-    }
-
-    if (doc.ext === 'pdf') {
-      return {
-        type: 'pdf',
-        mimeType: 'application/pdf',
-        url: doc.storageKey ? this.storage.getUrl(doc.storageKey) : null,
-      }
-    }
-
-    return {
-      type: 'unsupported',
-      mimeType: doc.mimeType || 'application/octet-stream',
-      url: doc.storageKey ? this.storage.getUrl(doc.storageKey) : null,
-    }
+    return this.previewService.preview(userId, kbId, doc)
   }
 
   private async ensureOwnership(userId: string, kbId: string) {
