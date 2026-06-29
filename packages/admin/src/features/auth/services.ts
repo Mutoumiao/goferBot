@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { changePassword, getCurrentUser, login as loginApi, logout, refresh } from '@/api/auth'
+import { getCurrentUser, login as loginApi, logout, refresh } from '@/api/auth'
 import type { AdminUser } from '@/stores/auth'
 import { useAuthStore } from '@/stores/auth'
 import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from '@/utils/auth-token'
@@ -81,22 +81,6 @@ export async function logoutService(): Promise<void> {
     clearTokens()
     useAuthStore.getState().clearAuth()
     toast.success('已退出登录')
-  }
-}
-
-export async function changePasswordService(
-  oldPassword: string,
-  newPassword: string,
-): Promise<LoginResult> {
-  try {
-    await changePassword({ oldPassword, newPassword }).send()
-    toast.success('密码已修改，请重新登录')
-    await logoutService()
-    return { success: true }
-  } catch (err) {
-    const msg = mapErrorMessage(err)
-    toast.error(msg)
-    return { success: false, error: msg }
   }
 }
 

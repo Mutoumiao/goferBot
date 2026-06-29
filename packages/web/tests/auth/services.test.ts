@@ -297,9 +297,11 @@ describe('auth services', () => {
       expect(result.error).toBe('该邮箱已被注册')
     })
 
-    it('maps AUTH_FAIL to user-friendly message', async () => {
+    it('maps AUTH_INVALID_CREDENTIALS to user-friendly message', async () => {
       vi.mocked(login).mockReturnValue({
-        send: vi.fn().mockRejectedValue({ code: 'AUTH_FAIL', message: 'Invalid credentials' }),
+        send: vi
+          .fn()
+          .mockRejectedValue({ code: 'AUTH_INVALID_CREDENTIALS', message: 'Invalid credentials' }),
       } as any)
 
       const result = await loginUser('user@example.com', 'password', false)

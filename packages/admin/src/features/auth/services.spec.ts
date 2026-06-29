@@ -1,7 +1,6 @@
 import { toast } from 'sonner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  changePasswordService,
   fetchCurrentUser,
   getRememberedEmail,
   hasRefreshToken,
@@ -15,7 +14,6 @@ const {
   mockLogin,
   mockRefresh,
   mockGetCurrentUser,
-  mockChangePassword,
   mockSetAccessToken,
   mockSetRefreshToken,
   mockClearTokens,
@@ -28,7 +26,6 @@ const {
   mockLogin: vi.fn(),
   mockRefresh: vi.fn(),
   mockGetCurrentUser: vi.fn(),
-  mockChangePassword: vi.fn(),
   mockSetAccessToken: vi.fn(),
   mockSetRefreshToken: vi.fn(),
   mockClearTokens: vi.fn(),
@@ -44,7 +41,6 @@ vi.mock('@/api/auth', () => ({
   logout: (d: unknown) => ({ send: () => mockLogout(d) }),
   refresh: () => ({ send: mockRefresh }),
   getCurrentUser: () => ({ send: mockGetCurrentUser }),
-  changePassword: (d: unknown) => ({ send: () => mockChangePassword(d) }),
 }))
 
 vi.mock('@/stores/auth', () => ({
@@ -119,13 +115,6 @@ describe('auth services', () => {
     await logoutService()
     expect(mockClearTokens).toHaveBeenCalled()
     expect(mockClearAuth).toHaveBeenCalled()
-    expect(toast.success).toHaveBeenCalled()
-  })
-
-  it('changePasswordService succeeds', async () => {
-    mockChangePassword.mockResolvedValueOnce(undefined)
-    const r = await changePasswordService('o', 'n')
-    expect(r.success).toBe(true)
     expect(toast.success).toHaveBeenCalled()
   })
 

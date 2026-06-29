@@ -24,7 +24,7 @@ function mapAuthError(err: unknown): string {
     switch (code) {
       case 'USER_EXISTS':
         return '该邮箱已被注册'
-      case 'AUTH_FAIL':
+      case 'AUTH_INVALID_CREDENTIALS':
         return '邮箱或密码错误'
       case 'ACCOUNT_DISABLED':
         return '账号已被禁用'
@@ -59,7 +59,7 @@ export async function loginUser(
     const encryptedPassword = await encryptPassword(password)
     const res = await login({ email, encryptedPassword }).send()
     const token = res.accessToken
-    const refreshToken = (res as unknown as { refreshToken?: string }).refreshToken
+    const refreshToken = res.refreshToken
     const user = res.user
     if (token && user) {
       setAccessToken(token)
@@ -97,7 +97,7 @@ export async function registerUser(
     const encryptedPassword = await encryptPassword(password)
     const res = await register({ email, encryptedPassword, name }).send()
     const token = res.accessToken
-    const refreshToken = (res as unknown as { refreshToken?: string }).refreshToken
+    const refreshToken = res.refreshToken
     const user = res.user
     if (token && user) {
       setAccessToken(token)
@@ -125,7 +125,7 @@ export async function refreshAuth(): Promise<boolean> {
     }
     const res = await refresh({ refreshToken }).send()
     const token = res.accessToken
-    const newRefreshToken = (res as unknown as { refreshToken?: string }).refreshToken
+    const newRefreshToken = res.refreshToken
     if (token) {
       setAccessToken(token)
       if (newRefreshToken) {

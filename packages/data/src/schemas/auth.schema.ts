@@ -35,6 +35,8 @@ export const userSchema = z.object({
 
 export const authResponseSchema = z.object({
   accessToken: z.string(),
+  refreshToken: z.string().optional(),
+  sessionId: z.string().optional(),
   user: userSchema,
 })
 

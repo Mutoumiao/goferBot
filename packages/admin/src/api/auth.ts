@@ -23,9 +23,3 @@ export const getCurrentUser = () => alovaInstance.Get<LoginResponse['user']>('/a
 
 export const refresh = (data: { refreshToken: string }) =>
   alovaInstance.Post<LoginResponse>('/auth/admin/refresh', data)
-
-export const changePassword = (data: { oldPassword: string; newPassword: string }) =>
-  alovaInstance.Post<{ success: boolean }>('/auth/change-password', data)
-
-export const verifyPassword = (data: { password: string }) =>
-  alovaInstance.Post<{ success: boolean }>('/auth/verify-password', data)

@@ -1,27 +1,3 @@
-import { toast } from 'sonner'
-import { changePassword as changePasswordApi } from '@/api/auth'
-import { mapErrorMessage } from '@/utils/error-mapper'
-
-export interface ChangePasswordResult {
-  success: boolean
-  error?: string
-}
-
-export async function changePasswordService(
-  oldPassword: string,
-  newPassword: string,
-): Promise<ChangePasswordResult> {
-  try {
-    await changePasswordApi({ oldPassword, newPassword }).send()
-    toast.success('密码已修改，请重新登录')
-    return { success: true }
-  } catch (err) {
-    const msg = mapErrorMessage(err)
-    toast.error(msg)
-    return { success: false, error: msg }
-  }
-}
-
 export interface LoginHistoryItem {
   id: string
   ip: string

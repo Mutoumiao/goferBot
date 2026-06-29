@@ -1,10 +1,10 @@
 import type { Job } from 'bullmq'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RequestContextStorage } from '../../src/common/request-context-storage.js'
-import { ChatFinalizeProcessor } from '../../src/processors/chat/chat-finalize.processor.js'
 import type { ConversationService } from '../../src/modules/chat/conversation.service.js'
 import type { LlmProviderFactory } from '../../src/modules/chat/llm/llm-provider.factory.js'
 import type { ModelRegistryService } from '../../src/modules/chat/model-registry.service.js'
+import { ChatFinalizeProcessor } from '../../src/processors/chat/chat-finalize.processor.js'
 import type { ChatFinalizeJobData } from '../../src/queue/index.js'
 
 function createMockJob(overrides: Partial<ChatFinalizeJobData> = {}): Job<ChatFinalizeJobData> {
@@ -37,7 +37,11 @@ describe('ChatFinalizeProcessor', () => {
       generateTitle: vi.fn().mockResolvedValue(undefined),
     }
     mockModelRegistry = {
-      lookup: vi.fn().mockReturnValue({ providerKey: 'openai', providerName: 'OpenAI', baseUrl: 'https://api.openai.com' }),
+      lookup: vi.fn().mockReturnValue({
+        providerKey: 'openai',
+        providerName: 'OpenAI',
+        baseUrl: 'https://api.openai.com',
+      }),
     }
     mockLlmProviderFactory = {
       create: vi.fn().mockReturnValue({
@@ -112,7 +116,9 @@ describe('ChatFinalizeProcessor', () => {
     })
 
     it('re-throws error when saveAssistantMessage fails', async () => {
-      mockConversationService.saveAssistantMessage = vi.fn().mockRejectedValue(new Error('DB write failed'))
+      mockConversationService.saveAssistantMessage = vi
+        .fn()
+        .mockRejectedValue(new Error('DB write failed'))
       processor = new ChatFinalizeProcessor(
         mockConversationService as ConversationService,
         mockModelRegistry as ModelRegistryService,

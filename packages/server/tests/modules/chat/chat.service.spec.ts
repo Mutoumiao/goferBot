@@ -318,7 +318,7 @@ describe('ChatService', () => {
     })
 
     it('warns and skips retrieval when no retriever registered', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { })
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       service = new ChatService(
         settingsService as unknown as SettingsService,
         modelProviderService as unknown as ModelProviderService,
