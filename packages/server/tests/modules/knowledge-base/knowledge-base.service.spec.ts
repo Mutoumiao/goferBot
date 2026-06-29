@@ -7,7 +7,8 @@ describe('KnowledgeBaseService', () => {
   let mockKbRepository: any
   let mockFolderRepository: any
   let mockDocumentRepository: any
-  let mockCleanup: any
+  let mockEventEmitter: any
+  let mockCacheService: any
 
   beforeEach(() => {
     mockKbRepository = {
@@ -25,15 +26,24 @@ describe('KnowledgeBaseService', () => {
     mockDocumentRepository = {
       searchByKbName: vi.fn(),
     }
-    mockCleanup = {
-      cleanupKnowledgeBase: vi.fn().mockResolvedValue(undefined),
+
+    mockEventEmitter = {
+      emitAsync: vi.fn().mockResolvedValue(undefined),
+    }
+
+    mockCacheService = {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue(undefined),
+      del: vi.fn().mockResolvedValue(undefined),
+      delByPrefix: vi.fn().mockResolvedValue(undefined),
     }
 
     kbService = new KnowledgeBaseService(
       mockKbRepository,
       mockFolderRepository,
       mockDocumentRepository,
-      mockCleanup,
+      mockEventEmitter as any,
+      mockCacheService as any,
     )
   })
 
@@ -165,13 +175,17 @@ describe('KnowledgeBaseService', () => {
   })
 
   describe('remove', () => {
-    it('AC-04f: removes knowledge base for owner and cleans up data', async () => {
+    it('AC-04f: removes knowledge base for owner and emits event', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
       mockKbRepository.delete.mockResolvedValue({})
 
       const result = await kbService.remove('u1', 'kb1')
 
-      expect(mockCleanup.cleanupKnowledgeBase).toHaveBeenCalledWith('kb1')
+      expect(mockKbRepository.delete).toHaveBeenCalledWith('kb1')
+      expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith(
+        'knowledge_base.deleted',
+        expect.anything(),
+      )
       expect(result.deleted).toBe(true)
     })
   })

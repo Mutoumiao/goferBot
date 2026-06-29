@@ -4,9 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { CacheService } from '../../shared/cache/cache.service.js'
 import type { CreateKbDto } from './dto/create-kb.dto.js'
 import type { UpdateKbDto } from './dto/update-kb.dto.js'
-import { KbCleanupService } from './kb-cleanup.service.js'
+import { KnowledgeBaseDeletedEvent } from './events/kb-deleted.event.js'
 import { DocumentRepository } from './repositories/document.repository.js'
 import { FolderRepository } from './repositories/folder.repository.js'
 import { KbRepository } from './repositories/kb.repository.js'
@@ -14,6 +16,8 @@ import { KbRepository } from './repositories/kb.repository.js'
 const MAX_SEARCH_QUERY_LENGTH = 100
 const MAX_SELECTOR_ITEMS = 100
 const MAX_SEARCH_RESULTS = 100
+const KB_LIST_CACHE_PREFIX = 'kb:list:'
+const KB_LIST_CACHE_TTL = 120
 
 @Injectable()
 export class KnowledgeBaseService {
@@ -21,16 +25,25 @@ export class KnowledgeBaseService {
     private readonly kbRepository: KbRepository,
     private readonly folderRepository: FolderRepository,
     private readonly documentRepository: DocumentRepository,
-    private readonly cleanupService: KbCleanupService,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly cacheService: CacheService,
   ) {}
 
   async list(userId: string, page: number, size: number) {
+    const cacheKey = `${KB_LIST_CACHE_PREFIX}${userId}:${page}:${size}`
+    const cached = await this.cacheService.get<{ items: Awaited<ReturnType<KbRepository['findManyByUserIdWithPagination']>>; total: number; page: number; size: number }>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const [items, total] = await Promise.all([
       this.kbRepository.findManyByUserIdWithPagination(userId, page, size),
       this.kbRepository.countByUserId(userId),
     ])
 
-    return { items, total, page, size }
+    const result = { items, total, page, size }
+    await this.cacheService.set(cacheKey, result, KB_LIST_CACHE_TTL)
+    return result
   }
 
   async listForSelector(userId: string) {
@@ -49,30 +62,38 @@ export class KnowledgeBaseService {
   }
 
   async create(userId: string, dto: CreateKbDto) {
-    return this.kbRepository.create({
+    const result = await this.kbRepository.create({
       userId,
       name: dto.name,
       description: dto.description ?? null,
       icon: dto.icon ?? null,
     })
+    await this.cacheService.delByPrefix(`${KB_LIST_CACHE_PREFIX}${userId}`)
+    return result
   }
 
   async update(userId: string, id: string, dto: UpdateKbDto) {
     await this.ensureOwnership(userId, id)
 
-    return this.kbRepository.update(id, {
+    const result = await this.kbRepository.update(id, {
       ...(dto.name !== undefined && { name: dto.name }),
       ...(dto.description !== undefined && { description: dto.description }),
       ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       ...(dto.icon !== undefined && { icon: dto.icon }),
     })
+    await this.cacheService.delByPrefix(`${KB_LIST_CACHE_PREFIX}${userId}`)
+    return result
   }
 
   async remove(userId: string, id: string) {
     await this.ensureOwnership(userId, id)
-    await this.cleanupService.cleanupKnowledgeBase(id)
+    await this.eventEmitter.emitAsync(
+      KnowledgeBaseDeletedEvent.eventType,
+      new KnowledgeBaseDeletedEvent(id, userId),
+    )
     await this.kbRepository.delete(id)
+    await this.cacheService.delByPrefix(`${KB_LIST_CACHE_PREFIX}${userId}`)
     return { id, deleted: true }
   }
 

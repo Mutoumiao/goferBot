@@ -14,6 +14,7 @@ import type { ModelProvider, Settings } from '../../modules/settings/dto/setting
 import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 import { PrismaService } from '../database/prisma.service.js'
+import { CacheService } from '../../shared/cache/cache.service.js'
 import { BgeRerankService } from './bge-rerank.service.js'
 import type { ChunkDocument, SearchHit } from './elasticsearch.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
@@ -90,6 +91,8 @@ const DEFAULT_CONTEXTUAL_WINDOW = 1
 const DEFAULT_CONTEXT_TOKEN_BUDGET = 3000
 const SSE_HEARTBEAT_MS = 60_000
 const MAX_QUERY_LENGTH = 2000
+const RAG_RETRIEVAL_CACHE_PREFIX = 'rag:retrieval:'
+const RAG_RETRIEVAL_CACHE_TTL = 60
 
 type StreamOutcome =
   | { type: 'data'; result: IteratorResult<{ text: string }> }
@@ -135,6 +138,7 @@ export class LlamaIndexRagService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly systemConfigService: SystemConfigService,
     private readonly modelProviderService: ModelProviderService,
+    private readonly cacheService: CacheService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -256,6 +260,32 @@ export class LlamaIndexRagService implements OnModuleInit {
         this.logger.warn(`Permission denied: user ${options.userId} does not own requested kbIds`)
         throw new ForbiddenException('无权访问指定的知识库')
       }
+    }
+
+    const keyParts = [
+      workingQuery,
+      options.kbIds?.join(',') ?? '',
+      options.documentIds?.join(',') ?? '',
+      options.mode ?? '',
+      String(options.topK ?? ''),
+      String(options.candidateK ?? ''),
+      String(options.vectorWeight ?? ''),
+      String(options.bm25Weight ?? ''),
+      String(options.rrfK ?? ''),
+      String(options.needRerank ?? ''),
+      String(options.rerankTopK ?? ''),
+      options.metadata ?? '',
+      options.userId ?? '',
+      options.userTeams?.join(',') ?? '',
+      String(options.resolveParents ?? ''),
+      String(options.skipRouter ?? ''),
+    ]
+    const cacheKey = `${RAG_RETRIEVAL_CACHE_PREFIX}${keyParts.join('|')}`
+
+    const cached = await this.cacheService.get<RetrievedChunk[]>(cacheKey)
+    if (cached) {
+      this.logger.log('RAG cache hit')
+      return cached
     }
 
     const quStart = Date.now()
@@ -400,6 +430,8 @@ export class LlamaIndexRagService implements OnModuleInit {
     this.logger.log(
       `[RAG] userId=${options.userId ?? 'anonymous'} queryLen=${workingQuery.length} mode=${effectiveMode} intent=${routerDecision?.intent ?? 'manual'} hits=${chunks.length} quMs=${quMs} retrievalMs=${retrievalTime} rerankMs=${rerankTime} totalMs=${Date.now() - startTs}`,
     )
+
+    await this.cacheService.set(cacheKey, chunks, RAG_RETRIEVAL_CACHE_TTL)
 
     return chunks
   }

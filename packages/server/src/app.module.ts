@@ -3,8 +3,10 @@ import { fileURLToPath } from 'node:url'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
+import { EventEmitterModule } from '@nestjs/event-emitter'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
+import { CacheModule } from './shared/cache/cache.module.js'
 import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
 import { SpiderGuard } from './common/guards/spider.guard.js'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
@@ -18,7 +20,6 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
 import { SessionModule } from './modules/session/session.module.js'
 import { SettingsModule } from './modules/settings/settings.module.js'
 import { UserModule } from './modules/user/user.module.js'
-import { validateEnv } from './env.js'
 import { QueueModule } from './processors/queue/queue.module.js'
 import { RagModule } from './processors/rag/rag.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
@@ -35,6 +36,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
       // 整理好环境变量后再开启验证
       // validate: () => validateEnv(),
     }),
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      maxListeners: 50,
+    }),
     ThrottlerModule.forRoot({
       throttlers: [
         {
@@ -48,6 +53,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
       skipIf: () => process.env.NODE_ENV !== 'production',
     }),
     HealthModule,
+    CacheModule,
     UserModule,
     AuthModule,
     QueueModule.forRoot(),
@@ -93,4 +99,4 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

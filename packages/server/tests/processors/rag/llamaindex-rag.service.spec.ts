@@ -171,6 +171,14 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
     ...overrides.modelProviderService,
   }
 
+  const cacheService = {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+    del: vi.fn().mockResolvedValue(undefined),
+    delByPrefix: vi.fn().mockResolvedValue(undefined),
+    ...overrides.cacheService,
+  }
+
   const service = new LlamaIndexRagService(
     embeddings as any,
     es as any,
@@ -184,6 +192,7 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
     prisma as any,
     systemConfigService as unknown as SystemConfigService,
     modelProviderService as unknown as ModelProviderService,
+    cacheService as any,
   )
   await service.onModuleInit()
   return service
