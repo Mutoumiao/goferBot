@@ -1,6 +1,6 @@
 # 服务端配置管理指南
 
-> 本文档定义 GoferBot 服务端配置的**分层管理原则**：哪些配置保留在环境变量，哪些配置迁移到**配置中心（数据库 `Setting` 表）**，以及如何在 UI 后台中区分管理。
+> 本文档定义 GoferBot 服务端配置的**分层管理原则**：哪些配置保留在环境变量，哪些配置迁移到**配置中心（数据库** **`Setting`** **表）**，以及如何在 UI 后台中区分管理。
 >
 > 目标：把“运行时可选、按用户/租户可变、需要 UI 热切换”的配置全部纳入数据库配置中心；仅把“影响服务启动、基础设施连接、全局安全策略”的配置保留在环境变量。
 
@@ -15,7 +15,7 @@
 1. **服务启动依赖**：端口、运行模式、日志级别等。
 2. **基础设施连接**：数据库、Redis、MinIO、Elasticsearch 等外部服务的地址与凭证。
 3. **全局安全策略**：JWT 密钥、配置加密密钥、密码哈希轮数、SSRF 白名单、CORS 来源等。
-4. **部署/实例级开关**：NODE_ENV、队列并发数、重启生效的本地模型开关等。
+4. **部署/实例级开关**：NODE\_ENV、队列并发数、重启生效的本地模型开关等。
 
 特点：
 
@@ -45,14 +45,14 @@
 
 项目采用**统一根目录模板 + 包级覆盖**的环境变量管理策略：
 
-| 文件                             | 职责                                      | 是否必需     |
-| ------------------------------ | --------------------------------------- | -------- |
-| 根目录 `.env.example`             | 唯一的完整环境变量模板，包含基础设施、安全策略、服务端应用配置 | ✅ 是      |
-| 根目录 `.env`                     | 本地开发/部署时的实际配置文件，由 `.env.example` 复制而来   | ✅ 是      |
-| `packages/server/.env.example` | 服务端独立覆盖说明文件，通常无需填写                      | ❌ 否      |
-| `packages/server/.env`         | 服务端独立覆盖值，根目录 `.env` 会覆盖其中同名变量           | 按需       |
-| `packages/web/.env.example`    | 前端 Vite 专属配置                            | ✅ 前端开发   |
-| `packages/admin/.env.example`  | 管理后台 Vite 专属配置                          | ✅ 管理后台开发 |
+| 文件                             | 职责                                    | 是否必需     |
+| ------------------------------ | ------------------------------------- | -------- |
+| 根目录 `.env.example`             | 唯一的完整环境变量模板，包含基础设施、安全策略、服务端应用配置       | ✅ 是      |
+| 根目录 `.env`                     | 本地开发/部署时的实际配置文件，由 `.env.example` 复制而来 | ✅ 是      |
+| `packages/server/.env.example` | 服务端独立覆盖说明文件，通常无需填写                    | ❌ 否      |
+| `packages/server/.env`         | 服务端独立覆盖值，根目录 `.env` 会覆盖其中同名变量         | 按需       |
+| `packages/web/.env.example`    | 前端 Vite 专属配置                          | ✅ 前端开发   |
+| `packages/admin/.env.example`  | 管理后台 Vite 专属配置                        | ✅ 管理后台开发 |
 
 ### 加载顺序
 
@@ -228,18 +228,18 @@ RERANK_EAGER_LOAD=false
 
 单个 provider 字段：
 
-| 字段          | 类型     | 说明                                              |
-| ------------- | -------- | ------------------------------------------------- |
-| `id`          | string   | 唯一标识，如 `openai-gpt4o`                       |
-| `name`        | string   | 展示名                                            |
-| `type`        | enum     | `llm` / `embedding` / `reranker` / `document-parser` |
-| `enabled`     | boolean  | 是否启用                                          |
-| `model`       | string   | 模型名或 HuggingFace ID                           |
-| `apiKey`      | string   | API 密钥（加密存储）                              |
-| `baseUrl`     | string   | 接口地址，空字符串表示使用默认地址                |
-| `timeoutMs`   | number   | 超时毫秒数                                        |
-| `dimensions`  | number?  | `embedding` 专用，向量维度                        |
-| `maxLength`   | number?  | `reranker` 专用，最大输入长度                     |
+| 字段           | 类型      | 说明                                                   |
+| ------------ | ------- | ---------------------------------------------------- |
+| `id`         | string  | 唯一标识，如 `openai-gpt4o`                                |
+| `name`       | string  | 展示名                                                  |
+| `type`       | enum    | `llm` / `embedding` / `reranker` / `document-parser` |
+| `enabled`    | boolean | 是否启用                                                 |
+| `model`      | string  | 模型名或 HuggingFace ID                                  |
+| `apiKey`     | string  | API 密钥（加密存储）                                         |
+| `baseUrl`    | string  | 接口地址，空字符串表示使用默认地址                                    |
+| `timeoutMs`  | number  | 超时毫秒数                                                |
+| `dimensions` | number? | `embedding` 专用，向量维度                                  |
+| `maxLength`  | number? | `reranker` 专用，最大输入长度                                 |
 
 管理接口（ADMIN）：
 
@@ -269,13 +269,13 @@ RERANK_EAGER_LOAD=false
 
 模块配置只保存“选择哪些 provider”以及业务调参，不保存 API Key / model / baseUrl。
 
-| 分类        | 配置字段                                                                 | 说明                          |
-| ----------- | ------------------------------------------------------------------------ | ----------------------------- |
-| `chat`      | `defaultProvider`, `enabledProviders`, `temperature`                     | Chat 默认/启用 provider、温度 |
-| `rag`       | `llmProvider`, `embeddingProvider`, `rerankerProvider`, `timeoutMs`      | RAG 各阶段模型选择            |
-| `companion` | `provider`                                                               | AI 伴侣模型选择               |
-| `indexing`  | `contextualEmbedding`, `contextualWindow`, `parentChunkSize`, `childChunkSize`, `synonymDict` | 索引切分与同义词策略 |
-| `appearance`| `mode`, `fontSizeLevel`                                                  | 外观与字体                    |
+| 分类           | 配置字段                                                                                          | 说明                     |
+| ------------ | --------------------------------------------------------------------------------------------- | ---------------------- |
+| `chat`       | `defaultProvider`, `enabledProviders`, `temperature`                                          | Chat 默认/启用 provider、温度 |
+| `rag`        | `llmProvider`, `embeddingProvider`, `rerankerProvider`, `timeoutMs`                           | RAG 各阶段模型选择            |
+| `companion`  | `provider`                                                                                    | AI 伴侣模型选择              |
+| `indexing`   | `contextualEmbedding`, `contextualWindow`, `parentChunkSize`, `childChunkSize`, `synonymDict` | 索引切分与同义词策略             |
+| `appearance` | `mode`, `fontSizeLevel`                                                                       | 外观与字体                  |
 
 用户只读端点：
 
@@ -352,29 +352,29 @@ ADMIN 系统默认端点：
 
 以下变量已迁移到数据库配置中心，不再出现在 `.env.example` 中：
 
-| 变量                         | 迁移目标                                               |
-| -------------------------- | -------------------------------------------------- |
-| `DEEPSEEK_API_KEY`         | `system_config.providers.{id}.apiKey`              |
-| `DEEPSEEK_BASE_URL`        | `system_config.providers.{id}.baseUrl`             |
-| `LLM_API_KEY`              | `system_config.providers.{id}.apiKey`              |
-| `LLM_MODEL`                | `system_config.providers.{id}.model`               |
-| `LLM_BASE_URL`             | `system_config.providers.{id}.baseUrl`             |
-| `LLM_TIMEOUT_MS`           | `system_config.providers.{id}.timeoutMs`           |
-| `RAG_LLM_API_KEY`          | `system_config.providers.{rag.llmProvider}.apiKey` |
-| `RAG_LLM_MODEL`            | `system_config.providers.{rag.llmProvider}.model`  |
-| `RAG_LLM_BASE_URL`         | `system_config.providers.{rag.llmProvider}.baseUrl`|
-| `RAG_LLM_TIMEOUT_MS`       | `system_config.providers.{rag.llmProvider}.timeoutMs` |
-| `EMBEDDING_API_KEY`        | `system_config.providers.{rag.embeddingProvider}.apiKey` |
-| `EMBEDDING_MODEL`          | `system_config.providers.{rag.embeddingProvider}.model` |
-| `EMBEDDING_BASE_URL`       | `system_config.providers.{rag.embeddingProvider}.baseUrl` |
-| `EMBEDDING_DIMENSIONS`     | `system_config.providers.{rag.embeddingProvider}.dimensions` |
-| `RERANK_MODEL`             | `system_config.providers.{rag.rerankerProvider}.model` |
-| `RERANK_MAX_LENGTH`        | `system_config.providers.{rag.rerankerProvider}.maxLength` |
-| `RAG_CONTEXTUAL_EMBEDDING` | `system_config.indexing.contextualEmbedding`       |
-| `RAG_CONTEXTUAL_WINDOW`    | `system_config.indexing.contextualWindow`          |
-| `RAG_PARENT_CHUNK_SIZE`    | `system_config.indexing.parentChunkSize`           |
-| `RAG_CHILD_CHUNK_SIZE`     | `system_config.indexing.childChunkSize`            |
-| `RAG_SYNONYM_DICT`         | `system_config.indexing.synonymDict`               |
+| 变量                         | 迁移目标                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `DEEPSEEK_API_KEY`         | `system_config.providers.{id}.apiKey`                                        |
+| `DEEPSEEK_BASE_URL`        | `system_config.providers.{id}.baseUrl`                                       |
+| `LLM_API_KEY`              | `system_config.providers.{id}.apiKey`                                        |
+| `LLM_MODEL`                | `system_config.providers.{id}.model`                                         |
+| `LLM_BASE_URL`             | `system_config.providers.{id}.baseUrl`                                       |
+| `LLM_TIMEOUT_MS`           | `system_config.providers.{id}.timeoutMs`                                     |
+| `RAG_LLM_API_KEY`          | `system_config.providers.{rag.llmProvider}.apiKey`                           |
+| `RAG_LLM_MODEL`            | `system_config.providers.{rag.llmProvider}.model`                            |
+| `RAG_LLM_BASE_URL`         | `system_config.providers.{rag.llmProvider}.baseUrl`                          |
+| `RAG_LLM_TIMEOUT_MS`       | `system_config.providers.{rag.llmProvider}.timeoutMs`                        |
+| `EMBEDDING_API_KEY`        | `system_config.providers.{rag.embeddingProvider}.apiKey`                     |
+| `EMBEDDING_MODEL`          | `system_config.providers.{rag.embeddingProvider}.model`                      |
+| `EMBEDDING_BASE_URL`       | `system_config.providers.{rag.embeddingProvider}.baseUrl`                    |
+| `EMBEDDING_DIMENSIONS`     | `system_config.providers.{rag.embeddingProvider}.dimensions`                 |
+| `RERANK_MODEL`             | `system_config.providers.{rag.rerankerProvider}.model`                       |
+| `RERANK_MAX_LENGTH`        | `system_config.providers.{rag.rerankerProvider}.maxLength`                   |
+| `RAG_CONTEXTUAL_EMBEDDING` | `system_config.indexing.contextualEmbedding`                                 |
+| `RAG_CONTEXTUAL_WINDOW`    | `system_config.indexing.contextualWindow`                                    |
+| `RAG_PARENT_CHUNK_SIZE`    | `system_config.indexing.parentChunkSize`                                     |
+| `RAG_CHILD_CHUNK_SIZE`     | `system_config.indexing.childChunkSize`                                      |
+| `RAG_SYNONYM_DICT`         | `system_config.indexing.synonymDict`                                         |
 | `ENABLED_PROVIDERS`        | `system_config.chat.defaultProvider` / `system_config.chat.enabledProviders` |
 
 ***
@@ -407,3 +407,4 @@ ADMIN 系统默认端点：
 - 管理后台 API：`packages/admin/src/api/system-config.ts`
 - 管理后台模型提供商页：`packages/admin/src/features/model-providers/components/ProviderList.tsx`
 - 管理后台模块配置页：`packages/admin/src/features/module-settings/components/ModuleSettingsLayout.tsx`
+

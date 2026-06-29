@@ -64,6 +64,7 @@ docs/bugs/*
 docs/handoff/*
 docs/design/pen/*
 docs/superpowers/*
+docs/code-wiki/*
 
 # Docker Compose local data volumes
 .data/
