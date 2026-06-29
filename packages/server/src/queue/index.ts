@@ -1,4 +1,7 @@
 export {
+  CHAT_FINALIZE_QUEUE,
+  type ChatFinalizeJobData,
+  createChatFinalizeQueue,
   createDocumentQueue,
   createEmbeddingQueue,
   DOCUMENT_PROCESSING_QUEUE,
@@ -8,6 +11,8 @@ export {
 } from './queues.js'
 export { createRedisConnection } from './redis.js'
 export {
+  type ChatFinalizeJobHandler,
+  createChatFinalizeWorker,
   createDocumentWorker,
   createEmbeddingWorker,
   type DocumentJobHandler,

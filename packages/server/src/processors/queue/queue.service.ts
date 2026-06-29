@@ -10,6 +10,8 @@ import { ConfigService } from '@nestjs/config'
 import { Job, Queue } from 'bullmq'
 import type { Redis } from 'ioredis'
 import {
+  type ChatFinalizeJobData,
+  createChatFinalizeQueue,
   createDocumentQueue,
   createEmbeddingQueue,
   createRedisConnection,
@@ -23,6 +25,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   private redis?: Redis
   private documentQueue!: Queue<DocumentJobData>
   private embeddingQueue!: Queue<EmbeddingJobData>
+  private chatFinalizeQueue!: Queue<ChatFinalizeJobData>
   private readonly logger = new Logger(QueueService.name)
 
   constructor(
@@ -51,6 +54,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
     this.documentQueue = createDocumentQueue(this.redis)
     this.embeddingQueue = createEmbeddingQueue(this.redis)
+    this.chatFinalizeQueue = createChatFinalizeQueue(this.redis)
 
     this.logger.log('Redis connection established')
     this.workerService.startWorkers(this.redis)
@@ -78,6 +82,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     if (!this.isEnabled()) return
     await this.documentQueue.close()
     await this.embeddingQueue.close()
+    await this.chatFinalizeQueue.close()
     await this.redis?.quit()
     this.logger.log('Queues and Redis connection closed')
   }
@@ -92,83 +97,78 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     return this.embeddingQueue.add('process-embedding', { chunkIds })
   }
 
+  async addChatFinalizeJob(payload: ChatFinalizeJobData): Promise<Job<ChatFinalizeJobData>> {
+    if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
+    return this.chatFinalizeQueue.add('finalize-chat', payload)
+  }
+
   async getJobStatus(
     jobId: string,
   ): Promise<{ id: string; state: string; progress: number; data: unknown } | null> {
     if (!this.isEnabled()) return null
-    const docJob = await this.documentQueue.getJob(jobId)
-    if (docJob) {
-      const state = await docJob.getState()
-      return {
-        id: docJob.id ?? jobId,
-        state,
-        progress: typeof docJob.progress === 'number' ? docJob.progress : 0,
-        data: docJob.data,
-      }
-    }
+    return (
+      (await this.resolveJobStatus(this.documentQueue, jobId)) ??
+      (await this.resolveJobStatus(this.embeddingQueue, jobId)) ??
+      (await this.resolveJobStatus(this.chatFinalizeQueue, jobId)) ??
+      null
+    )
+  }
 
-    const embJob = await this.embeddingQueue.getJob(jobId)
-    if (embJob) {
-      const state = await embJob.getState()
-      return {
-        id: embJob.id ?? jobId,
-        state,
-        progress: typeof embJob.progress === 'number' ? embJob.progress : 0,
-        data: embJob.data,
-      }
+  private async resolveJobStatus(
+    queue: Queue,
+    jobId: string,
+  ): Promise<{ id: string; state: string; progress: number; data: unknown } | null> {
+    const job = await queue.getJob(jobId)
+    if (!job) return null
+    const state = await job.getState()
+    return {
+      id: job.id ?? jobId,
+      state,
+      progress: typeof job.progress === 'number' ? job.progress : 0,
+      data: job.data,
     }
-
-    return null
   }
 
   async getQueueStats(): Promise<{
     documentQueue: Record<string, number>
     embeddingQueue: Record<string, number>
+    chatFinalizeQueue: Record<string, number>
   }> {
     if (!this.isEnabled()) {
       return {
         documentQueue: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
         embeddingQueue: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
+        chatFinalizeQueue: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
       }
     }
-    const [
-      documentWaiting,
-      documentActive,
-      documentCompleted,
-      documentFailed,
-      documentDelayed,
-      embeddingWaiting,
-      embeddingActive,
-      embeddingCompleted,
-      embeddingFailed,
-      embeddingDelayed,
-    ] = await Promise.all([
-      this.documentQueue.getWaitingCount(),
-      this.documentQueue.getActiveCount(),
-      this.documentQueue.getCompletedCount(),
-      this.documentQueue.getFailedCount(),
-      this.documentQueue.getDelayedCount(),
-      this.embeddingQueue.getWaitingCount(),
-      this.embeddingQueue.getActiveCount(),
-      this.embeddingQueue.getCompletedCount(),
-      this.embeddingQueue.getFailedCount(),
-      this.embeddingQueue.getDelayedCount(),
+    // ponytail: getJobCounts() returns all counts in one Redis call per queue (3 total vs 15 before)
+    const [docCounts, embCounts, chatCounts] = await Promise.all([
+      this.documentQueue.getJobCounts(),
+      this.embeddingQueue.getJobCounts(),
+      this.chatFinalizeQueue.getJobCounts(),
     ])
 
     return {
       documentQueue: {
-        waiting: documentWaiting,
-        active: documentActive,
-        completed: documentCompleted,
-        failed: documentFailed,
-        delayed: documentDelayed,
+        waiting: docCounts.waiting,
+        active: docCounts.active,
+        completed: docCounts.completed,
+        failed: docCounts.failed,
+        delayed: docCounts.delayed,
       },
       embeddingQueue: {
-        waiting: embeddingWaiting,
-        active: embeddingActive,
-        completed: embeddingCompleted,
-        failed: embeddingFailed,
-        delayed: embeddingDelayed,
+        waiting: embCounts.waiting,
+        active: embCounts.active,
+        completed: embCounts.completed,
+        failed: embCounts.failed,
+        delayed: embCounts.delayed,
+      },
+      chatFinalizeQueue: {
+        waiting: chatCounts.waiting,
+        active: chatCounts.active,
+        completed: chatCounts.completed,
+        failed: chatCounts.failed,
+        delayed: chatCounts.delayed,
       },
     }
   }
@@ -181,6 +181,11 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   getEmbeddingQueue(): Queue<EmbeddingJobData> {
     if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
     return this.embeddingQueue
+  }
+
+  getChatFinalizeQueue(): Queue<ChatFinalizeJobData> {
+    if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
+    return this.chatFinalizeQueue
   }
 
   getRedisConnection(): Redis {

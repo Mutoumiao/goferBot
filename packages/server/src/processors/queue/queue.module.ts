@@ -8,8 +8,13 @@ import {
 } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { Job } from 'bullmq'
-import { type DocumentJobHandler, type EmbeddingJobHandler } from '../../queue/index.js'
-import type { DocumentJobData } from '../../queue/queues.js'
+import {
+  type ChatFinalizeJobHandler,
+  type DocumentJobHandler,
+  type EmbeddingJobHandler,
+} from '../../queue/index.js'
+import type { ChatFinalizeJobData, DocumentJobData } from '../../queue/queues.js'
+import { ChatFinalizeProcessor } from '../chat/chat-finalize.processor.js'
 import { DocumentParser } from '../parser/document.parser.js'
 import { RagModule } from '../rag/rag.module.js'
 import { IndexingWorker } from './indexing.worker.js'
@@ -38,6 +43,7 @@ export class QueueModule {
       WorkerService,
       IndexingWorker,
       DocumentParser,
+      ChatFinalizeProcessor,
       {
         provide: 'DOCUMENT_JOB_HANDLER',
         useFactory: (indexingWorker: IndexingWorker): DocumentJobHandler => {
@@ -49,6 +55,15 @@ export class QueueModule {
           }
         },
         inject: [IndexingWorker],
+      },
+      {
+        provide: 'CHAT_FINALIZE_JOB_HANDLER',
+        useFactory: (processor: ChatFinalizeProcessor): ChatFinalizeJobHandler => {
+          return async (job: Job<ChatFinalizeJobData>) => {
+            return processor.process(job)
+          }
+        },
+        inject: [ChatFinalizeProcessor],
       },
     ]
 

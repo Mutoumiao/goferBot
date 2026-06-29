@@ -178,20 +178,16 @@ export class ChatService {
     }
 
     // 流已完整返回：通过门面异步持久化，不阻塞响应
-    this.finalizeService.schedule(
-      { userId, sessionId, span: 'chat.stream.finalize' },
-      [
-        {
-          name: 'persist-assistant',
-          run: () => this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply),
-        },
-        {
-          name: 'generate-title',
-          run: () =>
-            this.conversationService.generateTitle(sessionId, input, fullReply, provider),
-        },
-      ],
-    )
+    this.finalizeService.schedule({ userId, sessionId, span: 'chat.stream.finalize' }, [
+      {
+        name: 'persist-assistant',
+        run: () => this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply),
+      },
+      {
+        name: 'generate-title',
+        run: () => this.conversationService.generateTitle(sessionId, input, fullReply, provider),
+      },
+    ])
 
     yield {
       event: 'message_end',

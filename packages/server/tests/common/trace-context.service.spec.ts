@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { TraceContextService } from '@/common/services/trace-context.service.js'
 import { RequestContextStorage } from '@/common/request-context-storage.js'
+import { TraceContextService } from '@/common/services/trace-context.service.js'
 
 describe('TraceContextService', () => {
   const service = new TraceContextService()
@@ -15,37 +15,46 @@ describe('TraceContextService', () => {
   })
 
   it('returns traceId from current request context', () => {
-    RequestContextStorage.run({
-      ip: '127.0.0.1',
-      userAgent: 'test',
-      requestId: 'req-1',
-      traceId: 'trace-abc',
-    }, () => {
-      expect(service.current()).toBe('trace-abc')
-      expect(service.currentRequestId()).toBe('req-1')
-    })
+    RequestContextStorage.run(
+      {
+        ip: '127.0.0.1',
+        userAgent: 'test',
+        requestId: 'req-1',
+        traceId: 'trace-abc',
+      },
+      () => {
+        expect(service.current()).toBe('trace-abc')
+        expect(service.currentRequestId()).toBe('req-1')
+      },
+    )
   })
 
   it('returns email when present in request context', () => {
-    RequestContextStorage.run({
-      ip: '127.0.0.1',
-      userAgent: 'test',
-      requestId: 'req-1',
-      traceId: 'trace-abc',
-      email: 'user@example.com',
-    }, () => {
-      expect(service.currentEmail()).toBe('user@example.com')
-    })
+    RequestContextStorage.run(
+      {
+        ip: '127.0.0.1',
+        userAgent: 'test',
+        requestId: 'req-1',
+        traceId: 'trace-abc',
+        email: 'user@example.com',
+      },
+      () => {
+        expect(service.currentEmail()).toBe('user@example.com')
+      },
+    )
   })
 
   it('returns undefined for email when not set', () => {
-    RequestContextStorage.run({
-      ip: '127.0.0.1',
-      userAgent: 'test',
-      requestId: 'req-1',
-      traceId: 'trace-abc',
-    }, () => {
-      expect(service.currentEmail()).toBeUndefined()
-    })
+    RequestContextStorage.run(
+      {
+        ip: '127.0.0.1',
+        userAgent: 'test',
+        requestId: 'req-1',
+        traceId: 'trace-abc',
+      },
+      () => {
+        expect(service.currentEmail()).toBeUndefined()
+      },
+    )
   })
 })

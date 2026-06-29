@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { PrismaService } from '../../processors/database/prisma.service.js'
 import { AuthRedisService } from '../../auth/auth-redis.service.js'
+import { PrismaService } from '../../processors/database/prisma.service.js'
 import { STORAGE_PROVIDER } from '../../processors/storage/storage.provider.js'
 import type { MinIOStorageProvider } from '../../storage/minio.js'
 
@@ -34,7 +34,9 @@ export class HealthService {
 
   async check(): Promise<HealthSnapshot> {
     const components = await Promise.all([
-      this.probe('postgres', async () => { await this.prisma.$queryRaw`SELECT 1` }),
+      this.probe('postgres', async () => {
+        await this.prisma.$queryRaw`SELECT 1`
+      }),
       this.probe('redis', () => this.authRedis.ping()),
       this.probe('minio', () => this.storage.bucketExists()),
     ])
@@ -52,10 +54,7 @@ export class HealthService {
     }
   }
 
-  private async probe(
-    name: string,
-    fn: () => Promise<unknown>,
-  ): Promise<HealthComponent> {
+  private async probe(name: string, fn: () => Promise<unknown>): Promise<HealthComponent> {
     const start = Date.now()
     let timer: ReturnType<typeof setTimeout> | undefined
     try {

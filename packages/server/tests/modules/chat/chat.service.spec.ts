@@ -1,4 +1,4 @@
-import { BadRequestException, type Logger } from '@nestjs/common'
+import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { StreamFinalizeService } from '@/common/services/stream-finalize.service.js'
 import { ChatService } from '@/modules/chat/chat.service.js'
@@ -318,7 +318,7 @@ describe('ChatService', () => {
     })
 
     it('warns and skips retrieval when no retriever registered', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { })
       service = new ChatService(
         settingsService as unknown as SettingsService,
         modelProviderService as unknown as ModelProviderService,

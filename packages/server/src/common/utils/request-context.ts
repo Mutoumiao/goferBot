@@ -1,9 +1,10 @@
 import type { FastifyRequest } from 'fastify'
 
 export interface RequestContext {
-  ip: string
-  userAgent: string
+  ip?: string
+  userAgent?: string
   email?: string
+  userId?: string
   requestId: string
   traceId: string
 }

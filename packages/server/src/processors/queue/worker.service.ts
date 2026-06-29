@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config'
 import { Worker } from 'bullmq'
 import type { Redis } from 'ioredis'
 import {
+  type ChatFinalizeJobHandler,
+  createChatFinalizeWorker,
   createDocumentWorker,
   createEmbeddingWorker,
   type DocumentJobHandler,
@@ -15,6 +17,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WorkerService.name)
   private documentWorker?: Worker
   private embeddingWorker?: Worker
+  private chatFinalizeWorker?: Worker
 
   constructor(
     private readonly configService: ConfigService,
@@ -25,6 +28,9 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
     @Optional()
     @Inject('EMBEDDING_JOB_HANDLER')
     private readonly embeddingHandler?: EmbeddingJobHandler,
+    @Optional()
+    @Inject('CHAT_FINALIZE_JOB_HANDLER')
+    private readonly chatFinalizeHandler?: ChatFinalizeJobHandler,
   ) {}
 
   async onModuleInit() {
@@ -40,6 +46,10 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
     if (this.embeddingWorker) {
       await this.embeddingWorker.close()
       this.logger.log('Embedding worker closed')
+    }
+    if (this.chatFinalizeWorker) {
+      await this.chatFinalizeWorker.close()
+      this.logger.log('Chat finalize worker closed')
     }
   }
 
@@ -81,6 +91,17 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
         this.logger.error(`Embedding job ${job?.id} failed: ${err.message}`)
       })
       this.logger.log('Embedding worker started')
+    }
+
+    if (this.chatFinalizeHandler) {
+      this.chatFinalizeWorker = createChatFinalizeWorker(redis, this.chatFinalizeHandler, 1)
+      this.chatFinalizeWorker.on('completed', (job) => {
+        this.logger.log(`Chat finalize job ${job.id} completed`)
+      })
+      this.chatFinalizeWorker.on('failed', (job, err) => {
+        this.logger.error(`Chat finalize job ${job?.id} failed: ${err.message}`)
+      })
+      this.logger.log('Chat finalize worker started')
     }
   }
 }

@@ -29,7 +29,9 @@ function createService(overrides: {
 }
 
 describe('HealthService', () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   it('returns ok when all probes pass', async () => {
     const service = createService({})
@@ -60,9 +62,14 @@ describe('HealthService', () => {
   it('returns degraded when a probe times out', async () => {
     const service = createService({
       prisma: {
-        $queryRaw: vi.fn().mockImplementation(
-          () => new Promise((_, reject) => setTimeout(() => reject(new Error('probe timed out after 2500ms')), 10)),
-        ),
+        $queryRaw: vi
+          .fn()
+          .mockImplementation(
+            () =>
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('probe timed out after 2500ms')), 10),
+              ),
+          ),
       },
     })
     const snap = await service.check()

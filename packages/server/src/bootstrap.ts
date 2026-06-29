@@ -77,10 +77,8 @@ export async function bootstrap(app: NestFastifyApplication) {
   // 3.6 RequestContext 中间件（AsyncLocalStorage 隐式传递上下文）
   app.use(new RequestContextMiddleware().use)
 
-  // 4. 开发环境日志拦截器
-  if (process.env.NODE_ENV !== 'production') {
-    app.useGlobalInterceptors(new LoggingInterceptor())
-  }
+  // 4. 日志拦截器（生产与开发环境均启用，内部自行区分行为模式）
+  app.useGlobalInterceptors(new LoggingInterceptor())
 
   // Graceful shutdown
   app.enableShutdownHooks()

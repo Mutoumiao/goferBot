@@ -46,8 +46,20 @@ describe('StreamFinalizeService', () => {
   it('continues to next step when one step fails', async () => {
     const order: string[] = []
     service.schedule({ span: 't3' }, [
-      { name: 'fail-a', run: async () => { order.push('a'); throw new Error('x') } },
-      { name: 'fail-b', run: async () => { order.push('b'); throw new Error('y') } },
+      {
+        name: 'fail-a',
+        run: async () => {
+          order.push('a')
+          throw new Error('x')
+        },
+      },
+      {
+        name: 'fail-b',
+        run: async () => {
+          order.push('b')
+          throw new Error('y')
+        },
+      },
       { name: 'ok', run: async () => order.push('c') },
     ])
 
