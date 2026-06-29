@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import type { Prisma } from '@prisma/client'
 import { AuthRepository } from '../../auth/repositories/auth.repository.js'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import { userNotFoundError } from '../user/errors.js'
+import { UserStatusChangedEvent } from '../user/events/user-status-changed.event.js'
 import { AdminUserListQueryDto } from './dto/admin-user-list-query.dto.js'
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js'
 
@@ -21,7 +23,8 @@ const USER_LIST_SELECT = {
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly authRepository: AuthRepository,
+    readonly _authRepository: AuthRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async listUsers(query: AdminUserListQueryDto) {
@@ -68,15 +71,16 @@ export class AdminService {
       throw userNotFoundError()
     }
 
-    if (dto.isActive === false && user.isActive === true) {
-      await this.authRepository.revokeAllSessionsForUser(userId, 'user_disabled')
-    }
-
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: dto.isActive },
       select: USER_LIST_SELECT,
     })
+
+    await this.eventEmitter.emitAsync(
+      UserStatusChangedEvent.eventType,
+      new UserStatusChangedEvent(userId, dto.isActive, user.isActive),
+    )
 
     return {
       ...updated,
