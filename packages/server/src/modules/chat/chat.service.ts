@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { ChatMessagesChunk } from '@goferbot/data'
 import { BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { StreamFinalizeService } from '../../common/services/stream-finalize.service.js'
 import { MODEL_PROVIDER_ERROR_CODES } from '../settings/constants.js'
 import { ModelProviderService } from '../settings/model-provider.service.js'
 import { SettingsService } from '../settings/settings.service.js'
@@ -28,6 +29,7 @@ export class ChatService {
     private readonly modelRegistry: ModelRegistryService,
     private readonly conversationService: ConversationService,
     private readonly llmFactory: LlmProviderFactory,
+    private readonly finalizeService: StreamFinalizeService,
     @Inject(CHAT_CONTEXT_RETRIEVER)
     @Optional()
     private readonly contextRetriever?: ChatContextRetriever,
@@ -175,32 +177,21 @@ export class ChatService {
       return
     }
 
-    try {
-      await this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply)
-    } catch (err: unknown) {
-      this.logger.error(
-        `保存 assistant 消息失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`,
-      )
-      yield {
-        event: 'error',
-        conversation_id: sessionId,
-        message_id: messageId,
-        answer: '',
-        done: true,
-        error: '服务暂时不可用，请稍后重试',
-      }
-      return
-    }
-
-    if (fullReply) {
-      this.conversationService
-        .generateTitle(sessionId, input, fullReply, provider)
-        .catch((err: unknown) => {
-          this.logger.error(
-            `生成会话标题失败 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`,
-          )
-        })
-    }
+    // 流已完整返回：通过门面异步持久化，不阻塞响应
+    this.finalizeService.schedule(
+      { userId, sessionId, span: 'chat.stream.finalize' },
+      [
+        {
+          name: 'persist-assistant',
+          run: () => this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply),
+        },
+        {
+          name: 'generate-title',
+          run: () =>
+            this.conversationService.generateTitle(sessionId, input, fullReply, provider),
+        },
+      ],
+    )
 
     yield {
       event: 'message_end',

@@ -5,6 +5,7 @@ export interface RequestContext {
   userAgent: string
   email?: string
   requestId: string
+  traceId: string
 }
 
 export function extractRequestContext(req: FastifyRequest): RequestContext {
@@ -14,11 +15,13 @@ export function extractRequestContext(req: FastifyRequest): RequestContext {
 
   const userAgent = (req.headers['user-agent'] as string) || 'unknown'
   const requestId = req.requestId || 'unknown'
+  const traceId = (req.headers['x-trace-id'] as string) || requestId
 
   return {
     ip,
     userAgent,
     requestId,
+    traceId,
   }
 }
 

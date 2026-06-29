@@ -20,6 +20,7 @@ function createInterceptor(bypass = false): ResponseInterceptor<unknown> {
 
 const mockContext = {
   getHandler: () => () => undefined,
+  switchToHttp: () => ({ getRequest: () => ({ requestId: 'req-1' }) }),
 } as unknown as ExecutionContext
 
 function handlerOf(value: unknown): CallHandler {

@@ -18,10 +18,11 @@ export class LoggingInterceptor implements NestInterceptor {
     const url = request.url
     const ctx = getRequestContext()
     const requestId = ctx?.requestId || 'unknown'
+    const traceId = ctx?.traceId || requestId
     const ip = ctx?.ip || 'unknown'
     const now = Date.now()
 
-    this.logger.debug(`[${requestId}] +++ Request: ${method} ${url} (ip: ${ip})`)
+    this.logger.debug(`[trace:${traceId}] [req:${requestId}] +++ Request: ${method} ${url} (ip: ${ip})`)
 
     return next.handle().pipe(
       tap(() => {
@@ -29,7 +30,7 @@ export class LoggingInterceptor implements NestInterceptor {
         const statusCode = response.statusCode || 200
         const duration = Date.now() - now
         this.logger.debug(
-          `[${requestId}] --- Response: ${method} ${url} ${statusCode} +${duration}ms`,
+          `[trace:${traceId}] [req:${requestId}] --- Response: ${method} ${url} ${statusCode} +${duration}ms`,
         )
       }),
     )

@@ -36,6 +36,11 @@ export class MinIOStorageProvider {
     }
   }
 
+  /** 健康检查：验证 bucket 可达 */
+  async bucketExists(): Promise<boolean> {
+    return this.client.bucketExists(this.bucket)
+  }
+
   async uploadFile(buffer: Buffer, key: string, mimeType: string): Promise<string> {
     await this.client.putObject(this.bucket, key, buffer, buffer.length, {
       'Content-Type': mimeType,

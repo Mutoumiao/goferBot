@@ -84,4 +84,10 @@ export class AuthRedisService implements OnModuleInit, OnModuleDestroy {
     if (!this.isEnabled()) return
     await this.redis?.del(`${USER_CACHE_PREFIX}${userId}`)
   }
+
+  /** 健康检查：PING Redis；未启用时返回 'skipped' 表示降级而非故障 */
+  async ping(): Promise<string> {
+    if (!this.isEnabled()) return 'skipped'
+    return await this.redis!.ping()
+  }
 }

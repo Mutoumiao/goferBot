@@ -6,6 +6,7 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { EventEmitterModule } from '@nestjs/event-emitter'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
+import { CommonModule } from './common/common.module.js'
 import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
 import { SpiderGuard } from './common/guards/spider.guard.js'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
@@ -52,6 +53,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
       // skipIf 在 ThrottlerGuard 最先执行，故 @Throttle() 装饰的接口（如 auth 的 5 次/分）一并豁免。
       skipIf: () => process.env.NODE_ENV !== 'production',
     }),
+    CommonModule,
     HealthModule,
     CacheModule,
     UserModule,

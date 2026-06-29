@@ -1,5 +1,6 @@
 import { BadRequestException, type Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { StreamFinalizeService } from '@/common/services/stream-finalize.service.js'
 import { ChatService } from '@/modules/chat/chat.service.js'
 import type { ConversationService } from '@/modules/chat/conversation.service.js'
 import type { ChatContextRetriever } from '@/modules/chat/interfaces/chat-context-retriever.interface.js'
@@ -124,6 +125,7 @@ describe('ChatService', () => {
   let modelRegistry: ReturnType<typeof createMockModelRegistry>
   let conversationService: ReturnType<typeof createMockConversationService>
   let llmFactory: ReturnType<typeof createMockLlmFactory>
+  let finalizeService: { schedule: ReturnType<typeof vi.fn> }
   let contextRetriever: ChatContextRetriever
 
   beforeEach(() => {
@@ -133,6 +135,7 @@ describe('ChatService', () => {
     modelRegistry = createMockModelRegistry()
     conversationService = createMockConversationService()
     llmFactory = createMockLlmFactory()
+    finalizeService = { schedule: vi.fn() }
     contextRetriever = {
       retrieve: vi.fn().mockResolvedValue({ context: null }),
     }
@@ -145,6 +148,7 @@ describe('ChatService', () => {
       modelRegistry as unknown as ModelRegistryService,
       conversationService as unknown as ConversationService,
       llmFactory as unknown as LlmProviderFactory,
+      finalizeService as unknown as StreamFinalizeService,
       contextRetriever,
     )
   })
@@ -188,7 +192,7 @@ describe('ChatService', () => {
       expect(chunks[2].done).toBe(true)
     })
 
-    it('saves user and assistant messages', async () => {
+    it('saves user message and schedules assistant persistence via facade', async () => {
       const abortController = new AbortController()
 
       for await (const _ of service.streamChat(
@@ -200,10 +204,11 @@ describe('ChatService', () => {
       }
 
       expect(conversationService.saveUserMessage).toHaveBeenCalledWith('s1', 'hi')
-      expect(conversationService.saveAssistantMessage).toHaveBeenCalledWith(
-        's1',
-        expect.any(String),
-        'hello world',
+      // saveAssistantMessage is NOT awaited inline — it is scheduled via the facade
+      expect(conversationService.saveAssistantMessage).not.toHaveBeenCalled()
+      expect(finalizeService.schedule).toHaveBeenCalledWith(
+        { userId: 'user-1', sessionId: 's1', span: 'chat.stream.finalize' },
+        expect.any(Array),
       )
     })
 
@@ -320,6 +325,7 @@ describe('ChatService', () => {
         modelRegistry as unknown as ModelRegistryService,
         conversationService as unknown as ConversationService,
         llmFactory as unknown as LlmProviderFactory,
+        finalizeService as unknown as StreamFinalizeService,
         undefined,
       )
       const provider = createMockProvider()
@@ -446,15 +452,12 @@ describe('ChatService', () => {
       expect(yielded).toBe(true)
     })
 
-    it('yields error event when saveAssistantMessage fails', async () => {
-      // 回归：持久化失败时不应抛出未捕获异常，且应 yield error 事件
+    it('does not yield inline error when background persistence fails (facade isolates it)', async () => {
+      // 回归：持久化失败不再阻塞响应或 yield error 事件，由门面隔离记录
       conversationService.saveAssistantMessage.mockRejectedValueOnce(new Error('db down'))
       const provider = createMockProvider()
       llmFactory.create.mockReturnValue(provider)
       const abortController = new AbortController()
-      const errorSpy = vi
-        .spyOn((service as unknown as { logger: Logger }).logger, 'error')
-        .mockImplementation(() => {})
 
       const chunks: any[] = []
       for await (const chunk of service.streamChat(
@@ -465,14 +468,12 @@ describe('ChatService', () => {
         chunks.push(chunk)
       }
 
-      // 两个 message chunk + 1 个 error chunk，并且不应有 message_end
+      // 流式响应完整返回：无 error 事件，只有 message + message_end
       expect(chunks.filter((c) => c.event === 'message')).toHaveLength(2)
-      expect(chunks.filter((c) => c.event === 'error')).toHaveLength(1)
-      expect(chunks.filter((c) => c.event === 'message_end')).toHaveLength(0)
-      expect(chunks[chunks.length - 1].error).toContain('服务暂时不可用')
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('保存 assistant 消息失败'))
-
-      errorSpy.mockRestore()
+      expect(chunks.filter((c) => c.event === 'error')).toHaveLength(0)
+      expect(chunks.filter((c) => c.event === 'message_end')).toHaveLength(1)
+      // 持久化已排期到门面（不在此处直接调用）
+      expect(finalizeService.schedule).toHaveBeenCalled()
     })
 
     it('rejects empty query with QUERY_EMPTY code', async () => {
@@ -556,7 +557,7 @@ describe('ChatService', () => {
       expect(chunks[0].error).toBe('服务暂时不可用，请稍后重试')
     })
 
-    it('triggers title generation after successful stream', async () => {
+    it('schedules title generation via facade after successful stream', async () => {
       const abortController = new AbortController()
 
       for await (const _ of service.streamChat(
@@ -567,7 +568,16 @@ describe('ChatService', () => {
         // consume
       }
 
-      expect(conversationService.generateTitle).toHaveBeenCalled()
+      // title generation is scheduled via facade, not awaited inline
+      expect(finalizeService.schedule).toHaveBeenCalledWith(
+        { userId: 'user-1', sessionId: 's1', span: 'chat.stream.finalize' },
+        expect.any(Array),
+      )
+      const steps = finalizeService.schedule.mock.calls[0][1]
+      expect(steps.map((s: { name: string }) => s.name)).toEqual([
+        'persist-assistant',
+        'generate-title',
+      ])
     })
 
     it('uses model registry to resolve provider by model id', async () => {
