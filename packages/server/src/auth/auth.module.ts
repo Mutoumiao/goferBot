@@ -7,8 +7,10 @@ import { StorageModule } from '../processors/storage/storage.module.js'
 import { AuthController } from './auth.controller.js'
 import { AuthService } from './auth.service.js'
 import { AuthRedisService } from './auth-redis.service.js'
-import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { AuthRepositoryModule } from './auth-repository.module.js'
+import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
+import { UserPasswordChangedListener } from './listeners/user-password-changed.listener.js'
+import { UserStatusChangedListener } from './listeners/user-status-changed.listener.js'
 import { JwtStrategy } from './strategies/jwt.strategy.js'
 
 @Module({
@@ -28,7 +30,14 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     StorageModule,
     AuthRepositoryModule,
   ],
-  providers: [AuthService, PasswordEncryptionService, JwtStrategy, AuthRedisService],
+  providers: [
+    AuthService,
+    PasswordEncryptionService,
+    JwtStrategy,
+    AuthRedisService,
+    UserPasswordChangedListener,
+    UserStatusChangedListener,
+  ],
   controllers: [AuthController],
   exports: [AuthService, AuthRedisService],
 })

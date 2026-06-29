@@ -1,15 +1,19 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { Prisma } from '@prisma/client'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { compare, hash } from 'bcrypt'
 import { AuthRepository } from '../../auth/repositories/auth.repository.js'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import { TransactionManager } from '../../shared/repositories/transaction-manager.js'
 import {
   emailAlreadyExistsError,
   forbiddenError,
   invalidCredentialsError,
   passwordChangeFailedError,
+  userNotFoundError,
 } from './errors.js'
+import { UserPasswordChangedEvent } from './events/user-password-changed.event.js'
+import { UserStatusChangedEvent } from './events/user-status-changed.event.js'
 
 const USER_PROFILE_SELECT = {
   id: true,
@@ -24,10 +28,14 @@ const USER_PROFILE_SELECT = {
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-    private readonly authRepository: AuthRepository,
+    readonly _authRepository: AuthRepository,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   async findByEmail(email: string) {
@@ -131,17 +139,14 @@ export class UserService {
     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 12
     const hashed = await hash(newPassword, saltRounds)
 
-    // 原子事务：密码更新与会话撤销必须同时成功，避免状态不一致
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const now = new Date()
-
-      const updated = await tx.user.update({
+    const updated = await this.transactionManager.run(async (tx) => {
+      const result = await tx.user.update({
         where: { id: targetUserId },
         data: { password: hashed },
         select: USER_PROFILE_SELECT,
       })
 
-      // 仅在密码更新成功后撤销会话，防止合法用户因密码更新失败被错误锁死
+      const now = new Date()
       await tx.authSession.updateMany({
         where: { userId: targetUserId, revokedAt: null },
         data: { revokedAt: now, revokedReason: 'password_changed' },
@@ -151,7 +156,40 @@ export class UserService {
         data: { revokedAt: now },
       })
 
-      return updated
+      return result
     })
+
+    this.logger.log(`Password changed for user ${targetUserId}, publishing event`)
+    await this.eventEmitter.emitAsync(
+      UserPasswordChangedEvent.eventType,
+      new UserPasswordChangedEvent(targetUserId),
+    )
+
+    return updated
+  }
+
+  async setStatus(userId: string, isActive: boolean) {
+    const current = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { isActive: true },
+    })
+
+    if (!current) {
+      throw userNotFoundError()
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+      select: USER_PROFILE_SELECT,
+    })
+
+    this.logger.log(`Status changed for user ${userId} to ${isActive}, publishing event`)
+    await this.eventEmitter.emitAsync(
+      UserStatusChangedEvent.eventType,
+      new UserStatusChangedEvent(userId, isActive, current.isActive),
+    )
+
+    return updated
   }
 }

@@ -29,11 +29,13 @@ describe('AuthService', () => {
     mockAuthRedis = {}
     mockAuthRepository = {
       createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
+      createSessionWithTokenPair: vi.fn().mockResolvedValue({ id: 'session-1' }),
       insertRefreshToken: vi.fn().mockResolvedValue(undefined),
       findRefreshTokenByJtiHash: vi.fn(),
       markRefreshTokenUsed: vi.fn().mockResolvedValue(true),
       revokeSession: vi.fn().mockResolvedValue(undefined),
       getRolesForUserByApp: vi.fn().mockResolvedValue([]),
+      isAuthMethodEnabled: vi.fn().mockResolvedValue(true),
     }
 
     authService = new AuthService(
@@ -129,6 +131,34 @@ describe('AuthService', () => {
       await expect(authService.login('admin@gofer.bot', 'password123', 'admin')).rejects.toThrow(
         AppException,
       )
+    })
+
+    it('AC-03-auth-method-disabled: throws when password method is disabled for app', async () => {
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'test@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.isAuthMethodEnabled.mockResolvedValue(false)
+
+      await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
+        AppException,
+      )
+      expect(mockAuthRepository.isAuthMethodEnabled).toHaveBeenCalledWith('web', 'password')
+    })
+
+    it('AC-03-auth-method-check: validates auth method enabled before login', async () => {
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'test@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.isAuthMethodEnabled.mockResolvedValue(true)
+      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
+
+      await authService.login('test@gofer.bot', 'password123', 'web')
+
+      expect(mockAuthRepository.isAuthMethodEnabled).toHaveBeenCalledWith('web', 'password')
     })
   })
 

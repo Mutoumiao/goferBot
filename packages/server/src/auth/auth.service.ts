@@ -59,14 +59,15 @@ export class AuthService {
     return { user, ...tokens }
   }
 
-  async login(
-    email: string,
-    password: string,
-    app: AuthApp,
-  ) {
+  async login(email: string, password: string, app: AuthApp) {
     const user = await this.userService.validatePassword(email, password)
 
     if (!user.isActive) {
+      throw accountDisabledError()
+    }
+
+    const authMethodEnabled = await this.authRepository.isAuthMethodEnabled(app, 'password')
+    if (!authMethodEnabled) {
       throw accountDisabledError()
     }
 
@@ -304,19 +305,10 @@ export class AuthService {
     app: AuthApp,
     meta?: { userAgent?: string; ip?: string },
   ): Promise<TokenPair & { sessionId: string }> {
-    const session = await this.authRepository.createSession({
-      userId,
-      app,
-      userAgent: meta?.userAgent,
-      ip: meta?.ip,
-    })
-
     const jti = this.generateJti()
     const jtiHash = this.hashJti(jti)
-    await this.authRepository.insertRefreshToken({
-      sessionId: session.id,
-      jtiHash,
-    })
+
+    const session = await this.authRepository.createSessionWithTokenPair(userId, app, jtiHash, meta)
 
     const accessPayload: JwtAccessPayload = {
       sub: userId,

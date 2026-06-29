@@ -4,13 +4,14 @@ import { RagModule } from '../../processors/rag/rag.module.js'
 import { StorageModule } from '../../processors/storage/storage.module.js'
 import { DocumentController } from './document.controller.js'
 import { DocumentService } from './document.service.js'
-import { DocumentRepository } from './repositories/document.repository.js'
 import { FolderController } from './folder.controller.js'
 import { FolderService } from './folder.service.js'
-import { FolderRepository } from './repositories/folder.repository.js'
 import { KbCleanupService } from './kb-cleanup.service.js'
 import { KnowledgeBaseController } from './knowledge-base.controller.js'
 import { KnowledgeBaseService } from './knowledge-base.service.js'
+import { KnowledgeBaseDeletedListener } from './listeners/kb-deleted.listener.js'
+import { DocumentRepository } from './repositories/document.repository.js'
+import { FolderRepository } from './repositories/folder.repository.js'
 import { KbRepository } from './repositories/kb.repository.js'
 
 @Module({
@@ -23,6 +24,7 @@ import { KbRepository } from './repositories/kb.repository.js'
     KbCleanupService,
     DocumentService,
     DocumentRepository,
+    KnowledgeBaseDeletedListener,
   ],
   controllers: [KnowledgeBaseController, FolderController, DocumentController],
 })

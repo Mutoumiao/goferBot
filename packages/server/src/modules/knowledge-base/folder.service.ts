@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import { TransactionManager } from '../../shared/repositories/transaction-manager.js'
 import { DocumentService } from './document.service.js'
 import type { CopyFolderDto } from './dto/copy-folder.dto.js'
 import type { CreateFolderDto } from './dto/create-folder.dto.js'
@@ -44,6 +45,7 @@ export class FolderService {
     private readonly prisma: PrismaService,
     private readonly cleanupService: KbCleanupService,
     private readonly documentService: DocumentService,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   async list(userId: string, kbId: string, parentId?: string, sortBy?: string, sortOrder?: string) {
@@ -298,8 +300,7 @@ export class FolderService {
     targetParentId: string | null,
   ): Promise<Map<string, string>> {
     const folderMap = new Map<string, string>()
-    // folder 树记录在事务内原子创建；文档复制涉及外部存储/向量，无法纳入同一事务。
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await this.transactionManager.run(async (tx) => {
       const stack: Array<{ id: string; parentId: string | null }> = [
         { id: sourceRootId, parentId: targetParentId },
       ]

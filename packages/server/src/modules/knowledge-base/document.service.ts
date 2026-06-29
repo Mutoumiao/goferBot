@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import type { Prisma } from '@prisma/client'
 import { QueueService } from '../../processors/queue/queue.service.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
@@ -14,10 +15,11 @@ import type { CopyDocumentDto } from './dto/copy-document.dto.js'
 import type { CreateDocumentDto } from './dto/create-document.dto.js'
 import type { MoveDocumentDto } from './dto/move-document.dto.js'
 import type { UpdateDocumentDto } from './dto/update-document.dto.js'
+import { DocumentUploadedEvent } from './events/document-uploaded.event.js'
+import { KbCleanupService } from './kb-cleanup.service.js'
 import type { DocUpdateData } from './repositories/document.repository.js'
 import { DocumentRepository } from './repositories/document.repository.js'
 import { FolderRepository } from './repositories/folder.repository.js'
-import { KbCleanupService } from './kb-cleanup.service.js'
 import { KbRepository } from './repositories/kb.repository.js'
 
 const MAX_CROSS_KB_FILE_SIZE = 50 * 1024 * 1024
@@ -63,6 +65,7 @@ export class DocumentService {
     private readonly kbRepository: KbRepository,
     private readonly storage: StorageService,
     private readonly cleanupService: KbCleanupService,
+    private readonly eventEmitter: EventEmitter2,
     @Optional() private readonly queueService?: QueueService,
   ) {}
 
@@ -121,7 +124,10 @@ export class DocumentService {
 
     const queueHealthy = await this.queueService?.isHealthy()
     if (queueHealthy) {
-      await this.queueService?.addDocumentJob(doc.id, 'index')
+      await this.eventEmitter.emitAsync(
+        DocumentUploadedEvent.eventType,
+        new DocumentUploadedEvent(doc.id, kbId, userId),
+      )
     }
 
     return { ...doc, size: doc.size !== null ? Number(doc.size) : null }

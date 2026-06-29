@@ -23,6 +23,12 @@ describe('AuthRepository', () => {
         findMany: vi.fn(),
       },
       $queryRaw: vi.fn(),
+      application: {
+        findUnique: vi.fn(),
+      },
+      applicationAuthMethod: {
+        findUnique: vi.fn(),
+      },
     }
 
     authRepository = new AuthRepository(mockPrismaService)
@@ -279,6 +285,64 @@ describe('AuthRepository', () => {
       const result = await authRepository.getRolesForUserByApp('u1', 'admin')
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('isAuthMethodEnabled', () => {
+    it('returns true when application is active and method is enabled', async () => {
+      mockPrismaService.application.findUnique.mockResolvedValue({ id: 'app-1', status: 'active' })
+      mockPrismaService.applicationAuthMethod.findUnique.mockResolvedValue({ enabled: true })
+
+      const result = await authRepository.isAuthMethodEnabled('web', 'password')
+
+      expect(result).toBe(true)
+      expect(mockPrismaService.application.findUnique).toHaveBeenCalledWith({
+        where: { code: 'web' },
+        select: { id: true, status: true },
+      })
+      expect(mockPrismaService.applicationAuthMethod.findUnique).toHaveBeenCalledWith({
+        where: { applicationId_provider: { applicationId: 'app-1', provider: 'password' } },
+        select: { enabled: true },
+      })
+    })
+
+    it('returns false when application is inactive', async () => {
+      mockPrismaService.application.findUnique.mockResolvedValue({
+        id: 'app-1',
+        status: 'inactive',
+      })
+
+      const result = await authRepository.isAuthMethodEnabled('web', 'password')
+
+      expect(result).toBe(false)
+      expect(mockPrismaService.applicationAuthMethod.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('returns false when application does not exist', async () => {
+      mockPrismaService.application.findUnique.mockResolvedValue(null)
+
+      const result = await authRepository.isAuthMethodEnabled('unknown', 'password')
+
+      expect(result).toBe(false)
+      expect(mockPrismaService.applicationAuthMethod.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('returns false when method is disabled', async () => {
+      mockPrismaService.application.findUnique.mockResolvedValue({ id: 'app-1', status: 'active' })
+      mockPrismaService.applicationAuthMethod.findUnique.mockResolvedValue({ enabled: false })
+
+      const result = await authRepository.isAuthMethodEnabled('web', 'password')
+
+      expect(result).toBe(false)
+    })
+
+    it('returns false when method is not configured', async () => {
+      mockPrismaService.application.findUnique.mockResolvedValue({ id: 'app-1', status: 'active' })
+      mockPrismaService.applicationAuthMethod.findUnique.mockResolvedValue(null)
+
+      const result = await authRepository.isAuthMethodEnabled('web', 'sso')
+
+      expect(result).toBe(false)
     })
   })
 })

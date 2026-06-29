@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
+import { TransactionCapable } from '../../shared/repositories/transaction-capable.js'
 import type { AuthApp } from '../types/auth-app.type.js'
 
 @Injectable()
 export class AuthRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly tx: TransactionCapable
+
+  constructor(private readonly prisma: PrismaService) {
+    this.tx = new TransactionCapable(prisma)
+  }
 
   async createSession(data: { userId: string; app: AuthApp; userAgent?: string; ip?: string }) {
     return this.prisma.authSession.create({
@@ -14,6 +19,31 @@ export class AuthRepository {
         userAgent: data.userAgent,
         ip: data.ip,
       },
+    })
+  }
+
+  async createSessionWithTokenPair(
+    userId: string,
+    app: AuthApp,
+    jtiHash: string,
+    meta?: { userAgent?: string; ip?: string },
+  ) {
+    return this.tx.run(async (tx) => {
+      const session = await tx.authSession.create({
+        data: {
+          userId,
+          app,
+          userAgent: meta?.userAgent,
+          ip: meta?.ip,
+        },
+      })
+      await tx.refreshToken.create({
+        data: {
+          sessionId: session.id,
+          jtiHash,
+        },
+      })
+      return session
     })
   }
 
@@ -36,16 +66,16 @@ export class AuthRepository {
 
   async revokeAllSessionsForUser(userId: string, reason: string): Promise<void> {
     const now = new Date()
-    await this.prisma.$transaction([
-      this.prisma.authSession.updateMany({
+    await this.tx.run(async (tx) => {
+      await tx.authSession.updateMany({
         where: { userId, revokedAt: null },
         data: { revokedAt: now, revokedReason: reason },
-      }),
-      this.prisma.refreshToken.updateMany({
+      })
+      await tx.refreshToken.updateMany({
         where: { session: { userId }, revokedAt: null },
         data: { revokedAt: now },
-      }),
-    ])
+      })
+    })
   }
 
   async insertRefreshToken(data: { sessionId: string; jtiHash: string; parentTokenId?: string }) {
@@ -65,15 +95,7 @@ export class AuthRepository {
     })
   }
 
-  /**
-   * 原子标记 refresh token 为已使用。
-   * 使用 $queryRaw 执行 UPDATE ... RETURNING，确保并发安全：
-   * 只有第一个请求能成功更新并返回行，其余请求返回空数组（触发重放检测）。
-   */
-  async markRefreshTokenUsed(
-    jtiHash: string,
-    replacedByTokenId?: string,
-  ): Promise<boolean> {
+  async markRefreshTokenUsed(jtiHash: string, replacedByTokenId?: string): Promise<boolean> {
     const now = new Date()
     const result = (await this.prisma.$queryRaw`
       UPDATE "RefreshToken"
@@ -99,5 +121,28 @@ export class AuthRepository {
       where: { userId, app },
       select: { role: true },
     })
+  }
+
+  async isAuthMethodEnabled(applicationCode: string, provider: string): Promise<boolean> {
+    const application = await this.prisma.application.findUnique({
+      where: { code: applicationCode },
+      select: { id: true, status: true },
+    })
+
+    if (application?.status !== 'active') {
+      return false
+    }
+
+    const method = await this.prisma.applicationAuthMethod.findUnique({
+      where: {
+        applicationId_provider: {
+          applicationId: application.id,
+          provider,
+        },
+      },
+      select: { enabled: true },
+    })
+
+    return method?.enabled === true
   }
 }

@@ -1,9 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DocumentService } from '@/modules/knowledge-base/document.service.js'
-import { DocumentRepository } from '@/modules/knowledge-base/repositories/document.repository.js'
-import { FolderRepository } from '@/modules/knowledge-base/repositories/folder.repository.js'
-import { KbRepository } from '@/modules/knowledge-base/repositories/kb.repository.js'
 
 describe('DocumentService', () => {
   let docService: DocumentService
@@ -13,6 +10,7 @@ describe('DocumentService', () => {
   let mockStorage: any
   let mockQueueService: any
   let mockCleanupService: any
+  let mockEventEmitter: any
 
   beforeEach(() => {
     mockDocumentRepository = {
@@ -43,12 +41,17 @@ describe('DocumentService', () => {
       cleanupDocument: vi.fn().mockResolvedValue(undefined),
     }
 
+    mockEventEmitter = {
+      emitAsync: vi.fn().mockResolvedValue(undefined),
+    }
+
     docService = new DocumentService(
       mockDocumentRepository,
       mockFolderRepository,
       mockKbRepository,
       mockStorage,
       mockCleanupService,
+      mockEventEmitter as any,
       mockQueueService,
     )
   })
@@ -56,7 +59,9 @@ describe('DocumentService', () => {
   describe('list', () => {
     it('AC-04j: returns documents for KB owner with default sort', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([{ id: 'd1', name: 'doc.txt', kbId: 'kb1' }])
+      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([
+        { id: 'd1', name: 'doc.txt', kbId: 'kb1' },
+      ])
       mockDocumentRepository.countByKbId.mockResolvedValue(1)
 
       const result = await docService.list('u1', 'kb1')
@@ -75,7 +80,9 @@ describe('DocumentService', () => {
 
     it('treats empty string folderId as root (null)', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([{ id: 'd1', name: 'root.txt' }])
+      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([
+        { id: 'd1', name: 'root.txt' },
+      ])
       mockDocumentRepository.countByKbId.mockResolvedValue(1)
 
       const result = await docService.list('u1', 'kb1', '')
@@ -92,7 +99,9 @@ describe('DocumentService', () => {
 
     it('sorts documents by requested field', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([{ id: 'd1', name: 'a' }])
+      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([
+        { id: 'd1', name: 'a' },
+      ])
       mockDocumentRepository.countByKbId.mockResolvedValue(1)
 
       const result = await docService.list('u1', 'kb1', null, 'name', 'asc')
@@ -109,7 +118,9 @@ describe('DocumentService', () => {
 
     it('sorts documents by type using ext and mimeType', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([{ id: 'd1', name: 'a' }])
+      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([
+        { id: 'd1', name: 'a' },
+      ])
       mockDocumentRepository.countByKbId.mockResolvedValue(1)
 
       const result = await docService.list('u1', 'kb1', null, 'type', 'desc')
@@ -126,7 +137,9 @@ describe('DocumentService', () => {
 
     it('falls back to default sort when parameters are invalid', async () => {
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
-      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([{ id: 'd1', name: 'a' }])
+      mockDocumentRepository.findManyByKbIdWithPagination.mockResolvedValue([
+        { id: 'd1', name: 'a' },
+      ])
       mockDocumentRepository.countByKbId.mockResolvedValue(1)
 
       const result = await docService.list('u1', 'kb1', null, 'invalid', 'bad')
@@ -163,10 +176,13 @@ describe('DocumentService', () => {
 
       expect(result.name).toBe('test.txt')
       expect(mockStorage.uploadFile).toHaveBeenCalled()
-      expect(mockQueueService.addDocumentJob).toHaveBeenCalledWith('d1', 'index')
+      expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith(
+        'document.uploaded',
+        expect.anything(),
+      )
     })
 
-    it('AC-04l: uploads file without queue when queueService not healthy', async () => {
+    it('AC-04l: uploads file without event when queueService not healthy', async () => {
       mockQueueService.isHealthy.mockResolvedValue(false)
       mockKbRepository.findById.mockResolvedValue({ userId: 'u1' })
       mockDocumentRepository.create.mockResolvedValue({
@@ -187,7 +203,7 @@ describe('DocumentService', () => {
 
       expect(result.name).toBe('test.txt')
       expect(mockStorage.uploadFile).toHaveBeenCalled()
-      expect(mockQueueService.addDocumentJob).not.toHaveBeenCalled()
+      expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled()
     })
   })
 
