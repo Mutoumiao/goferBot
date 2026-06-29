@@ -486,3 +486,32 @@ model UserRole {
   @@index([userId, app])
   @@map("user_roles")
 }
+
+// ==================== Application Auth Config ====================
+
+model Application {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  authMethods ApplicationAuthMethod[]
+
+  @@map("applications")
+}
+
+model ApplicationAuthMethod {
+  id            String   @id @default(uuid())
+  applicationId String  @map("application_id")
+  provider      String
+  enabled       Boolean  @default(true)
+  config        Json?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, provider])
+  @@index([provider])
+  @@map("application_auth_methods")
+}
