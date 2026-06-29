@@ -17,7 +17,7 @@ export function PermissionMatrix({ roleId, onBack }: { roleId: string; onBack: (
       setRole(r)
       setPermissions(perms)
       setSelected(r?.permissions ?? [])
-    } catch (e) {
+    } catch {
       message.error('加载角色或权限列表失败，请刷新重试')
     }
   }

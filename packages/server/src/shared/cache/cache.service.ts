@@ -14,11 +14,14 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly configService: ConfigService) {}
 
   async onModuleInit() {
-    const host = this.configService.get<string>('CACHE_REDIS_HOST') ??
+    const host =
+      this.configService.get<string>('CACHE_REDIS_HOST') ??
       this.configService.get<string>('REDIS_HOST', 'localhost')
-    const port = this.configService.get<number>('CACHE_REDIS_PORT') ??
+    const port =
+      this.configService.get<number>('CACHE_REDIS_PORT') ??
       this.configService.get<number>('REDIS_PORT', 6379)
-    const password = this.configService.get<string>('CACHE_REDIS_PASSWORD') ??
+    const password =
+      this.configService.get<string>('CACHE_REDIS_PASSWORD') ??
       this.configService.get<string>('REDIS_PASSWORD')
 
     const conn = createRedisConnection(host, port, password)
@@ -72,17 +75,13 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     let totalDeleted = 0
     do {
       if (iterations >= MAX_SCAN_ITERATIONS) {
-        this.logger.warn(`delByPrefix exceeded ${MAX_SCAN_ITERATIONS} iterations for prefix ${prefix}, stopped early. Deleted ${totalDeleted} keys.`)
+        this.logger.warn(
+          `delByPrefix exceeded ${MAX_SCAN_ITERATIONS} iterations for prefix ${prefix}, stopped early. Deleted ${totalDeleted} keys.`,
+        )
         break
       }
       iterations++
-      const result = await this.redis?.scan(
-        cursor,
-        'MATCH',
-        `${fullPrefix}*`,
-        'COUNT',
-        '100',
-      )
+      const result = await this.redis?.scan(cursor, 'MATCH', `${fullPrefix}*`, 'COUNT', '100')
       if (!result) break
       cursor = result[0]
       const keys = result[1]

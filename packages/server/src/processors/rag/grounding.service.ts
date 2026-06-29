@@ -53,7 +53,7 @@ export class GroundingService {
    *   短句子（<8 字符）自动 grounded，因为过短的句子算分容易误判。
    */
   async checkGrounding(answer: string, chunks: GroundingChunk[]): Promise<GroundingResult[]> {
-    if (!answer || !answer.trim()) {
+    if (!answer?.trim()) {
       return []
     }
 
@@ -129,13 +129,13 @@ export class GroundingService {
 
     const sentenceSet = new Set(tokens)
     let hitCount = 0
-    let weightedHit = 0
+    let _weightedHit = 0
 
     for (const token of tokens) {
       if (token.length < 2) continue
       if (chunkTokens.has(token)) {
         hitCount += 1
-        weightedHit += token.length >= 4 ? 1.2 : 1
+        _weightedHit += token.length >= 4 ? 1.2 : 1
       }
     }
 

@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { App, Button, Card, Descriptions, Empty, Tag, Tooltip } from 'antd'
-import { ArrowLeft, Eye, EyeOff, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { fetchSession, fetchSessionMessages, type SessionItem } from '../services'

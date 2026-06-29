@@ -60,7 +60,6 @@ export class QueueModule {
     }
 
     return {
-      // biome-ignorelint: suspicious/noExplicitAny: NestJS 动态模块需要使用 Type<any>
       module: QueueModule as unknown as Type<any>,
       imports: [ConfigModule, forwardRef(() => RagModule)],
       providers,

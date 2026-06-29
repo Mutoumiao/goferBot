@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Popconfirm, Space, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Edit, Plus, RefreshCw, Trash2 } from 'lucide-react'
@@ -11,7 +10,6 @@ import { deleteRoleService, fetchRoles } from '../services'
 import { RoleFormModal } from './RoleForm'
 
 export function RoleList() {
-  const navigate = useNavigate()
   const [data, setData] = useState<Role[]>([])
   const [loading, setLoading] = useState(false)
 

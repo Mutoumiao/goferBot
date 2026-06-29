@@ -6,7 +6,6 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { EventEmitterModule } from '@nestjs/event-emitter'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
-import { CacheModule } from './shared/cache/cache.module.js'
 import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
 import { SpiderGuard } from './common/guards/spider.guard.js'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
@@ -23,6 +22,7 @@ import { UserModule } from './modules/user/user.module.js'
 import { QueueModule } from './processors/queue/queue.module.js'
 import { RagModule } from './processors/rag/rag.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
+import { CacheModule } from './shared/cache/cache.module.js'
 
 // ponytail: 使用 import.meta.url 定位 .env，避免 nest start --watch 在 dist/ 目录运行时 process.cwd() 漂移导致找不到根目录 .env
 // 编译后 app.module.js 位于 packages/server/dist/，到根目录需要上溯三层：dist → server → knowledge-base

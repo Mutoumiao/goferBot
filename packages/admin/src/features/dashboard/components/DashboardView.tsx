@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Col, Row } from 'antd'
+import { Alert, Button, Col, Row } from 'antd'
 import { RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { DashboardData } from '../services'

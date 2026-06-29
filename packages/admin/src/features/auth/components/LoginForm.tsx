@@ -1,5 +1,5 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { Alert, Button, Checkbox, Form, Input, Progress } from 'antd'
+import { Alert, Button, Checkbox, Input, Progress } from 'antd'
 import { Eye, EyeOff, Loader2, Lock, User2 } from 'lucide-react'
 import { useState } from 'react'
 import { ROUTES_REGISTER } from '@/router-register'

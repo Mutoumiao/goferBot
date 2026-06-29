@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { AdminUserResponse } from '@/features/users/services'
 import { fetchUser, updateUserService } from '@/features/users/services'
-import { isConflict } from '@/utils/error-mapper'
 
 export const Route = createFileRoute('/_authenticated/users/$id')({
   component: UserDetailPage,

@@ -31,7 +31,12 @@ export class KnowledgeBaseService {
 
   async list(userId: string, page: number, size: number) {
     const cacheKey = `${KB_LIST_CACHE_PREFIX}${userId}:${page}:${size}`
-    const cached = await this.cacheService.get<{ items: Awaited<ReturnType<KbRepository['findManyByUserIdWithPagination']>>; total: number; page: number; size: number }>(cacheKey)
+    const cached = await this.cacheService.get<{
+      items: Awaited<ReturnType<KbRepository['findManyByUserIdWithPagination']>>
+      total: number
+      page: number
+      size: number
+    }>(cacheKey)
     if (cached) {
       return cached
     }

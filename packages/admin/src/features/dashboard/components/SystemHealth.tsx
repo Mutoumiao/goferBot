@@ -1,9 +1,9 @@
 import { Card, Progress, Tag } from 'antd'
 import { CheckCircle2 } from 'lucide-react'
-import type { SystemHealth } from '../services'
+import type { SystemHealth as SystemHealthData } from '../services'
 
 export interface SystemHealthProps {
-  health?: SystemHealth
+  health?: SystemHealthData
 }
 
 export function SystemHealth({ health }: SystemHealthProps) {

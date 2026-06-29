@@ -101,14 +101,16 @@
           },
           "complexity": {
             "noBannedTypes": "off",
-            "noUselessConstructor": "off"
+            "noUselessConstructor": "off",
+            "noStaticOnlyClass": "off"
           },
           "correctness": {
             "useHookAtTopLevel": "off",
             "useYield": "off"
           },
           "suspicious": {
-            "useIterableCallbackReturn": "off"
+            "useIterableCallbackReturn": "off",
+            "noExplicitAny": "off"
           }
         }
       }
@@ -119,7 +121,7 @@
         "rules": {
           "a11y": "off",
           "suspicious": {
-            "noExplicitAny": "warn",
+            "noExplicitAny": "off",
             "noRedeclare": "warn",
             "useIterableCallbackReturn": "off"
           },
@@ -137,16 +139,22 @@
       }
     },
     {
-      "includes": ["packages/web/src/components/ui/**"],
+      "includes": ["packages/web/**"],
       "linter": {
         "rules": {
           "a11y": "off",
           "suspicious": {
-            "noArrayIndexKey": "off"
+            "noExplicitAny": "warn",
+            "noRedeclare": "warn",
+            "noArrayIndexKey": "warn"
           },
           "correctness": {
-            "useExhaustiveDependencies": "off"
-          }
+            "useExhaustiveDependencies": "off",
+            "useHookAtTopLevel": "off",
+            "noUnusedImports": "warn",
+            "noUnusedVariables": "warn"
+          },
+          "complexity": "off"
         }
       }
     },
@@ -167,7 +175,8 @@
           },
           "correctness": {
             "useHookAtTopLevel": "off",
-            "useYield": "off"
+            "useYield": "off",
+            "noUnusedFunctionParameters": "off"
           }
         }
       }

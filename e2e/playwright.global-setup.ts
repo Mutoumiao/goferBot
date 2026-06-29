@@ -15,7 +15,6 @@ import { Client } from 'pg'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const PROJECT_ROOT = path.resolve(__dirname, '../..')
 const E2E_DATABASE_URL =
   'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
 
