@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { PaginationResult } from '../interfaces/paginator.interface.js'
+import { TransactionCapable } from './transaction-capable.js'
 
 export interface RepositoryOptions {
   page?: number
@@ -11,8 +12,11 @@ export interface RepositoryOptions {
 @Injectable()
 export abstract class BaseRepository<T, CreateInput, UpdateInput> {
   protected abstract readonly modelName: keyof PrismaService
+  protected readonly tx: TransactionCapable
 
-  constructor(protected readonly prisma: PrismaService) {}
+  constructor(protected readonly prisma: PrismaService) {
+    this.tx = new TransactionCapable(prisma)
+  }
 
   protected get model() {
     return this.prisma[this.modelName] as unknown as {
