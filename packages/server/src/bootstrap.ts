@@ -1,12 +1,29 @@
+import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import multipart from '@fastify/multipart'
 import { ConfigService } from '@nestjs/config'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware.js'
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware.js'
 import { setAllowedHostnames } from './common/utils/ssrf-guard.js'
+
+export function logLevelToNestLevels(
+  level: string,
+): ('log' | 'error' | 'warn' | 'debug' | 'verbose')[] {
+  switch (level) {
+    case 'debug':
+      return ['log', 'error', 'warn', 'debug', 'verbose']
+    case 'info':
+      return ['log', 'error', 'warn']
+    case 'warn':
+      return ['error', 'warn']
+    case 'error':
+      return ['error']
+    default:
+      return ['log', 'error', 'warn']
+  }
+}
 
 export async function bootstrap(app: NestFastifyApplication) {
   const configService = app.get(ConfigService)
@@ -28,7 +45,17 @@ export async function bootstrap(app: NestFastifyApplication) {
     hsts: process.env.NODE_ENV === 'production',
   })
 
-  // 1.5 Multipart 文件上传
+  // 1.5 Cookie 插件（用于 HttpOnly Cookie 认证）
+  await app.register(cookie, {
+    secret: configService.get<string>('JWT_SECRET'), // 用于签名 cookie
+    parseOptions: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    },
+  })
+
+  // 1.6 Multipart 文件上传
   await app.register(multipart, {
     limits: {
       fileSize: 50 * 1024 * 1024, // 50MB
@@ -38,24 +65,16 @@ export async function bootstrap(app: NestFastifyApplication) {
   })
 
   // 2. CORS（白名单 origin）
-  const isProduction = process.env.NODE_ENV === 'production'
-  const envOrigin = configService.get<string>('CORS_ORIGIN')
-  const allowedOrigins = isProduction
-    ? envOrigin
-      ? [envOrigin]
-      : []
-    : [
-        'http://localhost:1420',
-        'http://localhost:1421',
-        'tauri://localhost',
-        'http://localhost:3000',
-        'http://localhost:5173',
-        ...(envOrigin ? [envOrigin] : []),
-      ]
+  const envOrigins = (configService.get<string>('CORS_ORIGIN') ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+  console.log('🚀 ~ bootstrap ~ envOrigins:', envOrigins)
 
   await app.register(cors, {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      console.log('🚀 ~ bootstrap ~ origin:', origin)
+      if (!origin || envOrigins.includes(origin)) {
         callback(null, true)
         return
       }
@@ -71,14 +90,17 @@ export async function bootstrap(app: NestFastifyApplication) {
     exclude: ['/health'],
   })
 
-  // 3.5 RequestId 中间件
-  app.use(new RequestIdMiddleware().use)
+  // 3.5 RequestId 中间件（使用 Fastify onRequest hook 避免依赖 @fastify/middie）
+  const fastifyInstance = app.getHttpAdapter().getInstance()
+  const requestIdMw = new RequestIdMiddleware()
+  const requestContextMw = new RequestContextMiddleware()
+  fastifyInstance.addHook('onRequest', (req, _reply, done) => {
+    requestIdMw.use(req as any, _reply as any, () => {
+      requestContextMw.use(req as any, _reply as any, done)
+    })
+  })
 
-  // 3.6 RequestContext 中间件（AsyncLocalStorage 隐式传递上下文）
-  app.use(new RequestContextMiddleware().use)
-
-  // 4. 日志拦截器（生产与开发环境均启用，内部自行区分行为模式）
-  app.useGlobalInterceptors(new LoggingInterceptor())
+  // 注意：LoggingInterceptor 已在 AppModule 通过 APP_INTERCEPTOR 注册，此处不再重复注册
 
   // Graceful shutdown
   app.enableShutdownHooks()

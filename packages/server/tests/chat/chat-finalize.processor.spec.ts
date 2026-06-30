@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RequestContextStorage } from '../../src/common/request-context-storage.js'
 import type { ConversationService } from '../../src/modules/chat/conversation.service.js'
 import type { LlmProviderFactory } from '../../src/modules/chat/llm/llm-provider.factory.js'
-import type { ModelRegistryService } from '../../src/modules/chat/model-registry.service.js'
+import type { ModelProvider, Settings } from '../../src/modules/settings/dto/settings.dto.js'
+import type { SystemConfigService } from '../../src/modules/settings/system-config.service.js'
 import { ChatFinalizeProcessor } from '../../src/processors/chat/chat-finalize.processor.js'
 import type { ChatFinalizeJobData } from '../../src/queue/index.js'
 
@@ -24,10 +25,56 @@ function createMockJob(overrides: Partial<ChatFinalizeJobData> = {}): Job<ChatFi
   } as unknown as Job<ChatFinalizeJobData>
 }
 
+function buildSettings(overrides: Partial<Settings> = {}): Settings {
+  const defaultProvider: ModelProvider = {
+    id: 'default-llm',
+    name: 'Default LLM',
+    type: 'llm',
+    enabled: true,
+    model: 'gpt-4o-mini',
+    apiKey: 'sk-test-api-key',
+    baseUrl: 'https://api.openai.com',
+    timeoutMs: 30_000,
+  }
+  const fallbackProvider: ModelProvider = {
+    ...defaultProvider,
+    id: 'backup-llm',
+    name: 'Backup LLM',
+    apiKey: 'sk-test-backup-key',
+  }
+  const base: Settings = {
+    providers: {
+      'default-llm': defaultProvider,
+      'backup-llm': fallbackProvider,
+    },
+    chat: {
+      defaultProvider: 'default-llm',
+      enabledProviders: ['default-llm', 'backup-llm'],
+      temperature: 0.7,
+    },
+    rag: {
+      llmProvider: 'default-llm',
+      embeddingProvider: 'default-llm',
+      rerankerAllowedModelPrefixes: ['BAAI/'],
+      timeoutMs: 60_000,
+    },
+    companion: {},
+    indexing: {
+      contextualEmbedding: false,
+      contextualWindow: 1,
+      parentChunkSize: 800,
+      childChunkSize: 150,
+      synonymDict: { zh: {}, en: {} },
+    },
+    appearance: { mode: 'light', fontSizeLevel: 5 },
+  }
+  return { ...base, ...overrides }
+}
+
 describe('ChatFinalizeProcessor', () => {
   let processor: ChatFinalizeProcessor
   let mockConversationService: Partial<ConversationService>
-  let mockModelRegistry: Partial<ModelRegistryService>
+  let mockSystemConfigService: Partial<SystemConfigService>
   let mockLlmProviderFactory: Partial<LlmProviderFactory>
 
   beforeEach(() => {
@@ -36,16 +83,12 @@ describe('ChatFinalizeProcessor', () => {
       saveAssistantMessage: vi.fn().mockResolvedValue(undefined),
       generateTitle: vi.fn().mockResolvedValue(undefined),
     }
-    mockModelRegistry = {
-      lookup: vi.fn().mockReturnValue({
-        providerKey: 'openai',
-        providerName: 'OpenAI',
-        baseUrl: 'https://api.openai.com',
-      }),
+    mockSystemConfigService = {
+      getDecryptedSystemConfig: vi.fn().mockResolvedValue(buildSettings()),
     }
     mockLlmProviderFactory = {
       create: vi.fn().mockReturnValue({
-        providerKey: 'openai',
+        providerKey: 'gpt-4o-mini',
         capabilities: [],
         stream: vi.fn(),
         invoke: vi.fn(),
@@ -53,7 +96,7 @@ describe('ChatFinalizeProcessor', () => {
     }
     processor = new ChatFinalizeProcessor(
       mockConversationService as ConversationService,
-      mockModelRegistry as ModelRegistryService,
+      mockSystemConfigService as SystemConfigService,
       mockLlmProviderFactory as LlmProviderFactory,
     )
   })
@@ -75,25 +118,75 @@ describe('ChatFinalizeProcessor', () => {
       )
     })
 
-    it('calls generateTitle when model provider is available', async () => {
+    it('resolves title provider from system config defaultProvider and passes decrypted apiKey (no hardcoded empty apiKey)', async () => {
       const job = createMockJob()
 
       await processor.process(job)
 
+      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith('default-llm', {
+        apiKey: 'sk-test-api-key',
+        model: 'gpt-4o-mini',
+        baseURL: 'https://api.openai.com',
+        timeout: 30_000,
+      })
       expect(mockConversationService.generateTitle).toHaveBeenCalledWith(
         'session-1',
         'Hi',
         'Hello, world!',
-        expect.objectContaining({ providerKey: 'openai' }),
+        expect.objectContaining({ providerKey: 'gpt-4o-mini' }),
       )
     })
 
-    it('skips title generation when model registry lookup returns null', async () => {
-      mockModelRegistry.lookup = vi.fn().mockReturnValue(undefined)
-      processor = new ChatFinalizeProcessor(
-        mockConversationService as ConversationService,
-        mockModelRegistry as ModelRegistryService,
-        mockLlmProviderFactory as LlmProviderFactory,
+    it('does not fall back to hardcoded "default" provider id when config is absent', async () => {
+      mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
+        buildSettings({
+          chat: {
+            defaultProvider: undefined,
+            enabledProviders: [],
+            temperature: 0.7,
+          },
+        }),
+      )
+      const job = createMockJob()
+
+      await processor.process(job)
+
+      expect(mockLlmProviderFactory.create).not.toHaveBeenCalled()
+      expect(mockConversationService.generateTitle).not.toHaveBeenCalled()
+    })
+
+    it('falls back to first enabled LLM provider when defaultProvider is not set', async () => {
+      mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
+        buildSettings({
+          chat: {
+            defaultProvider: undefined,
+            enabledProviders: ['backup-llm'],
+            temperature: 0.7,
+          },
+        }),
+      )
+      const job = createMockJob()
+
+      await processor.process(job)
+
+      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith('backup-llm', {
+        apiKey: 'sk-test-backup-key',
+        model: 'gpt-4o-mini',
+        baseURL: 'https://api.openai.com',
+        timeout: 30_000,
+      })
+      expect(mockConversationService.generateTitle).toHaveBeenCalled()
+    })
+
+    it('skips title generation when no usable LLM provider is enabled', async () => {
+      mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
+        buildSettings({
+          chat: {
+            defaultProvider: undefined,
+            enabledProviders: [],
+            temperature: 0.7,
+          },
+        }),
       )
       const job = createMockJob()
 
@@ -101,6 +194,157 @@ describe('ChatFinalizeProcessor', () => {
 
       expect(mockConversationService.saveAssistantMessage).toHaveBeenCalled()
       expect(mockConversationService.generateTitle).not.toHaveBeenCalled()
+    })
+
+    it('skips disabled providers and falls back to next enabled', async () => {
+      const disabledProvider: ModelProvider = {
+        id: 'disabled-llm',
+        name: 'Disabled LLM',
+        type: 'llm',
+        enabled: false,
+        model: 'gpt-4o',
+        apiKey: 'sk-disabled-key',
+        baseUrl: 'https://api.openai.com',
+        timeoutMs: 30_000,
+      }
+      mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
+        buildSettings({
+          providers: {
+            'disabled-llm': disabledProvider,
+            'backup-llm': {
+              ...disabledProvider,
+              id: 'backup-llm',
+              name: 'Backup LLM',
+              enabled: true,
+              apiKey: 'sk-test-backup-key',
+            },
+          },
+          chat: {
+            defaultProvider: 'disabled-llm',
+            enabledProviders: ['disabled-llm', 'backup-llm'],
+            temperature: 0.7,
+          },
+        }),
+      )
+      const job = createMockJob()
+
+      await processor.process(job)
+
+      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
+        'backup-llm',
+        expect.objectContaining({
+          apiKey: 'sk-test-backup-key',
+        }),
+      )
+    })
+
+    it('skips non-llm providers and falls back to next enabled llm provider', async () => {
+      const embeddingProvider: ModelProvider = {
+        id: 'embed-llm',
+        name: 'Embed',
+        type: 'embedding',
+        enabled: true,
+        model: 'text-embedding-3-small',
+        apiKey: 'sk-embed-key',
+        baseUrl: 'https://api.openai.com',
+        timeoutMs: 30_000,
+      }
+      const backupLlm: ModelProvider = {
+        ...embeddingProvider,
+        id: 'backup-llm',
+        name: 'Backup LLM',
+        type: 'llm',
+        model: 'gpt-4o-mini',
+        apiKey: 'sk-test-backup-key',
+      }
+      mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
+        buildSettings({
+          providers: {
+            'embed-llm': embeddingProvider,
+            'backup-llm': backupLlm,
+          },
+          chat: {
+            defaultProvider: 'embed-llm',
+            enabledProviders: ['embed-llm', 'backup-llm'],
+            temperature: 0.7,
+          },
+        }),
+      )
+      const job = createMockJob()
+
+      await processor.process(job)
+
+      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
+        'backup-llm',
+        expect.objectContaining({
+          apiKey: 'sk-test-backup-key',
+          model: 'gpt-4o-mini',
+        }),
+      )
+    })
+
+    it('skips provider when model or apiKey is missing', async () => {
+      const incompleteProvider: ModelProvider = {
+        id: 'incomplete-llm',
+        name: 'Incomplete',
+        type: 'llm',
+        enabled: true,
+        model: '',
+        apiKey: '',
+        baseUrl: 'https://api.openai.com',
+        timeoutMs: 30_000,
+      }
+      mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
+        buildSettings({
+          providers: {
+            'incomplete-llm': incompleteProvider,
+            'backup-llm': {
+              ...incompleteProvider,
+              id: 'backup-llm',
+              name: 'Backup LLM',
+              model: 'gpt-4o-mini',
+              apiKey: 'sk-test-backup-key',
+            },
+          },
+          chat: {
+            defaultProvider: 'incomplete-llm',
+            enabledProviders: ['incomplete-llm', 'backup-llm'],
+            temperature: 0.7,
+          },
+        }),
+      )
+      const job = createMockJob()
+
+      await processor.process(job)
+
+      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
+        'backup-llm',
+        expect.objectContaining({
+          apiKey: 'sk-test-backup-key',
+        }),
+      )
+    })
+
+    it('ignores defaultProvider when not present in enabledProviders and falls back', async () => {
+      mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
+        buildSettings({
+          chat: {
+            defaultProvider: 'unknown-llm',
+            enabledProviders: ['backup-llm'],
+            temperature: 0.7,
+          },
+        }),
+      )
+      const job = createMockJob()
+
+      await processor.process(job)
+
+      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
+        'backup-llm',
+        expect.objectContaining({
+          apiKey: 'sk-test-backup-key',
+        }),
+      )
     })
 
     it('wraps execution in RequestContextStorage.run with job trace context', async () => {
@@ -119,11 +363,6 @@ describe('ChatFinalizeProcessor', () => {
       mockConversationService.saveAssistantMessage = vi
         .fn()
         .mockRejectedValue(new Error('DB write failed'))
-      processor = new ChatFinalizeProcessor(
-        mockConversationService as ConversationService,
-        mockModelRegistry as ModelRegistryService,
-        mockLlmProviderFactory as LlmProviderFactory,
-      )
       const job = createMockJob()
 
       await expect(processor.process(job)).rejects.toThrow('DB write failed')
@@ -131,14 +370,8 @@ describe('ChatFinalizeProcessor', () => {
 
     it('does not throw when generateTitle fails (title is best-effort)', async () => {
       mockConversationService.generateTitle = vi.fn().mockRejectedValue(new Error('LLM timeout'))
-      processor = new ChatFinalizeProcessor(
-        mockConversationService as ConversationService,
-        mockModelRegistry as ModelRegistryService,
-        mockLlmProviderFactory as LlmProviderFactory,
-      )
       const job = createMockJob()
 
-      // Should not throw — title failure is caught and logged
       await expect(processor.process(job)).resolves.toBeUndefined()
       expect(mockConversationService.saveAssistantMessage).toHaveBeenCalled()
     })

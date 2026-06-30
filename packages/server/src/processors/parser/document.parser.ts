@@ -46,7 +46,7 @@ export class DocumentParser {
     for (const mime of parser.mimeTypes) {
       this.mimeIndex.set(mime.toLowerCase(), parser)
     }
-    this.logger.debug(`Registered parser "${parser.name}" for ${parser.mimeTypes.join(', ')}`)
+    this.logger.verbose(`Registered parser "${parser.name}" for ${parser.mimeTypes.join(', ')}`)
   }
 
   /** 注销一个解析器 */
@@ -88,7 +88,7 @@ export class DocumentParser {
       return parseResultSchema.parse(fallback) as ParseResult
     }
 
-    this.logger.debug(`Using parser "${parser.name}" for mime="${parsedInput.mimeType}"`)
+    this.logger.verbose(`Using parser "${parser.name}" for mime="${parsedInput.mimeType}"`)
     const result = await parser.parse(parsedInput)
     // 出口：Zod 校验，确保自定义解析器返回的结构合法
     return parseResultSchema.parse(result) as ParseResult

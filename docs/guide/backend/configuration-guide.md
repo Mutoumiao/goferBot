@@ -41,78 +41,124 @@
 
 ***
 
-## 2. 环境变量文件职责与加载顺序
+## 2. 环境变量三层架构与文件职责
 
-项目采用**统一根目录模板 + 包级覆盖**的环境变量管理策略：
+项目采用**三层环境变量架构**，以"单一信息源"为核心原则：每个变量只能在唯一的模板/实例文件中声明，避免多处维护导致的配置漂移。
 
-| 文件                             | 职责                                    | 是否必需     |
-| ------------------------------ | ------------------------------------- | -------- |
-| 根目录 `.env.example`             | 唯一的完整环境变量模板，包含基础设施、安全策略、服务端应用配置       | ✅ 是      |
-| 根目录 `.env`                     | 本地开发/部署时的实际配置文件，由 `.env.example` 复制而来 | ✅ 是      |
-| `packages/server/.env.example` | 服务端独立覆盖说明文件，通常无需填写                    | ❌ 否      |
-| `packages/server/.env`         | 服务端独立覆盖值，根目录 `.env` 会覆盖其中同名变量         | 按需       |
-| `packages/web/.env.example`    | 前端 Vite 专属配置                          | ✅ 前端开发   |
-| `packages/admin/.env.example`  | 管理后台 Vite 专属配置                        | ✅ 管理后台开发 |
+### 2.1 三层分类标准
 
-### 加载顺序
+| 层级 | 变量分类 | 单一信息源（模板） | 单一信息源（实例） | 示例 |
+|------|----------|--------------------|--------------------|------|
+| **Layer 1: Docker-Infra** | 仅被 `docker-compose.dev.yml` 使用的基础设施配置 | 根目录 `.env.example` | 根目录 `.env` | `POSTGRES_PORT`, `MINIO_ROOT_USER`, `REDIS_PORT` |
+| **Layer 2: Shared** | 被 server 应用和 docker-compose 共同使用的连接参数 | 根目录 `.env.example` | 根目录 `.env` | `DATABASE_URL`, `REDIS_HOST`, `MINIO_ENDPOINT` |
+| **Layer 3: Server-Only** | 仅被 server 应用使用的配置 | `packages/server/.env.example` | `packages/server/.env` | `JWT_SECRET`, `PORT`, `CORS_ORIGIN` |
+| **Frontend-Only** | 仅被前端 Vite 消费的变量 | `packages/web/.env.example` / `packages/admin/.env.example` | 各自的 `.env` | `VITE_API_BASE_URL` |
 
-服务端 `ConfigModule` 配置如下：
+> **禁止** 在 `packages/server/.env` 中重复声明 Shared 变量（如 `DATABASE_URL`、`REDIS_HOST`、`MINIO_*`、`ELASTICSEARCH_*`），这些变量的唯一来源是根目录 `.env`。
+
+### 2.2 文件职责
+
+| 文件 | 职责 | 包含变量层级 | 是否必需 |
+|------|------|-------------|----------|
+| 根目录 `.env.example` | Docker-Infra + Shared 变量模板（唯一信息源） | Layer 1, 2 | ✅ 是（docker-compose 依赖） |
+| 根目录 `.env` | 本地开发基础设施配置实例化 | Layer 1, 2 | ✅ 是 |
+| `packages/server/.env.example` | Server-Only 变量模板（唯一信息源） | Layer 3 | ✅ 是 |
+| `packages/server/.env` | 服务端应用配置实例化 | Layer 3 | ✅ 是 |
+| `packages/web/.env.example` | 前端 Vite 专属配置 | Frontend-Only | ✅ 前端开发 |
+| `packages/admin/.env.example` | 管理后台 Vite 专属配置 | Frontend-Only | ✅ 管理后台开发 |
+
+### 2.3 加载顺序
+
+服务端 `ConfigModule` 加载配置如下：
 
 ```ts
 ConfigModule.forRoot({
   isGlobal: true,
-  envFilePath: ['.env', '../.env'],
+  envFilePath: [
+    resolve(__dirname, '../.env'),      // packages/server/.env (Server-Only)
+    resolve(__dirname, '../../../.env'),  // 根目录 .env (Docker-Infra + Shared)
+  ],
+  validate: () => validateEnv(),
 })
 ```
 
 加载顺序为：
 
-1. `packages/server/.env`
-2. 根目录 `.env`
+1. `packages/server/.env` — Server-Only 变量
+2. 根目录 `.env` — Docker-Infra + Shared 变量
 
-**后加载的文件会覆盖先加载文件中的同名变量。** 因此：
+**后加载的文件会覆盖先加载文件中的同名变量。** 设计原则：
 
-- 通用配置统一放在**根目录** **`.env`**。
-- 只有在服务端需要特殊覆盖时，才在 `packages/server/.env` 中添加同名变量。
-- `packages/server/.env.example` 不再重复列出所有变量，仅保留职责说明。
+- **docker-compose 变量**必须留在根目录，因为 `docker-compose.dev.yml` 通过 `${VAR}` 语法从根目录 `.env` 读取。
+- **Server-Only 变量**（JWT、安全策略、业务开关等）仅存放在 `packages/server/.env`，实现模块隔离。
+- **Shared 变量**（连接参数）仅存放在根目录 `.env`，server 应用通过 ConfigModule 自动读取。
+- 如需特殊覆盖，允许在 `packages/server/.env` 中定义同名变量临时覆盖根目录的值（例如本地端口调整），但模板层只保留单一信息源。
+
+### 2.4 变量分类速查表
+
+> 单一信息源原则：下列变量仅在指定位置声明一次。
+
+| 变量 | 分类 | 单一信息源 |
+|------|------|------------|
+| `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Docker-Infra | 根目录 `.env` |
+| `MINIO_PORT`, `MINIO_CONSOLE_PORT`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` | Docker-Infra | 根目录 `.env` |
+| `REDIS_PORT` | Docker-Infra | 根目录 `.env` |
+| `DATABASE_URL`, `TEST_DATABASE_ADMIN_URL` | Shared | 根目录 `.env` |
+| `REDIS_HOST`, `REDIS_PASSWORD` | Shared | 根目录 `.env` |
+| `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`, `MINIO_REGION` | Shared | 根目录 `.env` |
+| `ELASTICSEARCH_NODE`, `ELASTICSEARCH_*`, `ELASTICSEARCH_INDEX` | Shared | 根目录 `.env` |
+| `PORT`, `NODE_ENV`, `LOG_LEVEL` | Server-Only | `packages/server/.env` |
+| `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` | Server-Only | `packages/server/.env` |
+| `BCRYPT_SALT_ROUNDS`, `SETTINGS_ENCRYPTION_KEY` | Server-Only | `packages/server/.env` |
+| `CORS_ORIGIN`, `SSRF_ALLOWED_HOSTNAMES` | Server-Only | `packages/server/.env` |
+| `QUEUE_CONCURRENCY`, `METADATA_ALLOWED_KEYS`, `RERANK_EAGER_LOAD` | Server-Only | `packages/server/.env` |
+| `VITE_API_BASE_URL` | Frontend-Only | `packages/web/.env` 或 `packages/admin/.env` |
 
 ***
 
 ## 3. 环境变量清单
 
-> 以下变量统一维护在**根目录** **`.env.example`** 中，并按类别分组。每个变量右侧都附带用途说明，便于运维与开发者理解。
+> 环境变量分为两部分维护：**根目录 `.env.example`**（Docker-Infra + Shared）和 **`packages/server/.env.example`**（Server-Only）。
 
-### 3.1 服务基础
+### 3.1 根目录 `.env` — Docker-Infra + Shared 变量
+
+以下变量存放在根目录 `.env`，供 `docker-compose.dev.yml` 和 server 应用共用：
+
+#### PostgreSQL 基础设施
 
 ```bash
-# 服务端口号，Fastify 监听端口
-PORT=3000
+# PostgreSQL 服务主机地址
+POSTGRES_HOST=localhost
 
-# 运行环境：development / production / test
-# 影响：CORS 策略、安全头、错误详情返回、Swagger 文档开关
-NODE_ENV=development
+# PostgreSQL 服务端口
+POSTGRES_PORT=5432
 
-# 日志级别：debug / info / warn / error
-# 生产环境建议设为 info 或 warn
-LOG_LEVEL=debug
+# PostgreSQL 初始化用户名
+POSTGRES_USER=gofer
+
+# PostgreSQL 初始化密码
+POSTGRES_PASSWORD=gofer_dev_pass
+
+# PostgreSQL 初始化数据库名
+POSTGRES_DB=goferbot
 ```
 
-### 3.2 数据库
+#### PostgreSQL 应用连接
 
 ```bash
 # PostgreSQL 连接串，Prisma 与 pgvector 共用
 # 格式：postgresql://用户名:密码@主机:端口/数据库名
 # 开发环境使用 127.0.0.1，避免 Windows 上 Prisma engine 对 localhost 的 IPv6 解析问题
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/goferbot
+DATABASE_URL=postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot
 
 # 测试数据库管理连接串，用于创建/删除测试数据库，需要超级用户权限
-TEST_DATABASE_ADMIN_URL=postgresql://postgres:postgres@127.0.0.1:5432/postgres
+TEST_DATABASE_ADMIN_URL=postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/postgres
 ```
 
-### 3.3 缓存与队列
+#### Redis 基础设施 + 应用
 
 ```bash
-# Redis 主机地址，用于会话、队列、缓存
+# Redis 服务主机地址
 REDIS_HOST=localhost
 
 # Redis 端口
@@ -120,12 +166,9 @@ REDIS_PORT=6379
 
 # Redis 密码，无密码时留空
 REDIS_PASSWORD=
-
-# BullMQ 任务并发数，控制同时执行的后台任务数量
-QUEUE_CONCURRENCY=2
 ```
 
-### 3.4 对象存储
+#### MinIO 基础设施 + 应用
 
 ```bash
 # MinIO 服务端点，S3 兼容
@@ -140,15 +183,63 @@ MINIO_SECRET_KEY=minioadmin
 # MinIO 默认桶名，用于存储用户上传的文档
 MINIO_BUCKET=goferbot-files
 
-# MinIO 控制台端口（Docker Compose 使用）
+# MinIO 区域
+MINIO_REGION=us-east-1
+
+# MinIO 服务端口（docker-compose 使用）
+MINIO_PORT=9000
+
+# MinIO 控制台端口（docker-compose 使用）
 MINIO_CONSOLE_PORT=9001
+
+# MinIO 根账号（docker-compose 初始化）
+MINIO_ROOT_USER=minioadmin
+
+# MinIO 根密码（docker-compose 初始化）
+MINIO_ROOT_PASSWORD=minioadmin
 ```
 
-### 3.5 认证与安全
+#### Elasticsearch 基础设施 + 应用
+
+```bash
+# Elasticsearch 节点地址
+ELASTICSEARCH_NODE=http://localhost:9200
+
+# Elasticsearch API Key（优先使用）
+ELASTICSEARCH_API_KEY=
+
+# Elasticsearch 用户名/密码（未使用 API Key 时生效）
+ELASTICSEARCH_USERNAME=
+ELASTICSEARCH_PASSWORD=
+
+# Elasticsearch 索引名，用于存储文档分片
+ELASTICSEARCH_INDEX=knowledge_chunks
+```
+
+### 3.2 `packages/server/.env` — Server-Only 变量
+
+以下变量仅被 server 应用使用，存放在 `packages/server/.env`。Shared 变量（`DATABASE_URL` / `REDIS_HOST` / `MINIO_*` / `ELASTICSEARCH_*` 等）的唯一信息源是根目录 `.env`，此处**不得**重复声明。
+
+#### 服务基础配置
+
+```bash
+# 服务端口号，Fastify 监听端口
+PORT=3000
+
+# 运行环境：development / production / test
+# 影响：CORS 策略、安全头、错误详情返回、Swagger 文档开关
+NODE_ENV=development
+
+# 日志级别：debug / info / warn / error
+# 生产环境建议设为 info 或 warn
+LOG_LEVEL=debug
+```
+
+#### JWT 与认证安全
 
 ```bash
 # JWT 访问令牌密钥，用于签名 access token
-# 生产环境必须修改，建议使用 openssl rand -base64 32 生成
+# 生产环境必须修改，建议执行：openssl rand -base64 32
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
 # JWT 刷新令牌密钥，用于签名 refresh token
@@ -169,6 +260,14 @@ SETTINGS_ENCRYPTION_KEY=
 # bcrypt 密码哈希轮数，数值越大越安全但越慢
 # 开发环境 10-12，生产环境 12-14
 BCRYPT_SALT_ROUNDS=12
+```
+
+#### CORS 与安全策略
+
+```bash
+# 前端应用地址，用于 CORS 白名单
+# 多个来源用逗号分隔
+CORS_ORIGIN=http://localhost:5173
 
 # SSRF 防护允许的主机名白名单
 # 限制用户可配置的 Base URL 只能指向这些主机，防止内网探测
@@ -176,46 +275,40 @@ BCRYPT_SALT_ROUNDS=12
 SSRF_ALLOWED_HOSTNAMES=
 ```
 
-### 3.6 CORS 与网络
+#### 队列与业务开关
 
 ```bash
-# 前端应用地址，用于 CORS 白名单
-# 多个来源用逗号分隔
-CORS_ORIGIN=http://localhost:5173
-```
+# BullMQ 任务并发数，控制同时执行的后台任务数量
+QUEUE_CONCURRENCY=2
 
-### 3.7 搜索引擎基础设施
-
-```bash
-# Elasticsearch 节点地址
-ELASTICSEARCH_NODE=http://localhost:9200
-
-# Elasticsearch API Key（优先使用）
-ELASTICSEARCH_API_KEY=
-
-# Elasticsearch 用户名/密码（未使用 API Key 时生效）
-ELASTICSEARCH_USERNAME=
-ELASTICSEARCH_PASSWORD=
-
-# Elasticsearch 索引名，用于存储文档分片
-ELASTICSEARCH_INDEX=knowledge_chunks
-```
-
-### 3.8 元数据安全策略
-
-```bash
 # RAG 元数据过滤器白名单
 # 限制用户传入的 metadata 键名，防止 NoSQL 注入
 # 当前允许：year, status, type, category, source, language, author, priority, department, project, tags, version
 METADATA_ALLOWED_KEYS=year,status,type,category,source,language,author,priority,department,project,tags,version
-```
 
-### 3.9 实例级行为开关
-
-```bash
 # 本地 Reranker 模型是否在启动时预加载
 # true 时启动会变慢，但首次请求延迟更低
 RERANK_EAGER_LOAD=false
+```
+
+#### 待清理变量
+
+```bash
+# RSA 密钥对（当前未启用，预留未来扩展）
+RSA_PRIVATE_KEY=
+RSA_PUBLIC_KEY=
+```
+
+### 3.3 前端 Vite 专属变量
+
+以下变量用于前端应用，分别存放在各前端包的 `.env` 文件中：
+
+```bash
+# packages/web/.env
+VITE_API_BASE_URL=http://localhost:3000/api
+
+# packages/admin/.env
+VITE_API_BASE_URL=http://localhost:3000/api
 ```
 
 ***

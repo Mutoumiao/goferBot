@@ -22,5 +22,6 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.spec.ts'],
     environment: 'node',
+    globals: true,
   },
 })

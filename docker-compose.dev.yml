@@ -1,5 +1,10 @@
 name: goferbot-infra
 
+# 使用根目录 .env 文件加载 Docker-Infra 变量
+# 变量分类详见 docs/guide/backend/configuration-guide.md
+env_file:
+  - .env
+
 services:
   postgres:
     container_name: goferbot-postgres
@@ -16,7 +21,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
       start_period: 10s
     networks:
@@ -38,7 +43,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
       start_period: 10s
     networks:
@@ -56,9 +61,8 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
-      start_period: 5s
     networks:
       - goferbot-infra
 

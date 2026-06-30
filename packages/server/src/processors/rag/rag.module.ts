@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { SettingsModule } from '../../modules/settings/settings.module.js'
-import { QueueModule } from '../queue/queue.module.js'
 import { BgeRerankService } from './bge-rerank.service.js'
 import { ElasticsearchService } from './elasticsearch.service.js'
 import { EsFilterBuilder } from './es-filter.builder.js'
@@ -21,7 +20,7 @@ import { RagRetrievalService } from './rag-retrieval.service.js'
 import { RouterService } from './router.service.js'
 
 @Module({
-  imports: [SettingsModule, QueueModule],
+  imports: [SettingsModule],
   controllers: [RagController],
   providers: [
     LlamaIndexEmbeddingService,

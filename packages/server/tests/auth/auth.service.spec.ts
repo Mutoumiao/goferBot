@@ -9,6 +9,7 @@ describe('AuthService', () => {
   let mockUserService: any
   let mockStorageService: any
   let mockAuthRedis: any
+  let mockCaptchaService: any
   let mockAuthRepository: any
 
   beforeEach(() => {
@@ -27,6 +28,9 @@ describe('AuthService', () => {
     }
     mockStorageService = {}
     mockAuthRedis = {}
+    mockCaptchaService = {
+      verify: vi.fn().mockResolvedValue(true),
+    }
     mockAuthRepository = {
       createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
       createSessionWithTokenPair: vi.fn().mockResolvedValue({ id: 'session-1' }),
@@ -44,6 +48,7 @@ describe('AuthService', () => {
       mockUserService,
       mockStorageService,
       mockAuthRedis,
+      mockCaptchaService,
       mockAuthRepository,
     )
   })
@@ -87,11 +92,28 @@ describe('AuthService', () => {
       })
       mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
 
-      const result = await authService.login('test@gofer.bot', 'password123', 'web')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
+        captchaId: 'cid-1',
+        captchaCode: 'ABCD',
+      })
 
       expect(result.user.id).toBe('u1')
       expect(result.accessToken).toBe('mock-token')
       expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'web')
+      expect(mockCaptchaService.verify).toHaveBeenCalledWith('cid-1', 'ABCD')
+    })
+
+    it('AC-03b-web-captcha-required: throws when web login has no captcha', async () => {
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'test@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
+
+      await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
+        AppException,
+      )
     })
 
     it('AC-03c: throws AppException when account is disabled', async () => {
@@ -101,9 +123,12 @@ describe('AuthService', () => {
         isActive: false,
       })
 
-      await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
-        AppException,
-      )
+      await expect(
+        authService.login('test@gofer.bot', 'password123', 'web', {
+          captchaId: 'cid-1',
+          captchaCode: 'ABCD',
+        }),
+      ).rejects.toThrow(AppException)
     })
 
     it('AC-03b-admin: returns tokens for admin with admin role', async () => {
@@ -114,10 +139,27 @@ describe('AuthService', () => {
       })
       mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'ADMIN' }])
 
-      const result = await authService.login('admin@gofer.bot', 'password123', 'admin')
+      const result = await authService.login('admin@gofer.bot', 'password123', 'admin', {
+        captchaId: 'cid-1',
+        captchaCode: 'ABCD',
+      })
 
       expect(result.user.id).toBe('u1')
       expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'admin')
+      expect(mockCaptchaService.verify).toHaveBeenCalledWith('cid-1', 'ABCD')
+    })
+
+    it('AC-03b-admin-captcha-required: throws when admin login has no captcha', async () => {
+      mockUserService.validatePassword.mockResolvedValue({
+        id: 'u1',
+        email: 'admin@gofer.bot',
+        isActive: true,
+      })
+      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'ADMIN' }])
+
+      await expect(authService.login('admin@gofer.bot', 'password123', 'admin')).rejects.toThrow(
+        AppException,
+      )
     })
 
     it('AC-03b-admin-deny: throws AppException when admin has no admin role', async () => {
@@ -128,9 +170,12 @@ describe('AuthService', () => {
       })
       mockAuthRepository.getRolesForUserByApp.mockResolvedValue([])
 
-      await expect(authService.login('admin@gofer.bot', 'password123', 'admin')).rejects.toThrow(
-        AppException,
-      )
+      await expect(
+        authService.login('admin@gofer.bot', 'password123', 'admin', {
+          captchaId: 'cid-1',
+          captchaCode: 'ABCD',
+        }),
+      ).rejects.toThrow(AppException)
     })
 
     it('AC-03-auth-method-disabled: throws when password method is disabled for app', async () => {
@@ -141,9 +186,12 @@ describe('AuthService', () => {
       })
       mockAuthRepository.isAuthMethodEnabled.mockResolvedValue(false)
 
-      await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
-        AppException,
-      )
+      await expect(
+        authService.login('test@gofer.bot', 'password123', 'web', {
+          captchaId: 'cid-1',
+          captchaCode: 'ABCD',
+        }),
+      ).rejects.toThrow(AppException)
       expect(mockAuthRepository.isAuthMethodEnabled).toHaveBeenCalledWith('web', 'password')
     })
 
@@ -156,7 +204,10 @@ describe('AuthService', () => {
       mockAuthRepository.isAuthMethodEnabled.mockResolvedValue(true)
       mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
 
-      await authService.login('test@gofer.bot', 'password123', 'web')
+      await authService.login('test@gofer.bot', 'password123', 'web', {
+        captchaId: 'cid-1',
+        captchaCode: 'ABCD',
+      })
 
       expect(mockAuthRepository.isAuthMethodEnabled).toHaveBeenCalledWith('web', 'password')
     })
@@ -396,7 +447,10 @@ describe('AuthService', () => {
         isActive: true,
       })
 
-      const result = await authService.login('test@gofer.bot', 'password123', 'web')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
+        captchaId: 'cid-1',
+        captchaCode: 'ABCD',
+      })
 
       expect(result.accessToken).toBe('mock-token')
       expect(mockJwtService.sign).toHaveBeenCalledWith(
@@ -413,7 +467,10 @@ describe('AuthService', () => {
         isActive: true,
       })
 
-      const result = await authService.login('test@gofer.bot', 'password123', 'web')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
+        captchaId: 'cid-1',
+        captchaCode: 'ABCD',
+      })
 
       expect(result.accessToken).toBe('mock-token')
       expect(mockJwtService.sign).toHaveBeenCalledWith(
@@ -430,7 +487,10 @@ describe('AuthService', () => {
         isActive: true,
       })
 
-      const result = await authService.login('test@gofer.bot', 'password123', 'web')
+      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
+        captchaId: 'cid-1',
+        captchaCode: 'ABCD',
+      })
 
       expect(result.accessToken).toBe('mock-token')
       expect(mockJwtService.sign).toHaveBeenCalledWith(
@@ -452,6 +512,7 @@ describe('AuthService', () => {
         mockUserService,
         mockStorageService,
         mockAuthRedis,
+        mockCaptchaService,
         mockAuthRepository,
       )
 
@@ -471,6 +532,7 @@ describe('AuthService', () => {
         mockUserService,
         mockStorageService,
         mockAuthRedis,
+        mockCaptchaService,
         mockAuthRepository,
       )
 
@@ -491,6 +553,7 @@ describe('AuthService', () => {
         mockUserService,
         mockStorageService,
         mockAuthRedis,
+        mockCaptchaService,
         mockAuthRepository,
       )
 

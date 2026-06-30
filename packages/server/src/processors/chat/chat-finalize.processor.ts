@@ -5,10 +5,12 @@ import { withTrace } from '../../common/utils/with-trace.js'
 import { ConversationService } from '../../modules/chat/conversation.service.js'
 import { LlmProviderFactory } from '../../modules/chat/llm/llm-provider.factory.js'
 import type { LlmProvider } from '../../modules/chat/llm/llm-provider.interface.js'
-import { ModelRegistryService } from '../../modules/chat/model-registry.service.js'
+import type { ModelProvider } from '../../modules/settings/dto/settings.dto.js'
+import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 import type { ChatFinalizeJobData } from '../../queue/index.js'
 
-const TITLE_DEFAULT_PROVIDER_ID = 'default'
+const TITLE_PROVIDER_TIMEOUT_MS = 30_000
+const TITLE_PROVIDER_SCOPE = 'llm'
 
 @Injectable()
 export class ChatFinalizeProcessor {
@@ -16,7 +18,7 @@ export class ChatFinalizeProcessor {
 
   constructor(
     private readonly conversationService: ConversationService,
-    private readonly modelRegistry: ModelRegistryService,
+    private readonly systemConfigService: SystemConfigService,
     private readonly llmProviderFactory: LlmProviderFactory,
   ) {}
 
@@ -55,7 +57,7 @@ export class ChatFinalizeProcessor {
       }
 
       try {
-        const provider = this.resolveTitleProvider(userId)
+        const provider = await this.resolveTitleProvider({ traceId, requestId, sessionId })
         if (provider) {
           await this.conversationService.generateTitle(sessionId, input, fullReply, provider)
         }
@@ -75,14 +77,60 @@ export class ChatFinalizeProcessor {
     })
   }
 
-  private resolveTitleProvider(_userId?: string): LlmProvider | null {
-    const info = this.modelRegistry.lookup(TITLE_DEFAULT_PROVIDER_ID)
-    if (!info) return null
-    return this.llmProviderFactory.create(info.providerKey, {
-      apiKey: '',
-      model: info.providerKey,
-      baseURL: info.baseUrl,
-      timeout: 30_000,
+  private async resolveTitleProvider(ctx: {
+    traceId?: string
+    requestId?: string
+    sessionId?: string
+  }): Promise<LlmProvider | null> {
+    const config = await this.systemConfigService.getDecryptedSystemConfig()
+
+    const preferredId = config.chat.defaultProvider
+    const enabledIds = config.chat.enabledProviders ?? []
+
+    const candidateIds = [
+      ...(preferredId && enabledIds.includes(preferredId) ? [preferredId] : []),
+      ...enabledIds.filter((id) => id !== preferredId),
+    ]
+
+    for (const id of candidateIds) {
+      const provider = config.providers[id]
+      if (!provider || provider.type !== TITLE_PROVIDER_SCOPE || !provider.enabled) continue
+      if (!provider.model || !provider.apiKey) {
+        this.logger.warn(
+          withTrace(`[chat-finalize] title provider ${id} missing model/apiKey, skipping`, ctx),
+        )
+        continue
+      }
+      try {
+        return this.createLlmProvider(provider)
+      } catch (err) {
+        this.logger.warn(
+          withTrace(
+            `[chat-finalize] title provider ${id} init failed: ${err instanceof Error ? err.message : String(err)}`,
+            ctx,
+          ),
+        )
+      }
+    }
+
+    this.logger.warn(
+      withTrace(
+        `[chat-finalize] no usable title provider configured (defaultProvider=${preferredId ?? 'none'}, enabledProviders=${enabledIds.join(',') || 'empty'})`,
+        ctx,
+      ),
+    )
+    return null
+  }
+
+  private createLlmProvider(provider: ModelProvider): LlmProvider {
+    const timeoutMs = Number.isFinite(provider.timeoutMs)
+      ? provider.timeoutMs
+      : TITLE_PROVIDER_TIMEOUT_MS
+    return this.llmProviderFactory.create(provider.id, {
+      apiKey: provider.apiKey,
+      model: provider.model,
+      baseURL: provider.baseUrl,
+      timeout: timeoutMs,
     })
   }
 }

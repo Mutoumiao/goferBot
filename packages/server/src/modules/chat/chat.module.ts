@@ -35,6 +35,6 @@ import { ModelRegistryService } from './model-registry.service.js'
       }),
     },
   ],
-  exports: [ModelRegistryService],
+  exports: [ConversationService, LlmProviderFactory, ModelRegistryService],
 })
 export class ChatModule {}

@@ -50,7 +50,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code = exception.code
       const res = exception.getResponse() as { error: { message: string; details?: unknown } }
       message = res.error.message
-      details = res.error.details
+      if (_isDevelopment) {
+        details = res.error.details
+      }
     } else if (exception instanceof HttpException) {
       const res = exception.getResponse()
       if (typeof res === 'string') {
@@ -59,10 +61,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const obj = res as Record<string, unknown>
         code = (obj.code as string) || this.mapStatusToCode(status)
         message = (obj.message as string) || message
-        details = obj.details
+        if (_isDevelopment) {
+          details = obj.details
+        }
       }
     } else if (exception instanceof Error) {
-      // 非 HttpException 的 Error 不暴露原始 message，防止敏感信息泄露
       message = '服务器内部错误'
       if (_isDevelopment) {
         details = exception.message

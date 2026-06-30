@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { Job } from 'bullmq'
+import { ChatModule } from '../../modules/chat/chat.module.js'
+import { SettingsModule } from '../../modules/settings/settings.module.js'
 import {
   type ChatFinalizeJobHandler,
   type DocumentJobHandler,
@@ -76,7 +78,12 @@ export class QueueModule {
 
     return {
       module: QueueModule as unknown as Type<any>,
-      imports: [ConfigModule, forwardRef(() => RagModule)],
+      imports: [
+        ConfigModule,
+        SettingsModule,
+        forwardRef(() => RagModule),
+        forwardRef(() => ChatModule),
+      ],
       providers,
       exports: [QueueService, WorkerService],
       global: true,

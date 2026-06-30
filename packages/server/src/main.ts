@@ -3,7 +3,7 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { cleanupOpenApiDoc } from 'nestjs-zod'
 import { AppModule } from './app.module.js'
-import { bootstrap } from './bootstrap.js'
+import { bootstrap, logLevelToNestLevels } from './bootstrap.js'
 
 async function main() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -12,6 +12,10 @@ async function main() {
       bodyLimit: 1048576, // 1MB JSON body limit
     }),
   )
+
+  const logLevel =
+    process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug')
+  app.useLogger(logLevelToNestLevels(logLevel))
 
   await bootstrap(app)
 
