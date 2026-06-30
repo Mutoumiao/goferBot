@@ -78,8 +78,17 @@ describe('auth services', () => {
       refreshToken: 'rt',
       user: { id: '1', email: 'a@b.com', roles: [] },
     })
-    const r = await loginService('a@b.com', 'x')
+    const r = await loginService('a@b.com', 'x', {
+      captchaId: 'cid-1',
+      captchaCode: 'ABCD',
+    })
     expect(r.success).toBe(true)
+    expect(mockLogin).toHaveBeenCalledWith({
+      email: 'a@b.com',
+      password: 'x',
+      captchaId: 'cid-1',
+      captchaCode: 'ABCD',
+    })
     expect(mockSetAccessToken).toHaveBeenCalledWith('at')
     expect(mockSetRefreshToken).toHaveBeenCalledWith('rt')
     expect(mockSetAuth).toHaveBeenCalled()
@@ -87,7 +96,10 @@ describe('auth services', () => {
 
   it('loginService handles error', async () => {
     mockLogin.mockRejectedValueOnce(new Error('bad'))
-    const r = await loginService('a@b.com', 'x')
+    const r = await loginService('a@b.com', 'x', {
+      captchaId: 'cid-1',
+      captchaCode: 'ABCD',
+    })
     expect(r.success).toBe(false)
     expect(r.error).toBeTruthy()
   })

@@ -19,13 +19,26 @@ const FONT_SIZE_MAP: Record<number, string> = {
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async () => {
     await waitForAuthInit()
-    const token = useAuthStore.getState().token
-    if (!token) {
+    // ponytail: 凭据由 HttpOnly Cookie 承担；持久化的 user 作为会话存在性判定
+    const user = useAuthStore.getState().user
+    if (!user) {
       throw redirect({ to: ROUTES_REGISTER.login.path })
     }
   },
   component: AppLayout,
 })
+
+const VALID_THEMES = new Set(['light', 'dark'])
+
+function resolveTheme(appearance: unknown): 'light' | 'dark' {
+  if (appearance === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  // ponytail: 防止持久化数据污染导致 appearance 为非字符串对象
+  return typeof appearance === 'string' && VALID_THEMES.has(appearance)
+    ? (appearance as 'light' | 'dark')
+    : 'light'
+}
 
 function useAppearanceEffect() {
   const appearance = useSettingsStore((s) => s.config.appearance)
@@ -34,13 +47,7 @@ function useAppearanceEffect() {
   useEffect(() => {
     const root = document.documentElement
     root.classList.remove('light', 'dark')
-
-    if (appearance === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      root.classList.add(prefersDark ? 'dark' : 'light')
-    } else {
-      root.classList.add(appearance)
-    }
+    root.classList.add(resolveTheme(appearance))
   }, [appearance])
 
   useEffect(() => {

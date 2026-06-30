@@ -39,7 +39,7 @@ const mockUser: User = {
 
 describe('auth services', () => {
   beforeEach(() => {
-    useAuthStore.setState({ user: null, token: null, isAuthenticated: false, isInitialized: false })
+    useAuthStore.setState({ user: null, isAuthenticated: false, isInitialized: false })
     localStorage.clear()
     vi.clearAllMocks()
   })
@@ -55,7 +55,7 @@ describe('auth services', () => {
 
     it('encrypts password before sending', async () => {
       vi.mocked(login).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ accessToken: 'token-1', user: mockUser }),
+        send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
       await loginUser('user@example.com', 'password', false)
@@ -67,24 +67,22 @@ describe('auth services', () => {
       })
     })
 
-    it('sets auth on success', async () => {
+    it('sets user on success', async () => {
       vi.mocked(login).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ accessToken: 'token-1', user: mockUser }),
+        send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
       const result = await loginUser('user@example.com', 'password', false)
 
       expect(result.success).toBe(true)
-      expect(useAuthStore.getState().token).toBe('token-1')
       expect(useAuthStore.getState().user).toEqual(mockUser)
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
-      expect(localStorage.getItem('goferbot_access_token')).toBe('token-1')
       expect(localStorage.getItem('goferbot_remember_email')).toBeNull()
     })
 
     it('remembers email when rememberMe is true', async () => {
       vi.mocked(login).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ accessToken: 'token-1', user: mockUser }),
+        send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
       await loginUser('user@example.com', 'password', true)
@@ -95,7 +93,7 @@ describe('auth services', () => {
     it('removes remembered email when rememberMe is false', async () => {
       localStorage.setItem('goferbot_remember_email', 'old@example.com')
       vi.mocked(login).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ accessToken: 'token-1', user: mockUser }),
+        send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
       await loginUser('user@example.com', 'password', false)
@@ -141,7 +139,7 @@ describe('auth services', () => {
 
     it('encrypts password before sending', async () => {
       vi.mocked(register).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ accessToken: 'token-2', user: mockUser }),
+        send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
       await registerUser('User', 'user@example.com', 'password')
@@ -154,17 +152,15 @@ describe('auth services', () => {
       })
     })
 
-    it('sets auth on success', async () => {
+    it('sets user on success', async () => {
       vi.mocked(register).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ accessToken: 'token-2', user: mockUser }),
+        send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
       const result = await registerUser('User', 'user@example.com', 'password')
 
       expect(result.success).toBe(true)
-      expect(useAuthStore.getState().token).toBe('token-2')
       expect(useAuthStore.getState().user).toEqual(mockUser)
-      expect(localStorage.getItem('goferbot_access_token')).toBe('token-2')
     })
 
     it('returns error on api failure', async () => {
@@ -194,61 +190,27 @@ describe('auth services', () => {
 
   describe('logoutUser', () => {
     it('clears auth state', async () => {
-      useAuthStore.setState({ token: 'token-1', user: mockUser, isAuthenticated: true })
-      localStorage.setItem('goferbot_access_token', 'token-1')
+      useAuthStore.setState({ user: mockUser, isAuthenticated: true })
 
       await logoutUser()
 
       expect(useAuthStore.getState().isAuthenticated).toBe(false)
-      expect(useAuthStore.getState().token).toBeNull()
       expect(useAuthStore.getState().user).toBeNull()
-    })
-
-    it('clears refresh token from localStorage', async () => {
-      useAuthStore.setState({ token: 'token-1', user: mockUser, isAuthenticated: true })
-      localStorage.setItem('goferbot_access_token', 'token-1')
-      localStorage.setItem('goferbot_refresh_token', 'refresh-1')
-
-      await logoutUser()
-
-      expect(localStorage.getItem('goferbot_access_token')).toBeNull()
-      expect(localStorage.getItem('goferbot_refresh_token')).toBeNull()
     })
   })
 
   describe('refreshAuth', () => {
-    it('returns true and stores tokens on success', async () => {
-      localStorage.setItem('goferbot_refresh_token', 'old-refresh')
+    it('returns true when refresh endpoint succeeds', async () => {
       vi.mocked(refresh).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ accessToken: 'new-token', refreshToken: 'new-refresh' }),
+        send: vi.fn().mockResolvedValue({ success: true }),
       } as any)
 
       const result = await refreshAuth()
 
       expect(result).toBe(true)
-      expect(localStorage.getItem('goferbot_access_token')).toBe('new-token')
-      expect(localStorage.getItem('goferbot_refresh_token')).toBe('new-refresh')
-    })
-
-    it('returns false when no refresh token exists', async () => {
-      localStorage.removeItem('goferbot_refresh_token')
-      const result = await refreshAuth()
-      expect(result).toBe(false)
-    })
-
-    it('returns false when no accessToken in response', async () => {
-      localStorage.setItem('goferbot_refresh_token', 'old-refresh')
-      vi.mocked(refresh).mockReturnValue({
-        send: vi.fn().mockResolvedValue({ refreshToken: 'new-refresh' }),
-      } as any)
-
-      const result = await refreshAuth()
-
-      expect(result).toBe(false)
     })
 
     it('returns false on api failure', async () => {
-      localStorage.setItem('goferbot_refresh_token', 'old-refresh')
       vi.mocked(refresh).mockReturnValue({
         send: vi.fn().mockRejectedValue(new Error('invalid refresh token')),
       } as any)

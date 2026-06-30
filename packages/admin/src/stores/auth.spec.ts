@@ -5,7 +5,6 @@ describe('auth store', () => {
   beforeEach(() => {
     useAuthStore.setState({
       user: null,
-      token: null,
       isAuthenticated: false,
       isInitialized: false,
     })
@@ -15,11 +14,10 @@ describe('auth store', () => {
   it('has default state', () => {
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
-    expect(state.token).toBeNull()
     expect(state.isAuthenticated).toBe(false)
   })
 
-  it('setAuth updates token, user, isAuthenticated', () => {
+  it('setUser updates user and isAuthenticated', () => {
     const user = {
       id: 'u1',
       email: 'a@b.com',
@@ -27,16 +25,15 @@ describe('auth store', () => {
       role: 'ADMIN' as const,
       isActive: true,
     }
-    useAuthStore.getState().setAuth('token-1', user)
+    useAuthStore.getState().setUser(user)
 
     const state = useAuthStore.getState()
-    expect(state.token).toBe('token-1')
     expect(state.user).toEqual(user)
     expect(state.isAuthenticated).toBe(true)
   })
 
   it('setUser updates user only', () => {
-    useAuthStore.getState().setAuth('token-1', {
+    useAuthStore.getState().setUser({
       id: 'u1',
       email: 'a@b.com',
       name: 'Old',
@@ -48,13 +45,10 @@ describe('auth store', () => {
       .setUser({ id: 'u1', email: 'a@b.com', name: 'New', role: 'ADMIN' as const, isActive: true })
 
     expect(useAuthStore.getState().user?.name).toBe('New')
-    expect(useAuthStore.getState().token).toBe('token-1')
   })
 
-  it('clearAuth clears state and tokens', () => {
-    localStorage.setItem('goferbot_admin_access_token', 'token-1')
+  it('clearAuth resets state', () => {
     useAuthStore.setState({
-      token: 'token-1',
       user: { id: 'u1', email: 'a@b.com', name: 'User', role: 'ADMIN' as const, isActive: true },
       isAuthenticated: true,
       isInitialized: true,
@@ -63,10 +57,7 @@ describe('auth store', () => {
     useAuthStore.getState().clearAuth()
 
     const state = useAuthStore.getState()
-    expect(state.token).toBeNull()
     expect(state.user).toBeNull()
     expect(state.isAuthenticated).toBe(false)
-    expect(localStorage.getItem('goferbot_admin_access_token')).toBeNull()
-    expect(localStorage.getItem('goferbot_admin_refresh_token')).toBeNull()
   })
 })

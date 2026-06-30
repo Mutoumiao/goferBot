@@ -188,14 +188,35 @@ export const useSettingsStore = create<SettingsState>()(
       }),
 
       merge: (persisted: unknown, current: SettingsState): SettingsState => {
-        const stored = persisted as { config?: Partial<AppConfig> } | undefined
+        const stored = persisted as { config?: Record<string, unknown> } | undefined
 
         if (!stored?.config) {
           return { ...current, config: { ...DEFAULT_CONFIG } }
         }
 
+        // ponytail: 防止持久化数据污染（如 appearance 被序列化为对象），只提取合法字段
+        const sanitized: Partial<AppConfig> = {}
+        const validThemes = new Set(['light', 'dark', 'system'])
+        const validFontSizes = new Set([1, 2, 3, 4, 5])
+
+        if (
+          typeof stored.config.appearance === 'string' &&
+          validThemes.has(stored.config.appearance)
+        ) {
+          sanitized.appearance = stored.config.appearance as 'light' | 'dark' | 'system'
+        }
+        if (
+          typeof stored.config.fontSizeLevel === 'number' &&
+          validFontSizes.has(stored.config.fontSizeLevel)
+        ) {
+          sanitized.fontSizeLevel = stored.config.fontSizeLevel as 1 | 2 | 3 | 4 | 5
+        }
+        if (typeof stored.config.defaultChatProvider === 'string') {
+          sanitized.defaultChatProvider = stored.config.defaultChatProvider
+        }
+
         try {
-          const merged = mergeAppConfig(DEFAULT_CONFIG, stored.config)
+          const merged = mergeAppConfig(DEFAULT_CONFIG, sanitized)
           return { ...current, config: merged, savedConfig: merged }
         } catch {
           return { ...current, config: { ...DEFAULT_CONFIG }, savedConfig: { ...DEFAULT_CONFIG } }

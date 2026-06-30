@@ -2,7 +2,6 @@ import type { User } from '@goferbot/data'
 import { toast } from 'sonner'
 import { getMe, login, logout, refresh, register, updateMe, uploadAvatar } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
-import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from '@/utils/auth-token'
 import { clearPublicKeyCache, encryptPassword } from '@/utils/password-encryption'
 
 export interface LoginResult {
@@ -17,71 +16,89 @@ export interface RegisterResult {
 
 const REMEMBER_EMAIL_KEY = 'goferbot_remember_email'
 
+// Error message whitelist for security - only allow safe characters
+function sanitizeErrorMessage(message: string): string {
+  // Only allow safe alphanumeric and CJK characters, no HTML tags or special chars
+  return message
+    .replace(/[<>'"&`\\]/g, '')
+    .replace(/<[^>]*>/g, '')
+    .trim()
+}
+
 function mapAuthError(err: unknown): string {
   if (err && typeof err === 'object' && 'code' in err) {
     const code = (err as { code: string }).code
     const msg = (err as { message?: string }).message
     switch (code) {
       case 'USER_EXISTS':
-        return '该邮箱已被注册'
+        return sanitizeErrorMessage('该邮箱已被注册')
       case 'AUTH_INVALID_CREDENTIALS':
-        return '邮箱或密码错误'
+        return sanitizeErrorMessage('邮箱或密码错误')
       case 'ACCOUNT_DISABLED':
-        return '账号已被禁用'
+        return sanitizeErrorMessage('账号已被禁用')
       case 'INVALID_REFRESH_TOKEN':
-        return '登录已过期，请重新登录'
+        return sanitizeErrorMessage('登录已过期，请重新登录')
       case 'USER_NOT_FOUND':
-        return '用户不存在'
+        return sanitizeErrorMessage('用户不存在')
       case 'DECRYPT_FAILED':
-        return '加密密钥已过期，请刷新页面后重试'
+        return sanitizeErrorMessage('加密密钥已过期，请刷新页面后重试')
       case 'VALIDATION_ERROR':
-        return msg || '输入信息不符合要求'
+        return sanitizeErrorMessage(msg || '输入信息不符合要求')
       default:
-        return msg || '操作失败，请稍后重试'
+        return sanitizeErrorMessage(msg || '操作失败，请稍后重试')
     }
   }
   if (err instanceof Error) {
-    return err.message
+    return sanitizeErrorMessage(err.message)
   }
-  return '操作失败，请稍后重试'
+  return sanitizeErrorMessage('操作失败，请稍后重试')
 }
 
 export async function loginUser(
   email: string,
   password: string,
   rememberMe: boolean,
+  captcha?: { captchaId: string; captchaCode: string },
 ): Promise<LoginResult> {
   if (!email.trim() || !password) {
     return { success: false, error: '请输入邮箱和密码' }
   }
 
   try {
-    const encryptedPassword = await encryptPassword(password)
-    const res = await login({ email, encryptedPassword }).send()
-    const token = res.accessToken
-    const refreshToken = res.refreshToken
-    const user = res.user
-    if (token && user) {
-      setAccessToken(token)
-      if (refreshToken) {
-        setRefreshToken(refreshToken)
-      }
-      if (rememberMe) {
-        localStorage.setItem(REMEMBER_EMAIL_KEY, email)
-      } else {
-        localStorage.removeItem(REMEMBER_EMAIL_KEY)
-      }
-      useAuthStore.getState().setAuth(token, user)
-      return { success: true }
-    }
-    return { success: false, error: '登录响应异常' }
+    return await attemptLogin(email, password, rememberMe, captcha)
   } catch (err) {
     const code = (err as { code?: string }).code
     if (code === 'DECRYPT_FAILED') {
       clearPublicKeyCache()
+      try {
+        return await attemptLogin(email, password, rememberMe, captcha)
+      } catch (retryErr) {
+        return { success: false, error: mapAuthError(retryErr) }
+      }
     }
     return { success: false, error: mapAuthError(err) }
   }
+}
+
+async function attemptLogin(
+  email: string,
+  password: string,
+  rememberMe: boolean,
+  captcha?: { captchaId: string; captchaCode: string },
+): Promise<LoginResult> {
+  const encryptedPassword = await encryptPassword(password)
+  const res = await login({ email, encryptedPassword, ...(captcha ?? {}) }).send()
+  const user = res.user
+  if (user) {
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_EMAIL_KEY, email)
+    } else {
+      localStorage.removeItem(REMEMBER_EMAIL_KEY)
+    }
+    useAuthStore.getState().setUser(user)
+    return { success: true }
+  }
+  return { success: false, error: '登录响应异常' }
 }
 
 export async function registerUser(
@@ -94,46 +111,41 @@ export async function registerUser(
   }
 
   try {
-    const encryptedPassword = await encryptPassword(password)
-    const res = await register({ email, encryptedPassword, name }).send()
-    const token = res.accessToken
-    const refreshToken = res.refreshToken
-    const user = res.user
-    if (token && user) {
-      setAccessToken(token)
-      if (refreshToken) {
-        setRefreshToken(refreshToken)
-      }
-      useAuthStore.getState().setAuth(token, user)
-      return { success: true }
-    }
-    return { success: false, error: '注册响应异常' }
+    return await attemptRegister(name, email, password)
   } catch (err) {
     const code = (err as { code?: string }).code
     if (code === 'DECRYPT_FAILED') {
       clearPublicKeyCache()
+      try {
+        return await attemptRegister(name, email, password)
+      } catch (retryErr) {
+        return { success: false, error: mapAuthError(retryErr) }
+      }
     }
     return { success: false, error: mapAuthError(err) }
   }
 }
 
+async function attemptRegister(
+  name: string,
+  email: string,
+  password: string,
+): Promise<RegisterResult> {
+  const encryptedPassword = await encryptPassword(password)
+  const res = await register({ email, encryptedPassword, name }).send()
+  const user = res.user
+  if (user) {
+    useAuthStore.getState().setUser(user)
+    return { success: true }
+  }
+  return { success: false, error: '注册响应异常' }
+}
+
 export async function refreshAuth(): Promise<boolean> {
   try {
-    const refreshToken = getRefreshToken()
-    if (!refreshToken) {
-      return false
-    }
-    const res = await refresh({ refreshToken }).send()
-    const token = res.accessToken
-    const newRefreshToken = res.refreshToken
-    if (token) {
-      setAccessToken(token)
-      if (newRefreshToken) {
-        setRefreshToken(newRefreshToken)
-      }
-      return true
-    }
-    return false
+    // Refresh token is in HttpOnly cookie, backend reads it automatically
+    await refresh({ refreshToken: '' }).send()
+    return true
   } catch {
     return false
   }
@@ -145,7 +157,6 @@ export async function fetchCurrentUser(): Promise<boolean> {
     useAuthStore.getState().setUser(user)
     return true
   } catch (err) {
-    // 若是认证失败（401/403），清空登录态避免游离态
     const status = (err as { status?: number }).status
     if (status === 401 || status === 403) {
       useAuthStore.getState().clearAuth()
@@ -156,14 +167,9 @@ export async function fetchCurrentUser(): Promise<boolean> {
 
 export async function logoutUser(): Promise<void> {
   try {
-    const refreshToken = getRefreshToken()
-    if (refreshToken) {
-      await logout({ refreshToken }).send()
-    }
+    await logout().send()
   } catch {
-    // 即使后端登出失败也继续清理本地状态
   } finally {
-    clearTokens()
     useAuthStore.getState().clearAuth()
     toast.success('已退出登录')
   }

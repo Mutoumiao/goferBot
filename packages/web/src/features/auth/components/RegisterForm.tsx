@@ -1,8 +1,8 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { validatePassword } from '@/utils/password'
+import { usePasswordStrength } from '../hooks/usePasswordStrength'
 import { registerUser } from '../services'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -21,6 +21,8 @@ export function RegisterForm() {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null)
+
+  const { strength, evaluate } = usePasswordStrength()
 
   const validate = (): boolean => {
     let valid = true
@@ -42,14 +44,9 @@ export function RegisterForm() {
       valid = false
     }
 
-    if (!password) {
-      setPasswordError('请输入密码')
-      valid = false
-    } else if (password.length < 6) {
-      setPasswordError('密码长度不能少于 6 位')
-      valid = false
-    } else if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(password)) {
-      setPasswordError('密码需同时包含字母和数字')
+    const pwdErr = validatePassword(password)
+    if (pwdErr) {
+      setPasswordError(pwdErr)
       valid = false
     }
 
@@ -80,13 +77,28 @@ export function RegisterForm() {
     }
   }
 
+  const inputFieldClass = (hasError: boolean) =>
+    `h-[52px] w-full rounded-xl border bg-transparent px-4 text-[15px]
+    placeholder:text-slate-400 text-slate-800
+    transition-all duration-200 outline-none
+    ${
+      hasError
+        ? 'border-red-400 focus:border-red-400'
+        : 'border-slate-200 hover:border-slate-300 focus:border-[var(--color-auth-accent)] focus:ring-1 focus:ring-[var(--color-auth-accent)]/30'
+    }`
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      {/* 用户名 */}
       <div>
-        <label htmlFor="register-name" className="mb-2 block text-sm font-medium text-text-primary">
+        <label
+          htmlFor="register-name"
+          className="mb-2 block text-[13px] font-medium"
+          style={{ color: 'var(--color-auth-text-secondary)' }}
+        >
           用户名
         </label>
-        <Input
+        <input
           id="register-name"
           type="text"
           value={name}
@@ -96,19 +108,27 @@ export function RegisterForm() {
           }}
           placeholder="你的名字"
           required
-          className="h-14 rounded-xl border-border-default text-sm"
+          className={inputFieldClass(!!nameError)}
+          style={{ backgroundColor: 'var(--color-auth-input-bg)' }}
         />
-        {nameError && <p className="mt-1.5 text-xs text-destructive">{nameError}</p>}
+        {nameError && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-500">
+            <AlertCircle className="size-3.5 shrink-0" />
+            {nameError}
+          </p>
+        )}
       </div>
 
+      {/* 邮箱 */}
       <div>
         <label
           htmlFor="register-email"
-          className="mb-2 block text-sm font-medium text-text-primary"
+          className="mb-2 block text-[13px] font-medium"
+          style={{ color: 'var(--color-auth-text-secondary)' }}
         >
-          邮箱
+          邮箱地址
         </label>
-        <Input
+        <input
           id="register-email"
           type="email"
           value={email}
@@ -118,51 +138,92 @@ export function RegisterForm() {
           }}
           placeholder="you@example.com"
           required
-          className="h-14 rounded-xl border-border-default text-sm"
+          className={inputFieldClass(!!emailError)}
+          style={{ backgroundColor: 'var(--color-auth-input-bg)' }}
         />
-        {emailError && <p className="mt-1.5 text-xs text-destructive">{emailError}</p>}
+        {emailError && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-500">
+            <AlertCircle className="size-3.5 shrink-0" />
+            {emailError}
+          </p>
+        )}
       </div>
 
+      {/* 密码 */}
       <div>
         <label
           htmlFor="register-password"
-          className="mb-2 block text-sm font-medium text-text-primary"
+          className="mb-2 block text-[13px] font-medium"
+          style={{ color: 'var(--color-auth-text-secondary)' }}
         >
           密码
         </label>
         <div className="relative">
-          <Input
+          <input
             id="register-password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value)
               if (passwordError) setPasswordError(null)
+              evaluate(e.target.value)
             }}
             placeholder="请输入密码"
             required
-            className="h-14 rounded-xl border-border-default pr-12 text-sm"
+            className={`${inputFieldClass(!!passwordError)} pr-12`}
+            style={{ backgroundColor: 'var(--color-auth-input-bg)' }}
           />
           <button
             type="button"
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary"
+            className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors hover:opacity-70"
+            style={{ color: 'var(--color-auth-text-tertiary)' }}
             onClick={() => setShowPassword(!showPassword)}
+            tabIndex={-1}
           >
-            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {showPassword ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
           </button>
         </div>
-        {passwordError && <p className="mt-1.5 text-xs text-destructive">{passwordError}</p>}
+        {/* 密码强度指示器 */}
+        {password && (
+          <div className="mt-2 flex items-center gap-2">
+            <div
+              className="flex-1 h-1 rounded-full overflow-hidden"
+              style={{ backgroundColor: 'var(--color-auth-divider)' }}
+            >
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${strength.color}`}
+                style={{ width: `${(strength.score / 5) * 100}%` }}
+              />
+            </div>
+            {strength.label && (
+              <span
+                className="text-xs font-medium"
+                style={{ color: 'var(--color-auth-text-tertiary)' }}
+              >
+                {strength.label}
+              </span>
+            )}
+          </div>
+        )}
+        {passwordError && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-500">
+            <AlertCircle className="size-3.5 shrink-0" />
+            {passwordError}
+          </p>
+        )}
       </div>
 
+      {/* 确认密码 */}
       <div>
         <label
           htmlFor="register-confirm-password"
-          className="mb-2 block text-sm font-medium text-text-primary"
+          className="mb-2 block text-[13px] font-medium"
+          style={{ color: 'var(--color-auth-text-secondary)' }}
         >
           确认密码
         </label>
         <div className="relative">
-          <Input
+          <input
             id="register-confirm-password"
             type={showConfirmPassword ? 'text' : 'password'}
             value={confirmPassword}
@@ -172,35 +233,63 @@ export function RegisterForm() {
             }}
             placeholder="请再次输入密码"
             required
-            className="h-14 rounded-xl border-border-default pr-12 text-sm"
+            className={`${inputFieldClass(!!confirmPasswordError)} pr-12`}
+            style={{ backgroundColor: 'var(--color-auth-input-bg)' }}
           />
           <button
             type="button"
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary"
+            className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors hover:opacity-70"
+            style={{ color: 'var(--color-auth-text-tertiary)' }}
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            tabIndex={-1}
           >
-            {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {showConfirmPassword ? (
+              <EyeOff className="size-[18px]" />
+            ) : (
+              <Eye className="size-[18px]" />
+            )}
           </button>
         </div>
         {confirmPasswordError && (
-          <p className="mt-1.5 text-xs text-destructive">{confirmPasswordError}</p>
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-500">
+            <AlertCircle className="size-3.5 shrink-0" />
+            {confirmPasswordError}
+          </p>
         )}
       </div>
 
+      {/* 全局错误 */}
       {error && (
-        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+        <div
+          className="flex items-start gap-2.5 rounded-xl p-3.5 text-sm"
+          style={{ backgroundColor: 'rgba(239, 68, 68, 0.06)', color: '#dc2626' }}
+        >
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          {error}
+        </div>
       )}
 
-      <Button type="submit" disabled={loading} className="h-14 w-full rounded-xl text-[15px]">
+      {/* 注册按钮 */}
+      <button
+        type="submit"
+        disabled={loading}
+        className="relative h-[52px] w-full rounded-xl text-[15px] font-semibold transition-all duration-200
+          disabled:opacity-50 disabled:cursor-not-allowed
+          enabled:hover:shadow-lg enabled:hover:shadow-[var(--color-auth-accent)]/25 enabled:active:scale-[0.98]"
+        style={{
+          background: 'linear-gradient(135deg, #5074fa 0%, #6c8aff 100%)',
+          color: '#ffffff',
+        }}
+      >
         {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="size-4 animate-spin" />
             注册中...
-          </>
+          </span>
         ) : (
-          '注册'
+          '创建账户'
         )}
-      </Button>
+      </button>
     </form>
   )
 }

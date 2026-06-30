@@ -2,55 +2,39 @@ import { createAlova } from 'alova'
 import adapterFetch from 'alova/fetch'
 import ReactHook from 'alova/react'
 import { useAuthStore } from '@/stores/auth'
-import {
-  buildAuthHeader,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-} from '@/utils/auth-token'
 
 // Token 刷新状态管理
 let isRefreshing = false
-let refreshSubscribers: Array<(token: string) => void> = []
+let refreshSubscribers: Array<() => void> = []
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
-async function refreshToken(): Promise<string | null> {
-  const refreshTokenValue = getRefreshToken()
-  if (!refreshTokenValue) return null
+async function refreshToken(): Promise<boolean> {
+  if (isRefreshing) return false
+  isRefreshing = true
   try {
-    // 直接使用 fetch 避免 alova 的 responded 链处理
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    // ponytail: 后端从 HttpOnly Cookie 读取 refreshToken，不再需要前端传递
+    const response = await fetch(`${API_BASE_URL}/auth/web/refresh`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: refreshTokenValue }),
+      body: '{}',
     })
-    if (!response.ok) return null
-    const json = (await response.json()) as {
-      data?: { accessToken?: string; refreshToken?: string }
-    }
-    // 解包 NestJS ResponseInterceptor: { data: T }
-    const payload = json.data ?? json
-    const token = (payload as { accessToken?: string }).accessToken
-    const newRefreshToken = (payload as { refreshToken?: string }).refreshToken
-    if (token) setAccessToken(token)
-    if (newRefreshToken) setRefreshToken(newRefreshToken)
-    return token ?? null
-  } catch {
-    return null
+    return response.ok
+  } finally {
+    isRefreshing = false
   }
 }
 
-function onRefreshed(newToken: string) {
-  for (const cb of refreshSubscribers) cb(newToken)
+function onRefreshed() {
+  for (const cb of refreshSubscribers) cb()
   refreshSubscribers = []
 }
 
-function addSubscriber(cb: (token: string) => void) {
+function addSubscriber(cb: () => void) {
   refreshSubscribers.push(cb)
 }
 
-/** 处理 401/403：尝试刷新 token，失败则清空登录态 */
 interface AlovaMethod {
   send: () => unknown
   config: { headers: Record<string, string> }
@@ -60,9 +44,9 @@ async function doRefreshAndRetry(method: AlovaMethod) {
   if (!isRefreshing) {
     isRefreshing = true
     try {
-      const newToken = await refreshToken()
-      if (newToken) {
-        onRefreshed(newToken)
+      const ok = await refreshToken()
+      if (ok) {
+        onRefreshed()
         return method.send()
       }
     } finally {
@@ -72,16 +56,13 @@ async function doRefreshAndRetry(method: AlovaMethod) {
     window.location.replace('/login')
     throw new Error('Auth refresh failed')
   }
-  // 已有刷新进行中，等刷新完成后用新 token 重试
-  return new Promise<void>((resolve) => {
-    addSubscriber((token: string) => {
-      method.config.headers.Authorization = `Bearer ${token}`
-      resolve(method.send() as unknown as undefined)
+  return new Promise<unknown>((resolve) => {
+    addSubscriber(() => {
+      resolve(method.send())
     })
   })
 }
 
-/** 检查 HTTP 响应状态，401/403 则触发刷新流程 */
 function isUnauthorized(status: number) {
   return status === 401 || status === 403
 }
@@ -92,7 +73,6 @@ const responded = {
       return doRefreshAndRetry(method)
     }
     if (!response.ok) {
-      // 保留 NestJS 异常体中的 { code, message } 结构，使上层 mapAuthError 能解析出中文提示
       return response
         .clone()
         .json()
@@ -133,7 +113,11 @@ export const alovaInstance = createAlova({
   responded,
   id: 'goferbot',
   statesHook: ReactHook,
-  requestAdapter: adapterFetch(),
+  // ponytail: 包裹 fetch 使所有请求携带 Cookie（HttpOnly 认证）
+  requestAdapter: adapterFetch({
+    customFetch: (input: RequestInfo | URL, init?: RequestInit) =>
+      fetch(input, { ...init, credentials: 'include' }),
+  }),
   baseURL: API_BASE_URL,
   timeout: 30_000,
   shareRequest: true,
@@ -142,12 +126,5 @@ export const alovaInstance = createAlova({
     POST: 0,
     PUT: 0,
     DELETE: 0,
-  },
-
-  beforeRequest(method) {
-    const authHeader = buildAuthHeader()
-    if (authHeader) {
-      method.config.headers.Authorization = authHeader
-    }
   },
 })

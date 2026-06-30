@@ -12,11 +12,9 @@ describe('auth-guard', () => {
     useAuthStore.setState(
       {
         user: null,
-        token: null,
         isAuthenticated: false,
         isInitialized: false,
         _hydrated: false,
-        setAuth: (() => undefined) as never,
         clearAuth: (() => undefined) as never,
         setUser: (() => undefined) as never,
         setInitialized: ((v: boolean) => useAuthStore.setState({ isInitialized: v })) as never,
@@ -25,18 +23,18 @@ describe('auth-guard', () => {
     )
   })
 
-  it('isAdmin requires ADMIN role and token', () => {
-    expect(isAdmin({ token: 't', role: 'ADMIN' })).toBe(true)
-    expect(isAdmin({ token: 't', role: 'USER' })).toBe(false)
-    expect(isAdmin({ token: null, role: 'ADMIN' })).toBe(false)
+  it('isAdmin requires ADMIN role and authenticated state', () => {
+    expect(isAdmin({ isAuthenticated: true, role: 'ADMIN' })).toBe(true)
+    expect(isAdmin({ isAuthenticated: true, role: 'USER' })).toBe(false)
+    expect(isAdmin({ isAuthenticated: false, role: 'ADMIN' })).toBe(false)
   })
 
-  it('getAuthSnapshot reads token and role', () => {
+  it('getAuthSnapshot reads isAuthenticated and role', () => {
     useAuthStore.setState({
-      token: 'tok',
+      isAuthenticated: true,
       user: { id: '1', role: 'ADMIN', email: 'a@b.com' },
     } as never)
-    expect(getAuthSnapshot()).toEqual({ token: 'tok', role: 'ADMIN' })
+    expect(getAuthSnapshot()).toEqual({ isAuthenticated: true, role: 'ADMIN' })
   })
 
   it('waitForAuthInit resolves immediately when hydrated', async () => {

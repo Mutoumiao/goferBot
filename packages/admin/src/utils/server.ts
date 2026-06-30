@@ -2,48 +2,35 @@ import { createAlova } from 'alova'
 import adapterFetch from 'alova/fetch'
 import ReactHook from 'alova/react'
 import { useAuthStore } from '@/stores/auth'
-import {
-  buildAuthHeader,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-} from '@/utils/auth-token'
 
 let isRefreshing = false
-let refreshSubscribers: Array<(token: string) => void> = []
+let refreshSubscribers: Array<() => void> = []
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
-async function refreshToken(): Promise<string | null> {
-  const refreshTokenValue = getRefreshToken()
-  if (!refreshTokenValue) return null
+async function refreshToken(): Promise<boolean> {
+  if (isRefreshing) return false
+  isRefreshing = true
   try {
+    // ponytail: 后端从 HttpOnly Cookie 读取 refreshToken，不再需要前端传递
     const response = await fetch(`${API_BASE_URL}/auth/admin/refresh`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: refreshTokenValue }),
+      body: '{}',
     })
-    if (!response.ok) return null
-    const json = (await response.json()) as {
-      data?: { accessToken?: string; refreshToken?: string }
-    }
-    const payload = json.data ?? json
-    const token = (payload as { accessToken?: string }).accessToken
-    const newRefreshToken = (payload as { refreshToken?: string }).refreshToken
-    if (token) setAccessToken(token)
-    if (newRefreshToken) setRefreshToken(newRefreshToken)
-    return token ?? null
-  } catch {
-    return null
+    return response.ok
+  } finally {
+    isRefreshing = false
   }
 }
 
-function onRefreshed(newToken: string) {
-  for (const cb of refreshSubscribers) cb(newToken)
+function onRefreshed() {
+  for (const cb of refreshSubscribers) cb()
   refreshSubscribers = []
 }
 
-function addSubscriber(cb: (token: string) => void) {
+function addSubscriber(cb: () => void) {
   refreshSubscribers.push(cb)
 }
 
@@ -54,9 +41,9 @@ async function doRefreshAndRetry(method: {
   if (!isRefreshing) {
     isRefreshing = true
     try {
-      const newToken = await refreshToken()
-      if (newToken) {
-        onRefreshed(newToken)
+      const ok = await refreshToken()
+      if (ok) {
+        onRefreshed()
         return method.send()
       }
     } finally {
@@ -67,8 +54,7 @@ async function doRefreshAndRetry(method: {
     throw new Error('Auth refresh failed')
   }
   return new Promise<unknown>((resolve) => {
-    addSubscriber((token) => {
-      method.config.headers.Authorization = `Bearer ${token}`
+    addSubscriber(() => {
       resolve(method.send())
     })
   })
@@ -117,7 +103,7 @@ const responded = {
   onError(
     error: { status?: number },
     method: { send: () => unknown; config: { headers: Record<string, string> } },
-  ) {
+  ): Promise<void> {
     const status = error.status
     if (status && isUnauthorized(status)) {
       return doRefreshAndRetry(method) as Promise<void>
@@ -130,7 +116,11 @@ export const alovaInstance = createAlova({
   responded,
   id: 'goferbot-admin',
   statesHook: ReactHook,
-  requestAdapter: adapterFetch(),
+  // ponytail: 包裹 fetch 使所有请求携带 Cookie（HttpOnly 认证）
+  requestAdapter: adapterFetch({
+    customFetch: (input: RequestInfo | URL, init?: RequestInit) =>
+      fetch(input, { ...init, credentials: 'include' }),
+  }),
   baseURL: API_BASE_URL,
   timeout: 30_000,
   shareRequest: true,
@@ -139,11 +129,5 @@ export const alovaInstance = createAlova({
     POST: 0,
     PUT: 0,
     DELETE: 0,
-  },
-  beforeRequest(method) {
-    const authHeader = buildAuthHeader()
-    if (authHeader) {
-      method.config.headers.Authorization = authHeader
-    }
   },
 })

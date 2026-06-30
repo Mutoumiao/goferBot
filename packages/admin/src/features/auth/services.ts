@@ -2,7 +2,6 @@ import { toast } from 'sonner'
 import { getCurrentUser, login as loginApi, logout, refresh } from '@/api/auth'
 import type { AdminUser } from '@/stores/auth'
 import { useAuthStore } from '@/stores/auth'
-import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from '@/utils/auth-token'
 import { mapErrorMessage } from '@/utils/error-mapper'
 
 export interface LoginResult {
@@ -10,21 +9,21 @@ export interface LoginResult {
   error?: string
 }
 
-export async function loginService(email: string, password: string): Promise<LoginResult> {
+export async function loginService(
+  email: string,
+  password: string,
+  captcha?: { captchaId: string; captchaCode: string },
+): Promise<LoginResult> {
   if (!email.trim() || !password) {
     return { success: false, error: '请输入邮箱和密码' }
   }
 
   try {
-    const res = await loginApi({ email, password }).send()
-    const token = res.accessToken
-    const refreshToken = res.refreshToken
+    const res = await loginApi({ email, password, ...(captcha ?? {}) }).send()
     const user = res.user as AdminUser
 
-    if (token && user) {
-      setAccessToken(token)
-      if (refreshToken) setRefreshToken(refreshToken)
-      useAuthStore.getState().setAuth(token, user)
+    if (user) {
+      useAuthStore.getState().setUser(user)
       return { success: true }
     }
     return { success: false, error: '登录响应异常' }
@@ -37,19 +36,9 @@ export async function loginService(email: string, password: string): Promise<Log
 
 export async function refreshAuth(): Promise<boolean> {
   try {
-    const refreshToken = getRefreshToken()
-    if (!refreshToken) {
-      return false
-    }
-    const res = await refresh({ refreshToken }).send()
-    const token = res.accessToken
-    const newRefreshToken = res.refreshToken
-    if (token) {
-      setAccessToken(token)
-      if (newRefreshToken) setRefreshToken(newRefreshToken)
-      return true
-    }
-    return false
+    // Refresh token is in HttpOnly cookie, backend reads it automatically
+    await refresh({ refreshToken: '' }).send()
+    return true
   } catch {
     return false
   }
@@ -71,14 +60,9 @@ export async function fetchCurrentUser(): Promise<boolean> {
 
 export async function logoutService(): Promise<void> {
   try {
-    const refreshToken = getRefreshToken()
-    if (refreshToken) {
-      await logout({ refreshToken }).send()
-    }
+    await logout().send()
   } catch {
-    // 即使后端登出失败也继续清理本地状态
   } finally {
-    clearTokens()
     useAuthStore.getState().clearAuth()
     toast.success('已退出登录')
   }
@@ -96,6 +80,8 @@ export function setRememberedEmail(email: string | null): void {
   }
 }
 
+// Note: Refresh token is now managed via HttpOnly cookies
+// This function kept for backward compatibility, always returns false
 export function hasRefreshToken(): boolean {
-  return !!getRefreshToken()
+  return false
 }

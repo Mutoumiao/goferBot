@@ -14,10 +14,9 @@ export const login = (data: LoginRequest) =>
   alovaInstance.Post<AuthResponse>('/auth/web/login', data)
 
 /**
- * 登出 — 携带 refreshToken 撤销服务端会话
+ * 登出 — 服务端从 HttpOnly Cookie 读取 refreshToken 撤销会话
  */
-export const logout = (data: { refreshToken: string }) =>
-  alovaInstance.Post<{ success: boolean }>('/auth/web/logout', data)
+export const logout = () => alovaInstance.Post<{ success: boolean }>('/auth/web/logout', {})
 
 /**
  * 注册 — 返回 accessToken + user
@@ -40,6 +39,18 @@ export const refresh = (data: { refreshToken: string }) =>
  * 获取 RSA 公钥（用于密码加密）
  */
 export const getPublicKey = () => alovaInstance.Get<PublicKeyResponse>('/auth/public-key')
+
+export interface CaptchaResponse {
+  captchaId: string
+  imageBase64: string
+  imageUrl: string
+  expiresIn: number
+}
+
+/**
+ * 获取图形验证码（captchaId + base64 图片）
+ */
+export const getCaptcha = () => alovaInstance.Get<CaptchaResponse>('/auth/captcha')
 
 /**
  * 更新当前用户信息（昵称等）

@@ -31,11 +31,9 @@ describe('auth api', () => {
     expect(method.send).toBeDefined()
   })
 
-  it('logout sends POST to /auth/web/logout with refreshToken', async () => {
-    const method = logout({ refreshToken: 'rt' })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/logout', {
-      refreshToken: 'rt',
-    })
+  it('logout sends POST to /auth/web/logout with empty body', async () => {
+    const method = logout()
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/logout', {})
     expect(method.send).toBeDefined()
   })
 

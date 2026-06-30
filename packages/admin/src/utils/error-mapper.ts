@@ -16,6 +16,14 @@ export const ERROR_CODE_MAP: Record<string, string> = {
   RATE_LIMITED: '操作过于频繁，请稍后再试',
 }
 
+// Security: Sanitize error messages to prevent XSS
+function sanitizeErrorMessage(message: string): string {
+  return message
+    .replace(/[<>'"&`\\]/g, '')
+    .replace(/<[^>]*>/g, '')
+    .trim()
+}
+
 export interface MappedError extends Error {
   status?: number
   code?: string
@@ -26,22 +34,23 @@ export function mapErrorMessage(err: unknown): string {
   if (err && typeof err === 'object') {
     const e = err as MappedError
     const code = e.code
-    if (code && ERROR_CODE_MAP[code]) return ERROR_CODE_MAP[code]
+    if (code && ERROR_CODE_MAP[code]) return sanitizeErrorMessage(ERROR_CODE_MAP[code])
 
-    if (e.status === 401) return '登录已过期，请重新登录'
-    if (e.status === 403) return '无权限访问'
-    if (e.status === 404) return '请求的资源不存在'
-    if (e.status === 409) return '数据已被他人修改，请刷新后重试'
-    if (e.status === 429) return '操作过于频繁，请稍后再试'
-    if (e.status === 500) return '系统繁忙，请稍后再试'
+    if (e.status === 401) return sanitizeErrorMessage('登录已过期，请重新登录')
+    if (e.status === 403) return sanitizeErrorMessage('无权限访问')
+    if (e.status === 404) return sanitizeErrorMessage('请求的资源不存在')
+    if (e.status === 409) return sanitizeErrorMessage('数据已被他人修改，请刷新后重试')
+    if (e.status === 429) return sanitizeErrorMessage('操作过于频繁，请稍后再试')
+    if (e.status === 500) return sanitizeErrorMessage('系统繁忙，请稍后再试')
 
     const message = e.message
-    if (message && typeof message === 'string' && message.length <= 80) return message
+    if (message && typeof message === 'string' && message.length <= 80)
+      return sanitizeErrorMessage(message)
   }
 
-  if (err instanceof Error) return err.message || '操作失败，请稍后重试'
+  if (err instanceof Error) return sanitizeErrorMessage(err.message || '操作失败，请稍后重试')
 
-  return '操作失败，请稍后重试'
+  return sanitizeErrorMessage('操作失败，请稍后重试')
 }
 
 export function isConflict(err: unknown): boolean {

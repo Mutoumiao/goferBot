@@ -26,17 +26,17 @@ export function waitForAuthInit(maxMs = 3000): Promise<void> {
 }
 
 export interface AuthStateSnapshot {
-  token: string | null
+  isAuthenticated: boolean
   role: string | null
 }
 
 export function getAuthSnapshot(): AuthStateSnapshot {
   const s = useAuthStore.getState()
-  return { token: s.token, role: s.user?.role ?? null }
+  return { isAuthenticated: s.isAuthenticated, role: s.user?.role ?? null }
 }
 
 export function isAdmin(snapshot: AuthStateSnapshot) {
-  return snapshot.role === 'ADMIN' && !!snapshot.token
+  return snapshot.role === 'ADMIN' && snapshot.isAuthenticated
 }
 
 /**

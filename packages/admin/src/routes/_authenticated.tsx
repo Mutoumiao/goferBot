@@ -14,7 +14,8 @@ export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async ({ location }) => {
     await waitForAuthInit()
     const snapshot = getAuthSnapshot()
-    if (!snapshot.token) {
+    // ponytail: 凭据由 HttpOnly Cookie 承担；持久化 user 作为会话存在性判定
+    if (!snapshot.isAuthenticated) {
       throw redirect({
         to: ROUTES_REGISTER.login.path,
         search: buildLoginRedirectSearch(location),
@@ -28,7 +29,10 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function AppLayout() {
-  const snapshot = useAuthStore((s) => ({ token: s.token, role: s.user?.role ?? null }))
+  const snapshot = useAuthStore((s) => ({
+    isAuthenticated: s.isAuthenticated,
+    role: s.user?.role ?? null,
+  }))
   if (!isAdmin(snapshot)) {
     return <ForbiddenPage />
   }

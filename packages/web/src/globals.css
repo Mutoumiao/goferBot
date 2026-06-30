@@ -164,8 +164,21 @@
   /* Surface Secondary — 次级背景色（sidebar、tab-bar、页面背景等） */
   --color-surface-secondary: #f0f1f5;
 
-  /* Auth — 登录/注册页专用 */
-  --color-auth-bg: #e8ebfb;
+  /* Auth — 登录/注册页专用（亮色主题） */
+  --color-auth-bg: #ebedf5;
+  --color-auth-surface: rgba(80, 116, 250, 0.04);
+  --color-auth-card: #ffffff;
+  --color-auth-card-border: rgba(0, 0, 0, 0.06);
+  --color-auth-input-bg: #f5f6fb;
+  --color-auth-input-border: #dfe2eb;
+  --color-auth-input-focus: rgba(80, 116, 250, 0.35);
+  --color-auth-text-primary: #15162a;
+  --color-auth-text-secondary: #5c617a;
+  --color-auth-text-tertiary: #9da1b8;
+  --color-auth-accent: #5074fa;
+  --color-auth-accent-soft: #eef1fe;
+  --color-auth-glow: rgba(80, 116, 250, 0.08);
+  --color-auth-divider: #e9ecf2;
 }
 
 * {

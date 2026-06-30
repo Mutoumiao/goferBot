@@ -3,19 +3,16 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { ROUTES_REGISTER } from '@/router-register'
-import { clearTokens, getAccessToken } from '@/utils/auth-token'
 
 interface AuthState {
   user: User | null
-  token: string | null
   isAuthenticated: boolean
   isInitialized: boolean
   /** 标记 Zustand persist rehydration 是否已完成（不持久化） */
   _hydrated: boolean
 
-  setAuth: (token: string, user: User) => void
-  clearAuth: () => void
   setUser: (user: User) => void
+  clearAuth: () => void
   setInitialized: (value: boolean) => void
 }
 
@@ -23,49 +20,36 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
       isAuthenticated: false,
       isInitialized: false,
       _hydrated: false,
 
-      setAuth: (token: string, user: User) =>
+      setUser: (user) =>
         set({
-          token,
           user,
           isAuthenticated: true,
         }),
 
       clearAuth: () => {
-        clearTokens()
         set({
-          token: null,
           user: null,
           isAuthenticated: false,
         })
         window.location.href = ROUTES_REGISTER.login.path
       },
 
-      setUser: (user: User) => set({ user }),
       setInitialized: (value: boolean) => set({ isInitialized: value }),
     }),
     {
       name: 'goferbot-auth',
+      // ponytail: 仅持久化 user 便于刷新后恢复用户资料；认证凭据由 HttpOnly Cookie 承担
       partialize: (state) => ({
-        token: state.token,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-      /** rehydrate 后同步 raw localStorage + 标记 hydration 完成 */
       onRehydrateStorage: () => {
-        return (state, _error) => {
+        return (state) => {
           if (!state) return
-          const rawToken = getAccessToken()
-          // raw localStorage 无 token → 登录态已被清理，同步清除 Zustand 持久化数据
-          // ponytail: 直接修改 state 属性，persist 会合并更新
-          if (!rawToken && state.token) {
-            state.token = null
-            state.isAuthenticated = false
-          }
           state._hydrated = true
         }
       },

@@ -44,8 +44,9 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hydrated || useAuthStore.getState().isInitialized) return
 
-    const token = useAuthStore.getState().token
-    if (token) {
+    // ponytail: HttpOnly Cookie 由浏览器自动携带；有持久化的 user 则尝试刷新当前会话
+    const user = useAuthStore.getState().user
+    if (user) {
       fetchCurrentUser().then((ok) => {
         if (!ok) {
           useAuthStore.getState().clearAuth()

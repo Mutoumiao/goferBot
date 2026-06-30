@@ -12,6 +12,33 @@ vi.mock('@/features/auth/services', () => ({
   getRememberedEmail: vi.fn(() => null),
 }))
 
+// Mock Captcha 组件，避免 canvas 渲染问题
+vi.mock('@/components/ui/captcha', () => ({
+  Captcha: ({
+    onVerify,
+    onChallengeChange,
+  }: {
+    onVerify: (valid: boolean) => void
+    onChallengeChange?: (c: { captchaId: string; imageBase64: string } | null) => void
+  }) => {
+    // 立即下发 challenge（LoginForm 在提交前会校验 captchaChallenge）
+    onChallengeChange?.({ captchaId: 'cid-1', imageBase64: 'AAAA' })
+    return (
+      <div data-testid="captcha">
+        <input
+          data-testid="captcha-input"
+          placeholder="验证码"
+          onChange={(e) => {
+            const v = e.target.value
+            // 4 位视为"校验通过"
+            onVerify(v.length === 4)
+          }}
+        />
+      </div>
+    )
+  },
+}))
+
 import { AuthContainer } from '@/features/auth/components/AuthContainer'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
@@ -34,7 +61,7 @@ function getForm(element: HTMLElement): HTMLFormElement {
 
 describe('auth components', () => {
   beforeEach(() => {
-    useAuthStore.setState({ user: null, token: null, isAuthenticated: false, isInitialized: false })
+    useAuthStore.setState({ user: null, isAuthenticated: false, isInitialized: false })
     useAuthPageStore.setState({ tab: 'login', rememberEmail: null })
     localStorage.clear()
     vi.clearAllMocks()
@@ -52,7 +79,10 @@ describe('auth components', () => {
     it('toggles password visibility', () => {
       render(<LoginForm />)
       const passwordInput = screen.getByPlaceholderText('请输入密码') as HTMLInputElement
-      const toggle = screen.getAllByRole('button')[0]
+      // 找到密码可见性切换按钮（tabIndex=-1），Eye 图标
+      const container = passwordInput.parentElement!
+      const toggle = container.querySelector('button[tabindex="-1"]')!
+      expect(toggle).toBeDefined()
 
       expect(passwordInput.type).toBe('password')
       fireEvent.click(toggle)
@@ -93,7 +123,19 @@ describe('auth components', () => {
       expect(loginUser).not.toHaveBeenCalled()
     })
 
-    it('submits login with credentials', async () => {
+    it('shows captcha validation error if not verified', async () => {
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
+
+      await waitFor(() => {
+        expect(screen.getByText('请完成验证码验证')).toBeDefined()
+      })
+    })
+
+    it('submits login with credentials and captcha', async () => {
       vi.mocked(loginUser).mockResolvedValue({ success: true })
 
       render(<LoginForm />)
@@ -101,10 +143,17 @@ describe('auth components', () => {
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
 
+      // 通过 mock captcha 输入 4 位，满足校验
+      const captchaInput = screen.getByTestId('captcha-input')
+      setInputValue(captchaInput, 'ABCD')
+
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(loginUser).toHaveBeenCalledWith('user@example.com', 'password', false)
+        expect(loginUser).toHaveBeenCalledWith('user@example.com', 'password', false, {
+          captchaId: 'cid-1',
+          captchaCode: 'ABCD',
+        })
       })
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
     })
@@ -116,6 +165,9 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+      // 验证码
+      const captchaInput = screen.getByTestId('captcha-input')
+      setInputValue(captchaInput, 'ABCD')
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
@@ -130,6 +182,9 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+      // 验证码
+      const captchaInput = screen.getByTestId('captcha-input')
+      setInputValue(captchaInput, 'ABCD')
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
@@ -140,7 +195,18 @@ describe('auth components', () => {
       ).toBe(true)
     })
 
-    it('clears email error when user starts typing', async () => {
+    it('shows instant validation on blur', async () => {
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'invalid')
+      fireEvent.blur(emailInput)
+
+      await waitFor(() => {
+        expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
+      })
+    })
+
+    it('clears error when user starts typing', async () => {
       render(<LoginForm />)
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'invalid')
@@ -150,8 +216,32 @@ describe('auth components', () => {
         expect(screen.getByText('请输入有效的邮箱地址')).toBeDefined()
       })
 
-      setInputValue(emailInput, 'invalid-changed')
+      setInputValue(emailInput, 'user@example.com')
       expect(screen.queryByText('请输入有效的邮箱地址')).toBeNull()
+    })
+
+    it('shows forgot password view when clicked', () => {
+      render(<LoginForm />)
+      fireEvent.click(screen.getByText('忘记密码？'))
+      expect(screen.getByText('找回密码')).toBeDefined()
+      expect(screen.getByPlaceholderText('请输入注册时使用的邮箱')).toBeDefined()
+    })
+
+    it('can navigate back from forgot password', () => {
+      render(<LoginForm />)
+      fireEvent.click(screen.getByText('忘记密码？'))
+      fireEvent.click(screen.getByText('返回登录'))
+      expect(screen.getByRole('button', { name: '登录' })).toBeDefined()
+    })
+
+    it('renders captcha component', () => {
+      render(<LoginForm />)
+      expect(screen.getByTestId('captcha')).toBeDefined()
+    })
+
+    it('shows remember me checkbox', () => {
+      render(<LoginForm />)
+      expect(screen.getByText('记住我')).toBeDefined()
     })
   })
 
@@ -161,7 +251,7 @@ describe('auth components', () => {
       expect(screen.getByPlaceholderText('你的名字')).toBeDefined()
       expect(screen.getByPlaceholderText('you@example.com')).toBeDefined()
       expect(screen.getByPlaceholderText('请输入密码')).toBeDefined()
-      expect(screen.getByRole('button', { name: '注册' })).toBeDefined()
+      expect(screen.getByRole('button', { name: '创建账户' })).toBeDefined()
     })
 
     it('shows name validation error for empty name', async () => {
@@ -245,7 +335,6 @@ describe('auth components', () => {
     it('toggles confirm password visibility', () => {
       render(<RegisterForm />)
       const confirmInput = screen.getByPlaceholderText('请再次输入密码') as HTMLInputElement
-      // Find the toggle button next to confirm password input
       const confirmWrapper = confirmInput.closest('div')
       if (!confirmWrapper) throw new Error('confirmWrapper not found')
       const confirmToggle = confirmWrapper.querySelector('button')
@@ -285,7 +374,7 @@ describe('auth components', () => {
       })
 
       const passwordInput = screen.getByPlaceholderText('请输入密码')
-      setInputValue(passwordInput, 'weak-changed')
+      setInputValue(passwordInput, 'newpassword123')
       expect(screen.queryByText('密码长度不能少于 6 位')).toBeNull()
     })
   })
@@ -293,22 +382,22 @@ describe('auth components', () => {
   describe('AuthContainer', () => {
     it('renders login form by default', () => {
       render(<AuthContainer />)
-      expect(screen.getByText('欢迎回来')).toBeDefined()
       expect(screen.getByRole('button', { name: '登录' })).toBeDefined()
     })
 
     it('switches to register form when register button clicked', () => {
       render(<AuthContainer />)
-      fireEvent.click(screen.getByRole('button', { name: '立即注册' }))
-      expect(screen.getByText('创建账户')).toBeDefined()
+      // AuthContainer 在 lg 屏幕下有两个 "欢迎回来" / "创建账户"
+      fireEvent.click(screen.getByText('立即注册'))
       expect(screen.getByText('返回登录')).toBeDefined()
     })
 
     it('switches back to login from register form', () => {
       render(<AuthContainer />)
-      fireEvent.click(screen.getByRole('button', { name: '立即注册' }))
+      fireEvent.click(screen.getByText('立即注册'))
       fireEvent.click(screen.getByText('返回登录'))
-      expect(screen.getByText('欢迎回来')).toBeDefined()
+      // 验证有登录按钮
+      expect(screen.getByRole('button', { name: '登录' })).toBeDefined()
     })
 
     it('renders feature list on left side', () => {
@@ -316,6 +405,12 @@ describe('auth components', () => {
       expect(screen.getByText('高效搜索')).toBeDefined()
       expect(screen.getByText('知识问答')).toBeDefined()
       expect(screen.getByText('安全加密')).toBeDefined()
+    })
+
+    it('renders logo', () => {
+      render(<AuthContainer />)
+      const logos = screen.getAllByText('GoferBot')
+      expect(logos.length).toBeGreaterThanOrEqual(1)
     })
   })
 })
