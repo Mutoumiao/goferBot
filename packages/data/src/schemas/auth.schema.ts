@@ -6,6 +6,8 @@ export const loginRequestSchema = z.object({
     .string()
     .min(1, 'Password cannot be empty')
     .max(4096, 'Password data anomaly'),
+  captchaId: z.string().min(1).optional(),
+  captchaCode: z.string().min(1).optional(),
 })
 
 export const registerRequestSchema = z.object({

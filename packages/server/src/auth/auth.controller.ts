@@ -15,11 +15,11 @@ import { Throttle } from '@nestjs/throttler'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AuthService } from './auth.service.js'
 import { AVATAR_ALLOWED_MIME_TYPES } from './constants.js'
+import { CookieHelper } from './cookie.helper.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { CurrentUser } from './decorators/current-user.decorator.js'
 import { AdminLoginDto } from './dto/admin-login.dto.js'
 import { LoginDto } from './dto/login.dto.js'
-import { LogoutDto } from './dto/logout.dto.js'
 import { validatePassword } from './dto/password.schema.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
@@ -31,12 +31,13 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwordEncryption: PasswordEncryptionService,
+    private readonly cookieHelper: CookieHelper,
   ) {}
 
   @Get('public-key')
   @Throttle({ default: { ttl: 60000, limit: 60 } })
   getPublicKey(@Res({ passthrough: true }) res: FastifyReply) {
-    res.header('Cache-Control', 'public, max-age=3600')
+    res.header('Cache-Control', 'no-store')
     return {
       publicKey: this.passwordEncryption.getPublicKeyPem(),
       algorithm: 'RSA-OAEP',
@@ -55,17 +56,27 @@ export class AuthController {
   @Post('web/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async webLogin(@Body() dto: WebLoginDto) {
+  async webLogin(@Body() dto: WebLoginDto, @Res({ passthrough: true }) res: FastifyReply) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
-    return this.authService.login(dto.email, password, 'web')
+    const result = await this.authService.login(dto.email, password, 'web', {
+      captchaId: dto.captchaId,
+      captchaCode: dto.captchaCode,
+    })
+    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
+    return { user: result.user }
   }
 
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
-  async adminLogin(@Body() dto: AdminLoginDto) {
+  async adminLogin(@Body() dto: AdminLoginDto, @Res({ passthrough: true }) res: FastifyReply) {
     validatePassword(dto.password)
-    return this.authService.login(dto.email, dto.password, 'admin')
+    const result = await this.authService.login(dto.email, dto.password, 'admin', {
+      captchaId: dto.captchaId,
+      captchaCode: dto.captchaCode,
+    })
+    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
+    return { user: result.user }
   }
 
   /** @deprecated 旧登录入口，前端切走后移除 */
@@ -94,15 +105,27 @@ export class AuthController {
   @Post('web/refresh')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async webRefresh(@Body() dto: { refreshToken: string }) {
-    return this.authService.refresh(dto.refreshToken)
+  async webRefresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
+    const refreshToken = req.cookies?.goferbot_refreshToken
+    if (!refreshToken) {
+      throw new BadRequestException({ code: 'REFRESH_TOKEN_MISSING', message: '未找到刷新令牌' })
+    }
+    const result = await this.authService.refresh(refreshToken)
+    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
+    return { success: true }
   }
 
   @Post('admin/refresh')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async adminRefresh(@Body() dto: { refreshToken: string }) {
-    return this.authService.refresh(dto.refreshToken)
+  async adminRefresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
+    const refreshToken = req.cookies?.goferbot_refreshToken
+    if (!refreshToken) {
+      throw new BadRequestException({ code: 'REFRESH_TOKEN_MISSING', message: '未找到刷新令牌' })
+    }
+    const result = await this.authService.refresh(refreshToken)
+    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
+    return { success: true }
   }
 
   /** @deprecated 旧刷新入口，前端切走后移除 */
@@ -115,15 +138,25 @@ export class AuthController {
 
   @Post('web/logout')
   @HttpCode(HttpStatus.OK)
-  async webLogout(@Body() dto: LogoutDto) {
-    await this.authService.logoutByRefreshToken(dto.refreshToken)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  async webLogout(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
+    const refreshToken = req.cookies?.goferbot_refreshToken
+    if (refreshToken) {
+      await this.authService.logoutByRefreshToken(refreshToken)
+    }
+    this.cookieHelper.clearAuthCookies(res)
     return { success: true }
   }
 
   @Post('admin/logout')
   @HttpCode(HttpStatus.OK)
-  async adminLogout(@Body() dto: LogoutDto) {
-    await this.authService.logoutByRefreshToken(dto.refreshToken)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  async adminLogout(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
+    const refreshToken = req.cookies?.goferbot_refreshToken
+    if (refreshToken) {
+      await this.authService.logoutByRefreshToken(refreshToken)
+    }
+    this.cookieHelper.clearAuthCookies(res)
     return { success: true }
   }
 

@@ -57,3 +57,11 @@ export function decryptFailedError(): AppException {
 export function validationError(message: string): AppException {
   return new AppException('VALIDATION_ERROR', message, 400)
 }
+
+export function captchaRequiredError(): AppException {
+  return new AppException('CAPTCHA_REQUIRED', '请输入验证码', 400)
+}
+
+export function captchaInvalidError(): AppException {
+  return new AppException('CAPTCHA_INVALID', '验证码错误或已过期', 400)
+}

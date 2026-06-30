@@ -15,8 +15,24 @@ export interface JwtPayload {
   type: 'access' | 'refresh'
 }
 
+// Extract JWT from cookie 'goferbot_access_token' or Authorization header
+const extractJwt = (req: any): string | null => {
+  // Try cookie first
+  if (req.cookies && req.cookies.goferbot_access_token) {
+    return req.cookies.goferbot_access_token
+  }
+  // Fall back to Authorization header
+  const authHeader = req.headers.authorization
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.slice(7)
+  }
+  return null
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  private readonly isDev: boolean
+
   constructor(
     @Inject(ConfigService) readonly configService: ConfigService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -24,10 +40,27 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     @Inject(AuthRepository) private readonly authRepository: AuthRepository,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: extractJwt,
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+      passReqToCallback: false,
     })
+    this.isDev = configService.get('NODE_ENV') === 'development'
+  }
+
+  handleRequest(err: unknown, user: unknown, _info: unknown, _status?: unknown) {
+    if (err || !user) {
+      // 生产环境隐藏 JWT 验签错误细节（如 "jwt expired"、"invalid signature"）
+      // 开发环境透传原始错误便于调试
+      const message =
+        err instanceof Error
+          ? this.isDev
+            ? `无效令牌: ${err.message}`
+            : '登录已过期或令牌无效'
+          : '登录已过期或令牌无效'
+      throw new UnauthorizedException(message)
+    }
+    return user
   }
 
   async validate(payload: JwtPayload) {
@@ -37,14 +70,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     if (!payload.sid || !payload.app) {
       throw new UnauthorizedException('无效的令牌声明')
-    }
-
-    const session = await this.prisma.authSession.findUnique({
-      where: { id: payload.sid },
-    })
-
-    if (!session || session.revokedAt) {
-      throw new UnauthorizedException('会话已失效')
     }
 
     const cached = await this.authRedis.getCachedUser(payload.sub)
@@ -66,18 +91,25 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       }
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatar: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+    const [session, user] = await Promise.all([
+      this.prisma.authSession.findUnique({ where: { id: payload.sid } }),
+      this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatar: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+    ])
+
+    if (!session || session.revokedAt) {
+      throw new UnauthorizedException('会话已失效')
+    }
 
     if (!user) {
       throw new UnauthorizedException('用户不存在')
@@ -87,7 +119,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('账号已被禁用')
     }
 
-    // 从 UserRole 表按应用拉取角色
     const userRoles = await this.authRepository.getRolesForUserByApp(user.id, payload.app)
     const roles = userRoles.map((r) => r.role)
 
@@ -95,7 +126,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       string,
       unknown
     >)
-    await this.authRepository.updateLastSeen(payload.sid)
+
+    // 节流 updateLastSeen：默认 60 秒内只更新一次，避免高并发下写放大
+    if (await this.authRedis.shouldUpdateLastSeen(payload.sid, 60)) {
+      await this.authRepository.updateLastSeen(payload.sid)
+    }
 
     return {
       ...user,

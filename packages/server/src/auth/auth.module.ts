@@ -8,6 +8,9 @@ import { AuthController } from './auth.controller.js'
 import { AuthService } from './auth.service.js'
 import { AuthRedisService } from './auth-redis.service.js'
 import { AuthRepositoryModule } from './auth-repository.module.js'
+import { CaptchaController } from './captcha.controller.js'
+import { CaptchaService } from './captcha.service.js'
+import { CookieHelper } from './cookie.helper.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { UserPasswordChangedListener } from './listeners/user-password-changed.listener.js'
 import { UserStatusChangedListener } from './listeners/user-status-changed.listener.js'
@@ -21,7 +24,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '2h',
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '15m',
         },
       }),
       inject: [ConfigService],
@@ -35,10 +38,12 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     PasswordEncryptionService,
     JwtStrategy,
     AuthRedisService,
+    CaptchaService,
+    CookieHelper,
     UserPasswordChangedListener,
     UserStatusChangedListener,
   ],
-  controllers: [AuthController],
-  exports: [AuthService, AuthRedisService],
+  controllers: [AuthController, CaptchaController],
+  exports: [AuthService, AuthRedisService, CaptchaService],
 })
 export class AuthModule {}

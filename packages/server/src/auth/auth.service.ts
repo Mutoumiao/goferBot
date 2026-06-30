@@ -7,10 +7,13 @@ import { AppException } from '../lib/app-error.js'
 import { UserService } from '../modules/user/user.service.js'
 import { StorageService } from '../processors/storage/storage.service.js'
 import { AuthRedisService } from './auth-redis.service.js'
+import { CaptchaService } from './captcha.service.js'
 import { AVATAR_ALLOWED_MIME_TYPES, AVATAR_EXT_MAP, AVATAR_MAX_SIZE } from './constants.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
 import {
   accountDisabledError,
+  captchaInvalidError,
+  captchaRequiredError,
   invalidRefreshTokenError,
   invalidTokenTypeError,
   noAdminRoleError,
@@ -49,6 +52,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly storageService: StorageService,
     private readonly authRedis: AuthRedisService,
+    private readonly captchaService: CaptchaService,
     private readonly authRepository: AuthRepository,
   ) {}
 
@@ -59,7 +63,21 @@ export class AuthService {
     return { user, ...tokens }
   }
 
-  async login(email: string, password: string, app: AuthApp) {
+  async login(
+    email: string,
+    password: string,
+    app: AuthApp,
+    captcha?: { captchaId?: string; captchaCode?: string },
+  ) {
+    // 管理后台与 Web 登录均强制要求验证码
+    if (!captcha?.captchaId || !captcha?.captchaCode) {
+      throw captchaRequiredError()
+    }
+    const ok = await this.captchaService.verify(captcha.captchaId, captcha.captchaCode)
+    if (!ok) {
+      throw captchaInvalidError()
+    }
+
     const user = await this.userService.validatePassword(email, password)
 
     if (!user.isActive) {

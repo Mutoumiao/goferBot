@@ -2,8 +2,10 @@ import { getPublicKey } from '@/api/auth'
 
 let cachedPublicKey: CryptoKey | null = null
 let cacheTimestamp = 0
-// ponytail: 公钥缓存有效期 1 小时，服务器公钥轮换时需手动清除或等待过期
-const CACHE_TTL_MS = 60 * 60 * 1000
+// ponytail: 30s 缓存覆盖连续表单重试（避免每次 importKey 的 Web Crypto 开销）。
+// 服务重启后 DECRYPT_FAILED → clearPublicKeyCache → re-encrypt → retry 自动恢复。
+// 后端 GET /auth/public-key 已设 Cache-Control: no-store，HTTP 层不缓存。
+const CACHE_TTL_MS = 30 * 1000
 
 function isCacheExpired(): boolean {
   return cacheTimestamp === 0 || Date.now() - cacheTimestamp > CACHE_TTL_MS
