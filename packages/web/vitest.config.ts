@@ -18,6 +18,10 @@ export default defineConfig({
       'tests/**/*.test.ts',
       'tests/**/*.test.tsx',
     ],
+    // ponytail: Windows 下 happy-dom + React 测试在默认 threads/并行模式会引发 worker 崩溃；
+    // 显式使用 forks 并串行执行以保证测试可稳定退出
+    pool: 'forks',
+    fileParallelism: false,
     environment: 'happy-dom',
     coverage: {
       provider: 'v8',

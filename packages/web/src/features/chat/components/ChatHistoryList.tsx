@@ -1,7 +1,13 @@
 import type { Pagination as PaginationType, Session } from '@goferbot/data'
-import { ArrowRightIcon, MessageCircleIcon, Trash2Icon } from 'lucide-react'
+import { ArrowRightIcon, MoreHorizontalIcon, MessageCircleIcon, Trash2Icon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import {
   Pagination,
@@ -84,6 +90,16 @@ export function ChatHistoryList({
     onPageChange(Math.min(totalPages, page + 1))
   }, [onPageChange, page, totalPages])
 
+  const handleCardKeyDown = useCallback(
+    (session: Session, e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onResume(session)
+      }
+    },
+    [onResume],
+  )
+
   if (sessions.length === 0) {
     return (
       <Empty className="mt-8 min-h-[320px] rounded-xl border border-dashed border-border-default bg-surface-1">
@@ -101,54 +117,92 @@ export function ChatHistoryList({
   return (
     <>
       <div className="mt-6 space-y-2.5">
-        {sessions.map((session) => (
-          <button
-            key={session.id}
-            type="button"
-            tabIndex={0}
-            onClick={() => onResume(session)}
-            className={cn(
-              'group flex w-full cursor-pointer items-center gap-4 rounded-lg border border-border-default bg-surface-1 p-4 text-left shadow-sm transition-all',
-              'hover:border-border-subtle hover:shadow',
-            )}
-          >
-            <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-2xl bg-brand-blue-soft">
-              <MessageCircleIcon className="size-[19px] text-brand-blue" />
-            </div>
+        {sessions.map((session) => {
+          const isDeleting = deletingId === session.id
+          return (
+            <div
+              key={session.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`恢复会话 ${session.title || '未命名会话'}`}
+              onClick={() => onResume(session)}
+              onKeyDown={(e) => handleCardKeyDown(session, e)}
+              className={cn(
+                'group relative flex w-full cursor-pointer items-center gap-4 rounded-lg border border-border-default bg-surface-1 p-4 text-left shadow-sm transition-all',
+                'hover:border-border-subtle hover:shadow',
+                isDeleting && 'pointer-events-none opacity-60',
+              )}
+            >
+              <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-2xl bg-brand-blue-soft">
+                <MessageCircleIcon className="size-[19px] text-brand-blue" />
+              </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-medium text-text-primary">
-                {session.title || '未命名会话'}
-              </p>
-              <p className="mt-1 line-clamp-1 text-xs text-text-secondary">
-                {session.messageCount ?? 0} 条消息
-              </p>
-            </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-medium text-text-primary">
+                  {session.title || '未命名会话'}
+                </p>
+                <p className="mt-1 line-clamp-1 text-xs text-text-secondary">
+                  {session.messageCount ?? 0} 条消息
+                </p>
+              </div>
 
-            <div className="hidden shrink-0 text-right sm:block">
-              <p className="text-xs text-text-tertiary">
-                {formatSessionTime(session.updatedAt ?? session.createdAt)}
-              </p>
-              <p className="mt-1 text-xs text-text-tertiary">{session.messageCount ?? 0} 条消息</p>
-            </div>
+              <div className="hidden shrink-0 text-right sm:block">
+                <p className="text-xs text-text-tertiary">
+                  {formatSessionTime(session.updatedAt ?? session.createdAt)}
+                </p>
+                <p className="mt-1 text-xs text-text-tertiary">{session.messageCount ?? 0} 条消息</p>
+              </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="h-[34px] w-[34px] rounded-full bg-surface-3 text-text-secondary opacity-0 transition-opacity group-hover:opacity-100"
-                onClick={(e) => onDelete(session, e)}
-                disabled={deletingId === session.id}
-                title="删除会话"
+              <div
+                className="flex shrink-0 items-center gap-2"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
               >
-                <Trash2Icon className="size-4" />
-              </Button>
-              <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-surface-3 text-text-secondary transition-colors group-hover:bg-surface-2">
-                <ArrowRightIcon className="size-[15px]" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      data-testid={`session-menu-trigger-${session.id}`}
+                      className={cn(
+                        'h-[34px] w-[34px] rounded-full bg-surface-3 text-text-secondary transition-opacity',
+                        'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+                      )}
+                      title="更多操作"
+                      aria-label={`会话 ${session.title || '未命名会话'} 的更多操作`}
+                      disabled={isDeleting}
+                    >
+                      <MoreHorizontalIcon className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[160px]">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onResume(session)
+                      }}
+                    >
+                      <ArrowRightIcon className="mr-2 size-4" />
+                      恢复会话
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      disabled={isDeleting}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete(session, e)
+                      }}
+                    >
+                      <Trash2Icon className="mr-2 size-4" />
+                      删除会话
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
-          </button>
-        ))}
+          )
+        })}
       </div>
 
       {totalPages > 1 && (

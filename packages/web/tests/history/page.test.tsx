@@ -57,13 +57,21 @@ vi.mock('lucide-react', () => ({
   MessageCircleIcon: () => <svg data-testid="icon-message" />,
   ArrowRightIcon: () => <svg data-testid="icon-arrow" />,
   Trash2Icon: () => <svg data-testid="icon-trash" />,
+  MoreHorizontalIcon: () => <svg data-testid="icon-more" />,
   Clock3Icon: () => <svg data-testid="icon-clock" />,
   ChevronDownIcon: () => <svg data-testid="icon-chevron" />,
 }))
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, disabled, title }: any) => (
-    <button type="button" onClick={onClick} disabled={disabled} title={title}>
+  Button: ({ children, onClick, disabled, title, type, ...rest }: any) => (
+    <button
+      type={type ?? 'button'}
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={rest['aria-label']}
+      data-testid={rest['data-testid']}
+    >
       {children}
     </button>
   ),
@@ -231,9 +239,8 @@ describe('ChatHistoryPage', () => {
     render(<ChatHistoryPage />)
     expect(screen.getByText('待删除')).toBeDefined()
 
-    const deleteBtn = screen.getByTitle('删除会话') as HTMLElement
-    expect(deleteBtn).toBeDefined()
-    fireEvent.click(deleteBtn)
+    const deleteItem = screen.getByText('删除会话')
+    fireEvent.click(deleteItem)
 
     await waitFor(() => {
       expect(mockDeleteChatSessionWithReload).toHaveBeenCalledWith(

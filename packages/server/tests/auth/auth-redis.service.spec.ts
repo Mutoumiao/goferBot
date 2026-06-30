@@ -37,8 +37,10 @@ describe('AuthRedisService', () => {
   })
 
   // 通过反射注入 mock Redis，避免 onModuleInit 的真实连接
+  // ponytail: 同时注入 ready=true 使 isReady() 通过（构造函数默认 ready=false）
   const injectRedis = (redis: MockRedis) => {
     ;(service as any).redis = redis
+    ;(service as any).ready = true
   }
 
   describe('blacklistToken', () => {

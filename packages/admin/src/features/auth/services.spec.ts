@@ -72,10 +72,8 @@ describe('auth services', () => {
     expect((await loginService('a', '')).success).toBe(false)
   })
 
-  it('loginService success sets token and auth', async () => {
+  it('loginService success sets user', async () => {
     mockLogin.mockResolvedValueOnce({
-      accessToken: 'at',
-      refreshToken: 'rt',
       user: { id: '1', email: 'a@b.com', roles: [] },
     })
     const r = await loginService('a@b.com', 'x', {
@@ -89,9 +87,7 @@ describe('auth services', () => {
       captchaId: 'cid-1',
       captchaCode: 'ABCD',
     })
-    expect(mockSetAccessToken).toHaveBeenCalledWith('at')
-    expect(mockSetRefreshToken).toHaveBeenCalledWith('rt')
-    expect(mockSetAuth).toHaveBeenCalled()
+    expect(mockSetUser).toHaveBeenCalled()
   })
 
   it('loginService handles error', async () => {
@@ -104,15 +100,14 @@ describe('auth services', () => {
     expect(r.error).toBeTruthy()
   })
 
-  it('refreshAuth returns false on error', async () => {
-    mockGetRefreshToken.mockReturnValueOnce('rt')
+  it('refreshAuth returns false when backend rejects', async () => {
     mockRefresh.mockRejectedValueOnce(new Error('bad'))
     expect(await refreshAuth()).toBe(false)
   })
 
-  it('refreshAuth returns false when no refresh token exists', async () => {
-    mockGetRefreshToken.mockReturnValueOnce(null)
-    expect(await refreshAuth()).toBe(false)
+  it('refreshAuth returns true on success', async () => {
+    mockRefresh.mockResolvedValueOnce(undefined)
+    expect(await refreshAuth()).toBe(true)
   })
 
   it('fetchCurrentUser clears auth on 401', async () => {
@@ -121,11 +116,9 @@ describe('auth services', () => {
     expect(mockClearAuth).toHaveBeenCalled()
   })
 
-  it('logoutService clears tokens', async () => {
-    mockGetRefreshToken.mockReturnValueOnce('rt')
+  it('logoutService clears tokens and shows success toast', async () => {
     mockLogout.mockResolvedValueOnce(undefined)
     await logoutService()
-    expect(mockClearTokens).toHaveBeenCalled()
     expect(mockClearAuth).toHaveBeenCalled()
     expect(toast.success).toHaveBeenCalled()
   })
@@ -139,10 +132,8 @@ describe('auth services', () => {
     expect(getRememberedEmail()).toBeNull()
   })
 
-  it('hasRefreshToken checks storage', () => {
-    mockGetRefreshToken.mockReturnValue('rt')
-    expect(hasRefreshToken()).toBe(true)
-    mockGetRefreshToken.mockReturnValue(null)
+  it('hasRefreshToken always returns false (refresh token moved to HttpOnly Cookie)', () => {
+    // Refresh token is now managed via HttpOnly cookies, hasRefreshToken is kept for backward compatibility
     expect(hasRefreshToken()).toBe(false)
   })
 })

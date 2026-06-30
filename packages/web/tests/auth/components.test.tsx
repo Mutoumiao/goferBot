@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockNavigate = vi.fn()
@@ -13,16 +13,27 @@ vi.mock('@/features/auth/services', () => ({
 }))
 
 // Mock Captcha 组件，避免 canvas 渲染问题
+// ponytail: 关键修复 —— 原实现直接在 render 中调用 onChallengeChange，会在 happy-dom 下触发
+// "Cannot read properties of null (reading 'insertBefore')" 之类的崩溃导致 worker 挂起。
+// 改为模块级 ref 显式触发 + act() 包裹，让父组件的 setState 在 commit 之后执行。
+let captchaRef: {
+  onVerify: (valid: boolean) => void
+  onChallengeChange?: (c: { captchaId: string; imageBase64: string } | null) => void
+  onInput?: (value: string) => void
+} | null = null
+let captchaReady = false
+
 vi.mock('@/components/ui/captcha', () => ({
   Captcha: ({
     onVerify,
     onChallengeChange,
+    onInput,
   }: {
     onVerify: (valid: boolean) => void
     onChallengeChange?: (c: { captchaId: string; imageBase64: string } | null) => void
+    onInput?: (value: string) => void
   }) => {
-    // 立即下发 challenge（LoginForm 在提交前会校验 captchaChallenge）
-    onChallengeChange?.({ captchaId: 'cid-1', imageBase64: 'AAAA' })
+    captchaRef = { onVerify, onChallengeChange, onInput }
     return (
       <div data-testid="captcha">
         <input
@@ -30,7 +41,7 @@ vi.mock('@/components/ui/captcha', () => ({
           placeholder="验证码"
           onChange={(e) => {
             const v = e.target.value
-            // 4 位视为"校验通过"
+            onInput?.(v)
             onVerify(v.length === 4)
           }}
         />
@@ -38,6 +49,14 @@ vi.mock('@/components/ui/captcha', () => ({
     )
   },
 }))
+
+/** 触发 captcha challenge 下发（在 act() 中包裹，避免 setState-during-render 警告） */
+function primeCaptcha() {
+  act(() => {
+    captchaRef?.onChallengeChange?.({ captchaId: 'cid-1', imageBase64: 'AAAA' })
+  })
+  captchaReady = true
+}
 
 import { AuthContainer } from '@/features/auth/components/AuthContainer'
 import { LoginForm } from '@/features/auth/components/LoginForm'
@@ -118,16 +137,31 @@ describe('auth components', () => {
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
+        expect(screen.getByText('密码长度至少 8 位')).toBeDefined()
+      })
+      expect(loginUser).not.toHaveBeenCalled()
+    })
+
+    it('shows password validation error for missing digit', async () => {
+      render(<LoginForm />)
+      const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
+      setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Abcdefgh')
+      fireEvent.submit(getForm(emailInput as HTMLInputElement))
+
+      await waitFor(() => {
+        expect(screen.getByText('密码必须包含数字')).toBeDefined()
       })
       expect(loginUser).not.toHaveBeenCalled()
     })
 
     it('shows captcha validation error if not verified', async () => {
       render(<LoginForm />)
+      // 不触发 primeCaptcha（captchaVerified 仍为 false）
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
-      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Password1')
+      // 不输入验证码直接提交，应提示验证码未完成
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
@@ -139,22 +173,27 @@ describe('auth components', () => {
       vi.mocked(loginUser).mockResolvedValue({ success: true })
 
       render(<LoginForm />)
+      primeCaptcha()
+
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
-      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
-
-      // 通过 mock captcha 输入 4 位，满足校验
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Password1')
       const captchaInput = screen.getByTestId('captcha-input')
       setInputValue(captchaInput, 'ABCD')
+
+      // ponytail: 等待 React 19 提交所有 state 更新
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
 
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(loginUser).toHaveBeenCalledWith('user@example.com', 'password', false, {
+        expect(loginUser).toHaveBeenCalledWith('user@example.com', 'Password1', false, {
           captchaId: 'cid-1',
           captchaCode: 'ABCD',
         })
-      })
+      }, { timeout: 3000 })
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
     })
 
@@ -162,9 +201,10 @@ describe('auth components', () => {
       vi.mocked(loginUser).mockResolvedValue({ success: false, error: 'invalid credentials' })
 
       render(<LoginForm />)
+      primeCaptcha()
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
-      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Password1')
       // 验证码
       const captchaInput = screen.getByTestId('captcha-input')
       setInputValue(captchaInput, 'ABCD')
@@ -179,9 +219,10 @@ describe('auth components', () => {
       vi.mocked(loginUser).mockImplementation(() => new Promise(() => {}))
 
       render(<LoginForm />)
+      primeCaptcha()
       const emailInput = screen.getByPlaceholderText('请输入邮箱地址')
       setInputValue(emailInput, 'user@example.com')
-      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Password1')
       // 验证码
       const captchaInput = screen.getByTestId('captcha-input')
       setInputValue(captchaInput, 'ABCD')
@@ -295,7 +336,7 @@ describe('auth components', () => {
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
+        expect(screen.getByText('密码长度至少 8 位')).toBeDefined()
       })
       expect(registerUser).not.toHaveBeenCalled()
     })
@@ -305,8 +346,8 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('you@example.com')
       setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
       setInputValue(emailInput, 'user@example.com')
-      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
-      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'different')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Password1')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'Different1')
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
@@ -322,12 +363,12 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('you@example.com')
       setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
       setInputValue(emailInput, 'user@example.com')
-      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password123')
-      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password123')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Password1')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'Password1')
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(registerUser).toHaveBeenCalledWith('User', 'user@example.com', 'password123')
+        expect(registerUser).toHaveBeenCalledWith('User', 'user@example.com', 'Password1')
       })
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
     })
@@ -350,12 +391,12 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('you@example.com')
       setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
       setInputValue(emailInput, 'user@example.com')
-      setInputValue(screen.getByPlaceholderText('请输入密码'), 'password')
-      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'password')
+      setInputValue(screen.getByPlaceholderText('请输入密码'), 'Abcdefgh')
+      setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'Abcdefgh')
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(screen.getByText('密码需同时包含字母和数字')).toBeDefined()
+        expect(screen.getByText('密码必须包含数字')).toBeDefined()
       })
       expect(registerUser).not.toHaveBeenCalled()
     })
@@ -370,12 +411,12 @@ describe('auth components', () => {
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(screen.getByText('密码长度不能少于 6 位')).toBeDefined()
+        expect(screen.getByText('密码长度至少 8 位')).toBeDefined()
       })
 
       const passwordInput = screen.getByPlaceholderText('请输入密码')
-      setInputValue(passwordInput, 'newpassword123')
-      expect(screen.queryByText('密码长度不能少于 6 位')).toBeNull()
+      setInputValue(passwordInput, 'Newpassword123')
+      expect(screen.queryByText('密码长度至少 8 位')).toBeNull()
     })
   })
 

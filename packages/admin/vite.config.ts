@@ -7,6 +7,8 @@ import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
 
+const isVitest = process.env.VITEST === '1'
+
 const config = defineConfig({
   resolve: {
     tsconfigPaths: true,
@@ -15,10 +17,14 @@ const config = defineConfig({
     },
   },
   plugins: [
-    devtools(),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    ...(isVitest
+      ? []
+      : [
+          devtools(),
+          nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+          tanstackStart({ spa: { enabled: true } }),
+        ]),
     tailwindcss(),
-    tanstackStart({ spa: { enabled: true } }),
     viteReact(),
   ],
   server: {

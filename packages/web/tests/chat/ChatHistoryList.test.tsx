@@ -6,15 +6,44 @@ vi.mock('lucide-react', () => ({
   MessageCircleIcon: () => <svg data-testid="icon-message" />,
   ArrowRightIcon: () => <svg data-testid="icon-arrow" />,
   Trash2Icon: () => <svg data-testid="icon-trash" />,
+  MoreHorizontalIcon: () => <svg data-testid="icon-more" />,
 }))
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, disabled, title }: any) => (
-    <button type="button" onClick={onClick} disabled={disabled} title={title}>
+  Button: ({ children, onClick, disabled, title, type, ...rest }: any) => (
+    <button type={type ?? 'button'} onClick={onClick} disabled={disabled} title={title} {...rest}>
       {children}
     </button>
   ),
 }))
+
+vi.mock('@/components/ui/dropdown-menu', () => {
+  const React = require('react')
+  return {
+    DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
+    DropdownMenuTrigger: ({ children, onClick }: any) => (
+      <div data-testid="dropdown-menu-trigger" onClick={onClick}>
+        {children}
+      </div>
+    ),
+    DropdownMenuContent: ({ children, align, className }: any) => (
+      <div data-testid="dropdown-menu-content" data-align={align} className={className}>
+        {children}
+      </div>
+    ),
+    DropdownMenuItem: ({ children, onClick, disabled, variant }: any) => (
+      <button
+        type="button"
+        data-testid="dropdown-menu-item"
+        data-variant={variant}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {children}
+      </button>
+    ),
+  }
+})
 
 vi.mock('@/components/ui/empty', () => ({
   Empty: ({ children }: any) => <div data-testid="empty">{children}</div>,
@@ -102,7 +131,7 @@ describe('ChatHistoryList', () => {
     expect(screen.getAllByText('3 条消息').length).toBe(2)
   })
 
-  it('calls onResume when session is clicked', () => {
+  it('calls onResume when session card is clicked', () => {
     const onResume = vi.fn()
     const sessions = [createSession('s1', '测试会话')]
 
@@ -122,7 +151,7 @@ describe('ChatHistoryList', () => {
     expect(onResume).toHaveBeenCalledWith(sessions[0])
   })
 
-  it('calls onDelete when delete button is clicked', () => {
+  it('calls onDelete when delete item in dropdown is clicked', () => {
     const onDelete = vi.fn()
     const sessions = [createSession('s1', '测试会话')]
 
@@ -137,14 +166,17 @@ describe('ChatHistoryList', () => {
       />,
     )
 
-    const deleteBtn = screen.getByTitle('删除会话')
-    fireEvent.click(deleteBtn)
+    const trigger = screen.getByTestId('session-menu-trigger-s1')
+    fireEvent.click(trigger)
+
+    const deleteItem = screen.getByText('删除会话')
+    fireEvent.click(deleteItem)
 
     expect(onDelete).toHaveBeenCalled()
     expect(onDelete.mock.calls[0][0]).toEqual(sessions[0])
   })
 
-  it('disables delete button when deletingId matches', () => {
+  it('disables menu trigger when deletingId matches', () => {
     const sessions = [createSession('s1', '测试会话')]
 
     render(
@@ -159,8 +191,8 @@ describe('ChatHistoryList', () => {
       />,
     )
 
-    const deleteBtn = screen.getByTitle('删除会话') as HTMLButtonElement
-    expect(deleteBtn.disabled).toBe(true)
+    const trigger = screen.getByTestId('session-menu-trigger-s1') as HTMLButtonElement
+    expect(trigger.disabled).toBe(true)
   })
 
   it('renders pagination when total exceeds pageSize', () => {

@@ -21,9 +21,9 @@ describe('auth-token utils', () => {
       expect(getAccessToken()).toBeNull()
     })
 
-    it('should store and retrieve access token', () => {
+    it('setAccessToken is a no-op (tokens moved to HttpOnly Cookie)', () => {
       setAccessToken(TEST_TOKEN)
-      expect(getAccessToken()).toBe(TEST_TOKEN)
+      expect(getAccessToken()).toBeNull()
     })
   })
 
@@ -32,14 +32,14 @@ describe('auth-token utils', () => {
       expect(getRefreshToken()).toBeNull()
     })
 
-    it('should store and retrieve refresh token', () => {
+    it('setRefreshToken is a no-op (tokens moved to HttpOnly Cookie)', () => {
       setRefreshToken(TEST_REFRESH_TOKEN)
-      expect(getRefreshToken()).toBe(TEST_REFRESH_TOKEN)
+      expect(getRefreshToken()).toBeNull()
     })
   })
 
   describe('clearTokens', () => {
-    it('should clear all tokens', () => {
+    it('clearTokens is a no-op (tokens moved to HttpOnly Cookie)', () => {
       setAccessToken(TEST_TOKEN)
       setRefreshToken(TEST_REFRESH_TOKEN)
       clearTokens()
@@ -53,9 +53,9 @@ describe('auth-token utils', () => {
       expect(buildAuthHeader()).toBeNull()
     })
 
-    it('should return Bearer token header when token exists', () => {
+    it('should return null even if access token was set (header no longer assembled client-side)', () => {
       setAccessToken(TEST_TOKEN)
-      expect(buildAuthHeader()).toBe(`Bearer ${TEST_TOKEN}`)
+      expect(buildAuthHeader()).toBeNull()
     })
   })
 })
