@@ -71,6 +71,20 @@ const envSchema = z.object({
   RERANK_EAGER_LOAD: z
     .preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean())
     .default(false),
+
+  // === 初始超级管理员 ===
+  SUPER_ADMIN_EMAIL: z.string().email('SUPER_ADMIN_EMAIL 必须是合法邮箱').optional(),
+  SUPER_ADMIN_PASSWORD: z
+    .union([
+      z
+        .string()
+        .regex(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+          'SUPER_ADMIN_PASSWORD 至少 8 字符，必须包含大小写字母和数字',
+        ),
+      z.literal(''),
+    ])
+    .optional(),
 })
 
 export type Env = z.infer<typeof envSchema>
