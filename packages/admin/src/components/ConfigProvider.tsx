@@ -8,16 +8,38 @@ function resolveAntTheme(appearance: AppearanceMode) {
     return {
       algorithm: theme.darkAlgorithm,
       token: {
-        colorPrimary: '#4f46e5',
+        colorPrimary: '#1890ff',
+        colorPrimaryHover: '#40a9ff',
+        colorSuccess: '#52c41a',
+        colorWarning: '#faad14',
+        colorError: '#ff4d4f',
         borderRadius: 8,
+        colorBgContainer: '#1f1f1f',
+        colorBgLayout: '#141414',
+        colorBgHeader: '#1f1f1f',
+        colorText: '#ffffff',
+        colorTextSecondary: '#bfbfbf',
+        colorBorder: '#303030',
+        colorBgElevated: '#262626',
       },
     }
   }
   return {
     algorithm: theme.defaultAlgorithm,
     token: {
-      colorPrimary: '#4f46e5',
+      colorPrimary: '#1890ff',
+      colorPrimaryHover: '#40a9ff',
+      colorSuccess: '#52c41a',
+      colorWarning: '#faad14',
+      colorError: '#ff4d4f',
       borderRadius: 8,
+      colorBgContainer: '#ffffff',
+      colorBgLayout: '#f0f2f5',
+      colorBgHeader: '#ffffff',
+      colorText: '#1a1a2e',
+      colorTextSecondary: '#6c757d',
+      colorBorder: '#e5e7eb',
+      colorBgElevated: '#ffffff',
     },
   }
 }

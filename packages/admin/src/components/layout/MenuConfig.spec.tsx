@@ -12,11 +12,35 @@ vi.mock('@/stores/auth', () => ({
 import { useMenuConfig } from '@/components/layout/MenuConfig'
 
 function selectUser(role: 'ADMIN' | 'USER' | null) {
+  const permissions =
+    role === 'ADMIN'
+      ? [
+          'dashboard',
+          'users',
+          'roles',
+          'rag',
+          'sessions',
+          'audit',
+          'modelProviders',
+          'moduleSettings',
+        ]
+      : role === 'USER'
+        ? ['dashboard']
+        : []
   return (
     selector: (s: {
-      user: { role: string; id: string; email: string; isActive: boolean } | null
+      user: {
+        role: string
+        id: string
+        email: string
+        isActive: boolean
+        permissions?: string[]
+      } | null
     }) => unknown,
-  ) => selector({ user: role ? { role, id: '1', email: 'a@b.com', isActive: true } : null })
+  ) =>
+    selector({
+      user: role ? { role, id: '1', email: 'a@b.com', isActive: true, permissions } : null,
+    })
 }
 
 describe('MenuConfig', () => {
@@ -50,11 +74,11 @@ describe('MenuConfig', () => {
     expect(keys).not.toContain('audit')
   })
 
-  it('safely handles null user as USER role', () => {
+  it('returns empty menu when user is null', () => {
     mockUseAuthStore.mockImplementation(selectUser(null))
     const { result } = renderHook(() => useMenuConfig())
     const keys = result.current.map((m) => m.key)
-    expect(keys).toEqual(['dashboard'])
+    expect(keys).toEqual([])
   })
 
   it('returns stable count on re-render', () => {

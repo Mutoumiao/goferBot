@@ -34,7 +34,7 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
       okText="保存"
       cancelText="取消"
       onCancel={onCancel}
-      destroyOnClose
+      destroyOnHidden
       onOk={async () => {
         try {
           const values = await form.validateFields()

@@ -14,8 +14,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@ant-design/icons": "^5.6.0",
-    "@ant-design/pro-components": "^2.8.0",
+    "@ant-design/icons": "^6.3.2",
+    "@ant-design/pro-components": "^2.8.10",
     "@goferbot/data": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-router": "latest",
@@ -23,7 +23,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "ahooks": "^3.9.7",
     "alova": "^3.5.1",
-    "antd": "^5.24.0",
+    "antd": "^6.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

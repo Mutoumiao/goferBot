@@ -10,6 +10,7 @@ import {
   User,
   Users,
 } from 'lucide-react'
+import { PERMISSIONS } from './constants/permissions'
 import type { FileRoutesByFullPath } from './routeTree.gen'
 
 type RoutePath = keyof FileRoutesByFullPath
@@ -26,6 +27,7 @@ export type RouteKey =
   | 'sessionDetail'
   | 'audit'
   | 'profile'
+  | 'changePassword'
   | 'modelProviders'
   | 'moduleSettings'
 
@@ -35,6 +37,7 @@ export interface RouteMeta {
   path: RoutePath
   icon?: LucideIcon | null
   nav: boolean
+  requiredPermission?: string
 }
 
 export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
@@ -51,6 +54,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/dashboard' as RoutePath,
     icon: LayoutDashboard,
     nav: true,
+    requiredPermission: PERMISSIONS.DASHBOARD,
   },
   users: {
     key: 'users',
@@ -58,6 +62,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/users' as RoutePath,
     icon: Users,
     nav: true,
+    requiredPermission: PERMISSIONS.USERS,
   },
   userDetail: {
     key: 'userDetail',
@@ -65,6 +70,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/users/$id' as RoutePath,
     icon: User,
     nav: false,
+    requiredPermission: PERMISSIONS.USERS,
   },
   roles: {
     key: 'roles',
@@ -72,6 +78,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/roles' as RoutePath,
     icon: Shield,
     nav: true,
+    requiredPermission: PERMISSIONS.ROLES,
   },
   roleDetail: {
     key: 'roleDetail',
@@ -79,6 +86,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/roles/$id' as RoutePath,
     icon: Shield,
     nav: false,
+    requiredPermission: PERMISSIONS.ROLES,
   },
   rag: {
     key: 'rag',
@@ -86,6 +94,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/rag-observability' as RoutePath,
     icon: BarChart3,
     nav: true,
+    requiredPermission: PERMISSIONS.RAG,
   },
   sessions: {
     key: 'sessions',
@@ -93,6 +102,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/sessions' as RoutePath,
     icon: MessageSquare,
     nav: true,
+    requiredPermission: PERMISSIONS.SESSIONS,
   },
   sessionDetail: {
     key: 'sessionDetail',
@@ -100,6 +110,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/sessions/$id' as RoutePath,
     icon: MessageSquare,
     nav: false,
+    requiredPermission: PERMISSIONS.SESSIONS,
   },
   audit: {
     key: 'audit',
@@ -107,12 +118,21 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/audit' as RoutePath,
     icon: FileText,
     nav: true,
+    requiredPermission: PERMISSIONS.AUDIT,
   },
   profile: {
     key: 'profile',
     title: '个人中心',
     path: '/profile' as RoutePath,
     icon: SettingsIcon,
+    nav: false,
+    requiredPermission: PERMISSIONS.PROFILE,
+  },
+  changePassword: {
+    key: 'changePassword',
+    title: '修改密码',
+    path: '/change-password' as RoutePath,
+    icon: null,
     nav: false,
   },
   modelProviders: {
@@ -121,6 +141,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/model-providers' as RoutePath,
     icon: Cpu,
     nav: true,
+    requiredPermission: PERMISSIONS.MODEL_PROVIDERS,
   },
   moduleSettings: {
     key: 'moduleSettings',
@@ -128,6 +149,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/module-settings' as RoutePath,
     icon: SettingsIcon,
     nav: true,
+    requiredPermission: PERMISSIONS.MODULE_SETTINGS,
   },
 }
 

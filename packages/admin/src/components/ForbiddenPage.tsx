@@ -1,9 +1,8 @@
 import { useRouter } from '@tanstack/react-router'
 import { App, Button, Result } from 'antd'
-import { useAuthStore } from '@/stores/auth'
+import { logoutService } from '@/features/auth/services'
 
 export function ForbiddenPage() {
-  const clearAuth = useAuthStore((s) => s.clearAuth)
   const router = useRouter()
   const { message } = App.useApp()
 
@@ -27,10 +26,7 @@ export function ForbiddenPage() {
           <Button
             key="logout"
             danger
-            onClick={() => {
-              clearAuth()
-              void router.navigate({ to: '/login' })
-            }}
+            onClick={() => logoutService()}
           >
             退出登录
           </Button>,

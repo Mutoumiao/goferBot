@@ -39,65 +39,65 @@
 }
 
 :root {
-  --background: #f5f7fa;
+  --background: #f0f2f5;
   --foreground: #1a1a2e;
   --card: #ffffff;
   --card-foreground: #1a1a2e;
   --popover: #ffffff;
   --popover-foreground: #1a1a2e;
-  --primary: #4f46e5;
+  --primary: #1890ff;
   --primary-foreground: #ffffff;
-  --secondary: #f8f9fa;
+  --secondary: #f5f5f5;
   --secondary-foreground: #1a1a2e;
-  --muted: #f1f3f5;
-  --muted-foreground: #6c757d;
-  --accent: #f1f3f5;
-  --accent-foreground: #1a1a2e;
-  --destructive: #ef4444;
+  --muted: #fafafa;
+  --muted-foreground: #8c8c8c;
+  --accent: #e6f7ff;
+  --accent-foreground: #1890ff;
+  --destructive: #ff4d4f;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #4f46e5;
+  --border: #e8e8e8;
+  --input: #e8e8e8;
+  --ring: #1890ff;
   --radius: 0.5rem;
 
   --sidebar: #001529;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #4f46e5;
+  --sidebar-primary: #1890ff;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1f3a5f;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1f3a5f;
-  --sidebar-ring: #4f46e5;
+  --sidebar-ring: #1890ff;
 }
 
 .dark {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card: #1e293b;
-  --card-foreground: #f1f5f9;
-  --popover: #1e293b;
-  --popover-foreground: #f1f5f9;
-  --primary: #6366f1;
+  --background: #141414;
+  --foreground: #ffffff;
+  --card: #1f1f1f;
+  --card-foreground: #ffffff;
+  --popover: #1f1f1f;
+  --popover-foreground: #ffffff;
+  --primary: #1890ff;
   --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --secondary-foreground: #f1f5f9;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f1f5f9;
-  --destructive: #dc2626;
+  --secondary: #262626;
+  --secondary-foreground: #ffffff;
+  --muted: #262626;
+  --muted-foreground: #bfbfbf;
+  --accent: #1677ff;
+  --accent-foreground: #ffffff;
+  --destructive: #ff4d4f;
   --destructive-foreground: #ffffff;
-  --border: #334155;
-  --input: #334155;
-  --ring: #6366f1;
+  --border: #303030;
+  --input: #303030;
+  --ring: #1890ff;
   --sidebar: #000c17;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #6366f1;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #1890ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f1f5f9;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #6366f1;
+  --sidebar-accent: #1f1f1f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #303030;
+  --sidebar-ring: #1890ff;
 }
 
 @layer base {
@@ -121,9 +121,25 @@ body {
     "Microsoft YaHei", sans-serif;
   background-color: var(--background);
   color: var(--foreground);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Admin Layout overrides */
 .admin-layout {
   min-height: 100vh;
+}
+
+.ant-pro-layout {
+  background-color: var(--background);
+}
+
+.ant-pro-layout-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.dark .ant-pro-layout-header {
+  background-color: #1f1f1f;
+  border-bottom: 1px solid #303030;
 }
