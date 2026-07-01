@@ -24,6 +24,7 @@ model User {
   password  String   @db.VarChar(60)
   role      String   @default("USER")
   isActive  Boolean  @default(true) @map("is_active")
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -44,6 +45,7 @@ model User {
   roles                     UserRole[]
 
   @@map("users")
+  @@index([role])
 }
 
 model KnowledgeBase {
@@ -514,4 +516,61 @@ model ApplicationAuthMethod {
   @@unique([applicationId, provider])
   @@index([provider])
   @@map("application_auth_methods")
+}
+
+// ==================== System Infrastructure ====================
+
+model SystemFlag {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_flags")
+}
+
+model AdminAuditLog {
+  id        String   @id @default(uuid())
+  actor     String
+  operation String
+  target    String
+  targetId  String?  @map("target_id")
+  result    String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([actor])
+  @@index([operation])
+  @@index([createdAt(sort: Desc)])
+  @@map("admin_audit_logs")
+}
+
+model Permission {
+  id          String          @id @default(uuid())
+  code        String          @unique
+  name        String
+  description String?
+  type        String          @default("menu")
+  resource    String?
+  parentCode  String?         @map("parent_code")
+  sortOrder   Int             @default(0) @map("sort_order")
+  status      String          @default("active")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            String   @id @default(uuid())
+  roleCode      String   @map("role_code")
+  permissionId  String   @map("permission_id")
+  app           String
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleCode, permissionId, app])
+  @@index([roleCode, app])
+  @@map("role_permissions")
 }
