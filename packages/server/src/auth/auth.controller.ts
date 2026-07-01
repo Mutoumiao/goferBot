@@ -19,6 +19,8 @@ import { CookieHelper } from './cookie.helper.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { CurrentUser } from './decorators/current-user.decorator.js'
 import { AdminLoginDto } from './dto/admin-login.dto.js'
+import { ChangePasswordDto } from './dto/change-password.dto.js'
+import { ChangePasswordForceDto } from './dto/change-password-force.dto.js'
 import { LoginDto } from './dto/login.dto.js'
 import { validatePassword } from './dto/password.schema.js'
 import { RegisterDto } from './dto/register.dto.js'
@@ -63,20 +65,20 @@ export class AuthController {
       captchaCode: dto.captchaCode,
     })
     this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { user: result.user }
+    return { user: result.user, mustChangePassword: result.mustChangePassword }
   }
 
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
   async adminLogin(@Body() dto: AdminLoginDto, @Res({ passthrough: true }) res: FastifyReply) {
-    validatePassword(dto.password)
-    const result = await this.authService.login(dto.email, dto.password, 'admin', {
+    const password = this.decryptAndValidate(dto.encryptedPassword)
+    const result = await this.authService.login(dto.email, password, 'admin', {
       captchaId: dto.captchaId,
       captchaCode: dto.captchaCode,
     })
     this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { user: result.user }
+    return { user: result.user, mustChangePassword: result.mustChangePassword }
   }
 
   /** @deprecated 旧登录入口，前端切走后移除 */
@@ -112,7 +114,7 @@ export class AuthController {
     }
     const result = await this.authService.refresh(refreshToken)
     this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { success: true }
+    return { success: true, mustChangePassword: result.mustChangePassword }
   }
 
   @Post('admin/refresh')
@@ -125,7 +127,7 @@ export class AuthController {
     }
     const result = await this.authService.refresh(refreshToken)
     this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { success: true }
+    return { success: true, mustChangePassword: result.mustChangePassword }
   }
 
   /** @deprecated 旧刷新入口，前端切走后移除 */
@@ -148,6 +150,22 @@ export class AuthController {
     return { success: true }
   }
 
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async changePassword(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(userId, dto.currentPassword, dto.newPassword)
+  }
+
+  @Post('change-password/force')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async changePasswordForce(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordForceDto) {
+    return this.authService.changePasswordForce(userId, dto.newPassword)
+  }
+
   @Post('admin/logout')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -157,20 +175,6 @@ export class AuthController {
       await this.authService.logoutByRefreshToken(refreshToken)
     }
     this.cookieHelper.clearAuthCookies(res)
-    return { success: true }
-  }
-
-  /** @deprecated 旧登出入口，使用 access token 黑名单，前端切走后移除 */
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  async legacyLogout(@CurrentUser('id') userId: string, @Req() req: FastifyRequest) {
-    const authHeader = req.headers.authorization
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7)
-      await this.authService.blacklistToken(token)
-      await this.authService.invalidateUserCache(userId)
-    }
     return { success: true }
   }
 

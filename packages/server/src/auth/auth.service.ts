@@ -24,6 +24,7 @@ import {
   userNotFoundError,
 } from './errors.js'
 import { AuthRepository } from './repositories/auth.repository.js'
+import { PermissionService } from './services/permission.service.js'
 import type { AuthApp } from './types/auth-app.type.js'
 import type { TokenPair } from './types/token-pair.type.js'
 
@@ -54,6 +55,7 @@ export class AuthService {
     private readonly authRedis: AuthRedisService,
     private readonly captchaService: CaptchaService,
     private readonly authRepository: AuthRepository,
+    private readonly permissionService: PermissionService,
   ) {}
 
   async register(email: string, password: string, name?: string) {
@@ -84,6 +86,10 @@ export class AuthService {
       throw accountDisabledError()
     }
 
+    // 不再阻止登录，而是在响应中返回 mustChangePassword 标志
+    // 允许用户获取 token 以便调用修改密码接口
+    const mustChangePassword = user.mustChangePassword
+
     const authMethodEnabled = await this.authRepository.isAuthMethodEnabled(app, 'password')
     if (!authMethodEnabled) {
       throw accountDisabledError()
@@ -100,7 +106,7 @@ export class AuthService {
     const meta = ctx ? { userAgent: ctx.userAgent, ip: ctx.ip } : undefined
     const tokens = await this.createSession(user.id, app, meta)
 
-    return { user, ...tokens }
+    return { user, ...tokens, mustChangePassword }
   }
 
   async refresh(refreshToken: string) {
@@ -144,6 +150,8 @@ export class AuthService {
       if (!user.isActive) {
         throw accountDisabledError()
       }
+
+      const mustChangePassword = user.mustChangePassword
 
       // 重新加载角色，权限变更即时生效
       const roles = await this.authRepository.getRolesForUserByApp(user.id, payload.app)
@@ -205,7 +213,12 @@ export class AuthService {
         expiresIn: accessExpiresIn,
       })
 
-      return { accessToken, refreshToken: newRefreshToken, sessionId: payload.sid }
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+        sessionId: payload.sid,
+        mustChangePassword,
+      }
     } catch (err) {
       if (err instanceof AppException) {
         throw err
@@ -252,7 +265,8 @@ export class AuthService {
     if (!user) {
       throw userNotFoundError()
     }
-    return user
+    const permissions = await this.permissionService.getUserPermissions(userId, 'admin')
+    return { ...user, permissions }
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -261,6 +275,23 @@ export class AuthService {
       throw userNotFoundError()
     }
     return user
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const updated = await this.userService.updatePassword(
+      userId,
+      userId,
+      currentPassword,
+      newPassword,
+    )
+    await this.authRedis.invalidateUserCache(userId)
+    return { ...updated, mustChangePassword: false }
+  }
+
+  async changePasswordForce(userId: string, newPassword: string) {
+    const updated = await this.userService.updatePasswordForce(userId, userId, newPassword)
+    await this.authRedis.invalidateUserCache(userId)
+    return { ...updated, mustChangePassword: false }
   }
 
   async uploadAvatar(userId: string, file: { buffer: Buffer; mimetype: string; size: number }) {

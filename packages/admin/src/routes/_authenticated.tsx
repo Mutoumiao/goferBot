@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import {
   buildLoginRedirectSearch,
   getAuthSnapshot,
-  isAdmin,
+  hasAnyPermission,
   waitForAuthInit,
 } from '@/utils/auth-guard'
 
@@ -14,26 +14,34 @@ export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async ({ location }) => {
     await waitForAuthInit()
     const snapshot = getAuthSnapshot()
-    // ponytail: 凭据由 HttpOnly Cookie 承担；持久化 user 作为会话存在性判定
     if (!snapshot.isAuthenticated) {
       throw redirect({
         to: ROUTES_REGISTER.login.path,
         search: buildLoginRedirectSearch(location),
       })
     }
-    if (snapshot.role !== 'ADMIN') {
-      throw new Error('FORBIDDEN')
+
+    const routeMeta = Object.values(ROUTES_REGISTER).find((r) => r.path === location.pathname)
+    if (
+      routeMeta?.requiredPermission &&
+      !hasAnyPermission(snapshot, [routeMeta.requiredPermission])
+    ) {
+      throw redirect({ to: '/forbidden' })
+    }
+
+    const state = useAuthStore.getState()
+    if (state.user?.mustChangePassword && location.pathname !== '/change-password') {
+      throw redirect({
+        to: ROUTES_REGISTER.changePassword.path,
+      })
     }
   },
   component: AppLayout,
 })
 
 function AppLayout() {
-  const snapshot = useAuthStore((s) => ({
-    isAuthenticated: s.isAuthenticated,
-    role: s.user?.role ?? null,
-  }))
-  if (!isAdmin(snapshot)) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  if (!isAuthenticated) {
     return <ForbiddenPage />
   }
   return (
