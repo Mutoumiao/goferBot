@@ -1,25 +1,25 @@
 import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common'
-import { Roles } from '../../auth/decorators/roles.decorator.js'
-import { Role } from '../../auth/enums/role.enum.js'
+import { RequirePermission } from '../../auth/decorators/permission.decorator.js'
+import { PermissionGuard } from '../../auth/guards/permission.guard.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
-import { RolesGuard } from '../../auth/guards/roles.guard.js'
 import { AdminService } from './admin.service.js'
 import { AdminUserListQueryDto } from './dto/admin-user-list-query.dto.js'
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js'
 
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('users')
+  @RequirePermission('users:read')
   async listUsers(@Query() query: AdminUserListQueryDto) {
     const result = await this.adminService.listUsers(query)
     return result
   }
 
   @Patch('users/:id/status')
+  @RequirePermission('users:update')
   async updateUserStatus(@Param('id') userId: string, @Body() dto: UpdateUserStatusDto) {
     const result = await this.adminService.updateUserStatus(userId, dto)
     return result

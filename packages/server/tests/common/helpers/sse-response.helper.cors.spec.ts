@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { bootstrap } from '../../../src/bootstrap.js'
 import { BypassResponse } from '../../../src/common/decorators/bypass-response.decorator.js'
 import { SseResponseHelper } from '../../../src/common/helpers/sse-response.helper.js'
+import { SuperAdminBootstrapService } from '../../../src/modules/user/services/super-admin-bootstrap.service.js'
 
 @Controller('cors-sse-test')
 class CorsSseTestController {
@@ -36,7 +37,13 @@ describe('SSE raw response CORS headers', () => {
         }),
       ],
       controllers: [CorsSseTestController],
-      providers: [SseResponseHelper],
+      providers: [
+        SseResponseHelper,
+        {
+          provide: SuperAdminBootstrapService,
+          useValue: { bootstrap: async () => {} },
+        },
+      ],
     }).compile()
 
     app = moduleRef.createNestApplication<NestFastifyApplication>(

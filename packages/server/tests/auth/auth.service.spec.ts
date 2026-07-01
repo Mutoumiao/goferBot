@@ -11,6 +11,7 @@ describe('AuthService', () => {
   let mockAuthRedis: any
   let mockCaptchaService: any
   let mockAuthRepository: any
+  let mockPermissionService: any
 
   beforeEach(() => {
     mockJwtService = {
@@ -41,6 +42,9 @@ describe('AuthService', () => {
       getRolesForUserByApp: vi.fn().mockResolvedValue([]),
       isAuthMethodEnabled: vi.fn().mockResolvedValue(true),
     }
+    mockPermissionService = {
+      getUserPermissions: vi.fn().mockResolvedValue([]),
+    }
 
     authService = new AuthService(
       mockJwtService,
@@ -50,6 +54,7 @@ describe('AuthService', () => {
       mockAuthRedis,
       mockCaptchaService,
       mockAuthRepository,
+      mockPermissionService,
     )
   })
 
@@ -514,6 +519,7 @@ describe('AuthService', () => {
         mockAuthRedis,
         mockCaptchaService,
         mockAuthRepository,
+        mockPermissionService,
       )
 
       await authService.blacklistToken('token-abc')
@@ -534,6 +540,7 @@ describe('AuthService', () => {
         mockAuthRedis,
         mockCaptchaService,
         mockAuthRepository,
+        mockPermissionService,
       )
 
       await authService.blacklistToken('token-abc')
@@ -555,6 +562,7 @@ describe('AuthService', () => {
         mockAuthRedis,
         mockCaptchaService,
         mockAuthRepository,
+        mockPermissionService,
       )
 
       await authService.invalidateUserCache('u1')

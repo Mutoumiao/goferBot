@@ -9,10 +9,9 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common'
-import { Roles } from '../../auth/decorators/roles.decorator.js'
-import { Role } from '../../auth/enums/role.enum.js'
+import { RequirePermission } from '../../auth/decorators/permission.decorator.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
-import { RolesGuard } from '../../auth/guards/roles.guard.js'
+import { PermissionGuard } from '../../auth/guards/permission.guard.js'
 import { ConfigCryptoService } from './config-crypto.service.js'
 import { SETTING_CATEGORIES, type SettingCategory } from './constants.js'
 import type { ModelProvider } from './dto/settings.dto.js'
@@ -36,8 +35,7 @@ type CategoryDtoMap = {
 }
 
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class SystemConfigController {
   constructor(
     private readonly systemConfigService: SystemConfigService,
@@ -47,11 +45,13 @@ export class SystemConfigController {
   // ==================== System-wide settings ====================
 
   @Get('system-config')
+  @RequirePermission('moduleSettings:read')
   async getSystemConfig(): Promise<Settings> {
     return this.systemConfigService.getSystemConfig()
   }
 
   @Get('system-config/:category')
+  @RequirePermission('moduleSettings:read')
   async getSystemCategory(
     @Param('category') category: SettingCategory,
   ): Promise<Settings[SettingCategory]> {
@@ -61,6 +61,7 @@ export class SystemConfigController {
 
   @Post('system-config/:category')
   @HttpCode(200)
+  @RequirePermission('moduleSettings:update')
   async saveSystemCategory(
     @Param('category') category: SettingCategory,
     @Body() dto: CategoryDtoMap[SettingCategory],
@@ -74,6 +75,7 @@ export class SystemConfigController {
 
   @Post('system-config/reload')
   @HttpCode(200)
+  @RequirePermission('moduleSettings:update')
   async reloadModels(): Promise<{ success: boolean }> {
     await this.systemConfigService.reloadModels()
     return { success: true }
@@ -82,12 +84,14 @@ export class SystemConfigController {
   // ==================== Provider pool ====================
 
   @Get('providers')
+  @RequirePermission('modelProviders:read')
   async listProviders(): Promise<Record<string, ModelProvider>> {
     const providers = await this.systemConfigService.getProviders()
     return this.maskProviders(providers)
   }
 
   @Get('providers/:id')
+  @RequirePermission('modelProviders:read')
   async getProvider(@Param('id') id: string): Promise<ModelProvider> {
     const provider = await this.systemConfigService.getProvider(id)
     return this.maskProvider(provider)
@@ -95,6 +99,7 @@ export class SystemConfigController {
 
   @Post('providers')
   @HttpCode(200)
+  @RequirePermission('modelProviders:create')
   async saveProvider(@Body() dto: ProviderDto): Promise<ModelProvider> {
     const provider = await this.systemConfigService.saveProvider(dto)
     return this.maskProvider(provider)
@@ -102,6 +107,7 @@ export class SystemConfigController {
 
   @Delete('providers/:id')
   @HttpCode(200)
+  @RequirePermission('modelProviders:delete')
   async deleteProvider(@Param('id') id: string): Promise<{ success: boolean }> {
     await this.systemConfigService.deleteProvider(id)
     return { success: true }

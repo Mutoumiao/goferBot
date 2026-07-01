@@ -150,7 +150,9 @@ export function ChatHistoryList({
                 <p className="text-xs text-text-tertiary">
                   {formatSessionTime(session.updatedAt ?? session.createdAt)}
                 </p>
-                <p className="mt-1 text-xs text-text-tertiary">{session.messageCount ?? 0} 条消息</p>
+                <p className="mt-1 text-xs text-text-tertiary">
+                  {session.messageCount ?? 0} 条消息
+                </p>
               </div>
 
               <div

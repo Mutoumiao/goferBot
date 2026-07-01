@@ -47,7 +47,6 @@ export function useQueryWithRetry<T>(
         setLoading(false)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const reset = useCallback(() => {
@@ -64,7 +63,6 @@ export function useQueryWithRetry<T>(
     return () => {
       mountedRef.current = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
 
   return { data, loading, error, run, reset }

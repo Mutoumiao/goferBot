@@ -20,10 +20,10 @@ const config = defineConfig({
     ...(isVitest
       ? []
       : [
-        devtools(),
-        nitro({ rollupConfig: { external: [/^@sentry\//] } }),
-        tanstackStart({ spa: { enabled: true } }),
-      ]),
+          devtools(),
+          nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+          tanstackStart({ spa: { enabled: true } }),
+        ]),
     tailwindcss(),
     viteReact(),
   ],

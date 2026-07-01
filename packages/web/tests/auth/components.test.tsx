@@ -188,12 +188,15 @@ describe('auth components', () => {
 
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
-      await waitFor(() => {
-        expect(loginUser).toHaveBeenCalledWith('user@example.com', 'Password1', false, {
-          captchaId: 'cid-1',
-          captchaCode: 'ABCD',
-        })
-      }, { timeout: 3000 })
+      await waitFor(
+        () => {
+          expect(loginUser).toHaveBeenCalledWith('user@example.com', 'Password1', false, {
+            captchaId: 'cid-1',
+            captchaCode: 'ABCD',
+          })
+        },
+        { timeout: 3000 },
+      )
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
     })
 
