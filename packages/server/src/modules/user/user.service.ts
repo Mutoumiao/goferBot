@@ -22,6 +22,7 @@ const USER_PROFILE_SELECT = {
   avatar: true,
   role: true,
   isActive: true,
+  mustChangePassword: true,
   createdAt: true,
   updatedAt: true,
 } as const
@@ -36,7 +37,7 @@ export class UserService {
     readonly _authRepository: AuthRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly transactionManager: TransactionManager,
-  ) {}
+  ) { }
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
@@ -91,6 +92,7 @@ export class UserService {
       avatar: user.avatar,
       role: user.role,
       isActive: user.isActive,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }
@@ -136,13 +138,41 @@ export class UserService {
       throw passwordChangeFailedError()
     }
 
+    return this.doUpdatePassword(targetUserId, newPassword)
+  }
+
+  async updatePasswordForce(callerId: string, targetUserId: string, newPassword: string) {
+    if (callerId !== targetUserId) {
+      throw forbiddenError()
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, mustChangePassword: true },
+    })
+
+    if (!user) {
+      throw passwordChangeFailedError()
+    }
+
+    if (!user.mustChangePassword) {
+      throw forbiddenError()
+    }
+
+    return this.doUpdatePassword(targetUserId, newPassword)
+  }
+
+  private async doUpdatePassword(targetUserId: string, newPassword: string) {
     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 12
     const hashed = await hash(newPassword, saltRounds)
 
     const updated = await this.transactionManager.run(async (tx) => {
       const result = await tx.user.update({
         where: { id: targetUserId },
-        data: { password: hashed },
+        data: {
+          password: hashed,
+          mustChangePassword: false,
+        },
         select: USER_PROFILE_SELECT,
       })
 

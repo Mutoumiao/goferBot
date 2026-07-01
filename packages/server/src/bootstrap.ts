@@ -7,6 +7,7 @@ import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware.js'
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware.js'
 import { setAllowedHostnames } from './common/utils/ssrf-guard.js'
+import { SuperAdminBootstrapService } from './modules/user/services/super-admin-bootstrap.service.js'
 
 export function logLevelToNestLevels(
   level: string,
@@ -39,6 +40,10 @@ export async function bootstrap(app: NestFastifyApplication) {
     )
   }
 
+  // 0.5 Super Admin Bootstrap
+  const superAdminBootstrap = app.get(SuperAdminBootstrapService)
+  await superAdminBootstrap.bootstrap()
+
   // 1. Helmet 安全头
   await app.register(helmet, {
     contentSecurityPolicy: false, // API 不需要 CSP
@@ -69,11 +74,9 @@ export async function bootstrap(app: NestFastifyApplication) {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean)
-  console.log('🚀 ~ bootstrap ~ envOrigins:', envOrigins)
 
   await app.register(cors, {
     origin: (origin, callback) => {
-      console.log('🚀 ~ bootstrap ~ origin:', origin)
       if (!origin || envOrigins.includes(origin)) {
         callback(null, true)
         return
@@ -81,7 +84,7 @@ export async function bootstrap(app: NestFastifyApplication) {
       callback(new Error('Not allowed by CORS'), false)
     },
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-Request-Id'],
+    allowedHeaders: ['Content-Type', 'Accept', 'X-Requested-With', 'X-Request-Id'],
     credentials: true,
   })
 

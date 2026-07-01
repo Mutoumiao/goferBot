@@ -201,6 +201,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.applicationAuthMethod
   }
 
+  get permission() {
+    return this.client.permission
+  }
+
+  get rolePermission() {
+    return this.client.rolePermission
+  }
+
   // 通用代理方法
   $connect() {
     return this.client.$connect()
