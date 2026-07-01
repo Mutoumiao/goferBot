@@ -22,6 +22,8 @@ const {
   mockSetAuth,
   mockSetUser,
   mockClearAuth,
+  mockEncryptPassword,
+  mockClearPublicKeyCache,
 } = vi.hoisted(() => ({
   mockLogin: vi.fn(),
   mockRefresh: vi.fn(),
@@ -34,6 +36,8 @@ const {
   mockSetAuth: vi.fn(),
   mockSetUser: vi.fn(),
   mockClearAuth: vi.fn(),
+  mockEncryptPassword: vi.fn().mockResolvedValue('encrypted-password'),
+  mockClearPublicKeyCache: vi.fn(),
 }))
 
 vi.mock('@/api/auth', () => ({
@@ -64,6 +68,11 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
+vi.mock('@/utils/password-encryption', () => ({
+  encryptPassword: (...args: unknown[]) => mockEncryptPassword(...args),
+  clearPublicKeyCache: () => mockClearPublicKeyCache(),
+}))
+
 describe('auth services', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -83,7 +92,7 @@ describe('auth services', () => {
     expect(r.success).toBe(true)
     expect(mockLogin).toHaveBeenCalledWith({
       email: 'a@b.com',
-      password: 'x',
+      encryptedPassword: expect.any(String),
       captchaId: 'cid-1',
       captchaCode: 'ABCD',
     })
@@ -98,6 +107,28 @@ describe('auth services', () => {
     })
     expect(r.success).toBe(false)
     expect(r.error).toBeTruthy()
+  })
+
+  it('loginService retries on DECRYPT_FAILED', async () => {
+    mockLogin.mockRejectedValueOnce({ code: 'DECRYPT_FAILED' })
+    mockLogin.mockResolvedValueOnce({ user: { id: '1', email: 'a@b.com', roles: [] } })
+    const r = await loginService('a@b.com', 'x', {
+      captchaId: 'cid-1',
+      captchaCode: 'ABCD',
+    })
+    expect(r.success).toBe(true)
+    expect(mockClearPublicKeyCache).toHaveBeenCalled()
+    expect(mockLogin).toHaveBeenCalledTimes(2)
+  })
+
+  it('loginService shows auth error on 401', async () => {
+    mockLogin.mockRejectedValueOnce({ status: 401, code: 'AUTH_FAIL' })
+    const r = await loginService('a@b.com', 'x', {
+      captchaId: 'cid-1',
+      captchaCode: 'ABCD',
+    })
+    expect(r.success).toBe(false)
+    expect(r.error).toBe('账号或密码错误')
   })
 
   it('refreshAuth returns false when backend rejects', async () => {
@@ -116,11 +147,23 @@ describe('auth services', () => {
     expect(mockClearAuth).toHaveBeenCalled()
   })
 
-  it('logoutService clears tokens and shows success toast', async () => {
+  it('logoutService calls API, clears auth, shows success and navigates on success', async () => {
     mockLogout.mockResolvedValueOnce(undefined)
+    const originalHref = window.location.href
     await logoutService()
+    expect(mockLogout).toHaveBeenCalled()
     expect(mockClearAuth).toHaveBeenCalled()
-    expect(toast.success).toHaveBeenCalled()
+    expect(toast.success).toHaveBeenCalledWith('已退出登录')
+    expect(window.location.href).toContain('/login')
+    window.location.href = originalHref
+  })
+
+  it('logoutService shows error and does not clear auth on API failure', async () => {
+    mockLogout.mockRejectedValueOnce(new Error('network error'))
+    await logoutService()
+    expect(mockLogout).toHaveBeenCalled()
+    expect(mockClearAuth).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalled()
   })
 
   it('remembered email storage', () => {

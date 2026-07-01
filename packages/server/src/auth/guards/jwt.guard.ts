@@ -11,14 +11,15 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<FastifyRequest>()
-    const authHeader = request.headers.authorization
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7)
+    const token = request.cookies?.goferbot_access_token
+
+    if (token) {
       const isBlacklisted = await this.authRedis.isTokenBlacklisted(token)
       if (isBlacklisted) {
         throw new UnauthorizedException('令牌已失效')
       }
     }
+
     return super.canActivate(context) as Promise<boolean>
   }
 

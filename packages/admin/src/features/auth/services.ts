@@ -1,12 +1,26 @@
 import { toast } from 'sonner'
 import { getCurrentUser, login as loginApi, logout, refresh } from '@/api/auth'
+import { ROUTES_REGISTER } from '@/router-register'
 import type { AdminUser } from '@/stores/auth'
 import { useAuthStore } from '@/stores/auth'
 import { mapErrorMessage } from '@/utils/error-mapper'
+import { clearPublicKeyCache, encryptPassword } from '@/utils/password-encryption'
 
 export interface LoginResult {
   success: boolean
   error?: string
+}
+
+function mapAuthError(err: unknown): string {
+  const code = (err as { code?: string }).code
+  const status = (err as { status?: number }).status
+  if (code === 'DECRYPT_FAILED') {
+    return '加密密钥已过期，请刷新页面后重试'
+  }
+  if (code === 'AUTH_FAIL' || (status === 401 && code !== 'DECRYPT_FAILED')) {
+    return '账号或密码错误'
+  }
+  return mapErrorMessage(err)
 }
 
 export async function loginService(
@@ -19,19 +33,42 @@ export async function loginService(
   }
 
   try {
-    const res = await loginApi({ email, password, ...(captcha ?? {}) }).send()
-    const user = res.user as AdminUser
-
-    if (user) {
-      useAuthStore.getState().setUser(user)
-      return { success: true }
-    }
-    return { success: false, error: '登录响应异常' }
+    return await attemptLogin(email, password, captcha)
   } catch (err) {
-    const msg = mapErrorMessage(err)
+    const code = (err as { code?: string }).code
+    if (code === 'DECRYPT_FAILED') {
+      clearPublicKeyCache()
+      try {
+        return await attemptLogin(email, password, captcha)
+      } catch (retryErr) {
+        const msg = mapAuthError(retryErr)
+        toast.error(msg)
+        return { success: false, error: msg }
+      }
+    }
+    const msg = mapAuthError(err)
     toast.error(msg)
     return { success: false, error: msg }
   }
+}
+
+async function attemptLogin(
+  email: string,
+  password: string,
+  captcha?: { captchaId: string; captchaCode: string },
+): Promise<LoginResult> {
+  const encryptedPassword = await encryptPassword(password)
+  const res = await loginApi({ email, encryptedPassword, ...(captcha ?? {}) }).send()
+  const user = res.user as AdminUser
+
+  if (user) {
+    if (res.mustChangePassword !== undefined) {
+      user.mustChangePassword = res.mustChangePassword
+    }
+    useAuthStore.getState().setUser(user)
+    return { success: true }
+  }
+  return { success: false, error: '登录响应异常' }
 }
 
 export async function refreshAuth(): Promise<boolean> {
@@ -61,10 +98,12 @@ export async function fetchCurrentUser(): Promise<boolean> {
 export async function logoutService(): Promise<void> {
   try {
     await logout().send()
-  } catch {
-  } finally {
     useAuthStore.getState().clearAuth()
     toast.success('已退出登录')
+    window.location.href = ROUTES_REGISTER.login.path
+  } catch (err) {
+    const errorMsg = (err as { message?: string })?.message || '退出登录失败，请重试'
+    toast.error(errorMsg)
   }
 }
 

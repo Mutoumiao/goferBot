@@ -64,12 +64,16 @@ function isUnauthorized(status: number) {
   return status === 401 || status === 403
 }
 
+function isLoginPage() {
+  return window.location.pathname === '/login'
+}
+
 const responded = {
   onSuccess(
     response: Response,
     method: { send: () => unknown; config: { headers: Record<string, string> } },
   ) {
-    if (isUnauthorized(response.status)) {
+    if (isUnauthorized(response.status) && !isLoginPage()) {
       return doRefreshAndRetry(method)
     }
     if (!response.ok) {
@@ -105,7 +109,7 @@ const responded = {
     method: { send: () => unknown; config: { headers: Record<string, string> } },
   ): Promise<void> {
     const status = error.status
-    if (status && isUnauthorized(status)) {
+    if (status && isUnauthorized(status) && !isLoginPage()) {
       return doRefreshAndRetry(method) as Promise<void>
     }
     throw error

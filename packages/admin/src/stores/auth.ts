@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { ROUTES_REGISTER } from '@/router-register'
 
-export type AdminRole = 'ADMIN' | 'USER'
+export type AdminRole = 'ADMIN' | 'USER' | 'SUPER_ADMIN'
 
 export interface AdminUser {
   id: string
@@ -11,8 +11,10 @@ export interface AdminUser {
   role: AdminRole
   avatarUrl?: string | null
   isActive: boolean
+  mustChangePassword?: boolean
   createdAt?: string
   updatedAt?: string
+  permissions?: string[]
 }
 
 interface AuthState {
@@ -24,6 +26,7 @@ interface AuthState {
   setUser: (user: AdminUser) => void
   clearAuth: () => void
   setInitialized: (value: boolean) => void
+  setMustChangePassword: (value: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -38,17 +41,24 @@ export const useAuthStore = create<AuthState>()(
         set({
           user,
           isAuthenticated: true,
+          isInitialized: true,
         }),
 
       clearAuth: () => {
+        localStorage.removeItem('goferbot-admin-auth')
         set({
           user: null,
           isAuthenticated: false,
+          isInitialized: false,
         })
-        window.location.href = ROUTES_REGISTER.login.path
       },
 
       setInitialized: (value: boolean) => set({ isInitialized: value }),
+
+      setMustChangePassword: (value: boolean) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, mustChangePassword: value } : null,
+        })),
     }),
     {
       name: 'goferbot-admin-auth',
@@ -61,6 +71,9 @@ export const useAuthStore = create<AuthState>()(
         return (state) => {
           if (!state) return
           state._hydrated = true
+          if (state.isAuthenticated && state.user) {
+            useAuthStore.setState({ isInitialized: true })
+          }
         }
       },
     },

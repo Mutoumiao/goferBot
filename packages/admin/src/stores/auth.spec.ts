@@ -59,5 +59,28 @@ describe('auth store', () => {
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
     expect(state.isAuthenticated).toBe(false)
+    expect(state.isInitialized).toBe(false)
+  })
+
+  it('setUser sets isInitialized to true to enable app rendering', () => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isInitialized: false,
+      _hydrated: true,
+    })
+
+    useAuthStore.getState().setUser({
+      id: 'u1',
+      email: 'a@b.com',
+      name: 'User',
+      role: 'ADMIN' as const,
+      isActive: true,
+    })
+
+    const state = useAuthStore.getState()
+    expect(state.user).toBeDefined()
+    expect(state.isAuthenticated).toBe(true)
+    expect(state.isInitialized).toBe(true)
   })
 })

@@ -14,6 +14,8 @@ import { CookieHelper } from './cookie.helper.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { UserPasswordChangedListener } from './listeners/user-password-changed.listener.js'
 import { UserStatusChangedListener } from './listeners/user-status-changed.listener.js'
+import { PermissionGuard } from './guards/permission.guard.js'
+import { PermissionService } from './services/permission.service.js'
 import { JwtStrategy } from './strategies/jwt.strategy.js'
 
 @Module({
@@ -42,8 +44,10 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     CookieHelper,
     UserPasswordChangedListener,
     UserStatusChangedListener,
+    PermissionService,
+    PermissionGuard,
   ],
   controllers: [AuthController, CaptchaController],
-  exports: [AuthService, AuthRedisService, CaptchaService],
+  exports: [AuthService, AuthRedisService, CaptchaService, PermissionService, PermissionGuard],
 })
 export class AuthModule {}

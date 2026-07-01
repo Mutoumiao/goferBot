@@ -15,18 +15,8 @@ export interface JwtPayload {
   type: 'access' | 'refresh'
 }
 
-// Extract JWT from cookie 'goferbot_access_token' or Authorization header
 const extractJwt = (req: any): string | null => {
-  // Try cookie first
-  if (req.cookies && req.cookies.goferbot_access_token) {
-    return req.cookies.goferbot_access_token
-  }
-  // Fall back to Authorization header
-  const authHeader = req.headers.authorization
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.slice(7)
-  }
-  return null
+  return req.cookies?.goferbot_access_token ?? null
 }
 
 @Injectable()

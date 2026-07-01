@@ -6,6 +6,8 @@ import { createRedisConnection } from '../queue/redis.js'
 const TOKEN_BLACKLIST_PREFIX = 'token:blacklist:'
 const USER_CACHE_PREFIX = 'auth:user:'
 const USER_CACHE_TTL_SECONDS = 300 // 5 分钟
+const PERMISSION_CACHE_PREFIX = 'auth:permission:'
+const PERMISSION_CACHE_TTL_SECONDS = 300 // 5 分钟
 
 /**
  * Auth 模块专用 Redis 服务。
@@ -139,6 +141,43 @@ export class AuthRedisService implements OnModuleInit, OnModuleDestroy {
     const throttleKey = `auth:lastSeen:throttle:${key}`
     const result = await this.redis?.set(throttleKey, '1', 'EX', intervalSeconds, 'NX')
     return result === 'OK'
+  }
+
+  /** 缓存用户权限 */
+  async cacheUserPermissions(userId: string, permissions: string[]): Promise<void> {
+    if (!this.isReady()) return
+    await this.redis?.setex(
+      `${PERMISSION_CACHE_PREFIX}${userId}`,
+      PERMISSION_CACHE_TTL_SECONDS,
+      JSON.stringify(permissions),
+    )
+  }
+
+  /** 获取缓存的用户权限 */
+  async getCachedUserPermissions(userId: string): Promise<string[] | null> {
+    if (!this.isReady()) return null
+    const data = await this.redis?.get(`${PERMISSION_CACHE_PREFIX}${userId}`)
+    if (!data) return null
+    try {
+      return JSON.parse(data) as string[]
+    } catch {
+      return null
+    }
+  }
+
+  /** 清除用户权限缓存（权限变更时） */
+  async invalidateUserPermissions(userId: string): Promise<void> {
+    if (!this.isReady()) return
+    await this.redis?.del(`${PERMISSION_CACHE_PREFIX}${userId}`)
+  }
+
+  /** 批量清除用户权限缓存（角色权限变更时） */
+  async invalidateAllUserPermissions(): Promise<void> {
+    if (!this.isReady()) return
+    const keys = await this.redis?.keys(`${PERMISSION_CACHE_PREFIX}*`)
+    if (keys && keys.length > 0) {
+      await this.redis?.del(keys)
+    }
   }
 
   /** 健康检查：PING Redis；未就绪时返回 'skipped' 表示降级而非故障 */
