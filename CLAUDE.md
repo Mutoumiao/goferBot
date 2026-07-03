@@ -122,7 +122,9 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 > - **Authority Principle**：每条知识仅有一个 Source of Truth。Reference > Copy。
 > - **Golden Rule**：实现方式改变后仍然有效 → OpenSpec；否则 → Trellis；始终强制 → Rules。
 >
-> **Progressive Knowledge Loading**：AI Agent 不要预加载全部规范。从对应 package 的 Trellis index.md（Navigation Hub）进入，按 Pre-Development Checklist 加载通用指南和模块指南；需要业务规则时，按指南顶部 `REFERENCE_ONLY` 标头跳转 OpenSpec。
+> **Progressive Knowledge Loading**：AI Agent 不要预加载全部规范。
+> - **Workflow A (Business Change)**：OpenSpec 工具链自动加载 change artifacts（proposal/design/tasks/specs），无需 before-dev；Trellis 指南按需跳转
+> - **Workflow B (Development Task)**：从对应 package 的 Trellis index.md（Navigation Hub）进入，按 Pre-Development Checklist 加载通用指南和模块指南；需要业务规则时跳转 OpenSpec
 
 ### 项目全局
 
@@ -157,11 +159,11 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 | `packages/web/`    | [auth](openspec/specs/auth/spec.md)、[chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `packages/data/`   | [chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[document](openspec/specs/document/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)、[user](openspec/specs/user/spec.md)                                                                                                                                                                                                                                                                                                                                                                                |
 
-### 持续演进机制
+### 持续演进机制（双流程）
 
-- **OpenSpec 变更触发**：业务规则变更、架构变更、功能需求变更、API 契约变更、领域知识变更
-- **Trellis 变更触发**：每个完成任务的开发经验（新编码约定、更好测试策略、新审查清单、平台限制、经验教训），通过 `trellis-update-spec` 沉淀
-- **大多数开发任务**只更新一个知识系统；仅架构/业务变更才需同时更新两者
+- **Workflow A: Business Change**（改变系统"是什么"）：Grill → OpenSpec Explore → Propose → Review → Apply（实现）→ Trellis Check → Update Spec → Archive。适用于新增功能、业务重设计、改变外部行为的架构演进
+- **Workflow B: Development Task**（不改变业务规格）：Brainstorm（可选）→ Trellis Before Dev → 开发 → Trellis Check → Update Spec。适用于 Bug 修复、纯重构、性能优化、测试补充
+- **判断方法**：是否改变业务规则/API契约/验收标准？是 → A；否 → B。Bug 修复中发现业务规则本身有问题（代码符合 spec 但行为不对）→ 升级到 A
 
 ### 环境变量
 

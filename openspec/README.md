@@ -16,7 +16,7 @@
 │  Development Knowledge (HOW)                                 │
 │  "如何开发" — 编码模式、测试策略、审查清单、常见陷阱、开发入口  │
 │  权威源: .trellis/spec/                                      │
-│  加载方式: trellis-before-dev 按需加载 index → guidelines     │
+│  加载方式: Workflow B 通过 before-dev 加载；Workflow A 按需跳转 │
 │                                                              │
 ├─────────────────────────────────────────────────────────────┤
 │                    Runtime Layer                             │
@@ -86,8 +86,8 @@
 | 内容 | SHALL/MUST 行为定义、API 契约、领域模型、状态机、验收标准 | 具体代码模式、文件路径、测试方法、审查清单、陷阱、入口点 | 全局强制约束、安全规范、审查标准、提交规范 |
 | 变更频率 | 业务决策变更时 | 每次任务完成后自然沉淀 | 团队规范调整时（低频） |
 | 抽象层级 | 与实现无关 | 与实现绑定 | 与项目无关（跨项目通用模式） |
-| 变更流程 | OpenSpec change lifecycle（propose→apply→sync→archive） | trellis-update-spec（即时沉淀） | 手动编辑 rules 文件 |
-| 加载方式 | Trellis 指南引用 → 按需跳转 | trellis-before-dev → index → guidelines | IDE 始终注入 |
+| 主导流程 | Workflow A: Grill → Explore → Propose → Apply → Archive | Workflow A: check/update-spec; Workflow B: before-dev → check → update-spec | 手动编辑 rules 文件 |
+| 加载方式 | Workflow A: apply-change 自动加载 change artifacts; Workflow B: 从 Trellis 指南链接跳转按需加载 | Workflow B: trellis-before-dev → index → guidelines; Workflow A: 按需跳转 | IDE 始终注入 |
 | 受众 | 产品/架构/开发/AI Agent | 开发者/AI Agent | 所有参与者 |
 
 ---
@@ -176,120 +176,128 @@ openspec/
 
 ## 知识生命周期与工作流
 
-### 1. 新增业务功能（Additive Change）
+开发活动按是否**改变 Business Knowledge** 划分为两条独立主流程。两者的根本区别在于起点：Business Change 由业务定义驱动，Development Task 由开发任务驱动。
 
-业务上新增一个不存在的能力。
+### 判断方法
+
+对任务问："这个任务是否改变了系统'是什么'（业务规则、API 契约、验收标准）？"
+
+- **是** → Workflow A（Business Change）
+- **否** → Workflow B（Development Task）
+
+---
+
+### Workflow A: Business Change（业务变更）
+
+**适用场景**：新增功能、业务重设计、改变外部行为的架构演进、领域模型变更。
+
+**核心特征**：由 OpenSpec 主导完整的 Analysis & Planning，`openspec-apply-change` 进入实现时已加载全部 Business Context（proposal → design → tasks → delta specs），**不再需要 trellis-before-dev**。
 
 ```
-Grill Me（需求澄清）
+Grill Me（需求澄清与拷问）
   ↓
-trellis-brainstorm（Trellis 规划阶段）
+整理拷问记录到 docs/grill-sessions/
   ↓
-影响长期业务知识？→ openspec-propose（创建 OpenSpec change）
+openspec-explore（深入代码现状 + 探索替代方案 + Gap Analysis）
+  ↓
+补充拷问记录（explore 中发现的新问题）
+  ↓
+openspec-propose（创建 change：proposal.md + design.md + tasks.md + specs/）
   ↓                ↓
-  │           proposal.md + design.md + tasks.md + specs/(ADDED)
+  │           specs/ 中根据变更类型生成：
+  │           - ADDED（新增能力）
+  │           - MODIFIED（修改现有能力）
+  │           - REMOVED（废弃能力）
+  │           - RENAMED（重命名）
   │                ↓
-  │           Review
+  │           Review（人工确认）
   │                ↓
-  └──────────→ openspec-apply-change（实现）
+  └──────────→ openspec-apply-change（按 Slice 实现）
                     ↓
-               trellis-before-dev（加载 Trellis 开发指南）
+               开发实现（apply-change 已加载完整 Business Context，
+               直接按 tasks 执行，无需 before-dev）
                     ↓
-               开发实现
+               trellis-check（质量检查：编码规范、测试、架构一致性）
                     ↓
-               trellis-check（质量检查）
-                    ↓
-               trellis-update-spec（沉淀开发经验到 .trellis/spec/）
+               trellis-update-spec（沉淀 HOW 经验到 .trellis/spec/）
                     ↓
                openspec-sync-specs（合并 delta specs 到主 specs）
                     ↓
                openspec-archive-change（归档变更）
+                    ↓
+               清理/重写受影响的 Trellis 指南（如 MODIFIED/REMOVED 场景）
 ```
 
-### 2. Bug 修复（Corrective Change）
+**为什么没有 before-dev**：`openspec-apply-change` 启动时已读取 proposal、design、tasks、delta specs 四份文档，拥有完整的业务上下文、架构设计、任务拆分和验收标准。此时再跑 before-dev 是重复加载，且时间顺序错误（before-dev 应在规划前而非实现前）。
 
-修复不符合既有业务规则的行为。
+**子类型说明**：
+
+| 子类型 | specs 特征 | 特殊注意 |
+|-------|-----------|---------|
+| 新增功能（Additive） | 仅 ADDED | 低风险，新功能不影响现有行为 |
+| 业务重设计（Redesign） | MODIFIED + REMOVED + ADDED | 风险最高，必须含数据迁移和向后兼容方案，需清理旧 Trellis 指南 |
+| 架构演进（Architecture） | MODIFIED（如 API 契约变化） | design.md 重点论证方案选择，需更新受影响的 Trellis 指南 |
+
+---
+
+### Workflow B: Development Task（开发任务）
+
+**适用场景**：Bug 修复、纯重构（不改变外部行为）、性能优化、测试补充、代码清理、小型工具函数调整。
+
+**核心特征**：不改变 Business Knowledge，没有 OpenSpec change 产物。起点是一个具体的开发任务而非业务需求，此时需要 `trellis-before-dev` 加载项目开发上下文。
 
 ```
-trellis-brainstorm（或直接 trellis-before-dev）
+trellis-brainstorm（可选，复杂 Bug/重构需要澄清根因）
   ↓
-trellis-before-dev（加载 Trellis 开发指南）
+trellis-before-dev（加载 Trellis 开发指南：index → 通用指南 → 模块指南）
   ↓
-开发修复
+开发实现
   ↓
 trellis-check（质量检查 + 回归验证）
   ↓
-发现业务规则本身有问题（不是实现问题）？→ OpenSpec propose/sync
+发现业务规则本身有问题（代码符合 spec 但行为不对）？
+  ├─ 是 → 升级到 Workflow A（OpenSpec propose）
+  └─ 否 → 继续
   ↓
-trellis-update-spec（沉淀防坑经验到 .trellis/spec/）
+trellis-update-spec（沉淀防坑经验/新模式到 .trellis/spec/）
 ```
 
-**区分关键**：如果代码符合 OpenSpec 但行为不对 → 是 Business Knowledge 问题，走 OpenSpec；如果代码不符合 OpenSpec → 是实现问题，只走 Trellis。
-
-### 3. 架构调整（Implementation Change）
-
-改变 HOW（实现方式），不改变 WHAT（业务行为）。例如：从 REST 迁移到 GraphQL、换 ORM、重构目录结构。
-
-```
-Grill Me
-  ↓
-openspec-explore（探索方案，确认不改变业务行为）
-  ↓
-openspec-propose（架构变更提案，design.md 重点说明方案选择）
-  ↓
-openspec-apply-change（实现）
-  ↓
-trellis-before-dev → 开发 → trellis-check
-  ↓
-trellis-update-spec（重写/更新受影响的开发指南）
-  ↓
-openspec-sync-specs → openspec-archive-change
-```
-
-**注意**：纯重构（不改变外部行为）如果不影响 API 契约，可以跳过 OpenSpec propose，直接走 Trellis 流程加 trellis-update-spec。
-
-### 4. 业务能力重设计（Business Redesign）
-
-重新定义一个已有的业务能力。不是新增（没有新能力），不是 Bug（没坏），不是架构调整（不只是 HOW 变了，WHAT 本身变了）。例如：重新设计 Auth 模型、重定义 Chat 交互模式、重构 Workspace 概念。
-
-```
-Grill Me
-  ↓
-openspec-explore（深入理解现状 + 探索替代方案 + 兼容性分析）
-  ↓
-openspec-propose（变更提案）
-  ↓                ↓
-  │           proposal.md（明确废弃什么、新增什么、迁移路径）
-  │           design.md（重点关注数据迁移和向后兼容）
-  │           tasks.md（分阶段实施：迁移 → 切换 → 清理）
-  │           specs/(MODIFIED + REMOVED + ADDED)
-  │                ↓
-  │           Review（特别关注：数据迁移、向后兼容、旧指南废弃计划）
-  │                ↓
-  └──────────→ openspec-apply-change（分阶段实现）
-                    ↓
-               trellis-before-dev（注意：旧指南可能已失效）
-                    ↓
-               开发实现（含数据迁移）
-                    ↓
-               trellis-check
-                    ↓
-               trellis-update-spec（重写/废弃受影响的模块开发指南）
-                    ↓
-               openspec-sync-specs（合并 delta specs）
-                    ↓
-               openspec-archive-change
-                    ↓
-               清理废弃的 Trellis 指南
-```
-
-**关键区别**：Business Redesign 产生 MODIFIED/REMOVED delta specs（而非仅 ADDED），且必须考虑旧 Trellis 指南的废弃/重写。这是风险最高的变更类型。
+**区分关键**：
+- 代码**不符合** OpenSpec spec → 实现问题 → Workflow B
+- 代码**符合** OpenSpec spec 但行为不对 → 业务规则问题 → 升级到 Workflow A
+- 纯重构不改变外部行为 → Workflow B（不走 OpenSpec）
 
 ---
 
 ## Progressive Knowledge Loading（渐进式知识加载）
 
-AI Agent **绝对不要预加载全部规范**。知识加载遵循以下导航链：
+AI Agent **绝对不要预加载全部规范**。知识加载路径取决于当前处于哪条工作流。
+
+### Workflow A 的知识加载（Business Change）
+
+Business Change 流程中，知识加载由 OpenSpec 工具链自然完成，不需要显式调用 before-dev：
+
+```
+openspec-explore
+  ↓ 自动读取：现有 specs + 代码现状
+openspec-propose
+  ↓ 自动读取：现有 specs + explore 结果
+  ↓ 产出：proposal.md + design.md + tasks.md + specs/（完整 Business Context）
+openspec-apply-change
+  ↓ 自动读取：change 下所有 artifacts（Business Context 已完备）
+  ↓ 按 tasks 逐 Slice 实现
+  ↓ 如需开发模式参考 → 按需跳转 Trellis 指南（通过 spec 中的链接或模块指南引用）
+trellis-check
+  ↓ 按需加载：质量检查清单、测试策略
+trellis-update-spec
+  ↓ 按需加载：现有 Trellis 指南（决定沉淀到哪里）
+```
+
+**核心原则**：Business Change 中 OpenSpec artifacts 本身就是最完整的上下文。Trellis 指南作为 HOW 参考按需跳转，不是前置加载项。
+
+### Workflow B 的知识加载（Development Task）
+
+Development Task 流程中，没有 OpenSpec artifacts 承载上下文，需要通过 Navigation Hub 加载开发知识：
 
 ```
 当前 Task
@@ -312,11 +320,11 @@ Navigation Hub: .trellis/spec/<package>/<layer>/index.md
   └─ 需要跨包思维？→ guides/index.md
 ```
 
-**Navigation Hub 的核心职责**：
+### Navigation Hub 的核心职责
 
 每个 `index.md` 不是简单的文件列表，而是知识导航中心。它负责：
 
-1. **Pre-Development Checklist**：进入开发前必须阅读的通用指南
+1. **Pre-Development Checklist**：进入开发前必须阅读的通用指南（Workflow B 中使用）
 2. **Module Guide Index**：按任务类型映射到对应模块指南（"做 X 看 Y"）
 3. **OpenSpec Mapping**：每个模块指南对应的 OpenSpec capability
 4. **Quality Gate**：完成开发后的质量检查项
@@ -332,11 +340,11 @@ Navigation Hub: .trellis/spec/<package>/<layer>/index.md
 
 ### trellis-update-spec 沉淀规则
 
-`trellis-update-spec` 用于将开发经验沉淀到 `.trellis/spec/`，不是修改业务规则。
+`trellis-update-spec` 用于将开发经验沉淀到 `.trellis/spec/`，不是修改业务规则。它在 **Workflow A 和 Workflow B 中都会使用**——开发完成后（无论走哪条流程），都应沉淀有价值的 HOW 经验。
 
 **触发时机**：
-- 完成一个功能特性后
-- 修复一个有价值的 Bug 后（特别是根因分析）
+- 完成 Workflow A 的一个功能特性后
+- 完成 Workflow B 的 Bug 修复后（特别是根因分析）
 - 发现新的实现模式后
 - 踩过一个非显而易见的坑后
 - 确立新的团队约定后
@@ -354,9 +362,9 @@ Navigation Hub: .trellis/spec/<package>/<layer>/index.md
 
 **禁止沉淀内容**：业务规则、API 契约定义、状态机定义、领域模型——遇到此类内容应放入 OpenSpec 并在 Trellis 中引用。
 
-### OpenSpec 变更触发
+### OpenSpec 变更触发（走 Workflow A）
 
-以下情况必须走 OpenSpec change 流程：
+以下情况必须走 Workflow A（OpenSpec change 流程），即判断"是否改变系统是什么"为"是"时：
 
 - 新的业务能力（ADDED requirement）
 - 业务行为改变（MODIFIED requirement）
