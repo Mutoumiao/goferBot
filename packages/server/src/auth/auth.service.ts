@@ -16,13 +16,14 @@ import {
   captchaRequiredError,
   invalidRefreshTokenError,
   invalidTokenTypeError,
-  noAdminRoleError,
+  noAppRoleError,
   sessionRevokedError,
   tokenNotFoundError,
   tokenReplayError,
   tokenRevokedError,
   userNotFoundError,
 } from './errors.js'
+import { getAuthPolicy } from './auth-policy.js'
 import { AuthRepository } from './repositories/auth.repository.js'
 import { PermissionService } from './services/permission.service.js'
 import type { AuthApp } from './types/auth-app.type.js'
@@ -56,7 +57,7 @@ export class AuthService {
     private readonly captchaService: CaptchaService,
     private readonly authRepository: AuthRepository,
     private readonly permissionService: PermissionService,
-  ) {}
+  ) { }
 
   async register(email: string, password: string, name?: string) {
     const user = await this.userService.create(email, password, name)
@@ -71,7 +72,6 @@ export class AuthService {
     app: AuthApp,
     captcha?: { captchaId?: string; captchaCode?: string },
   ) {
-    // 管理后台与 Web 登录均强制要求验证码
     if (!captcha?.captchaId || !captcha?.captchaCode) {
       throw captchaRequiredError()
     }
@@ -86,8 +86,6 @@ export class AuthService {
       throw accountDisabledError()
     }
 
-    // 不再阻止登录，而是在响应中返回 mustChangePassword 标志
-    // 允许用户获取 token 以便调用修改密码接口
     const mustChangePassword = user.mustChangePassword
 
     const authMethodEnabled = await this.authRepository.isAuthMethodEnabled(app, 'password')
@@ -97,16 +95,20 @@ export class AuthService {
 
     const roles = await this.authRepository.getRolesForUserByApp(user.id, app)
 
-    // admin 端无角色拒绝登录
-    if (app === 'admin' && roles.length === 0) {
-      throw noAdminRoleError()
+    const policy = getAuthPolicy(app)
+    if (policy.requireRolesToLogin && roles.length === 0) {
+      throw noAppRoleError(app)
     }
 
     const ctx = getRequestContext()
     const meta = ctx ? { userAgent: ctx.userAgent, ip: ctx.ip } : undefined
     const tokens = await this.createSession(user.id, app, meta)
 
-    return { user, ...tokens, mustChangePassword }
+    const permissions = policy.includePermissionsInLoginResponse
+      ? await this.permissionService.getUserPermissions(user.id, app)
+      : undefined
+
+    return { user: { ...user, permissions }, ...tokens, mustChangePassword }
   }
 
   async refresh(refreshToken: string) {
@@ -155,9 +157,10 @@ export class AuthService {
 
       // 重新加载角色，权限变更即时生效
       const roles = await this.authRepository.getRolesForUserByApp(user.id, payload.app)
-      if (payload.app === 'admin' && roles.length === 0) {
-        await this.authRepository.revokeSession(tokenRecord.sessionId, 'admin_role_missing')
-        throw noAdminRoleError()
+      const policy = getAuthPolicy(payload.app)
+      if (policy.requireRolesToLogin && roles.length === 0) {
+        await this.authRepository.revokeSession(tokenRecord.sessionId, `${payload.app}_role_missing`)
+        throw noAppRoleError(payload.app)
       }
 
       // 标记旧 token 为 used，生成新 token
@@ -260,12 +263,15 @@ export class AuthService {
     await this.authRedis.invalidateUserCache(userId)
   }
 
-  async me(userId: string) {
+  async me(userId: string, app: AuthApp = 'admin') {
     const user = await this.userService.findById(userId)
     if (!user) {
       throw userNotFoundError()
     }
-    const permissions = await this.permissionService.getUserPermissions(userId, 'admin')
+    const policy = getAuthPolicy(app)
+    const permissions = policy.includePermissionsInLoginResponse
+      ? await this.permissionService.getUserPermissions(userId, app)
+      : undefined
     return { ...user, permissions }
   }
 

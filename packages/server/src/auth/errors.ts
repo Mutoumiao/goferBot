@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'async_hooks'
 import { AppException } from '../lib/app-error.js'
 
 /**
@@ -10,11 +11,16 @@ export function invalidCredentialsError(): AppException {
 }
 
 export function accountDisabledError(): AppException {
+  AsyncLocalStorage
   return new AppException('ACCOUNT_DISABLED', '账号已被禁用', 403)
 }
 
+export function noAppRoleError(app: string): AppException {
+  return new AppException(`NO_${app.toUpperCase()}_ROLE`, `无权访问${app === 'admin' ? '管理后台' : '系统'}`, 403)
+}
+
 export function noAdminRoleError(): AppException {
-  return new AppException('NO_ADMIN_ROLE', '无权访问管理后台', 403)
+  return noAppRoleError('admin')
 }
 
 export function invalidTokenTypeError(): AppException {

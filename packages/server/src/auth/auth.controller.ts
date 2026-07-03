@@ -27,6 +27,7 @@ import { RegisterDto } from './dto/register.dto.js'
 import { UpdateProfileDto } from './dto/update-profile.dto.js'
 import { WebLoginDto } from './dto/web-login.dto.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
+import type { AuthApp } from './types/auth-app.type.js'
 
 @Controller('auth')
 export class AuthController {
@@ -59,21 +60,23 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async webLogin(@Body() dto: WebLoginDto, @Res({ passthrough: true }) res: FastifyReply) {
-    const password = this.decryptAndValidate(dto.encryptedPassword)
-    const result = await this.authService.login(dto.email, password, 'web', {
-      captchaId: dto.captchaId,
-      captchaCode: dto.captchaCode,
-    })
-    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { user: result.user, mustChangePassword: result.mustChangePassword }
+    return this.handleLogin('web', dto, res)
   }
 
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
   async adminLogin(@Body() dto: AdminLoginDto, @Res({ passthrough: true }) res: FastifyReply) {
+    return this.handleLogin('admin', dto, res)
+  }
+
+  private async handleLogin(
+    app: AuthApp,
+    dto: { email: string; encryptedPassword: string; captchaId?: string; captchaCode?: string },
+    res: FastifyReply,
+  ) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
-    const result = await this.authService.login(dto.email, password, 'admin', {
+    const result = await this.authService.login(dto.email, password, app, {
       captchaId: dto.captchaId,
       captchaCode: dto.captchaCode,
     })
@@ -108,19 +111,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async webRefresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
-    const refreshToken = req.cookies?.goferbot_refreshToken
-    if (!refreshToken) {
-      throw new BadRequestException({ code: 'REFRESH_TOKEN_MISSING', message: '未找到刷新令牌' })
-    }
-    const result = await this.authService.refresh(refreshToken)
-    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { success: true, mustChangePassword: result.mustChangePassword }
+    return this.handleRefresh(req, res)
   }
 
   @Post('admin/refresh')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async adminRefresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
+    return this.handleRefresh(req, res)
+  }
+
+  private async handleRefresh(req: FastifyRequest, res: FastifyReply) {
     const refreshToken = req.cookies?.goferbot_refreshToken
     if (!refreshToken) {
       throw new BadRequestException({ code: 'REFRESH_TOKEN_MISSING', message: '未找到刷新令牌' })
@@ -142,12 +143,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async webLogout(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
-    const refreshToken = req.cookies?.goferbot_refreshToken
-    if (refreshToken) {
-      await this.authService.logoutByRefreshToken(refreshToken)
-    }
-    this.cookieHelper.clearAuthCookies(res)
-    return { success: true }
+    return this.handleLogout(req, res)
   }
 
   @Post('change-password')
@@ -170,6 +166,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async adminLogout(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
+    return this.handleLogout(req, res)
+  }
+
+  private async handleLogout(req: FastifyRequest, res: FastifyReply) {
     const refreshToken = req.cookies?.goferbot_refreshToken
     if (refreshToken) {
       await this.authService.logoutByRefreshToken(refreshToken)

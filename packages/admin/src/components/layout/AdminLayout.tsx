@@ -79,15 +79,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const menuDataRender = useCallback(() => menuItems as any, [menuItems])
 
   const menuHeaderRender = useCallback(() => {
-    return (
-      <div className="flex items-center gap-2 px-3 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
-          G
-        </div>
-        {!collapsed && <span className="text-sm font-semibold text-white">GoferBot</span>}
-      </div>
-    )
-  }, [collapsed])
+    return null
+  }, [])
 
   const rightContentRender = useCallback(() => {
     if (hideSidebar) {

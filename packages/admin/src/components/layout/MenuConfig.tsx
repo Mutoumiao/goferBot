@@ -31,6 +31,18 @@ export function useMenuConfig(): MenuItem[] {
         }))
     }
 
+    if (user.role === 'SUPER_ADMIN') {
+      return Object.values(ROUTES_REGISTER)
+        .filter((r: RouteMeta) => r.nav)
+        .map((r) => ({
+          key: r.key,
+          path: r.path as string,
+          title: r.title,
+          icon: r.icon ?? null,
+          nav: r.nav,
+        }))
+    }
+
     const permissions = user.permissions ?? EMPTY_PERMISSIONS
 
     return Object.values(ROUTES_REGISTER)
