@@ -1,293 +1,138 @@
-# Overlay 弹窗系统
+# Overlay Portal 弹窗系统开发指南
 
-> Web 端命令式 Portal 弹窗系统的架构和使用指南。
-
----
-
-## 概述
-
-项目使用自建 **4 层 Portal 弹窗系统**，而非 React 生态的第三方弹窗库。核心设计理念：**命令式 API + Promise 返回值 + Portal 渲染**，让弹窗调用像 `await openDialog(...)` 一样自然。
-
-## 4 层架构
-
-```
-┌──────────────────────────────────────────┐
-│  调用方 (useOverlay hook)                 │  ← Layer 4: 消费层
-│  const result = await openDialog(...)     │
-├──────────────────────────────────────────┤
-│  overlay-service (命令式 Service)         │  ← Layer 3: 服务层
-│  openDialog() → push() → Promise          │
-├──────────────────────────────────────────┤
-│  overlay-store (Zustand Store)            │  ← Layer 2: 状态层
-│  entries[] / nextZIndex / push / remove   │
-├──────────────────────────────────────────┤
-│  OverlayHost (React Portal Renderer)       │  ← Layer 1: 渲染层
-│  createPortal(entries → document.body)    │
-└──────────────────────────────────────────┘
-```
+> **NOTE**: 此文件记录开发指南（HOW）。Overlay Portal 是前端实现模式，无对应 OpenSpec capability。弹窗的业务行为由各业务模块的 OpenSpec 定义（如 Chat 的分享弹窗、知识库的创建弹窗）。
 
 ---
 
-## 命令式 Promise API
+## Purpose
 
-### 基本用法
+帮助开发者在 Overlay Portal 弹窗系统中高效工作：理解 4 层架构实现、正确使用命令式 Promise API、规避常见陷阱、扩展预置弹窗。
+
+## Primary OpenSpec
+
+- 无对应 capability。Overlay Portal 是前端实现模式。
+
+## Related OpenSpec
+
+- 各业务模块 OpenSpec（弹窗的业务行为由对应模块定义）
+
+## Module Dependencies
+
+- React `createPortal` — Portal 渲染底层
+- Zustand — Overlay Store 状态管理
+- shadcn/ui Dialog — 弹窗底层组件
+
+## Development Entry
+
+- `packages/web/src/overlays/` — Portal 系统全部文件
+- `packages/web/src/overlays/types/overlay.types.ts` — 类型定义（OverlayEntry 等）
+- `packages/web/src/overlays/host/overlay-store.ts` — Zustand Store
+- `packages/web/src/overlays/services/overlay-service.ts` — 命令式 Service
+- `packages/web/src/overlays/host/OverlayHost.tsx` — Portal 渲染器
+- `packages/web/src/overlays/hooks/useOverlay.ts` — 类型安全 Hook
+- `packages/web/src/overlays/dialogs/*.tsx` — 预置弹窗组件
+- `packages/web/src/routes/__root.tsx` — OverlayHost 挂载点
+
+## Implementation Notes
+
+### 4 层架构实现模式
+
+```
+Layer 4 消费层  useOverlay hook → const result = await openDialog(...)
+Layer 3 服务层  overlay-service → openDialog() push() Promise
+Layer 2 状态层  overlay-store (Zustand) → entries[] / nextZIndex
+Layer 1 渲染层  OverlayHost → createPortal(entries, document.body)
+```
+
+数据流：调用方 → service.push → store.entries → OverlayHost 重渲染 → 弹窗 onClose → store.remove → Promise resolve。
+
+### 命令式 Promise API
 
 ```typescript
 import { openDialog } from '@/overlays/services/overlay-service'
 
-// 打开弹窗，await 等待用户操作结果
 const result = await openDialog(ConfirmDialog, {
   title: '确认删除？',
   message: '此操作不可撤销',
 })
-
-if (result === 'confirm') {
-  // 用户点击了确认
-}
+if (result === 'confirm') { /* 用户确认 */ }
 ```
 
-### 实现原理
+实现要点：`openDialog` 内部 `new Promise`，将 `resolve/reject` 注入 `OverlayEntry`；弹窗调用 `onClose(result)` 时由 `store.remove(id, result)` 触发 `resolve(result)`。
 
-```typescript
-// packages/web/src/overlays/services/overlay-service.ts
-export function openDialog<T = unknown>(
-  component: React.ComponentType<WithOnClose<T>>,
-  props?: Record<string, unknown>,
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const id = overlayStore.getState().push({
-      kind: 'dialog',
-      component,
-      props,
-      resolve,    // Promise resolve 注入 Store
-      reject,     // Promise reject 注入 Store
-    })
-  })
-}
-```
+### createPortal 到 document.body
 
-`resolve/reject` 被注入到 `OverlayEntry` 中，弹窗关闭时通过 `remove(id, result)` 触发 Promise 完成。
+`OverlayHost` 使用 `createPortal(..., document.body)` 突破父组件 `overflow: hidden` / `z-index` 限制。`onClose` 是 Portal 与 Store 的**唯一桥接点**。OverlayHost 挂载在 `__root.tsx`，与页面主体平级。
 
----
+### z-index 层级管理策略
 
-## OverlayEntry 数据模型
+`nextZIndex` 初始 1000，每次 `push` 后 `+= 1000`，确保后打开的弹窗在最上层。间隔 1000 为嵌套弹窗内部元素（如 Select、Tooltip）预留层级空间。
 
-```typescript
-// packages/web/src/overlays/types/overlay.types.ts
-interface OverlayEntry<T = unknown> {
-  id: string
-  kind: 'dialog' | 'context-menu'
-  component: React.ComponentType
-  props?: Record<string, unknown>
-  zIndex: number
-  position?: { x: number; y: number }   // context-menu 专用
-  resolve?: (value: T) => void           // Promise resolve
-  reject?: (reason?: unknown) => void    // Promise reject
-}
-```
+### 嵌套弹窗栈管理
 
-两种弹窗类型：
-- `dialog` — 无位置，渲染在视口中央
-- `context-menu` — 携带 `position: {x, y}` 屏幕坐标（右键菜单场景）
+`entries[]` 数组天然支持栈结构：新弹窗 push 到数组末尾，关闭时按 id 移除。ESC 键由最上层弹窗拦截（shadcn Dialog 默认行为）。
 
----
-
-## Zustand Store
-
-```typescript
-// packages/web/src/overlays/host/overlay-store.ts
-interface OverlayState {
-  entries: OverlayEntry[]
-  nextZIndex: number
-
-  push: (entry) => string    // 分配全局唯一 id，nextZIndex += 1000
-  remove: (id, result) => void  // 触发 resolve(result)，清理 entry
-  closeAll: () => void          // resolve(undefined) 全部关闭
-}
-```
-
-**zIndex 自增规则**：`nextZIndex` 初始 1000，每次 `push` 后 `+= 1000`。确保后打开的弹窗在最上层。
-
-**closeAll**：路由切换时调用，遍历所有 entry 调用 `resolve(undefined)`，清空 entries 数组。
-
----
-
-## Portal 渲染（OverlayHost）
-
-```tsx
-// packages/web/src/overlays/host/OverlayHost.tsx
-export function OverlayHost() {
-  const entries = useOverlayStore((s) => s.entries)
-  const remove = useOverlayStore((s) => s.remove)
-
-  return createPortal(
-    <>
-      {entries.map((entry) => {
-        const Comp = entry.component
-        return (
-          <Comp
-            key={entry.id}
-            {...entry.props}
-            style={{ zIndex: entry.zIndex }}
-            onClose={(result) => remove(entry.id, result)}  // 桥接点
-          />
-        )
-      })}
-    </>,
-    document.body  // 渲染到 body 层
-  )
-}
-```
-
-**关键设计**：
-- `createPortal(..., document.body)` 突破父组件 `overflow: hidden` / `z-index` 限制
-- `onClose` 是 Portal 与 Store 的**唯一桥接点**
-- 挂载在 `routes/__root.tsx` body 中，与页面主体平级
-
----
-
-## 生命周期序列
+### 弹窗关闭与 Promise 时序
 
 ```
-1. openDialog(Component, props)
-     ↓
-2. overlayStore.push(entry)
-     → 生成 id、自增 zIndex、注入 resolve/reject
-     → entries 数组 push
-     ↓
-3. OverlayHost 重渲染
-     → createPortal(Component, document.body)
-     → props.onClose = (result) => remove(id, result)
-     ↓
-4. 用户在弹窗中操作
-     → 点击确认/取消/关闭
-     ↓
-5. Component 调用 props.onClose(result)
-     ↓
-6. overlayStore.remove(id, result)
-     → 触发 resolve(result) → openDialog() 的 Promise 完成
-     → 从 entries 中移除
-     ↓
-7. OverlayHost 重渲染（弹窗消失）
+Component 调用 props.onClose(result)
+  → store.remove(id, result)
+  → 触发 resolve(result) → openDialog() 的 Promise 完成
+  → entries 移除 → OverlayHost 重渲染 → 弹窗消失
 ```
 
----
+### 两种 onClose 签名模式
 
-## 弹窗组件两种 onClose 签名
+- **Alert 风格**：`onClose: (result: 'confirm' | 'cancel') => void` — 用于确认/取消场景
+- **Form 风格**：`onClose: (success: boolean) => void` — 用于表单提交场景
 
-### Alert 风格（确认/取消）
+### 11 个预置弹窗分类
 
-```tsx
-// ConfirmDialog, DeleteKbDialog 等
-interface AlertDialogProps {
-  onClose: (result: 'confirm' | 'cancel') => void
-}
+| 组件 | 类型 | onClose 签名 |
+|------|------|-------------|
+| `ConfirmDialog` | Alert | `'confirm' \| 'cancel'` |
+| `CreateKbDialog` | Form | `boolean` |
+| `CreateFolderDialog` | Form | `boolean` |
+| `DeleteKbDialog` | Alert | `true \| false \| 'refresh'` |
+| `DeleteItemDialog` | Alert | `'confirm' \| 'cancel'` |
+| `DeleteSessionDialog` | Alert | `'confirm' \| 'cancel'` |
+| `EditKbDialog` | Form | `boolean` |
+| `EditNameDialog` | Form | `boolean` |
+| `EditAvatarDialog` | Form | `boolean` |
+| `RenameItemDialog` | Form | `boolean` |
+| `PreviewDialog` | View | N/A |
 
-// 使用
-const result = await openDialog<'confirm' | 'cancel'>(ConfirmDialog, { title: '确认删除？' })
-if (result === 'confirm') { /* 执行删除 */ }
-```
+## Testing Checklist
 
-### Form 风格（成功/取消）
+- [ ] `openDialog(Comp, props)` 正确渲染弹窗到 body
+- [ ] Promise 在弹窗关闭后正确 `resolve(result)` / `reject`
+- [ ] 嵌套弹窗正确栈管理（后开者在最上层）
+- [ ] ESC 键只关闭最上层弹窗，不连锁关闭下层
+- [ ] z-index 层级正确（新弹窗 > 旧弹窗）
+- [ ] 路由切换时 `closeAll()` 正确触发所有 `resolve(undefined)`
+- [ ] Alert 与 Form 两种 onClose 签名均能正确返回结果
 
-```tsx
-// CreateKbDialog, EditKbDialog 等
-interface FormDialogProps {
-  onClose: (success: boolean) => void
-}
+## Review Checklist
 
-// 使用
-const success = await openDialog<boolean>(CreateKbDialog, { mode: 'create' })
-if (success) { /* 刷新列表 */ }
-```
+- [ ] 新增弹窗是否注册到预置列表（上表）并放在 `dialogs/` 目录
+- [ ] 弹窗 Props 类型是否完整，泛型 `<T>` 是否与 onClose 签名一致
+- [ ] 弹窗关闭是否正确调用 `props.onClose` 并清理内部状态
+- [ ] 是否避免直接操作 `overlayStore`（应通过 `overlayService` / `useOverlay`）
+- [ ] 是否避免在 `onClose` 中抛异常（会导致 Promise rejection）
 
----
+## Common Pitfalls
 
-## useOverlay Hook
+- **直接操作 `overlayStore`**：应通过 `overlayService` / `useOverlay` Hook，避免跳过 Promise 桥接
+- **在 `onClose` 回调中抛异常**：会被 Promise 吞掉，应在弹窗内部 try/catch 后再调用 onClose
+- **嵌套 `openDialog` 调用**：`await` 一个弹窗完成后再开另一个，容易造成栈堆积；应链式 `then` 或合并交互
+- **在 Overlay 系统外使用 Portal**：会绕过 z-index 管理和 closeAll 清理，应复用 OverlayHost
+- **忘记路由切换清理**：未在 `__root.tsx` 注册 `closeAll`，会导致切换页面后弹窗残留
+- **z-index 硬编码**：弹窗内部元素不要硬编码 z-index，应依赖 `entry.zIndex` 传递的层级
 
-薄封装，提供类型安全的 API：
+## Reusable Patterns
 
-```typescript
-// packages/web/src/overlays/hooks/useOverlay.ts
-export function useOverlay() {
-  return {
-    dialog: openDialog,
-    closeDialog,
-    contextMenu: openContextMenu,
-    closeContextMenu,
-    closeAll,
-  }
-}
-```
-
----
-
-## 11 个预置弹窗组件
-
-| 组件 | 类型 | onClose 签名 | 说明 |
-|------|------|-------------|------|
-| `ConfirmDialog` | Alert | `'confirm' \| 'cancel'` | 通用确认 |
-| `CreateKbDialog` | Form | `boolean` | 创建知识库 |
-| `CreateFolderDialog` | Form | `boolean` | 创建文件夹 |
-| `DeleteKbDialog` | Alert | `true \| false \| 'refresh'` | 删除知识库 |
-| `DeleteItemDialog` | Alert | `'confirm' \| 'cancel'` | 删除文档/文件夹 |
-| `DeleteSessionDialog` | Alert | `'confirm' \| 'cancel'` | 删除会话 |
-| `EditKbDialog` | Form | `boolean` | 编辑知识库 |
-| `EditNameDialog` | Form | `boolean` | 编辑名称 |
-| `EditAvatarDialog` | Form | `boolean` | 编辑头像 |
-| `RenameItemDialog` | Form | `boolean` | 重命名文档 |
-| `PreviewDialog` | View | N/A | 文档预览 |
-
----
-
-## 最佳实践
-
-### ✅ 正确的用法
-
-```typescript
-// 在组件中使用
-const { dialog } = useOverlay()
-
-const handleDelete = async () => {
-  const result = await dialog<'confirm' | 'cancel'>(ConfirmDialog, {
-    title: '确认删除？',
-  })
-  if (result === 'confirm') {
-    await deleteItem(id)
-    toast.success('删除成功')
-  }
-}
-```
-
-### ❌ 禁止的做法
-
-```tsx
-// ❌ 不要在 Overlay 系统外使用 Portal
-// ❌ 不要直接操作 overlayStore（应通过 overlayService）
-// ❌ 不要在 onClose 中抛出异常（会导致 Promise rejection）
-// ❌ 不要嵌套 openDialog（await 一个弹窗完成后再开另一个）
-```
-
-### closeAll 用于路由切换
-
-```typescript
-// packages/web/src/routes/__root.tsx
-useEffect(() => {
-  // 路由变化时关闭所有弹窗
-  return () => overlayStore.getState().closeAll()
-}, [location.pathname])
-```
-
----
-
-## 代码引用
-
-| 规范 | 文件路径 |
-|------|----------|
-| 类型定义 | `packages/web/src/overlays/types/overlay.types.ts` |
-| Zustand Store | `packages/web/src/overlays/host/overlay-store.ts` |
-| 命令式 Service | `packages/web/src/overlays/services/overlay-service.ts` |
-| Portal 渲染 | `packages/web/src/overlays/host/OverlayHost.tsx` |
-| useOverlay Hook | `packages/web/src/overlays/hooks/useOverlay.ts` |
-| 弹窗组件 | `packages/web/src/overlays/dialogs/*.tsx` |
-| 根路由挂载 | `packages/web/src/routes/__root.tsx` |
+- **命令式 Portal 弹窗模式**：`openDialog(Comp, props) → Promise<T>`，将 UI 交互 Promise 化，适合需要等待用户决策的流程
+- **Promise 化弹窗交互模式**：`resolve/reject` 注入 Store，关闭时由 Store 触发 Promise 完成，解耦调用方与弹窗组件
+- **z-index 分层管理模式**：`nextZIndex += 1000` 自增策略，间隔 1000 为嵌套元素预留空间
+- **onClose 单一桥接点**：Portal 与 Store 仅通过 `onClose` 通信，弹窗组件无需感知 Store 存在
+- **closeAll 路由切换清理**：在 `__root.tsx` 监听路由变化调用 `closeAll()`，统一清理所有弹窗

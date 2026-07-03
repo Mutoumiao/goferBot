@@ -1,6 +1,7 @@
-# Thinking Guides
+# Thinking Guides 索引
 
-> **Purpose**：扩展你的思维，捕捉可能忽略的问题。
+> **Purpose**：本索引是开发思维方法论的导航中枢。Thinking Guides 属于 Trellis 开发智慧层，记录"如何思考"而非"系统是什么"。
+> 这些思维方法论独立于具体业务模块，适用于所有开发场景。
 
 ---
 
@@ -9,7 +10,7 @@
 **大多数 Bug 和技术债务源于"没想到"**，而非缺乏技能：
 
 - 没想到层边界会发生什么 → cross-layer bugs
-- 没想到代码模式会重复 → 到处都是重复代码
+- 没到代码模式会重复 → 到处都是重复代码
 - 没想到边缘情况 → runtime errors
 - 没想到未来维护者 → 难以阅读的代码
 
@@ -23,6 +24,19 @@
 |-------|---------|-------------|
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | 识别模式并减少重复 | 当你注意到重复模式时 |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | 思考跨层数据流 | 跨多层的功能 |
+
+---
+
+## Progressive Knowledge Loading 流程
+
+Thinking Guides 是**开发前思维准备**层，应在以下时机查阅：
+
+1. **编码前**：浏览相关的思维指南，确认你已提出正确的问题
+2. **编码中**：如果感觉某些内容重复或复杂，请查阅 Code Reuse Guide
+3. **跨模块/跨层修改时**：查阅 Cross-Layer Guide 确认数据流完整性
+4. **修复 Bug 后**：将新见解添加到相关指南中（从错误中学习）
+
+**重要**：Thinking Guides 不引用 OpenSpec。它们是纯方法论，独立于业务模块。
 
 ---
 
@@ -80,18 +94,15 @@ grep -r "value_to_change" .
 
 ---
 
-## 如何使用此目录
+## 与 OpenSpec 的关系
 
-1. **编码前**：浏览相关的思维指南
-2. **编码中**：如果感觉某些内容重复或复杂，请查阅指南
-3. **修复 Bug 后**：将新见解添加到相关指南中（从错误中学习）
+Thinking Guides 是纯方法论，**不直接引用 OpenSpec**。但当你按指南发现某条业务规则需变更时：
 
----
-
-## 贡献
-
-发现新的"没想到"时刻？将其添加到相关指南中。
+1. 在对应 OpenSpec capability spec.md 中提交变更
+2. 不需要在 Thinking Guides 中记录业务变更
 
 ---
 
 **核心原则**：30 分钟的思考可以节省 3 小时的调试时间。
+
+**语言**：所有文档使用**简体中文**编写。

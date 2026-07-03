@@ -181,3 +181,37 @@
 #### Scenario: 分布式追踪支持
 - **WHEN** chat finalize 任务携带 traceId/requestId 时
 - **THEN** 系统 SHALL 在任务执行时通过 RequestContextStorage.run() 恢复追踪上下文，确保跨 SSE 流和队列的完整追踪链路
+
+### Requirement: IndexingWorker 管线步骤
+系统 SHALL 通过 IndexingWorker 实现文档索引的详细管线，MUST 在索引前查询文档和知识库所有者以构建 ACL 上下文，SHOULD 通过单次数据库写入更新文档状态以最小化往返次数。
+
+证据来源：
+- `.trellis/spec/server/backend/queue-implementation.md`（IndexingWorker 管线章节、上下文嵌入元数据流程章节）
+- `packages/server/src/processors/queue/indexing.worker.ts#L24-L88`
+
+#### Scenario: 管线执行步骤
+- **WHEN** IndexingWorker 执行 `handleIndexJob` 处理索引任务
+- **THEN** 系统 MUST 按以下顺序执行：1. `prisma.document.findUnique` 查询文档 → 2. `prisma.knowledgeBase.findUnique` 查询知识库并提取 `ownerUserId` → 3. `storage.downloadFile` 下载文件为 Buffer → 4. `parser.parse` 解析为 ParseResult → 5. 单次写入更新 `status: 'indexing'` → 6. 调用 `ragService.indexDocument` 执行索引 → 7. 成功更新 `status: 'ready'`，失败更新 `status: 'failed'`（`errorMessage` 截断至 500 字符）并抛出异常触发 BullMQ 重试
+
+#### Scenario: 上下文嵌入元数据流程
+- **WHEN** IndexingWorker 调用 `ragService.indexDocument`
+- **THEN** 系统 MUST 传递结构化元数据：`documentTitle`（来自 `ParseResult.title`）、`sectionPath`（来自 `resolveSectionPath()` 取第一个标题或 `hierarchyPath.join(' / ')`）、`userId`（来自 `knowledgeBase.userId` 用于 ACL）、`allowedUserIds`（`[ownerUserId]`）以及 `metadata`（包含 `source_mime`、`parser_name`）
+
+#### Scenario: ZodError 特殊处理
+- **WHEN** 解析过程抛出 ZodError
+- **THEN** 系统 MUST 将 `err.issues` 映射为 `${path.join('.')}:${message}` 分号拼接的详情字符串，记录 schema 路径详情用于调试
+
+### Requirement: Job Data 类型契约
+系统 SHALL 为队列任务定义强类型 Job Data 契约，MUST 确保任务数据结构严格符合类型定义。ChatFinalizeJobData 契约已在"Chat Finalize 队列"需求中定义。
+
+证据来源：
+- `.trellis/spec/server/backend/queue-implementation.md`（队列定义章节）
+- `packages/server/src/queue/queues.ts#L4-L25`
+
+#### Scenario: DocumentJobData 契约
+- **WHEN** 添加文档处理任务到 `document-processing` 队列
+- **THEN** 任务数据 MUST 符合 `DocumentJobData` 契约：`{ documentId: string; type: 'index' }`，仅包含文档 ID 和操作类型
+
+#### Scenario: EmbeddingJobData 契约
+- **WHEN** 添加嵌入任务到 `embedding` 队列
+- **THEN** 任务数据 MUST 符合 `EmbeddingJobData` 契约：`{ chunkIds: string[] }`，仅包含需要重新嵌入的 chunk ID 列表

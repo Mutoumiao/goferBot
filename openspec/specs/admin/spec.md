@@ -101,3 +101,37 @@
 #### Scenario: 使用趋势
 - **WHEN** 管理员查看使用统计数据时
 - **THEN** 系统应提供关键指标的时间序列数据（新用户数、新知识库数、每日聊天会话数）
+
+### Requirement: 三层 RBAC 守卫编排
+Admin 前端 SHALL 通过三层守卫体系实现端到端权限控制，执行顺序为：Layer 1 路由守卫（beforeLoad）→ Layer 2 菜单过滤（useMenuConfig）→ Layer 3 组件级权限（PermissionMatrix）。
+
+证据来源：
+- `packages/admin/src/routes/_authenticated.tsx` (Layer 1 路由守卫)
+- `packages/admin/src/components/layout/MenuConfig.tsx` (Layer 2 菜单过滤)
+- `.trellis/spec/admin/frontend/rbac-guard-architecture.md` (三层架构详解章节)
+
+#### Scenario: Layer 1 路由守卫 beforeLoad 编排
+- **WHEN** 用户访问受保护路由时
+- **THEN** `beforeLoad` 守卫 SHALL 按以下顺序执行：
+  1. 等待认证模块初始化（`waitForAuthInit`，3s 超时，50ms 轮询）
+  2. 检查认证状态，未认证则重定向到 `/login` 并携带 redirect 参数
+  3. 检查路由所需权限（`routeMeta.requiredPermission`），无权限则重定向到 `/403`
+  4. 检查 `mustChangePassword` 标志，需强制改密则重定向到 `/profile`
+- **AND** 执行顺序 MUST 为 `init → authenticated → permission → mustChangePassword → render`
+
+#### Scenario: waitForAuthInit 超时强制初始化
+- **WHEN** `waitForAuthInit` 在 3 秒内未检测到 Zustand `persist` hydration 完成（`_hydrated && isInitialized`）时
+- **THEN** 系统 SHALL 强制调用 `setInitialized(true)` 完成初始化，防止 localStorage 损坏导致页面永久白屏
+
+#### Scenario: Layer 2 菜单过滤动态隐藏
+- **WHEN** 渲染左侧导航菜单时
+- **THEN** `useMenuConfig` SHALL 从 `ROUTES_REGISTER` 动态过滤菜单项：保留 `nav: true` 且（无 `requiredPermission` 或用户拥有该权限）的路由
+- **AND** `mustChangePassword` 模式激活时 SHALL 仅返回 profile 路由
+
+#### Scenario: Layer 3 组件级 PermissionMatrix
+- **WHEN** 管理员在角色编辑页面配置角色权限时
+- **THEN** `PermissionMatrix` 组件 SHALL 显示所有 19 个权限码的双向绑定 checkbox，前端 selected state 与后端返回的 permissions 同步，提交时将 selected state 发送给后端
+
+#### Scenario: 路由注册表集中管理
+- **WHEN** 维护路由元数据时
+- **THEN** 系统 SHALL 通过 `ROUTES_REGISTER` 集中注册路由（path/nav/label/icon/requiredPermission），路由守卫、菜单过滤、面包屑 MUST 复用此注册表实现单点维护

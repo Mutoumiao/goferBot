@@ -1,339 +1,116 @@
-# 状态相关的 Schema 设计模式
+# Data 包状态管理开发指南
 
-> Data Schema 包中与状态管理相关的设计模式和最佳实践。
-
----
-
-## 概述
-
-`packages/data` 不包含状态管理库（如 Zustand），本指南描述的"状态管理"指的是**如何设计 Schema 来支持前后端的状态管理需求**，包括：
-
-- 状态数据结构的 Schema 定义
-- 配置状态的层级组织
-- 业务流程状态的 Schema 设计
-- 状态转换的验证规则
+> **REFERENCE_ONLY**: 此文件记录开发指南（HOW）。业务规范权威源为 [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) 和 [openspec/specs/document/spec.md](../../../../openspec/specs/document/spec.md)（WHAT）。LangGraph 管线状态字段 / 文档状态机状态字段 应以 OpenSpec 为准。
 
 ---
 
-## 配置状态模式
+## Purpose
 
-### 分层配置 Schema
+帮助开发者在 `@goferbot/data` 包中使用 Zod 表达状态机与共享 Schema。本包不含状态管理库（如 Zustand），"状态管理"指**如何设计 Schema 来支持前后端的状态管理需求**：状态数据结构定义、配置层级组织、业务流程状态表达、状态转换验证。
 
-```typescript
-export const settingsSchema = z.object({
-  providers: z.record(z.string(), modelProviderSchema).default({}),
-  chat: chatConfigSchema.default({ enabledProviders: [], temperature: 0.7 }),
-  rag: ragConfigSchema.default({ timeoutMs: 60_000 }),
-  companion: companionConfigSchema.default({}),
-  indexing: indexingConfigSchema.default({}),
-  appearance: appearanceConfigSchema.default({ mode: 'light', fontSizeLevel: 3 }),
-})
-```
+## Primary OpenSpec
 
-**设计原则**：
+- [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) — Companion 管线节点顺序、条件分支、LLM 预算（业务字段权威源）
+- [openspec/specs/document/spec.md](../../../../openspec/specs/document/spec.md) — 文档解析管线、状态机转换（业务字段权威源）
 
-| 原则 | 说明 |
-|------|------|
-| **分类明确** | 按功能域划分（chat/rag/indexing/companion/appearance） |
-| **默认值完整** | 每个分类都有合理的默认值 |
-| **动态扩展** | 使用 `z.record()` 支持动态配置项 |
-| **独立验证** | 每个分类有独立的 Schema 验证规则 |
+## Related OpenSpec
 
-### 配置分类 Schema
+- [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — `chatMessagesChunkSchema` 流式响应事件定义
 
-```typescript
-export const chatConfigSchema = z.object({
-  defaultProvider: z.string().min(1).optional(),
-  enabledProviders: z.array(z.string()).default([]),
-  temperature: z.number().min(0).max(2, 'temperature 范围 0-2').default(0.7),
-})
+## Module Dependencies
 
-export const ragConfigSchema = z.object({
-  llmProvider: z.string().min(1).optional(),
-  embeddingProvider: z.string().min(1).optional(),
-  rerankerProvider: z.string().optional(),
-  timeoutMs: z.number().min(1000).default(60_000),
-})
-```
+- Zod 3.x — Schema 定义与运行时校验
+- `@goferbot/data` — 前后端共享 Schema 包
+- TypeScript — 通过 `z.infer<typeof schema>` 派生类型
 
----
+## Development Entry
 
-## 业务流程状态模式
+- `packages/data/src/schemas/` — 全部 Schema 文件（按业务模块分文件组织）
+- `packages/data/src/schemas/companion-pipeline.schema.ts` — Companion 管线 Schema
+- `packages/data/src/schemas/document.schema.ts` — 文档 Schema
+- `packages/data/src/schemas/settings.schema.ts` — 分层配置 Schema
 
-### LangGraph 管线状态
+## Implementation Notes
 
-`companion-pipeline.schema.ts` 定义了完整的 LangGraph 工作流状态：
+### Zod Schema 定义模式
 
-```typescript
-export const conversationSafetySchema = z.object({
-  safetyLevel: z.enum(['safe', 'caution', 'redirect', 'block', 'crisis']),
-  category: z.enum(['normal', 'emotional_dependency', 'manipulation', 'self_harm', 'other']),
-  boundaryAction: z.enum(['continue', 'soft_boundary', 'redirect', 'refuse', 'crisis_support']),
-  reason: z.string().trim().max(300),
-  responseGuidance: z.string().trim().max(600),
-  allowMemoryExtraction: z.boolean(),
-})
+- `z.object({...})` 表达结构化状态对象
+- `z.enum([...])` 表达有限状态集合（禁止用 `z.number()` 编码状态）
+- `z.record(z.string(), valueSchema)` 支持动态扩展的映射型配置（如多 Provider 配置）
+- `z.array(...)` 表达列表型状态（如 secondary intents、files）
+- `.default(...)` 为状态字段提供合理默认值，避免 `undefined`
+- `.optional()` / `.nullable()` 区分"可缺失"与"显式空值"
 
-export const conversationIntentSchema = z.object({
-  primary: companionIntentPrimarySchema,
-  secondary: z.array(companionIntentPrimarySchema).max(3),
-  confidence: z.number().min(0).max(1),
-  userNeed: z.enum(['be_heard', 'be_comforted', 'get_advice', 'unknown']),
-  // ...
-})
-```
+### 状态机用 Zod 表达的方法
 
-**状态流转**：
+- **状态枚举**：用 `z.enum(['state1', 'state2', ...])` 表达状态机的有限状态集
+- **判别联合**：用 `z.discriminatedUnion('event', [VariantA, VariantB, ...])` 表达同一状态家族中形态不同的变体（如 SSE chunk 的 `message` / `message_end` / `error` 三种事件 payload 结构不同；文档状态机的 `pending` / `processing` / `ready` 字段集不同）。比 `z.union` 更优：Zod 能根据判别字段直接定位变体，错误消息更精准，性能更好
+- **状态转换验证**：用 `.refine(({ status, previousStatus }) => ...)` 配合 `validTransitions` 映射表验证转换合法性
+- **状态相关常量与 Schema 共置**：`export const DOCUMENT_STATUSES = [...] as const` 与 `z.enum(DOCUMENT_STATUSES)` 同源，避免枚举值不一致
+- **回退值**：当状态节点计算失败时，提供 fallback 对象（含 `as const` 字面量）确保管线不中断
 
-```
-safety → intent → emotion → relationship → route → policy → generate → quality → summary → memory_candidate → memory_extraction
-```
+### Schema 组织约定
 
-### 状态回退机制
+- 按业务模块分文件：`companion-pipeline.schema.ts`、`document.schema.ts`、`settings.schema.ts`
+- 分层配置按功能域划分：`chat` / `rag` / `companion` / `indexing` / `appearance`，每个分类独立 Schema + 独立默认值
+- 前后端共享 Schema 由 `@goferbot/data` 统一导出，禁止在业务代码中重复定义
+
+### 类型派生模式
 
 ```typescript
-export const fallbackSafety = {
-  safetyLevel: 'caution' as const,
-  category: 'other' as const,
-  boundaryAction: 'soft_boundary' as const,
-  reason: '安全边界判断暂时不可用，采用保守回复策略。',
-  responseGuidance: '用温和、克制、尊重边界的方式回复。',
-  allowMemoryExtraction: false,
-}
+export const documentSchema = z.object({ /* ... */ })
+export type Document = z.infer<typeof documentSchema>
 ```
 
-**用途**：当某个状态节点计算失败时，使用 fallback 值确保管线不中断。
+类型永远从 Schema 派生，禁止手写 interface 与 Schema 脱节。
 
----
-
-## 文档生命周期状态
-
-### 文档状态机
+### 前后端共享 Schema 导入模式
 
 ```typescript
-export const documentSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  kbId: z.string(),
-  status: z.enum(['uploaded', 'chunking', 'embedding', 'indexing', 'ready', 'failed']),
-  progress: z.number().min(0).max(100).optional(),
-  error: z.string().optional(),
-})
+// 前端 / 后端 / Worker 统一导入
+import { documentSchema, type Document } from '@goferbot/data'
 ```
 
-**状态转换**：
+### 状态字段命名规范
 
-```
-uploaded → chunking → embedding → indexing → ready
-                    ↘         ↘          ↘
-                     └─────────┴──────────→ failed
-```
+- 推荐：`status`、`role`、`phase`、`safetyLevel`、`boundaryAction`
+- 禁止：`type`、`kind`、`mode`（语义模糊）以及单字母缩写（`u`、`c`、`e`）
 
-### 状态验证
+## Testing Checklist
 
-使用 `.refine()` 验证状态转换的合法性：
+- [ ] Schema 正确校验合法数据（`schema.parse(valid)` 不抛错）
+- [ ] Schema 正确拒绝非法数据（`schema.parse(invalid)` 抛 ZodError）
+- [ ] 状态转换 `.refine()` 覆盖所有合法 / 非法转换路径
+- [ ] 类型派生与后端一致（`z.infer` 与后端 ORM 输出兼容）
+- [ ] 默认值完整（`schema.parse({})` 在所有可选字段上产出合理默认）
+- [ ] fallback 对象通过对应 Schema 校验
 
-```typescript
-export const updateDocumentStatusSchema = z
-  .object({
-    status: z.enum(['uploaded', 'chunking', 'embedding', 'indexing', 'ready', 'failed']),
-    progress: z.number().min(0).max(100).optional(),
-    error: z.string().optional(),
-  })
-  .refine(({ status, error }) => {
-    if (status === 'failed') {
-      return error !== undefined && error.length > 0
-    }
-    return true
-  }, { message: 'failed 状态必须提供 error 信息', path: ['error'] })
-```
+## Review Checklist
 
----
+- [ ] 新增 / 修改状态字段是否同步更新 OpenSpec（companion / document spec）
+- [ ] Schema 变更是否同步更新前后端导入方
+- [ ] 状态枚举值是否与 `*_STATUSES` 常量同源
+- [ ] 新增状态字段是否提供默认值
+- [ ] `.refine()` 错误消息是否包含 `path` 字段定位问题字段
 
-## 会话状态模式
+## Common Pitfalls
 
-### 消息状态
+1. **状态枚举值不一致**：不同 Schema 中使用不同的状态值 —— 用 `*_STATUSES as const` + `z.enum(...)` 单源化
+2. **状态字段缺少默认值**：未初始化时为 `undefined` —— 一律 `.default(...)`
+3. **状态转换无验证**：允许任意跳转 —— 用 `.refine()` + `validTransitions` 映射表
+4. **流式响应缺少事件类型**：无法区分 SSE 事件 —— 用 `z.enum(['message', 'message_end', 'error'])` 在 `event` 字段区分
+5. **配置状态缺少默认值**：导致配置读取失败 —— 每个分类 Schema `.default({...})`
+6. **状态字段命名模糊**：`type` / `kind` / `mode` 语义不清 —— 改用 `status` / `role` / `phase`
+7. **手写类型与 Schema 脱节**：interface 与 Zod Schema 各自演化 —— 一律 `z.infer<typeof schema>`
+8. **数字编码状态**：`z.number()` 表示状态 —— 改用 `z.enum()` 枚举
+9. **一个 Schema 堆叠多个状态字段**：难维护 —— 拆分为独立的状态 Schema
 
-```typescript
-export const messageSchema = z.object({
-  id: z.string(),
-  sessionId: z.string(),
-  role: z.enum(['user', 'assistant', 'system']),
-  content: z.string(),
-  createdAt: z.string(),
-  files: z
-    .array(
-      z.object({
-        id: z.string(),
-        fileName: z.string(),
-        fileUrl: z.string(),
-      }),
-    )
-    .optional(),
-})
-```
+## Reusable Patterns
 
-### 会话状态
-
-```typescript
-export const sessionSchema = z.object({
-  id: z.string(),
-  userId: z.string().optional(),
-  title: z.string(),
-  provider: z.string().nullable().optional(),
-  model: z.string().nullable().optional(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  messageCount: z.number(),
-})
-```
-
----
-
-## 用户状态模式
-
-### 用户角色状态
-
-```typescript
-export const userRoleSchema = z.enum(['USER', 'ADMIN'])
-
-export const userSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  name: z.string(),
-  role: userRoleSchema.default('USER'),
-  avatarUrl: z.string().nullable().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-})
-```
-
-### 管理用户状态
-
-```typescript
-export const adminUserSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  name: z.string().optional(),
-  role: z.enum(['ADMIN', 'USER']),
-  isActive: z.boolean(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-})
-```
-
-**状态字段**：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `role` | enum | 用户角色（USER/ADMIN） |
-| `isActive` | boolean | 用户是否启用 |
-
----
-
-## 流式响应状态
-
-### SSE 事件状态
-
-```typescript
-export const chatMessagesChunkSchema = z.object({
-  event: z.enum(['message', 'message_end', 'error']),
-  conversation_id: z.string().uuid(),
-  message_id: z.string().uuid(),
-  answer: z.string(),
-  done: z.boolean().optional(),
-  error: z.string().optional(),
-})
-```
-
-**事件类型**：
-
-| 事件 | 说明 |
-|------|------|
-| `message` | 增量消息内容 |
-| `message_end` | 消息结束 |
-| `error` | 错误发生 |
-
----
-
-## 最佳实践
-
-### 状态字段命名
-
-使用明确的状态字段名：
-
-```typescript
-// 推荐
-status: z.enum(['uploaded', 'chunking', 'embedding', 'indexing', 'ready', 'failed'])
-
-// 避免
-state: z.enum(['u', 'c', 'e', 'i', 'r', 'f'])
-```
-
-### 状态转换验证
-
-使用 `.refine()` 确保状态转换的合法性：
-
-```typescript
-export const updateDocumentStatusSchema = z
-  .object({
-    status: z.enum(['uploaded', 'chunking', 'embedding', 'indexing', 'ready', 'failed']),
-    previousStatus: z.enum(['uploaded', 'chunking', 'embedding', 'indexing', 'ready', 'failed']),
-  })
-  .refine(({ status, previousStatus }) => {
-    const validTransitions: Record<string, string[]> = {
-      uploaded: ['chunking'],
-      chunking: ['embedding', 'failed'],
-      embedding: ['indexing', 'failed'],
-      indexing: ['ready', 'failed'],
-      ready: [],
-      failed: ['uploaded'],
-    }
-    return validTransitions[previousStatus]?.includes(status) ?? false
-  }, { message: '无效的状态转换', path: ['status'] })
-```
-
-### 默认状态设置
-
-为状态字段设置合理的默认值：
-
-```typescript
-export const userSchema = z.object({
-  role: userRoleSchema.default('USER'),
-})
-
-export const settingsSchema = z.object({
-  appearance: appearanceConfigSchema.default({ mode: 'light', fontSizeLevel: 3 }),
-})
-```
-
-### 状态相关常量
-
-将状态相关的常量与 Schema 放在一起：
-
-```typescript
-export const DOCUMENT_STATUSES = ['uploaded', 'chunking', 'embedding', 'indexing', 'ready', 'failed'] as const
-export const DOCUMENT_STATUS_SCHEMA = z.enum(DOCUMENT_STATUSES)
-```
-
----
-
-## 禁止模式
-
-| 禁止 | 描述 | 正确做法 |
-|------|------|----------|
-| 使用数字编码状态 | `status: z.number()` | 使用 `z.enum()` 枚举 |
-| 状态字段过多 | 一个 Schema 中有多个状态字段 | 拆分为独立的状态 Schema |
-| 缺失状态回退 | 没有 fallback 值 | 提供合理的 fallback |
-| 状态转换无验证 | 允许任意状态转换 | 使用 `.refine()` 验证 |
-| 状态字段命名模糊 | `type`, `kind`, `mode` | 使用 `status`, `role`, `phase` |
-
----
-
-## 常见错误
-
-1. **状态枚举值不一致**：不同 Schema 中使用不同的状态值
-2. **状态字段缺少默认值**：导致未初始化时状态为 `undefined`
-3. **状态转换缺少验证**：允许非法的状态转换
-4. **流式响应缺少事件类型**：无法区分不同类型的 SSE 事件
-5. **配置状态缺少默认值**：导致配置读取失败
+- **Zod 状态机模式**：`z.enum([...])` 表达状态集 + `.refine()` 验证转换 + `*_STATUSES as const` 常量共置
+- **判别联合状态模式**：`z.discriminatedUnion('status', [PendingSchema, ProcessingSchema, ReadySchema])` 表达形态各异的状态变体，比 `z.union` 错误消息更精准、性能更好
+- **分层配置 Schema 模式**：顶层 `z.object({ chat, rag, companion, indexing, appearance })`，每子域独立 Schema + `.default({...})`
+- **动态扩展配置模式**：`z.record(z.string(), valueSchema)` 支持运行时新增配置项（如多 Provider）
+- **fallback 状态对象模式**：导出含 `as const` 字面量的 fallback 值，确保节点失败时管线不中断
+- **类型派生模式**：`export type T = z.infer<typeof schema>`，类型永远从 Schema 派生
+- **前后端共享 Schema 模式**：`@goferbot/data` 统一导出 Schema 与类型，业务代码仅导入不重复定义

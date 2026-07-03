@@ -247,3 +247,42 @@
 #### Scenario: 用户缓存与权限缓存逐出
 - **WHEN** 用户信息或权限被缓存在 Auth Redis 中时
 - **THEN** 缓存 TTL 为 300s（5 分钟）；用户信息缓存 key 前缀为 `auth:user:`，权限缓存 key 前缀为 `auth:permission:`
+
+### Requirement: 并发 Token 刷新幂等性
+客户端 SHALL 保证并发 401 请求只触发一次 Token 刷新，所有等待中的请求共享同一次刷新结果，MUST 避免多次刷新导致的 Token 链断裂或竞态条件。
+
+证据来源：
+- `packages/admin/src/utils/server.ts` (alova responded 拦截器)
+- `packages/web/src/utils/auth.ts` (Token 刷新逻辑)
+
+#### Scenario: 批量请求只触发一次刷新
+- **WHEN** 多个并发请求同时收到 401 响应时
+- **THEN** 系统 MUST 仅触发一次 Token 刷新操作，所有并发请求共享同一次刷新结果并在刷新完成后自动重试，MUST NOT 出现多次并发刷新导致的 Token 链断裂或竞态条件
+
+#### Scenario: 刷新失败通知所有等待者
+- **WHEN** Token 刷新操作失败时
+- **THEN** 系统 SHALL 将失败状态通知所有等待中的请求，MUST 触发统一的登出或错误处理流程，避免部分请求卡住
+
+### Requirement: mustChangePassword 强制改密流程
+系统 SHALL 在登录后端检测到用户需强制修改密码时，通过 `mustChangePassword` 标志触发前端强制改密流程，限制用户导航至改密页面直到密码修改完成。
+
+证据来源：
+- `.trellis/spec/admin/frontend/rbac-guard-architecture.md` (mustChangePassword 流章节)
+- `packages/admin/src/routes/_authenticated.tsx` (路由守卫 mustChangePassword 检查)
+- `packages/admin/src/components/layout/MenuConfig.tsx` (菜单过滤 mustChangePassword 模式)
+
+#### Scenario: 登录返回 mustChangePassword 标志
+- **WHEN** 用户登录成功但后端检测到需强制修改密码时
+- **THEN** 系统 SHALL 在登录响应中返回 `mustChangePassword: true`，Auth store 设置 `user.mustChangePassword = true`
+
+#### Scenario: 路由守卫强制跳转改密页
+- **WHEN** 路由守卫检测到 `snapshot.user?.mustChangePassword` 为 true 时
+- **THEN** 系统 SHALL 强制重定向到 `/profile` 页面，阻止用户访问其他受保护路由
+
+#### Scenario: 菜单过滤仅显示改密入口
+- **WHEN** `mustChangePassword` 模式激活时
+- **THEN** `useMenuConfig` SHALL 仅返回 profile 路由，隐藏所有其他菜单项，确保用户只能完成改密操作
+
+#### Scenario: 改密完成恢复导航
+- **WHEN** 用户成功修改密码后
+- **THEN** 后端 SHALL 清除 `mustChangePassword` 标志，Auth store 更新 `user.mustChangePassword = false`，路由守卫与菜单过滤恢复正常导航

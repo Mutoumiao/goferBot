@@ -1,346 +1,142 @@
-# Admin RBAC 前端守卫架构
+# Admin RBAC 守卫开发指南
 
-> Admin 后台的三层 RBAC 权限守卫体系、Token 自动刷新和认证状态管理。
-
----
-
-## 概述
-
-Admin 前端实现**三层权限控制**，从前端路由到组件级全覆盖：
-
-```
-Layer 1: 路由守卫 (beforeLoad)
-  → 阻止未认证/无权限访问页面
-Layer 2: 菜单过滤 (useMenuConfig)
-  → 动态隐藏无权限菜单项
-Layer 3: 组件级权限 (PermissionMatrix)
-  → 细粒度控制页面内操作权限
-```
+> **REFERENCE_ONLY**: 此文件记录开发指南（HOW）。业务规范权威源为 [openspec/specs/admin/spec.md](../../../../openspec/specs/admin/spec.md) 和 [openspec/specs/auth/spec.md](../../../../openspec/specs/auth/spec.md)（WHAT）。19 权限码 / 3 预置角色集 / 三层守卫编排流 / Token 自动刷新订阅者队列模式 / mustChangePassword 流 应以 OpenSpec 为准。
 
 ---
 
-## 三层架构详解
+## Purpose
 
-### Layer 1: 路由守卫（beforeLoad）
+帮助开发者在 Admin RBAC 三层守卫体系中高效工作：理解路由守卫编写约定、菜单过滤 Hook 集成、组件级权限控制、Token 自动刷新并发去重实现，以及认证状态持久化的安全设计要点。
 
-```typescript
-// packages/admin/src/routes/_authenticated.tsx
-export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: async ({ location }) => {
-    // Step 1: 等待认证模块初始化
-    await waitForAuthInit()   // 3s 超时，50ms 轮询
+## Primary OpenSpec
 
-    // Step 2: 检查是否已认证
-    const snapshot = getAuthSnapshot()
-    if (!snapshot.isAuthenticated) {
-      throw redirect({ to: '/login', search: buildLoginRedirectSearch(location) })
-    }
+- [openspec/specs/admin/spec.md](../../../../openspec/specs/admin/spec.md) — Admin RBAC 权限模型（19 权限码、3 预置角色集、管理员认证、用户/角色/审计管理）
+- [openspec/specs/auth/spec.md](../../../../openspec/specs/auth/spec.md) — 认证与 Token 刷新（JWT 双密钥、Token Rotation 与重放检测、jti 哈希安全）
 
-    // Step 3: 检查路由所需权限
-    const routeMeta = getRouteMeta(location.pathname)
-    if (routeMeta.requiredPermission) {
-      if (!hasAnyPermission(snapshot, [routeMeta.requiredPermission])) {
-        throw redirect({ to: '/403' })
-      }
-    }
+## Related OpenSpec
 
-    // Step 4: 检查是否需要强制修改密码
-    if (snapshot.user?.mustChangePassword) {
-      throw redirect({ to: '/profile' })
-    }
-  },
-})
-```
+- [openspec/specs/user/spec.md](../../../../openspec/specs/user/spec.md) — 用户角色定义
 
-守卫执行顺序：`init → authenticated → permission → mustChangePassword → render`
+## Module Dependencies
 
-### waitForAuthInit 轮询
+- **TanStack Router** — `beforeLoad` 路由守卫机制
+- **Zustand**（含 `persist` 中间件）— 认证状态管理与本地持久化
+- **alova** — HTTP 客户端，`responded` 拦截器承载 Token 刷新逻辑
+- **jsencrypt** — RSA 密码加密
 
-```typescript
-// packages/admin/src/utils/auth-guard.ts
-export async function waitForAuthInit(timeoutMs = 3000): Promise<void> {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    const state = useAuthStore.getState()
-    if (state._hydrated && state.isInitialized) return
-    await new Promise((r) => setTimeout(r, 50))  // 50ms 轮询
-  }
-  // 超时强制初始化，防止页面永久白屏
-  useAuthStore.getState().setInitialized(true)
-}
-```
+## Development Entry
 
-**关键设计**：
-- 50ms 轮询检查 Zustand `persist` hydration 是否完成
-- 3s 超时后**强制初始化**（防止 localStorage 损坏导致永久白屏）
-- 考虑到 SSR 场景下 localStorage 不可用
+| 入口 | 文件路径 | 作用 |
+|------|----------|------|
+| Layer 1 路由守卫 | `packages/admin/src/routes/_authenticated.tsx` | `beforeLoad` 编排认证/权限/强制改密检查 |
+| Layer 2 菜单过滤 | `packages/admin/src/components/layout/MenuConfig.tsx` | `useMenuConfig` Hook 按权限过滤导航项 |
+| Layer 3 组件级 | `packages/admin/src/features/roles/components/PermissionMatrix.tsx` | 角色权限矩阵双向绑定 |
+| Token 刷新 | `packages/admin/src/utils/auth-token.ts` | 订阅者队列实现 |
+| 认证守卫工具 | `packages/admin/src/utils/auth-guard.ts` | `waitForAuthInit` / `getRouteMeta` / `hasAnyPermission` |
+| 路由注册表 | `packages/admin/src/router-register.ts` | 路由元数据集中维护 |
+| 认证 Store | `packages/admin/src/stores/auth.ts` | Zustand persist 状态 |
+| 登录服务 | `packages/admin/src/features/auth/services.ts` | RSA 加密 + 重试 |
 
-### Layer 2: 菜单过滤（useMenuConfig）
+## Implementation Notes
 
-```typescript
-// packages/admin/src/components/layout/MenuConfig.tsx
-export function useMenuConfig() {
-  const permissions = useAuthStore((s) => s.user?.permissions ?? [])
-  const mustChangePassword = useAuthStore((s) => s.user?.mustChangePassword)
+### beforeLoad 路由守卫编写模式
 
-  // mustChangePassword 模式：仅显示 profile
-  if (mustChangePassword) {
-    return [PROFILE_ROUTE]
-  }
+按固定顺序执行四步检查，任一失败即 `throw redirect`：
+1. `await waitForAuthInit()` — 等待 Zustand persist hydration 完成
+2. 检查 `snapshot.isAuthenticated` — 否则跳 `/login`（携带 `buildLoginRedirectSearch` 回跳参数）
+3. 检查 `getRouteMeta(pathname).requiredPermission` 与 `hasAnyPermission` — 否则跳 `/403`
+4. 检查 `snapshot.user?.mustChangePassword` — 否则跳 `/profile`
 
-  // 从 ROUTES_REGISTER 动态过滤菜单
-  return ROUTES_REGISTER.filter((r) =>
-    r.nav &&                                    // 可导航
-    (!r.requiredPermission ||                   // 无权限要求
-     permissions.includes(r.requiredPermission))  // 或用户拥有权限
-  )
-}
-```
+执行顺序：`init → authenticated → permission → mustChangePassword → render`。新增守卫步骤必须插入到此顺序的合适位置，不得跳过前置检查。
 
-### Layer 3: 组件级权限（PermissionMatrix）
+### waitForAuthInit 轮询模式
 
-`PermissionMatrix` 组件用于角色编辑页面，显示角色拥有的权限并通过 checkbox 双向绑定：
+- 50ms 间隔轮询 `useAuthStore.getState()._hydrated && isInitialized`
+- 3s 超时后**强制 `setInitialized(true)`**，防止 localStorage 损坏导致永久白屏
+- 考虑 SSR 场景下 localStorage 不可用的容错
 
-```typescript
-// 后端返回角色的 permissions → 前端设置 selected state
-// 前端修改 selected → 提交时发送给后端
-```
+### useMenuConfig Hook 集成
 
----
+- 从 `useAuthStore` 订阅 `permissions` 与 `mustChangePassword`
+- mustChangePassword 模式下仅返回 `[PROFILE_ROUTE]`
+- 否则从 `ROUTES_REGISTER` 过滤：`r.nav && (!r.requiredPermission || permissions.includes(r.requiredPermission))`
 
-## ROUTES_REGISTER 集中路由注册
+### PermissionMatrix 组件级权限控制
 
-```typescript
-// packages/admin/src/router-register.ts
-const ROUTES_REGISTER: RouteMeta[] = [
-  { path: '/dashboard', nav: true, label: '仪表盘', icon: LayoutDashboard, requiredPermission: null },
-  { path: '/users', nav: true, label: '用户管理', icon: Users, requiredPermission: 'users:read' },
-  { path: '/roles', nav: true, label: '角色管理', icon: Shield, requiredPermission: 'roles:read' },
-  { path: '/audit', nav: true, label: '审计日志', icon: FileText, requiredPermission: 'audit:read' },
-  { path: '/settings', nav: true, label: '系统设置', icon: Settings, requiredPermission: 'settings:read' },
-  // ... 14 条路由
-]
-```
+- 用于角色编辑页，后端 `permissions` → 前端 `selected` state；前端修改 → 提交回后端
+- 不要在业务页面用它做按钮级权限控制；按钮级请直接调 `hasAnyPermission` 或 `useAuthStore` 订阅
 
-**集中管理的优势**：路由守卫 + 菜单过滤 + 面包屑都复用此注册表，单点维护。
+### Token 刷新订阅者队列实现
 
----
+模块级两个变量：`isRefreshing`（互斥锁）+ `refreshSubscribers`（等待回调数组）。
+- 第一个 401：置 `isRefreshing=true`，执行刷新，完成后 `forEach` 通知等待者并清空数组
+- 后续 401：`push` 一个返回 Promise 的回调到队列，等待新 token 后重试
+- 实现要点：批量并发请求只触发一次 refresh，避免竞态导致多次刷新
 
-## Token 自动刷新（订阅者队列模式）
+### 路由注册表集中管理
 
-### 核心机制
+`ROUTES_REGISTER` 单点维护路由元数据（`path` / `nav` / `label` / `icon` / `requiredPermission`），路由守卫、菜单过滤、面包屑均复用此注册表。新增路由必须在此登记，否则守卫拿不到 `requiredPermission`。
 
-```typescript
-// packages/admin/src/utils/server.ts
-let isRefreshing = false            // 互斥锁
-let refreshSubscribers: Array<(token: string) => void> = []  // 等待队列
+### getRouteMeta 与 hasAnyPermission 使用
 
-// alova responded 拦截器
-responded: {
-  onSuccess: async (response) => {
-    if ([401, 403].includes(response.status)) {
-      if (!isRefreshing) {
-        // 第一个 401：执行刷新
-        isRefreshing = true
-        const newToken = await doRefreshAndRetry()
-        isRefreshing = false
-        // 通知所有等待者
-        refreshSubscribers.forEach((cb) => cb(newToken))
-        refreshSubscribers = []
-        // 重试原请求
-        return fetch(newConfig)
-      } else {
-        // 后续 401：进入等待队列
-        return new Promise((resolve) => {
-          refreshSubscribers.push((newToken) => {
-            resolve(fetch({ ...config, headers: { Authorization: `Bearer ${newToken}` } }))
-          })
-        })
-      }
-    }
-    return response
-  },
-}
-```
+- `getRouteMeta(pathname)` 从 `ROUTES_REGISTER` 查询路由元数据
+- `hasAnyPermission(snapshot, [perm])` 判断用户是否拥有任一权限
+- 二者结合用于 beforeLoad 与组件级判定
 
-### 流程图
+### Zustand Persist + HttpOnly Cookie 安全设计
 
-```
-请求 A（token 过期）→ 401 → isRefreshing=false → 触发 doRefreshAndRetry()
-                                               → isRefreshing = true
-请求 B（同时到达）→ 401 → isRefreshing=true  → 进入 refreshSubscribers 队列
-请求 C（同时到达）→ 401 → isRefreshing=true  → 进入 refreshSubscribers 队列
-                                               ↓
-                              doRefreshAndRetry 完成 → 通知 A/B/C 重试
-                                               → isRefreshing = false
-```
+- `partialize` 仅持久化 `{ user, isAuthenticated }` 到 localStorage
+- Token 通过 **HttpOnly Cookie** 管理（`credentials: 'include'`），不进 localStorage
+- `onRehydrateStorage` 钩子在页面刷新后用 refreshToken 验证身份，失败则 `clearAuth()`
+- 登出 `clearAuth()` 删 localStorage + 调 logout API
 
-**优势**：批量请求只触发一次 refresh，避免竞态条件导致多次刷新。
+### RSA 加密重试
 
----
+登录流先取公钥再 RSA 加密密码；若后端返回 `DECRYPT_FAILED`，清公钥缓存后重试一次（应对公钥过期）。
 
-## Auth 状态持久化
+### 根路由入口分流
 
-### Zustand Persist + HttpOnly Cookie
+`/` 路由 `beforeLoad` 中：`waitForAuthInit` → 已认证跳 `/dashboard`，否则跳 `/login`。
 
-```typescript
-// packages/admin/src/stores/auth.ts
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      isInitialized: false,
-      // ...
-    }),
-    {
-      name: 'goferbot-admin-auth',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        user: state.user,               // 仅持久化用户资料
-        isAuthenticated: state.isAuthenticated,
-      }),
-      // Token 通过 HttpOnly Cookie 管理，不持久化到 localStorage
-    }
-  )
-)
-```
+## Testing Checklist
 
-**安全设计**：
-- `partialize` 只序列化 `{user, isAuthenticated}` 到 localStorage
-- Token 通过 **HttpOnly Cookie** 管理（`credentials: 'include'`）
-- 登出时 `clearAuth()` 删除 localStorage + 调用 logout API
+- [ ] 未认证用户访问受保护路由被重定向到 `/login`，回跳参数正确
+- [ ] 无权限用户被重定向到 `/403`
+- [ ] mustChangePassword 用户被重定向到 `/profile`
+- [ ] mustChangePassword 模式下菜单仅显示 profile 入口
+- [ ] 菜单正确过滤无权限项，保留有权限项
+- [ ] PermissionMatrix 正确反映并回写角色权限
+- [ ] 并发多个 401 请求只触发一次 refresh，全部请求被重试
+- [ ] waitForAuthInit 超时后能强制初始化，不白屏
+- [ ] 登出后 localStorage 与 Cookie 同步清除
+- [ ] 公钥过期场景下登录自动重试一次成功
 
-### 登录流程
+## Review Checklist
 
-```typescript
-// packages/admin/src/features/auth/services.ts
-export async function loginService(params: LoginParams) {
-  // 1. 获取 RSA 公钥
-  const { publicKey } = await getPublicKey().send()
+- [ ] 新增权限码是否同步更新 OpenSpec（admin/spec.md 权限码体系场景）
+- [ ] 新增/调整角色权限集是否同步更新 OpenSpec
+- [ ] 守卫编排流变更（新增/重排步骤）是否同步更新 OpenSpec
+- [ ] mustChangePassword 流变更是否同步更新 OpenSpec
+- [ ] Token 刷新机制变更是否同步更新 auth/spec.md
+- [ ] 新增路由是否登记到 `ROUTES_REGISTER`
+- [ ] `partialize` 是否避免持久化敏感字段
 
-  // 2. RSA 加密密码
-  const encryptedPassword = encryptPassword(params.password, publicKey)
+## Common Pitfalls
 
-  // 3. 登录
-  try {
-    const result = await login({ email: params.email, password: encryptedPassword }).send()
-    useAuthStore.getState().setUser(result.user, result.mustChangePassword)
-  } catch (e) {
-    if (e.code === 'DECRYPT_FAILED') {
-      // 公钥缓存过期，清除缓存后重试一次
-      clearPublicKeyCache()
-      return loginService(params)
-    }
-    throw e
-  }
-}
-```
+- **跳过 waitForAuthInit**：persist 未 hydrate 时 `isAuthenticated` 恒为 false，会把已登录用户误踢到 `/login`。守卫第一步必须等待。
+- **超时不强制初始化**：localStorage 损坏时页面永久白屏。超时分支必须 `setInitialized(true)`。
+- **守卫顺序错乱**：mustChangePassword 检查必须在权限检查之后，否则无权限的强制改密用户会被踢到 `/403` 而非 `/profile`。
+- **Token 刷新未做互斥**：并发 401 会触发多次 refresh，刷新旧 token 导致后续请求全部失败。必须用 `isRefreshing` 互斥锁 + 订阅者队列。
+- **Token 进 localStorage**：XSS 可读。Token 必须只在 HttpOnly Cookie。
+- **路由未登记注册表**：守卫拿不到 `requiredPermission`，等同于无权限保护。新路由必须登记。
+- **PermissionMatrix 滥用**：它是角色编辑专用组件，不要在业务页面用作按钮级权限控制。
+- **RSA 公钥不缓存清理**：DECRYPT_FAILED 后未清缓存会死循环（重试又用旧公钥）。重试前必须 `clearPublicKeyCache`。
 
-**RSA 加密重试**：如果加密失败（公钥过期），清除缓存后自动重试一次。
+## Reusable Patterns
 
-### 会话恢复
-
-```typescript
-// 页面刷新后：localStorage 中有 user + isAuthenticated=true
-useAuthStore.persist.onRehydrateStorage(() => {
-  // 用 HttpOnly Cookie 中的 refreshToken 验证身份
-  fetchCurrentUser().then((user) => {
-    useAuthStore.getState().setUser(user)
-  }).catch(() => {
-    // 验证失败：清除认证状态
-    useAuthStore.getState().clearAuth()
-  })
-})
-```
-
----
-
-## 权限常量
-
-### PERMISSIONS（19 个权限码）
-
-```typescript
-// packages/admin/src/constants/permissions.ts
-export const PERMISSIONS = {
-  // 用户管理
-  'users:read': '查看用户',
-  'users:create': '创建用户',
-  'users:update': '更新用户',
-  'users:delete': '删除用户',
-  // 角色管理
-  'roles:read': '查看角色',
-  'roles:create': '创建角色',
-  'roles:update': '更新角色',
-  'roles:delete': '删除角色',
-  // 审计日志
-  'audit:read': '查看审计日志',
-  'audit:export': '导出审计日志',
-  // 系统设置
-  'settings:read': '查看设置',
-  'settings:update': '更新设置',
-  // 系统
-  'system:metrics': '查看指标',
-  'system:maintenance': '维护模式',
-  'system:logs': '查看日志',
-  // API Keys
-  'api-keys:read': '查看 API Keys',
-  'api-keys:create': '创建 API Keys',
-  'api-keys:update': '更新 API Keys',
-  'api-keys:delete': '删除 API Keys',
-} as const
-```
-
-### ROLE_PERMISSIONS（3 种预设角色）
-
-| 角色 | 权限数量 | 包含权限 |
-|------|---------|---------|
-| `SUPER_ADMIN` | 18 项 | 全部（除保留项） |
-| `ADMIN` | 14 项 | 无 `users:delete`、`roles:create/update/delete` |
-| `USER` | 2 项 | `users:read`、`roles:read`（只读） |
-
----
-
-## mustChangePassword 流
-
-1. 后端登录返回 `mustChangePassword: true`
-2. Auth store 设置 `user.mustChangePassword = true`
-3. 路由守卫检测到 → 强制跳转 `/profile`
-4. 菜单过滤仅显示 profile 入口
-5. 修改密码后后端清除标志 → 恢复正常导航
-
----
-
-## 根路由入口分流
-
-```typescript
-// packages/admin/src/routes/index.tsx
-export const Route = createFileRoute('/')({
-  beforeLoad: async () => {
-    await waitForAuthInit()
-    const state = getAuthSnapshot()
-    if (state.isAuthenticated) {
-      throw redirect({ to: '/dashboard' })
-    } else {
-      throw redirect({ to: '/login' })
-    }
-  },
-})
-```
-
----
-
-## 代码引用
-
-| 规范 | 文件路径 |
-|------|----------|
-| 认证 Store | `packages/admin/src/stores/auth.ts` |
-| 路由守卫 | `packages/admin/src/routes/_authenticated.tsx` |
-| 认证守卫工具 | `packages/admin/src/utils/auth-guard.ts` |
-| Token 刷新 | `packages/admin/src/utils/server.ts` (responded 拦截器) |
-| 路由注册表 | `packages/admin/src/router-register.ts` |
-| 菜单配置 | `packages/admin/src/components/layout/MenuConfig.tsx` |
-| 权限常量 | `packages/admin/src/constants/permissions.ts` |
-| 登录服务 | `packages/admin/src/features/auth/services.ts` |
-| 根路由 | `packages/admin/src/routes/index.tsx` |
-| 认证 API | `packages/admin/src/api/auth.ts` |
+- **beforeLoad 路由守卫模式**：四步顺序检查 + `throw redirect` 中断，适用于所有受保护路由
+- **订阅者队列并发去重模式**：`isRefreshing` 互斥锁 + `refreshSubscribers` 数组，适用于任何"首个请求触发、其余等待复用结果"的并发场景
+- **Zustand persist 安全持久化模式**：`partialize` 白名单 + HttpOnly Cookie 存敏感凭证，适用于所有前端认证状态
+- **集中路由注册表模式**：路由元数据单点维护，守卫/菜单/面包屑复用，适用于多消费方场景
+- **超时强制降级模式**：轮询等待 + 超时强制推进，防止依赖未就绪导致永久卡死
+- **RSA 加密 + 单次重试模式**：公钥可能过期的加密场景，失败清缓存重试一次

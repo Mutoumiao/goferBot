@@ -1,257 +1,143 @@
-# Companion 前端 UI 渲染
+# Companion UI 渲染开发指南
 
-> Companion 模块的前端 UI 组件树、渲染模式和使用约定。
-
----
-
-## 组件树
-
-```
-CompanionListPage                     ← 列表页（/companions）
-├── Tabs（全部/草稿/已发布/已归档）      ← 四态筛选
-├── Grid（1-4列响应式）
-│   └── CompanionCard                 ← 每张卡片
-│       ├── 头像（图片/首字母）
-│       ├── CompanionStatusTag
-│       └── DropdownMenu（编辑/删除）
-├── CompanionForm（Dialog）            ← 创建/编辑表单
-└── AlertDialog（删除确认）
-
-CompanionChatPage                     ← 聊天页（/companions/$id/chat）
-├── CompanionHeader                   ← 固定顶部
-│   ├── 返回 + 头像 + 名称 + StatusTag
-│   └── "记忆库" 按钮 → /companions/$id/memories
-├── 消息滚动区（overflow-y-auto）
-│   ├── [空状态] Empty + CompanionQuickPrompts
-│   └── [有消息] CompanionMessageItem[]
-│       ├── 用户消息: plain text（placement=end, variant=filled）
-│       └── AI 消息: XMarkdown（静态）+ 点赞/踩反馈
-│           └── [流式中] CompanionTypingIndicator 覆写 content
-└── Sender（固定底部）
-```
-
-共 **10 个组件**，覆盖完整的 CRUD + 对话交互。
+> **REFERENCE_ONLY**: 此文件记录开发指南（HOW）。业务规范权威源为 [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md)（WHAT）。Memory 5 种类型 / CompanionForm 字段定义 / 组件树业务约束 / SSE 流式契约 应以 OpenSpec 为准。
 
 ---
 
-## 打字机动画
+## Purpose
 
-### CompanionTypingIndicator
+帮助开发者在 Companion 前端 UI 渲染模块中高效工作：理解打字机动画、流式渲染、双模式表单等实现模式，避免重复踩坑。业务字段定义、组件树业务约束请直接查阅 OpenSpec。
 
-与 Chat 的 `XMarkdown streaming.hasNextChunk` 完全不同，Companion 使用自己的逐字打字机：
+## Primary OpenSpec
 
-```typescript
-// packages/web/src/features/companion/components/CompanionTypingIndicator.tsx
+- [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) — Companion 业务规范（字段定义、组件树、Memory 类型、SSE 契约权威源）
 
-const DEFAULT_INTERVAL = 18  // 18ms/字
+## Related OpenSpec
 
-function CompanionTypingIndicator({ content, intervalMs, onComplete }) {
-  const [displayedCount, setDisplayedCount] = useState(0)
+- [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — SSE 双轨方案（Companion 流式渲染参考）
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDisplayedCount((prev) => {
-        const next = prev + 1
-        if (next >= content.length) { clearInterval(timer) }
-        return next
-      })
-    }, intervalMs)
-    return () => clearInterval(timer)
-  }, [content, displayedCount])
+## Module Dependencies
 
-  return (
-    <span>
-      {content.slice(0, displayedCount)}
-      {displayedCount < content.length && (
-        <span className="animate-pulse w-0.5 h-4 bg-current" />  // 闪烁光标
-      )}
-    </span>
-  )
-}
-```
+- **Zustand** — `useCompanionStore` 管理消息列表与流式状态
+- **原生 fetch + ReadableStream** — Companion SSE 流式接收（不依赖 XStream）
+- **shadcn/ui** — 表单组件（Input / Textarea / Button / Dialog / AlertDialog / DropdownMenu / Badge）
+- **@ant-design/x** — `Bubble` 消息气泡组件
+- **XMarkdown** — AI 完成消息的 Markdown 渲染
 
-**关键细节**：
-- 默认 18ms 间隔（约 55 字/秒，模拟真人中等打字速度）
-- 尾部闪烁光标用 `animate-pulse` CSS 实现
-- content 变长后触发重渲染，光标推进
-- `onComplete` 在全部文字显示后触发
+## Development Entry
 
-### 与 Chat XMarkdown 对比
+- `packages/web/src/features/companion/` — Companion 全部前端文件
+- `packages/web/src/features/companion/components/` — 组件树（CompanionTypingIndicator / CompanionMessageItem / CompanionForm 等）
+- `packages/web/src/features/companion/types.ts` — 前端类型定义
+- `packages/web/src/stores/companion.ts` — Companion Store（流式状态管理）
 
-| 特性 | CompanionTypingIndicator | XMarkdown streaming |
-|------|------------------------|---------------------|
-| 渲染策略 | 纯文本逐字输出 | Markdown 增量渲染 |
-| 动画方式 | setInterval + displayedCount | hasNextChunk 光标 |
-| 光标样式 | `animate-pulse` 闪烁竖线 | XMarkdown 内置光标 |
-| 适用 | 纯文本（模拟真人） | Markdown（代码、表格） |
+## Implementation Notes
 
----
+### 打字机动画（CompanionTypingIndicator）
 
-## 消息气泡组件
+与 Chat 的 `XMarkdown streaming.hasNextChunk` 不同，Companion 使用自研逐字打字机：
 
-### CompanionMessageItem 三态渲染
+- **核心机制**：`setInterval` + `displayedCount` 状态推进，每 tick `+1`
+- **默认间隔**：18ms/字（约 55 字/秒，模拟真人中等速度）
+- **光标**：尾部 `<span className="animate-pulse w-0.5 h-4 bg-current" />` 闪烁竖线
+- **完成回调**：`displayedCount >= content.length` 时 `clearInterval` 并触发 `onComplete`
+- **重置**：`content` 变长后 `useEffect` 重启 interval，光标推进新内容
+- **适用范围**：纯文本场景（AI 流式中覆写 content）；Markdown 增量渲染仍走 XMarkdown
 
-[CompanionMessageItem.tsx](file:///d:/projects/ai-stared-project/knowledge-base/packages/web/src/features/companion/components/CompanionMessageItem.tsx) 使用 `@ant-design/x` 的 `Bubble` 组件：
+### 流式渲染性能优化
 
-| 消息角色 | 渲染内容 | Bubble 配置 | 反馈 |
-|---------|---------|------------|------|
-| 用户消息 | 纯文本 `message.content` | `placement=end, variant=filled, shape=round` | 无 |
-| AI 流式中 | `<CompanionTypingIndicator content={message.content} />` | `placement=start, variant=borderless, shape=round` | 无 |
-| AI 完成 | `<XMarkdown content={message.content} streaming={{ hasNextChunk: false }} />` | `placement=start, variant=borderless, shape=round` | 点赞/踩 |
+- AI 流式中：`CompanionTypingIndicator` 直接消费 `message.content`，避免每 token 重渲染整个组件树
+- AI 完成后：切换为 `XMarkdown` 一次性渲染，`streaming={{ hasNextChunk: false }}`
+- 用户消息：纯文本 `Bubble`，无 Markdown 解析开销
+- 流式中不显示反馈按钮，避免不必要的交互节点
 
-### 反馈按钮
+### CompanionMessageItem 三态渲染策略
 
-AI 完成消息显示点赞/踩按钮，带悬停动画：
+按 `role` + `streaming` 状态分流：
+- **用户消息**：`Bubble` `placement=end, variant=filled, shape=round`，纯文本
+- **AI 流式中**：`Bubble` `placement=start, variant=borderless`，children 为 `<CompanionTypingIndicator />`
+- **AI 完成**：`Bubble` `placement=start, variant=borderless`，children 为 `<XMarkdown />`，配点赞/踩按钮
 
-```tsx
-// group-hover 显示，已投票按钮高亮
-<div className="opacity-0 group-hover:opacity-100 transition-opacity">
-  <Button
-    variant={message.feedback?.rating === 'up' ? 'secondary' : 'ghost'}
-    onClick={() => onFeedback(message.id, 'up')}
-  >
-    <ThumbsUp />
-  </Button>
-  <Button
-    variant={message.feedback?.rating === 'down' ? 'secondary' : 'ghost'}
-    onClick={() => onFeedback(message.id, 'down')}
-  >
-    <ThumbsDown />
-  </Button>
-</div>
-```
+### 反馈按钮交互模式
 
-**交互细节**：
-- 默认 `opacity-0`，父元素 `group hover` 时 `opacity-100`
-- 已投票按钮 `variant='secondary'` 高亮
+- 默认 `opacity-0`，父元素 `group hover` 时 `opacity-100`（`transition-opacity`）
+- 已投票按钮 `variant='secondary'` 高亮，未投票 `variant='ghost'`
 - 点击调用 `submitFeedback(messageId, { rating: 1 | -1 })`
-- 流式中不显示反馈按钮
+- 流式中不渲染反馈按钮
 
----
+### 头像渲染模式
 
-## 头像渲染模式
+Card 与 Header 共用逻辑：
+- 有 `avatarKey` → CSS `backgroundImage: url(/api/files/{key})`
+- 无 `avatarKey` → 首字母 fallback（`.charAt(0)` 居中）
+- 尺寸由调用方决定（Card `h-14 w-14`，Header `h-10 w-10`）
 
-Card 和 Header 共用相同的头像逻辑：
+### CompanionForm 双模式实现
 
-```tsx
-<div
-  style={{
-    backgroundImage: companion.avatarKey
-      ? `url(/api/files/${companion.avatarKey})`
-      : undefined,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  }}
->
-  {!companion.avatarKey && companion.name.charAt(0)}
-</div>
-```
+- `mode: 'create' | 'edit'` prop 切换提交端点（POST / PATCH）和 toast 文案
+- **统一 trim 处理**：所有字段 `trim()`，空字符串转 `undefined`（避免后端存空串）
+- 字段定义详见 OpenSpec，本文件不复制
 
-**渲染规则**：
-- 有 `avatarKey` → CSS `backgroundImage` 加载 `/api/files/{key}`
-- 无 `avatarKey` → 首字母 fallback（`.charAt(0)` 居中显示）
-- Card 尺寸：`h-14 w-14`，Header 尺寸：`h-10 w-10`
+### CompanionStatusTag 三态映射
 
----
+`draft → default`、`published → secondary`、`archived → destructive`，中文标签由状态键查表。
 
-## CompanionForm 表单
+### useCompanionStore 流式状态管理
 
-### 11 字段
+- 流式标记 `streaming: true` 写入消息对象，UI 据此选择渲染分支
+- 完成时清 `streaming`，触发 XMarkdown 切换
+- 中断时需清理半成品消息（见 Common Pitfalls）
 
-| 字段 | 组件 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | Input | 是 | 伴侣名称 |
-| `headline` | Input | 否 | 卡片副标题 |
-| `description` | Textarea(3行) | 否 | 详细描述 |
-| `personality` | Input | 否 | 性格设定 |
-| `tone` | Input | 否 | 语气风格 |
-| `boundaries` | Textarea(2行) | 否 | 行为边界 |
-| `guardrailsPrompt` | Textarea(2行) | 否 | 安全约束提示词 |
-| `defaultPrompt` | Textarea(2行) | 否 | 默认系统提示词 |
-| `backgroundStory` | Textarea(3行) | 否 | 背景故事 |
-| `openingMessage` | Textarea(2行) | 否 | 开场白 |
-| `avatarKey` | Input | 否 | 头像文件 key |
-| `visibility` | Input | 否 | 可见性 |
+## Testing Checklist
 
-**提交处理**：所有字段 `trim()` 处理，空字符串转 `undefined`。
+- [ ] 打字机动画流畅无卡顿（长文本下仍稳定 55 字/秒）
+- [ ] 流式渲染不阻塞主线程（输入框、滚动条可交互）
+- [ ] AI 流式中→完成切换无内容跳变（光标位置正确）
+- [ ] CompanionForm create/edit 双模式正确提交
+- [ ] 所有字段 trim 处理生效（空串 → undefined）
+- [ ] 反馈按钮 group-hover 显示/隐藏正确
+- [ ] 已投票按钮高亮状态正确
+- [ ] 头像 avatarKey / 首字母 fallback 正确切换
+- [ ] 流式中断后状态正确清理（无残留 streaming 标记）
+- [ ] 组件树正确渲染（按 OpenSpec 组件约束）
 
-**双模式**：通过 `mode: 'create' | 'edit'` prop 切换
-- create → `POST /api/companions` → toast "创建成功"
-- edit → `PATCH /api/companions/{id}` → toast "更新成功"
+## Review Checklist
 
-### CompanionStatusTag 三态
+- [ ] 新增字段是否同步更新 OpenSpec（不在本文件追加字段表）
+- [ ] Memory 类型变更是否同步更新 OpenSpec
+- [ ] 组件树变更是否同步更新 OpenSpec
+- [ ] 打字机间隔改动是否影响体感（默认 18ms）
+- [ ] 流式分支是否复用 CompanionTypingIndicator（不重复实现）
+- [ ] 反馈按钮是否复用 group-hover 模式
+- [ ] 表单是否复用 trim + undefined 处理
 
-| 状态 | Badge variant | 中文标签 |
-|------|-------------|---------|
-| `draft` | `default` | 草稿 |
-| `published` | `secondary` | 已发布 |
-| `archived` | `destructive` | 已归档 |
+## Common Pitfalls
 
----
+- **打字机 useEffect 依赖**：`displayedCount` 进入依赖会导致每次 tick 重启 interval；正确做法是只依赖 `content`，用函数式 `setDisplayedCount(prev => ...)` 推进
+- **流式中断未清理**：组件卸载或请求中断时若未清 `streaming` 标记，消息会卡在"流式中"状态，永远不切 XMarkdown
+- **反馈按钮在流式中渲染**：会触发不必要的 re-render，且点击会提交到不完整 messageId
+- **表单未 trim 空串**：后端存入空字符串导致列表页显示空白副标题
+- **打字机用于 Markdown**：代码块、表格会被逐字破坏渲染，Markdown 内容必须走 XMarkdown
+- **头像首字母未处理大小写**：`charAt(0)` 应配合 `toUpperCase()` 保证视觉一致
 
-## 数据模型
+## Reusable Patterns
 
-### CompanionMessage（前端专有）
+### 打字机动画实现模式
 
-```typescript
-// packages/web/src/features/companion/types.ts
-interface CompanionMessage {
-  id: string
-  conversationId: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  createdAt: string
-  streaming?: boolean                                           // 流式标记
-  feedback?: { rating: 'up' | 'down', comment?: string } | null  // 用户反馈
-}
-```
+`setInterval + displayedCount + slice(0, n)`，配合 `animate-pulse` 光标；适用于任何纯文本逐字输出场景。
 
-比后端 `Message` 多出 `streaming` 和 `feedback` 两个前端状态字段。
+### 流式渲染性能优化模式
 
-### Memory 类型
+流式中用轻量组件（如 CompanionTypingIndicator）消费 token 流，避免每 token 重渲染 Markdown；完成后切换到重量级 Markdown 渲染器。
 
-```typescript
-type MemoryType =
-  | 'preference'          // 偏好
-  | 'boundary'            // 边界
-  | 'relationship_goal'   // 关系目标
-  | 'conversation_style'  // 对话风格
-  | 'important_fact'      // 重要事实
+### 双模式表单实现模式
 
-const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {
-  preference: '偏好',
-  boundary: '边界',
-  relationship_goal: '关系目标',
-  conversation_style: '对话风格',
-  important_fact: '重要事实',
-}
-```
+`mode` prop 切换端点 + toast 文案；统一 trim + undefined 处理；字段定义外置于 OpenSpec，本文件只保留实现骨架。
 
-5 种记忆类型，用于 Companion 记忆管理页面。
+### group-hover 反馈交互模式
 
----
+父元素 `group`，子元素 `opacity-0 group-hover:opacity-100 transition-opacity`；适用于消息气泡、卡片操作按钮等"聚焦时显式"场景。
 
-## 页面导航
+### 三态渲染分支模式
 
-| 路径 | 组件 | 说明 |
-|------|------|------|
-| `/companions` | `CompanionListPage` | 伴侣列表页面 |
-| `/companions/$companionId/chat` | `CompanionChatPage` | 伴侣聊天页面 |
-| `/companions/$companionId/memories` | `CompanionMemoriesPage` | 伴侣记忆管理 |
-
----
-
-## 代码引用
-
-| 组件 | 文件路径 |
-|------|----------|
-| CompanionTypingIndicator | `packages/web/src/features/companion/components/CompanionTypingIndicator.tsx` |
-| CompanionMessageItem | `packages/web/src/features/companion/components/CompanionMessageItem.tsx` |
-| CompanionChatPage | `packages/web/src/features/companion/components/CompanionChatPage.tsx` |
-| CompanionListPage | `packages/web/src/features/companion/components/CompanionListPage.tsx` |
-| CompanionCard | `packages/web/src/features/companion/components/CompanionCard.tsx` |
-| CompanionForm | `packages/web/src/features/companion/components/CompanionForm.tsx` |
-| CompanionHeader | `packages/web/src/features/companion/components/CompanionHeader.tsx` |
-| CompanionQuickPrompts | `packages/web/src/features/companion/components/CompanionQuickPrompts.tsx` |
-| CompanionStatusTag | `packages/web/src/features/companion/components/CompanionStatusTag.tsx` |
-| 类型定义 | `packages/web/src/features/companion/types.ts` |
+按 `role × streaming` 矩阵分流到不同 children 渲染器，状态切换由 store 标记驱动，组件本身保持无感。

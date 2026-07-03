@@ -328,6 +328,67 @@
 - **WHEN** 队列服务不健康或入队失败
 - **THEN** 系统记录错误日志，不阻断上传流程
 
+### Requirement: 检索过滤业务约束
+系统 SHALL 在所有检索路径（向量检索、BM25 检索、混合检索）中统一应用业务过滤条件，MUST 确保检索结果满足知识库权限、文档状态与访问控制约束。
+
+证据来源：
+- `packages/server/src/processors/rag/es-filter.builder.ts`
+- `packages/server/src/processors/rag/`
+
+#### Scenario: 知识库隔离
+- **WHEN** 执行检索时
+- **THEN** 系统 MUST 限定检索范围仅在请求指定的知识库（kbIds）内，MUST NOT 返回其他知识库的 chunks
+
+#### Scenario: 活跃文档约束
+- **WHEN** 执行检索时
+- **THEN** 系统 MUST 仅返回状态为活跃的文档 chunk，MUST NOT 返回已删除、待处理或处理失败的文档内容
+
+#### Scenario: 单文档限定
+- **WHEN** 检索请求指定了特定文档 ID 时
+- **THEN** 系统 MUST 将检索范围限定在该文档内
+
+### Requirement: ACL 向后兼容语义
+系统 SHALL 通过 OR 逻辑实现 ACL 访问控制，MUST 支持向后兼容：没有 ACL 字段的旧文档对所有用户可见。
+
+证据来源：
+- `packages/server/src/processors/rag/es-filter.builder.ts`
+
+#### Scenario: ACL 条件判定逻辑
+- **WHEN** 执行 ACL 过滤判定时
+- **THEN** 系统 MUST 满足以下任一条件：条件 1 用户 ID 在 `allowed_user_ids` 中（显式权限授予）；条件 2 文档无 ACL 限制（公开文档）
+
+#### Scenario: 向后兼容旧数据
+- **WHEN** 索引中存在没有 ACL 字段的旧文档
+- **THEN** 系统 MUST 将此类文档视为公开文档，使其对所有用户可见，确保旧数据不需要迁移即可被检索
+
+### Requirement: Reranker 配置热重载
+系统 SHALL 支持 Reranker 模型配置的动态变更，MUST 无需重启服务即可切换重排模型，SHOULD 限制单条文本的最大序列长度以控制推理成本。
+
+证据来源：
+- `packages/server/src/processors/rag/bge-rerank.service.ts`
+
+#### Scenario: 模型配置解析
+- **WHEN** 初始化或切换 Reranker 模型时
+- **THEN** 系统 MUST 从配置中心解析模型标识，MUST NOT 硬编码模型路径
+
+#### Scenario: 序列长度限制
+- **WHEN** 执行重排推理时
+- **THEN** 系统 SHOULD 限制输入序列最大长度，超长文本截断后参与重排，避免推理超时或显存溢出
+
+#### Scenario: 配置热重载
+- **WHEN** Reranker 相关配置发生变更时
+- **THEN** 系统 MUST 重新加载模型实例，无需重启服务即可切换 Reranker 模型
+
+### Requirement: BM25 检索容错降级
+系统 SHALL 为关键词检索提供容错机制，MUST 在检索服务不可用时返回空结果以保证管线降级执行，SHOULD 提供可配置的默认检索数量。
+
+证据来源：
+- `packages/server/src/processors/rag/es-keyword.service.ts`
+
+#### Scenario: 检索失败降级
+- **WHEN** 关键词检索抛出异常（如检索引擎连接错误、查询语法错误）
+- **THEN** 系统 MUST 返回空结果，不向上抛出异常，管道仅使用可用的检索路径继续执行
+
 ## Architecture（架构）
 
 ### 检索管线流程图

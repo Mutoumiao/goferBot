@@ -116,6 +116,25 @@ processors/{processor}/
 └── dto/                     ← 请求 DTO（可选，如 rag）
 ```
 
+### 处理器双层架构约定
+
+`processors/` 目录按职责分为两层，禁止跨层反向依赖：
+
+**第一层：纯基础设施层（pure infrastructure）**
+- 不依赖任何业务模块，只被其他模块依赖
+- 目录示例：`database/`（PrismaService、TransactionManager）、`storage/`（StorageService、MinIO provider）
+- 规则：只对外提供服务，从不 import 业务模块
+
+**第二层：编排处理器层（orchestration processors）**
+- 依赖业务模块的领域类型或共享服务
+- 目录示例：`rag/`（依赖 ModelProviderService、SystemConfigService）、`queue/`（依赖 ChatModule、SettingsModule）、`chat/`（依赖 ConversationService、LlmProviderFactory）
+- 规则：允许 import `modules/` 中的领域类型和共享服务，但通过事件驱动与业务模块解耦
+
+**事件驱动松耦合模式**：
+- 编排处理器使用 NestJS `EventEmitter` 监听领域事件（如 `document-uploaded`）
+- 监听器放在 `processors/{name}/listeners/` 下
+- 禁止从处理器反向 import 业务服务，所有交互通过事件或共享接口
+
 ---
 
 ## 文件命名约定

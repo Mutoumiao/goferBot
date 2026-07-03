@@ -56,6 +56,19 @@
 - **AND** 前端 `GoferChatProvider.transformMessage` 通过 `originMessage.content + chunk.answer` 增量累积内容
 - **AND** JSON 解析失败时 SHALL 静默忽略，保留当前已累积内容
 
+#### Scenario: SSE 事件类型业务语义
+- **WHEN** 后端通过 SSE 发送 Chat 流式消息时
+- **THEN** 系统 SHALL 定义三种事件类型的业务语义：
+  - `message` 事件 — 增量 token，`answer` 字段为本次 chunk 的增量内容，前端累积拼接
+  - `message_end` 事件 — 流结束信号，`done: true`，标志流式传输完成
+  - `error` 事件 — 异常信号，`error` 字段描述错误信息
+- **AND** `event` 字段为 Zod enum 强制约束，MUST 取值为 `message` / `message_end` / `error` 之一
+- **AND** `conversation_id` / `message_id` / `answer` 为必填字段，`done` / `error` 为可选字段
+
+证据来源：
+- `packages/data/src/schemas/chat.schema.ts` (chatMessagesChunkSchema Zod 定义)
+- `.trellis/spec/web/frontend/sse-streaming-architecture.md` (chatMessagesChunkSchema 共享契约章节)
+
 ### Requirement: RAG Retrieval Pipeline
 系统应支持完整的 RAG 管线：Query Understanding → Hybrid Retrieval (BM25 + Vector) → RRF Fusion → Reranker → Parent Resolution → LLM Generation，带有 Redis 缓存。
 
@@ -155,3 +168,34 @@
 #### Scenario: 队列不可用降级
 - **WHEN** BullMQ `chat-finalize` 队列不可用时
 - **THEN** StreamFinalizeService 降级为 `queueMicrotask` 模式，在微任务中恢复 RequestContext 后同步执行后处理步骤
+
+### Requirement: SSE 双轨方案业务分轨
+系统 SHALL 根据输出内容类型选择不同的 SSE 客户端方案：Chat（Markdown 富文本）使用 `@ant-design/x-sdk` 高层抽象，Companion（纯文本情感化陪伴）使用原生 `fetch` + `ReadableStream` 底层实现。
+
+证据来源：
+- `.trellis/spec/web/frontend/sse-streaming-architecture.md` (双轨对比总结章节)
+- `packages/web/src/api/x-chat.ts` (Chat SSE Client)
+- `packages/web/src/features/companion/sse-client.ts` (Companion SSE Client)
+
+#### Scenario: Chat 选择高层抽象方案
+- **WHEN** 对话输出包含 Markdown 富文本（代码块、表格、列表）时
+- **THEN** 系统 SHALL 采用 `@ant-design/x-sdk` `XRequest` 高层抽象方案：
+  - 通过 `GoferChatProvider.transformMessage` 增量累积内容
+  - 通过 `useXChat` 管理 6 状态生命周期（loading/success/error/local/updating/abort）
+  - 通过 `XMarkdown streaming.hasNextChunk` 渲染光标动画
+  - 遵循 `chatMessagesChunkSchema` Zod schema 契约
+
+#### Scenario: Companion 选择底层原生方案
+- **WHEN** 对话输出为纯文本，需要模拟真人逐字打字效果时
+- **THEN** 系统 SHALL 采用原生 `fetch` + `ReadableStream` 底层方案：
+  - 手动解析 SSE 帧（`event:{type}\ndata:{payload}\n\n`），不依赖第三方 SSE 库
+  - 通过 Zustand `useCompanionStore` 管理 `streamingContent` 状态
+  - 通过 `CompanionTypingIndicator` 渲染打字机动画
+  - 使用自定义 `event:token/done/error` 帧格式
+
+#### Scenario: SSE 方案选择决策标准
+- **WHEN** 为新的对话模块选择 SSE 方案时
+- **THEN** 系统 SHOULD 按以下标准决策：
+  - 输出包含 Markdown（代码块、表格、列表）→ Chat 方案（`@ant-design/x-sdk`）
+  - 输出为纯文本且需要模拟真人打字 → Companion 方案（原生 fetch + 打字机）
+  - 需要完全自定义 SSE 帧格式 → Companion 方案

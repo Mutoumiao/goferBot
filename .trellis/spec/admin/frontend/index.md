@@ -1,40 +1,66 @@
-# 前端开发指南
+# Admin 前端开发指南索引
 
-> 本项目前端开发的最佳实践。
-
----
-
-## 概述
-
-本目录包含前端开发指南。请在每个文件中填写项目特定的约定。
+> **Purpose**：本索引是 Admin 管理后台前端开发的导航中枢。Trellis 记录"如何开发"（HOW），OpenSpec 记录"系统是什么"（WHAT）。
+> AI Agent 在此找到对应的开发指南；如需业务规则（19 权限码、3 预置角色集、三层守卫编排流等），请按下方映射跳转 OpenSpec 权威源。
 
 ---
 
-## 指南索引
+## 通用开发指南
 
-| 指南 | 描述 | 状态 |
-|------|------|------|
-| [目录结构](./directory-structure.md) | 模块组织和文件布局 | 待填写 |
-| [组件指南](./component-guidelines.md) | 组件模式、props、组合 | 待填写 |
-| [Hook 指南](./hook-guidelines.md) | 自定义 hooks、数据获取模式 | 待填写 |
-| [状态管理](./state-management.md) | 本地状态、全局状态、服务端状态 | 已填写 |
-| [质量指南](./quality-guidelines.md) | 代码标准、禁止模式 | 待填写 |
-| [类型安全](./type-safety.md) | 类型模式、验证 | 待填写 |
-| [RBAC 守卫架构](./rbac-guard-architecture.md) | 三层权限守卫 + Token 自动刷新 | 已填写 |
+> 适用于 Admin 前端所有模块的开发约定。
 
----
-
-## 如何填写这些指南
-
-对于每个指南文件：
-
-1. 记录项目的**实际约定**（而非理想情况）
-2. 包含代码库中的**代码示例**
-3. 列出**禁止模式**及其原因
-4. 添加团队曾犯过的**常见错误**
-
-目标是帮助 AI 助手和新团队成员理解项目的工作方式。
+| 指南 | 描述 |
+|------|------|
+| [目录结构](./directory-structure.md) | Admin FSA 架构、目录布局 |
+| [组件指南](./component-guidelines.md) | Ant Design 6.x 组件用法、ProComponents 模式 |
+| [Hook 指南](./hook-guidelines.md) | useQueryWithRetry 核心 Hook 实现模式 |
+| [状态管理](./state-management.md) | Admin Zustand + alova 分层集成模式 |
+| [质量指南](./quality-guidelines.md) | 禁止模式、测试要求、代码审查清单 |
+| [类型安全](./type-safety.md) | 类型组织、Zod 验证、Biome 配置 |
 
 ---
 
-**语言**：所有文档应使用**中文**编写。
+## 模块开发指南
+
+> 每个业务模块的开发指南（Module Development Guide），含 10 个章节：Purpose / Primary OpenSpec / Related OpenSpec / Module Dependencies / Development Entry / Implementation Notes / Testing Checklist / Review Checklist / Common Pitfalls / Reusable Patterns。
+>
+> **重要**：业务规则（19 权限码、3 预置角色集、三层守卫编排、mustChangePassword 流、Token 刷新订阅者队列业务行为）不在 Trellis 中。请查阅对应 OpenSpec capability spec.md。
+
+| 模块 | Trellis 开发指南 | OpenSpec 权威源 |
+|------|-----------------|----------------|
+| Admin RBAC 守卫 | [rbac-guard-architecture.md](./rbac-guard-architecture.md) | [openspec/specs/admin/spec.md](../../../openspec/specs/admin/spec.md) + [openspec/specs/auth/spec.md](../../../openspec/specs/auth/spec.md) |
+
+---
+
+## Progressive Knowledge Loading 流程
+
+当你要实现/调试某个 Admin 前端功能时：
+
+1. **第一步**：在上方"模块开发指南"找到对应模块 → 阅读其 Trellis Development Guide
+2. **第二步**：若需业务规则（权限码、角色集、守卫编排流）→ 点击该指南顶部"Primary OpenSpec"链接跳转
+3. **第三步**：若涉及跨模块依赖 → 沿"Related OpenSpec"链接跳转
+
+**示例流程**：实现新的权限保护路由
+↓
+读 `rbac-guard-architecture.md`（开发指南：beforeLoad 模式、ROUTES_REGISTER 登记）
+↓
+读 `openspec/specs/admin/spec.md`（19 权限码定义、三层守卫编排业务流）
+↓
+若涉及 Token 刷新
+↓
+读 `openspec/specs/auth/spec.md`（订阅者队列业务行为）
+
+---
+
+## OpenSpec 相关 capability 索引
+
+Admin 前端涉及的 OpenSpec 业务规范（按需查阅，不要预加载）：
+
+- [admin](../../../openspec/specs/admin/spec.md) — 19 权限码、3 预置角色集、三层守卫编排、管理员认证、用户/角色/审计管理
+- [auth](../../../openspec/specs/auth/spec.md) — Token 自动刷新订阅者队列、mustChangePassword 流
+- [user](../../../openspec/specs/user/spec.md) — 用户角色定义、Super Admin
+- [settings](../../../openspec/specs/settings/spec.md) — 系统配置业务规则
+
+---
+
+**语言**：所有文档使用**简体中文**编写。
