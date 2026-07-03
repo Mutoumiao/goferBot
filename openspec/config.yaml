@@ -1,0 +1,42 @@
+schema: spec-driven
+
+# GoferBot 项目上下文 — 供 OpenSpec AI 生成 artifacts 时使用
+context: |
+  Tech stack:
+    - Frontend: React 19 + TanStack Start + TanStack Router + Vite + Tailwind CSS 4 + Zustand + shadcn/ui + alova
+    - Backend: NestJS 10 + Fastify + Prisma 5 + PostgreSQL 16 + pgvector + Redis + BullMQ + MinIO (S3)
+    - AI: LangChain 1.x + @ant-design/x + BGE-Reranker
+    - Validation: Zod (global ZodValidationPipe, no class-validator)
+    - Testing: Vitest + Playwright
+    - Format/Lint: Biome
+
+  Key conventions:
+    - Arch: Feature First (按业务领域拆分: kb/chat/file/auth)
+    - Auth: JWT (access + refresh) via HTTP-only cookies, RBAC (USER/ADMIN/SUPER_ADMIN)
+    - HTTP: alova frontend, Fastify backend, Zod validation globally
+    - Response: ResponseInterceptor wraps as { data: T }
+    - DB: PostgreSQL 16 + pgvector, Prisma ORM, snake_case DB -> camelCase TS
+    - Commit: 简体中文, format: type(scope): description
+
+  Spec organization:
+    - openspec/specs/ — 系统能力规范（做什么 WHAT）：持久化的 capability-level requirements
+    - .trae/specs/    — 特性实施规范（怎么做 HOW）：transient feature-level PRD + tasks + checklist
+    - .trae/rules/    — 编码规范：coding conventions, patterns, style guides
+
+# Per-artifact rules
+rules:
+  proposal:
+    - 使用简体中文撰写
+    - 必须包含 Non-Goals 章节明确范围边界
+    - 引用 openspec/specs/ 中相关 capability 规范
+  design:
+    - 设计方案需包含架构图或序列图（ASCII art）
+    - 标注与现有 Trellis rules 中编码规范的兼容性
+  tasks:
+    - 每个 task 控制在 2 小时内可完成
+    - 标注依赖关系和优先级（P0/P1/P2）
+  specs:
+    - 使用 SHALL/MUST/SHOULD 关键字
+    - 每个 Requirement 至少包含一个 Scenario
+    - Scenario 使用 WHEN/THEN 格式
+    - 标注 Evidenced by 引用实际源文件路径

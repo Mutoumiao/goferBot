@@ -1,0 +1,327 @@
+# Settings - 系统设置
+
+## Purpose（目的）
+
+定义 GoferBot 系统配置管理规范，包括配置分层架构、模型提供商管理、用户偏好设置、系统级参数管理、配置加密与安全。
+
+## Architecture（架构）
+
+### 配置分层架构
+
+系统采用三层配置合并策略，优先级从低到高：
+
+```
+DEFAULT_CONFIG (内置默认值)
+      ↓ 合并
+SYSTEM_CONFIG (管理员配置)
+      ↓ 合并
+APP_CONFIG (用户个人配置)
+```
+
+**合并规则**：
+- Provider 池以系统配置为准，用户自定义仅作为补充
+- 用户配置仅允许修改 `appearance` 分类，其他分类为只读
+- 深层合并：对象类型递归合并，数组和基本类型直接覆盖
+
+**配置存储**：
+- 存储在 `Setting` 表，按 `userId_key` 唯一标识
+- 系统配置使用 `SYSTEM_USER_ID` (`00000000-0000-0000-0000-000000000000`)
+- 用户配置使用用户实际 ID
+
+### 模块职责划分
+
+| 模块 | 职责 | 关键文件 |
+|------|------|----------|
+| `SettingsService` | 用户配置 CRUD、配置合并、遗留迁移 | [settings.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/settings.service.ts) |
+| `SystemConfigService` | 系统配置 CRUD、Provider 池管理、事件通知 | [system-config.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.service.ts) |
+| `ModelProviderService` | Provider 引用验证、类型校验 | [model-provider.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/model-provider.service.ts) |
+| `ConfigCryptoService` | API Key 加密/解密/掩码 | [config-crypto.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/config-crypto.service.ts) |
+
+### 配置分类
+
+| 分类 | 说明 | 用户可修改 | 默认值 |
+|------|------|-----------|--------|
+| `providers` | 模型提供商池（LLM/Embedding/Reranker） | 否 | `{}` |
+| `chat` | 聊天配置（默认提供商、启用列表、温度） | 否 | `{ enabledProviders: [], temperature: 0.7 }` |
+| `rag` | RAG 配置（LLM/Embedding/Reranker 引用） | 否 | `{ timeoutMs: 60000, rerankerAllowedModelPrefixes: [...] }` |
+| `companion` | 伴侣配置（提供商引用） | 否 | `{}` |
+| `indexing` | 索引配置（上下文嵌入、Chunk 大小） | 否 | `{ contextualEmbedding: false, parentChunkSize: 800, childChunkSize: 150 }` |
+| `appearance` | 外观配置（主题、字号） | 是 | `{ mode: 'light', fontSizeLevel: 3 }` |
+
+## Requirements（需求）
+
+### Requirement: 配置分层与合并
+
+系统应支持系统级配置与用户级配置的分层管理，用户配置覆盖系统配置，但 Provider 池以系统配置为准。
+
+证据来源：
+- [settings.service.ts#L403-L428](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/settings.service.ts#L403-L428)
+
+#### Scenario: 获取合并后的用户配置
+- **WHEN** 用户请求获取配置时
+- **THEN** 系统依次合并 DEFAULT_CONFIG → SYSTEM_CONFIG → APP_CONFIG，返回合并结果
+
+#### Scenario: Provider 池优先级
+- **WHEN** 用户配置中包含自定义 Provider
+- **THEN** 系统合并时以系统配置的 Provider 池为主，用户自定义作为补充
+
+### Requirement: LLM 提供商配置
+
+系统应支持配置多个 LLM 提供商，API key、基础 URL 和模型选择需安全存储。
+
+证据来源：
+- [model-provider.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/model-provider.service.ts)
+- [system-config.controller.ts#L86-L114](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.controller.ts#L86-L114)
+
+#### Scenario: 添加 LLM 提供商
+- **WHEN** 用户（或管理员）配置新的 LLM 提供商（如 OpenAI、Anthropic、本地 Ollama）
+- **THEN** 系统加密存储 API key，验证端点，并使该提供商可用于聊天
+
+#### Scenario: API key 安全
+- **WHEN** API key 被存储或检索时
+- **THEN** 系统应在静态存储时加密密钥，且绝不在 API 响应中返回完整密钥（仅显示掩码形式）
+
+#### Scenario: 提供商健康检查
+- **WHEN** 提供商被配置时
+- **THEN** 系统应执行连接性检查，并报告提供商状态（在线/离线/错误）
+
+#### Scenario: Provider 类型校验
+- **WHEN** 保存 Provider 时
+- **THEN** 系统验证 Provider 类型（llm/embedding/reranker/document-parser）与引用处类型一致
+
+#### Scenario: 删除 Provider 引用检查
+- **WHEN** 管理员尝试删除 Provider 时
+- **THEN** 系统检查该 Provider 是否被任何配置引用（系统或用户），如有引用则拒绝删除
+
+### Requirement: 用户偏好设置
+
+系统应允许用户配置个人偏好设置，包括默认 LLM 提供商、模型、语言和 UI 主题。
+
+证据来源：
+- [settings.controller.ts#L77-L96](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/settings.controller.ts#L77-L96)
+
+#### Scenario: 设置默认聊天模型
+- **WHEN** 用户为新的聊天会话选择偏好的 LLM 模型时
+- **THEN** 系统持久化该偏好设置，并将其应用于所有新会话
+
+#### Scenario: 主题偏好
+- **WHEN** 用户在浅色和深色主题之间切换时
+- **THEN** 系统持久化该偏好设置并立即应用
+
+#### Scenario: 用户端只读限制
+- **WHEN** 用户尝试修改非 appearance 分类的配置时
+- **THEN** 系统返回错误，提示通过管理后台配置
+
+### Requirement: 系统配置
+
+系统应支持管理员管理的系统级配置，包括速率限制、文件大小限制和功能开关。
+
+证据来源：
+- [system-config.controller.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.controller.ts)
+
+#### Scenario: 配置速率限制
+- **WHEN** 管理员为 API 端点设置速率限制时
+- **THEN** 系统对每个用户/IP 强制执行该限制，并返回相应的 HTTP 429 响应
+
+#### Scenario: 功能开关切换
+- **WHEN** 管理员启用或禁用某个功能（如 RAG 检索、特定 LLM 提供商）时
+- **THEN** 系统立即在 UI 和 API 行为中反映该变更
+
+#### Scenario: 配置变更事件
+- **WHEN** 系统配置变更时
+- **THEN** 系统触发 `config.changed` 事件，通知订阅模块重新加载配置
+
+### Requirement: 配置加密与安全
+
+系统应使用 AES-256-GCM 加密敏感配置（API Key），并在返回时进行掩码处理。
+
+证据来源：
+- [config-crypto.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/config-crypto.service.ts)
+
+#### Scenario: API Key 加密存储
+- **WHEN** 配置被持久化时
+- **THEN** 系统递归加密所有 `apiKey` 字段，使用 AES-256-GCM 算法
+
+#### Scenario: API Key 掩码返回
+- **WHEN** 配置被读取并返回给客户端时
+- **THEN** 系统将 `apiKey` 替换为 `MASKED:xxx` 格式，保护密钥安全
+
+#### Scenario: 加密密钥验证
+- **WHEN** 服务启动时
+- **THEN** 系统验证 `SETTINGS_ENCRYPTION_KEY` 环境变量是否存在，缺失则快速失败
+
+### Requirement: 遗留配置迁移
+
+系统应自动迁移旧版配置格式到新版分层结构。
+
+证据来源：
+- [settings.service.ts#L36-L242](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/settings.service.ts#L36-L242)
+
+#### Scenario: 扁平配置迁移
+- **WHEN** 系统读取到旧版扁平格式配置时
+- **THEN** 系统自动迁移到新版分层结构，并异步保存迁移结果
+
+#### Scenario: 嵌套配置迁移
+- **WHEN** 系统读取到旧版嵌套格式配置（包含 llm/rag/embedding 直接字段）时
+- **THEN** 系统提取 Provider 信息到 providers 池，并更新引用关系
+
+### Requirement: 环境变量管理
+
+系统应遵循分层环境变量加载策略：包级别的 `.env` 覆盖根级别的 `.env`。
+
+证据来源：
+- `.env.example` (root level)
+- `packages/server/.env.example`
+- `packages/web/.env.example`
+
+#### Scenario: 服务端环境加载
+- **WHEN** 服务端启动时
+- **THEN** 它先加载 `packages/server/.env`，然后加载根目录 `.env`，后加载的值覆盖先前的值
+
+#### Scenario: 必需变量验证
+- **WHEN** 启动时缺少必需的环境变量或变量无效时
+- **THEN** 系统应快速失败，并显示描述性错误消息，列出所有缺失的变量
+
+## API Endpoints（API 端点）
+
+### 用户配置端点
+
+| 方法 | 路径 | 说明 | 权限 |
+|------|------|------|------|
+| GET | `/settings` | 获取用户配置（已掩码） | JWT |
+| GET | `/settings/:category` | 获取指定分类配置 | JWT |
+| GET | `/settings/:category/providers` | 获取可用模型列表（仅 chat/rag/companion） | JWT |
+| POST | `/settings` | 保存用户配置（仅 appearance） | JWT |
+| POST | `/settings/:category` | 保存分类配置（仅 appearance） | JWT |
+
+### 系统配置端点（管理员）
+
+| 方法 | 路径 | 说明 | 权限 |
+|------|------|------|------|
+| GET | `/admin/system-config` | 获取系统配置（已掩码） | `moduleSettings:read` |
+| GET | `/admin/system-config/:category` | 获取系统配置分类 | `moduleSettings:read` |
+| POST | `/admin/system-config/:category` | 保存系统配置分类 | `moduleSettings:update` |
+| POST | `/admin/system-config/reload` | 触发配置重载 | `moduleSettings:update` |
+
+### Provider 池端点（管理员）
+
+| 方法 | 路径 | 说明 | 权限 |
+|------|------|------|------|
+| GET | `/admin/providers` | 获取所有 Provider（已掩码） | `modelProviders:read` |
+| GET | `/admin/providers/:id` | 获取指定 Provider（已掩码） | `modelProviders:read` |
+| POST | `/admin/providers` | 保存 Provider | `modelProviders:create` |
+| DELETE | `/admin/providers/:id` | 删除 Provider | `modelProviders:delete` |
+
+## Data Models（数据模型）
+
+### ModelProvider
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | string | 是 | Provider 唯一标识 |
+| name | string | 是 | 显示名称 |
+| type | 'llm'\|'embedding'\|'reranker'\|'document-parser' | 是 | 类型 |
+| enabled | boolean | 否 | 是否启用（默认 true） |
+| model | string | 是 | 模型名称 |
+| apiKey | string | 是 | API 密钥（存储时加密，返回时掩码） |
+| baseUrl | string | 否 | 自定义基础 URL（默认空） |
+| timeoutMs | number | 否 | 超时时间（默认 300000） |
+| dimensions | number | 否 | Embedding 维度 |
+| maxLength | number | 否 | 最大输入长度 |
+
+### Settings
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| providers | Record<string, ModelProvider> | `{}` | 模型提供商池 |
+| chat | ChatSettings | 见下方 | 聊天配置 |
+| rag | RagSettings | 见下方 | RAG 配置 |
+| companion | CompanionSettings | `{}` | 伴侣配置 |
+| indexing | IndexingSettings | 见下方 | 索引配置 |
+| appearance | AppearanceSettings | 见下方 | 外观配置 |
+
+### ChatSettings
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| defaultProvider | string | undefined | 默认聊天提供商 ID |
+| enabledProviders | string[] | `[]` | 启用的提供商 ID 列表 |
+| temperature | number | 0.7 | 温度参数（0-2） |
+
+### RagSettings
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| llmProvider | string | undefined | RAG LLM 提供商 ID |
+| embeddingProvider | string | undefined | Embedding 提供商 ID |
+| rerankerProvider | string | undefined | 重排提供商 ID |
+| timeoutMs | number | 60000 | 超时时间 |
+| rerankerAllowedModelPrefixes | string[] | `['BAAI/', 'Xorbits/', 'sentence-transformers/']` | 允许的重排模型前缀 |
+
+### IndexingSettings
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| contextualEmbedding | boolean | false | 是否启用上下文嵌入 |
+| contextualWindow | number | 1 | 上下文窗口大小 |
+| parentChunkSize | number | 800 | 父 Chunk 大小 |
+| childChunkSize | number | 150 | 子 Chunk 大小 |
+| synonymDict | Record<'zh'\|'en', Record<string, string[]>> | `{ zh: {}, en: {} }` | 同义词词典 |
+
+### AppearanceSettings
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| mode | 'light'\|'dark'\|'system' | 'light' | 主题模式 |
+| fontSizeLevel | number | 3 | 字号级别（1-5） |
+
+## Error Codes（错误码）
+
+| 错误码 | 说明 |
+|--------|------|
+| `CATEGORY_READ_ONLY` | 用户端不允许修改该分类 |
+| `INVALID_CONFIG_FIELDS` | 用户端不允许保存指定字段 |
+| `INVALID_CONFIG_CATEGORY` | 无效的配置分类 |
+| `INVALID_PROVIDER_CATEGORY` | 该分类不支持读取可用模型 |
+| `MODEL_PROVIDER_NOT_CONFIGURED` | 未配置模型提供商 |
+| `MODEL_PROVIDER_NOT_FOUND` | 引用的模型提供商不存在 |
+| `MODEL_PROVIDER_TYPE_MISMATCH` | 模型提供商类型不匹配 |
+| `MODEL_PROVIDER_DISABLED` | 模型提供商已禁用 |
+| `PROVIDER_IN_USE` | 该模型提供商仍被配置引用 |
+| `INVALID_ENCRYPTED_FORMAT` | 加密格式无效 |
+
+## Events（事件）
+
+| 事件名 | 数据 | 说明 |
+|--------|------|------|
+| `config.changed` | `ConfigChangedEvent(category, isSystem)` | 配置变更通知 |
+
+## Security（安全）
+
+### API Key 保护
+- 存储时使用 AES-256-GCM 加密
+- 返回时使用 `MASKED:xxx` 格式掩码
+- 加密密钥来自 `SETTINGS_ENCRYPTION_KEY` 环境变量
+
+### 权限控制
+- 用户端仅允许修改 `appearance` 分类
+- 其他分类修改需要管理员权限
+- Provider 管理需要 `modelProviders` 权限
+
+### SSRF 防护
+- `baseUrl` 使用 `validateBaseUrl` 校验，仅允许白名单域名
+
+## Migration（迁移）
+
+### 遗留格式识别
+
+系统识别两种遗留格式并自动迁移：
+
+1. **扁平格式**：包含 `providers`、`embeddingProvider`、`temperature`、`defaultChatProvider`、`appearance`、`fontSizeLevel` 等顶级字段
+
+2. **嵌套格式**：包含 `llm`、`rag`、`embedding`、`reranker`、`companion` 等顶级对象，且包含 `apiKey` 字段
+
+### 迁移策略
+- 读取时识别遗留格式并转换
+- 异步保存迁移结果（不阻塞当前请求）
+- 兼容明文遗留数据（解密失败时保留原值）
