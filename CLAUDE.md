@@ -77,6 +77,8 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的
 
 ## 架构亮点
 
+> 以下为快速 Orientation Summary。详细开发模式见 Trellis 指南，业务规范见 OpenSpec specs。
+
 | 系统                 | 架构要点                                                                                                              |
 |----------------------|-----------------------------------------------------------------------------------------------------------------------|
 | **SSE 流式**         | 双轨并行 — Chat 用 `@ant-design/x-sdk` (XMarkdown streaming)，Companion 用原生 `fetch + ReadableStream` (打字机动画)  |
@@ -113,23 +115,22 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 
 ## 权威知识索引
 
-> **知识架构**：本项目采用 **OpenSpec（WHAT）+ Trellis（HOW）** 双源互补设计。
-> - **OpenSpec** 是业务知识的**唯一权威源**（业务规则、API 契约、架构定义、验收标准、设计决策）。
-> - **Trellis** 是开发智慧的载体（编码约定、模式、最佳实践、测试策略、审查清单、常见陷阱）。
-> - **Golden Rule**：对每条知识问"如果未来实现方式改变，这条知识是否仍然有效？" — 是 → OpenSpec；否 → Trellis。
-> - **不重复原则**：Trellis 不得复制业务规则/架构/API 契约；遇到此类需求应**引用**对应 OpenSpec capability。
+> **AI Knowledge Architecture**：本项目知识体系按知识类型划分（详见 [openspec/README.md](openspec/README.md)）。
+> - **Business Knowledge (WHAT)** → `openspec/specs/`：业务规则、API契约、架构定义、验收标准。唯一权威源。
+> - **Development Knowledge (HOW)** → `.trellis/spec/`：编码约定、模式、最佳实践、测试策略、审查清单、常见陷阱。唯一权威源。
+> - **Workspace Rules (ALWAYS)** → `.trae/rules/`：IDE 始终注入的强制约束。
+> - **Authority Principle**：每条知识仅有一个 Source of Truth。Reference > Copy。
+> - **Golden Rule**：实现方式改变后仍然有效 → OpenSpec；否则 → Trellis；始终强制 → Rules。
 >
-> **Progressive Knowledge Loading**：AI Agent 不要预加载全部规范。先从对应 package 的 Trellis index.md 入口查找开发指南；如需业务细节，再按指南顶部 `REFERENCE_ONLY` 标头跳转 OpenSpec 权威源。
->
-> **REFERENCE_ONLY 标头**：所有业务相关 Trellis 指南顶部均含此标头，指向权威 OpenSpec capability spec.md。这是判断"业务知识应去哪查"的导航锚点。
+> **Progressive Knowledge Loading**：AI Agent 不要预加载全部规范。从对应 package 的 Trellis index.md（Navigation Hub）进入，按 Pre-Development Checklist 加载通用指南和模块指南；需要业务规则时，按指南顶部 `REFERENCE_ONLY` 标头跳转 OpenSpec。
 
 ### 项目全局
 
 | 文档                                         | 内容                                           |
 |----------------------------------------------|------------------------------------------------|
+| [openspec/README.md](openspec/README.md)      | AI Knowledge Architecture 完整规范（权威源原则、工作流、目录规范、沉淀规则） |
 | [Discovery Report](docs/discovery-report.md) | 项目全局认知基线（21 章节，全模块覆盖）        |
-| [知识架构报告](.trae/specs/redesign-knowledge-architecture/knowledge-architecture-report.md) | OpenSpec 与 Trellis 职责分工、Module Development Guide 模式、Progressive Loading 设计 |
-| `.trellis/workflow.md`                       | 开发阶段流程、任务创建时机、Skill 路由         |
+| `.trae/workflow.md`                          | 开发阶段流程、任务创建时机、Skill 路由         |
 | `.trellis/workspace/`                        | 开发者日志和会话追踪                           |
 | `.trellis/tasks/`                            | 活跃/已归档任务（PRD、research、jsonl 上下文） |
 
@@ -169,6 +170,8 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 - 配置管理指南：`docs/guide/backend/configuration-guide.md`
 
 ## 数据库模型（核心）
+
+> Orientation Summary。完整 schema 见 `packages/server/prisma/schema.prisma`，业务规则见对应 OpenSpec specs。
 
 ```
 User ──→ Session (Chat)

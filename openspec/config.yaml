@@ -18,10 +18,13 @@ context: |
     - DB: PostgreSQL 16 + pgvector, Prisma ORM, snake_case DB -> camelCase TS
     - Commit: 简体中文, format: type(scope): description
 
-  Spec organization:
-    - openspec/specs/ — 系统能力规范（做什么 WHAT）：持久化的 capability-level requirements
-    - .trae/specs/    — 特性实施规范（怎么做 HOW）：transient feature-level PRD + tasks + checklist
-    - .trae/rules/    — 编码规范：coding conventions, patterns, style guides
+  Knowledge architecture (see openspec/README.md for full specification):
+    - Knowledge Layers (按需加载):
+      - openspec/specs/ — Business Knowledge 权威源（WHAT）：Business Rules / Architecture / Feature Spec / API Contract / Domain Model / Acceptance Criteria
+      - .trellis/spec/  — Development Knowledge 权威源（HOW）：Coding Convention / Testing Pattern / Review Checklist / Development Guide / Common Pitfalls / Implementation Notes
+    - Runtime Layer (IDE 始终注入):
+      - .trae/rules/    — Workspace Rules（ALWAYS）：Code Review / Security / Performance / Git Commit / Ponytail Mode
+    - Authority Principle: 每条知识仅有一个 Source of Truth；Reference > Copy
 
 # Per-artifact rules
 rules:
