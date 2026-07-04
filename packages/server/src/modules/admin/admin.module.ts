@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common'
 import { AuthModule } from '../../auth/auth.module.js'
+import { PermissionGuard } from '../../auth/guards/permission.guard.js'
 import { UserModule } from '../user/user.module.js'
 import { AdminController } from './admin.controller.js'
 import { AdminService } from './admin.service.js'
@@ -28,7 +29,8 @@ import { PermissionService } from './services/permission.service.js'
     InvitationRepository,
     InvitationService,
     AuditService,
+    PermissionGuard,
   ],
-  exports: [PermissionRepository, PermissionService, AuditService],
+  exports: [PermissionRepository, PermissionService, AuditService, PermissionGuard],
 })
 export class AdminModule {}

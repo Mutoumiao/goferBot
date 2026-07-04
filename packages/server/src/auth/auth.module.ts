@@ -2,7 +2,7 @@ import { forwardRef, Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
-import { AdminModule } from '../modules/admin/admin.module.js'
+import { PermissionModule } from '../modules/permission/permission.module.js'
 import { UserModule } from '../modules/user/user.module.js'
 import { StorageModule } from '../processors/storage/storage.module.js'
 import { AuthController } from './auth.controller.js'
@@ -14,7 +14,6 @@ import { CaptchaService } from './captcha.service.js'
 import { CookieHelper } from './cookie.helper.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
-import { PermissionGuard } from './guards/permission.guard.js'
 import { UserPasswordChangedListener } from './listeners/user-password-changed.listener.js'
 import { UserStatusChangedListener } from './listeners/user-status-changed.listener.js'
 import { JwtStrategy } from './strategies/jwt.strategy.js'
@@ -35,7 +34,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     forwardRef(() => UserModule),
     StorageModule,
     AuthRepositoryModule,
-    forwardRef(() => AdminModule),
+    PermissionModule,
   ],
   providers: [
     AuthService,
@@ -46,7 +45,6 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     CookieHelper,
     UserPasswordChangedListener,
     UserStatusChangedListener,
-    PermissionGuard,
     JwtAuthGuard,
   ],
   controllers: [AuthController, CaptchaController],
@@ -55,7 +53,6 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     AuthRedisService,
     CaptchaService,
     CookieHelper,
-    PermissionGuard,
     JwtAuthGuard,
     JwtStrategy,
     PasswordEncryptionService,

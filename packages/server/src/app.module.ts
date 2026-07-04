@@ -73,8 +73,8 @@ const ROOT_ENV_PATH = resolve(__dirname, '../../../.env')
     SessionModule,
     ChatModule,
     CompanionModule,
-    SettingsModule,
     AdminModule,
+    SettingsModule,
     RagModule,
   ],
   providers: [
