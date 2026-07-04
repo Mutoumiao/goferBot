@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PermissionService } from '../../src/auth/services/permission.service.js'
+import { PermissionService } from '../../src/modules/admin/services/permission.service.js'
 
 const mockPermissionRepository = {
   getPermissionsByUserId: vi.fn(),
   getAllPermissions: vi.fn(),
+  getUserRoles: vi.fn(),
 }
 
 const mockAuthRedis = {
@@ -18,6 +19,7 @@ describe('PermissionService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockPermissionRepository.getUserRoles.mockResolvedValue([])
     service = new PermissionService(mockPermissionRepository as never, mockAuthRedis as never)
   })
 

@@ -12,11 +12,13 @@ async function refreshToken(): Promise<boolean> {
   if (isRefreshing) return false
   isRefreshing = true
   try {
-    // ponytail: 后端从 HttpOnly Cookie 读取 refreshToken，不再需要前端传递
     const response = await fetch(`${API_BASE_URL}/auth/admin/refresh`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-App-Context': 'admin',
+      },
       body: '{}',
     })
     return response.ok
@@ -120,7 +122,12 @@ export const alovaInstance = createAlova({
   responded,
   id: 'goferbot-admin',
   statesHook: ReactHook,
-  // ponytail: 包裹 fetch 使所有请求携带 Cookie（HttpOnly 认证）
+  beforeRequest(method) {
+    method.config.headers = {
+      ...method.config.headers,
+      'X-App-Context': 'admin',
+    }
+  },
   requestAdapter: adapterFetch({
     customFetch: (input: RequestInfo | URL, init?: RequestInit) =>
       fetch(input, { ...init, credentials: 'include' }),

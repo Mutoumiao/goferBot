@@ -22,7 +22,7 @@ export function waitForAuthInit(maxMs = 3000): Promise<void> {
 
 export interface AuthStateSnapshot {
   isAuthenticated: boolean
-  role: string | null
+  roles: string[]
   permissions: string[]
 }
 
@@ -30,24 +30,31 @@ export function getAuthSnapshot(): AuthStateSnapshot {
   const s = useAuthStore.getState()
   return {
     isAuthenticated: s.isAuthenticated,
-    role: s.user?.role ?? null,
+    roles: s.user?.roles ?? [],
     permissions: s.user?.permissions ?? [],
   }
 }
 
 export function isAdmin(snapshot: AuthStateSnapshot) {
-  return (snapshot.role === 'ADMIN' || snapshot.role === 'SUPER_ADMIN') && snapshot.isAuthenticated
+  return (
+    (snapshot.roles.includes('admin') || snapshot.roles.includes('super_admin')) &&
+    snapshot.isAuthenticated
+  )
+}
+
+export function isSuperAdmin(snapshot: AuthStateSnapshot) {
+  return snapshot.roles.includes('super_admin') && snapshot.isAuthenticated
 }
 
 export function hasPermission(snapshot: AuthStateSnapshot, permission: string): boolean {
   if (!snapshot.isAuthenticated) return false
-  if (snapshot.role === 'SUPER_ADMIN') return true
+  if (snapshot.roles.includes('super_admin')) return true
   return snapshot.permissions.includes(permission)
 }
 
 export function hasAnyPermission(snapshot: AuthStateSnapshot, permissions: string[]): boolean {
   if (!snapshot.isAuthenticated) return false
-  if (snapshot.role === 'SUPER_ADMIN') return true
+  if (snapshot.roles.includes('super_admin')) return true
   return permissions.some((p) => snapshot.permissions.includes(p))
 }
 

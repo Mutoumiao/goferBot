@@ -22,7 +22,7 @@ export const logout = () => alovaInstance.Post<{ success: boolean }>('/auth/web/
  * 注册 — 返回 accessToken + user
  */
 export const register = (data: RegisterRequest) =>
-  alovaInstance.Post<AuthResponse>('/auth/register', data)
+  alovaInstance.Post<AuthResponse>('/auth/web/register', data)
 
 /**
  * 获取当前用户信息（需 Bearer Token）
@@ -32,8 +32,7 @@ export const getMe = () => alovaInstance.Get<User>('/auth/me')
 /**
  * Token 刷新 — 由 alova 拦截器自动调用，一般不直接使用
  */
-export const refresh = (data: { refreshToken: string }) =>
-  alovaInstance.Post<AuthResponse>('/auth/web/refresh', data)
+export const refresh = () => alovaInstance.Post<AuthResponse>('/auth/web/refresh', {})
 
 /**
  * 获取 RSA 公钥（用于密码加密）
@@ -55,7 +54,7 @@ export const getCaptcha = () => alovaInstance.Get<CaptchaResponse>('/auth/captch
 /**
  * 更新当前用户信息（昵称等）
  */
-export const updateMe = (data: { name?: string }) => alovaInstance.Patch<User>('/auth/me', data)
+export const updateMe = (data: { name?: string }) => alovaInstance.Patch<User>('/user/me', data)
 
 /**
  * 上传用户头像（multipart/form-data）
@@ -63,5 +62,5 @@ export const updateMe = (data: { name?: string }) => alovaInstance.Patch<User>('
 export const uploadAvatar = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  return alovaInstance.Post<{ avatarUrl: string }>('/auth/avatar', formData)
+  return alovaInstance.Post<{ avatar: string | null }>('/user/avatar', formData)
 }

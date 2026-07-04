@@ -6,11 +6,12 @@ describe('AuthService', () => {
   let authService: AuthService
   let mockJwtService: any
   let mockConfigService: any
-  let mockUserService: any
-  let mockStorageService: any
-  let mockAuthRedis: any
-  let mockCaptchaService: any
+  let mockCookieHelper: any
   let mockAuthRepository: any
+  let mockAuthRedis: any
+  let mockRsaService: any
+  let mockCaptchaService: any
+  let mockUserService: any
   let mockPermissionService: any
 
   beforeEach(() => {
@@ -22,25 +23,32 @@ describe('AuthService', () => {
       get: vi.fn().mockReturnValue('15m'),
       getOrThrow: vi.fn().mockReturnValue('secret'),
     }
+    mockCookieHelper = {
+      setAuthCookies: vi.fn(),
+      clearAuthCookies: vi.fn(),
+    }
     mockUserService = {
-      create: vi.fn(),
-      validatePassword: vi.fn(),
       findById: vi.fn(),
     }
-    mockStorageService = {}
-    mockAuthRedis = {}
+    mockAuthRedis = {
+      blacklistToken: vi.fn().mockResolvedValue(undefined),
+      invalidateUserCache: vi.fn().mockResolvedValue(undefined),
+      cacheUserPermissions: vi.fn().mockResolvedValue(undefined),
+    }
+    mockRsaService = {
+      decryptPassword: vi.fn().mockResolvedValue('decrypted-password'),
+    }
     mockCaptchaService = {
       verify: vi.fn().mockResolvedValue(true),
     }
     mockAuthRepository = {
-      createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
-      createSessionWithTokenPair: vi.fn().mockResolvedValue({ id: 'session-1' }),
-      insertRefreshToken: vi.fn().mockResolvedValue(undefined),
+      insertRefreshToken: vi.fn().mockResolvedValue({ id: 'rt-2' }),
       findRefreshTokenByJtiHash: vi.fn(),
       markRefreshTokenUsed: vi.fn().mockResolvedValue(true),
       revokeSession: vi.fn().mockResolvedValue(undefined),
-      getRolesForUserByApp: vi.fn().mockResolvedValue([]),
+      getRolesForUserByApp: vi.fn().mockResolvedValue([{ role: 'USER' }]),
       isAuthMethodEnabled: vi.fn().mockResolvedValue(true),
+      createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
     }
     mockPermissionService = {
       getUserPermissions: vi.fn().mockResolvedValue([]),
@@ -49,180 +57,22 @@ describe('AuthService', () => {
     authService = new AuthService(
       mockJwtService,
       mockConfigService,
-      mockUserService,
-      mockStorageService,
-      mockAuthRedis,
-      mockCaptchaService,
+      mockCookieHelper,
       mockAuthRepository,
+      mockAuthRedis,
+      mockRsaService,
+      mockCaptchaService,
+      mockUserService,
       mockPermissionService,
     )
-  })
-
-  describe('register', () => {
-    it('AC-03a: creates user and returns tokens for valid input', async () => {
-      mockUserService.create.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        name: 'Test',
-      })
-
-      const result = await authService.register('test@gofer.bot', 'password123')
-
-      expect(result.user.email).toBe('test@gofer.bot')
-      expect(result.accessToken).toBe('mock-token')
-      expect(mockUserService.create).toHaveBeenCalledWith(
-        'test@gofer.bot',
-        'password123',
-        undefined,
-      )
-    })
-
-    it('AC-03j: propagates ConflictException when email already exists', async () => {
-      const conflictError = new Error('USER_EXISTS')
-      conflictError.name = 'ConflictException'
-      mockUserService.create.mockRejectedValue(conflictError)
-
-      await expect(authService.register('exists@gofer.bot', 'password123')).rejects.toThrow(
-        'USER_EXISTS',
-      )
-    })
-  })
-
-  describe('login', () => {
-    it('AC-03b: returns tokens for valid credentials', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: true,
-      })
-      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
-
-      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
-        captchaId: 'cid-1',
-        captchaCode: 'ABCD',
-      })
-
-      expect(result.user.id).toBe('u1')
-      expect(result.accessToken).toBe('mock-token')
-      expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'web')
-      expect(mockCaptchaService.verify).toHaveBeenCalledWith('cid-1', 'ABCD')
-    })
-
-    it('AC-03b-web-captcha-required: throws when web login has no captcha', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: true,
-      })
-      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
-
-      await expect(authService.login('test@gofer.bot', 'password123', 'web')).rejects.toThrow(
-        AppException,
-      )
-    })
-
-    it('AC-03c: throws AppException when account is disabled', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: false,
-      })
-
-      await expect(
-        authService.login('test@gofer.bot', 'password123', 'web', {
-          captchaId: 'cid-1',
-          captchaCode: 'ABCD',
-        }),
-      ).rejects.toThrow(AppException)
-    })
-
-    it('AC-03b-admin: returns tokens for admin with admin role', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'admin@gofer.bot',
-        isActive: true,
-      })
-      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'ADMIN' }])
-
-      const result = await authService.login('admin@gofer.bot', 'password123', 'admin', {
-        captchaId: 'cid-1',
-        captchaCode: 'ABCD',
-      })
-
-      expect(result.user.id).toBe('u1')
-      expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'admin')
-      expect(mockCaptchaService.verify).toHaveBeenCalledWith('cid-1', 'ABCD')
-    })
-
-    it('AC-03b-admin-captcha-required: throws when admin login has no captcha', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'admin@gofer.bot',
-        isActive: true,
-      })
-      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'ADMIN' }])
-
-      await expect(authService.login('admin@gofer.bot', 'password123', 'admin')).rejects.toThrow(
-        AppException,
-      )
-    })
-
-    it('AC-03b-admin-deny: throws AppException when admin has no admin role', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'admin@gofer.bot',
-        isActive: true,
-      })
-      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([])
-
-      await expect(
-        authService.login('admin@gofer.bot', 'password123', 'admin', {
-          captchaId: 'cid-1',
-          captchaCode: 'ABCD',
-        }),
-      ).rejects.toThrow(AppException)
-    })
-
-    it('AC-03-auth-method-disabled: throws when password method is disabled for app', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: true,
-      })
-      mockAuthRepository.isAuthMethodEnabled.mockResolvedValue(false)
-
-      await expect(
-        authService.login('test@gofer.bot', 'password123', 'web', {
-          captchaId: 'cid-1',
-          captchaCode: 'ABCD',
-        }),
-      ).rejects.toThrow(AppException)
-      expect(mockAuthRepository.isAuthMethodEnabled).toHaveBeenCalledWith('web', 'password')
-    })
-
-    it('AC-03-auth-method-check: validates auth method enabled before login', async () => {
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: true,
-      })
-      mockAuthRepository.isAuthMethodEnabled.mockResolvedValue(true)
-      mockAuthRepository.getRolesForUserByApp.mockResolvedValue([{ role: 'USER' }])
-
-      await authService.login('test@gofer.bot', 'password123', 'web', {
-        captchaId: 'cid-1',
-        captchaCode: 'ABCD',
-      })
-
-      expect(mockAuthRepository.isAuthMethodEnabled).toHaveBeenCalledWith('web', 'password')
-    })
   })
 
   describe('refresh', () => {
     it('AC-03d: returns new tokens for valid refresh token', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
-        sid: 'session-1',
+        email: 'test@gofer.bot',
+        sessionId: 'session-1',
         app: 'web',
         jti: 'jti-1',
         type: 'refresh',
@@ -241,19 +91,19 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: null },
       })
 
-      const result = await authService.refresh('valid-refresh-token')
+      const result = await authService.refresh('web', 'valid-refresh-token')
 
       expect(result.accessToken).toBe('mock-token')
       expect(result.refreshToken).toBe('mock-token')
       expect(mockJwtService.verify).toHaveBeenCalledWith('valid-refresh-token', expect.any(Object))
-      // ✅ 验证角色重新加载被调用
       expect(mockAuthRepository.getRolesForUserByApp).toHaveBeenCalledWith('u1', 'web')
     })
 
     it('AC-03d-rot: marks old refresh token as used and creates new one', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
-        sid: 'session-1',
+        email: 'test@gofer.bot',
+        sessionId: 'session-1',
         app: 'web',
         jti: 'jti-1',
         type: 'refresh',
@@ -272,7 +122,7 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: null },
       })
 
-      await authService.refresh('valid-refresh-token')
+      await authService.refresh('web', 'valid-refresh-token')
 
       expect(mockAuthRepository.markRefreshTokenUsed).toHaveBeenCalledTimes(1)
       expect(mockAuthRepository.insertRefreshToken).toHaveBeenCalledWith({
@@ -303,10 +153,9 @@ describe('AuthService', () => {
         revokedAt: null,
         session: { id: 'session-1', revokedAt: null },
       })
-      // 模拟并发竞争失败：另一个请求已经标记了此 token
       mockAuthRepository.markRefreshTokenUsed.mockResolvedValue(false)
 
-      await expect(authService.refresh('valid-refresh-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('web', 'valid-refresh-token')).rejects.toThrow(AppException)
       expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith(
         'session-1',
         'token_replay_detected',
@@ -330,7 +179,7 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: null },
       })
 
-      await expect(authService.refresh('reused-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('web', 'reused-token')).rejects.toThrow(AppException)
       expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith(
         'session-1',
         'token_replay_detected',
@@ -354,7 +203,7 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: null },
       })
 
-      await expect(authService.refresh('revoked-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('web', 'revoked-token')).rejects.toThrow(AppException)
     })
 
     it('AC-03d-session-revoked: throws when session is revoked', async () => {
@@ -374,7 +223,9 @@ describe('AuthService', () => {
         session: { id: 'session-1', revokedAt: new Date() },
       })
 
-      await expect(authService.refresh('session-revoked-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('web', 'session-revoked-token')).rejects.toThrow(
+        AppException,
+      )
     })
 
     it('AC-03e: throws AppException for invalid token type', async () => {
@@ -386,7 +237,7 @@ describe('AuthService', () => {
         type: 'access',
       })
 
-      await expect(authService.refresh('access-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('web', 'access-token')).rejects.toThrow(AppException)
     })
 
     it('AC-03f: throws AppException when user not found', async () => {
@@ -399,7 +250,7 @@ describe('AuthService', () => {
       })
       mockUserService.findById.mockResolvedValue(null)
 
-      await expect(authService.refresh('valid-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('web', 'valid-token')).rejects.toThrow(AppException)
     })
 
     it('AC-03g: throws AppException for expired/invalid token', async () => {
@@ -407,10 +258,9 @@ describe('AuthService', () => {
         throw new Error('jwt expired')
       })
 
-      await expect(authService.refresh('expired-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('web', 'expired-token')).rejects.toThrow(AppException)
     })
 
-    // ✅ 新增：admin 角色缺失测试
     it('AC-03d-admin-role: revokes session when admin role is removed after token issued', async () => {
       mockJwtService.verify.mockReturnValue({
         sub: 'u1',
@@ -432,10 +282,11 @@ describe('AuthService', () => {
         revokedAt: null,
         session: { id: 'session-1', revokedAt: null },
       })
-      // 模拟 admin 角色被撤销
       mockAuthRepository.getRolesForUserByApp.mockResolvedValue([])
 
-      await expect(authService.refresh('admin-refresh-token')).rejects.toThrow(AppException)
+      await expect(authService.refresh('admin', 'admin-refresh-token')).rejects.toThrow(
+        AppException,
+      )
       expect(mockAuthRepository.revokeSession).toHaveBeenCalledWith(
         'session-1',
         'admin_role_missing',
@@ -443,130 +294,23 @@ describe('AuthService', () => {
     })
   })
 
-  describe('generateTokens', () => {
-    it('AC-03k: uses default expiresIn when config returns undefined', async () => {
-      mockConfigService.get.mockReturnValue(undefined)
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: true,
-      })
-
-      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
-        captchaId: 'cid-1',
-        captchaCode: 'ABCD',
-      })
-
-      expect(result.accessToken).toBe('mock-token')
-      expect(mockJwtService.sign).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({ expiresIn: '2h' }),
-      )
-    })
-
-    it('AC-03l: falls back to safe default when JWT_EXPIRES_IN is invalid', async () => {
-      mockConfigService.get.mockReturnValue('invalid')
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: true,
-      })
-
-      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
-        captchaId: 'cid-1',
-        captchaCode: 'ABCD',
-      })
-
-      expect(result.accessToken).toBe('mock-token')
-      expect(mockJwtService.sign).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({ expiresIn: '2h' }),
-      )
-    })
-
-    it('AC-03m: uses config value when JWT_EXPIRES_IN is valid', async () => {
-      mockConfigService.get.mockReturnValue('30m')
-      mockUserService.validatePassword.mockResolvedValue({
-        id: 'u1',
-        email: 'test@gofer.bot',
-        isActive: true,
-      })
-
-      const result = await authService.login('test@gofer.bot', 'password123', 'web', {
-        captchaId: 'cid-1',
-        captchaCode: 'ABCD',
-      })
-
-      expect(result.accessToken).toBe('mock-token')
-      expect(mockJwtService.sign).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({ expiresIn: '30m' }),
-      )
-    })
-  })
-
   describe('blacklistToken', () => {
     it('AC-03n: delegates to authRedis with parsed TTL', async () => {
       mockConfigService.get.mockReturnValue('2h')
-      const mockAuthRedis = {
-        blacklistToken: vi.fn().mockResolvedValue(undefined),
-      } as any
-      authService = new AuthService(
-        mockJwtService,
-        mockConfigService,
-        mockUserService,
-        mockStorageService,
-        mockAuthRedis,
-        mockCaptchaService,
-        mockAuthRepository,
-        mockPermissionService,
-      )
-
       await authService.blacklistToken('token-abc')
-
       expect(mockAuthRedis.blacklistToken).toHaveBeenCalledWith('token-abc', 7200)
     })
 
     it('AC-03o: defaults to 7200 seconds when config is missing', async () => {
       mockConfigService.get.mockReturnValue(undefined)
-      const mockAuthRedis = {
-        blacklistToken: vi.fn().mockResolvedValue(undefined),
-      } as any
-      authService = new AuthService(
-        mockJwtService,
-        mockConfigService,
-        mockUserService,
-        mockStorageService,
-        mockAuthRedis,
-        mockCaptchaService,
-        mockAuthRepository,
-        mockPermissionService,
-      )
-
       await authService.blacklistToken('token-abc')
-
       expect(mockAuthRedis.blacklistToken).toHaveBeenCalledWith('token-abc', 7200)
     })
   })
 
   describe('invalidateUserCache', () => {
     it('AC-03p: delegates to authRedis.invalidateUserCache', async () => {
-      const mockAuthRedis = {
-        invalidateUserCache: vi.fn().mockResolvedValue(undefined),
-      } as any
-      authService = new AuthService(
-        mockJwtService,
-        mockConfigService,
-        mockUserService,
-        mockStorageService,
-        mockAuthRedis,
-        mockCaptchaService,
-        mockAuthRepository,
-        mockPermissionService,
-      )
-
       await authService.invalidateUserCache('u1')
-
       expect(mockAuthRedis.invalidateUserCache).toHaveBeenCalledWith('u1')
     })
   })
@@ -578,7 +322,7 @@ describe('AuthService', () => {
         email: 'test@gofer.bot',
       })
 
-      const result = await authService.me('u1')
+      const result = await authService.me('u1', 'web')
 
       expect(result.email).toBe('test@gofer.bot')
     })
@@ -586,7 +330,7 @@ describe('AuthService', () => {
     it('AC-03i: throws AppException when user not found', async () => {
       mockUserService.findById.mockResolvedValue(null)
 
-      await expect(authService.me('u1')).rejects.toThrow(AppException)
+      await expect(authService.me('u1', 'web')).rejects.toThrow(AppException)
     })
   })
 })

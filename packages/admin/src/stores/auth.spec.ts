@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import type { AdminRoleCode } from '@/stores/auth'
 import { useAuthStore } from '@/stores/auth'
 
 describe('auth store', () => {
@@ -22,7 +23,7 @@ describe('auth store', () => {
       id: 'u1',
       email: 'a@b.com',
       name: 'User',
-      role: 'ADMIN' as const,
+      roles: ['admin'] as AdminRoleCode[],
       isActive: true,
     }
     useAuthStore.getState().setUser(user)
@@ -37,19 +38,29 @@ describe('auth store', () => {
       id: 'u1',
       email: 'a@b.com',
       name: 'Old',
-      role: 'ADMIN' as const,
+      roles: ['admin'] as AdminRoleCode[],
       isActive: true,
     })
-    useAuthStore
-      .getState()
-      .setUser({ id: 'u1', email: 'a@b.com', name: 'New', role: 'ADMIN' as const, isActive: true })
+    useAuthStore.getState().setUser({
+      id: 'u1',
+      email: 'a@b.com',
+      name: 'New',
+      roles: ['admin'] as AdminRoleCode[],
+      isActive: true,
+    })
 
     expect(useAuthStore.getState().user?.name).toBe('New')
   })
 
   it('clearAuth resets state', () => {
     useAuthStore.setState({
-      user: { id: 'u1', email: 'a@b.com', name: 'User', role: 'ADMIN' as const, isActive: true },
+      user: {
+        id: 'u1',
+        email: 'a@b.com',
+        name: 'User',
+        roles: ['admin'] as AdminRoleCode[],
+        isActive: true,
+      },
       isAuthenticated: true,
       isInitialized: true,
     })
@@ -74,7 +85,7 @@ describe('auth store', () => {
       id: 'u1',
       email: 'a@b.com',
       name: 'User',
-      role: 'ADMIN' as const,
+      roles: ['admin'] as AdminRoleCode[],
       isActive: true,
     })
 

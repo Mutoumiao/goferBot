@@ -2,19 +2,18 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { ROUTES_REGISTER } from '@/router-register'
 
-export type AdminRole = 'ADMIN' | 'USER' | 'SUPER_ADMIN'
+export type AdminRoleCode = 'super_admin' | 'admin' | 'user'
 
 export interface AdminUser {
   id: string
   email: string
   name?: string
-  role: AdminRole
   avatarUrl?: string | null
   isActive: boolean
-  mustChangePassword?: boolean
+  roles: AdminRoleCode[]
+  permissions?: string[]
   createdAt?: string
   updatedAt?: string
-  permissions?: string[]
 }
 
 interface AuthState {
@@ -26,7 +25,6 @@ interface AuthState {
   setUser: (user: AdminUser) => void
   clearAuth: () => void
   setInitialized: (value: boolean) => void
-  setMustChangePassword: (value: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -54,15 +52,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setInitialized: (value: boolean) => set({ isInitialized: value }),
-
-      setMustChangePassword: (value: boolean) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, mustChangePassword: value } : null,
-        })),
     }),
     {
       name: 'goferbot-admin-auth',
-      // ponytail: 仅持久化 user 便于刷新后恢复；认证凭据由 HttpOnly Cookie 承担
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

@@ -105,19 +105,20 @@ export async function registerUser(
   name: string,
   email: string,
   password: string,
+  invitationCode: string,
 ): Promise<RegisterResult> {
-  if (!name.trim() || !email.trim() || !password) {
+  if (!name.trim() || !email.trim() || !password || !invitationCode.trim()) {
     return { success: false, error: '请填写所有字段' }
   }
 
   try {
-    return await attemptRegister(name, email, password)
+    return await attemptRegister(name, email, password, invitationCode)
   } catch (err) {
     const code = (err as { code?: string }).code
     if (code === 'DECRYPT_FAILED') {
       clearPublicKeyCache()
       try {
-        return await attemptRegister(name, email, password)
+        return await attemptRegister(name, email, password, invitationCode)
       } catch (retryErr) {
         return { success: false, error: mapAuthError(retryErr) }
       }
@@ -130,9 +131,10 @@ async function attemptRegister(
   name: string,
   email: string,
   password: string,
+  invitationCode: string,
 ): Promise<RegisterResult> {
   const encryptedPassword = await encryptPassword(password)
-  const res = await register({ email, encryptedPassword, name }).send()
+  const res = await register({ email, encryptedPassword, invitationCode, name }).send()
   const user = res.user
   if (user) {
     useAuthStore.getState().setUser(user)
@@ -143,8 +145,7 @@ async function attemptRegister(
 
 export async function refreshAuth(): Promise<boolean> {
   try {
-    // Refresh token is in HttpOnly cookie, backend reads it automatically
-    await refresh({ refreshToken: '' }).send()
+    await refresh().send()
     return true
   } catch {
     return false
@@ -214,7 +215,7 @@ export async function updateProfile(data: UpdateProfileData): Promise<UpdateProf
         const res = await uploadAvatar(avatarFile).send()
         const currentUser = useAuthStore.getState().user
         if (currentUser) {
-          const updatedUser = { ...currentUser, avatarUrl: res.avatarUrl } as User
+          const updatedUser = { ...currentUser, avatar: res.avatar } as User
           useAuthStore.getState().setUser(updatedUser)
         }
         toast.success('头像已更新')

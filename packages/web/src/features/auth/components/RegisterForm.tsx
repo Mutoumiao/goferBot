@@ -11,6 +11,7 @@ export function RegisterForm() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [invitationCode, setInvitationCode] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -19,6 +20,7 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null)
   const [nameError, setNameError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [invitationCodeError, setInvitationCodeError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null)
 
@@ -28,6 +30,7 @@ export function RegisterForm() {
     let valid = true
     setNameError(null)
     setEmailError(null)
+    setInvitationCodeError(null)
     setPasswordError(null)
     setConfirmPasswordError(null)
 
@@ -41,6 +44,11 @@ export function RegisterForm() {
       valid = false
     } else if (!EMAIL_REGEX.test(email)) {
       setEmailError('请输入有效的邮箱地址')
+      valid = false
+    }
+
+    if (!invitationCode.trim()) {
+      setInvitationCodeError('请输入邀请码')
       valid = false
     }
 
@@ -68,7 +76,7 @@ export function RegisterForm() {
     if (!validate()) return
 
     setLoading(true)
-    const result = await registerUser(name, email, password)
+    const result = await registerUser(name, email, password, invitationCode)
     setLoading(false)
     if (result.success) {
       navigate({ to: '/', replace: true })
@@ -145,6 +153,36 @@ export function RegisterForm() {
           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-500">
             <AlertCircle className="size-3.5 shrink-0" />
             {emailError}
+          </p>
+        )}
+      </div>
+
+      {/* 邀请码 */}
+      <div>
+        <label
+          htmlFor="register-invitation-code"
+          className="mb-2 block text-[13px] font-medium"
+          style={{ color: 'var(--color-auth-text-secondary)' }}
+        >
+          邀请码
+        </label>
+        <input
+          id="register-invitation-code"
+          type="text"
+          value={invitationCode}
+          onChange={(e) => {
+            setInvitationCode(e.target.value)
+            if (invitationCodeError) setInvitationCodeError(null)
+          }}
+          placeholder="请输入邀请码"
+          required
+          className={inputFieldClass(!!invitationCodeError)}
+          style={{ backgroundColor: 'var(--color-auth-input-bg)' }}
+        />
+        {invitationCodeError && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-500">
+            <AlertCircle className="size-3.5 shrink-0" />
+            {invitationCodeError}
           </p>
         )}
       </div>

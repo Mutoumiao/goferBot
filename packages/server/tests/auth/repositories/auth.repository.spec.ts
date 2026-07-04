@@ -267,15 +267,15 @@ describe('AuthRepository', () => {
 
   describe('getRolesForUserByApp', () => {
     it('returns roles for user in specified app', async () => {
-      const mockRoles = [{ role: 'USER' }, { role: 'ADMIN' }]
+      const mockRoles = [{ roleCode: 'USER' }, { roleCode: 'ADMIN' }]
       mockPrismaService.userRole.findMany.mockResolvedValue(mockRoles)
 
       const result = await authRepository.getRolesForUserByApp('u1', 'web')
 
-      expect(result).toEqual(mockRoles)
+      expect(result).toEqual([{ role: 'USER' }, { role: 'ADMIN' }])
       expect(mockPrismaService.userRole.findMany).toHaveBeenCalledWith({
         where: { userId: 'u1', app: 'web' },
-        select: { role: true },
+        select: { roleCode: true },
       })
     })
 

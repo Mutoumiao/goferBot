@@ -32,7 +32,7 @@ const mockUser: User = {
   id: 'u1',
   email: 'user@example.com',
   name: 'User',
-  role: 'USER',
+  roles: ['user'],
   createdAt: '',
   updatedAt: '',
 }
@@ -128,11 +128,11 @@ describe('auth services', () => {
 
   describe('registerUser', () => {
     it('returns false when fields are empty', async () => {
-      const r1 = await registerUser('', 'a@b.com', 'pass')
+      const r1 = await registerUser('', 'a@b.com', 'pass', 'TESTCODE')
       expect(r1.success).toBe(false)
-      const r2 = await registerUser('name', '', 'pass')
+      const r2 = await registerUser('name', '', 'pass', 'TESTCODE')
       expect(r2.success).toBe(false)
-      const r3 = await registerUser('name', 'a@b.com', '')
+      const r3 = await registerUser('name', 'a@b.com', '', 'TESTCODE')
       expect(r3.success).toBe(false)
       expect(register).not.toHaveBeenCalled()
     })
@@ -142,13 +142,14 @@ describe('auth services', () => {
         send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
-      await registerUser('User', 'user@example.com', 'password')
+      await registerUser('User', 'user@example.com', 'password', 'TESTCODE')
 
       expect(encryptPassword).toHaveBeenCalledWith('password')
       expect(register).toHaveBeenCalledWith({
         email: 'user@example.com',
         encryptedPassword: 'encrypted-password',
         name: 'User',
+        invitationCode: 'TESTCODE',
       })
     })
 
@@ -157,7 +158,7 @@ describe('auth services', () => {
         send: vi.fn().mockResolvedValue({ user: mockUser }),
       } as any)
 
-      const result = await registerUser('User', 'user@example.com', 'password')
+      const result = await registerUser('User', 'user@example.com', 'password', 'TESTCODE')
 
       expect(result.success).toBe(true)
       expect(useAuthStore.getState().user).toEqual(mockUser)
@@ -168,7 +169,7 @@ describe('auth services', () => {
         send: vi.fn().mockRejectedValue(new Error('email taken')),
       } as any)
 
-      const result = await registerUser('User', 'user@example.com', 'password')
+      const result = await registerUser('User', 'user@example.com', 'password', 'TESTCODE')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('email taken')
@@ -180,7 +181,7 @@ describe('auth services', () => {
         send: vi.fn().mockRejectedValue({ code: 'DECRYPT_FAILED', message: '密钥过期' }),
       } as any)
 
-      const result = await registerUser('User', 'user@example.com', 'password')
+      const result = await registerUser('User', 'user@example.com', 'password', 'TESTCODE')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('加密密钥已过期，请刷新页面后重试')
@@ -253,7 +254,7 @@ describe('auth services', () => {
           .mockRejectedValue({ code: 'USER_EXISTS', message: 'Email already registered' }),
       } as any)
 
-      const result = await registerUser('User', 'user@example.com', 'password')
+      const result = await registerUser('User', 'user@example.com', 'password', 'TESTCODE')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('该邮箱已被注册')
@@ -312,7 +313,7 @@ describe('auth services', () => {
         send: vi.fn().mockRejectedValue({ code: 'VALIDATION_ERROR', message: 'Name too short' }),
       } as any)
 
-      const result = await registerUser('U', 'user@example.com', 'password')
+      const result = await registerUser('U', 'user@example.com', 'password', 'TESTCODE')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Name too short')
@@ -323,7 +324,7 @@ describe('auth services', () => {
         send: vi.fn().mockRejectedValue({ code: 'VALIDATION_ERROR' }),
       } as any)
 
-      const result = await registerUser('User', 'user@example.com', 'password')
+      const result = await registerUser('User', 'user@example.com', 'password', 'TESTCODE')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('输入信息不符合要求')

@@ -31,7 +31,7 @@ describe('AC-05: JwtAuthGuard blacklist check', () => {
     mockAuthRedis.isTokenBlacklisted.mockResolvedValue(true)
     const context = createMockContext({
       headers: {},
-      cookies: { goferbot_access_token: 'blacklisted-token' },
+      cookies: { goferbot_web_access_token: 'blacklisted-token' },
     })
 
     await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException)

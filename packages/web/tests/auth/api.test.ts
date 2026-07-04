@@ -37,12 +37,18 @@ describe('auth api', () => {
     expect(method.send).toBeDefined()
   })
 
-  it('register sends POST to /auth/register with encryptedPassword and name', async () => {
-    const method = register({ email: 'a@b.com', encryptedPassword: 'enc-pwd', name: 'User' })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/register', {
+  it('register sends POST to /auth/web/register with encryptedPassword and name', async () => {
+    const method = register({
       email: 'a@b.com',
       encryptedPassword: 'enc-pwd',
       name: 'User',
+      invitationCode: 'TESTCODE123',
+    })
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/register', {
+      email: 'a@b.com',
+      encryptedPassword: 'enc-pwd',
+      name: 'User',
+      invitationCode: 'TESTCODE123',
     })
     expect(method.send).toBeDefined()
   })
@@ -53,11 +59,9 @@ describe('auth api', () => {
     expect(method.send).toBeDefined()
   })
 
-  it('refresh sends POST to /auth/web/refresh with refreshToken', async () => {
-    const method = refresh({ refreshToken: 'rt' })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/refresh', {
-      refreshToken: 'rt',
-    })
+  it('refresh sends POST to /auth/web/refresh with empty body', async () => {
+    const method = refresh()
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/refresh', {})
     expect(method.send).toBeDefined()
   })
 

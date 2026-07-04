@@ -59,12 +59,9 @@ async function attemptLogin(
 ): Promise<LoginResult> {
   const encryptedPassword = await encryptPassword(password)
   const res = await loginApi({ email, encryptedPassword, ...(captcha ?? {}) }).send()
-  const user = res.user as AdminUser
+  const user = res.user
 
   if (user) {
-    if (res.mustChangePassword !== undefined) {
-      user.mustChangePassword = res.mustChangePassword
-    }
     useAuthStore.getState().setUser(user)
     return { success: true }
   }
@@ -73,8 +70,7 @@ async function attemptLogin(
 
 export async function refreshAuth(): Promise<boolean> {
   try {
-    // Refresh token is in HttpOnly cookie, backend reads it automatically
-    await refresh({ refreshToken: '' }).send()
+    await refresh().send()
     return true
   } catch {
     return false
@@ -119,8 +115,6 @@ export function setRememberedEmail(email: string | null): void {
   }
 }
 
-// Note: Refresh token is now managed via HttpOnly cookies
-// This function kept for backward compatibility, always returns false
 export function hasRefreshToken(): boolean {
   return false
 }

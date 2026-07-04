@@ -5,8 +5,8 @@ import { useState } from 'react'
 import type { CaptchaResponse } from '@/api/auth'
 import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
-import { getRememberedEmail, loginService, setRememberedEmail } from '../services'
 import { validatePassword } from '@/utils/password'
+import { getRememberedEmail, loginService, setRememberedEmail } from '../services'
 import { CaptchaInput } from './CaptchaInput'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -84,10 +84,7 @@ export function LoginForm() {
       } else {
         setRememberedEmail(null)
       }
-      const state = useAuthStore.getState()
-      const redirectTo = state.user?.mustChangePassword
-        ? ROUTES_REGISTER.profile.path
-        : search.redirect || ROUTES_REGISTER.dashboard.path
+      const redirectTo = search.redirect || ROUTES_REGISTER.dashboard.path
       navigate({
         to: redirectTo,
         replace: true,

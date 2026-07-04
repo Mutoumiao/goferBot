@@ -6,6 +6,7 @@ import {
   hasAnyPermission,
   hasPermission,
   isAdmin,
+  isSuperAdmin,
   waitForAuthInit,
 } from '@/utils/auth-guard'
 
@@ -20,66 +21,85 @@ describe('auth-guard', () => {
         clearAuth: (() => undefined) as never,
         setUser: (() => undefined) as never,
         setInitialized: ((v: boolean) => useAuthStore.setState({ isInitialized: v })) as never,
-        setMustChangePassword: (() => undefined) as never,
       },
       true,
     )
   })
 
-  it('isAdmin requires ADMIN role and authenticated state', () => {
-    expect(isAdmin({ isAuthenticated: true, role: 'ADMIN', permissions: [] })).toBe(true)
-    expect(isAdmin({ isAuthenticated: true, role: 'USER', permissions: [] })).toBe(false)
-    expect(isAdmin({ isAuthenticated: false, role: 'ADMIN', permissions: [] })).toBe(false)
+  it('isAdmin requires admin/super_admin role and authenticated state', () => {
+    expect(isAdmin({ isAuthenticated: true, roles: ['admin'], permissions: [] })).toBe(true)
+    expect(isAdmin({ isAuthenticated: true, roles: ['super_admin'], permissions: [] })).toBe(true)
+    expect(isAdmin({ isAuthenticated: true, roles: ['user'], permissions: [] })).toBe(false)
+    expect(isAdmin({ isAuthenticated: false, roles: ['admin'], permissions: [] })).toBe(false)
   })
 
-  it('getAuthSnapshot reads isAuthenticated, role and permissions', () => {
+  it('isSuperAdmin requires super_admin role and authenticated state', () => {
+    expect(isSuperAdmin({ isAuthenticated: true, roles: ['super_admin'], permissions: [] })).toBe(
+      true,
+    )
+    expect(isSuperAdmin({ isAuthenticated: true, roles: ['admin'], permissions: [] })).toBe(false)
+    expect(isSuperAdmin({ isAuthenticated: false, roles: ['super_admin'], permissions: [] })).toBe(
+      false,
+    )
+  })
+
+  it('getAuthSnapshot reads isAuthenticated, roles and permissions', () => {
     useAuthStore.setState({
       isAuthenticated: true,
-      user: { id: '1', role: 'ADMIN', email: 'a@b.com', permissions: ['dashboard', 'users'] },
+      user: {
+        id: '1',
+        roles: ['admin'],
+        email: 'a@b.com',
+        isActive: true,
+        permissions: ['dashboard', 'users'],
+      },
     } as never)
     expect(getAuthSnapshot()).toEqual({
       isAuthenticated: true,
-      role: 'ADMIN',
+      roles: ['admin'],
       permissions: ['dashboard', 'users'],
     })
   })
 
   it('hasPermission returns false for unauthenticated users', () => {
     expect(
-      hasPermission({ isAuthenticated: false, role: 'ADMIN', permissions: ['users'] }, 'users'),
+      hasPermission({ isAuthenticated: false, roles: ['admin'], permissions: ['users'] }, 'users'),
     ).toBe(false)
   })
 
-  it('hasPermission returns true for SUPER_ADMIN regardless of permissions', () => {
+  it('hasPermission returns true for super_admin regardless of permissions', () => {
     expect(
-      hasPermission({ isAuthenticated: true, role: 'SUPER_ADMIN', permissions: [] }, 'users'),
+      hasPermission({ isAuthenticated: true, roles: ['super_admin'], permissions: [] }, 'users'),
     ).toBe(true)
   })
 
   it('hasPermission checks permission array for non-super-admin users', () => {
     expect(
       hasPermission(
-        { isAuthenticated: true, role: 'ADMIN', permissions: ['dashboard', 'users'] },
+        { isAuthenticated: true, roles: ['admin'], permissions: ['dashboard', 'users'] },
         'users',
       ),
     ).toBe(true)
     expect(
-      hasPermission({ isAuthenticated: true, role: 'ADMIN', permissions: ['dashboard'] }, 'users'),
+      hasPermission(
+        { isAuthenticated: true, roles: ['admin'], permissions: ['dashboard'] },
+        'users',
+      ),
     ).toBe(false)
   })
 
   it('hasAnyPermission returns false for unauthenticated users', () => {
     expect(
-      hasAnyPermission({ isAuthenticated: false, role: 'ADMIN', permissions: ['users'] }, [
+      hasAnyPermission({ isAuthenticated: false, roles: ['admin'], permissions: ['users'] }, [
         'users',
         'roles',
       ]),
     ).toBe(false)
   })
 
-  it('hasAnyPermission returns true for SUPER_ADMIN regardless of permissions', () => {
+  it('hasAnyPermission returns true for super_admin regardless of permissions', () => {
     expect(
-      hasAnyPermission({ isAuthenticated: true, role: 'SUPER_ADMIN', permissions: [] }, [
+      hasAnyPermission({ isAuthenticated: true, roles: ['super_admin'], permissions: [] }, [
         'users',
         'roles',
       ]),
@@ -89,12 +109,12 @@ describe('auth-guard', () => {
   it('hasAnyPermission checks if any permission is present', () => {
     expect(
       hasAnyPermission(
-        { isAuthenticated: true, role: 'ADMIN', permissions: ['dashboard', 'users'] },
+        { isAuthenticated: true, roles: ['admin'], permissions: ['dashboard', 'users'] },
         ['users', 'roles'],
       ),
     ).toBe(true)
     expect(
-      hasAnyPermission({ isAuthenticated: true, role: 'ADMIN', permissions: ['dashboard'] }, [
+      hasAnyPermission({ isAuthenticated: true, roles: ['admin'], permissions: ['dashboard'] }, [
         'users',
         'roles',
       ]),
