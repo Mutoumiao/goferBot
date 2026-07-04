@@ -34,6 +34,7 @@ const envSchema = z.object({
     .regex(/^\d+[smhd]$/, 'JWT_REFRESH_EXPIRES_IN 格式无效，预期如 15m、2h、7d')
     .default('7d'),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(31).default(12),
+  TEST_INVITATION_CODES: optionalNonEmptyString,
 
   // === 配置加密 ===
   SETTINGS_ENCRYPTION_KEY: optionalNonEmptyString,

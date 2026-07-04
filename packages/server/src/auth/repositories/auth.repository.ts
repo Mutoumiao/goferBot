@@ -54,6 +54,27 @@ export class AuthRepository {
     })
   }
 
+  async findValidSession(sessionId: string) {
+    return this.prisma.authSession.findFirst({
+      where: { id: sessionId, revokedAt: null },
+    })
+  }
+
+  async findUserById(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatar: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+  }
+
   async revokeSession(sessionId: string, reason: string) {
     return this.prisma.authSession.update({
       where: { id: sessionId },
@@ -73,6 +94,27 @@ export class AuthRepository {
       })
       await tx.refreshToken.updateMany({
         where: { session: { userId }, revokedAt: null },
+        data: { revokedAt: now },
+      })
+    })
+  }
+
+  async revokeOtherSessions(
+    userId: string,
+    currentSessionId: string,
+    reason: string,
+  ): Promise<void> {
+    const now = new Date()
+    await this.tx.run(async (tx) => {
+      await tx.authSession.updateMany({
+        where: { userId, revokedAt: null, id: { not: currentSessionId } },
+        data: { revokedAt: now, revokedReason: reason },
+      })
+      await tx.refreshToken.updateMany({
+        where: {
+          session: { userId, id: { not: currentSessionId } },
+          revokedAt: null,
+        },
         data: { revokedAt: now },
       })
     })
@@ -116,10 +158,26 @@ export class AuthRepository {
     })
   }
 
+  async updateLastLogin(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
+      select: { id: true, lastLoginAt: true },
+    })
+  }
+
   async getRolesForUserByApp(userId: string, app: AuthApp) {
-    return this.prisma.userRole.findMany({
-      where: { userId, app },
-      select: { role: true },
+    return this.prisma.userRole
+      .findMany({
+        where: { userId, app },
+        select: { roleCode: true },
+      })
+      .then((rows) => rows.map((r) => ({ role: r.roleCode })))
+  }
+
+  async createUserRole(userId: string, roleCode: string, app: AuthApp) {
+    await this.prisma.userRole.create({
+      data: { userId, roleCode, app },
     })
   }
 
@@ -144,5 +202,60 @@ export class AuthRepository {
     })
 
     return method?.enabled === true
+  }
+
+  async findInvitationCodeByCode(code: string) {
+    return this.prisma.invitationCode.findUnique({
+      where: { code },
+      select: {
+        id: true,
+        code: true,
+        type: true,
+        maxUses: true,
+        usedCount: true,
+        usedBy: true,
+        expiresAt: true,
+      },
+    })
+  }
+
+  async useStandardInvitationCode(codeId: string, userId: string): Promise<void> {
+    await this.prisma.invitationCode.update({
+      where: { id: codeId },
+      data: {
+        usedBy: userId,
+        usedCount: { increment: 1 },
+      },
+    })
+  }
+
+  async useMultiInvitationCode(codeId: string): Promise<void> {
+    await this.prisma.invitationCode.update({
+      where: { id: codeId },
+      data: {
+        usedCount: { increment: 1 },
+      },
+    })
+  }
+
+  async getUserSessions(userId: string) {
+    return this.prisma.authSession.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        refreshTokens: {
+          where: { revokedAt: null, usedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    })
+  }
+
+  async userHasRole(userId: string, app: AuthApp, roleCode: string): Promise<boolean> {
+    const count = await this.prisma.userRole.count({
+      where: { userId, app, roleCode },
+    })
+    return count > 0
   }
 }

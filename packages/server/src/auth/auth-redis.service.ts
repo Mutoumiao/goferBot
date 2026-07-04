@@ -183,6 +183,6 @@ export class AuthRedisService implements OnModuleInit, OnModuleDestroy {
   /** 健康检查：PING Redis；未就绪时返回 'skipped' 表示降级而非故障 */
   async ping(): Promise<string> {
     if (!this.isReady()) return 'skipped'
-    return await this.redis!.ping()
+    return (await this.redis?.ping()) ?? 'skipped'
   }
 }

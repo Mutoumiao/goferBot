@@ -1,4 +1,4 @@
-import { AsyncLocalStorage } from 'async_hooks'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { AppException } from '../lib/app-error.js'
 
 /**
@@ -16,7 +16,11 @@ export function accountDisabledError(): AppException {
 }
 
 export function noAppRoleError(app: string): AppException {
-  return new AppException(`NO_${app.toUpperCase()}_ROLE`, `无权访问${app === 'admin' ? '管理后台' : '系统'}`, 403)
+  return new AppException(
+    `NO_${app.toUpperCase()}_ROLE`,
+    `无权访问${app === 'admin' ? '管理后台' : '系统'}`,
+    403,
+  )
 }
 
 export function noAdminRoleError(): AppException {
@@ -70,4 +74,32 @@ export function captchaRequiredError(): AppException {
 
 export function captchaInvalidError(): AppException {
   return new AppException('CAPTCHA_INVALID', '验证码错误或已过期', 400)
+}
+
+export function appMismatchError(): AppException {
+  return new AppException('APP_MISMATCH', '令牌应用不匹配', 403)
+}
+
+export function invitationCodeInvalidError(): AppException {
+  return new AppException('INVITATION_CODE_INVALID', '无效的邀请码', 400)
+}
+
+export function invitationCodeUsedError(): AppException {
+  return new AppException('INVITATION_CODE_USED', '邀请码已被使用', 400)
+}
+
+export function invitationCodeExpiredError(): AppException {
+  return new AppException('INVITATION_CODE_EXPIRED', '邀请码已过期', 400)
+}
+
+export function invitationCodeMaxUsesError(): AppException {
+  return new AppException('INVITATION_CODE_MAX_USES', '邀请码已达使用上限', 400)
+}
+
+export function systemRoleDeleteDeniedError(): AppException {
+  return new AppException('SYSTEM_ROLE_DELETE_DENIED', '系统预置角色不可删除', 400)
+}
+
+export function superAdminProtectedError(): AppException {
+  return new AppException('SUPER_ADMIN_PROTECTED', '必须保留至少一个启用的超级管理员', 400)
 }

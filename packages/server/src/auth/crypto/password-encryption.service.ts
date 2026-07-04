@@ -1,9 +1,8 @@
 import { constants, generateKeyPairSync, privateDecrypt } from 'node:crypto'
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import { Injectable, OnModuleInit } from '@nestjs/common'
 
 @Injectable()
 export class PasswordEncryptionService implements OnModuleInit {
-  private readonly logger = new Logger(PasswordEncryptionService.name)
   private privateKey: string | null = null
   private publicKeyPem: string | null = null
 

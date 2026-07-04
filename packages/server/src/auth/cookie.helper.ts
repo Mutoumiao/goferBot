@@ -1,47 +1,64 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { FastifyReply } from 'fastify'
+import type { AuthApp } from './types/auth-app.type.js'
+
+export const WEB_ACCESS_COOKIE = 'goferbot_web_access_token'
+export const WEB_REFRESH_COOKIE = 'goferbot_web_refresh_token'
+export const ADMIN_ACCESS_COOKIE = 'goferbot_admin_access_token'
+export const ADMIN_REFRESH_COOKIE = 'goferbot_admin_refresh_token'
+
+export function getCookieNamesForApp(app: AuthApp): {
+  accessToken: string
+  refreshToken: string
+} {
+  switch (app) {
+    case 'web':
+      return { accessToken: WEB_ACCESS_COOKIE, refreshToken: WEB_REFRESH_COOKIE }
+    case 'admin':
+      return { accessToken: ADMIN_ACCESS_COOKIE, refreshToken: ADMIN_REFRESH_COOKIE }
+    default:
+      throw new Error(`Unknown app: ${app}`)
+  }
+}
 
 @Injectable()
 export class CookieHelper {
   constructor(private readonly configService: ConfigService) {}
 
-  setAuthCookies(reply: FastifyReply, accessToken: string, refreshToken: string) {
+  private getCookieOptions() {
     const isProd = this.configService.get('NODE_ENV') === 'production'
     const cookieDomain = this.configService.get<string>('COOKIE_DOMAIN')
 
-    const cookieOptions = {
+    return {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? ('strict' as const) : ('lax' as const),
       path: '/',
       ...(cookieDomain ? { domain: cookieDomain } : {}),
     }
+  }
 
-    reply.setCookie('goferbot_access_token', accessToken, {
-      ...cookieOptions,
+  setAuthCookies(reply: FastifyReply, accessToken: string, refreshToken: string, app: AuthApp) {
+    const opts = this.getCookieOptions()
+    const { accessToken: accessName, refreshToken: refreshName } = getCookieNamesForApp(app)
+
+    reply.setCookie(accessName, accessToken, {
+      ...opts,
       maxAge: 15 * 60 * 1000,
     })
 
-    reply.setCookie('goferbot_refresh_token', refreshToken, {
-      ...cookieOptions,
+    reply.setCookie(refreshName, refreshToken, {
+      ...opts,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     })
   }
 
-  clearAuthCookies(reply: FastifyReply) {
-    const isProd = this.configService.get('NODE_ENV') === 'production'
-    const cookieDomain = this.configService.get<string>('COOKIE_DOMAIN')
+  clearAuthCookies(reply: FastifyReply, app: AuthApp) {
+    const opts = this.getCookieOptions()
+    const { accessToken: accessName, refreshToken: refreshName } = getCookieNamesForApp(app)
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? ('strict' as const) : ('lax' as const),
-      path: '/',
-      ...(cookieDomain ? { domain: cookieDomain } : {}),
-    }
-
-    reply.clearCookie('goferbot_access_token', cookieOptions)
-    reply.clearCookie('goferbot_refresh_token', cookieOptions)
+    reply.clearCookie(accessName, opts)
+    reply.clearCookie(refreshName, opts)
   }
 }

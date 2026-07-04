@@ -5,6 +5,11 @@ import {
   adminUserSchema,
   assignRoleRequestSchema,
   createAdminUserRequestSchema,
+  createInvitationRequestSchema,
+  invitationCodeSchema,
+  invitationCodeTypeSchema,
+  invitationListQuerySchema,
+  invitationListResponseSchema,
   resetPasswordRequestSchema,
   updateAdminUserRequestSchema,
   updateUserStatusRequestSchema,
@@ -121,6 +126,11 @@ export type CreateAdminUserRequest = z.infer<typeof createAdminUserRequestSchema
 export type UpdateAdminUserRequest = z.infer<typeof updateAdminUserRequestSchema>
 export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>
 export type AssignRoleRequest = z.infer<typeof assignRoleRequestSchema>
+export type InvitationCodeType = z.infer<typeof invitationCodeTypeSchema>
+export type CreateInvitationRequest = z.infer<typeof createInvitationRequestSchema>
+export type InvitationCode = z.infer<typeof invitationCodeSchema>
+export type InvitationListQuery = z.infer<typeof invitationListQuerySchema>
+export type InvitationListResponse = z.infer<typeof invitationListResponseSchema>
 
 export type Settings = z.infer<typeof settingsSchema>
 export type SettingsResponse = z.infer<typeof settingsResponseSchema>
@@ -151,6 +161,7 @@ export {
   createAdminUserRequestSchema,
   createDocumentRequestSchema,
   createFolderRequestSchema,
+  createInvitationRequestSchema,
   createKbRequestSchema,
   createSessionRequestSchema,
   documentSchema,
@@ -158,6 +169,10 @@ export {
   documentStatusSchema,
   folderSchema,
   indexingConfigSchema,
+  invitationCodeSchema,
+  invitationCodeTypeSchema,
+  invitationListQuerySchema,
+  invitationListResponseSchema,
   kbDetailResponseSchema,
   kbEntrySchema,
   kbListResponseSchema,

@@ -1,11 +1,19 @@
 import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../../processors/database/prisma.service.js'
 import type { Permission, RolePermission } from '@prisma/client'
-import type { AuthApp } from '../types/auth-app.type.js'
+import type { AuthApp } from '../../../auth/types/auth-app.type.js'
+import { PrismaService } from '../../../processors/database/prisma.service.js'
 
 @Injectable()
 export class PermissionRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getUserRoles(userId: string, app: AuthApp): Promise<string[]> {
+    const userRoles = await this.prisma.userRole.findMany({
+      where: { userId, app },
+      select: { roleCode: true },
+    })
+    return userRoles.map((r) => r.roleCode)
+  }
 
   async getPermissionsByRoleCode(roleCode: string, app: AuthApp): Promise<Permission[]> {
     return this.prisma.permission.findMany({
@@ -19,31 +27,21 @@ export class PermissionRepository {
   }
 
   async getPermissionsByUserId(userId: string, app: AuthApp): Promise<string[]> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        role: true,
-        roles: {
-          where: { app },
-          select: { role: true },
-        },
-      },
-    })
+    const roleCodes = await this.getUserRoles(userId, app)
 
-    if (!user) {
+    if (roleCodes.length === 0) {
       return []
     }
 
-    const roleCodes = new Set<string>()
-    roleCodes.add(user.role)
-    user.roles.forEach((r) => roleCodes.add(r.role))
+    if (roleCodes.includes('super_admin') && app === 'admin') {
+      return ['*']
+    }
 
     const permissions = await this.prisma.permission.findMany({
       where: {
         rolePermissions: {
           some: {
-            roleCode: { in: Array.from(roleCodes) },
-            app,
+            roleCode: { in: roleCodes },
           },
         },
         status: 'active',
@@ -51,7 +49,7 @@ export class PermissionRepository {
       select: { code: true },
     })
 
-    return permissions.map((p) => p.code)
+    return [...new Set(permissions.map((p) => p.code))]
   }
 
   async getAllPermissions(app?: AuthApp): Promise<Permission[]> {
@@ -77,26 +75,38 @@ export class PermissionRepository {
     })
   }
 
-  async createPermission(data: {
+  async findByCodes(codes: string[]): Promise<Permission[]> {
+    if (codes.length === 0) return []
+    return this.prisma.permission.findMany({
+      where: { code: { in: codes }, status: 'active' },
+    })
+  }
+
+  async upsertPermission(data: {
     code: string
     name: string
     description?: string
     type?: string
-    resource?: string
     parentCode?: string
     sortOrder?: number
-    status?: string
   }): Promise<Permission> {
-    return this.prisma.permission.create({
-      data: {
+    return this.prisma.permission.upsert({
+      where: { code: data.code },
+      update: {
+        name: data.name,
+        description: data.description,
+        type: data.type ?? 'menu',
+        parentCode: data.parentCode,
+        sortOrder: data.sortOrder ?? 0,
+      },
+      create: {
         code: data.code,
         name: data.name,
         description: data.description,
         type: data.type ?? 'menu',
-        resource: data.resource,
         parentCode: data.parentCode,
         sortOrder: data.sortOrder ?? 0,
-        status: data.status ?? 'active',
+        status: 'active',
       },
     })
   }
@@ -120,24 +130,25 @@ export class PermissionRepository {
     permissionIds: string[],
     app: AuthApp,
   ): Promise<void> {
-    await Promise.all(
-      permissionIds.map((permissionId) =>
-        this.prisma.rolePermission.upsert({
-          where: {
-            roleCode_permissionId_app: {
-              roleCode,
-              permissionId,
-              app,
-            },
-          },
-          update: {},
-          create: {
-            roleCode,
-            permissionId,
-            app,
-          },
-        }),
-      ),
-    )
+    if (permissionIds.length === 0) {
+      await this.prisma.rolePermission.deleteMany({
+        where: { roleCode, app },
+      })
+      return
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.rolePermission.deleteMany({
+        where: { roleCode, app },
+      }),
+      this.prisma.rolePermission.createMany({
+        data: permissionIds.map((permissionId) => ({
+          roleCode,
+          permissionId,
+          app,
+        })),
+        skipDuplicates: true,
+      }),
+    ])
   }
 }

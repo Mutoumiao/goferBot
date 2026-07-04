@@ -8,6 +8,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module.js'
 import { CommonModule } from './common/common.module.js'
 import { AllExceptionsFilter } from './common/filters/all-exception.filter.js'
+import { AppGuard } from './common/guards/app.guard.js'
 import { SpiderGuard } from './common/guards/spider.guard.js'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js'
@@ -106,6 +107,11 @@ const ROOT_ENV_PATH = resolve(__dirname, '../../../.env')
     {
       provide: APP_GUARD,
       useClass: SpiderGuard,
+    },
+    // 全局应用上下文隔离守卫
+    {
+      provide: APP_GUARD,
+      useClass: AppGuard,
     },
   ],
 })

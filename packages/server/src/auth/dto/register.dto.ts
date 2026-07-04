@@ -4,5 +4,6 @@ import { createZodDto } from 'nestjs-zod'
 export class RegisterDto extends createZodDto(registerRequestSchema) {
   declare email: string
   declare encryptedPassword: string
+  declare invitationCode: string
   declare name?: string
 }

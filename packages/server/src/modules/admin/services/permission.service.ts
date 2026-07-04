@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { AuthRedisService } from '../auth-redis.service.js'
+import { AuthRedisService } from '../../../auth/auth-redis.service.js'
+import type { AuthApp } from '../../../auth/types/auth-app.type.js'
 import { PermissionRepository } from '../repositories/permission.repository.js'
-import type { AuthApp } from '../types/auth-app.type.js'
 
 @Injectable()
 export class PermissionService {
@@ -9,6 +9,15 @@ export class PermissionService {
     private readonly permissionRepository: PermissionRepository,
     private readonly authRedis: AuthRedisService,
   ) {}
+
+  async getUserRoles(userId: string, app: AuthApp): Promise<string[]> {
+    return this.permissionRepository.getUserRoles(userId, app)
+  }
+
+  async isSuperAdmin(userId: string): Promise<boolean> {
+    const roles = await this.permissionRepository.getUserRoles(userId, 'admin')
+    return roles.includes('super_admin')
+  }
 
   async getUserPermissions(userId: string, app: AuthApp): Promise<string[]> {
     const cacheKey = `${userId}:${app}`
@@ -72,10 +81,5 @@ export class PermissionService {
 
   async invalidateAllPermissions(): Promise<void> {
     await this.authRedis.invalidateAllUserPermissions()
-  }
-
-  private async isSuperAdmin(userId: string): Promise<boolean> {
-    const permissions = await this.getUserPermissions(userId, 'admin')
-    return permissions.includes('*') || permissions.length >= 20
   }
 }

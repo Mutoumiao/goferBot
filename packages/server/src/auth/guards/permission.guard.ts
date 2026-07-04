@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { PermissionService } from '../services/permission.service.js'
+import { PermissionService } from '../../modules/admin/services/permission.service.js'
 import { PERMISSION_KEY } from '../decorators/permission.decorator.js'
 import type { AuthApp } from '../types/auth-app.type.js'
 
@@ -31,11 +31,11 @@ export class PermissionGuard implements CanActivate {
       })
     }
 
-    const app = request.app ?? 'admin'
+    const app = (request.user?.app ?? 'admin') as AuthApp
     const hasPermission = await this.permissionService.hasAnyPermission(
       user.id,
       requiredPermissions,
-      app as AuthApp,
+      app,
     )
 
     if (!hasPermission) {

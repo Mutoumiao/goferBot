@@ -1,12 +1,14 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
-import { AuthRepositoryModule } from '../../auth/auth-repository.module.js'
-import { DatabaseModule } from '../../processors/database/database.module.js'
+import { EventEmitterModule } from '@nestjs/event-emitter'
+import { AuthModule } from '../../auth/auth.module.js'
 import { SuperAdminBootstrapService } from './services/super-admin-bootstrap.service.js'
+import { UserController } from './user.controller.js'
 import { UserService } from './user.service.js'
 
 @Module({
-  imports: [DatabaseModule, ConfigModule, AuthRepositoryModule],
+  imports: [ConfigModule, EventEmitterModule, forwardRef(() => AuthModule)],
+  controllers: [UserController],
   providers: [UserService, SuperAdminBootstrapService],
   exports: [UserService, SuperAdminBootstrapService],
 })

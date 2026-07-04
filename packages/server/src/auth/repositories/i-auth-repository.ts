@@ -17,6 +17,7 @@ export interface IAuthRepository {
   findSessionById(sessionId: string): Promise<AuthSession | null>
   revokeSession(sessionId: string, reason: string): Promise<AuthSession>
   revokeAllSessionsForUser(userId: string, reason: string): Promise<void>
+  revokeOtherSessions(userId: string, currentSessionId: string, reason: string): Promise<void>
   insertRefreshToken(data: {
     sessionId: string
     jtiHash: string
@@ -27,4 +28,26 @@ export interface IAuthRepository {
   updateLastSeen(sessionId: string): Promise<AuthSession>
   getRolesForUserByApp(userId: string, app: AuthApp): Promise<Array<{ role: string }>>
   isAuthMethodEnabled(applicationCode: string, provider: string): Promise<boolean>
+  findUserById(userId: string): Promise<{
+    id: string
+    email: string
+    name: string | null
+    avatar: string | null
+    isActive: boolean
+    createdAt: Date
+    updatedAt: Date
+  } | null>
+  findValidSession(sessionId: string): Promise<AuthSession | null>
+  findInvitationCodeByCode(code: string): Promise<{
+    id: string
+    code: string
+    type: string
+    maxUses: number | null
+    usedCount: number
+    usedBy: string | null
+    expiresAt: Date | null
+  } | null>
+  useStandardInvitationCode(codeId: string, userId: string): Promise<void>
+  useTestInvitationCode(codeId: string): Promise<void>
+  createUserRole(userId: string, roleCode: string, app: AuthApp): Promise<void>
 }

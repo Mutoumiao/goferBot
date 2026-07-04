@@ -84,7 +84,7 @@ export async function bootstrap(app: NestFastifyApplication) {
       callback(new Error('Not allowed by CORS'), false)
     },
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept', 'X-Requested-With', 'X-Request-Id'],
+    allowedHeaders: ['Content-Type', 'Accept', 'X-Requested-With', 'X-Request-Id', 'X-App-Context'],
     credentials: true,
   })
 

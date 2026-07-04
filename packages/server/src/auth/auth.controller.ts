@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Patch,
   Post,
   Req,
   Res,
@@ -13,18 +12,15 @@ import {
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { AllowApp, Public } from '../common/decorators/allow-app.decorator.js'
 import { AuthService } from './auth.service.js'
-import { AVATAR_ALLOWED_MIME_TYPES } from './constants.js'
-import { CookieHelper } from './cookie.helper.js'
+import { ADMIN_REFRESH_COOKIE, CookieHelper, WEB_REFRESH_COOKIE } from './cookie.helper.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { CurrentUser } from './decorators/current-user.decorator.js'
 import { AdminLoginDto } from './dto/admin-login.dto.js'
-import { ChangePasswordDto } from './dto/change-password.dto.js'
-import { ChangePasswordForceDto } from './dto/change-password-force.dto.js'
-import { LoginDto } from './dto/login.dto.js'
 import { validatePassword } from './dto/password.schema.js'
 import { RegisterDto } from './dto/register.dto.js'
-import { UpdateProfileDto } from './dto/update-profile.dto.js'
+import { VerifyPasswordDto } from './dto/verify-password.dto.js'
 import { WebLoginDto } from './dto/web-login.dto.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
 import type { AuthApp } from './types/auth-app.type.js'
@@ -37,6 +33,7 @@ export class AuthController {
     private readonly cookieHelper: CookieHelper,
   ) {}
 
+  @Public()
   @Get('public-key')
   @Throttle({ default: { ttl: 60000, limit: 60 } })
   getPublicKey(@Res({ passthrough: true }) res: FastifyReply) {
@@ -48,49 +45,61 @@ export class AuthController {
     }
   }
 
-  @Post('register')
+  @Public()
+  @Post('web/register')
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async register(@Body() dto: RegisterDto) {
+  async webRegister(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Req() req: FastifyRequest,
+  ) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
-    return this.authService.register(dto.email, password, dto.name)
+    const userAgent = req.headers['user-agent']
+    const ip = req.ip
+    const result = await this.authService.webRegister(
+      dto.email,
+      password,
+      dto.invitationCode,
+      dto.name,
+      { userAgent, ip },
+    )
+    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken, 'web')
+    return { user: result.user }
   }
 
+  @Public()
   @Post('web/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async webLogin(@Body() dto: WebLoginDto, @Res({ passthrough: true }) res: FastifyReply) {
-    return this.handleLogin('web', dto, res)
+  async webLogin(
+    @Body() dto: WebLoginDto,
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Req() req: FastifyRequest,
+  ) {
+    const password = this.decryptAndValidate(dto.encryptedPassword)
+    const userAgent = req.headers['user-agent']
+    const ip = req.ip
+    const result = await this.authService.webLogin(dto.email, password, { userAgent, ip })
+    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken, 'web')
+    return { user: result.user }
   }
 
+  @Public()
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
-  async adminLogin(@Body() dto: AdminLoginDto, @Res({ passthrough: true }) res: FastifyReply) {
-    return this.handleLogin('admin', dto, res)
-  }
-
-  private async handleLogin(
-    app: AuthApp,
-    dto: { email: string; encryptedPassword: string; captchaId?: string; captchaCode?: string },
-    res: FastifyReply,
+  async adminLogin(
+    @Body() dto: AdminLoginDto,
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Req() req: FastifyRequest,
   ) {
     const password = this.decryptAndValidate(dto.encryptedPassword)
-    const result = await this.authService.login(dto.email, password, app, {
-      captchaId: dto.captchaId,
-      captchaCode: dto.captchaCode,
-    })
-    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { user: result.user, mustChangePassword: result.mustChangePassword }
-  }
-
-  /** @deprecated 旧登录入口，前端切走后移除 */
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async legacyLogin(@Body() dto: LoginDto) {
-    const password = this.decryptAndValidate(dto.encryptedPassword)
-    return this.authService.login(dto.email, password, 'web')
+    const userAgent = req.headers['user-agent']
+    const ip = req.ip
+    const result = await this.authService.adminLogin(dto.email, password, { userAgent, ip })
+    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken, 'admin')
+    return { user: result.user }
   }
 
   private decryptAndValidate(encryptedPassword: string): string {
@@ -107,125 +116,75 @@ export class AuthController {
     return password
   }
 
+  @Public()
   @Post('web/refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   async webRefresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
-    return this.handleRefresh(req, res)
+    return this.handleRefresh('web', req, res)
   }
 
+  @Public()
   @Post('admin/refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   async adminRefresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
-    return this.handleRefresh(req, res)
+    return this.handleRefresh('admin', req, res)
   }
 
-  private async handleRefresh(req: FastifyRequest, res: FastifyReply) {
-    const refreshToken = req.cookies?.goferbot_refreshToken
+  private async handleRefresh(app: AuthApp, req: FastifyRequest, res: FastifyReply) {
+    const refreshCookieName = app === 'admin' ? ADMIN_REFRESH_COOKIE : WEB_REFRESH_COOKIE
+    const refreshToken = req.cookies?.[refreshCookieName]
     if (!refreshToken) {
+      this.cookieHelper.clearAuthCookies(res, app)
       throw new BadRequestException({ code: 'REFRESH_TOKEN_MISSING', message: '未找到刷新令牌' })
     }
-    const result = await this.authService.refresh(refreshToken)
-    this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken)
-    return { success: true, mustChangePassword: result.mustChangePassword }
-  }
-
-  /** @deprecated 旧刷新入口，前端切走后移除 */
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async legacyRefresh(@Body() dto: { refreshToken: string }) {
-    return this.authService.refresh(dto.refreshToken)
+    try {
+      const result = await this.authService.refresh(app, refreshToken)
+      this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken, app)
+      return { success: true }
+    } catch (err) {
+      this.cookieHelper.clearAuthCookies(res, app)
+      throw err
+    }
   }
 
   @Post('web/logout')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async webLogout(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
-    return this.handleLogout(req, res)
-  }
-
-  @Post('change-password')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async changePassword(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(userId, dto.currentPassword, dto.newPassword)
-  }
-
-  @Post('change-password/force')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async changePasswordForce(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordForceDto) {
-    return this.authService.changePasswordForce(userId, dto.newPassword)
+  async webLogout(
+    @CurrentUser('sessionId') sessionId: string,
+    @Res({ passthrough: true }) res: FastifyReply,
+  ) {
+    await this.authService.logout(sessionId, res, 'web')
+    return { success: true }
   }
 
   @Post('admin/logout')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async adminLogout(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
-    return this.handleLogout(req, res)
-  }
-
-  private async handleLogout(req: FastifyRequest, res: FastifyReply) {
-    const refreshToken = req.cookies?.goferbot_refreshToken
-    if (refreshToken) {
-      await this.authService.logoutByRefreshToken(refreshToken)
-    }
-    this.cookieHelper.clearAuthCookies(res)
+  async adminLogout(
+    @CurrentUser('sessionId') sessionId: string,
+    @Res({ passthrough: true }) res: FastifyReply,
+  ) {
+    await this.authService.logout(sessionId, res, 'admin')
     return { success: true }
   }
 
+  @AllowApp('both')
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@CurrentUser('id') userId: string) {
-    return this.authService.me(userId)
+  async me(@CurrentUser() user: { id: string; app: AuthApp }) {
+    return this.authService.me(user.id, user.app)
   }
 
-  @Patch('me')
+  @AllowApp('both')
+  @Post('verify-password')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  async updateMe(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
-    return this.authService.updateProfile(userId, dto)
-  }
-
-  @Post('avatar')
-  @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async uploadAvatar(@CurrentUser('id') userId: string, @Req() req: FastifyRequest) {
-    const data = await req.file()
-    if (!data) {
-      throw new BadRequestException({
-        code: 'VALIDATION_ERROR',
-        message: '请上传头像文件',
-      })
-    }
-
-    if (!AVATAR_ALLOWED_MIME_TYPES.includes(data.mimetype)) {
-      throw new BadRequestException({
-        code: 'VALIDATION_ERROR',
-        message: '仅支持 JPEG、PNG、GIF、WebP 格式的图片',
-      })
-    }
-
-    const chunks: Buffer[] = []
-    for await (const chunk of data.file) {
-      chunks.push(chunk as Buffer)
-    }
-    const buffer = Buffer.concat(chunks)
-
-    if (data.file.truncated) {
-      throw new BadRequestException({
-        code: 'VALIDATION_ERROR',
-        message: '头像文件大小不能超过 5MB',
-      })
-    }
-
-    return this.authService.uploadAvatar(userId, {
-      buffer,
-      mimetype: data.mimetype,
-      size: buffer.length,
-    })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  async verifyPassword(@CurrentUser('id') userId: string, @Body() dto: VerifyPasswordDto) {
+    const valid = await this.authService.verifyPassword(userId, dto.password)
+    return { success: valid }
   }
 }

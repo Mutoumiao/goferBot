@@ -1,132 +1,113 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PassportStrategy } from '@nestjs/passport'
+import type { FastifyRequest } from 'fastify'
 import { ExtractJwt, Strategy } from 'passport-jwt'
-import { PrismaService } from '../../processors/database/prisma.service.js'
-import { AuthRedisService } from '../auth-redis.service.js'
-import { AuthRepository } from '../repositories/auth.repository.js'
-import type { AuthApp } from '../types/auth-app.type.js'
+import { ADMIN_ACCESS_COOKIE, WEB_ACCESS_COOKIE } from '../../auth/cookie.helper.js'
+import { accountDisabledError, tokenRevokedError } from '../../auth/errors.js'
+import { AuthRepository } from '../../auth/repositories/auth.repository.js'
+import type { AuthApp } from '../../auth/types/auth-app.type.js'
 
-export interface JwtPayload {
+type JwtPayload = {
   sub: string
-  email?: string
-  sid: string
+  email: string
+  sessionId: string
   app: AuthApp
-  type: 'access' | 'refresh'
+  iat?: number
+  exp?: number
 }
 
-const extractJwt = (req: any): string | null => {
-  return req.cookies?.goferbot_access_token ?? null
+function inferAppFromPath(path: string): AuthApp {
+  if (path.startsWith('/admin/')) return 'admin'
+  if (path === '/auth/admin/refresh' || path === '/auth/admin/logout') return 'admin'
+  if (path === '/auth/web/refresh' || path === '/auth/web/logout') return 'web'
+  if (
+    path.startsWith('/chat/') ||
+    path.startsWith('/knowledge-base/') ||
+    path.startsWith('/session/') ||
+    path.startsWith('/companion/')
+  ) {
+    return 'web'
+  }
+  return 'web'
+}
+
+function getAppForRequest(request: FastifyRequest): AuthApp {
+  const path = request.routeOptions?.url ?? request.url?.split('?')[0] ?? '/'
+  const headerApp = request.headers['x-app-context'] as string | undefined
+
+  if (path === '/auth/me' || path.startsWith('/user/') || path.startsWith('/settings/')) {
+    if (headerApp === 'admin') return 'admin'
+    return 'web'
+  }
+
+  return inferAppFromPath(path)
+}
+
+function extractTokenFromAppCookies(request: FastifyRequest, app: AuthApp): string | null {
+  const cookieName = app === 'admin' ? ADMIN_ACCESS_COOKIE : WEB_ACCESS_COOKIE
+  const cookies = (request.cookies ?? {}) as Record<string, string | undefined>
+  return cookies[cookieName] ?? null
 }
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  private readonly isDev: boolean
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name)
 
   constructor(
-    @Inject(ConfigService) readonly configService: ConfigService,
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(AuthRedisService) private readonly authRedis: AuthRedisService,
-    @Inject(AuthRepository) private readonly authRepository: AuthRepository,
+    readonly configService: ConfigService,
+    private readonly authRepository: AuthRepository,
   ) {
     super({
-      jwtFromRequest: extractJwt,
-      ignoreExpiration: false,
-      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
-      passReqToCallback: false,
-    })
-    this.isDev = configService.get('NODE_ENV') === 'development'
-  }
-
-  handleRequest(err: unknown, user: unknown, _info: unknown, _status?: unknown) {
-    if (err || !user) {
-      // 生产环境隐藏 JWT 验签错误细节（如 "jwt expired"、"invalid signature"）
-      // 开发环境透传原始错误便于调试
-      const message =
-        err instanceof Error
-          ? this.isDev
-            ? `无效令牌: ${err.message}`
-            : '登录已过期或令牌无效'
-          : '登录已过期或令牌无效'
-      throw new UnauthorizedException(message)
-    }
-    return user
-  }
-
-  async validate(payload: JwtPayload) {
-    if (payload.type !== 'access') {
-      throw new UnauthorizedException('无效的令牌类型')
-    }
-
-    if (!payload.sid || !payload.app) {
-      throw new UnauthorizedException('无效的令牌声明')
-    }
-
-    const cached = await this.authRedis.getCachedUser(payload.sub)
-    if (cached) {
-      if (!cached.isActive) {
-        throw new UnauthorizedException('账号已被禁用')
-      }
-      return {
-        id: cached.id as string,
-        email: cached.email as string,
-        name: cached.name as string | null,
-        avatar: cached.avatar as string | null,
-        roles: cached.roles as string[],
-        isActive: cached.isActive as boolean,
-        createdAt: cached.createdAt as Date,
-        updatedAt: cached.updatedAt as Date,
-        sessionId: payload.sid,
-        app: payload.app,
-      }
-    }
-
-    const [session, user] = await Promise.all([
-      this.prisma.authSession.findUnique({ where: { id: payload.sid } }),
-      this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          avatar: true,
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: FastifyRequest) => {
+          const app = getAppForRequest(req)
+          return extractTokenFromAppCookies(req, app)
         },
-      }),
-    ])
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>('JWT_SECRET'),
+      passReqToCallback: true,
+    })
+  }
 
-    if (!session || session.revokedAt) {
-      throw new UnauthorizedException('会话已失效')
+  async validate(request: FastifyRequest, payload: JwtPayload) {
+    if (!payload.sub || !payload.sessionId) {
+      this.logger.warn(`JWT payload missing fields: ${JSON.stringify(payload)}`)
+      throw new UnauthorizedException('无效的令牌')
     }
 
+    const session = await this.authRepository.findValidSession(payload.sessionId)
+    if (!session) {
+      this.logger.warn(`Session ${payload.sessionId} revoked or not found`)
+      throw tokenRevokedError()
+    }
+
+    const user = await this.authRepository.findUserById(payload.sub)
     if (!user) {
+      this.logger.warn(`User ${payload.sub} not found in JWT validation`)
       throw new UnauthorizedException('用户不存在')
     }
-
     if (!user.isActive) {
-      throw new UnauthorizedException('账号已被禁用')
+      this.logger.warn(`Banned user ${payload.sub} attempted access`)
+      throw accountDisabledError()
     }
 
-    const userRoles = await this.authRepository.getRolesForUserByApp(user.id, payload.app)
-    const roles = userRoles.map((r) => r.role)
+    const app = payload.app ?? getAppForRequest(request)
+    const roles = await this.authRepository.getRolesForUserByApp(user.id, app)
 
-    await this.authRedis.cacheUser(user.id, { ...user, roles } as unknown as Record<
-      string,
-      unknown
-    >)
-
-    // 节流 updateLastSeen：默认 60 秒内只更新一次，避免高并发下写放大
-    if (await this.authRedis.shouldUpdateLastSeen(payload.sid, 60)) {
-      await this.authRepository.updateLastSeen(payload.sid)
-    }
+    void this.authRepository.updateLastSeen(payload.sessionId).catch((err) => {
+      this.logger.error(`Failed to update lastSeen for session ${payload.sessionId}`, err)
+    })
 
     return {
-      ...user,
-      roles,
-      sessionId: payload.sid,
-      app: payload.app,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar: user.avatar,
+      sessionId: payload.sessionId,
+      app,
+      roles: roles.map((r) => r.role),
     }
   }
 }

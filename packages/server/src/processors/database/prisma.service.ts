@@ -209,6 +209,22 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.rolePermission
   }
 
+  get role() {
+    return this.client.role
+  }
+
+  get invitationCode() {
+    return this.client.invitationCode
+  }
+
+  get systemFlag() {
+    return this.client.systemFlag
+  }
+
+  get adminAuditLog() {
+    return this.client.adminAuditLog
+  }
+
   // 通用代理方法
   $connect() {
     return this.client.$connect()
@@ -226,7 +242,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return (this.client.$executeRaw as (...args: unknown[]) => unknown)(...args)
   }
 
-  $transaction(...args: unknown[]): unknown {
-    return (this.client.$transaction as (...args: unknown[]) => unknown)(...args)
+  // ponytail: Prisma extended client 的 transaction 类型复杂，使用 any 简化，调用方自行注解 tx 类型
+  $transaction(...args: unknown[]): any {
+    return (this.client.$transaction as (...a: unknown[]) => unknown)(...args)
   }
 }

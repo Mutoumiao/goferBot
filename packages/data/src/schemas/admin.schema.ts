@@ -12,6 +12,8 @@ function toBoolean(value: unknown): boolean | undefined {
   return undefined
 }
 
+export const adminRoleCodeSchema = z.enum(['super_admin', 'admin', 'user'])
+
 export const adminUserListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1).describe('页码'),
   pageSize: z.coerce.number().int().min(1).max(50).default(10).describe('每页条数'),
@@ -21,7 +23,7 @@ export const adminUserListQuerySchema = z.object({
     .transform((v) => toBoolean(v))
     .optional()
     .describe('按状态过滤'),
-  role: z.enum(['ADMIN', 'USER']).optional().describe('按角色过滤'),
+  role: adminRoleCodeSchema.optional().describe('按角色过滤'),
 })
 
 export const updateUserStatusRequestSchema = z.object({
@@ -32,7 +34,8 @@ export const adminUserSchema = z.object({
   id: z.string(),
   email: z.string().email(),
   name: z.string().optional(),
-  role: z.enum(['ADMIN', 'USER']),
+  avatar: z.string().nullable().optional(),
+  roles: z.array(adminRoleCodeSchema),
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -49,12 +52,12 @@ export const createAdminUserRequestSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
   password: z.string(),
-  role: z.enum(['ADMIN', 'USER']),
+  roles: z.array(adminRoleCodeSchema).default(['user']),
 })
 
 export const updateAdminUserRequestSchema = z.object({
   name: z.string().optional(),
-  role: z.enum(['ADMIN', 'USER']).optional(),
+  roles: z.array(adminRoleCodeSchema).optional(),
   isActive: z.boolean().optional(),
   updatedAt: z.string().optional(),
 })
@@ -64,5 +67,43 @@ export const resetPasswordRequestSchema = z.object({
 })
 
 export const assignRoleRequestSchema = z.object({
-  role: z.enum(['ADMIN', 'USER']),
+  roles: z.array(adminRoleCodeSchema),
+})
+
+export const invitationCodeTypeSchema = z.enum(['standard', 'multi'])
+
+export const createInvitationRequestSchema = z.object({
+  type: invitationCodeTypeSchema.default('standard'),
+  maxUses: z.coerce.number().int().min(1).max(1000).optional(),
+  note: z.string().max(200).optional(),
+  expiresAt: z.string().datetime().optional(),
+})
+
+export const invitationCodeSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  type: z.string(),
+  maxUses: z.number().nullable(),
+  usedCount: z.number(),
+  note: z.string().nullable(),
+  expiresAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  creatorName: z.string().nullable(),
+  usedByUserEmail: z.string().nullable(),
+  isActive: z.boolean(),
+})
+
+export const invitationListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  type: invitationCodeTypeSchema.optional(),
+  active: z.coerce.boolean().optional(),
+})
+
+export const invitationListResponseSchema = z.object({
+  items: z.array(invitationCodeSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
 })

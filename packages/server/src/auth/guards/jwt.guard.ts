@@ -2,6 +2,14 @@ import { ExecutionContext, Inject, Injectable, UnauthorizedException } from '@ne
 import { AuthGuard } from '@nestjs/passport'
 import type { FastifyRequest } from 'fastify'
 import { AuthRedisService } from '../auth-redis.service.js'
+import { ADMIN_ACCESS_COOKIE, WEB_ACCESS_COOKIE } from '../cookie.helper.js'
+
+function getCookieNameByPath(path: string): string {
+  if (path.startsWith('/admin/') || path.startsWith('/auth/admin/')) {
+    return ADMIN_ACCESS_COOKIE
+  }
+  return WEB_ACCESS_COOKIE
+}
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -11,7 +19,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<FastifyRequest>()
-    const token = request.cookies?.goferbot_access_token
+    const path = request.routeOptions?.url ?? request.url?.split('?')[0] ?? '/'
+    const cookieName = getCookieNameByPath(path)
+    const token = request.cookies?.[cookieName]
 
     if (token) {
       const isBlacklisted = await this.authRedis.isTokenBlacklisted(token)

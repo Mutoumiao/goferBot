@@ -17,16 +17,16 @@ enum DocumentStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  avatar    String?
-  password  String   @db.VarChar(60)
-  role      String   @default("USER")
-  isActive  Boolean  @default(true) @map("is_active")
-  mustChangePassword Boolean @default(false) @map("must_change_password")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               String           @id @default(uuid())
+  email            String           @unique
+  name             String?
+  avatar           String?
+  password         String           @db.VarChar(60)
+  isActive         Boolean          @default(true) @map("is_active")
+  invitationCodeId String?          @map("invitation_code_id")
+  lastLoginAt      DateTime?        @map("last_login_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
 
   knowledgeBases            KnowledgeBase[]
   sessions                  Session[]
@@ -43,9 +43,10 @@ model User {
   groupChatMessages         GroupChatMessage[]
   authSessions              AuthSession[]
   roles                     UserRole[]
+  invitationCode            InvitationCode?  @relation(fields: [invitationCodeId], references: [id])
+  createdInvitations        InvitationCode[] @relation("CreatedInvitations")
 
   @@map("users")
-  @@index([role])
 }
 
 model KnowledgeBase {
@@ -476,17 +477,58 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+model Role {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  description String?
+  app         String
+  isSystem    Boolean          @default(false) @map("is_system")
+  sortOrder   Int              @default(0) @map("sort_order")
+  status      String           @default("active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
 model UserRole {
-  id     String @id @default(cuid())
-  userId String @map("user_id")
-  app    String
-  role   String
+  id       String @id @default(cuid())
+  userId   String @map("user_id")
+  roleCode String @map("role_code")
+  app      String
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleCode], references: [code], onDelete: Cascade)
 
-  @@unique([userId, app, role])
+  @@unique([userId, app, roleCode])
   @@index([userId, app])
+  @@index([roleCode, app])
   @@map("user_roles")
+}
+
+model InvitationCode {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  type        String    @default("standard")
+  maxUses     Int?      @map("max_uses")
+  usedCount   Int       @default(0) @map("used_count")
+  note        String?
+  createdBy   String    @map("created_by")
+  usedBy      String?   @unique @map("used_by")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  creator         User?  @relation("CreatedInvitations", fields: [createdBy], references: [id])
+  registeredUsers User[]
+
+  @@index([type])
+  @@index([expiresAt])
+  @@map("invitation_codes")
 }
 
 // ==================== Application Auth Config ====================
@@ -569,6 +611,7 @@ model RolePermission {
   createdAt     DateTime @default(now()) @map("created_at")
 
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleCode], references: [code], onDelete: Cascade)
 
   @@unique([roleCode, permissionId, app])
   @@index([roleCode, app])
