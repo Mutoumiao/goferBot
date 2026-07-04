@@ -10,6 +10,7 @@ import {
   updateUser as updateUserApi,
   updateUserStatus as updateUserStatusApi,
 } from '@/api/admin'
+import type { AdminRoleCode } from '@/stores/auth'
 import { isConflict, isForbidden, mapErrorMessage } from '@/utils/error-mapper'
 
 export type { AdminUserResponse, ListUsersQuery, PagedResponse }
@@ -50,7 +51,7 @@ export async function createUserService(data: {
   email: string
   name?: string
   password: string
-  role: 'ADMIN' | 'USER'
+  roles: AdminRoleCode[]
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await createUserApi(data).send()
@@ -65,7 +66,7 @@ export async function createUserService(data: {
 
 export async function updateUserService(
   id: string,
-  data: { name?: string; role?: 'ADMIN' | 'USER'; updatedAt?: string },
+  data: { name?: string; roles?: AdminRoleCode[]; updatedAt?: string },
 ): Promise<{ success: boolean; conflict?: boolean; error?: string }> {
   try {
     await updateUserApi(id, data).send()
@@ -115,10 +116,10 @@ export async function resetUserPassword(
 
 export async function assignUserRole(
   id: string,
-  role: 'ADMIN' | 'USER',
+  roles: AdminRoleCode[],
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await assignRoleApi(id, { role }).send()
+    await assignRoleApi(id, { roles }).send()
     toast.success('角色分配成功')
     return { success: true }
   } catch (err) {

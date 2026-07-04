@@ -1,13 +1,20 @@
 import type { FormInstance } from 'antd'
 import { Form, Input, Modal, Select } from 'antd'
+import type { AdminRoleCode } from '@/stores/auth'
 import { createUserService } from '../services'
 
 interface FormValues {
   email: string
   name?: string
   password: string
-  role: 'ADMIN' | 'USER'
+  roles: AdminRoleCode[]
 }
+
+const ROLE_OPTIONS: { value: AdminRoleCode; label: string }[] = [
+  { value: 'user', label: '普通用户' },
+  { value: 'admin', label: '管理员' },
+  { value: 'super_admin', label: '超级管理员' },
+]
 
 export function createUserModal(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -22,7 +29,7 @@ export function createUserModal(): Promise<boolean> {
           layout="vertical"
           preserve={false}
           className="pt-2"
-          initialValues={{ role: 'USER' }}
+          initialValues={{ roles: ['user'] }}
         >
           <Form.Item
             name="email"
@@ -50,13 +57,8 @@ export function createUserModal(): Promise<boolean> {
             <Input.Password placeholder="至少 8 位" />
           </Form.Item>
 
-          <Form.Item name="role" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
-            <Select
-              options={[
-                { value: 'USER', label: '普通用户' },
-                { value: 'ADMIN', label: '管理员' },
-              ]}
-            />
+          <Form.Item name="roles" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
+            <Select mode="multiple" options={ROLE_OPTIONS} />
           </Form.Item>
         </Form>
       ),

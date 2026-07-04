@@ -28,13 +28,6 @@ export const Route = createFileRoute('/_authenticated')({
     ) {
       throw redirect({ to: '/forbidden' })
     }
-
-    const state = useAuthStore.getState()
-    if (state.user?.mustChangePassword && location.pathname !== '/change-password') {
-      throw redirect({
-        to: ROUTES_REGISTER.changePassword.path,
-      })
-    }
   },
   component: AppLayout,
 })

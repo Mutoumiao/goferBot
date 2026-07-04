@@ -4,10 +4,31 @@ import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { AdminUserResponse } from '@/features/users/services'
 import { fetchUser, updateUserService } from '@/features/users/services'
+import type { AdminRoleCode } from '@/stores/auth'
 
 export const Route = createFileRoute('/_authenticated/users/$id')({
   component: UserDetailPage,
 })
+
+const ROLE_OPTIONS: { value: AdminRoleCode; label: string }[] = [
+  { value: 'user', label: '普通用户' },
+  { value: 'admin', label: '管理员' },
+  { value: 'super_admin', label: '超级管理员' },
+]
+
+function renderRoleTags(roles: string[]) {
+  return (
+    <Space size={4}>
+      {roles.includes('super_admin') && <Tag color="red">超级管理员</Tag>}
+      {roles.includes('admin') && !roles.includes('super_admin') && (
+        <Tag color="purple">管理员</Tag>
+      )}
+      {roles.includes('user') && !roles.includes('admin') && !roles.includes('super_admin') && (
+        <Tag>普通用户</Tag>
+      )}
+    </Space>
+  )
+}
 
 function UserDetailPage() {
   const params = Route.useParams()
@@ -31,7 +52,7 @@ function UserDetailPage() {
       const u = await fetchUser(params.id)
       setUser(u)
       if (u) {
-        form.setFieldsValue({ name: u.name, role: u.role })
+        form.setFieldsValue({ name: u.name, roles: u.roles })
       }
     } catch {
       setLoadError(true)
@@ -46,7 +67,7 @@ function UserDetailPage() {
       const values = await form.validateFields()
       const res = await updateUserService(user.id, {
         name: values.name,
-        role: values.role,
+        roles: values.roles,
         updatedAt: user.updatedAt,
       })
       if (res.success) {
@@ -92,9 +113,7 @@ function UserDetailPage() {
             <Descriptions.Item label="ID">{user.id}</Descriptions.Item>
             <Descriptions.Item label="邮箱">{user.email}</Descriptions.Item>
             <Descriptions.Item label="昵称">{user.name ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="角色">
-              {user.role === 'ADMIN' ? <Tag color="purple">管理员</Tag> : <Tag>普通用户</Tag>}
-            </Descriptions.Item>
+            <Descriptions.Item label="角色">{renderRoleTags(user.roles ?? [])}</Descriptions.Item>
             <Descriptions.Item label="状态">
               {user.isActive ? <Tag color="green">已启用</Tag> : <Tag color="default">已禁用</Tag>}
             </Descriptions.Item>
@@ -113,13 +132,12 @@ function UserDetailPage() {
             <Form.Item name="name" label="昵称">
               <Input placeholder="选填" />
             </Form.Item>
-            <Form.Item name="role" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
-              <Select
-                options={[
-                  { value: 'USER', label: '普通用户' },
-                  { value: 'ADMIN', label: '管理员' },
-                ]}
-              />
+            <Form.Item
+              name="roles"
+              label="角色"
+              rules={[{ required: true, message: '请选择角色' }]}
+            >
+              <Select mode="multiple" options={ROLE_OPTIONS} />
             </Form.Item>
             <p className="text-xs text-slate-500">
               版本号：{user.updatedAt}（保存时若版本不一致将提示冲突）

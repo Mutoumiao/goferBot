@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { useMemo } from 'react'
 import { ROUTES_REGISTER, type RouteKey, type RouteMeta } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 
@@ -19,19 +19,8 @@ export function useMenuConfig(): MenuItem[] {
   return useMemo(() => {
     if (!user) return []
 
-    if (user.mustChangePassword) {
-      return Object.values(ROUTES_REGISTER)
-        .filter((r: RouteMeta) => r.key === 'profile' && r.nav)
-        .map((r) => ({
-          key: r.key,
-          path: r.path as string,
-          title: r.title,
-          icon: r.icon ?? null,
-          nav: r.nav,
-        }))
-    }
-
-    if (user.role === 'SUPER_ADMIN') {
+    const isSuperAdmin = user.roles.includes('super_admin')
+    if (isSuperAdmin) {
       return Object.values(ROUTES_REGISTER)
         .filter((r: RouteMeta) => r.nav)
         .map((r) => ({

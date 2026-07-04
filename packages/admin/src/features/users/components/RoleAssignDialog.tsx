@@ -1,12 +1,31 @@
 import { Modal, Select } from 'antd'
 import { useState } from 'react'
+import type { AdminRoleCode } from '@/stores/auth'
 import { confirmPasswordAction } from '@/utils/confirm-action'
 import type { AdminUserResponse } from '../services'
 
-export function assignRoleModal(user: AdminUserResponse): Promise<'ADMIN' | 'USER' | null> {
+const ROLE_OPTIONS: { value: AdminRoleCode; label: string }[] = [
+  { value: 'user', label: '普通用户' },
+  { value: 'admin', label: '管理员' },
+  { value: 'super_admin', label: '超级管理员' },
+]
+
+function rolesEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const sortedA = [...a].sort()
+  const sortedB = [...b].sort()
+  return sortedA.every((v, i) => v === sortedB[i])
+}
+
+function getRoleLabel(roles: string[]): string {
+  if (roles.includes('super_admin')) return '超级管理员'
+  if (roles.includes('admin')) return '管理员'
+  return '普通用户'
+}
+
+export function assignRoleModal(user: AdminUserResponse): Promise<AdminRoleCode[] | null> {
   return new Promise((resolve) => {
-    const [role, setRole] = useState<'ADMIN' | 'USER'>(user.role)
-    const [error, setError] = useState<string | null>(null)
+    const [roles, setRoles] = useState<AdminRoleCode[]>([...(user.roles ?? [])] as AdminRoleCode[])
 
     const modal = Modal.confirm({
       title: '分配角色',
@@ -19,39 +38,35 @@ export function assignRoleModal(user: AdminUserResponse): Promise<'ADMIN' | 'USE
           <div>
             <label className="mb-1 block text-sm text-slate-600">角色</label>
             <Select
-              value={role}
+              mode="multiple"
+              value={roles}
               onChange={(v) => {
-                setRole(v)
-                setError(null)
+                setRoles(v)
               }}
               style={{ width: '100%' }}
-              options={[
-                { value: 'USER', label: '普通用户' },
-                { value: 'ADMIN', label: '管理员' },
-              ]}
+              options={ROLE_OPTIONS}
             />
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
       ),
       okText: '确认',
       cancelText: '取消',
       onOk: async () => {
-        if (role === user.role) {
+        if (rolesEqual(roles, user.roles ?? [])) {
           resolve(null)
           modal.destroy()
           return
         }
         const result = await confirmPasswordAction(
           '分配角色',
-          `请输入当前登录密码以确认将 ${user.email} 角色变更为 ${role === 'ADMIN' ? '管理员' : '普通用户'}`,
+          `请输入当前登录密码以确认将 ${user.email} 角色变更为 ${getRoleLabel(roles)}`,
         )
         if (!result.confirmed) {
           resolve(null)
           modal.destroy()
           return Promise.reject(new Error('cancelled'))
         }
-        resolve(role)
+        resolve(roles)
       },
       onCancel: () => {
         resolve(null)

@@ -77,7 +77,7 @@ describe('users services', () => {
 
   it('createUserService returns success', async () => {
     mockCreateUser.mockResolvedValueOnce(undefined)
-    const r = await createUserService({ email: 'a@b.com', password: 'pwd', role: 'USER' })
+    const r = await createUserService({ email: 'a@b.com', password: 'pwd', roles: ['user'] })
     expect(r.success).toBe(true)
   })
 
@@ -100,7 +100,8 @@ describe('users services', () => {
     expect((await resetUserPassword('u1', 'newpwd')).success).toBe(true)
 
     mockAssignRole.mockResolvedValueOnce(undefined)
-    expect((await assignUserRole('u1', 'ADMIN')).success).toBe(true)
+    expect((await assignUserRole('u1', ['admin'])).success).toBe(true)
+    expect(mockAssignRole).toHaveBeenCalledWith('u1', { roles: ['admin'] })
 
     mockGetUser.mockResolvedValueOnce({ id: 'u1' })
     expect(await fetchUser('u1')).toEqual({ id: 'u1' })

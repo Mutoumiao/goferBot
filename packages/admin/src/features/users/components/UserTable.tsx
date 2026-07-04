@@ -25,8 +25,30 @@ import { resetPasswordModal } from './ResetPasswordDialog'
 import { assignRoleModal } from './RoleAssignDialog'
 import { createUserModal } from './UserCreateForm'
 
+type RoleFilter = 'all' | 'super_admin' | 'admin' | 'user'
+
 export interface UserTableProps {
   initialQuery?: ListUsersQuery
+}
+
+function renderRoleTags(roles: string[]) {
+  return (
+    <Space size={4}>
+      {roles.includes('super_admin') && <Tag color="red">超级管理员</Tag>}
+      {roles.includes('admin') && !roles.includes('super_admin') && (
+        <Tag color="purple">管理员</Tag>
+      )}
+      {roles.includes('user') && !roles.includes('admin') && !roles.includes('super_admin') && (
+        <Tag>普通用户</Tag>
+      )}
+    </Space>
+  )
+}
+
+function avatarColor(roles: string[]): string {
+  if (roles.includes('super_admin')) return '#dc2626'
+  if (roles.includes('admin')) return '#4f46e5'
+  return '#10b981'
 }
 
 export function UserTable({ initialQuery }: UserTableProps) {
@@ -41,7 +63,7 @@ export function UserTable({ initialQuery }: UserTableProps) {
     ...initialQuery,
   })
   const [searchInput, setSearchInput] = useState(initialQuery?.search ?? '')
-  const [roleFilter, setRoleFilter] = useState<'all' | 'ADMIN' | 'USER'>('all')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
 
   const load = useCallback(async (q: ListUsersQuery) => {
@@ -110,9 +132,9 @@ export function UserTable({ initialQuery }: UserTableProps) {
   }
 
   const handleAssignRole = async (user: AdminUserResponse) => {
-    const role = await assignRoleModal(user)
-    if (role) {
-      await assignUserRole(user.id, role)
+    const roles = await assignRoleModal(user)
+    if (roles) {
+      await assignUserRole(user.id, roles)
       void load(query)
     }
   }
@@ -177,10 +199,7 @@ export function UserTable({ initialQuery }: UserTableProps) {
       width: 220,
       render: (_: unknown, record) => (
         <div className="flex items-center gap-3">
-          <Avatar
-            size="small"
-            style={{ backgroundColor: record.role === 'ADMIN' ? '#4f46e5' : '#10b981' }}
-          >
+          <Avatar size="small" style={{ backgroundColor: avatarColor(record.roles ?? []) }}>
             {(record.name ?? record.email)[0].toUpperCase()}
           </Avatar>
           <div>
@@ -192,11 +211,10 @@ export function UserTable({ initialQuery }: UserTableProps) {
     },
     {
       title: '角色',
-      dataIndex: 'role',
-      key: 'role',
-      width: 120,
-      render: (role: string) =>
-        role === 'ADMIN' ? <Tag color="purple">管理员</Tag> : <Tag>普通用户</Tag>,
+      dataIndex: 'roles',
+      key: 'roles',
+      width: 160,
+      render: (roles: string[] | undefined) => renderRoleTags(roles ?? []),
     },
     {
       title: '状态',
@@ -305,8 +323,9 @@ export function UserTable({ initialQuery }: UserTableProps) {
             style={{ width: 140 }}
             options={[
               { value: 'all', label: '全部角色' },
-              { value: 'ADMIN', label: '管理员' },
-              { value: 'USER', label: '普通用户' },
+              { value: 'super_admin', label: '超级管理员' },
+              { value: 'admin', label: '管理员' },
+              { value: 'user', label: '普通用户' },
             ]}
           />
           <Select

@@ -1,12 +1,11 @@
 import {
-  BarChart3,
   Cpu,
   FileText,
   LayoutDashboard,
   type LucideIcon,
-  MessageSquare,
   Settings as SettingsIcon,
   Shield,
+  Ticket,
   User,
   Users,
 } from 'lucide-react'
@@ -22,10 +21,8 @@ export type RouteKey =
   | 'userDetail'
   | 'roles'
   | 'roleDetail'
-  | 'rag'
-  | 'sessions'
-  | 'sessionDetail'
   | 'audit'
+  | 'invitations'
   | 'profile'
   | 'changePassword'
   | 'modelProviders'
@@ -88,30 +85,6 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     nav: false,
     requiredPermission: PERMISSIONS.ROLES,
   },
-  rag: {
-    key: 'rag',
-    title: 'RAG 观测',
-    path: '/rag-observability' as RoutePath,
-    icon: BarChart3,
-    nav: true,
-    requiredPermission: PERMISSIONS.RAG,
-  },
-  sessions: {
-    key: 'sessions',
-    title: '会话观测',
-    path: '/sessions' as RoutePath,
-    icon: MessageSquare,
-    nav: true,
-    requiredPermission: PERMISSIONS.SESSIONS,
-  },
-  sessionDetail: {
-    key: 'sessionDetail',
-    title: '会话详情',
-    path: '/sessions/$id' as RoutePath,
-    icon: MessageSquare,
-    nav: false,
-    requiredPermission: PERMISSIONS.SESSIONS,
-  },
   audit: {
     key: 'audit',
     title: '审计日志',
@@ -119,6 +92,14 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     icon: FileText,
     nav: true,
     requiredPermission: PERMISSIONS.AUDIT,
+  },
+  invitations: {
+    key: 'invitations',
+    title: '邀请码管理',
+    path: '/invitations' as RoutePath,
+    icon: Ticket,
+    nav: true,
+    requiredPermission: PERMISSIONS.INVITATIONS,
   },
   profile: {
     key: 'profile',

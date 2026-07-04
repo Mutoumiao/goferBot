@@ -11,9 +11,18 @@ vi.mock('@/stores/auth', () => ({
 
 import { useMenuConfig } from '@/components/layout/MenuConfig'
 
-function selectUser(role: 'ADMIN' | 'USER' | null) {
-  const permissions =
-    role === 'ADMIN'
+type TestUser = {
+  roles: string[]
+  id: string
+  email: string
+  isActive: boolean
+  permissions?: string[]
+}
+
+function selectUser(roles: string[] | null, permissions?: string[]) {
+  const defaultPermissions = roles?.includes('super_admin')
+    ? []
+    : roles?.includes('admin')
       ? [
           'dashboard',
           'users',
@@ -24,22 +33,20 @@ function selectUser(role: 'ADMIN' | 'USER' | null) {
           'modelProviders',
           'moduleSettings',
         ]
-      : role === 'USER'
+      : roles?.includes('user')
         ? ['dashboard']
         : []
-  return (
-    selector: (s: {
-      user: {
-        role: string
-        id: string
-        email: string
-        isActive: boolean
-        permissions?: string[]
-      } | null
-    }) => unknown,
-  ) =>
+  return (selector: (s: { user: TestUser | null }) => unknown) =>
     selector({
-      user: role ? { role, id: '1', email: 'a@b.com', isActive: true, permissions } : null,
+      user: roles
+        ? {
+            roles,
+            id: '1',
+            email: 'a@b.com',
+            isActive: true,
+            permissions: permissions ?? defaultPermissions,
+          }
+        : null,
     })
 }
 
@@ -48,8 +55,8 @@ describe('MenuConfig', () => {
     vi.clearAllMocks()
   })
 
-  it('filters menu by ADMIN role', () => {
-    mockUseAuthStore.mockImplementation(selectUser('ADMIN'))
+  it('shows all menus for super_admin role', () => {
+    mockUseAuthStore.mockImplementation(selectUser(['super_admin']))
     const { result } = renderHook(() => useMenuConfig())
     const keys = result.current.map((m) => m.key)
     expect(keys).toContain('dashboard')
@@ -62,8 +69,22 @@ describe('MenuConfig', () => {
     expect(keys).not.toContain('userDetail')
   })
 
-  it('filters menu by USER role (limited access)', () => {
-    mockUseAuthStore.mockImplementation(selectUser('USER'))
+  it('filters menu by admin role with permissions', () => {
+    mockUseAuthStore.mockImplementation(selectUser(['admin']))
+    const { result } = renderHook(() => useMenuConfig())
+    const keys = result.current.map((m) => m.key)
+    expect(keys).toContain('dashboard')
+    expect(keys).toContain('users')
+    expect(keys).toContain('roles')
+    expect(keys).toContain('modelProviders')
+    expect(keys).toContain('moduleSettings')
+    expect(keys).toContain('audit')
+    expect(keys).not.toContain('login')
+    expect(keys).not.toContain('userDetail')
+  })
+
+  it('filters menu by user role (limited access)', () => {
+    mockUseAuthStore.mockImplementation(selectUser(['user']))
     const { result } = renderHook(() => useMenuConfig())
     const keys = result.current.map((m) => m.key)
     expect(keys).toContain('dashboard')
@@ -82,7 +103,7 @@ describe('MenuConfig', () => {
   })
 
   it('returns stable count on re-render', () => {
-    mockUseAuthStore.mockImplementation(selectUser('ADMIN'))
+    mockUseAuthStore.mockImplementation(selectUser(['admin']))
     const { result, rerender } = renderHook(() => useMenuConfig())
     const firstLen = result.current.length
     act(() => {
