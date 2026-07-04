@@ -14,7 +14,7 @@ export function ProfilePage() {
     if (!user) return
     const EditAvatarDialog = (await import('@/overlays/dialogs/EditAvatarDialog')).default
     const file = await openDialog<File | undefined>(EditAvatarDialog, {
-      currentAvatar: user.avatarUrl,
+      currentAvatar: user.avatar ?? undefined,
     })
     if (file) {
       setIsSubmitting(true)
@@ -74,8 +74,8 @@ export function ProfilePage() {
                 <span className="text-[15px] text-[#1F2328]">头像</span>
                 <div className="flex items-center gap-3">
                   <Avatar
-                    src={user.avatarUrl}
-                    fallback={user.name}
+                    src={user.avatar ?? undefined}
+                    fallback={user.name ?? undefined}
                     size={52}
                     className="rounded-[10px]"
                   />

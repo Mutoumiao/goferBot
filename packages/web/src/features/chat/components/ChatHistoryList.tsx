@@ -1,5 +1,5 @@
 import type { Pagination as PaginationType, Session } from '@goferbot/data'
-import { ArrowRightIcon, MoreHorizontalIcon, MessageCircleIcon, Trash2Icon } from 'lucide-react'
+import { ArrowRightIcon, MessageCircleIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import {

@@ -7,22 +7,39 @@
 ## Requirements（需求）
 
 ### Requirement: User Profile Management
-系统应支持用户档案操作，包括创建、通过邮箱/ID查询、姓名更新和头像更新。
+系统应支持用户档案操作，包括创建、通过邮箱/ID查询、姓名更新和头像更新。个人资料和头像接口从 auth 模块迁移至 user 模块，通过独立的 user controller 暴露。
 
 证据来源：
-- `packages/server/src/modules/user/user.service.ts#L42-L115`
+- `packages/server/src/modules/user/user.controller.ts` (新增)
+- `packages/server/src/modules/user/user.service.ts`
 
 #### Scenario: 通过邮箱查找用户
 - **WHEN** 执行通过邮箱查找用户操作
-- **THEN** 系统返回用户档案（id、email、name、avatar、role、isActive、mustChangePassword、timestamps）或 null
+- **THEN** 系统返回用户档案（id、email、name、avatar、isActive、createdAt、updatedAt）或 null，MUST NOT 返回 role 字段（已删除），MUST NOT 返回密码哈希
 
 #### Scenario: 创建用户时检查重复邮箱
 - **WHEN** 使用已存在的邮箱创建新用户
 - **THEN** 系统应拒绝请求并返回 `EMAIL_EXISTS`（409 Conflict）
 
-#### Scenario: 更新用户名
-- **WHEN** 已认证用户更新其显示名称
-- **THEN** 系统更新 name 字段并返回更新后的档案
+#### Scenario: 更新当前用户资料
+- **WHEN** 已认证用户通过 PATCH `/user/me` 更新其显示名称
+- **THEN** 系统更新对应字段并返回更新后的档案
+
+#### Scenario: 用户自行修改密码
+- **WHEN** 已认证用户通过 PATCH `/user/me` 提交当前密码和新密码时
+- **THEN** 系统验证当前密码正确后 bcrypt 哈希新密码并保存，密码修改成功后撤销所有其他活跃会话（保留当前会话），MUST NOT 设置 mustChangePassword（该字段已删除）
+
+#### Scenario: 修改密码时当前密码错误
+- **WHEN** 用户提交修改密码请求但当前密码验证失败时
+- **THEN** 系统返回 400 错误，MUST NOT 更新密码
+
+#### Scenario: 上传头像
+- **WHEN** 已认证用户通过 POST `/user/avatar` 上传头像图片
+- **THEN** 系统上传文件到 S3 存储，更新用户 avatarKey 字段，返回头像访问 URL
+
+#### Scenario: 获取当前用户信息
+- **WHEN** 已认证用户通过 GET `/user/me` 获取自身信息
+- **THEN** 返回用户档案及该用户在当前 app 下的角色列表（roles 数组）和权限列表（permissions 数组）
 
 ### Requirement: Password Security
 系统应强制实施安全的密码管理：bcrypt 哈希、密码修改时验证当前密码、密码修改时撤销所有会话。
@@ -38,10 +55,6 @@
 - **WHEN** 用户修改密码（提供当前密码）
 - **THEN** 系统应在单个事务中执行：(1) 更新密码哈希，(2) 撤销所有认证会话（`revokedAt + revokedReason='password_changed'`），(3) 撤销所有刷新令牌，(4) 发布 `UserPasswordChangedEvent`
 - **AND** bcrypt 哈希计算应在事务外执行以缩短锁持有时长
-
-#### Scenario: 强制密码修改（首次登录）
-- **WHEN** `mustChangePassword=true` 的用户调用 `updatePasswordForce`
-- **THEN** 系统应在事务中更新密码并清除 `mustChangePassword` 标志
 
 #### Scenario: 未授权的密码修改
 - **WHEN** 用户尝试修改另一个用户的密码
@@ -62,22 +75,29 @@
 - **THEN** 系统更新状态并发布 `UserStatusChangedEvent`
 
 ### Requirement: Super Admin Bootstrap
-当配置了 `SUPER_ADMIN_EMAIL` 和 `SUPER_ADMIN_PASSWORD` 环境变量时，系统应在首次启动时自动引导超级管理员账户。
+当配置了 `SUPER_ADMIN_EMAIL` 和 `SUPER_ADMIN_PASSWORD` 环境变量时，系统应在首次启动时自动引导超级管理员账户，适配新的 Role 表模型。
 
 证据来源：
-- `packages/server/src/modules/user/services/super-admin-bootstrap.service.ts#L50-L189`
+- `packages/server/src/modules/user/services/super-admin-bootstrap.service.ts`
 
 #### Scenario: 幂等引导
 - **WHEN** 服务器启动
-- **THEN** 系统检查 SUPER_ADMIN 用户是否已存在；如果存在，则跳过引导
+- **THEN** 系统检查是否存在拥有 `super_admin` 角色的用户；如果存在，则跳过引导
 
 #### Scenario: 分布式引导锁
 - **WHEN** 多个服务器实例并发启动
-- **THEN** 系统应使用键为 `super_admin_bootstrapping`（30秒TTL）的 `systemFlag` 作为分布式锁；检测到锁被其他实例持有的实例应跳过引导
+- **THEN** 系统应使用键为 `super_admin_bootstrapping`（30秒TTL）的分布式锁；检测到锁被其他实例持有的实例应跳过引导
 
-#### Scenario: 完整引导序列
+#### Scenario: 完整引导序列（适配新 Role 模型）
 - **WHEN** 执行引导
-- **THEN** 系统应在单个事务中执行：(1) upsert Application 记录（admin + web），(2) upsert ApplicationAuthMethod（两个应用的密码认证），(3) 在事务级别重新检查是否存在 SUPER_ADMIN，(4) 获取分布式锁，(5) 创建 User（SUPER_ADMIN），密码使用 bcrypt 哈希且 `mustChangePassword=true`，(6) 创建 UserRole 记录（admin + web 的 OWNER），(7) 写入 `super_admin_bootstrapped` systemFlag，(8) 写入审计日志
+- **THEN** 系统应在单个事务中执行：
+  1. 确保 PermissionSeeder 已完成（预置角色存在）
+  2. 在事务级别重新检查是否存在 super_admin 用户
+  3. 获取分布式锁
+  4. 创建 User（SUPER_ADMIN），密码使用 bcrypt 哈希，MUST NOT 设置 mustChangePassword
+  5. 创建 UserRole 记录，关联 super_admin 角色（admin app），同时关联 user 角色（web app）
+  6. 写入 `super_admin_bootstrapped` 系统标志
+  7. 写入审计日志
 
 #### Scenario: 并发引导竞争解决
 - **WHEN** 两个实例竞争创建超级管理员

@@ -1,13 +1,13 @@
-import { useCallback, useMemo, useState } from 'react'
 import { ProLayout } from '@ant-design/pro-components'
 import { useNavigate, useRouter } from '@tanstack/react-router'
-import { Avatar, theme as antdTheme, Dropdown, Space, Button } from 'antd'
+import { Avatar, theme as antdTheme, Button, Dropdown, Space } from 'antd'
 import type { MenuItemType } from 'antd/es/menu/interface'
-import { Bell, LogOut, Settings as SettingsIcon, User as UserIcon, ChevronDown } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Settings as SettingsIcon, User as UserIcon } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { logoutService } from '@/features/auth/services'
 import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
-import { logoutService } from '@/features/auth/services'
 import { useMenuConfig } from './MenuConfig'
 
 const SIDEBAR_HIDDEN_ROUTES = ['/change-password']
@@ -54,10 +54,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     [token.colorPrimary],
   )
 
-  const location = useMemo(
-    () => ({ pathname: currentPath }),
-    [currentPath],
-  )
+  const location = useMemo(() => ({ pathname: currentPath }), [currentPath])
 
   const menuItemRender = useCallback(
     (item: { key?: string }, defaultDom: React.ReactNode) => {

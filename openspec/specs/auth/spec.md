@@ -2,7 +2,7 @@
 
 ## Purpose（目的）
 
-定义 GoferBot 用户认证、会话管理、权限控制的系统级规范。覆盖 Web 端（主前端）、Admin 端（管理后台）的认证流程、JWT 令牌生命周期（含 Rotation 与重放检测）、RBAC 角色权限模型（含 SUPER_ADMIN 判定）、CAPTCHA 验证、Cookie 安全策略。
+定义 GoferBot 用户认证、会话管理、权限控制的系统级规范。覆盖 Web 端（主前端）、Admin 端（管理后台）的认证流程、JWT 令牌生命周期（含 Rotation 与重放检测）、RBAC 角色权限模型（基于 Role + UserRole 多角色支持）、CAPTCHA 验证、Cookie 安全策略（按 app 隔离 Cookie 名称）。
 
 ## Requirements（需求）
 
@@ -102,33 +102,41 @@
 - **THEN** 系统立即删除 Redis 中的验证码记录，每次验证请求必须重新获取新的验证码
 
 ### Requirement: RBAC 权限模型
-系统应强制执行基于角色的访问控制，至少包含三个角色：`USER`、`ADMIN`、`SUPER_ADMIN`，并通过三层 Guard 链（JWT → Roles → Permission）实现分层鉴权。
+系统应强制执行基于角色的访问控制，通过 Role 表和 UserRole 关联表实现多角色支持，MUST NOT 使用 User.role 字段（已删除）。角色 SHALL 使用小写 snake_case 编码，预置角色为 `super_admin`、`admin`、`user`。超级管理员判定 SHALL 检查用户角色列表是否包含 `super_admin` roleCode，MUST NOT 使用权限数量判断。
 
 证据来源：
-- `packages/server/src/auth/enums/role.enum.ts`
-- `packages/server/src/auth/guards/roles.guard.ts`
+- `packages/server/prisma/schema.prisma` (Role, UserRole 模型)
+- `packages/server/src/modules/admin/services/permission.service.ts`
 - `packages/server/src/auth/guards/permission.guard.ts`
-- `packages/server/src/auth/services/permission.service.ts`
+- `packages/server/src/common/decorators/allow-app.decorator.ts`
 
 #### Scenario: 普通用户被拒绝访问管理员端点
-- **WHEN** 具有 `USER` 角色的用户访问受 `ADMIN` 保护的端点时
+- **WHEN** 仅具有 `user` 角色的用户访问受管理员权限保护的端点时
 - **THEN** 系统返回 403 Forbidden
 
 #### Scenario: 基于权限的访问控制
-- **WHEN** 用户访问带有 `@Permission('users.read')` 装饰器的端点时
-- **THEN** 系统 SHALL 通过 PermissionService.hasAnyPermission() 验证用户的权限
+- **WHEN** 用户访问带有 `@Permission('users:read')` 装饰器的端点时
+- **THEN** 系统 SHALL 通过 PermissionService.hasAnyPermission() 验证用户是否拥有该权限（通过 Role→RolePermission 关联查询）
 
 #### Scenario: SUPER_ADMIN 权限豁免
-- **WHEN** 用户具有 `SUPER_ADMIN` 角色时
-- **THEN** 系统判定条件为 `permissions.includes('*')` 或 `permissions.length >= 20` → 所有权限检查直接返回 true
+- **WHEN** 用户具有 `super_admin` 角色时（UserRole 关联中 roleCode = 'super_admin'）
+- **THEN** 所有权限检查直接返回 true，无需逐个校验权限码
+
+#### Scenario: 多角色权限合并
+- **WHEN** 用户同时拥有多个角色时
+- **THEN** 系统 SHALL 合并所有角色的权限码集合，去重后作为用户的有效权限集
 
 #### Scenario: 权限缓存
 - **WHEN** PermissionService 查询用户权限时
-- **THEN** 优先从 Redis `auth:permission:{userId}` 缓存读取（TTL=300s）；miss 时查询 RolePermission 表并写入缓存
+- **THEN** 优先从 Redis `auth:permission:{userId}:{app}` 缓存读取（TTL=300s）；miss 时查询 Role→RolePermission 表并写入缓存
 
 #### Scenario: 权限缓存失效
-- **WHEN** 用户权限发生变更时
-- **THEN** 系统调用 `invalidateUserPermissions(userId, app)` 清除特定用户的权限缓存，或 `invalidateAllPermissions()` 清除全部
+- **WHEN** 用户角色分配发生变更时
+- **THEN** 系统调用 `invalidateUserPermissions(userId, app)` 清除特定用户特定 app 的权限缓存
+
+#### Scenario: 角色与 app 绑定
+- **WHEN** 查询用户权限时
+- **THEN** 系统 SHALL 按 app 过滤角色：web app 仅查询 app='web' 的角色，admin app 仅查询 app='admin' 的角色
 
 ### Requirement: 令牌黑名单与 Redis Fail-Closed
 系统应将已撤销的 Access Token 写入 Redis 黑名单，SHALL 在 Redis 不可用时执行 Fail-Closed 策略。
@@ -192,18 +200,26 @@
 - **THEN** 系统撤销关联的整个 AuthSession（`revokedAt` 设置），该 Session 下所有 RefreshToken 全部失效
 
 ### Requirement: Cookie 安全策略
-系统 SHALL 在认证 Cookie 上强制执行严格的安全属性，生产和开发环境使用不同的策略。
+系统 SHALL 在认证 Cookie 上强制执行严格的安全属性，按 app 隔离 Cookie 名称防止 web/admin 互相覆盖。
 
 证据来源：
 - `packages/server/src/auth/cookie.helper.ts`
 
-#### Scenario: 生产环境 Cookie 安全
-- **WHEN** 在生产环境中设置认证 Cookie 时
-- **THEN** Access Token Cookie（`goferbot_access_token`）的 maxAge=15min，Refresh Token Cookie（`goferbot_refresh_token`）的 maxAge=7d；两者均设置 httpOnly=true, secure=true, sameSite=strict, path=/
+#### Scenario: 生产环境 Web 端 Cookie
+- **WHEN** 在生产环境中为 web 端设置认证 Cookie 时
+- **THEN** Access Token Cookie 名称为 `goferbot_web_access_token`（maxAge=15min, httpOnly=true, secure=true, sameSite=strict, path=/），Refresh Token Cookie 名称为 `goferbot_web_refresh_token`（maxAge=7d, 其余属性相同）
+
+#### Scenario: 生产环境 Admin 端 Cookie
+- **WHEN** 在生产环境中为 admin 端设置认证 Cookie 时
+- **THEN** Access Token Cookie 名称为 `goferbot_admin_access_token`（maxAge=15min, httpOnly=true, secure=true, sameSite=strict, path=/），Refresh Token Cookie 名称为 `goferbot_admin_refresh_token`（maxAge=7d, 其余属性相同）
 
 #### Scenario: 开发环境 Cookie 兼容性
 - **WHEN** 在开发环境中设置认证 Cookie 时
-- **THEN** secure=false, sameSite=lax（兼容 localhost 和不同端口），其余属性与生产环境一致
+- **THEN** secure=false, sameSite=lax（兼容 localhost 和不同端口），Cookie 名称仍按 app 区分，其余属性与生产环境一致
+
+#### Scenario: Cookie 清除按 app 隔离
+- **WHEN** 用户登出时
+- **THEN** 系统仅清除当前 app 对应的两个 Cookie，MUST NOT 清除另一 app 的 Cookie
 
 ### Requirement: 认证错误码体系
 系统 SHALL 为所有认证错误定义明确的错误码，用于前端统一错误处理和用户体验。
@@ -263,26 +279,130 @@
 - **WHEN** Token 刷新操作失败时
 - **THEN** 系统 SHALL 将失败状态通知所有等待中的请求，MUST 触发统一的登出或错误处理流程，避免部分请求卡住
 
-### Requirement: mustChangePassword 强制改密流程
-系统 SHALL 在登录后端检测到用户需强制修改密码时，通过 `mustChangePassword` 标志触发前端强制改密流程，限制用户导航至改密页面直到密码修改完成。
+### Requirement: App 隔离守卫
+系统 SHALL 提供 `@AllowApp()` 装饰器和 `AppGuard`，校验 JWT payload 中的 `app` 字段与请求端点期望的 app 是否匹配，防止跨 app token 滥用。
 
 证据来源：
-- `.trellis/spec/admin/frontend/rbac-guard-architecture.md` (mustChangePassword 流章节)
-- `packages/admin/src/routes/_authenticated.tsx` (路由守卫 mustChangePassword 检查)
-- `packages/admin/src/components/layout/MenuConfig.tsx` (菜单过滤 mustChangePassword 模式)
+- `packages/server/src/common/decorators/allow-app.decorator.ts`
+- `packages/server/src/common/guards/app.guard.ts`
 
-#### Scenario: 登录返回 mustChangePassword 标志
-- **WHEN** 用户登录成功但后端检测到需强制修改密码时
-- **THEN** 系统 SHALL 在登录响应中返回 `mustChangePassword: true`，Auth store 设置 `user.mustChangePassword = true`
+#### Scenario: Admin 专属路径自动判定
+- **WHEN** 请求路径以 `/admin` 开头时（不含 `/auth/admin/*` auth 端点）
+- **THEN** 系统自动要求 `token.app === 'admin'`
 
-#### Scenario: 路由守卫强制跳转改密页
-- **WHEN** 路由守卫检测到 `snapshot.user?.mustChangePassword` 为 true 时
-- **THEN** 系统 SHALL 强制重定向到 `/profile` 页面，阻止用户访问其他受保护路由
+#### Scenario: Web Auth 专属端点
+- **WHEN** 请求路径为 `/auth/web/refresh` 或 `/auth/web/logout` 时
+- **THEN** 系统自动要求 `token.app === 'web'`
 
-#### Scenario: 菜单过滤仅显示改密入口
-- **WHEN** `mustChangePassword` 模式激活时
-- **THEN** `useMenuConfig` SHALL 仅返回 profile 路由，隐藏所有其他菜单项，确保用户只能完成改密操作
+#### Scenario: Admin Auth 专属端点
+- **WHEN** 请求路径为 `/auth/admin/refresh` 或 `/auth/admin/logout` 时
+- **THEN** 系统自动要求 `token.app === 'admin'`
 
-#### Scenario: 改密完成恢复导航
-- **WHEN** 用户成功修改密码后
-- **THEN** 后端 SHALL 清除 `mustChangePassword` 标志，Auth store 更新 `user.mustChangePassword = false`，路由守卫与菜单过滤恢复正常导航
+#### Scenario: Web 业务专属路径
+- **WHEN** 请求路径以 `/chat/`、`/knowledge-base/`、`/session/`、`/companion/` 开头时
+- **THEN** 系统自动要求 `token.app === 'web'`
+
+#### Scenario: 通用端点允许双 app
+- **WHEN** 请求路径为 `/auth/me` 或以 `/user/`、`/settings/` 开头且不以 `/admin/` 开头时
+- **THEN** 系统允许 `token.app` 为 `'web'` 或 `'admin'` 任一值通过
+
+#### Scenario: 公开端点无需认证
+- **WHEN** 请求路径为 `/auth/web/login`、`/auth/admin/login`、`/auth/web/register`、`/auth/public-key` 或以 `/captcha/` 开头时
+- **THEN** 系统 MUST NOT 要求认证，AppGuard 在无 request.user 时直接放行
+
+#### Scenario: 显式 @AllowApp 装饰器覆盖
+- **WHEN** Controller 或方法上使用 `@AllowApp('web')`、`@AllowApp('admin')`、`@AllowApp('both')` 或 `@AllowApp('public')` 装饰器时
+- **THEN** 系统以装饰器指定的 app 要求为准，忽略路径前缀自动判定
+
+#### Scenario: App 不匹配拒绝访问
+- **WHEN** token.app 与端点要求的 app 不匹配时
+- **THEN** 系统返回 403 Forbidden，错误码 `APP_MISMATCH`
+
+#### Scenario: JwtStrategy 路径感知解析
+- **WHEN** JwtStrategy 验证 token 时
+- **THEN** 系统 SHALL 根据请求路径从正确的 Cookie 名称中提取 token：
+  - Admin 专属路径（`/admin/*`、`/auth/admin/refresh`、`/auth/admin/logout`）→ 从 `goferbot_admin_access_token` 读取
+  - Web 专属路径（`/auth/web/refresh`、`/auth/web/logout`、`/chat/*`、`/knowledge-base/*`、`/session/*`、`/companion/*`）→ 从 `goferbot_web_access_token` 读取
+  - 通用路径（`/auth/me`、`/user/*`、`/settings/*`）→ 同域下两个 Cookie 可能同时存在，根据请求头 `X-App-Context` 决定读取优先级：`X-App-Context: admin` 先尝试 admin Cookie 再 web，`X-App-Context: web` 或无该头时先尝试 web Cookie 再 admin，取首个验证通过的 token（由 AppGuard 最终校验 app 匹配）
+  - 公开路径 → 不读取 Cookie（无认证要求）
+
+#### Scenario: 前端自动添加 X-App-Context 请求头
+- **WHEN** 前端 API 客户端发起请求时
+- **THEN** web 端 alova 实例 MUST 在所有请求中添加 `X-App-Context: web` 请求头，admin 端 alova 实例 MUST 添加 `X-App-Context: admin` 请求头
+
+### Requirement: PermissionSeeder 启动权限初始化
+系统 SHALL 在启动时通过 PermissionSeeder 自动 seed 权限定义和预置角色，确保权限数据完整性。
+
+证据来源：
+- `packages/server/src/modules/admin/seeders/permission.seeder.ts`
+
+#### Scenario: 首次启动创建权限和角色
+- **WHEN** 应用首次启动（数据库中无 Role 记录）时
+- **THEN** PermissionSeeder SHALL：(1) 创建所有权限码记录（如存在 PermissionCode 表则插入，否则仅在内存中维护列表），(2) 创建 3 个预置角色：super_admin（web+admin 双 app，所有权限）、admin（admin app，管理权限无用户删除/角色管理写权限）、user（web app，基础使用权限），(3) 为预置角色分配对应权限集合
+
+#### Scenario: 幂等 seed
+- **WHEN** 应用重启时
+- **THEN** PermissionSeeder SHALL 检查预置角色是否已存在，存在则跳过创建；如发现新增权限码，将权限码补充到 super_admin 角色中但 MUST NOT 修改 admin/user 角色的已有权限
+
+#### Scenario: 系统角色不可删除
+- **WHEN** 管理员尝试删除 isSystem=true 的预置角色时
+- **THEN** 系统返回 400 错误，错误码 `SYSTEM_ROLE_DELETE_DENIED`
+
+### Requirement: 前端认证初始化安全
+前端 SHALL 在应用初始化时通过调用 `/auth/me` 端点验证 Cookie 中 token 的有效性，MUST NOT 仅依赖 localStorage 中持久化的 `isAuthenticated` 标记判定登录状态。
+
+证据来源：
+- `packages/admin/src/stores/auth.ts`
+- `packages/admin/src/utils/auth-guard.ts`
+- `packages/web/src/stores/auth.ts`
+
+#### Scenario: 页面加载时验证认证状态
+- **WHEN** 前端应用初始化（beforeLoad 路由守卫）时
+- **THEN** 系统 SHALL 发起单次 `/auth/me` 请求（single-flight，并发请求共享同一 Promise）：成功则将用户信息（含 roles 数组）写入 store，失败（401）则清除 store 并重定向到登录页
+
+#### Scenario: localStorage 仅作为 hydration 缓存
+- **WHEN** Zustand auth store 持久化到 localStorage 时
+- **THEN** MUST NOT 持久化 `isAuthenticated` 作为信任标记；MAY 持久化 `user` 对象用于 hydration 时避免 UI 闪烁，但 MUST 在 `waitForAuthInit` 中通过 `/auth/me` 响应覆盖 localStorage 缓存数据，真正认证状态以 `/auth/me` 返回结果为唯一信任源
+
+#### Scenario: waitForAuthInit 超时保护
+- **WHEN** `/auth/me` 请求在 3 秒内未响应时
+- **THEN** 系统 SHALL 判定为未认证状态，重定向到登录页，MUST NOT 永久白屏
+
+#### Scenario: 401 触发 Token 刷新
+- **WHEN** API 请求返回 401 时
+- **THEN** 前端拦截器 SHALL 触发单次 refresh 请求（single-flight），所有并发 401 请求共享同一刷新结果，刷新成功后重试原请求
+
+#### Scenario: 403 不触发刷新
+- **WHEN** API 请求返回 403 时
+- **THEN** 前端拦截器 SHALL NOT 触发 token refresh，直接按权限不足处理（重定向到 /forbidden 或显示无权限提示）
+
+### Requirement: 认证模块边界清理
+auth 模块 SHALL 仅负责纯认证逻辑（登录、注册、登出、refresh、me），MUST NOT 包含个人资料管理、头像上传等非认证功能。
+
+证据来源：
+- `packages/server/src/auth/auth.controller.ts`
+- `packages/server/src/modules/user/user.controller.ts`
+
+#### Scenario: 个人资料接口迁出 auth
+- **WHEN** 用户需要更新个人资料（name等）时
+- **THEN** 请求 PATCH `/user/me` 端点（位于 user 模块），MUST NOT 使用 auth 模块的接口
+
+#### Scenario: 头像上传接口迁出 auth
+- **WHEN** 用户需要上传头像时
+- **THEN** 请求 POST `/user/avatar` 端点（位于 user 模块），MUST NOT 使用 auth 模块的接口
+
+#### Scenario: Web 注册路径
+- **WHEN** Web 用户注册时
+- **THEN** 请求 POST `/auth/web/register` 端点，必须携带邀请码
+
+#### Scenario: Web/Admin Logout 路径分离
+- **WHEN** Web 用户登出时请求 POST `/auth/web/logout`，Admin 用户登出时请求 POST `/auth/admin/logout`
+- **THEN** 系统清除对应 app 的 Cookie，MUST NOT 影响另一 app 的登录状态
+
+#### Scenario: /auth/me 不接受外部 app 参数
+- **WHEN** 客户端请求 GET `/auth/me` 时
+- **THEN** 系统 MUST 从 JWT payload 中获取 app 信息，MUST NOT 接受客户端传入的 app 参数（防止客户端伪造 app 上下文）
+
+#### Scenario: Legacy 接口删除
+- **WHEN** 请求访问已删除的 legacy 端点 `/auth/login` 或 `/auth/refresh` 时
+- **THEN** 系统返回 404 Not Found（这些端点已被 app 专属端点替代：`/auth/web/login`、`/auth/admin/login`、`/auth/web/refresh`、`/auth/admin/refresh`）

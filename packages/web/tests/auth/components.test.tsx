@@ -21,7 +21,6 @@ let captchaRef: {
   onChallengeChange?: (c: { captchaId: string; imageBase64: string } | null) => void
   onInput?: (value: string) => void
 } | null = null
-let captchaReady = false
 
 vi.mock('@/components/ui/captcha', () => ({
   Captcha: ({
@@ -55,7 +54,6 @@ function primeCaptcha() {
   act(() => {
     captchaRef?.onChallengeChange?.({ captchaId: 'cid-1', imageBase64: 'AAAA' })
   })
-  captchaReady = true
 }
 
 import { AuthContainer } from '@/features/auth/components/AuthContainer'

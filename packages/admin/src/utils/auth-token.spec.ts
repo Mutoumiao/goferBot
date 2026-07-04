@@ -7,7 +7,8 @@ describe('auth-token (admin namespace)', () => {
     expect(getAccessToken()).toBeNull()
     expect(buildAuthHeader()).toBeNull()
     expect(localStorage.getItem('goferbot_admin_access_token')).toBeNull()
-    expect(localStorage.getItem('goferbot_access_token')).toBeNull()
+    // Legacy cookie names are no longer used; tokens moved to HttpOnly cookies
+    // goferbot_web_access_token / goferbot_admin_access_token are set by server
   })
 
   it('clearTokens is a no-op (tokens moved to HttpOnly Cookie)', () => {

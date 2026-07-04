@@ -53,7 +53,7 @@ export function IconSidebar({ className }: { className?: string }) {
         onClick={handleOpenProfile}
         title="个人资料"
       >
-        <Avatar src={user?.avatarUrl} fallback={user?.name} size={40} />
+        <Avatar src={user?.avatar ?? undefined} fallback={user?.name ?? undefined} size={40} />
       </button>
 
       {/* 主导航图标 */}

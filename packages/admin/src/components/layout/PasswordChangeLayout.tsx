@@ -1,7 +1,7 @@
-import { Button, Dropdown, Space, Avatar, theme } from 'antd'
+import { Avatar, Button, Dropdown, Space, theme } from 'antd'
 import { LogOut, User as UserIcon } from 'lucide-react'
-import { useAuthStore } from '@/stores/auth'
 import { logoutService } from '@/features/auth/services'
+import { useAuthStore } from '@/stores/auth'
 
 export function PasswordChangeLayout({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user)

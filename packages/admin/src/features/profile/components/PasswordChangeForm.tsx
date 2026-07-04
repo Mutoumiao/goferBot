@@ -1,19 +1,16 @@
-import { useState } from 'react'
-import { Card, Form, Input, Button, Typography, message } from 'antd'
 import { useRouter } from '@tanstack/react-router'
-import { changePassword, changePasswordForce } from '@/api/auth'
-import { useAuthStore } from '@/stores/auth'
+import { Button, Card, Form, Input, message, Typography } from 'antd'
+import { useState } from 'react'
+import { changePassword } from '@/api/auth'
 
 const { Title, Text } = Typography
 
 export function PasswordChangeForm() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const setMustChangePassword = useAuthStore((s) => s.setMustChangePassword)
-  const mustChangePassword = useAuthStore((s) => s.user?.mustChangePassword)
 
   const onFinish = async (values: {
-    currentPassword?: string
+    currentPassword: string
     newPassword: string
     confirmPassword: string
   }) => {
@@ -24,17 +21,12 @@ export function PasswordChangeForm() {
 
     setLoading(true)
     try {
-      if (mustChangePassword) {
-        await changePasswordForce({ newPassword: values.newPassword }).send()
-      } else {
-        await changePassword({
-          currentPassword: values.currentPassword!,
-          newPassword: values.newPassword,
-        }).send()
-      }
+      await changePassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      }).send()
 
-      setMustChangePassword(false)
-      message.success('密码修改成功，正在刷新页面...')
+      message.success('密码修改成功')
       await router.invalidate()
       void router.navigate({ to: '/dashboard', replace: true })
     } catch (err) {
@@ -50,10 +42,13 @@ export function PasswordChangeForm() {
       <div style={{ maxWidth: 480, width: '100%' }}>
         <Card>
           <Title level={4} style={{ textAlign: 'center', marginBottom: 8 }}>
-            {mustChangePassword ? '首次登录：请修改初始密码' : '修改密码'}
+            修改密码
           </Title>
-          <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 24 }}>
-            {mustChangePassword ? '为了您的账户安全，请设置一个新的强密码' : '请输入新密码以完成修改'}
+          <Text
+            type="secondary"
+            style={{ display: 'block', textAlign: 'center', marginBottom: 24 }}
+          >
+            请输入当前密码和新密码
           </Text>
           <Form
             name="changePassword"
@@ -62,15 +57,13 @@ export function PasswordChangeForm() {
             autoComplete="off"
             requiredMark={false}
           >
-            {!mustChangePassword && (
-              <Form.Item
-                label="当前密码"
-                name="currentPassword"
-                rules={[{ required: true, message: '请输入当前密码' }]}
-              >
-                <Input.Password placeholder="请输入当前密码" />
-              </Form.Item>
-            )}
+            <Form.Item
+              label="当前密码"
+              name="currentPassword"
+              rules={[{ required: true, message: '请输入当前密码' }]}
+            >
+              <Input.Password placeholder="请输入当前密码" />
+            </Form.Item>
 
             <Form.Item
               label="新密码"

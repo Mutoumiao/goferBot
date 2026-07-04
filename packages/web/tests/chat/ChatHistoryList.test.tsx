@@ -18,7 +18,6 @@ vi.mock('@/components/ui/button', () => ({
 }))
 
 vi.mock('@/components/ui/dropdown-menu', () => {
-  const React = require('react')
   return {
     DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
     DropdownMenuTrigger: ({ children, onClick }: any) => (

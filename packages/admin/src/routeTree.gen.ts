@@ -14,17 +14,15 @@ import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
-import { Route as AuthenticatedSessionsRouteImport } from './routes/_authenticated/sessions'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
-import { Route as AuthenticatedRagObservabilityRouteImport } from './routes/_authenticated/rag-observability'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedModuleSettingsRouteImport } from './routes/_authenticated/module-settings'
 import { Route as AuthenticatedModelProvidersRouteImport } from './routes/_authenticated/model-providers'
+import { Route as AuthenticatedInvitationsRouteImport } from './routes/_authenticated/invitations'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedUsersIdRouteImport } from './routes/_authenticated/users/$id'
-import { Route as AuthenticatedSessionsIdRouteImport } from './routes/_authenticated/sessions/$id'
 import { Route as AuthenticatedRolesIdRouteImport } from './routes/_authenticated/roles/$id'
 
 const LoginRoute = LoginRouteImport.update({
@@ -51,22 +49,11 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedSessionsRoute = AuthenticatedSessionsRouteImport.update({
-  id: '/sessions',
-  path: '/sessions',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedRagObservabilityRoute =
-  AuthenticatedRagObservabilityRouteImport.update({
-    id: '/rag-observability',
-    path: '/rag-observability',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -82,6 +69,12 @@ const AuthenticatedModelProvidersRoute =
   AuthenticatedModelProvidersRouteImport.update({
     id: '/model-providers',
     path: '/model-providers',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInvitationsRoute =
+  AuthenticatedInvitationsRouteImport.update({
+    id: '/invitations',
+    path: '/invitations',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -105,11 +98,6 @@ const AuthenticatedUsersIdRoute = AuthenticatedUsersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedUsersRoute,
 } as any)
-const AuthenticatedSessionsIdRoute = AuthenticatedSessionsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedSessionsRoute,
-} as any)
 const AuthenticatedRolesIdRoute = AuthenticatedRolesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -123,15 +111,13 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AuthenticatedAuditRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/invitations': typeof AuthenticatedInvitationsRoute
   '/model-providers': typeof AuthenticatedModelProvidersRoute
   '/module-settings': typeof AuthenticatedModuleSettingsRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/rag-observability': typeof AuthenticatedRagObservabilityRoute
   '/roles': typeof AuthenticatedRolesRouteWithChildren
-  '/sessions': typeof AuthenticatedSessionsRouteWithChildren
   '/users': typeof AuthenticatedUsersRouteWithChildren
   '/roles/$id': typeof AuthenticatedRolesIdRoute
-  '/sessions/$id': typeof AuthenticatedSessionsIdRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
 }
 export interface FileRoutesByTo {
@@ -141,15 +127,13 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthenticatedAuditRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/invitations': typeof AuthenticatedInvitationsRoute
   '/model-providers': typeof AuthenticatedModelProvidersRoute
   '/module-settings': typeof AuthenticatedModuleSettingsRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/rag-observability': typeof AuthenticatedRagObservabilityRoute
   '/roles': typeof AuthenticatedRolesRouteWithChildren
-  '/sessions': typeof AuthenticatedSessionsRouteWithChildren
   '/users': typeof AuthenticatedUsersRouteWithChildren
   '/roles/$id': typeof AuthenticatedRolesIdRoute
-  '/sessions/$id': typeof AuthenticatedSessionsIdRoute
   '/users/$id': typeof AuthenticatedUsersIdRoute
 }
 export interface FileRoutesById {
@@ -161,15 +145,13 @@ export interface FileRoutesById {
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/invitations': typeof AuthenticatedInvitationsRoute
   '/_authenticated/model-providers': typeof AuthenticatedModelProvidersRoute
   '/_authenticated/module-settings': typeof AuthenticatedModuleSettingsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/rag-observability': typeof AuthenticatedRagObservabilityRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRouteWithChildren
-  '/_authenticated/sessions': typeof AuthenticatedSessionsRouteWithChildren
   '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
   '/_authenticated/roles/$id': typeof AuthenticatedRolesIdRoute
-  '/_authenticated/sessions/$id': typeof AuthenticatedSessionsIdRoute
   '/_authenticated/users/$id': typeof AuthenticatedUsersIdRoute
 }
 export interface FileRouteTypes {
@@ -181,15 +163,13 @@ export interface FileRouteTypes {
     | '/audit'
     | '/change-password'
     | '/dashboard'
+    | '/invitations'
     | '/model-providers'
     | '/module-settings'
     | '/profile'
-    | '/rag-observability'
     | '/roles'
-    | '/sessions'
     | '/users'
     | '/roles/$id'
-    | '/sessions/$id'
     | '/users/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -199,15 +179,13 @@ export interface FileRouteTypes {
     | '/audit'
     | '/change-password'
     | '/dashboard'
+    | '/invitations'
     | '/model-providers'
     | '/module-settings'
     | '/profile'
-    | '/rag-observability'
     | '/roles'
-    | '/sessions'
     | '/users'
     | '/roles/$id'
-    | '/sessions/$id'
     | '/users/$id'
   id:
     | '__root__'
@@ -218,15 +196,13 @@ export interface FileRouteTypes {
     | '/_authenticated/audit'
     | '/_authenticated/change-password'
     | '/_authenticated/dashboard'
+    | '/_authenticated/invitations'
     | '/_authenticated/model-providers'
     | '/_authenticated/module-settings'
     | '/_authenticated/profile'
-    | '/_authenticated/rag-observability'
     | '/_authenticated/roles'
-    | '/_authenticated/sessions'
     | '/_authenticated/users'
     | '/_authenticated/roles/$id'
-    | '/_authenticated/sessions/$id'
     | '/_authenticated/users/$id'
   fileRoutesById: FileRoutesById
 }
@@ -274,25 +250,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/sessions': {
-      id: '/_authenticated/sessions'
-      path: '/sessions'
-      fullPath: '/sessions'
-      preLoaderRoute: typeof AuthenticatedSessionsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/roles': {
       id: '/_authenticated/roles'
       path: '/roles'
       fullPath: '/roles'
       preLoaderRoute: typeof AuthenticatedRolesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/rag-observability': {
-      id: '/_authenticated/rag-observability'
-      path: '/rag-observability'
-      fullPath: '/rag-observability'
-      preLoaderRoute: typeof AuthenticatedRagObservabilityRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {
@@ -314,6 +276,13 @@ declare module '@tanstack/react-router' {
       path: '/model-providers'
       fullPath: '/model-providers'
       preLoaderRoute: typeof AuthenticatedModelProvidersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/invitations': {
+      id: '/_authenticated/invitations'
+      path: '/invitations'
+      fullPath: '/invitations'
+      preLoaderRoute: typeof AuthenticatedInvitationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -344,13 +313,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersIdRouteImport
       parentRoute: typeof AuthenticatedUsersRoute
     }
-    '/_authenticated/sessions/$id': {
-      id: '/_authenticated/sessions/$id'
-      path: '/$id'
-      fullPath: '/sessions/$id'
-      preLoaderRoute: typeof AuthenticatedSessionsIdRouteImport
-      parentRoute: typeof AuthenticatedSessionsRoute
-    }
     '/_authenticated/roles/$id': {
       id: '/_authenticated/roles/$id'
       path: '/$id'
@@ -372,19 +334,6 @@ const AuthenticatedRolesRouteChildren: AuthenticatedRolesRouteChildren = {
 const AuthenticatedRolesRouteWithChildren =
   AuthenticatedRolesRoute._addFileChildren(AuthenticatedRolesRouteChildren)
 
-interface AuthenticatedSessionsRouteChildren {
-  AuthenticatedSessionsIdRoute: typeof AuthenticatedSessionsIdRoute
-}
-
-const AuthenticatedSessionsRouteChildren: AuthenticatedSessionsRouteChildren = {
-  AuthenticatedSessionsIdRoute: AuthenticatedSessionsIdRoute,
-}
-
-const AuthenticatedSessionsRouteWithChildren =
-  AuthenticatedSessionsRoute._addFileChildren(
-    AuthenticatedSessionsRouteChildren,
-  )
-
 interface AuthenticatedUsersRouteChildren {
   AuthenticatedUsersIdRoute: typeof AuthenticatedUsersIdRoute
 }
@@ -400,12 +349,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInvitationsRoute: typeof AuthenticatedInvitationsRoute
   AuthenticatedModelProvidersRoute: typeof AuthenticatedModelProvidersRoute
   AuthenticatedModuleSettingsRoute: typeof AuthenticatedModuleSettingsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedRagObservabilityRoute: typeof AuthenticatedRagObservabilityRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRouteWithChildren
-  AuthenticatedSessionsRoute: typeof AuthenticatedSessionsRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
 }
 
@@ -413,12 +361,11 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInvitationsRoute: AuthenticatedInvitationsRoute,
   AuthenticatedModelProvidersRoute: AuthenticatedModelProvidersRoute,
   AuthenticatedModuleSettingsRoute: AuthenticatedModuleSettingsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedRagObservabilityRoute: AuthenticatedRagObservabilityRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRouteWithChildren,
-  AuthenticatedSessionsRoute: AuthenticatedSessionsRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
 }
 

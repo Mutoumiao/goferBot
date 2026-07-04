@@ -23,11 +23,7 @@ export function ForbiddenPage() {
           >
             返回首页
           </Button>,
-          <Button
-            key="logout"
-            danger
-            onClick={() => logoutService()}
-          >
+          <Button key="logout" danger onClick={() => logoutService()}>
             退出登录
           </Button>,
         ]}
