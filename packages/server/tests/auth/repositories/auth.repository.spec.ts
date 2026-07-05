@@ -204,45 +204,50 @@ describe('AuthRepository', () => {
   })
 
   describe('markRefreshTokenUsed', () => {
-    beforeEach(() => {
-      mockPrismaService.$queryRaw = vi.fn()
-    })
-
     it('atomically updates refresh token with usedAt only and returns true', async () => {
-      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'rt-1' }])
+      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 })
 
       const result = await authRepository.markRefreshTokenUsed('hash-abc')
 
       expect(result).toBe(true)
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledOnce()
-      const callArg = mockPrismaService.$queryRaw.mock.calls[0][0]
-      // Prisma $queryRaw tagged template produces a Sql instance; verify SQL structure
-      expect(String(callArg)).toContain('UPDATE "RefreshToken"')
-      expect(String(callArg)).toContain('RETURNING "id"')
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledOnce()
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { jtiHash: 'hash-abc', usedAt: null, revokedAt: null },
+        data: {
+          usedAt: expect.any(Date),
+          replacedByTokenId: null,
+        },
+      })
     })
 
     it('atomically updates refresh token with replacedByTokenId and returns true', async () => {
-      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'rt-2' }])
+      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 })
 
       const result = await authRepository.markRefreshTokenUsed('hash-abc', 'rt-2')
 
       expect(result).toBe(true)
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledOnce()
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledOnce()
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { jtiHash: 'hash-abc', usedAt: null, revokedAt: null },
+        data: {
+          usedAt: expect.any(Date),
+          replacedByTokenId: 'rt-2',
+        },
+      })
     })
 
     it('passes null for replacedByTokenId when omitted', async () => {
-      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'rt-3' }])
+      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 1 })
 
       await authRepository.markRefreshTokenUsed('hash-abc')
 
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledOnce()
-      // Second argument should be null (not undefined) so SQL binds correctly
-      const callArgs = mockPrismaService.$queryRaw.mock.calls[0]
-      expect(callArgs.length).toBeGreaterThanOrEqual(1)
+      expect(mockPrismaService.refreshToken.updateMany).toHaveBeenCalledOnce()
+      const callArg = mockPrismaService.refreshToken.updateMany.mock.calls[0][0]
+      expect(callArg.data.replacedByTokenId).toBeNull()
     })
 
     it('returns false when token is already used (concurrent race lost)', async () => {
-      mockPrismaService.$queryRaw.mockResolvedValue([])
+      mockPrismaService.refreshToken.updateMany.mockResolvedValue({ count: 0 })
 
       const result = await authRepository.markRefreshTokenUsed('hash-abc')
 
@@ -267,12 +272,12 @@ describe('AuthRepository', () => {
 
   describe('getRolesForUserByApp', () => {
     it('returns roles for user in specified app', async () => {
-      const mockRoles = [{ roleCode: 'USER' }, { roleCode: 'ADMIN' }]
+      const mockRoles = [{ roleCode: 'user' }, { roleCode: 'admin' }]
       mockPrismaService.userRole.findMany.mockResolvedValue(mockRoles)
 
       const result = await authRepository.getRolesForUserByApp('u1', 'web')
 
-      expect(result).toEqual([{ role: 'USER' }, { role: 'ADMIN' }])
+      expect(result).toEqual([{ role: 'user' }, { role: 'admin' }])
       expect(mockPrismaService.userRole.findMany).toHaveBeenCalledWith({
         where: { userId: 'u1', app: 'web' },
         select: { roleCode: true },

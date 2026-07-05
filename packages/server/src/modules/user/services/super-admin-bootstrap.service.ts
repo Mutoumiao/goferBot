@@ -47,6 +47,35 @@ export class SuperAdminBootstrapService implements OnApplicationBootstrap {
     }
   }
 
+  private async ensureSystemRoles(tx: Prisma.TransactionClient): Promise<void> {
+    const roles = [
+      { code: 'super_admin', name: '超级管理员', app: 'admin', isSystem: true, sortOrder: 0 },
+      { code: 'admin', name: '管理员', app: 'admin', isSystem: true, sortOrder: 10 },
+      { code: 'user', name: '普通用户', app: 'web', isSystem: true, sortOrder: 0 },
+    ] as const
+
+    for (const role of roles) {
+      await tx.role.upsert({
+        where: { code: role.code },
+        update: {
+          name: role.name,
+          app: role.app,
+          isSystem: role.isSystem,
+          sortOrder: role.sortOrder,
+          status: 'active',
+        },
+        create: {
+          code: role.code,
+          name: role.name,
+          app: role.app,
+          isSystem: role.isSystem,
+          sortOrder: role.sortOrder,
+          status: 'active',
+        },
+      })
+    }
+  }
+
   async onApplicationBootstrap() {
     await this.bootstrap()
   }
@@ -70,6 +99,7 @@ export class SuperAdminBootstrapService implements OnApplicationBootstrap {
     await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         await this.ensureApplicationAuthMethods(tx)
+        await this.ensureSystemRoles(tx)
 
         const existingSuperAdmin = await tx.userRole.findFirst({
           where: { roleCode: 'super_admin', app: 'admin' },

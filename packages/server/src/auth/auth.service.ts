@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { Injectable, Logger } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-import type { FastifyReply } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AppException } from '../lib/app-error.js'
 import { PermissionService } from '../modules/admin/services/permission.service.js'
 import { UserService } from '../modules/user/user.service.js'
@@ -254,6 +254,24 @@ export class AuthService {
     }
   }
 
+  async refreshToken(app: AuthApp, req: FastifyRequest, res: FastifyReply) {
+    const refreshCookieName =
+      app === 'admin' ? 'goferbot_admin_refresh_token' : 'goferbot_web_refresh_token'
+    const refreshToken = req.cookies?.[refreshCookieName]
+    if (!refreshToken) {
+      this.cookieHelper.clearAuthCookies(res, app)
+      throw new BadRequestException({ code: 'REFRESH_TOKEN_MISSING', message: '未找到刷新令牌' })
+    }
+    try {
+      const result = await this.refresh(app, refreshToken)
+      this.cookieHelper.setAuthCookies(res, result.accessToken, result.refreshToken, app)
+      return { success: true }
+    } catch (err) {
+      this.cookieHelper.clearAuthCookies(res, app)
+      throw err
+    }
+  }
+
   async logout(sessionId: string, reply: FastifyReply, app: AuthApp): Promise<void> {
     await this.authRepository.revokeSession(sessionId, 'logout')
     this.cookieHelper.clearAuthCookies(reply, app)
@@ -271,7 +289,7 @@ export class AuthService {
     const roles = await this.authRepository.getRolesForUserByApp(userId, app)
     const roleCodes = roles.map((r) => r.role)
     const permissions = await this.permissionService.getUserPermissions(userId, app)
-    return { ...user, roles: roleCodes, permissions }
+    return { ...user, roles: roleCodes, permissions, app }
   }
 
   async changePassword(

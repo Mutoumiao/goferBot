@@ -94,12 +94,11 @@ export async function fetchCurrentUser(): Promise<boolean> {
 export async function logoutService(): Promise<void> {
   try {
     await logout().send()
-    useAuthStore.getState().clearAuth()
     toast.success('已退出登录')
-    window.location.href = ROUTES_REGISTER.login.path
-  } catch (err) {
-    const errorMsg = (err as { message?: string })?.message || '退出登录失败，请重试'
-    toast.error(errorMsg)
+  } catch {
+  } finally {
+    useAuthStore.getState().clearAuth()
+    window.location.replace(ROUTES_REGISTER.login.path)
   }
 }
 

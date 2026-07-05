@@ -11,7 +11,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -47,7 +47,7 @@ describe('DocumentController', () => {
     const kbRes = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${userToken}` },
+      headers: authHeader(userToken),
       payload: { name: `Doc-KB-${Date.now()}` },
     })
     kbId = kbRes.json().data.id
@@ -63,7 +63,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -74,7 +74,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${kbId}/documents?folderId=not-uuid`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
@@ -104,7 +104,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
       })
       expect(res.statusCode).toBe(403)
     })
@@ -126,8 +126,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -151,8 +151,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -165,7 +165,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       // 无 multipart content-type 时，@fastify/multipart 抛出 FastifyError，返回 500
       expect(res.statusCode).toBe(500)
@@ -214,8 +214,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(otherToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${otherToken}`,
         },
         payload: multipartBody,
       })
@@ -235,8 +235,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: '/api/knowledge-bases/non-existent-kb-id/documents/upload',
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -260,8 +260,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -282,8 +282,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -306,8 +306,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -322,7 +322,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'New Document' },
       })
       expect(res.statusCode).toBe(201)
@@ -334,7 +334,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -346,7 +346,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'New Document', folderId: 'not-uuid' },
       })
       expect(res.statusCode).toBe(400)
@@ -378,7 +378,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: { name: 'New Document' },
       })
       expect(res.statusCode).toBe(403)
@@ -388,7 +388,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases/non-existent-kb-id/documents',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'New Document' },
       })
       expect(res.statusCode).toBe(404)
@@ -400,7 +400,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original Name' },
       })
       const docId = createRes.json().data.id
@@ -408,7 +408,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Updated Name' },
       })
       expect(res.statusCode).toBe(200)
@@ -420,7 +420,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original' },
       })
       const docId = createRes.json().data.id
@@ -428,7 +428,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -440,7 +440,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original' },
       })
       const docId = createRes.json().data.id
@@ -457,7 +457,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original' },
       })
       const docId = createRes.json().data.id
@@ -477,7 +477,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: { name: 'Hacked' },
       })
       expect(res.statusCode).toBe(403)
@@ -487,7 +487,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: '/api/knowledge-bases/non-existent-kb-id/documents/some-doc-id',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Updated' },
       })
       expect(res.statusCode).toBe(404)
@@ -497,7 +497,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/documents/non-existent-id`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Updated' },
       })
       expect(res.statusCode).toBe(404)
@@ -507,7 +507,7 @@ describe('DocumentController', () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: `Other-KB-${Date.now()}` },
       })
       const otherKbId = otherKbRes.json().data.id
@@ -515,7 +515,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${otherKbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Other Doc' },
       })
       const otherDocId = createRes.json().data.id
@@ -523,7 +523,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/documents/${otherDocId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Updated' },
       })
       expect(res.statusCode).toBe(404)
@@ -535,7 +535,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'To Delete' },
       })
       const docId = createRes.json().data.id
@@ -543,7 +543,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -554,7 +554,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'To Delete' },
       })
       const docId = createRes.json().data.id
@@ -570,7 +570,7 @@ describe('DocumentController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'To Delete' },
       })
       const docId = createRes.json().data.id
@@ -590,7 +590,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
       })
       expect(res.statusCode).toBe(403)
     })
@@ -599,7 +599,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: '/api/knowledge-bases/non-existent-kb-id/documents/some-doc-id',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(404)
     })
@@ -608,7 +608,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/documents/non-existent-id`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(404)
     })
@@ -619,7 +619,7 @@ describe('DocumentController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Doc Move Target' },
       })
       const targetFolderId = folderRes.json().data.id
@@ -627,7 +627,7 @@ describe('DocumentController', () => {
       const docRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Doc To Move' },
       })
       const docId = docRes.json().data.id
@@ -635,7 +635,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetFolderId },
       })
       expect(res.statusCode).toBe(200)
@@ -647,7 +647,7 @@ describe('DocumentController', () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: `Target-KB-${Date.now()}` },
       })
       const targetKbId = otherKbRes.json().data.id
@@ -666,8 +666,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -688,7 +688,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetKbId },
       })
       expect(res.statusCode).toBe(200)
@@ -712,7 +712,7 @@ describe('DocumentController', () => {
       const docRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Empty Body' },
       })
       const docId = docRes.json().data.id
@@ -720,7 +720,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: {},
       })
       expect(res.statusCode).toBe(400)
@@ -734,7 +734,7 @@ describe('DocumentController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Doc Copy Target' },
       })
       const targetFolderId = folderRes.json().data.id
@@ -753,8 +753,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -763,7 +763,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/copy`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetFolderId },
       })
       expect(res.statusCode).toBe(200)
@@ -777,7 +777,7 @@ describe('DocumentController', () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: `Copy-Target-KB-${Date.now()}` },
       })
       const targetKbId = otherKbRes.json().data.id
@@ -796,8 +796,8 @@ describe('DocumentController', () => {
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/upload`,
         headers: {
+          ...authHeader(userToken),
           'content-type': `multipart/form-data; boundary=${boundary}`,
-          authorization: `Bearer ${userToken}`,
         },
         payload: multipartBody,
       })
@@ -816,7 +816,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/copy`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetKbId },
       })
       expect(res.statusCode).toBe(200)
@@ -846,7 +846,7 @@ describe('DocumentController', () => {
       const docRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Empty Copy Body' },
       })
       const docId = docRes.json().data.id
@@ -854,7 +854,7 @@ describe('DocumentController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/copy`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: {},
       })
       expect(res.statusCode).toBe(400)

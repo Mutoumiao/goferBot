@@ -18,10 +18,9 @@ const FONT_SIZE_MAP: Record<number, string> = {
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async () => {
-    await waitForAuthInit()
-    // ponytail: 凭据由 HttpOnly Cookie 承担；持久化的 user 作为会话存在性判定
+    const authed = await waitForAuthInit()
     const user = useAuthStore.getState().user
-    if (!user) {
+    if (!authed || !user) {
       throw redirect({ to: ROUTES_REGISTER.login.path })
     }
   },

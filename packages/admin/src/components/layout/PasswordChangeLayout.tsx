@@ -1,5 +1,5 @@
-import { Avatar, Button, Dropdown, Space, theme } from 'antd'
-import { LogOut, User as UserIcon } from 'lucide-react'
+import { Avatar, Dropdown, Space, theme } from 'antd'
+import { LogOut } from 'lucide-react'
 import { logoutService } from '@/features/auth/services'
 import { useAuthStore } from '@/stores/auth'
 

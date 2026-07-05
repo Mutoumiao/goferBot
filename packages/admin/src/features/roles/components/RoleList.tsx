@@ -35,12 +35,12 @@ export function RoleList() {
   }
 
   const handleEdit = async (role: Role) => {
-    const success = await RoleFormModal({ roleId: role.id })
+    const success = await RoleFormModal({ roleCode: role.code })
     if (success) void load()
   }
 
   const handleDelete = async (role: Role) => {
-    if (role.isBuiltIn) return
+    if (role.isSystem) return
     const result = await confirmPasswordAction(
       '删除角色',
       <>
@@ -48,7 +48,7 @@ export function RoleList() {
       </>,
     )
     if (!result.confirmed) return
-    await deleteRoleService(role.id)
+    await deleteRoleService(role.code)
     void load()
   }
 
@@ -60,21 +60,35 @@ export function RoleList() {
       render: (name: string, record) => (
         <div className="flex items-center gap-2">
           <span className="font-medium text-slate-700">{name}</span>
-          {record.isBuiltIn && <Tag color="blue">内置</Tag>}
+          {record.isSystem && <Tag color="blue">系统</Tag>}
         </div>
       ),
+    },
+    {
+      title: '角色编码',
+      dataIndex: 'code',
+      key: 'code',
+      width: 140,
+      render: (code: string) => <span className="font-mono text-xs text-slate-500">{code}</span>,
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      render: (v?: string) => <span className="text-slate-500">{v ?? '—'}</span>,
+      render: (v: string | null) => <span className="text-slate-500">{v ?? '—'}</span>,
     },
     {
       title: '权限数',
       dataIndex: 'permissions',
       key: 'permissions',
       render: (perms: string[]) => <Tag color="purple">{perms.length} 项</Tag>,
+    },
+    {
+      title: '用户数',
+      dataIndex: 'userCount',
+      key: 'userCount',
+      width: 80,
+      render: (count: number) => <Tag>{count}</Tag>,
     },
     {
       title: '更新时间',
@@ -98,11 +112,11 @@ export function RoleList() {
             编辑
           </Button>
           <Popconfirm
-            title={record.isBuiltIn ? '内置角色不可删除' : '确定删除此角色？'}
-            disabled={record.isBuiltIn}
+            title={record.isSystem ? '系统角色不可删除' : '确定删除此角色？'}
+            disabled={record.isSystem}
             onConfirm={() => void handleDelete(record)}
             okText="删除"
-            okButtonProps={{ danger: true, disabled: record.isBuiltIn }}
+            okButtonProps={{ danger: true, disabled: record.isSystem }}
             cancelText="取消"
           >
             <Button
@@ -110,7 +124,7 @@ export function RoleList() {
               size="small"
               danger
               icon={<Trash2 size={14} />}
-              disabled={record.isBuiltIn}
+              disabled={record.isSystem}
             >
               删除
             </Button>

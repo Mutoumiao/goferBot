@@ -46,7 +46,7 @@ describe('AuthService', () => {
       findRefreshTokenByJtiHash: vi.fn(),
       markRefreshTokenUsed: vi.fn().mockResolvedValue(true),
       revokeSession: vi.fn().mockResolvedValue(undefined),
-      getRolesForUserByApp: vi.fn().mockResolvedValue([{ role: 'USER' }]),
+      getRolesForUserByApp: vi.fn().mockResolvedValue([{ role: 'user' }]),
       isAuthMethodEnabled: vi.fn().mockResolvedValue(true),
       createSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
     }

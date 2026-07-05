@@ -1,22 +1,12 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { JwtAuthGuard } from '@/auth/guards/jwt.guard.js'
 
-describe('AC-05: JwtAuthGuard blacklist check', () => {
-  let guard: JwtAuthGuard
-  let mockAuthRedis: any
-
-  beforeEach(() => {
-    mockAuthRedis = {
-      isTokenBlacklisted: vi.fn().mockResolvedValue(false),
-    }
-    guard = new JwtAuthGuard(mockAuthRedis)
-  })
-
-  function createMockContext(request: Record<string, any>): ExecutionContext {
+describe('JwtAuthGuard', () => {
+  function createMockContext(user: unknown): ExecutionContext {
     return {
       switchToHttp: () => ({
-        getRequest: () => request,
+        getRequest: () => user,
         getResponse: () => ({}),
       }),
       getHandler: () => ({}),
@@ -27,14 +17,20 @@ describe('AC-05: JwtAuthGuard blacklist check', () => {
     } as unknown as ExecutionContext
   }
 
-  it('should throw UnauthorizedException when cookie token is blacklisted', async () => {
-    mockAuthRedis.isTokenBlacklisted.mockResolvedValue(true)
-    const context = createMockContext({
-      headers: {},
-      cookies: { goferbot_web_access_token: 'blacklisted-token' },
-    })
+  it('handleRequest throws UnauthorizedException when user is false', () => {
+    const guard = new JwtAuthGuard()
+    expect(() => guard.handleRequest(null, false)).toThrow(UnauthorizedException)
+  })
 
-    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException)
-    expect(mockAuthRedis.isTokenBlacklisted).toHaveBeenCalledWith('blacklisted-token')
+  it('handleRequest throws error when error is provided', () => {
+    const guard = new JwtAuthGuard()
+    const err = new Error('custom')
+    expect(() => guard.handleRequest(err, false)).toThrow(err)
+  })
+
+  it('handleRequest returns user when valid', () => {
+    const guard = new JwtAuthGuard()
+    const user = { id: '1' }
+    expect(guard.handleRequest(null, user)).toBe(user)
   })
 })

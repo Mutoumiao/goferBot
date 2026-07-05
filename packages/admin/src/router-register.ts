@@ -51,7 +51,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/dashboard' as RoutePath,
     icon: LayoutDashboard,
     nav: true,
-    requiredPermission: PERMISSIONS.DASHBOARD,
+    requiredPermission: PERMISSIONS.DASHBOARD_READ,
   },
   users: {
     key: 'users',
@@ -59,7 +59,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/users' as RoutePath,
     icon: Users,
     nav: true,
-    requiredPermission: PERMISSIONS.USERS,
+    requiredPermission: PERMISSIONS.USERS_READ,
   },
   userDetail: {
     key: 'userDetail',
@@ -67,7 +67,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/users/$id' as RoutePath,
     icon: User,
     nav: false,
-    requiredPermission: PERMISSIONS.USERS,
+    requiredPermission: PERMISSIONS.USERS_READ,
   },
   roles: {
     key: 'roles',
@@ -75,7 +75,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/roles' as RoutePath,
     icon: Shield,
     nav: true,
-    requiredPermission: PERMISSIONS.ROLES,
+    requiredPermission: PERMISSIONS.ROLES_READ,
   },
   roleDetail: {
     key: 'roleDetail',
@@ -83,7 +83,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/roles/$id' as RoutePath,
     icon: Shield,
     nav: false,
-    requiredPermission: PERMISSIONS.ROLES,
+    requiredPermission: PERMISSIONS.ROLES_READ,
   },
   audit: {
     key: 'audit',
@@ -91,7 +91,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/audit' as RoutePath,
     icon: FileText,
     nav: true,
-    requiredPermission: PERMISSIONS.AUDIT,
+    requiredPermission: PERMISSIONS.AUDIT_READ,
   },
   invitations: {
     key: 'invitations',
@@ -99,7 +99,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/invitations' as RoutePath,
     icon: Ticket,
     nav: true,
-    requiredPermission: PERMISSIONS.INVITATIONS,
+    requiredPermission: PERMISSIONS.INVITATIONS_READ,
   },
   profile: {
     key: 'profile',
@@ -107,7 +107,6 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/profile' as RoutePath,
     icon: SettingsIcon,
     nav: false,
-    requiredPermission: PERMISSIONS.PROFILE,
   },
   changePassword: {
     key: 'changePassword',
@@ -122,7 +121,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/model-providers' as RoutePath,
     icon: Cpu,
     nav: true,
-    requiredPermission: PERMISSIONS.MODEL_PROVIDERS,
+    requiredPermission: PERMISSIONS.SETTINGS_READ,
   },
   moduleSettings: {
     key: 'moduleSettings',
@@ -130,7 +129,7 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/module-settings' as RoutePath,
     icon: SettingsIcon,
     nav: true,
-    requiredPermission: PERMISSIONS.MODULE_SETTINGS,
+    requiredPermission: PERMISSIONS.SETTINGS_READ,
   },
 }
 

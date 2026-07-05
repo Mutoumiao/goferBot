@@ -235,6 +235,23 @@ export class PermissionSeeder implements OnModuleInit {
       }
 
       await tx.rolePermission.deleteMany({
+        where: { roleCode: 'super_admin', app: 'admin' },
+      })
+      const superAdminPermIds = PERMISSIONS.map((p) => permissionIds.get(p.code)).filter(
+        (id): id is string => !!id,
+      )
+      if (superAdminPermIds.length > 0) {
+        await tx.rolePermission.createMany({
+          data: superAdminPermIds.map((permId) => ({
+            roleCode: 'super_admin',
+            permissionId: permId,
+            app: 'admin',
+          })),
+          skipDuplicates: true,
+        })
+      }
+
+      await tx.rolePermission.deleteMany({
         where: { roleCode: 'admin', app: 'admin' },
       })
       const adminPermIds = PERMISSIONS.map((p) => permissionIds.get(p.code)).filter(

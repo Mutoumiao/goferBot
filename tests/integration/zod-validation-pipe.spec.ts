@@ -6,7 +6,7 @@
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -51,7 +51,7 @@ describe('ZodValidationPipe', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: {},
     })
     expect(res.statusCode).toBe(400)
@@ -67,8 +67,13 @@ describe('ZodValidationPipe', () => {
   it('AC-13: returns 400 for invalid string format', async () => {
     const res = await app.inject({
       method: 'POST',
-      url: '/api/auth/register',
-      payload: { email: 'not-an-email', encryptedPassword: 'valid-pwd-123', name: 'Test' },
+      url: '/api/web/auth/register',
+      payload: {
+        email: 'not-an-email',
+        encryptedPassword: 'valid-pwd-123',
+        name: 'Test',
+        invitationCode: 'GF-test-code-001',
+      },
     })
     expect(res.statusCode).toBe(400)
     const body = res.json()
@@ -82,7 +87,7 @@ describe('ZodValidationPipe', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { title: 'a'.repeat(101) },
     })
     expect(res.statusCode).toBe(400)
@@ -97,7 +102,7 @@ describe('ZodValidationPipe', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/settings/appearance',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: {
         mode: 'light',
         fontSizeLevel: 10,

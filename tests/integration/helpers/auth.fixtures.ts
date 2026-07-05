@@ -1,5 +1,33 @@
 import { constants, publicEncrypt } from 'node:crypto'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import {
+  ADMIN_ACCESS_COOKIE,
+  WEB_ACCESS_COOKIE,
+} from '../../../packages/server/src/auth/cookie.helper.js'
+
+const TEST_INVITATION_CODE = 'GF-test-code-001'
+
+function extractCookieValue(setCookieHeader: string | string[] | undefined, name: string): string {
+  const headers = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
+  for (const header of headers) {
+    if (!header) continue
+    const prefix = `${name}=`
+    if (header.startsWith(prefix)) {
+      const rest = header.slice(prefix.length)
+      const end = rest.indexOf(';')
+      return end === -1 ? rest : rest.slice(0, end)
+    }
+  }
+  throw new Error(`Cookie "${name}" not found in Set-Cookie header`)
+}
+
+function extractAccessToken(
+  res: { headers: Record<string, unknown> },
+  cookieName: string = WEB_ACCESS_COOKIE,
+): string {
+  const setCookie = res.headers['set-cookie'] as string | string[] | undefined
+  return extractCookieValue(setCookie, cookieName)
+}
 
 export const AuthFixtures = {
   normalUser: { email: 'test@gofer.bot', password: 'Test1234!' },
@@ -13,8 +41,13 @@ export const AuthFixtures = {
     const encryptedPassword = await this.encryptPassword(app, user.password, opts)
     const res = await app.inject({
       method: 'POST',
-      url: '/api/auth/register',
-      payload: { email: user.email, encryptedPassword, name: user.name },
+      url: '/api/web/auth/register',
+      payload: {
+        email: user.email,
+        encryptedPassword,
+        name: user.name,
+        invitationCode: TEST_INVITATION_CODE,
+      },
       remoteAddress: opts?.remoteAddress,
     })
     if (res.statusCode >= 400) {
@@ -30,19 +63,43 @@ export const AuthFixtures = {
     user: { email: string; password: string },
     opts?: { remoteAddress?: string },
   ): Promise<string> {
+    return this.loginAsWeb(app, user, opts)
+  },
+
+  async loginAsWeb(
+    app: NestFastifyApplication,
+    user: { email: string; password: string },
+    opts?: { remoteAddress?: string },
+  ): Promise<string> {
     const encryptedPassword = await this.encryptPassword(app, user.password, opts)
     const res = await app.inject({
       method: 'POST',
-      url: '/api/auth/login',
+      url: '/api/web/auth/login',
       payload: { email: user.email, encryptedPassword },
       remoteAddress: opts?.remoteAddress,
     })
     if (res.statusCode >= 400) {
-      throw new Error(`loginAs failed: ${res.statusCode} ${res.body}`)
+      throw new Error(`loginAsWeb failed: ${res.statusCode} ${res.body}`)
     }
-    const body = res.json()
-    const data = body.data ? body.data : body
-    return data.accessToken
+    return extractAccessToken(res)
+  },
+
+  async loginAsAdmin(
+    app: NestFastifyApplication,
+    user: { email: string; password: string },
+    opts?: { remoteAddress?: string },
+  ): Promise<string> {
+    const encryptedPassword = await this.encryptPassword(app, user.password, opts)
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/auth/login',
+      payload: { email: user.email, encryptedPassword },
+      remoteAddress: opts?.remoteAddress,
+    })
+    if (res.statusCode >= 400) {
+      throw new Error(`loginAsAdmin failed: ${res.statusCode} ${res.body}`)
+    }
+    return extractAccessToken(res, ADMIN_ACCESS_COOKIE)
   },
 
   async encryptPassword(
@@ -64,4 +121,12 @@ export const AuthFixtures = {
     )
     return encrypted.toString('base64')
   },
+}
+
+export function authHeader(token: string): { cookie: string } {
+  return { cookie: `${WEB_ACCESS_COOKIE}=${token}` }
+}
+
+export function adminAuthHeader(token: string): { cookie: string } {
+  return { cookie: `${ADMIN_ACCESS_COOKIE}=${token}` }
 }

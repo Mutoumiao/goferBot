@@ -52,7 +52,7 @@ describe('auth store', () => {
     expect(useAuthStore.getState().user?.name).toBe('New')
   })
 
-  it('clearAuth resets state', () => {
+  it('clearAuth resets state but keeps isInitialized=true', () => {
     useAuthStore.setState({
       user: {
         id: 'u1',
@@ -70,7 +70,7 @@ describe('auth store', () => {
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
     expect(state.isAuthenticated).toBe(false)
-    expect(state.isInitialized).toBe(false)
+    expect(state.isInitialized).toBe(true)
   })
 
   it('setUser sets isInitialized to true to enable app rendering', () => {

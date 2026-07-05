@@ -24,17 +24,15 @@ function selectUser(roles: string[] | null, permissions?: string[]) {
     ? []
     : roles?.includes('admin')
       ? [
-          'dashboard',
-          'users',
-          'roles',
-          'rag',
-          'sessions',
-          'audit',
-          'modelProviders',
-          'moduleSettings',
+          'dashboard:read',
+          'users:read',
+          'roles:read',
+          'audit:read',
+          'invitations:read',
+          'settings:read',
         ]
       : roles?.includes('user')
-        ? ['dashboard']
+        ? ['dashboard:read']
         : []
   return (selector: (s: { user: TestUser | null }) => unknown) =>
     selector({

@@ -1,6 +1,9 @@
 import type { FormInstance } from 'antd'
-import { Form, Input, Modal, Select } from 'antd'
+import { Checkbox, Form, Input, Modal, Spin } from 'antd'
+import type { Role } from '@/features/roles/services'
+import { fetchRoles } from '@/features/roles/services'
 import type { AdminRoleCode } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth'
 import { createUserService } from '../services'
 
 interface FormValues {
@@ -10,15 +13,46 @@ interface FormValues {
   roles: AdminRoleCode[]
 }
 
-const ROLE_OPTIONS: { value: AdminRoleCode; label: string }[] = [
-  { value: 'user', label: '普通用户' },
-  { value: 'admin', label: '管理员' },
-  { value: 'super_admin', label: '超级管理员' },
-]
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: '超级管理员',
+  admin: '管理员',
+  user: '普通用户',
+}
 
-export function createUserModal(): Promise<boolean> {
+function isCurrentUserSuperAdmin(): boolean {
+  const state = useAuthStore.getState()
+  return !!state.user?.roles?.includes('super_admin')
+}
+
+function filterAssignableRoles(roles: Role[]): Role[] {
+  const isSuperAdmin = isCurrentUserSuperAdmin()
+  if (isSuperAdmin) {
+    return roles.filter((r) => r.app === 'admin')
+  }
+  return roles.filter((r) => r.app === 'admin' && r.code !== 'super_admin' && r.code !== 'admin')
+}
+
+async function loadAssignableRoles(): Promise<Role[]> {
+  const list = await fetchRoles()
+  return filterAssignableRoles(list)
+}
+
+export async function createUserModal(): Promise<boolean> {
+  let roles: Role[] = []
+  try {
+    roles = await loadAssignableRoles()
+  } catch {
+    roles = []
+  }
+
   return new Promise((resolve) => {
+    const formRef: { current: FormInstance<FormValues> | null } = { current: null }
     const [form] = Form.useForm<FormValues>()
+
+    const options = roles.map((r) => ({
+      label: `${ROLE_LABELS[r.code] ?? r.name}（${r.code}）`,
+      value: r.code as AdminRoleCode,
+    }))
 
     const modal = Modal.confirm({
       title: '新建用户',
@@ -29,7 +63,7 @@ export function createUserModal(): Promise<boolean> {
           layout="vertical"
           preserve={false}
           className="pt-2"
-          initialValues={{ roles: ['user'] }}
+          initialValues={{ roles: [] }}
         >
           <Form.Item
             name="email"
@@ -57,8 +91,21 @@ export function createUserModal(): Promise<boolean> {
             <Input.Password placeholder="至少 8 位" />
           </Form.Item>
 
-          <Form.Item name="roles" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
-            <Select mode="multiple" options={ROLE_OPTIONS} />
+          <Form.Item
+            name="roles"
+            label="角色（可多选）"
+            rules={[{ required: true, message: '请选择至少一个角色' }]}
+            extra={
+              isCurrentUserSuperAdmin()
+                ? '勾选 admin 或 super_admin 即为管理员账号'
+                : '当前账号仅能创建普通用户'
+            }
+          >
+            {options.length === 0 ? (
+              <Spin size="small" />
+            ) : (
+              <Checkbox.Group options={options} className="flex flex-col gap-2" />
+            )}
           </Form.Item>
         </Form>
       ),
@@ -83,6 +130,7 @@ export function createUserModal(): Promise<boolean> {
         modal.destroy()
       },
     })
-    void (null as unknown as FormInstance<FormValues> | null)
+
+    void formRef
   })
 }

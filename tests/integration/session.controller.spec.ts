@@ -7,7 +7,7 @@
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -55,7 +55,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -77,7 +77,7 @@ describe('SessionController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'Test Session' },
       })
       const { data: created } = createRes.json()
@@ -85,7 +85,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'GET',
         url: `/api/sessions/${created.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -97,7 +97,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/sessions/non-existent-id',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(404)
       const body = res.json()
@@ -123,7 +123,7 @@ describe('SessionController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'Private Session' },
       })
       const { data: created } = createRes.json()
@@ -131,7 +131,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'GET',
         url: `/api/sessions/${created.id}`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
       })
       expect(res.statusCode).toBe(403)
       const body = res.json()
@@ -153,7 +153,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'New Session', provider: 'openai', model: 'gpt-4' },
       })
       expect(res.statusCode).toBe(201)
@@ -167,7 +167,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: {},
       })
       expect(res.statusCode).toBe(201)
@@ -179,7 +179,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'a'.repeat(101) },
       })
       expect(res.statusCode).toBe(400)
@@ -202,7 +202,7 @@ describe('SessionController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'Old Name' },
       })
       const { data: created } = createRes.json()
@@ -210,7 +210,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/sessions/${created.id}/rename`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'New Name' },
       })
       expect(res.statusCode).toBe(200)
@@ -222,7 +222,7 @@ describe('SessionController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'Rename Test' },
       })
       const { data: created } = createRes.json()
@@ -230,7 +230,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/sessions/${created.id}/rename`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -242,7 +242,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/sessions/non-existent-id/rename',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'New Name' },
       })
       expect(res.statusCode).toBe(404)
@@ -269,7 +269,7 @@ describe('SessionController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'Private' },
       })
       const { data: created } = createRes.json()
@@ -277,7 +277,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/sessions/${created.id}/rename`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: { title: 'Hacked' },
       })
       expect(res.statusCode).toBe(403)
@@ -292,7 +292,7 @@ describe('SessionController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/sessions',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { title: 'To Delete' },
       })
       const { data: created } = createRes.json()
@@ -300,7 +300,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/sessions/${created.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -311,7 +311,7 @@ describe('SessionController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: '/api/sessions/non-existent-id',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(404)
       const body = res.json()

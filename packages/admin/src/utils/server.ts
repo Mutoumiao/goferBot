@@ -4,42 +4,51 @@ import ReactHook from 'alova/react'
 import { useAuthStore } from '@/stores/auth'
 
 let isRefreshing = false
-let refreshSubscribers: Array<() => void> = []
+let refreshSubscribers: Array<{ resolve: () => void; reject: (err: Error) => void }> = []
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 async function refreshToken(): Promise<boolean> {
-  if (isRefreshing) return false
-  isRefreshing = true
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/admin/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-App-Context': 'admin',
-      },
-      body: '{}',
-    })
-    return response.ok
-  } finally {
-    isRefreshing = false
-  }
+  const response = await fetch(`${API_BASE_URL}/admin/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-Context': 'admin',
+    },
+    body: '{}',
+  })
+  return response.ok
 }
 
 function onRefreshed() {
-  for (const cb of refreshSubscribers) cb()
+  for (const cb of refreshSubscribers) cb.resolve()
   refreshSubscribers = []
 }
 
-function addSubscriber(cb: () => void) {
+function onRefreshFailed(err: Error) {
+  for (const cb of refreshSubscribers) cb.reject(err)
+  refreshSubscribers = []
+}
+
+function addSubscriber(cb: { resolve: () => void; reject: (err: Error) => void }) {
   refreshSubscribers.push(cb)
+}
+
+function isLogoutRequest(method: { config: { url?: string } }) {
+  return method.config.url?.includes('logout') ?? false
 }
 
 async function doRefreshAndRetry(method: {
   send: () => unknown
-  config: { headers: Record<string, string> }
+  config: { headers: Record<string, string>; url?: string }
 }) {
+  if (isLogoutRequest(method)) {
+    useAuthStore.getState().clearAuth()
+    window.location.replace('/login')
+    throw new Error('Logout request')
+  }
+
   if (!isRefreshing) {
     isRefreshing = true
     try {
@@ -48,16 +57,22 @@ async function doRefreshAndRetry(method: {
         onRefreshed()
         return method.send()
       }
+      const err = new Error('Auth refresh failed')
+      onRefreshFailed(err)
+      throw err
+    } catch (err) {
+      onRefreshFailed(err instanceof Error ? err : new Error('Refresh error'))
+      throw err
     } finally {
       isRefreshing = false
     }
-    useAuthStore.getState().clearAuth()
-    window.location.replace('/login')
-    throw new Error('Auth refresh failed')
   }
-  return new Promise<unknown>((resolve) => {
-    addSubscriber(() => {
-      resolve(method.send())
+  return new Promise<unknown>((resolve, reject) => {
+    addSubscriber({
+      resolve: () => {
+        resolve(method.send())
+      },
+      reject,
     })
   })
 }

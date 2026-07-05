@@ -43,7 +43,7 @@ describe('roles services', () => {
   })
 
   it('fetchRoles returns list and logs toast on error', async () => {
-    mockListRoles.mockResolvedValueOnce([{ id: '1', name: 'ADMIN' }])
+    mockListRoles.mockResolvedValueOnce([{ code: 'admin', name: '管理员' }])
     const list = await fetchRoles()
     expect(list.length).toBe(1)
 
@@ -61,26 +61,26 @@ describe('roles services', () => {
 
   it('createRoleService returns success/error', async () => {
     mockCreateRole.mockResolvedValueOnce(undefined)
-    const r1 = await createRoleService({ name: 'NewRole', permissions: ['user:read'] })
+    const r1 = await createRoleService({ code: 'auditor', name: '审计员' })
     expect(r1.success).toBe(true)
     expect(toast.success).toHaveBeenCalledWith('创建角色成功')
 
     mockCreateRole.mockRejectedValueOnce(new Error('conflict'))
-    const r2 = await createRoleService({ name: 'Dup', permissions: [] })
+    const r2 = await createRoleService({ code: 'dup', name: 'Dup' })
     expect(r2.success).toBe(false)
     expect(r2.error).toBeTruthy()
   })
 
   it('editRoleService / updateRoleService / deleteRoleService / fetchRole forward to api', async () => {
     mockUpdateRole.mockResolvedValueOnce(undefined)
-    expect((await editRoleService('1', { name: 'n' })).success).toBe(true)
-    expect((await updateRoleService('1', {})).success).toBe(true)
+    expect((await editRoleService('admin', { name: 'n' })).success).toBe(true)
+    expect((await updateRoleService('admin', {})).success).toBe(true)
 
     mockDeleteRole.mockResolvedValueOnce(undefined)
-    expect((await deleteRoleService('1')).success).toBe(true)
+    expect((await deleteRoleService('admin')).success).toBe(true)
 
-    mockGetRole.mockResolvedValueOnce({ id: '1' })
-    expect(await fetchRole('1')).toEqual({ id: '1' })
+    mockGetRole.mockResolvedValueOnce({ code: 'admin' })
+    expect(await fetchRole('admin')).toEqual({ code: 'admin' })
 
     mockGetRole.mockRejectedValueOnce(new Error('not found'))
     await expect(fetchRole('x')).rejects.toThrow()

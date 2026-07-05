@@ -1,4 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
 import { AppException } from '../lib/app-error.js'
 
 /**
@@ -11,7 +10,6 @@ export function invalidCredentialsError(): AppException {
 }
 
 export function accountDisabledError(): AppException {
-  AsyncLocalStorage
   return new AppException('ACCOUNT_DISABLED', '账号已被禁用', 403)
 }
 

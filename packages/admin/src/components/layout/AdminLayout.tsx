@@ -1,7 +1,6 @@
 import { ProLayout } from '@ant-design/pro-components'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { Avatar, theme as antdTheme, Button, Dropdown, Space } from 'antd'
-import type { MenuItemType } from 'antd/es/menu/interface'
 import { Bell, ChevronDown, LogOut, Settings as SettingsIcon, User as UserIcon } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { logoutService } from '@/features/auth/services'
@@ -9,8 +8,6 @@ import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { useMenuConfig } from './MenuConfig'
-
-const SIDEBAR_HIDDEN_ROUTES = ['/change-password']
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -23,19 +20,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navItems = useMenuConfig()
 
   const currentPath = router.state.location.pathname as string
-  const hideSidebar = SIDEBAR_HIDDEN_ROUTES.includes(currentPath)
 
-  const menuItems = useMemo<MenuItemType[]>(
+  const menuItems = useMemo(
     () =>
       navItems.map((item) => ({
-        key: item.path,
+        path: item.path,
+        name: item.title,
         icon: item.icon
           ? (() => {
               const Icon = item.icon
               return <Icon size={16} />
             })()
           : undefined,
-        label: item.title,
       })),
     [navItems],
   )
@@ -80,35 +76,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   const rightContentRender = useCallback(() => {
-    if (hideSidebar) {
-      return (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'logout',
-                icon: <LogOut size={14} />,
-                label: '退出登录',
-                danger: true,
-                onClick: () => logoutService(),
-              },
-            ],
-          }}
-          placement="bottomRight"
-        >
-          <Space className="cursor-pointer flex items-center gap-1 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors">
-            <Avatar size="small" style={{ backgroundColor: token.colorPrimary }}>
-              {user?.name?.[0]?.toUpperCase() ?? 'A'}
-            </Avatar>
-            <span className="text-sm text-gray-700 font-medium">
-              {user?.name ?? user?.email ?? 'Admin'}
-            </span>
-            <ChevronDown size={14} className="text-gray-400" />
-          </Space>
-        </Dropdown>
-      )
-    }
-
     return (
       <div className="flex items-center gap-2 px-4">
         <Button
@@ -159,7 +126,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </Dropdown>
       </div>
     )
-  }, [navigate, setAppearance, token.colorPrimary, user, hideSidebar])
+  }, [navigate, setAppearance, token.colorPrimary, user])
 
   const breadcrumbRender = useCallback(
     (routers: { path?: string; breadcrumbName?: string }[] = []) => {
@@ -174,25 +141,23 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       title="GoferBot Admin"
       token={proLayoutToken}
       menuItemRender={menuItemRender}
-      menuDataRender={hideSidebar ? () => [] : menuDataRender}
+      menuDataRender={menuDataRender}
       location={location}
-      collapsed={hideSidebar || collapsed}
+      collapsed={collapsed}
       onCollapse={setCollapsed}
-      menuHeaderRender={hideSidebar ? () => null : menuHeaderRender}
+      menuHeaderRender={menuHeaderRender}
       actionsRender={rightContentRender}
       breadcrumbRender={breadcrumbRender}
       layout="mix"
       fixedHeader
       headerTitleRender={() => (
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-linear-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold">
             G
           </div>
           <span className="text-base font-semibold text-gray-800">GoferBot Admin</span>
         </div>
       )}
-      menuRender={hideSidebar ? false : undefined}
-      {...(hideSidebar ? { siderWidth: 0 } : {})}
     >
       {children}
     </ProLayout>

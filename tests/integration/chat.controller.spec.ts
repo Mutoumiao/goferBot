@@ -7,7 +7,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ChatService } from '../../packages/server/src/modules/chat/chat.service.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -51,7 +51,7 @@ describe('ChatController', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${userToken}` },
+      headers: authHeader(userToken),
       payload: { title },
     })
     expect(res.statusCode).toBe(201)
@@ -82,7 +82,7 @@ describe('ChatController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/chat-messages',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: {
           response_mode: 'streaming',
           query: 'Hello',
@@ -101,7 +101,7 @@ describe('ChatController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/chat-messages',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: {
           response_mode: 'streaming',
           query: '',
@@ -117,7 +117,7 @@ describe('ChatController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/chat-messages',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: {
           response_mode: 'streaming',
           query: 'Hello',
@@ -133,7 +133,7 @@ describe('ChatController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/chat-messages',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: {
           response_mode: 'streaming',
           query: 'Hello',
@@ -162,7 +162,7 @@ describe('ChatController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/chat-messages',
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: {
           response_mode: 'streaming',
           query: 'Hello',
@@ -205,7 +205,7 @@ describe('ChatController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/chat-messages',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: {
           response_mode: 'streaming',
           query: 'Hello',

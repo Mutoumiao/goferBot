@@ -6,7 +6,7 @@
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -51,7 +51,7 @@ describe('ResponseInterceptor', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/settings',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
     })
     expect(res.statusCode).toBe(200)
     const body = res.json()
@@ -64,7 +64,7 @@ describe('ResponseInterceptor', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
     })
     expect(res.statusCode).toBe(200)
     const body = res.json()
@@ -77,7 +77,7 @@ describe('ResponseInterceptor', () => {
     const createRes = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { title: 'Delete Me' },
     })
     const sessionId = createRes.json().data.id
@@ -85,7 +85,7 @@ describe('ResponseInterceptor', () => {
     const deleteRes = await app.inject({
       method: 'DELETE',
       url: `/api/sessions/${sessionId}`,
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
     })
     expect(deleteRes.statusCode).toBe(200)
     const body = deleteRes.json()
@@ -99,7 +99,7 @@ describe('ResponseInterceptor', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { title: 'SSE Test' },
     })
     const sessionId = sessionRes.json().data.id
@@ -107,7 +107,7 @@ describe('ResponseInterceptor', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/chat',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { message: 'test', sessionId },
     })
     // SSE 端点应设置 text/event-stream 头（即使后续可能因 mock 而报错）

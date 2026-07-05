@@ -241,50 +241,56 @@ export function UserTable({ initialQuery }: UserTableProps) {
       title: '操作',
       key: 'actions',
       width: 320,
-      render: (_: unknown, record) => (
-        <Space size="small">
-          <Button
-            type="text"
-            size="small"
-            icon={<Edit size={14} />}
-            onClick={() => navigate({ to: `/_authenticated/users/${record.id}` })}
-          >
-            编辑
-          </Button>
-          <Button
-            type="text"
-            size="small"
-            icon={<KeyRound size={14} />}
-            onClick={() => void handleResetPassword(record)}
-          >
-            重置密码
-          </Button>
-          <Button
-            type="text"
-            size="small"
-            icon={<UserCog size={14} />}
-            onClick={() => void handleAssignRole(record)}
-          >
-            分配角色
-          </Button>
-          <Switch
-            size="small"
-            checked={record.isActive}
-            onChange={() => void handleToggleStatus(record)}
-          />
-          <Popconfirm
-            title="确定删除此用户？"
-            onConfirm={() => void handleDelete(record)}
-            okText="删除"
-            okButtonProps={{ danger: true }}
-            cancelText="取消"
-          >
-            <Button type="text" size="small" danger icon={<Trash2 size={14} />}>
-              删除
+      render: (_: unknown, record) => {
+        const roles = record.roles ?? []
+        const isAdminUser = roles.includes('admin') || roles.includes('super_admin')
+        return (
+          <Space size="small">
+            <Button
+              type="text"
+              size="small"
+              icon={<Edit size={14} />}
+              onClick={() => navigate({ to: `/_authenticated/users/${record.id}` })}
+            >
+              编辑
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
+            {isAdminUser && (
+              <Button
+                type="text"
+                size="small"
+                icon={<KeyRound size={14} />}
+                onClick={() => void handleResetPassword(record)}
+              >
+                重置密码
+              </Button>
+            )}
+            <Button
+              type="text"
+              size="small"
+              icon={<UserCog size={14} />}
+              onClick={() => void handleAssignRole(record)}
+            >
+              分配角色
+            </Button>
+            <Switch
+              size="small"
+              checked={record.isActive}
+              onChange={() => void handleToggleStatus(record)}
+            />
+            <Popconfirm
+              title="确定删除此用户？"
+              onConfirm={() => void handleDelete(record)}
+              okText="删除"
+              okButtonProps={{ danger: true }}
+              cancelText="取消"
+            >
+              <Button type="text" size="small" danger icon={<Trash2 size={14} />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        )
+      },
     },
   ]
 

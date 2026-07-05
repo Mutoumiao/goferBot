@@ -1,6 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import nock from 'nock'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { checkInfrastructure } from './helpers/infra-check.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
@@ -64,24 +65,18 @@ describe('RAG Real Integration Tests', () => {
     // 创建测试用户
     const timestamp = Date.now()
     const email = `rag-real-${timestamp}@test.gofer`
-    await app.inject({
-      method: 'POST',
-      url: '/api/auth/register',
-      payload: { email, password: 'Test1234!', name: 'RAG Real Tester' },
+    await AuthFixtures.createUser(app, {
+      email,
+      password: 'Test1234!',
+      name: 'RAG Real Tester',
     })
-
-    const loginRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email, password: 'Test1234!' },
-    })
-    token = loginRes.json().data.accessToken
+    token = await AuthFixtures.loginAsWeb(app, { email, password: 'Test1234!' })
 
     // 创建知识库
     const kbRes = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { name: `RAG-Real-KB-${timestamp}`, description: 'Real integration test KB' },
     })
     kbId = kbRes.json().data.id
@@ -109,7 +104,7 @@ describe('RAG Real Integration Tests', () => {
       url: `/api/knowledge-bases/${kbId}/documents/upload`,
       headers: {
         'content-type': `multipart/form-data; boundary=${boundary}`,
-        authorization: `Bearer ${token}`,
+        ...authHeader(token),
       },
       payload: multipartBody,
     })
@@ -161,7 +156,7 @@ describe('RAG Real Integration Tests', () => {
       url: `/api/knowledge-bases/${kbId}/documents/upload`,
       headers: {
         'content-type': `multipart/form-data; boundary=${boundary}`,
-        authorization: `Bearer ${token}`,
+        ...authHeader(token),
       },
       payload: multipartBody,
     })
@@ -174,7 +169,7 @@ describe('RAG Real Integration Tests', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { title: 'RAG Retrieval Test' },
     })
     const sessionId = sessionRes.json().data.id
@@ -199,7 +194,7 @@ describe('RAG Real Integration Tests', () => {
       method: 'POST',
       url: '/api/chat',
       headers: {
-        authorization: `Bearer ${token}`,
+        ...authHeader(token),
         'content-type': 'application/json',
       },
       payload: {
@@ -248,7 +243,7 @@ describe('RAG Real Integration Tests', () => {
       url: `/api/knowledge-bases/${kbId}/documents/upload`,
       headers: {
         'content-type': `multipart/form-data; boundary=${boundary}`,
-        authorization: `Bearer ${token}`,
+        ...authHeader(token),
       },
       payload: multipartBody,
     })

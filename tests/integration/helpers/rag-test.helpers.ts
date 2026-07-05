@@ -1,6 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
 import { StorageService } from '../../../packages/server/src/processors/storage/storage.service.js'
+import { authHeader } from './auth.fixtures.js'
 
 const VECTOR_DIMENSION = 1536
 
@@ -47,7 +48,7 @@ export async function uploadDocumentWithChunk(
     url: `/api/knowledge-bases/${kbId}/documents/upload`,
     headers: {
       'content-type': `multipart/form-data; boundary=${boundary}`,
-      authorization: `Bearer ${token}`,
+      ...authHeader(token),
     },
     payload: multipartBody,
   })

@@ -6,7 +6,7 @@
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -50,7 +50,7 @@ describe('AllExceptionsFilter', () => {
   it('AC-07: returns { error: { code, message } } for 400', async () => {
     const res = await app.inject({
       method: 'POST',
-      url: '/api/auth/register',
+      url: '/api/web/auth/register',
       payload: { email: 'invalid-email', encryptedPassword: '', name: '' },
     })
     expect(res.statusCode).toBe(400)
@@ -65,7 +65,7 @@ describe('AllExceptionsFilter', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/sessions',
-      headers: { authorization: 'Bearer invalid-token' },
+      headers: authHeader('invalid-token'),
     })
     expect(res.statusCode).toBe(401)
     const body = res.json()
@@ -77,7 +77,7 @@ describe('AllExceptionsFilter', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/sessions/non-existent-id',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
     })
     expect(res.statusCode).toBe(404)
     const body = res.json()
@@ -104,7 +104,7 @@ describe('AllExceptionsFilter', () => {
     const createRes = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { title: 'Private' },
     })
     const sessionId = createRes.json().data.id
@@ -112,7 +112,7 @@ describe('AllExceptionsFilter', () => {
     const res = await app.inject({
       method: 'GET',
       url: `/api/sessions/${sessionId}`,
-      headers: { authorization: `Bearer ${otherToken}` },
+      headers: authHeader(otherToken),
     })
     expect(res.statusCode).toBe(403)
     const body = res.json()
@@ -123,7 +123,7 @@ describe('AllExceptionsFilter', () => {
   it('AC-11: returns { error: { code, message, details } } with field-level details for validation errors', async () => {
     const res = await app.inject({
       method: 'POST',
-      url: '/api/auth/register',
+      url: '/api/web/auth/register',
       payload: { email: 'not-email', encryptedPassword: '', name: '' },
     })
     expect(res.statusCode).toBe(400)

@@ -11,9 +11,8 @@
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { Role } from '../../packages/server/src/auth/enums/role.enum.js'
 import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, adminAuthHeader, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -78,11 +77,11 @@ describe('SettingsController (provider-pool)', () => {
       name: 'Settings Admin',
     })
     const prisma = app.get(PrismaService)
-    await prisma.user.update({
-      where: { email: adminEmail },
-      data: { role: Role.ADMIN },
+    const adminUser = await prisma.user.findUnique({ where: { email: adminEmail } })
+    await prisma.userRole.create({
+      data: { userId: adminUser!.id, roleCode: 'admin', app: 'admin' },
     })
-    adminToken = await AuthFixtures.loginAs(app, {
+    adminToken = await AuthFixtures.loginAsAdmin(app, {
       email: adminEmail,
       password: 'Test1234!',
     })
@@ -107,7 +106,7 @@ describe('SettingsController (provider-pool)', () => {
     const providerRes1 = await app.inject({
       method: 'POST',
       url: '/api/admin/providers',
-      headers: { authorization: `Bearer ${adminToken}` },
+      headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       payload: openaiProvider,
       remoteAddress: nextIp(),
     })
@@ -116,7 +115,7 @@ describe('SettingsController (provider-pool)', () => {
     const providerRes2 = await app.inject({
       method: 'POST',
       url: '/api/admin/providers',
-      headers: { authorization: `Bearer ${adminToken}` },
+      headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       payload: claudeProvider,
       remoteAddress: nextIp(),
     })
@@ -125,7 +124,7 @@ describe('SettingsController (provider-pool)', () => {
     const providerRes3 = await app.inject({
       method: 'POST',
       url: '/api/admin/providers',
-      headers: { authorization: `Bearer ${adminToken}` },
+      headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       payload: disabledProvider,
       remoteAddress: nextIp(),
     })
@@ -134,7 +133,7 @@ describe('SettingsController (provider-pool)', () => {
     const chatConfigRes = await app.inject({
       method: 'POST',
       url: '/api/admin/system-config/chat',
-      headers: { authorization: `Bearer ${adminToken}` },
+      headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       payload: {
         defaultProvider: 'openai',
         enabledProviders: ['openai', 'claude'],
@@ -155,7 +154,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/settings',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -179,7 +178,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/settings/chat',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -191,7 +190,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/settings/invalid-category',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
@@ -204,7 +203,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/settings/chat/providers',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -218,7 +217,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/settings/indexing/providers',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
@@ -231,7 +230,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/settings/appearance',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { mode: 'dark', fontSizeLevel: 4 },
       })
       expect(res.statusCode).toBe(200)
@@ -244,7 +243,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/settings/chat',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { defaultProvider: 'claude', enabledProviders: ['claude'], temperature: 0.5 },
       })
       expect(res.statusCode).toBe(400)
@@ -256,7 +255,7 @@ describe('SettingsController (provider-pool)', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/settings/appearance',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { mode: 'invalid', fontSizeLevel: 10 },
       })
       expect(res.statusCode).toBe(400)

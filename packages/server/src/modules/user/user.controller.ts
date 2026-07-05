@@ -22,7 +22,7 @@ import { ChangePasswordDto } from '../../auth/dto/change-password.dto.js'
 import { UpdateProfileDto } from '../../auth/dto/update-profile.dto.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import type { AuthApp } from '../../auth/types/auth-app.type.js'
-import { AllowApp } from '../../common/decorators/allow-app.decorator.js'
+
 import { UserService } from './user.service.js'
 
 @Controller('user')
@@ -31,22 +31,19 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
-  @AllowApp('both')
   @Get('me')
   async getMe(@CurrentUser() user: { id: string; app: AuthApp }) {
     return this.authService.me(user.id, user.app)
   }
 
-  @AllowApp('both')
   @Patch('me')
   async updateMe(@CurrentUser() user: { id: string; app: AuthApp }, @Body() dto: UpdateProfileDto) {
     await this.userService.updateName(user.id, dto.name)
     return this.authService.me(user.id, user.app)
   }
 
-  @AllowApp('both')
   @Post('avatar')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async uploadAvatar(@CurrentUser('id') userId: string, @Req() req: FastifyRequest) {
@@ -83,7 +80,6 @@ export class UserController {
     return { avatar: avatarUrl }
   }
 
-  @AllowApp('both')
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
@@ -95,13 +91,11 @@ export class UserController {
     return this.authService.changePassword(sessionId, userId, dto.currentPassword, dto.newPassword)
   }
 
-  @AllowApp('both')
   @Get('sessions')
   async getSessions(@CurrentUser('id') userId: string) {
     return this.authService.getAllSessions(userId)
   }
 
-  @AllowApp('both')
   @Delete('sessions/:id')
   @HttpCode(HttpStatus.OK)
   async revokeSession(
@@ -112,7 +106,6 @@ export class UserController {
     return { success: true }
   }
 
-  @AllowApp('both')
   @Post('sessions/revoke-all')
   @HttpCode(HttpStatus.OK)
   async revokeAllSessions(@CurrentUser('id') userId: string) {
@@ -120,7 +113,6 @@ export class UserController {
     return { success: true }
   }
 
-  @AllowApp('both')
   @Post('sessions/revoke-others')
   @HttpCode(HttpStatus.OK)
   async revokeOtherSessions(

@@ -1,12 +1,13 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PassportStrategy } from '@nestjs/passport'
 import type { FastifyRequest } from 'fastify'
 import { ExtractJwt, Strategy } from 'passport-jwt'
-import { ADMIN_ACCESS_COOKIE, WEB_ACCESS_COOKIE } from '../../auth/cookie.helper.js'
-import { accountDisabledError, tokenRevokedError } from '../../auth/errors.js'
-import { AuthRepository } from '../../auth/repositories/auth.repository.js'
-import type { AuthApp } from '../../auth/types/auth-app.type.js'
+import { isAdminOnlyPath } from '../../common/utils/api-path.js'
+import { ADMIN_ACCESS_COOKIE, WEB_ACCESS_COOKIE } from '../cookie.helper.js'
+import { accountDisabledError, tokenRevokedError } from '../errors.js'
+import { AuthRepository } from '../repositories/auth.repository.js'
+import type { AuthApp } from '../types/auth-app.type.js'
 
 type JwtPayload = {
   sub: string
@@ -17,37 +18,22 @@ type JwtPayload = {
   exp?: number
 }
 
-function inferAppFromPath(path: string): AuthApp {
-  if (path.startsWith('/admin/')) return 'admin'
-  if (path === '/auth/admin/refresh' || path === '/auth/admin/logout') return 'admin'
-  if (path === '/auth/web/refresh' || path === '/auth/web/logout') return 'web'
-  if (
-    path.startsWith('/chat/') ||
-    path.startsWith('/knowledge-base/') ||
-    path.startsWith('/session/') ||
-    path.startsWith('/companion/')
-  ) {
-    return 'web'
+function getAppForRequest(request: FastifyRequest): AuthApp {
+  const path = request.routeOptions?.url ?? request.url?.split('?')[0] ?? '/'
+
+  if (isAdminOnlyPath(path)) {
+    return 'admin'
   }
+
+  const headerApp = request.headers['x-app-context'] as string | undefined
+  if (headerApp === 'admin' || headerApp === 'web') return headerApp
+
   return 'web'
 }
 
-function getAppForRequest(request: FastifyRequest): AuthApp {
-  const path = request.routeOptions?.url ?? request.url?.split('?')[0] ?? '/'
-  const headerApp = request.headers['x-app-context'] as string | undefined
-
-  if (path === '/auth/me' || path.startsWith('/user/') || path.startsWith('/settings/')) {
-    if (headerApp === 'admin') return 'admin'
-    return 'web'
-  }
-
-  return inferAppFromPath(path)
-}
-
-function extractTokenFromAppCookies(request: FastifyRequest, app: AuthApp): string | null {
-  const cookieName = app === 'admin' ? ADMIN_ACCESS_COOKIE : WEB_ACCESS_COOKIE
+function extractTokenFromAnyCookie(request: FastifyRequest): string | null {
   const cookies = (request.cookies ?? {}) as Record<string, string | undefined>
-  return cookies[cookieName] ?? null
+  return cookies[ADMIN_ACCESS_COOKIE] ?? cookies[WEB_ACCESS_COOKIE] ?? null
 }
 
 @Injectable()
@@ -61,8 +47,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: FastifyRequest) => {
-          const app = getAppForRequest(req)
-          return extractTokenFromAppCookies(req, app)
+          return extractTokenFromAnyCookie(req)
         },
       ]),
       ignoreExpiration: false,
@@ -93,7 +78,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw accountDisabledError()
     }
 
-    const app = payload.app ?? getAppForRequest(request)
+    const requestApp = getAppForRequest(request)
+    const tokenApp = payload.app
+
+    if (tokenApp && requestApp !== tokenApp) {
+      this.logger.warn(
+        `App mismatch: request path requires ${requestApp} but token issued for ${tokenApp}`,
+      )
+      throw new ForbiddenException({ code: 'APP_MISMATCH', message: '无效的应用令牌' })
+    }
+
+    const app = tokenApp ?? requestApp
     const roles = await this.authRepository.getRolesForUserByApp(user.id, app)
 
     void this.authRepository.updateLastSeen(payload.sessionId).catch((err) => {

@@ -28,7 +28,7 @@ TBD
 
 ### Requirement: Web 端注册必须提供邀请码
 
-系统 SHALL 在 web 端注册端点 `/auth/web/register` 强制要求提供有效的邀请码，MUST NOT 允许无邀请码注册。
+系统 SHALL 在 web 端注册端点 `/web/auth/register` 强制要求提供有效的邀请码，MUST NOT 允许无邀请码注册。
 
 证据来源：
 - `packages/server/src/auth/auth.controller.ts` (web register endpoint)

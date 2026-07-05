@@ -1007,7 +1007,7 @@ alova `responded` 拦截器 ([server.ts](file:///d:/projects/ai-stared-project/k
 HTTP 401/403（非登录页）
   → isRefreshing? 
       否 → doRefreshAndRetry(method):
-            isRefreshing=true → fetch /auth/admin/refresh (credentials:include)
+            isRefreshing=true → fetch /admin/auth/refresh (credentials:include)
               → ok? onRefreshed() → refreshSubscribers.forEach(cb => cb())
               → fail? clearAuth() → window.location.replace('/login')
       是 → addSubscriber(cb) → 等待 onRefreshed() 后重发
@@ -1035,7 +1035,7 @@ Zustand `persist` middleware ([auth.ts](file:///d:/projects/ai-stared-project/kn
 ```
 输入邮箱+密码
   → RSA 公钥加密密码（encryptPassword）
-  → POST /auth/admin/login (email, encryptedPassword, captcha?)
+  → POST /admin/auth/login (email, encryptedPassword, captcha?)
     → 成功: setUser({...user, mustChangePassword?})
     → DECRYPT_FAILED: 清除公钥缓存 → 重试一次
     → 其他失败: toast 错误消息

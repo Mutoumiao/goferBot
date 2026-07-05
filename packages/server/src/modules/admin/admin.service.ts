@@ -15,6 +15,7 @@ import { UserService } from '../user/user.service.js'
 import { AdminUserListQueryDto } from './dto/admin-user-list-query.dto.js'
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js'
 import { RoleService } from './role.service.js'
+import { PermissionService } from './services/permission.service.js'
 
 export interface AdminUserListItem {
   id: string
@@ -34,6 +35,7 @@ export class AdminService {
     private readonly eventEmitter: EventEmitter2,
     private readonly userService: UserService,
     private readonly roleService: RoleService,
+    private readonly permissionService: PermissionService,
   ) {}
 
   async listUsers(query: AdminUserListQueryDto) {
@@ -137,11 +139,20 @@ export class AdminService {
 
   async createUser(
     dto: { email: string; name?: string; password: string; roles: string[] },
-    _actorId: string,
+    actorId: string,
   ) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } })
     if (existing) {
       throw emailAlreadyExistsError()
+    }
+
+    const isSuperAdmin = await this.permissionService.isSuperAdmin(actorId)
+    const hasAdminRole = dto.roles.some((r) => r === 'admin' || r === 'super_admin')
+    if (hasAdminRole && !isSuperAdmin) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: '只有超级管理员可以创建管理员用户',
+      })
     }
 
     const user = await this.userService.create(dto.email, dto.password, dto.name)
@@ -165,6 +176,27 @@ export class AdminService {
 
     if (!user) {
       throw userNotFoundError()
+    }
+
+    if (!dto.isActive && user.isActive) {
+      const userHasSuperAdmin = await (this.prisma.userRole as any).findFirst({
+        where: { userId, app: 'admin', roleCode: 'super_admin' },
+      })
+      if (userHasSuperAdmin) {
+        const activeSuperAdmins = await (this.prisma.userRole as any).count({
+          where: {
+            roleCode: 'super_admin',
+            app: 'admin',
+            user: { isActive: true },
+          },
+        })
+        if (activeSuperAdmins <= 1) {
+          throw new ForbiddenException({
+            code: 'SUPER_ADMIN_PROTECTED',
+            message: '不能禁用最后一个超级管理员',
+          })
+        }
+      }
     }
 
     await this.prisma.user.update({
@@ -208,10 +240,28 @@ export class AdminService {
     return { success: true }
   }
 
-  async resetPassword(userId: string, newPassword: string) {
+  async resetPassword(userId: string, newPassword: string, actorId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (!user) {
       throw userNotFoundError()
+    }
+
+    const isSuperAdmin = await this.permissionService.isSuperAdmin(actorId)
+    if (!isSuperAdmin) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: '只有超级管理员可以重置密码',
+      })
+    }
+
+    const userRoles = await (this.prisma.userRole as any).findMany({
+      where: { userId, app: 'admin', roleCode: { in: ['admin', 'super_admin'] } },
+    })
+    if (userRoles.length === 0) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN',
+        message: '只能重置管理员用户的密码',
+      })
     }
 
     if (newPassword.length < 8) {

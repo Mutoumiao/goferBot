@@ -364,12 +364,18 @@ describe('auth components', () => {
       const emailInput = screen.getByPlaceholderText('you@example.com')
       setInputValue(screen.getByPlaceholderText('你的名字'), 'User')
       setInputValue(emailInput, 'user@example.com')
+      setInputValue(screen.getByPlaceholderText('请输入邀请码'), 'TEST-INVITE-CODE')
       setInputValue(screen.getByPlaceholderText('请输入密码'), 'Password1')
       setInputValue(screen.getByPlaceholderText('请再次输入密码'), 'Password1')
       fireEvent.submit(getForm(emailInput as HTMLInputElement))
 
       await waitFor(() => {
-        expect(registerUser).toHaveBeenCalledWith('User', 'user@example.com', 'Password1')
+        expect(registerUser).toHaveBeenCalledWith(
+          'User',
+          'user@example.com',
+          'Password1',
+          'TEST-INVITE-CODE',
+        )
       })
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
     })

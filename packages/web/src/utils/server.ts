@@ -1,39 +1,36 @@
 import { createAlova } from 'alova'
 import adapterFetch from 'alova/fetch'
 import ReactHook from 'alova/react'
-import { useAuthStore } from '@/stores/auth'
 
-// Token 刷新状态管理
 let isRefreshing = false
-let refreshSubscribers: Array<() => void> = []
+let refreshSubscribers: Array<{ resolve: () => void; reject: (err: Error) => void }> = []
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 async function refreshToken(): Promise<boolean> {
-  if (isRefreshing) return false
-  isRefreshing = true
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/web/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-App-Context': 'web',
-      },
-      body: '{}',
-    })
-    return response.ok
-  } finally {
-    isRefreshing = false
-  }
+  const response = await fetch(`${API_BASE_URL}/web/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-Context': 'web',
+    },
+    body: '{}',
+  })
+  return response.ok
 }
 
 function onRefreshed() {
-  for (const cb of refreshSubscribers) cb()
+  for (const cb of refreshSubscribers) cb.resolve()
   refreshSubscribers = []
 }
 
-function addSubscriber(cb: () => void) {
+function onRefreshFailed(err: Error) {
+  for (const cb of refreshSubscribers) cb.reject(err)
+  refreshSubscribers = []
+}
+
+function addSubscriber(cb: { resolve: () => void; reject: (err: Error) => void }) {
   refreshSubscribers.push(cb)
 }
 
@@ -51,16 +48,22 @@ async function doRefreshAndRetry(method: AlovaMethod) {
         onRefreshed()
         return method.send()
       }
+      const err = new Error('Auth refresh failed')
+      onRefreshFailed(err)
+      throw err
+    } catch (err) {
+      onRefreshFailed(err instanceof Error ? err : new Error('Refresh error'))
+      throw err
     } finally {
       isRefreshing = false
     }
-    useAuthStore.getState().clearAuth()
-    window.location.replace('/login')
-    throw new Error('Auth refresh failed')
   }
-  return new Promise<unknown>((resolve) => {
-    addSubscriber(() => {
-      resolve(method.send())
+  return new Promise<unknown>((resolve, reject) => {
+    addSubscriber({
+      resolve: () => {
+        resolve(method.send())
+      },
+      reject,
     })
   })
 }
@@ -69,9 +72,13 @@ function isUnauthorized(status: number) {
   return status === 401 || status === 403
 }
 
+function isLoginPage() {
+  return window.location.pathname === '/login'
+}
+
 const responded = {
   onSuccess(response: Response, method: AlovaMethod) {
-    if (isUnauthorized(response.status)) {
+    if (isUnauthorized(response.status) && !isLoginPage()) {
       return doRefreshAndRetry(method)
     }
     if (!response.ok) {
@@ -103,7 +110,8 @@ const responded = {
     return response.json().then((json: Record<string, unknown>) => json.data ?? json)
   },
   onError(error: { status?: number }, method: AlovaMethod) {
-    if (error.status && isUnauthorized(error.status)) {
+    const status = error.status
+    if (status && isUnauthorized(status) && !isLoginPage()) {
       return doRefreshAndRetry(method)
     }
     throw error

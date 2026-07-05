@@ -2,20 +2,37 @@ import { Form, Input, Modal } from 'antd'
 import { createRoleService, editRoleService, fetchRole } from '../services'
 
 interface FormValues {
+  code?: string
   name: string
   description?: string
 }
 
-export function RoleFormModal(props: { roleId?: string } = {}): Promise<boolean> {
+export function RoleFormModal(props: { roleCode?: string } = {}): Promise<boolean> {
   return new Promise((resolve) => {
     const [form] = Form.useForm<FormValues>()
-    const isEdit = !!props.roleId
+    const isEdit = !!props.roleCode
 
     const modal = Modal.confirm({
       title: isEdit ? '编辑角色' : '新建角色',
-      width: 420,
+      width: 480,
       content: (
         <Form form={form} layout="vertical" preserve={false} className="pt-2">
+          {!isEdit && (
+            <Form.Item
+              name="code"
+              label="角色编码"
+              rules={[
+                { required: true, message: '请输入角色编码' },
+                {
+                  pattern: /^[a-z][a-z0-9_-]*$/,
+                  message: '角色编码需以小写字母开头，仅含小写字母、数字、下划线、连字符',
+                },
+              ]}
+              tooltip="kebab-case 格式，例如：auditor"
+            >
+              <Input placeholder="例如：auditor" />
+            </Form.Item>
+          )}
           <Form.Item
             name="name"
             label="角色名称"
@@ -33,9 +50,9 @@ export function RoleFormModal(props: { roleId?: string } = {}): Promise<boolean>
       onOk: async () => {
         try {
           const values = await form.validateFields()
-          if (isEdit && props.roleId) {
-            const current = await fetchRole(props.roleId)
-            const res = await editRoleService(props.roleId, {
+          if (isEdit && props.roleCode) {
+            const current = await fetchRole(props.roleCode)
+            const res = await editRoleService(props.roleCode, {
               name: values.name,
               description: values.description,
               permissions: current?.permissions ?? [],
@@ -48,9 +65,9 @@ export function RoleFormModal(props: { roleId?: string } = {}): Promise<boolean>
             }
           } else {
             const res = await createRoleService({
+              code: values.code ?? '',
               name: values.name,
               description: values.description,
-              permissions: [],
             })
             if (res.success) {
               resolve(true)
@@ -69,10 +86,10 @@ export function RoleFormModal(props: { roleId?: string } = {}): Promise<boolean>
       },
     })
 
-    if (isEdit && props.roleId) {
-      void fetchRole(props.roleId).then((r) => {
+    if (isEdit && props.roleCode) {
+      void fetchRole(props.roleCode).then((r) => {
         if (r) {
-          form.setFieldsValue({ name: r.name, description: r.description })
+          form.setFieldsValue({ name: r.name, description: r.description ?? undefined })
         }
       })
     }

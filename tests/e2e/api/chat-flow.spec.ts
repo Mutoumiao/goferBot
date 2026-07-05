@@ -25,23 +25,40 @@ async function encryptPassword(password: string): Promise<string> {
   return encrypted.toString('base64')
 }
 
+function extractAccessTokenFromCookies(setCookie: string[] | undefined): string {
+  if (!setCookie || !Array.isArray(setCookie)) {
+    throw new Error('Set-Cookie header not found in response')
+  }
+  for (const cookie of setCookie) {
+    if (cookie.startsWith('goferbot_web_access_token=')) {
+      return cookie.split('=')[1].split(';')[0]
+    }
+  }
+  throw new Error('goferbot_web_access_token not found in Set-Cookie header')
+}
+
 async function registerUser(email: string, password: string, name: string) {
   const encryptedPassword = await encryptPassword(password)
-  const res = await axios.post(`${baseURL}/api/auth/register`, {
+  const res = await axios.post(`${baseURL}/api/web/auth/register`, {
     email,
     encryptedPassword,
     name,
+    invitationCode: 'GF-test-code-001',
   })
   return res.data.data ? res.data.data.user : res.data.user
 }
 
 async function login(email: string, password: string): Promise<string> {
   const encryptedPassword = await encryptPassword(password)
-  const res = await axios.post(`${baseURL}/api/auth/login`, {
+  const res = await axios.post(`${baseURL}/api/web/auth/login`, {
     email,
     encryptedPassword,
   })
-  return res.data.data ? res.data.data.accessToken : res.data.accessToken
+  return extractAccessTokenFromCookies(res.headers['set-cookie'])
+}
+
+function cookieHeader(token: string): { cookie: string } {
+  return { cookie: `goferbot_web_access_token=${token}` }
 }
 
 describe('Chat HTTP E2E', () => {
@@ -69,7 +86,7 @@ describe('Chat HTTP E2E', () => {
     const sessionRes = await axios.post(
       `${baseURL}/api/sessions`,
       { title: 'E2E Session' },
-      { headers: { authorization: `Bearer ${token}` } },
+      { headers: cookieHeader(token) },
     )
     const sessionId = sessionRes.data.data.id as string
 
@@ -99,7 +116,7 @@ describe('Chat HTTP E2E', () => {
         conversation_id: sessionId,
       },
       {
-        headers: { authorization: `Bearer ${token}` },
+        headers: cookieHeader(token),
         responseType: 'text',
       },
     )

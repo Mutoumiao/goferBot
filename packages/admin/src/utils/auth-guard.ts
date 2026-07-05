@@ -1,20 +1,30 @@
 import { useAuthStore } from '@/stores/auth'
 
-export function waitForAuthInit(maxMs = 3000): Promise<void> {
+export function waitForAuthInit(maxMs = 5000): Promise<boolean> {
   return new Promise((resolve) => {
     const start = Date.now()
-    const check = () => {
+    const check = async () => {
       const state = useAuthStore.getState()
-      if (state._hydrated && state.isInitialized) {
-        resolve()
+
+      // 已完成初始化，直接返回当前状态
+      if (state.isInitialized) {
+        resolve(!!state.user)
         return
       }
-      if (Date.now() - start > maxMs) {
-        useAuthStore.getState().setInitialized(true)
-        resolve()
+
+      if (!state._hydrated) {
+        if (Date.now() - start > maxMs) {
+          useAuthStore.getState().setInitialized(true)
+          resolve(!!state.user)
+          return
+        }
+        setTimeout(check, 50)
         return
       }
-      setTimeout(check, 50)
+
+      // hydration 完成，调用 fetchMe 从服务器验证
+      const ok = await useAuthStore.getState().fetchMe()
+      resolve(ok)
     }
     check()
   })

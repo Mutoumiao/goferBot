@@ -7,7 +7,7 @@
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -50,14 +50,14 @@ describe('KnowledgeBaseController', () => {
       await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'My KB' },
       })
 
       const res = await app.inject({
         method: 'GET',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -77,7 +77,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/knowledge-bases',
-        headers: { authorization: 'Bearer invalid-token' },
+        headers: authHeader('invalid-token'),
       })
       expect(res.statusCode).toBe(401)
     })
@@ -86,7 +86,7 @@ describe('KnowledgeBaseController', () => {
       await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Selector KB' },
       })
 
@@ -104,14 +104,14 @@ describe('KnowledgeBaseController', () => {
       await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: { name: 'Other Selector KB' },
       })
 
       const res = await app.inject({
         method: 'GET',
         url: '/api/knowledge-bases/for-selector',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -133,7 +133,7 @@ describe('KnowledgeBaseController', () => {
       await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Unpinned Selector KB' },
       })
 
@@ -141,21 +141,21 @@ describe('KnowledgeBaseController', () => {
       const pinnedRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Pinned Selector KB' },
       })
       const pinnedId = pinnedRes.json().data.id
       await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${pinnedId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { isPinned: true, sortOrder: 0 },
       })
 
       const res = await app.inject({
         method: 'GET',
         url: '/api/knowledge-bases/for-selector',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -170,7 +170,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'New KB', description: 'Description' },
       })
       expect(res.statusCode).toBe(201)
@@ -182,7 +182,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -194,7 +194,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'a'.repeat(101) },
       })
       expect(res.statusCode).toBe(400)
@@ -206,7 +206,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Valid Name', description: 'a'.repeat(501) },
       })
       expect(res.statusCode).toBe(400)
@@ -229,7 +229,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original KB' },
       })
       const kbId = createRes.json().data.id
@@ -237,7 +237,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Updated KB' },
       })
       expect(res.statusCode).toBe(200)
@@ -249,7 +249,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original KB' },
       })
       const kbId = createRes.json().data.id
@@ -257,7 +257,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -269,7 +269,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original KB' },
       })
       const kbId = createRes.json().data.id
@@ -277,7 +277,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { sortOrder: -1 },
       })
       expect(res.statusCode).toBe(400)
@@ -289,7 +289,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Original KB' },
       })
       const kbId = createRes.json().data.id
@@ -306,7 +306,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Owner KB' },
       })
       const kbId = createRes.json().data.id
@@ -326,7 +326,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: { name: 'Hacked' },
       })
       expect(res.statusCode).toBe(403)
@@ -336,7 +336,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: '/api/knowledge-bases/non-existent-id',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Updated' },
       })
       expect(res.statusCode).toBe(404)
@@ -348,7 +348,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'To Delete' },
       })
       const kbId = createRes.json().data.id
@@ -356,7 +356,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -367,7 +367,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'To Delete' },
       })
       const kbId = createRes.json().data.id
@@ -383,7 +383,7 @@ describe('KnowledgeBaseController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Owner KB' },
       })
       const kbId = createRes.json().data.id
@@ -403,7 +403,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}`,
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
       })
       expect(res.statusCode).toBe(403)
     })
@@ -412,7 +412,7 @@ describe('KnowledgeBaseController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: '/api/knowledge-bases/non-existent-id',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(404)
     })

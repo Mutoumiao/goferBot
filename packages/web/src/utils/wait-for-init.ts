@@ -1,33 +1,29 @@
 /**
  * 等待认证初始化完成
- * ponytail: 使用 Zustand subscribe 替代轮询，减少无效检查
+ * 先等 hydration，再调用 fetchMe 从服务器验证
  */
-export function waitForAuthInit(maxMs = 2000): Promise<void> {
+export function waitForAuthInit(maxMs = 5000): Promise<boolean> {
   return new Promise((resolve) => {
     // 动态导入避免循环依赖
     import('@/stores/auth').then(({ useAuthStore }) => {
-      // ponytail: 如果已初始化，直接返回
       if (useAuthStore.getState().isInitialized) {
-        resolve()
+        resolve(!!useAuthStore.getState().user)
         return
       }
 
-      const start = Date.now()
-      // ponytail: 使用 subscribe 监听状态变化，避免轮询
       const unsubscribe = useAuthStore.subscribe((state) => {
-        if (state.isInitialized) {
-          unsubscribe()
-          resolve()
-        } else if (Date.now() - start > maxMs) {
-          unsubscribe()
-          resolve()
-        }
+        if (!state._hydrated) return
+
+        unsubscribe()
+        // hydration 完成，调用 fetchMe 从服务器验证
+        useAuthStore.getState().fetchMe().then(resolve)
       })
 
-      // ponytail: 超时兜底
+      // 超时兜底
       setTimeout(() => {
         unsubscribe()
-        resolve()
+        // 超时后用现有 user 兜底
+        resolve(!!useAuthStore.getState().user)
       }, maxMs)
     })
   })

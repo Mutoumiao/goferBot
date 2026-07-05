@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { app, mockEmbeddingPort, mockLLMPort, prisma, setupE2E, teardownE2E } from './setup.ts'
 import { cleanupTestData } from './teardown.ts'
 
@@ -29,31 +30,24 @@ describe('RAG Server Integration E2E', () => {
       return
     }
     await cleanupTestData(prisma)
-    const loginRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email: 'q21-test@gofer.bot', password: 'Test1234!' },
-    })
-    if (loginRes.statusCode === 401) {
-      await app.inject({
-        method: 'POST',
-        url: '/api/auth/register',
-        payload: { email: 'q21-test@gofer.bot', password: 'Test1234!', name: 'Q21 Tester' },
+    try {
+      await AuthFixtures.createUser(app, {
+        email: 'q21-test@gofer.bot',
+        password: 'Test1234!',
+        name: 'Q21 Tester',
       })
-      const retry = await app.inject({
-        method: 'POST',
-        url: '/api/auth/login',
-        payload: { email: 'q21-test@gofer.bot', password: 'Test1234!' },
-      })
-      token = retry.json().data?.accessToken ?? ''
-    } else {
-      token = loginRes.json().data?.accessToken ?? ''
+    } catch {
+      // user may already exist from prior run
     }
+    token = await AuthFixtures.loginAsWeb(app, {
+      email: 'q21-test@gofer.bot',
+      password: 'Test1234!',
+    })
 
     const kbRes = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: {
         name: `Q21-TestKB-${crypto.randomUUID()}`,
         description: 'RAG integration test KB',
@@ -71,7 +65,7 @@ describe('RAG Server Integration E2E', () => {
     const res = await app.inject({
       method: 'POST',
       url: `/api/knowledge-bases/${kbId}/documents`,
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: Buffer.from(content),
       query: { filename: 'rag-test.txt', mimeType: 'text/plain' },
     })
@@ -94,7 +88,7 @@ describe('RAG Server Integration E2E', () => {
     const uploadRes = await app.inject({
       method: 'POST',
       url: `/api/knowledge-bases/${kbId}/documents`,
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: Buffer.from(content),
       query: { filename: 'rag-test.txt', mimeType: 'text/plain' },
     })
@@ -119,7 +113,7 @@ describe('RAG Server Integration E2E', () => {
     const uploadRes = await app.inject({
       method: 'POST',
       url: `/api/knowledge-bases/${kbId}/documents`,
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: Buffer.from(content),
       query: { filename: 'rag-test.txt', mimeType: 'text/plain' },
     })
@@ -128,7 +122,7 @@ describe('RAG Server Integration E2E', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { title: 'Q21 Test Session' },
     })
     const sessionId = sessionRes.json().data.id
@@ -136,7 +130,7 @@ describe('RAG Server Integration E2E', () => {
     const chatRes = await app.inject({
       method: 'POST',
       url: '/api/chat',
-      headers: { authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { ...authHeader(token), 'Content-Type': 'application/json' },
       payload: {
         message: 'What does the document say about GoferBot?',
         sessionId,
@@ -162,7 +156,7 @@ describe('RAG Server Integration E2E', () => {
     const sessionRes = await app.inject({
       method: 'POST',
       url: '/api/sessions',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { title: 'Q21 Baseline Session' },
     })
     const sessionId = sessionRes.json().data.id
@@ -170,7 +164,7 @@ describe('RAG Server Integration E2E', () => {
     const chatRes = await app.inject({
       method: 'POST',
       url: '/api/chat',
-      headers: { authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { ...authHeader(token), 'Content-Type': 'application/json' },
       payload: {
         message: 'Hello',
         sessionId,

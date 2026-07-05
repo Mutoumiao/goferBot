@@ -7,7 +7,7 @@
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -48,7 +48,7 @@ describe('FolderController', () => {
     const kbRes = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${token}` },
+      headers: authHeader(token),
       payload: { name: 'Test KB', description: 'For folder tests' },
     })
     kbId = kbRes.json().data.id
@@ -64,7 +64,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -75,7 +75,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/knowledge-bases/non-existent-kb/folders',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(404)
       const body = res.json()
@@ -101,7 +101,7 @@ describe('FolderController', () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: { name: 'Other KB' },
       })
       const otherKbId = otherKbRes.json().data.id
@@ -109,7 +109,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${otherKbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(403)
       const body = res.json()
@@ -130,7 +130,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'New Folder' },
       })
       expect(res.statusCode).toBe(201)
@@ -143,7 +143,7 @@ describe('FolderController', () => {
       const parentRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Parent Folder' },
       })
       const parentId = parentRes.json().data.id
@@ -151,7 +151,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Child Folder', parentId },
       })
       expect(res.statusCode).toBe(201)
@@ -163,7 +163,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -175,7 +175,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Test', parentId: 'not-uuid' },
       })
       expect(res.statusCode).toBe(400)
@@ -187,7 +187,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Test', parentId: '00000000-0000-0000-0000-000000000000' },
       })
       expect(res.statusCode).toBe(404)
@@ -199,7 +199,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases/non-existent-kb/folders',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Test' },
       })
       expect(res.statusCode).toBe(404)
@@ -222,7 +222,7 @@ describe('FolderController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Old Name' },
       })
       const folderId = createRes.json().data.id
@@ -230,7 +230,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Updated Name' },
       })
       expect(res.statusCode).toBe(200)
@@ -242,7 +242,7 @@ describe('FolderController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Rename Test' },
       })
       const folderId = createRes.json().data.id
@@ -250,7 +250,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -262,7 +262,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${kbId}/folders/non-existent-folder`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Updated' },
       })
       expect(res.statusCode).toBe(404)
@@ -289,7 +289,7 @@ describe('FolderController', () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${otherToken}` },
+        headers: authHeader(otherToken),
         payload: { name: 'Other KB 2' },
       })
       const otherKbId = otherKbRes.json().data.id
@@ -297,7 +297,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/knowledge-bases/${otherKbId}/folders/00000000-0000-0000-0000-000000000000`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Hacked' },
       })
       expect(res.statusCode).toBe(403)
@@ -311,7 +311,7 @@ describe('FolderController', () => {
       const createRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'To Delete' },
       })
       const folderId = createRes.json().data.id
@@ -319,7 +319,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -330,7 +330,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/folders/non-existent-folder`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(404)
       const body = res.json()
@@ -351,7 +351,7 @@ describe('FolderController', () => {
       const parentRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Move Parent' },
       })
       const parentId = parentRes.json().data.id
@@ -359,7 +359,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Move Target' },
       })
       const folderId = folderRes.json().data.id
@@ -367,7 +367,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { targetFolderId: parentId },
       })
       expect(res.statusCode).toBe(200)
@@ -379,7 +379,7 @@ describe('FolderController', () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: `Target-KB-${Date.now()}` },
       })
       const targetKbId = otherKbRes.json().data.id
@@ -387,7 +387,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Cross KB Folder' },
       })
       const folderId = folderRes.json().data.id
@@ -395,7 +395,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { targetKbId },
       })
       expect(res.statusCode).toBe(200)
@@ -406,7 +406,7 @@ describe('FolderController', () => {
       const sourceRes = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       const sourceFolders = sourceRes.json().data as Array<{ id: string }>
       expect(sourceFolders.some((f) => f.id === folderId)).toBe(false)
@@ -416,7 +416,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Self Move' },
       })
       const folderId = folderRes.json().data.id
@@ -424,7 +424,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { targetFolderId: folderId },
       })
       expect(res.statusCode).toBe(400)
@@ -436,7 +436,7 @@ describe('FolderController', () => {
       const parentRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Cycle Parent' },
       })
       const parentId = parentRes.json().data.id
@@ -444,7 +444,7 @@ describe('FolderController', () => {
       const childRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Cycle Child', parentId },
       })
       const childId = childRes.json().data.id
@@ -452,7 +452,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${parentId}/move`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { targetFolderId: childId },
       })
       expect(res.statusCode).toBe(400)
@@ -464,7 +464,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'No Target' },
       })
       const folderId = folderRes.json().data.id
@@ -472,7 +472,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { targetFolderId: '00000000-0000-0000-0000-000000000000' },
       })
       expect(res.statusCode).toBe(404)
@@ -493,7 +493,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Empty Body' },
       })
       const folderId = folderRes.json().data.id
@@ -501,7 +501,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/move`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: {},
       })
       expect(res.statusCode).toBe(400)
@@ -515,7 +515,7 @@ describe('FolderController', () => {
       const parentRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Copy Parent' },
       })
       const parentId = parentRes.json().data.id
@@ -523,7 +523,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Copy Target' },
       })
       const folderId = folderRes.json().data.id
@@ -531,7 +531,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/copy`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { targetFolderId: parentId },
       })
       expect(res.statusCode).toBe(200)
@@ -544,7 +544,7 @@ describe('FolderController', () => {
       const otherKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: `Copy-Target-KB-${Date.now()}` },
       })
       const targetKbId = otherKbRes.json().data.id
@@ -552,7 +552,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Cross KB Copy Folder' },
       })
       const folderId = folderRes.json().data.id
@@ -560,7 +560,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/copy`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { targetKbId },
       })
       expect(res.statusCode).toBe(200)
@@ -572,7 +572,7 @@ describe('FolderController', () => {
       const sourceRes = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
       })
       const sourceFolders = sourceRes.json().data as Array<{ id: string }>
       expect(sourceFolders.some((f) => f.id === folderId)).toBe(true)
@@ -591,7 +591,7 @@ describe('FolderController', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: { name: 'Empty Copy Body' },
       })
       const folderId = folderRes.json().data.id
@@ -599,7 +599,7 @@ describe('FolderController', () => {
       const res = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}/copy`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: authHeader(token),
         payload: {},
       })
       expect(res.statusCode).toBe(400)

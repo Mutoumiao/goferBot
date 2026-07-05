@@ -20,7 +20,7 @@ export class PermissionService {
   }
 
   async getUserPermissions(userId: string, app: AuthApp): Promise<string[]> {
-    const cacheKey = `${userId}:${app}`
+    const cacheKey = `auth:permission:${userId}:${app}`
     const cached = await this.authRedis.getCachedUserPermissions(cacheKey)
     if (cached) {
       return cached
@@ -69,11 +69,11 @@ export class PermissionService {
 
   async invalidateUserPermissions(userId: string, app?: AuthApp): Promise<void> {
     if (app) {
-      const cacheKey = `${userId}:${app}`
+      const cacheKey = `auth:permission:${userId}:${app}`
       await this.authRedis.invalidateUserPermissions(cacheKey)
     } else {
-      const adminKey = `${userId}:admin`
-      const webKey = `${userId}:web`
+      const adminKey = `auth:permission:${userId}:admin`
+      const webKey = `auth:permission:${userId}:web`
       await this.authRedis.invalidateUserPermissions(adminKey)
       await this.authRedis.invalidateUserPermissions(webKey)
     }

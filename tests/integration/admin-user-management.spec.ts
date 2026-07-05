@@ -1,12 +1,11 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { Role } from '../../packages/server/src/auth/enums/role.enum.js'
 import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, adminAuthHeader, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 
-describe('AC-03: schema migration adds role and isActive columns', () => {
+describe('AC-03: schema migration adds UserRole table and isActive column', () => {
   let app: NestFastifyApplication
   let dbManager: TestDatabaseManager
   let dbUrl: string
@@ -28,18 +27,38 @@ describe('AC-03: schema migration adds role and isActive columns', () => {
     }
   })
 
-  it('should have role and isActive columns in users table', async () => {
+  it('should have is_active column in users table', async () => {
     const prisma = app.get(PrismaService)
     const result = await prisma.$queryRaw`
       SELECT column_name, data_type, column_default, is_nullable
       FROM information_schema.columns
-      WHERE table_name = 'users' AND column_name IN ('role', 'is_active')
+      WHERE table_name = 'users' AND column_name = 'is_active'
     `
     const columns = result as Array<{ column_name: string; data_type: string }>
     const columnNames = columns.map((c) => c.column_name)
-
-    expect(columnNames).toContain('role')
     expect(columnNames).toContain('is_active')
+  })
+
+  it('should have UserRole table for role assignments', async () => {
+    const prisma = app.get(PrismaService)
+    const result = await prisma.$queryRaw`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name = 'user_role'
+    `
+    const tables = result as Array<{ table_name: string }>
+    expect(tables.map((t) => t.table_name)).toContain('user_role')
+  })
+
+  it('should have Role table for role definitions', async () => {
+    const prisma = app.get(PrismaService)
+    const result = await prisma.$queryRaw`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name = 'role'
+    `
+    const tables = result as Array<{ table_name: string }>
+    expect(tables.map((t) => t.table_name)).toContain('role')
   })
 })
 
@@ -57,29 +76,33 @@ describe('Admin User Management API', () => {
     dbName = new URL(dbUrl).pathname.slice(1)
     app = await TestAppFactory.create(dbUrl)
 
-    // 创建管理员用户并登录
+    const prisma = app.get(PrismaService)
+
+    // 创建管理员用户并分配 admin 角色
     await AuthFixtures.createUser(app, {
       email: 'admin@test.gofer',
       password: 'Test1234!',
       name: 'Admin',
     })
-    const prisma = app.get(PrismaService)
-    await prisma.user.update({
-      where: { email: 'admin@test.gofer' },
-      data: { role: Role.ADMIN },
+    const adminUser = await prisma.user.findUnique({ where: { email: 'admin@test.gofer' } })
+    await prisma.userRole.create({
+      data: { userId: adminUser!.id, roleCode: 'admin', app: 'admin' },
     })
-    adminToken = await AuthFixtures.loginAs(app, {
+    adminToken = await AuthFixtures.loginAsAdmin(app, {
       email: 'admin@test.gofer',
       password: 'Test1234!',
     })
 
-    // 创建普通用户并登录
+    // 创建普通用户并登录（web 端）
     await AuthFixtures.createUser(app, {
       email: 'user@test.gofer',
       password: 'Test1234!',
       name: 'User',
     })
-    userToken = await AuthFixtures.loginAs(app, { email: 'user@test.gofer', password: 'Test1234!' })
+    userToken = await AuthFixtures.loginAsWeb(app, {
+      email: 'user@test.gofer',
+      password: 'Test1234!',
+    })
 
     // 创建更多用户用于分页测试（直接操作数据库绕过限流）
     await prisma.user.createMany({
@@ -105,7 +128,7 @@ describe('Admin User Management API', () => {
       const response = await app.inject({
         method: 'GET',
         url: '/api/admin/users?page=1&size=10',
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       })
 
       expect(response.statusCode).toBe(200)
@@ -119,7 +142,7 @@ describe('Admin User Management API', () => {
       const response = await app.inject({
         method: 'GET',
         url: '/api/admin/users?search=user@test.gofer',
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       })
 
       expect(response.statusCode).toBe(200)
@@ -139,7 +162,7 @@ describe('Admin User Management API', () => {
       const response = await app.inject({
         method: 'GET',
         url: '/api/admin/users?isActive=false',
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       })
 
       expect(response.statusCode).toBe(200)
@@ -152,7 +175,7 @@ describe('Admin User Management API', () => {
       const response = await app.inject({
         method: 'GET',
         url: '/api/admin/users',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { ...authHeader(userToken), 'x-app-context': 'web' },
       })
 
       expect(response.statusCode).toBe(403)
@@ -168,7 +191,7 @@ describe('Admin User Management API', () => {
         method: 'PATCH',
         url: `/api/admin/users/${user?.id}/status`,
         payload: { isActive: false },
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       })
 
       expect(response.statusCode).toBe(200)
@@ -181,7 +204,7 @@ describe('Admin User Management API', () => {
         method: 'PATCH',
         url: '/api/admin/users/non-existent-id/status',
         payload: { isActive: false },
-        headers: { authorization: `Bearer ${adminToken}` },
+        headers: { ...adminAuthHeader(adminToken), 'x-app-context': 'admin' },
       })
 
       expect(response.statusCode).toBe(404)
@@ -195,7 +218,7 @@ describe('Admin User Management API', () => {
         method: 'PATCH',
         url: `/api/admin/users/${user?.id}/status`,
         payload: { isActive: false },
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { ...authHeader(userToken), 'x-app-context': 'web' },
       })
 
       expect(response.statusCode).toBe(403)

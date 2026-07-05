@@ -55,13 +55,14 @@ describe('auth store', () => {
       expect(useAuthStore.getState().isInitialized).toBe(true)
     })
 
-    it('persists user and isAuthenticated to localStorage', () => {
+    it('persists user to localStorage but not isAuthenticated', () => {
       useAuthStore.getState().setUser({ id: 'u1', email: 'a@b.com', name: 'User' } as any)
 
       const raw = localStorage.getItem('goferbot-auth')
       expect(raw).not.toBeNull()
       const persisted = JSON.parse(raw as string)
-      expect(persisted.state.isAuthenticated).toBe(true)
+      expect(persisted.state.user).toEqual({ id: 'u1', email: 'a@b.com', name: 'User' })
+      expect(persisted.state.isAuthenticated).toBeUndefined()
     })
   })
 

@@ -1,4 +1,4 @@
-import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
+import { createRootRoute, HeadContent, Scripts, useLocation } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { Toaster } from 'sonner'
 import { ConfigProvider } from '@/components/ConfigProvider'
@@ -6,6 +6,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { waitForAuthInit } from '@/utils/auth-guard'
 import appCss from '../globals.css?url'
+
+const PUBLIC_ROUTES = ['/login', '/forbidden']
 
 function NotFound() {
   return (
@@ -33,6 +35,8 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthStore((s) => s._hydrated)
   const isInitialized = useAuthStore((s) => s.isInitialized)
   const appearance = useSettingsStore((s) => s.appearance)
+  const location = useLocation()
+  const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname)
 
   useEffect(() => {
     const root = document.documentElement
@@ -44,12 +48,12 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   }, [appearance])
 
   useEffect(() => {
-    if (hydrated) {
+    if (hydrated && !isPublicRoute) {
       void waitForAuthInit()
     }
-  }, [hydrated])
+  }, [hydrated, isPublicRoute])
 
-  if (!hydrated || !isInitialized) return null
+  if (!hydrated || (!isInitialized && !isPublicRoute)) return null
   return <>{children}</>
 }
 

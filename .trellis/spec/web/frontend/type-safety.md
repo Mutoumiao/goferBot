@@ -292,7 +292,7 @@ const user = useAuthStore((state) => state.user)
 import type { LoginRequest, RegisterRequest } from '@goferbot/data'
 
 export const login = (data: LoginRequest) =>
-  alovaInstance.Post<AuthResponse>('/auth/web/login', data)
+  alovaInstance.Post<AuthResponse>('/web/auth/login', data)
 ```
 
 ### 响应类型

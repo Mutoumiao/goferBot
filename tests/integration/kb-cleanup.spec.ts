@@ -8,7 +8,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
 import { StorageService } from '../../packages/server/src/processors/storage/storage.service.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { checkInfrastructure } from './helpers/infra-check.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
@@ -71,7 +71,7 @@ describe('KbCleanup Integration Tests', () => {
     const kbRes = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${userToken}` },
+      headers: authHeader(userToken),
       payload: { name: `Cleanup-KB-${timestamp}` },
     })
     kbId = kbRes.json().data.id
@@ -98,7 +98,7 @@ describe('KbCleanup Integration Tests', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
 
@@ -121,7 +121,7 @@ describe('KbCleanup Integration Tests', () => {
       const folderRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/folders`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: 'Cleanup Folder' },
       })
       const folderId = folderRes.json().data.id
@@ -139,7 +139,7 @@ describe('KbCleanup Integration Tests', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/folders/${folderId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
 
@@ -169,7 +169,7 @@ describe('KbCleanup Integration Tests', () => {
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(200)
 
@@ -195,7 +195,7 @@ describe('KbCleanup Integration Tests', () => {
       const copyRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${sourceDocId}/copy`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetFolderId: null },
       })
       expect(copyRes.statusCode).toBe(200)
@@ -210,7 +210,7 @@ describe('KbCleanup Integration Tests', () => {
       await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${kbId}/documents/${sourceDocId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
 
       // 源文档的 storage 应被清理，副本仍可下载
@@ -234,7 +234,7 @@ describe('KbCleanup Integration Tests', () => {
       const targetKbRes = await app.inject({
         method: 'POST',
         url: '/api/knowledge-bases',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { name: `Target-KB-${Date.now()}` },
       })
       const targetKbId = targetKbRes.json().data.id
@@ -252,7 +252,7 @@ describe('KbCleanup Integration Tests', () => {
       const moveRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${kbId}/documents/${docId}/move`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetKbId },
       })
       expect(moveRes.statusCode).toBe(200)
@@ -292,8 +292,8 @@ describe('KbCleanup Integration Tests', () => {
       method: 'POST',
       url: `/api/knowledge-bases/${kbId}/documents/upload`,
       headers: {
+        ...authHeader(userToken),
         'content-type': `multipart/form-data; boundary=${boundary}`,
-        authorization: `Bearer ${userToken}`,
       },
       payload: multipartBody,
     })

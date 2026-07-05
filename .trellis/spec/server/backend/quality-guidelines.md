@@ -140,3 +140,57 @@ node_modules/  — 第三方依赖
 1. **忘记 organizeImports**：保存前确保 biome 自动执行了 import 排序
 2. **覆盖 rules 后不写注释**：每个 overrides 块应注明原因
 3. **CI 检查失败后本地不修复**：`biome ci` 失败应立即在本地 `biome lint --write` 修复
+
+---
+
+## 代码清理规则
+
+### 未使用代码检测
+
+| 规则 | 检测方式 | 处理方式 |
+|------|----------|----------|
+| 未引用的导出函数/类 | `grep -r "export.*" src/ | grep -v test` + 全局搜索引用 | 删除 |
+| 未使用的装饰器 | 检查装饰器定义文件和使用处 | 删除装饰器及相关代码 |
+| 重复工具函数 | 搜索相同功能的函数名 | 保留一个，删除重复 |
+| 文件名失真 | 文件内容与文件名不符 | 重命名文件并更新所有导入 |
+
+### 路径工具函数约定
+
+使用 `api-path.ts` 统一管理 API 前缀和路径分类：
+
+```typescript
+// 路径分类
+categorizePath('/api/admin/users') // 'admin-only'
+categorizePath('/api/web/auth/login') // 'web-biz'
+categorizePath('/api/auth/public-key') // 'public'
+categorizePath('/api/chat/completions') // 'common'
+
+// 路径判断
+isAdminOnlyPath(path) // 仅 admin 可访问
+isWebOnlyPath(path) // 仅 web 可访问  
+isPublicPath(path) // 公开端点
+
+// 路径构建（环境变量 API_PREFIX）
+buildApiPath('chat') // '/api/chat'
+```
+
+**约定**：
+- 路径分类判断必须使用 `categorizePath`，禁止硬编码 `/admin/`、`/web/` 前缀判断
+- `@Public()` 装饰器用于标记公开端点，禁止使用 `@AllowApp('both')`
+- 文件命名应准确反映内容，删除 `allow-app.decorator.ts` 类的误导性命名
+
+### 设计决策：路径分类优于装饰器
+
+**Context**：AppGuard 需要判断请求是否允许特定 app 访问。
+
+**Options Considered**：
+1. **装饰器方式**：`@AllowApp('web')`、`@AllowApp('admin')`、`@AllowApp('both')`
+2. **路径方式**：根据 URL 前缀自动分类（`/admin/*`、`/web/*`、`/auth/*`）
+
+**Decision**：选择路径方式，因为：
+- 路径前缀是天然的分类依据，无需额外配置
+- 减少代码冗余，避免每个端点都加装饰器
+- 统一管理，修改路径规则只需更新 `api-path.ts`
+- `@AllowApp('both')` 无实际用途，会导致安全隐患
+
+**例外**：`@Public()` 装饰器保留，用于标记公开端点（如 `/auth/public-key`）

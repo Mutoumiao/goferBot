@@ -158,12 +158,14 @@ describe('auth services', () => {
     window.location.href = originalHref
   })
 
-  it('logoutService shows error and does not clear auth on API failure', async () => {
+  it('logoutService clears auth and navigates even on API failure', async () => {
     mockLogout.mockRejectedValueOnce(new Error('network error'))
+    const originalHref = window.location.href
     await logoutService()
     expect(mockLogout).toHaveBeenCalled()
-    expect(mockClearAuth).not.toHaveBeenCalled()
-    expect(toast.error).toHaveBeenCalled()
+    expect(mockClearAuth).toHaveBeenCalled()
+    expect(window.location.href).toContain('/login')
+    window.location.href = originalHref
   })
 
   it('remembered email storage', () => {

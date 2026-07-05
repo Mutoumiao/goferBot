@@ -139,16 +139,11 @@ export class AuthRepository {
 
   async markRefreshTokenUsed(jtiHash: string, replacedByTokenId?: string): Promise<boolean> {
     const now = new Date()
-    const result = (await this.prisma.$queryRaw`
-      UPDATE "RefreshToken"
-      SET "usedAt" = ${now},
-          "replacedByTokenId" = ${replacedByTokenId ?? null}
-      WHERE "jtiHash" = ${jtiHash}
-        AND "usedAt" IS NULL
-        AND "revokedAt" IS NULL
-      RETURNING "id"
-    `) as Array<{ id: string }>
-    return result.length > 0
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { jtiHash, usedAt: null, revokedAt: null },
+      data: { usedAt: now, replacedByTokenId: replacedByTokenId ?? null },
+    })
+    return result.count > 0
   }
 
   async updateLastSeen(sessionId: string) {

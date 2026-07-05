@@ -27,6 +27,7 @@
 
 | 模块 | Trellis 开发指南 | OpenSpec 权威源 |
 |------|-----------------|----------------|
+| Auth | [auth-module-guide.md](./auth-module-guide.md) | [openspec/specs/auth/spec.md](../../../openspec/specs/auth/spec.md) |
 | Companion | [companion-pipeline.md](./companion-pipeline.md) | [openspec/specs/companion/spec.md](../../../openspec/specs/companion/spec.md) |
 | RAG | [rag-implementation.md](./rag-implementation.md) | [openspec/specs/rag/spec.md](../../../openspec/specs/rag/spec.md) |
 | Queue | [queue-implementation.md](./queue-implementation.md) | [openspec/specs/queue/spec.md](../../../openspec/specs/queue/spec.md) |

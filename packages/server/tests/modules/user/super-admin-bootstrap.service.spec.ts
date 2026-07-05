@@ -28,6 +28,9 @@ function createTxMockBase() {
     applicationAuthMethod: {
       upsert: vi.fn().mockResolvedValue({}),
     },
+    role: {
+      upsert: vi.fn().mockResolvedValue({}),
+    },
     adminAuditLog: {
       create: vi.fn().mockResolvedValue({}),
     },
@@ -54,6 +57,9 @@ describe('SuperAdminBootstrapService', () => {
       findUnique: Mock
     }
     applicationAuthMethod: {
+      upsert: Mock
+    }
+    role: {
       upsert: Mock
     }
     adminAuditLog: {
@@ -84,6 +90,9 @@ describe('SuperAdminBootstrapService', () => {
         findUnique: vi.fn().mockResolvedValue({ id: 'app-id', code: 'admin', status: 'active' }),
       },
       applicationAuthMethod: {
+        upsert: vi.fn().mockResolvedValue({}),
+      },
+      role: {
         upsert: vi.fn().mockResolvedValue({}),
       },
       adminAuditLog: {

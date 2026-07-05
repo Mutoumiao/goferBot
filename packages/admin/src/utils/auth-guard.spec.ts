@@ -18,9 +18,11 @@ describe('auth-guard', () => {
         isAuthenticated: false,
         isInitialized: false,
         _hydrated: false,
+        fetchMePromise: null,
         clearAuth: (() => undefined) as never,
         setUser: (() => undefined) as never,
         setInitialized: ((v: boolean) => useAuthStore.setState({ isInitialized: v })) as never,
+        fetchMe: (async () => false) as never,
       },
       true,
     )
@@ -121,19 +123,28 @@ describe('auth-guard', () => {
     ).toBe(false)
   })
 
-  it('waitForAuthInit resolves immediately when hydrated', async () => {
-    useAuthStore.setState({ _hydrated: true, isInitialized: true } as never)
+  it('waitForAuthInit resolves with false when fetchMe fails', async () => {
+    useAuthStore.setState({
+      _hydrated: true,
+      isInitialized: false,
+      fetchMe: (async () => false) as never,
+    } as never)
     const result = await waitForAuthInit()
-    expect(result).toBeUndefined()
+    expect(result).toBe(false)
   })
 
-  it('waitForAuthInit times out and marks initialized', async () => {
-    useAuthStore.setState({ _hydrated: false, isInitialized: false } as never)
+  it('waitForAuthInit times out and marks initialized when not hydrated', async () => {
+    useAuthStore.setState({
+      _hydrated: false,
+      isInitialized: false,
+      fetchMe: (async () => false) as never,
+    } as never)
     const start = Date.now()
-    await waitForAuthInit(150)
+    const result = await waitForAuthInit(150)
     const elapsed = Date.now() - start
     expect(elapsed).toBeGreaterThanOrEqual(140)
     expect(useAuthStore.getState().isInitialized).toBe(true)
+    expect(typeof result).toBe('boolean')
   }, 5000)
 
   it('buildLoginRedirectSearch 不会因 null 原型 search 对象崩溃（回归 #beforeLoad-crash）', () => {

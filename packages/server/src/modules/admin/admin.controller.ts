@@ -134,7 +134,7 @@ export class AdminController {
     @Body() dto: ResetPasswordDto,
     @CurrentUser('id') actorId: string,
   ) {
-    const result = await this.adminService.resetPassword(userId, dto.newPassword)
+    const result = await this.adminService.resetPassword(userId, dto.newPassword, actorId)
     await this.auditService.log({
       actor: actorId,
       operation: 'user.reset_password',

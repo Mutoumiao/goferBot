@@ -8,5 +8,5 @@ export const Route = createFileRoute('/_authenticated/roles/$id')({
 function RoleDetailPage() {
   const params = Route.useParams()
   const navigate = useNavigate()
-  return <PermissionMatrix roleId={params.id} onBack={() => navigate({ to: '/roles' })} />
+  return <PermissionMatrix roleCode={params.id} onBack={() => navigate({ to: '/roles' })} />
 }

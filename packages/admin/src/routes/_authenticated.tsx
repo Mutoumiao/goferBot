@@ -1,5 +1,4 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
-import { ForbiddenPage } from '@/components/ForbiddenPage'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
@@ -12,9 +11,9 @@ import {
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async ({ location }) => {
-    await waitForAuthInit()
+    const authed = await waitForAuthInit()
     const snapshot = getAuthSnapshot()
-    if (!snapshot.isAuthenticated) {
+    if (!authed || !snapshot.isAuthenticated) {
       throw redirect({
         to: ROUTES_REGISTER.login.path,
         search: buildLoginRedirectSearch(location),
@@ -35,7 +34,7 @@ export const Route = createFileRoute('/_authenticated')({
 function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   if (!isAuthenticated) {
-    return <ForbiddenPage />
+    return null
   }
   return (
     <AdminLayout>

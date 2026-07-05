@@ -22,29 +22,29 @@ describe('auth api', () => {
     vi.clearAllMocks()
   })
 
-  it('login sends POST to /auth/web/login with encryptedPassword', async () => {
+  it('login sends POST to /web/auth/login with encryptedPassword', async () => {
     const method = login({ email: 'a@b.com', encryptedPassword: 'enc-pwd' })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/login', {
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/web/auth/login', {
       email: 'a@b.com',
       encryptedPassword: 'enc-pwd',
     })
     expect(method.send).toBeDefined()
   })
 
-  it('logout sends POST to /auth/web/logout with empty body', async () => {
+  it('logout sends POST to /web/auth/logout with empty body', async () => {
     const method = logout()
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/logout', {})
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/web/auth/logout', {})
     expect(method.send).toBeDefined()
   })
 
-  it('register sends POST to /auth/web/register with encryptedPassword and name', async () => {
+  it('register sends POST to /web/auth/register with encryptedPassword and name', async () => {
     const method = register({
       email: 'a@b.com',
       encryptedPassword: 'enc-pwd',
       name: 'User',
       invitationCode: 'TESTCODE123',
     })
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/register', {
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/web/auth/register', {
       email: 'a@b.com',
       encryptedPassword: 'enc-pwd',
       name: 'User',
@@ -59,9 +59,9 @@ describe('auth api', () => {
     expect(method.send).toBeDefined()
   })
 
-  it('refresh sends POST to /auth/web/refresh with empty body', async () => {
+  it('refresh sends POST to /web/auth/refresh with empty body', async () => {
     const method = refresh()
-    expect(alovaInstance.Post).toHaveBeenCalledWith('/auth/web/refresh', {})
+    expect(alovaInstance.Post).toHaveBeenCalledWith('/web/auth/refresh', {})
     expect(method.send).toBeDefined()
   })
 

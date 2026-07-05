@@ -7,7 +7,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { checkInfrastructure } from './helpers/infra-check.js'
 import {
   canDownloadStorage,
@@ -73,7 +73,7 @@ describe('Folder Cross-KB Integration Tests', () => {
     const sourceKbRes = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${userToken}` },
+      headers: authHeader(userToken),
       payload: { name: `Source-KB-${timestamp}` },
     })
     sourceKbId = sourceKbRes.json().data.id
@@ -83,7 +83,7 @@ describe('Folder Cross-KB Integration Tests', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/knowledge-bases',
-      headers: { authorization: `Bearer ${userToken}` },
+      headers: authHeader(userToken),
       payload: { name: `Target-KB-${Date.now()}` },
     })
     return res.json().data.id
@@ -95,7 +95,7 @@ describe('Folder Cross-KB Integration Tests', () => {
     const res = await app.inject({
       method: 'POST',
       url: `/api/knowledge-bases/${kbId}/folders`,
-      headers: { authorization: `Bearer ${userToken}` },
+      headers: authHeader(userToken),
       payload,
     })
     return res.json().data.id
@@ -132,7 +132,7 @@ describe('Folder Cross-KB Integration Tests', () => {
       const copyRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${sourceKbId}/folders/${rootFolderId}/copy`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetKbId },
       })
       expect(copyRes.statusCode).toBe(200)
@@ -142,7 +142,7 @@ describe('Folder Cross-KB Integration Tests', () => {
       const targetRootFolders = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${targetKbId}/folders`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(targetRootFolders.json().data).toHaveLength(1)
       expect(targetRootFolders.json().data[0].id).toBe(copiedRootId)
@@ -151,7 +151,7 @@ describe('Folder Cross-KB Integration Tests', () => {
       const targetChildren = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${targetKbId}/folders?parentId=${copiedRootId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(targetChildren.json().data).toHaveLength(1)
       const copiedChildId = targetChildren.json().data[0].id
@@ -170,7 +170,7 @@ describe('Folder Cross-KB Integration Tests', () => {
       await app.inject({
         method: 'DELETE',
         url: `/api/knowledge-bases/${sourceKbId}/folders/${rootFolderId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(await canDownloadStorage(app, sourceStorageKey)).toBe(false)
       expect(await canDownloadStorage(app, copiedDoc.storageKey)).toBe(true)
@@ -212,7 +212,7 @@ describe('Folder Cross-KB Integration Tests', () => {
       const moveRes = await app.inject({
         method: 'POST',
         url: `/api/knowledge-bases/${sourceKbId}/folders/${rootFolderId}/move`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
         payload: { targetKbId },
       })
       expect(moveRes.statusCode).toBe(200)
@@ -222,14 +222,14 @@ describe('Folder Cross-KB Integration Tests', () => {
       const sourceRootFolders = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${sourceKbId}/folders`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(sourceRootFolders.json().data).toHaveLength(0)
 
       const targetRootFolders = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${targetKbId}/folders`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(targetRootFolders.json().data).toHaveLength(1)
       expect(targetRootFolders.json().data[0].id).toBe(movedRootId)
@@ -237,7 +237,7 @@ describe('Folder Cross-KB Integration Tests', () => {
       const targetChildren = await app.inject({
         method: 'GET',
         url: `/api/knowledge-bases/${targetKbId}/folders?parentId=${movedRootId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: authHeader(userToken),
       })
       expect(targetChildren.json().data).toHaveLength(1)
       const movedChildId = targetChildren.json().data[0].id

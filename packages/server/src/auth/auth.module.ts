@@ -11,6 +11,8 @@ import { AuthRedisService } from './auth-redis.service.js'
 import { AuthRepositoryModule } from './auth-repository.module.js'
 import { CaptchaController } from './captcha.controller.js'
 import { CaptchaService } from './captcha.service.js'
+import { AdminAuthController } from './controllers/admin-auth.controller.js'
+import { WebAuthController } from './controllers/web-auth.controller.js'
 import { CookieHelper } from './cookie.helper.js'
 import { PasswordEncryptionService } from './crypto/password-encryption.service.js'
 import { JwtAuthGuard } from './guards/jwt.guard.js'
@@ -47,7 +49,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js'
     UserStatusChangedListener,
     JwtAuthGuard,
   ],
-  controllers: [AuthController, CaptchaController],
+  controllers: [AuthController, WebAuthController, AdminAuthController, CaptchaController],
   exports: [
     AuthService,
     AuthRedisService,

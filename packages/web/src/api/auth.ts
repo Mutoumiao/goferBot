@@ -11,18 +11,18 @@ interface PublicKeyResponse {
  * 登录 — 返回 accessToken + user
  */
 export const login = (data: LoginRequest) =>
-  alovaInstance.Post<AuthResponse>('/auth/web/login', data)
+  alovaInstance.Post<AuthResponse>('/web/auth/login', data)
 
 /**
  * 登出 — 服务端从 HttpOnly Cookie 读取 refreshToken 撤销会话
  */
-export const logout = () => alovaInstance.Post<{ success: boolean }>('/auth/web/logout', {})
+export const logout = () => alovaInstance.Post<{ success: boolean }>('/web/auth/logout', {})
 
 /**
  * 注册 — 返回 accessToken + user
  */
 export const register = (data: RegisterRequest) =>
-  alovaInstance.Post<AuthResponse>('/auth/web/register', data)
+  alovaInstance.Post<AuthResponse>('/web/auth/register', data)
 
 /**
  * 获取当前用户信息（需 Bearer Token）
@@ -32,7 +32,7 @@ export const getMe = () => alovaInstance.Get<User>('/auth/me')
 /**
  * Token 刷新 — 由 alova 拦截器自动调用，一般不直接使用
  */
-export const refresh = () => alovaInstance.Post<AuthResponse>('/auth/web/refresh', {})
+export const refresh = () => alovaInstance.Post<AuthResponse>('/web/auth/refresh', {})
 
 /**
  * 获取 RSA 公钥（用于密码加密）

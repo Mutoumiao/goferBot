@@ -33,9 +33,10 @@ export async function fetchPermissions(): Promise<Permission[]> {
 }
 
 export async function createRoleService(data: {
+  code: string
   name: string
   description?: string
-  permissions: string[]
+  app?: string
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await createRoleApi(data).send()
@@ -49,11 +50,11 @@ export async function createRoleService(data: {
 }
 
 export async function editRoleService(
-  id: string,
+  code: string,
   data: { name?: string; description?: string; permissions?: string[] },
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await updateRoleApi(id, data).send()
+    await updateRoleApi(code, data).send()
     toast.success('修改角色成功')
     return { success: true }
   } catch (err) {
@@ -64,11 +65,11 @@ export async function editRoleService(
 }
 
 export async function updateRoleService(
-  id: string,
-  data: { name?: string; description?: string; permissions?: string[] },
+  code: string,
+  data: { name?: string; description?: string; sortOrder?: number; permissions?: string[] },
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await updateRoleApi(id, data).send()
+    await updateRoleApi(code, data).send()
     toast.success('修改成功')
     return { success: true }
   } catch (err) {

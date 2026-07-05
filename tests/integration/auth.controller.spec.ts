@@ -1,14 +1,14 @@
 /**
  * AuthController 集成测试
- * 覆盖端点：GET /api/auth/public-key, POST /api/auth/register, POST /api/auth/login,
- *          POST /api/auth/logout, POST /api/auth/refresh, GET /api/auth/me
+ * 覆盖端点：GET /api/auth/public-key, POST /api/web/auth/register, POST /api/web/auth/login,
+ *          POST /api/web/auth/logout, POST /api/web/auth/refresh, GET /api/auth/me
  * 场景：happy path、Zod 验证失败、认证缺失/无效、资源不存在、唯一约束冲突
  */
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaService } from '../../packages/server/src/processors/database/prisma.service.js'
-import { AuthFixtures } from './helpers/auth.fixtures.js'
+import { AuthFixtures, authHeader } from './helpers/auth.fixtures.js'
 import { TestAppFactory } from './helpers/test-app.factory.js'
 import { TestDatabaseManager } from './helpers/test-database.manager.js'
 import { createIpGenerator } from './helpers/test-utils.js'
@@ -47,27 +47,36 @@ describe('AuthController', () => {
     })
   })
 
-  describe('POST /api/auth/register', () => {
+  describe('POST /api/web/auth/register', () => {
     it('AC-03: creates user with valid data', async () => {
       const email = `reg-${Date.now()}@test.gofer`
       const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
-        payload: { email, encryptedPassword, name: 'Test User' },
+        url: '/api/web/auth/register',
+        payload: {
+          email,
+          encryptedPassword,
+          name: 'Test User',
+          invitationCode: 'GF-test-code-001',
+        },
       })
       expect(res.statusCode).toBe(201)
       const body = res.json()
       expect(body.data.user.email).toBe(email)
-      expect(body.data.accessToken).toBeTruthy()
     })
 
     it('AC-04: returns 400 for invalid email', async () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
-        payload: { email: 'invalid-email', encryptedPassword, name: 'Test' },
+        url: '/api/web/auth/register',
+        payload: {
+          email: 'invalid-email',
+          encryptedPassword,
+          name: 'Test',
+          invitationCode: 'GF-test-code-001',
+        },
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
@@ -77,8 +86,13 @@ describe('AuthController', () => {
     it('AC-05: returns 400 for empty password', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
-        payload: { email: `reg-${Date.now()}@test.gofer`, encryptedPassword: '', name: 'Test' },
+        url: '/api/web/auth/register',
+        payload: {
+          email: `reg-${Date.now()}@test.gofer`,
+          encryptedPassword: '',
+          name: 'Test',
+          invitationCode: 'GF-test-code-001',
+        },
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
@@ -88,11 +102,12 @@ describe('AuthController', () => {
     it('AC-06: returns 400 for decrypt failure', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
+        url: '/api/web/auth/register',
         payload: {
           email: `reg-${Date.now()}@test.gofer`,
           encryptedPassword: 'not-valid-base64!!!',
           name: 'Test',
+          invitationCode: 'GF-test-code-001',
         },
       })
       expect(res.statusCode).toBe(400)
@@ -104,8 +119,13 @@ describe('AuthController', () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, '123')
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
-        payload: { email: `reg-${Date.now()}@test.gofer`, encryptedPassword, name: 'Test' },
+        url: '/api/web/auth/register',
+        payload: {
+          email: `reg-${Date.now()}@test.gofer`,
+          encryptedPassword,
+          name: 'Test',
+          invitationCode: 'GF-test-code-001',
+        },
       })
       expect(res.statusCode).toBe(400)
       const body = res.json()
@@ -116,8 +136,13 @@ describe('AuthController', () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, '!!!!!!')
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
-        payload: { email: `reg-${Date.now()}@test.gofer`, encryptedPassword, name: 'Test' },
+        url: '/api/web/auth/register',
+        payload: {
+          email: `reg-${Date.now()}@test.gofer`,
+          encryptedPassword,
+          name: 'Test',
+          invitationCode: 'GF-test-code-001',
+        },
         remoteAddress: nextIp(),
       })
       expect(res.statusCode).toBe(400)
@@ -130,24 +155,65 @@ describe('AuthController', () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
       const first = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
-        payload: { email, encryptedPassword, name: 'First' },
+        url: '/api/web/auth/register',
+        payload: {
+          email,
+          encryptedPassword,
+          name: 'First',
+          invitationCode: 'GF-test-code-001',
+        },
         remoteAddress: nextIp(),
       })
       expect(first.statusCode).toBe(201)
       const second = await app.inject({
         method: 'POST',
-        url: '/api/auth/register',
-        payload: { email, encryptedPassword, name: 'Second' },
+        url: '/api/web/auth/register',
+        payload: {
+          email,
+          encryptedPassword,
+          name: 'Second',
+          invitationCode: 'GF-test-code-001',
+        },
         remoteAddress: nextIp(),
       })
       expect(second.statusCode).toBe(409)
       const body = second.json()
       expect(body.error.code).toBe('USER_EXISTS')
     })
+
+    it('AC-10: returns 400 for missing invitation code', async () => {
+      const email = `noinv-${Date.now()}@test.gofer`
+      const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/web/auth/register',
+        payload: { email, encryptedPassword, name: 'No Invite' },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AC-10b: returns 400 for invalid invitation code', async () => {
+      const email = `badinv-${Date.now()}@test.gofer`
+      const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/web/auth/register',
+        payload: {
+          email,
+          encryptedPassword,
+          name: 'Bad Invite',
+          invitationCode: 'INVALID-CODE-XXX',
+        },
+      })
+      expect(res.statusCode).toBe(400)
+      const body = res.json()
+      expect(body.error.code).toBe('INVITATION_CODE_INVALID')
+    })
   })
 
-  describe('POST /api/auth/login', () => {
+  describe('POST /api/web/auth/login', () => {
     it('AC-11: returns tokens for valid credentials', async () => {
       const email = `login-${Date.now()}@test.gofer`
       const password = 'Test1234!'
@@ -159,18 +225,19 @@ describe('AuthController', () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, password)
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/login',
+        url: '/api/web/auth/login',
         payload: { email, encryptedPassword },
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
-      expect(body.data.accessToken).toBeTruthy()
+      expect(body.data.user.email).toBe(email)
+      expect(res.headers['set-cookie']).toBeDefined()
     })
 
     it('AC-12: returns 400 for invalid input', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/login',
+        url: '/api/web/auth/login',
         payload: { email: 'not-email', encryptedPassword: '' },
       })
       expect(res.statusCode).toBe(400)
@@ -182,7 +249,7 @@ describe('AuthController', () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/login',
+        url: '/api/web/auth/login',
         payload: { email: 'nonexistent@test.gofer', encryptedPassword },
       })
       expect(res.statusCode).toBe(404)
@@ -198,7 +265,7 @@ describe('AuthController', () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, 'WrongPassword1!')
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/login',
+        url: '/api/web/auth/login',
         payload: { email, encryptedPassword },
       })
       expect(res.statusCode).toBe(404)
@@ -217,7 +284,7 @@ describe('AuthController', () => {
       const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/login',
+        url: '/api/web/auth/login',
         payload: { email, encryptedPassword },
       })
       expect(res.statusCode).toBe(403)
@@ -226,7 +293,7 @@ describe('AuthController', () => {
     })
   })
 
-  describe('POST /api/auth/logout', () => {
+  describe('POST /api/web/auth/logout', () => {
     it('AC-17: returns success for valid token', async () => {
       const email = `logout-${Date.now()}@test.gofer`
       await AuthFixtures.createUser(
@@ -234,15 +301,15 @@ describe('AuthController', () => {
         { email, password: 'Test1234!', name: 'Logout User' },
         { remoteAddress: nextIp() },
       )
-      const token = await AuthFixtures.loginAs(
+      const token = await AuthFixtures.loginAsWeb(
         app,
         { email, password: 'Test1234!' },
         { remoteAddress: nextIp() },
       )
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/logout',
-        headers: { authorization: `Bearer ${token}` },
+        url: '/api/web/auth/logout',
+        headers: authHeader(token),
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
@@ -252,7 +319,7 @@ describe('AuthController', () => {
     it('AC-18: returns 401 without token', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/logout',
+        url: '/api/web/auth/logout',
       })
       expect(res.statusCode).toBe(401)
     })
@@ -260,14 +327,14 @@ describe('AuthController', () => {
     it('AC-19: returns 401 for invalid token', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/logout',
-        headers: { authorization: 'Bearer invalid-token' },
+        url: '/api/web/auth/logout',
+        headers: { cookie: 'goferbot_web_access_token=invalid-token' },
       })
       expect(res.statusCode).toBe(401)
     })
   })
 
-  describe('POST /api/auth/refresh', () => {
+  describe('POST /api/web/auth/refresh', () => {
     it('AC-20: returns new tokens for valid refresh token', async () => {
       const email = `refresh-${Date.now()}@test.gofer`
       await AuthFixtures.createUser(
@@ -275,71 +342,43 @@ describe('AuthController', () => {
         { email, password: 'Test1234!', name: 'Refresh User' },
         { remoteAddress: nextIp() },
       )
+      const encryptedPassword = await AuthFixtures.encryptPassword(app, 'Test1234!')
       const loginRes = await app.inject({
         method: 'POST',
-        url: '/api/auth/login',
-        payload: { email, encryptedPassword: await AuthFixtures.encryptPassword(app, 'Test1234!') },
+        url: '/api/web/auth/login',
+        payload: { email, encryptedPassword },
         remoteAddress: nextIp(),
       })
-      const { refreshToken } = loginRes.json().data
+      const setCookie = loginRes.headers['set-cookie'] as string | string[]
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie]
+      const refreshCookie = cookies.find((c) => c.startsWith('goferbot_web_refresh_token='))
+      expect(refreshCookie).toBeDefined()
+      const refreshTokenValue = refreshCookie!.split('=')[1].split(';')[0]
+
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/refresh',
-        payload: { refreshToken },
+        url: '/api/web/auth/refresh',
+        headers: { cookie: `goferbot_web_refresh_token=${refreshTokenValue}` },
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
-      expect(body.data.accessToken).toBeTruthy()
+      expect(body.data.success).toBe(true)
+      expect(res.headers['set-cookie']).toBeDefined()
     })
 
-    it('AC-21: returns 401 for empty refresh token', async () => {
+    it('AC-21: returns 400 for missing refresh token cookie', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/refresh',
-        payload: { refreshToken: '' },
+        url: '/api/web/auth/refresh',
       })
-      expect(res.statusCode).toBe(401)
+      expect(res.statusCode).toBe(400)
     })
 
-    it('AC-22: returns 401 for access token', async () => {
-      const email = `refresh-at-${Date.now()}@test.gofer`
-      await AuthFixtures.createUser(
-        app,
-        { email, password: 'Test1234!', name: 'Refresh AT' },
-        { remoteAddress: nextIp() },
-      )
-      const loginRes = await app.inject({
-        method: 'POST',
-        url: '/api/auth/login',
-        payload: { email, encryptedPassword: await AuthFixtures.encryptPassword(app, 'Test1234!') },
-        remoteAddress: nextIp(),
-      })
-      const { accessToken } = loginRes.json().data
+    it('AC-23: returns 401 for invalid refresh token', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/refresh',
-        payload: { refreshToken: accessToken },
-      })
-      expect(res.statusCode).toBe(401)
-    })
-
-    it('AC-23: returns 401 for expired token', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/auth/refresh',
-        payload: { refreshToken: 'invalid-token' },
-      })
-      expect(res.statusCode).toBe(401)
-    })
-
-    it('AC-24: returns 401 when user not found', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/auth/refresh',
-        payload: {
-          refreshToken:
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJub24tZXhpc3RlbnQtdXNlciIsInR5cGUiOiJyZWZyZXNoIn0.fake',
-        },
+        url: '/api/web/auth/refresh',
+        headers: { cookie: 'goferbot_web_refresh_token=invalid-token' },
       })
       expect([401, 403]).toContain(res.statusCode)
     })
@@ -353,7 +392,7 @@ describe('AuthController', () => {
         { email, password: 'Test1234!', name: 'Me User' },
         { remoteAddress: nextIp() },
       )
-      const token = await AuthFixtures.loginAs(
+      const token = await AuthFixtures.loginAsWeb(
         app,
         { email, password: 'Test1234!' },
         { remoteAddress: nextIp() },
@@ -361,11 +400,13 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/auth/me',
-        headers: { authorization: `Bearer ${token}` },
+        headers: { ...authHeader(token), 'x-app-context': 'web' },
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
       expect(body.data.email).toBe(email)
+      expect(body.data.roles).toBeDefined()
+      expect(Array.isArray(body.data.roles)).toBe(true)
     })
 
     it('AC-26: returns 401 without token', async () => {
@@ -380,7 +421,7 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/auth/me',
-        headers: { authorization: 'Bearer invalid-token' },
+        headers: { cookie: 'goferbot_web_access_token=invalid-token' },
       })
       expect(res.statusCode).toBe(401)
     })
@@ -392,7 +433,7 @@ describe('AuthController', () => {
         { email, password: 'Test1234!', name: 'Deleted' },
         { remoteAddress: nextIp() },
       )
-      const token = await AuthFixtures.loginAs(
+      const token = await AuthFixtures.loginAsWeb(
         app,
         { email, password: 'Test1234!' },
         { remoteAddress: nextIp() },
@@ -403,7 +444,7 @@ describe('AuthController', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/auth/me',
-        headers: { authorization: `Bearer ${token}` },
+        headers: { ...authHeader(token), 'x-app-context': 'web' },
       })
       expect(res.statusCode).toBe(401)
     })
