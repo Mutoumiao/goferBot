@@ -41,3 +41,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: 鉴权代码巩固与路径规范化
+
+**Date**: 2026-07-06
+**Task**: 鉴权代码巩固与路径规范化
+**Branch**: `master`
+
+### Summary
+
+完成鉴权模块代码清理与路径规范化：创建统一路径工具函数api-path.ts，重构app.guard.ts和jwt.strategy.ts移除硬编码，拆分auth控制器为web/admin专用，删除死代码文件（roles.guard、roles.decorator、role.enum、request-context），重命名allow-app.decorator为public.decorator，更新前端请求路径至新规范，同步更新OpenSpec和Trellis知识沉淀文档。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e822ed7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
