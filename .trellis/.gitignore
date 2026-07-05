@@ -27,6 +27,8 @@
 # Conflict resolution temp files
 *.new
 
+tasks/
+
 # Python cache
 **/__pycache__/
 **/*.pyc
