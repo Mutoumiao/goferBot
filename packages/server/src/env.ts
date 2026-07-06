@@ -35,6 +35,10 @@ const envSchema = z.object({
     .default('7d'),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(31).default(12),
   TEST_INVITATION_CODES: optionalNonEmptyString,
+  CAPTCHA_ENABLED: z
+    .preprocess((val) => val === 'true' || val === '1' || val === true, z.boolean())
+    .default(false),
+  CAPTCHA_WHITELIST_ORIGINS: optionalNonEmptyString,
 
   // === 配置加密 ===
   SETTINGS_ENCRYPTION_KEY: optionalNonEmptyString,

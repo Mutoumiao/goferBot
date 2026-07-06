@@ -13,6 +13,7 @@ import { Throttle } from '@nestjs/throttler'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { Public } from '../../common/decorators/public.decorator.js'
 import { AuthService } from '../auth.service.js'
+import { CaptchaService } from '../captcha.service.js'
 import { CookieHelper } from '../cookie.helper.js'
 import { PasswordEncryptionService } from '../crypto/password-encryption.service.js'
 import { CurrentUser } from '../decorators/current-user.decorator.js'
@@ -26,6 +27,7 @@ export class AdminAuthController {
     private readonly authService: AuthService,
     private readonly passwordEncryption: PasswordEncryptionService,
     private readonly cookieHelper: CookieHelper,
+    private readonly captchaService: CaptchaService,
   ) {}
 
   @Public()
@@ -37,6 +39,12 @@ export class AdminAuthController {
     @Res({ passthrough: true }) res: FastifyReply,
     @Req() req: FastifyRequest,
   ) {
+    const origin = req.headers.origin as string | undefined
+    const captchaOk = await this.captchaService.verifyWithOrigin(origin, dto.captchaId ?? '', dto.captchaCode ?? '')
+    if (!captchaOk) {
+      throw new BadRequestException({ code: 'CAPTCHA_INVALID', message: '验证码无效，请刷新后重试' })
+    }
+
     const password = this.decryptAndValidate(dto.encryptedPassword)
     const userAgent = req.headers['user-agent']
     const ip = req.ip

@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import sharp from 'sharp'
 import { AuthRedisService } from './auth-redis.service.js'
 
@@ -36,7 +37,10 @@ export interface CaptchaImageData {
 export class CaptchaService {
   private readonly logger = new Logger(CaptchaService.name)
 
-  constructor(private readonly authRedis: AuthRedisService) {}
+  constructor(
+    private readonly authRedis: AuthRedisService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /** 生成一个新的验证码挑战，返回 captchaId + PNG 图片 Buffer。 */
   async generateChallenge(): Promise<CaptchaChallenge> {
@@ -108,6 +112,45 @@ export class CaptchaService {
       return false
     }
     return true
+  }
+
+  /** 基于 Origin 白名单的验证码校验。如果验证码未启用或 Origin 在白名单中，直接跳过验证。 */
+  async verifyWithOrigin(origin: string | undefined, captchaId: string, inputCode: string): Promise<boolean> {
+    if (!this.isCaptchaEnabled()) {
+      return true
+    }
+
+    const whitelistOrigins = this.getWhitelistOrigins()
+    if (whitelistOrigins.has(origin ?? '')) {
+      this.logger.debug('验证码跳过：Origin 在白名单中', { origin })
+      return true
+    }
+
+    return this.verify(captchaId, inputCode)
+  }
+
+  private isCaptchaEnabled(): boolean {
+    return this.configService.get<boolean>('CAPTCHA_ENABLED') ?? false
+  }
+
+  private isProduction(): boolean {
+    return this.configService.get<string>('NODE_ENV') === 'production'
+  }
+
+  private getWhitelistOrigins(): Set<string> {
+    if (this.isProduction()) {
+      return new Set()
+    }
+
+    const config = this.configService.get<string>('CAPTCHA_WHITELIST_ORIGINS')
+    if (!config) return new Set()
+
+    return new Set(
+      config
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+    )
   }
 
   /** 仅用于调试 / 测试：获取当前验证码明文（正常流程不暴露）。 */

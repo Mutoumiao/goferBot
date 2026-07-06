@@ -146,6 +146,36 @@ web 端和 admin 端使用不同的 Cookie 名称，防止互相覆盖：
 - 401 触发 token refresh（single-flight），403 不触发 refresh
 - localStorage 不持久化 `isAuthenticated`，仅缓存 `user` 对象
 
+### 8.7 验证码 Origin 白名单跳过机制
+
+**设计决策**：基于 Origin 请求头的白名单跳过，仅在开发/测试环境生效
+
+**实现要点**：
+- 使用 `CaptchaService.verifyWithOrigin(origin, captchaId, captchaCode)` 替代直接调用 `verify()`
+- Origin 通过 `req.headers.origin` 获取
+- `CAPTCHA_ENABLED` 控制是否启用验证码验证（默认 `false`）
+- `CAPTCHA_WHITELIST_ORIGINS` 配置白名单 Origin，逗号分隔
+- 生产环境（`NODE_ENV=production`）强制忽略白名单配置，始终执行验证码校验
+
+**配置示例**：
+```bash
+# 启用验证码验证
+CAPTCHA_ENABLED=true
+
+# 配置白名单（开发/测试环境）
+CAPTCHA_WHITELIST_ORIGINS=http://localhost:1421,http://localhost:3000
+```
+
+**工作流程**：
+```
+CAPTCHA_ENABLED=false → 所有请求跳过验证码（默认）
+CAPTCHA_ENABLED=true
+  ├─ NODE_ENV=production → 白名单忽略，始终执行验证码校验
+  └─ NODE_ENV!=production
+      ├─ Origin 在白名单 → 跳过验证
+      └─ Origin 不在白名单 → 执行验证码校验
+```
+
 ## 9. Testing Checklist
 
 ### 9.1 认证流程测试
@@ -202,6 +232,16 @@ web 端和 admin 端使用不同的 Cookie 名称，防止互相覆盖：
 - [ ] SYSTEM_ROLE_DELETE_DENIED（400）
 - [ ] SUPER_ADMIN_PROTECTED（400）
 - [ ] INVITATION_CODE_INVALID/USED/EXPIRED/MAX_USES（400）
+- [ ] CAPTCHA_INVALID（400）
+
+### 9.8 验证码白名单测试
+
+- [ ] CAPTCHA_ENABLED=false 时所有请求跳过验证码
+- [ ] CAPTCHA_ENABLED=true 时白名单 Origin 请求跳过验证码（非生产环境）
+- [ ] CAPTCHA_ENABLED=true 时非白名单 Origin 请求需要验证码校验
+- [ ] 生产环境（NODE_ENV=production）白名单配置被忽略，始终执行验证码校验
+- [ ] 未配置白名单时执行正常验证码校验
+- [ ] Origin 为空时执行正常验证码校验
 
 ## 10. Common Pitfalls
 

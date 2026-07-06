@@ -19,10 +19,26 @@ interface MockRedis {
   del: ReturnType<typeof vi.fn>
 }
 
+const createMockConfigService = (captchaEnabled?: boolean, whitelistOrigins?: string, nodeEnv?: string) => ({
+  get: vi.fn((key: string) => {
+    if (key === 'CAPTCHA_ENABLED') {
+      return captchaEnabled
+    }
+    if (key === 'CAPTCHA_WHITELIST_ORIGINS') {
+      return whitelistOrigins
+    }
+    if (key === 'NODE_ENV') {
+      return nodeEnv ?? 'development'
+    }
+    return undefined
+  }),
+})
+
 describe('CaptchaService', () => {
   let service: CaptchaService
   let mockRedis: MockRedis
   let mockAuthRedis: any
+  let mockConfigService: any
 
   beforeEach(() => {
     mockRedis = createMockRedis()
@@ -38,7 +54,8 @@ describe('CaptchaService', () => {
         mockRedis.del(key)
       }),
     }
-    service = new CaptchaService(mockAuthRedis)
+    mockConfigService = createMockConfigService()
+    service = new CaptchaService(mockAuthRedis, mockConfigService)
   })
 
   describe('generateChallenge', () => {
@@ -100,13 +117,13 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => {}),
+        setex: vi.fn(async () => { }),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
         }),
       }
-      service = new CaptchaService(mockAuthRedis)
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
 
       const ok = await service.verify('cid-1', 'abcd')
       expect(ok).toBe(true)
@@ -120,13 +137,13 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => {}),
+        setex: vi.fn(async () => { }),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
         }),
       }
-      service = new CaptchaService(mockAuthRedis)
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
 
       const ok = await service.verify('cid-1', 'wrong')
       expect(ok).toBe(false)
@@ -139,11 +156,11 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue(null),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => {}),
+        setex: vi.fn(async () => { }),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => {}),
+        del: vi.fn(async () => { }),
       }
-      service = new CaptchaService(mockAuthRedis)
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
 
       const ok = await service.verify('cid-1', 'ABCD')
       expect(ok).toBe(false)
@@ -156,6 +173,134 @@ describe('CaptchaService', () => {
     })
   })
 
+  describe('verifyWithOrigin', () => {
+    it('CS-06a: 验证码未启用时直接跳过验证返回 true', async () => {
+      mockConfigService = createMockConfigService(false)
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin('http://localhost:1421', '', '')
+      expect(ok).toBe(true)
+    })
+
+    it('CS-06b: 验证码启用且 Origin 在白名单中时直接跳过验证返回 true', async () => {
+      mockConfigService = createMockConfigService(true, 'http://localhost:1421,http://localhost:3000')
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin('http://localhost:1421', '', '')
+      expect(ok).toBe(true)
+    })
+
+    it('CS-06c: 验证码启用且 Origin 不在白名单中时执行正常验证码校验', async () => {
+      mockConfigService = createMockConfigService(true, 'http://localhost:3000')
+      mockRedis = createMockRedis({
+        get: vi.fn().mockResolvedValue('ABCD'),
+      })
+      mockAuthRedis = {
+        setex: vi.fn(async () => { }),
+        get: vi.fn(async (key: string) => mockRedis.get(key)),
+        del: vi.fn(async (key: string) => {
+          mockRedis.del(key)
+        }),
+      }
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin('http://localhost:1421', 'cid-1', 'abcd')
+      expect(ok).toBe(true)
+      expect(mockAuthRedis.get).toHaveBeenCalledWith(`${CAPTCHA_PREFIX}cid-1`)
+    })
+
+    it('CS-06d: 验证码启用且 Origin 不在白名单中且验证码错误时返回 false', async () => {
+      mockConfigService = createMockConfigService(true, 'http://localhost:3000')
+      mockRedis = createMockRedis({
+        get: vi.fn().mockResolvedValue('ABCD'),
+      })
+      mockAuthRedis = {
+        setex: vi.fn(async () => { }),
+        get: vi.fn(async (key: string) => mockRedis.get(key)),
+        del: vi.fn(async (key: string) => {
+          mockRedis.del(key)
+        }),
+      }
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin('http://localhost:1421', 'cid-1', 'wrong')
+      expect(ok).toBe(false)
+    })
+
+    it('CS-06e: 验证码启用且未配置白名单时执行正常验证码校验', async () => {
+      mockConfigService = createMockConfigService(true)
+      mockRedis = createMockRedis({
+        get: vi.fn().mockResolvedValue('ABCD'),
+      })
+      mockAuthRedis = {
+        setex: vi.fn(async () => { }),
+        get: vi.fn(async (key: string) => mockRedis.get(key)),
+        del: vi.fn(async (key: string) => {
+          mockRedis.del(key)
+        }),
+      }
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin('http://localhost:1421', 'cid-1', 'abcd')
+      expect(ok).toBe(true)
+    })
+
+    it('CS-06f: 验证码启用且 Origin 为空时执行正常验证码校验', async () => {
+      mockConfigService = createMockConfigService(true, 'http://localhost:3000')
+      mockRedis = createMockRedis({
+        get: vi.fn().mockResolvedValue('ABCD'),
+      })
+      mockAuthRedis = {
+        setex: vi.fn(async () => { }),
+        get: vi.fn(async (key: string) => mockRedis.get(key)),
+        del: vi.fn(async (key: string) => {
+          mockRedis.del(key)
+        }),
+      }
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin(undefined, 'cid-1', 'abcd')
+      expect(ok).toBe(true)
+    })
+
+    it('CS-06g: 生产环境中白名单配置被忽略，执行正常验证码校验', async () => {
+      mockConfigService = createMockConfigService(true, 'http://localhost:1421', 'production')
+      mockRedis = createMockRedis({
+        get: vi.fn().mockResolvedValue('ABCD'),
+      })
+      mockAuthRedis = {
+        setex: vi.fn(async () => { }),
+        get: vi.fn(async (key: string) => mockRedis.get(key)),
+        del: vi.fn(async (key: string) => {
+          mockRedis.del(key)
+        }),
+      }
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin('http://localhost:1421', 'cid-1', 'abcd')
+      expect(ok).toBe(true)
+      expect(mockAuthRedis.get).toHaveBeenCalledWith(`${CAPTCHA_PREFIX}cid-1`)
+    })
+
+    it('CS-06h: 生产环境中即使配置了白名单，验证码错误仍返回 false', async () => {
+      mockConfigService = createMockConfigService(true, 'http://localhost:1421', 'production')
+      mockRedis = createMockRedis({
+        get: vi.fn().mockResolvedValue('ABCD'),
+      })
+      mockAuthRedis = {
+        setex: vi.fn(async () => { }),
+        get: vi.fn(async (key: string) => mockRedis.get(key)),
+        del: vi.fn(async (key: string) => {
+          mockRedis.del(key)
+        }),
+      }
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
+
+      const ok = await service.verifyWithOrigin('http://localhost:1421', 'cid-1', 'wrong')
+      expect(ok).toBe(false)
+    })
+  })
+
   describe('getImageById', () => {
     it('CS-05a: 基于 captchaId 返回 base64 解码后的 PNG Buffer', async () => {
       const pngBuf = Buffer.from('89504e470d0a', 'hex')
@@ -163,11 +308,11 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue(pngBuf.toString('base64')),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => {}),
+        setex: vi.fn(async () => { }),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => {}),
+        del: vi.fn(async () => { }),
       }
-      service = new CaptchaService(mockAuthRedis)
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
 
       const buf = await service.getImageById('cid-1')
       expect(buf).toBeInstanceOf(Buffer)
@@ -180,11 +325,11 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue(null),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => {}),
+        setex: vi.fn(async () => { }),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => {}),
+        del: vi.fn(async () => { }),
       }
-      service = new CaptchaService(mockAuthRedis)
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
 
       expect(await service.getImageById('cid-miss')).toBeNull()
       expect(await service.getImageById('')).toBeNull()
@@ -197,11 +342,11 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('WXYZ'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => {}),
+        setex: vi.fn(async () => { }),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => {}),
+        del: vi.fn(async () => { }),
       }
-      service = new CaptchaService(mockAuthRedis)
+      service = new CaptchaService(mockAuthRedis, mockConfigService)
 
       const v = await service.peek('cid-1')
       expect(v).toBe('WXYZ')

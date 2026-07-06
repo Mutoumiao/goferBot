@@ -101,6 +101,14 @@
 - **WHEN** 客户端提交 CAPTCHA 验证时（无论正确或错误）
 - **THEN** 系统立即删除 Redis 中的验证码记录，每次验证请求必须重新获取新的验证码
 
+#### Scenario: Origin 白名单跳过验证码（开发/测试环境专用）
+- **WHEN** `CAPTCHA_ENABLED=true` 且请求 Origin 在 `CAPTCHA_WHITELIST_ORIGINS` 白名单中（非生产环境）
+- **THEN** 系统跳过 CAPTCHA 验证，允许请求继续处理
+- **WHEN** `NODE_ENV=production`
+- **THEN** 白名单配置被忽略，强制执行 CAPTCHA 验证
+- **WHEN** `CAPTCHA_ENABLED=false`（默认）
+- **THEN** 系统跳过 CAPTCHA 验证，允许请求继续处理
+
 ### Requirement: RBAC 权限模型
 系统应强制执行基于角色的访问控制，通过 Role 表和 UserRole 关联表实现多角色支持，MUST NOT 使用 User.role 字段（已删除）。角色 SHALL 使用小写 snake_case 编码，预置角色为 `super_admin`、`admin`、`user`。超级管理员判定 SHALL 检查用户角色列表是否包含 `super_admin` roleCode，MUST NOT 使用权限数量判断。
 
