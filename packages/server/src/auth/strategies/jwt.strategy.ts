@@ -18,17 +18,21 @@ type JwtPayload = {
   exp?: number
 }
 
+const APP_CONTEXT_WEB: AuthApp = 'web'
+const APP_CONTEXT_ADMIN: AuthApp = 'admin'
+const HEADER_APP_CONTEXT = 'x-app-context'
+
 function getAppForRequest(request: FastifyRequest): AuthApp {
   const path = request.routeOptions?.url ?? request.url?.split('?')[0] ?? '/'
 
   if (isAdminOnlyPath(path)) {
-    return 'admin'
+    return APP_CONTEXT_ADMIN
   }
 
-  const headerApp = request.headers['x-app-context'] as string | undefined
-  if (headerApp === 'admin' || headerApp === 'web') return headerApp
+  const headerApp = request.headers[HEADER_APP_CONTEXT] as AuthApp | undefined
+  if (headerApp && [APP_CONTEXT_ADMIN, APP_CONTEXT_WEB].includes(headerApp)) return headerApp
 
-  return 'web'
+  return APP_CONTEXT_WEB
 }
 
 function extractTokenFromAnyCookie(request: FastifyRequest): string | null {
