@@ -34,7 +34,7 @@ APP_CONFIG (用户个人配置)
 |------|------|----------|
 | `SettingsService` | 用户配置 CRUD、配置合并、遗留迁移 | [settings.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/settings.service.ts) |
 | `SystemConfigService` | 系统配置 CRUD、Provider 池管理、事件通知 | [system-config.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.service.ts) |
-| `ModelProviderService` | Provider 引用验证、类型校验 | [model-provider.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/model-provider.service.ts) |
+| `ModelProviderService` | Provider 引用验证、模型级解析、旧格式迁移 | [model-provider.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/model-provider.service.ts) |
 | `ConfigCryptoService` | API Key 加密/解密/掩码 | [config-crypto.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/config-crypto.service.ts) |
 
 ### 配置分类
@@ -65,33 +65,54 @@ APP_CONFIG (用户个人配置)
 - **WHEN** 用户配置中包含自定义 Provider
 - **THEN** 系统合并时以系统配置的 Provider 池为主，用户自定义作为补充
 
-### Requirement: LLM 提供商配置
+### Requirement: 模型提供商配置
 
-系统应支持配置多个 LLM 提供商，API key、基础 URL 和模型选择需安全存储。
+系统应支持配置多个模型提供商，每个提供商可包含多种类型的模型（LLM/Embedding/Reranker/Document-Parser）。API key、基础 URL 和模型选择需安全存储。
 
 证据来源：
 - [model-provider.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/model-provider.service.ts)
-- [system-config.controller.ts#L86-L114](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.controller.ts#L86-L114)
+- [system-config.controller.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.controller.ts)
+- [settings.schema.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/data/src/schemas/settings.schema.ts)
 
-#### Scenario: 添加 LLM 提供商
-- **WHEN** 用户（或管理员）配置新的 LLM 提供商（如 OpenAI、Anthropic、本地 Ollama）
-- **THEN** 系统加密存储 API key，验证端点，并使该提供商可用于聊天
+#### Scenario: 添加模型提供商
+- **WHEN** 管理员配置新的模型提供商（如 DeepSeek、Ollama）
+- **THEN** 系统加密存储 API key，后端自动生成唯一 ID（`{slug}-{random4}`），并使该提供商可用于配置引用
+
+#### Scenario: 一个提供商包含多种类型模型
+- **WHEN** 管理员为同一 Provider 添加多个不同类型的 Model（如 Ollama 同时有 LLM 和 Embedding 模型）
+- **THEN** 系统将所有模型存储在 `provider.models` 数组中，每个模型独立标注 `type`
 
 #### Scenario: API key 安全
 - **WHEN** API key 被存储或检索时
 - **THEN** 系统应在静态存储时加密密钥，且绝不在 API 响应中返回完整密钥（仅显示掩码形式）
 
-#### Scenario: 提供商健康检查
-- **WHEN** 提供商被配置时
-- **THEN** 系统应执行连接性检查，并报告提供商状态（在线/离线/错误）
+#### Scenario: 模型类型校验
+- **WHEN** 引用配置（如 `chat.defaultProvider`、`rag.embeddingProvider`）被解析时
+- **THEN** 系统通过 `ModelProviderService.resolveProvider()` 解析 `{providerId}#{modelName}` key，在 `provider.models` 中查找匹配类型且 enabled 的模型，返回 `ResolvedProvider` 扁平化视图
 
-#### Scenario: Provider 类型校验
-- **WHEN** 保存 Provider 时
-- **THEN** 系统验证 Provider 类型（llm/embedding/reranker/document-parser）与引用处类型一致
+#### Scenario: 完整 URL 模式
+- **WHEN** Provider 的 `isCompleteUrl = true` 时
+- **THEN** SDK 直接使用 `baseUrl` 作为完整请求路径，不拼接 `/chat/completions` 或 `/embeddings` 等默认后缀
 
 #### Scenario: 删除 Provider 引用检查
 - **WHEN** 管理员尝试删除 Provider 时
-- **THEN** 系统检查该 Provider 是否被任何配置引用（系统或用户），如有引用则拒绝删除
+- **THEN** 系统通过 `collectProviderReferences()` 检查该 Provider 是否被任何配置引用（系统或用户），引用 key 可以是 `{providerId}` 或 `{providerId}#{modelName}`，如有引用则拒绝删除
+
+### Requirement: 预设提供商与远程模型获取
+
+系统应提供预设提供商模板供前端选择，并支持代理调用远程 API 获取可用模型列表。
+
+证据来源：
+- [system-config.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.service.ts) — `getPresets()`、`fetchModels()`
+- [presets/providers.json](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/presets/providers.json)
+
+#### Scenario: 获取预设提供商列表
+- **WHEN** 前端请求 `GET /admin/providers/presets` 时
+- **THEN** 系统返回静态 JSON 配置中的预设列表（13 个预设，含 DeepSeek、Qwen、Ollama、OpenAI 等），每个预设包含 `key`、`label`、`name`、`baseUrl`
+
+#### Scenario: 代理获取远程模型列表
+- **WHEN** 前端请求 `POST /admin/providers/fetch-models`（传入 `baseUrl`、`apiKey`、`isCompleteUrl`）
+- **THEN** 系统代理调用远程 `/models` 端点，解析 OpenAI 兼容格式响应，根据模型名推断 `type`，返回统一的 `{ success, models: FetchedModel[], error? }` 结构
 
 ### Requirement: 用户偏好设置
 
@@ -208,8 +229,10 @@ APP_CONFIG (用户个人配置)
 | 方法 | 路径 | 说明 | 权限 |
 |------|------|------|------|
 | GET | `/admin/providers` | 获取所有 Provider（已掩码） | `modelProviders:read` |
+| GET | `/admin/providers/presets` | 获取预设提供商列表 | `modelProviders:read` |
 | GET | `/admin/providers/:id` | 获取指定 Provider（已掩码） | `modelProviders:read` |
-| POST | `/admin/providers` | 保存 Provider | `modelProviders:create` |
+| POST | `/admin/providers` | 保存 Provider（新建时 id 留空，后端自动生成） | `modelProviders:create` |
+| POST | `/admin/providers/fetch-models` | 代理获取远程模型列表 | `modelProviders:create` |
 | DELETE | `/admin/providers/:id` | 删除 Provider | `modelProviders:delete` |
 
 ## Data Models（数据模型）
@@ -218,21 +241,33 @@ APP_CONFIG (用户个人配置)
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| id | string | 是 | Provider 唯一标识 |
+| id | string | 是 | Provider 唯一标识（新建时留空，后端根据 name 自动生成 `{slug}-{random4}`） |
 | name | string | 是 | 显示名称 |
-| type | 'llm'\|'embedding'\|'reranker'\|'document-parser' | 是 | 类型 |
+| notes | string | 否 | 备注 |
 | enabled | boolean | 否 | 是否启用（默认 true） |
-| model | string | 是 | 模型名称 |
 | apiKey | string | 是 | API 密钥（存储时加密，返回时掩码） |
 | baseUrl | string | 否 | 自定义基础 URL（默认空） |
+| isCompleteUrl | boolean | 否 | 是否完整 URL（默认 false；true 时 SDK 不拼接默认路径） |
 | timeoutMs | number | 否 | 超时时间（默认 300000） |
-| dimensions | number | 否 | Embedding 维度 |
-| maxLength | number | 否 | 最大输入长度 |
+| models | Model[] | 否 | 模型列表（一个 Provider 可包含多种类型的模型，默认 `[]`） |
+
+### Model
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 模型名（如 `deepseek-chat`） |
+| type | 'llm'\|'embedding'\|'reranker'\|'document-parser' | 是 | 模型类型 |
+| enabled | boolean | 否 | 是否启用（默认 true） |
+| dimensions | number | 否 | Embedding 维度（仅 embedding 类型，远程 API 模型通常自动获取） |
+| maxLength | number | 否 | 最大输入长度（仅 reranker 类型） |
+
+> **模型唯一标识**：消费端使用 `{providerId}#{modelName}` 格式（如 `deepseek#deepseek-chat`）引用具体模型。`ModelProviderService.parseModelKey()` / `buildModelKey()` 提供解析与构造。
 
 ### Settings
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
+| version | number | 2 | 配置格式版本（v1: 单 model 字段; v2: models 数组） |
 | providers | Record<string, ModelProvider> | `{}` | 模型提供商池 |
 | chat | ChatSettings | 见下方 | 聊天配置 |
 | rag | RagSettings | 见下方 | RAG 配置 |
@@ -325,3 +360,12 @@ APP_CONFIG (用户个人配置)
 - 读取时识别遗留格式并转换
 - 异步保存迁移结果（不阻塞当前请求）
 - 兼容明文遗留数据（解密失败时保留原值）
+
+### v1 → v2 Provider 格式迁移
+
+系统支持从 v1（单 `model` 字段）自动迁移到 v2（`models` 数组）格式：
+
+1. **v1 格式**：Provider 含 `type`（provider 级）、`model`（单字符串）、`dimensions`、`maxLength` 字段
+2. **v2 格式**：Provider 含 `models: Model[]` 数组，`type`/`dimensions`/`maxLength` 移至 Model 级
+3. **迁移时机**：`ModelProviderService.migrateLegacyProvider()` 在读取 Provider 池时执行；`SettingsService.migrateProviders()` 在 `settingsSchema.parse` 前执行
+4. **转换规则**：`{ model, type, dimensions, maxLength }` → `{ models: [{ name: model, type, enabled: true, dimensions?, maxLength? }] }`，同时补全 `isCompleteUrl: false`

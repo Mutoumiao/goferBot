@@ -272,7 +272,7 @@
 
 #### Scenario: 配置化提供商
 - **WHEN** 初始化 Embedding 服务
-- **THEN** 系统通过 ModelProviderService 解析配置（apiKey/model/baseURL/dimensions），创建 OpenAIEmbedding 实例
+- **THEN** 系统通过 `ModelProviderService.resolveProvider()` 解析 `rag.embeddingProvider` 引用（`{providerId}#{modelName}` 格式），从 `provider.models` 中查找 enabled 的 embedding 模型，使用 `ResolvedProvider` 扁平化视图（apiKey/model/baseURL/dimensions/isCompleteUrl）创建 OpenAIEmbedding 实例
 
 #### Scenario: 动态刷新
 - **WHEN** 触发 `config.changed` 事件（category 为 rag 或 providers）

@@ -161,7 +161,7 @@ Companion 的 LLM 调用 SHALL 通过 LangChain ChatOpenAI 适配层完成，MUS
 #### Scenario: 配置初始化链
 
 - **WHEN** LlmConfigService 创建 LangChain ChatOpenAI 实例时
-- **THEN** 系统执行配置链：`SystemConfigService.getDecryptedSystemConfig()` → `settings.companion.provider` → `ModelProviderService.resolveProvider("companion.provider", "llm")` → `{apiKey, model, baseURL, timeoutMs}` → `new ChatOpenAI(...)`
+- **THEN** 系统执行配置链：`SystemConfigService.getDecryptedSystemConfig()` → `settings.companion.provider`（`{providerId}#{modelName}` 格式）→ `ModelProviderService.resolveProvider("companion.provider", "llm")` → `ResolvedProvider{apiKey, model, baseURL, isCompleteUrl, timeoutMs}` → `resolveLlmBaseURL()` → `new ChatOpenAI(...)`
 
 #### Scenario: 配置热更新
 
