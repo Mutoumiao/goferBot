@@ -4,6 +4,8 @@ import ReactHook from 'alova/react'
 
 let isRefreshing = false
 let refreshSubscribers: Array<{ resolve: () => void; reject: (err: Error) => void }> = []
+/** 已尝试过 token 刷新的请求 —— 防止 retry 后仍 401/403 时陷入无限刷新循环 */
+const refreshedMethods = new WeakSet<object>()
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
@@ -42,6 +44,8 @@ interface AlovaMethod {
 async function doRefreshAndRetry(method: AlovaMethod) {
   if (!isRefreshing) {
     isRefreshing = true
+    // 标记该 method 已触发过刷新，防止 retry 仍 401/403 时陷入无限循环
+    refreshedMethods.add(method)
     try {
       const ok = await refreshToken()
       if (ok) {
@@ -61,6 +65,7 @@ async function doRefreshAndRetry(method: AlovaMethod) {
   return new Promise<unknown>((resolve, reject) => {
     addSubscriber({
       resolve: () => {
+        refreshedMethods.add(method)
         resolve(method.send())
       },
       reject,
@@ -79,6 +84,10 @@ function isLoginPage() {
 const responded = {
   onSuccess(response: Response, method: AlovaMethod) {
     if (isUnauthorized(response.status) && !isLoginPage()) {
+      // 已尝试过刷新但仍 401/403 → 不再循环，直接抛错由上层处理（clearAuth / 跳转登录）
+      if (refreshedMethods.has(method)) {
+        throw Object.assign(new Error('Session expired'), { status: response.status })
+      }
       return doRefreshAndRetry(method)
     }
     if (!response.ok) {
@@ -112,6 +121,9 @@ const responded = {
   onError(error: { status?: number }, method: AlovaMethod) {
     const status = error.status
     if (status && isUnauthorized(status) && !isLoginPage()) {
+      if (refreshedMethods.has(method)) {
+        throw error
+      }
       return doRefreshAndRetry(method)
     }
     throw error
