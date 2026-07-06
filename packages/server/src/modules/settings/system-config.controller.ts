@@ -19,6 +19,7 @@ import {
   AppearanceSettingsDto,
   ChatSettingsDto,
   CompanionSettingsDto,
+  FetchModelsDto,
   IndexingSettingsDto,
   ProviderDto,
   RagSettingsDto,
@@ -99,10 +100,7 @@ export class SystemConfigController {
   @Post('providers/fetch-models')
   @HttpCode(200)
   @RequirePermission('modelProviders:create')
-  async fetchModels(@Body() dto: { baseUrl: string; apiKey: string; isCompleteUrl: boolean }) {
-    if (!dto.baseUrl) {
-      throw new BadRequestException({ code: 'INVALID_BASE_URL', message: 'baseUrl 不能为空' })
-    }
+  async fetchModels(@Body() dto: FetchModelsDto) {
     return this.systemConfigService.fetchModels(dto)
   }
 

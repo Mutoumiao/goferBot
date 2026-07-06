@@ -179,6 +179,7 @@ export class SystemConfigService {
   /**
    * 代理调用远程 /models 端点，返回可用模型列表。
    * 后端统一解析 OpenAI 兼容格式，并根据模型名推断类型。
+   * SSRF 防护：baseUrl 已由 FetchModelsDto 的 Zod schema 校验（validateBaseUrl + skipWhitelist）。
    */
   async fetchModels(dto: {
     baseUrl: string
@@ -203,7 +204,18 @@ export class SystemConfigService {
           error: `远程返回 ${resp.status}: ${body.slice(0, 200)}`,
         }
       }
-      const json = (await resp.json()) as { data?: Array<{ id: string }> }
+
+      // 限制响应体大小，防止恶意远程服务器返回超大 JSON 导致内存溢出
+      const MAX_RESPONSE_SIZE = 1_000_000 // 1MB
+      const contentLength = Number.parseInt(resp.headers.get('content-length') ?? '0', 10)
+      if (contentLength > MAX_RESPONSE_SIZE) {
+        return { success: false, models: [], error: '远程响应体过大（>1MB），已拒绝' }
+      }
+      const text = await resp.text()
+      if (text.length > MAX_RESPONSE_SIZE) {
+        return { success: false, models: [], error: '远程响应体过大（>1MB），已拒绝' }
+      }
+      const json = JSON.parse(text) as { data?: Array<{ id: string }> }
       const rawModels = json.data ?? []
       const models: FetchedModel[] = rawModels.map((m) => ({
         name: m.id,

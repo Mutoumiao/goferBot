@@ -121,6 +121,23 @@ const saveProviderSchema = modelProviderSchema.extend({
 
 export class ProviderDto extends createZodDto(saveProviderSchema) {}
 
+/**
+ * fetchModels 输入校验：baseUrl 必须是合法 URL 且不指向内网地址（跳过白名单，允许探测新提供商）。
+ * isCompleteUrl 默认 false。apiKey 可为空（部分本地部署如 Ollama 不需要 key）。
+ */
+export const fetchModelsSchema = z.object({
+  baseUrl: z
+    .string()
+    .min(1, 'baseUrl 不能为空')
+    .refine((v) => validateBaseUrl(v, { skipWhitelist: true }), {
+      message: 'baseUrl 不合法或指向受限内网地址',
+    }),
+  apiKey: z.string().default(''),
+  isCompleteUrl: z.boolean().default(false),
+})
+
+export class FetchModelsDto extends createZodDto(fetchModelsSchema) {}
+
 export class ChatSettingsDto extends createZodDto(chatConfigSchema) {}
 export class RagSettingsDto extends createZodDto(ragConfigSchema) {}
 export class CompanionSettingsDto extends createZodDto(companionConfigSchema) {}

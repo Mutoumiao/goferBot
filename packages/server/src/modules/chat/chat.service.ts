@@ -12,24 +12,13 @@ import {
   CHAT_CONTEXT_RETRIEVER,
   type ChatContextRetriever,
 } from './interfaces/chat-context-retriever.interface.js'
+import { resolveLlmBaseURL } from './llm/llama-index-provider.service.js'
 import { LlmProviderFactory } from './llm/llm-provider.factory.js'
 import type { LlmMessage, LlmProvider } from './llm/llm-provider.interface.js'
 import { ModelRegistryService } from './model-registry.service.js'
 
 function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
   return m.role === 'system' || m.role === 'user' || m.role === 'assistant'
-}
-
-/**
- * 根据 isCompleteUrl 解析 LLM baseURL。
- * - false（默认）：baseUrl 是 API 网关地址，SDK 自动拼 /chat/completions
- * - true：baseUrl 是完整请求地址，strip /chat/completions 后缀供 SDK 重新拼接
- */
-function resolveLlmBaseURL(baseUrl: string, isCompleteUrl: boolean): string {
-  if (!baseUrl) return 'https://api.openai.com'
-  if (!isCompleteUrl) return baseUrl
-  // ponytail: strip 已知端点后缀，SDK 会重新拼接
-  return baseUrl.replace(/\/chat\/completions$/, '')
 }
 
 @Injectable()
@@ -296,8 +285,21 @@ export class ChatService {
       })
     }
 
-    const timeoutMs = provider.timeoutMs
+    // 如果用户通过 dto.model 指定了不同模型，验证该模型在 provider 列表中且为启用的 LLM
     const resolvedModelName = dtoModel ?? model.name
+    if (dtoModel && dtoModel !== model.name) {
+      const overrideModel = provider.models.find(
+        (m) => m.name === dtoModel && m.type === 'llm' && m.enabled,
+      )
+      if (!overrideModel) {
+        throw new BadRequestException({
+          code: MODEL_PROVIDER_ERROR_CODES.TYPE_MISMATCH,
+          message: `模型 ${dtoModel} 不存在于提供商 ${providerId} 或未启用的 LLM 模型`,
+        })
+      }
+    }
+
+    const timeoutMs = provider.timeoutMs
     return {
       provider: await this.createProvider(
         {

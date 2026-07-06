@@ -1,4 +1,4 @@
-import type { Message, ProviderListItem, Session } from '@goferbot/data'
+import type { Message, ModelProvider, ProviderListItem, Session } from '@goferbot/data'
 import {
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
@@ -201,27 +201,21 @@ export async function fetchProviders(): Promise<void> {
   store.setInitError(null)
   try {
     const res = await getChatProviders().send()
-    const builtIn: ProviderListItem[] = (res?.builtIn ?? []).flatMap((p) =>
-      p.models
-        .filter((m) => m.type === 'llm' && m.enabled)
-        .map((m) => ({
-          key: `${p.id}#${m.name}`,
-          name: p.name,
-          model: m.name,
-          isBuiltin: true,
-        })),
-    )
-    const custom: ProviderListItem[] = (res?.custom ?? []).flatMap((p) =>
-      p.models
-        .filter((m) => m.type === 'llm' && m.enabled)
-        .map((m) => ({
-          key: `${p.id}#${m.name}`,
-          name: p.name,
-          model: m.name,
-          isBuiltin: false,
-        })),
-    )
-    store.setAvailableProviders([...builtIn, ...custom])
+    const toListItems = (providers: ModelProvider[], isBuiltin: boolean): ProviderListItem[] =>
+      providers.flatMap((p) =>
+        p.models
+          .filter((m) => m.type === 'llm' && m.enabled)
+          .map((m) => ({
+            key: `${p.id}#${m.name}`,
+            name: p.name,
+            model: m.name,
+            isBuiltin,
+          })),
+      )
+    store.setAvailableProviders([
+      ...toListItems(res?.builtIn ?? [], true),
+      ...toListItems(res?.custom ?? [], false),
+    ])
   } catch (e) {
     store.setInitError(e instanceof Error ? e.message : '初始化失败')
   } finally {

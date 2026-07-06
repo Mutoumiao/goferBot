@@ -18,6 +18,8 @@ export interface SsrfGuardOptions {
   allowLocalhost?: boolean
   /** 是否强制 HTTPS（生产环境建议开启） */
   requireHttps?: boolean
+  /** 跳过白名单校验（用于 fetchModels 等探测任意新提供商的场景，仍保留内网地址过滤） */
+  skipWhitelist?: boolean
 }
 
 /**
@@ -26,7 +28,7 @@ export interface SsrfGuardOptions {
  */
 export function validateBaseUrl(url: string, options: SsrfGuardOptions = {}): boolean {
   const isDev = process.env.NODE_ENV === 'development'
-  const { allowLocalhost = isDev, requireHttps = !isDev } = options
+  const { allowLocalhost = isDev, requireHttps = !isDev, skipWhitelist = false } = options
 
   try {
     const parsed = new URL(url)
@@ -54,7 +56,8 @@ export function validateBaseUrl(url: string, options: SsrfGuardOptions = {}): bo
       }
     }
 
-    // 白名单校验
+    // 白名单校验（skipWhitelist 时跳过，用于 fetchModels 探测新提供商）
+    if (skipWhitelist) return true
     return _allowedHostnames.includes(hostname)
   } catch {
     return false
