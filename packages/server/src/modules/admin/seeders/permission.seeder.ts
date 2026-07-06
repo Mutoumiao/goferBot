@@ -188,6 +188,19 @@ export class PermissionSeeder implements OnModuleInit {
 
   async seed(): Promise<void> {
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 确保系统用户存在（settings 模块的 SYSTEM_USER_ID 外键依赖）
+      await tx.user.upsert({
+        where: { id: '00000000-0000-0000-0000-000000000000' },
+        update: {},
+        create: {
+          id: '00000000-0000-0000-0000-000000000000',
+          email: 'system@goferbot.local',
+          name: 'System',
+          password: '$2b$12$placeholder.placeholder.placeholder.',
+          isActive: false,
+        },
+      })
+
       for (const role of SYSTEM_ROLES) {
         await tx.role.upsert({
           where: { code: role.code },
