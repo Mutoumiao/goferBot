@@ -128,42 +128,49 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 
 ### 项目全局
 
-| 文档                                         | 内容                                           |
-|----------------------------------------------|------------------------------------------------|
-| [openspec/README.md](openspec/README.md)      | AI Knowledge Architecture 完整规范（权威源原则、工作流、目录规范、沉淀规则） |
+| 文档                                     | 内容                                                                      |
+|------------------------------------------|---------------------------------------------------------------------------|
+| [openspec/README.md](openspec/README.md) | AI Knowledge Architecture 导航入口（架构总览 + 导航表）                   |
+| [docs/guide/](docs/guide/)               | 知识架构参考文档（权威源原则、工作流、知识加载、沉淀规则、spec 更新指南） |
 | [Discovery Report](docs/discovery-report.md) | 项目全局认知基线（21 章节，全模块覆盖）        |
-| `.trae/workflow.md`                          | 开发阶段流程、任务创建时机、Skill 路由         |
-| `.trellis/workspace/`                        | 开发者日志和会话追踪                           |
-| `.trellis/tasks/`                            | 活跃/已归档任务（PRD、research、jsonl 上下文） |
+| `.trae/workflow.md`                      | 开发阶段流程、任务创建时机、Skill 路由                                    |
+| `.trellis/workspace/`                    | 开发者日志和会话追踪                                                      |
+| `.trellis/tasks/`                        | 活跃/已归档任务（PRD、research、jsonl 上下文）                            |
 
 ### 编码规范入口（HOW — Trellis）
 
 > 每个 package 的 Trellis index.md 是**渐进加载入口**：先查 index.md 找到对应模块开发指南，再按需跳 OpenSpec。
 
-| Package            | Trellis 入口（含通用指南 + 模块开发指南 + OpenSpec 映射）              |
-|--------------------|------------------------------------------------------------------------|
-| `packages/web/`    | [.trellis/spec/web/frontend/index.md](.trellis/spec/web/frontend/index.md) |
+| Package            | Trellis 入口（含通用指南 + 模块开发指南 + OpenSpec 映射）                      |
+|--------------------|--------------------------------------------------------------------------------|
+| `packages/web/`    | [.trellis/spec/web/frontend/index.md](.trellis/spec/web/frontend/index.md)     |
 | `packages/admin/`  | [.trellis/spec/admin/frontend/index.md](.trellis/spec/admin/frontend/index.md) |
 | `packages/server/` | [.trellis/spec/server/backend/index.md](.trellis/spec/server/backend/index.md) |
-| `packages/data/`   | [.trellis/spec/data/frontend/index.md](.trellis/spec/data/frontend/index.md) |
-| 跨包思维方法论     | [.trellis/spec/guides/index.md](.trellis/spec/guides/index.md) |
+| `packages/data/`   | [.trellis/spec/data/frontend/index.md](.trellis/spec/data/frontend/index.md)   |
+| 跨包思维方法论     | [.trellis/spec/guides/index.md](.trellis/spec/guides/index.md)                 |
 
 ### 功能规范（WHAT — OpenSpec）
 
 > OpenSpec 是业务知识唯一权威源。以下 capability spec.md 按需查阅，不要预加载。
 
-| Package            | OpenSpec capability                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Package            | OpenSpec capability                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `packages/server/` | [auth](openspec/specs/auth/spec.md)、[chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[rag](openspec/specs/rag/spec.md)、[queue](openspec/specs/queue/spec.md)、[admin](openspec/specs/admin/spec.md)、[knowledge-base](openspec/specs/knowledge-base/spec.md)、[document](openspec/specs/document/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)、[user](openspec/specs/user/spec.md)、[document-lifecycle](openspec/specs/knowledge-base/document-lifecycle.md) |
-| `packages/admin/`  | [admin](openspec/specs/admin/spec.md)                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `packages/web/`    | [auth](openspec/specs/auth/spec.md)、[chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `packages/data/`   | [chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[document](openspec/specs/document/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)、[user](openspec/specs/user/spec.md)                                                                                                                                                                                                                                                                                                                                                                                |
+| `packages/admin/`  | [admin](openspec/specs/admin/spec.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `packages/web/`    | [auth](openspec/specs/auth/spec.md)、[chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)                                                                                                                                                                                                                                                                                                                                        |
+| `packages/data/`   | [chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[document](openspec/specs/document/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)、[user](openspec/specs/user/spec.md)                                                                                                                                                                                                                                                                                           |
 
 ### 持续演进机制（双流程）
+
+> 详见 [docs/guide/knowledge-workflow.md](docs/guide/knowledge-workflow.md)。
 
 - **Workflow A: Business Change**（改变系统"是什么"）：Grill → OpenSpec Explore → Propose → Review → Apply（实现）→ Trellis Check → Update Spec → Archive。适用于新增功能、业务重设计、改变外部行为的架构演进
 - **Workflow B: Development Task**（不改变业务规格）：Brainstorm（可选）→ Trellis Before Dev → 开发 → Trellis Check → Update Spec。适用于 Bug 修复、纯重构、性能优化、测试补充
 - **判断方法**：是否改变业务规则/API契约/验收标准？是 → A；否 → B。Bug 修复中发现业务规则本身有问题（代码符合 spec 但行为不对）→ 升级到 A
+
+### Spec 更新参考
+
+> 调用 `trellis-update-spec` / `openspec-propose` 时的决策指南，详见 [docs/guide/spec-update-reference.md](docs/guide/spec-update-reference.md)。
 
 ### 环境变量
 
