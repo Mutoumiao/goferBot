@@ -74,3 +74,37 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: 拆分 openspec/README.md 为多份关注点文档并新增 spec 更新参考指南
+
+**Date**: 2026-07-06
+**Task**: 拆分 openspec/README.md 为多份关注点文档并新增 spec 更新参考指南
+**Branch**: `master`
+
+### Summary
+
+将 openspec/README.md (~420行) 拆分为 docs/guide/ 下 7 份独立文档，新增 spec-update-reference.md 作为 Trellis/OpenSpec 更新决策参考。瘦身 openspec/README.md 为导航入口。完成 server 基础设施代码整改。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c100a02` | (see git log) |
+| `1eff85e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
