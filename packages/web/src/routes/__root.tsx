@@ -49,7 +49,6 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     if (user) {
       fetchCurrentUser().then((ok) => {
         if (!ok) {
-          useAuthStore.getState().clearAuth()
           window.location.href = ROUTES_REGISTER.login.path
           return
         }

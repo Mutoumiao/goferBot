@@ -1,6 +1,7 @@
 import type { User } from '@goferbot/data'
 import { toast } from 'sonner'
 import { getMe, login, logout, refresh, register, updateMe, uploadAvatar } from '@/api/auth'
+import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
 import { clearPublicKeyCache, encryptPassword } from '@/utils/password-encryption'
 
@@ -15,6 +16,8 @@ export interface RegisterResult {
 }
 
 const REMEMBER_EMAIL_KEY = 'goferbot_remember_email'
+
+let _fetchMePromise: Promise<boolean> | null = null
 
 // Error message whitelist for security - only allow safe characters
 function sanitizeErrorMessage(message: string): string {
@@ -152,16 +155,50 @@ export async function refreshAuth(): Promise<boolean> {
   }
 }
 
+/**
+ * 获取当前用户信息（带互斥锁，防止并发请求）
+ * 失败时设置 isInitialized 并在 401/403 时清除 auth 状态
+ */
+export async function fetchMe(): Promise<boolean> {
+  if (_fetchMePromise) return _fetchMePromise
+
+  _fetchMePromise = (async (): Promise<boolean> => {
+    try {
+      const user = await getMe().send()
+      useAuthStore.getState().setUser(user)
+      return true
+    } catch (err) {
+      const status = (err as { status?: number }).status
+      if (status === 401 || status === 403) {
+        useAuthStore.getState().clearAuth()
+      }
+      useAuthStore.setState({ isInitialized: true })
+      return false
+    } finally {
+      _fetchMePromise = null
+    }
+  })()
+
+  return _fetchMePromise
+}
+
+/**
+ * 获取当前用户信息（与 fetchMe 等价，保留向后兼容）
+ */
 export async function fetchCurrentUser(): Promise<boolean> {
+  return fetchMe()
+}
+
+/**
+ * 静默检测当前是否有有效会话（仅用于登录页自动跳转场景）
+ * 失败时不清除 auth 状态、不触发刷新循环 —— 仅返回 false
+ */
+export async function checkSession(): Promise<boolean> {
   try {
     const user = await getMe().send()
     useAuthStore.getState().setUser(user)
     return true
-  } catch (err) {
-    const status = (err as { status?: number }).status
-    if (status === 401 || status === 403) {
-      useAuthStore.getState().clearAuth()
-    }
+  } catch {
     return false
   }
 }
@@ -173,6 +210,7 @@ export async function logoutUser(): Promise<void> {
   } finally {
     useAuthStore.getState().clearAuth()
     toast.success('已退出登录')
+    window.location.href = ROUTES_REGISTER.login.path
   }
 }
 

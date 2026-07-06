@@ -4,7 +4,6 @@
  */
 export function waitForAuthInit(maxMs = 5000): Promise<boolean> {
   return new Promise((resolve) => {
-    // 动态导入避免循环依赖
     import('@/stores/auth').then(({ useAuthStore }) => {
       if (useAuthStore.getState().isInitialized) {
         resolve(!!useAuthStore.getState().user)
@@ -15,14 +14,13 @@ export function waitForAuthInit(maxMs = 5000): Promise<boolean> {
         if (!state._hydrated) return
 
         unsubscribe()
-        // hydration 完成，调用 fetchMe 从服务器验证
-        useAuthStore.getState().fetchMe().then(resolve)
+        import('@/features/auth/services').then(({ fetchMe }) => {
+          fetchMe().then(resolve)
+        })
       })
 
-      // 超时兜底
       setTimeout(() => {
         unsubscribe()
-        // 超时后用现有 user 兜底
         resolve(!!useAuthStore.getState().user)
       }, maxMs)
     })

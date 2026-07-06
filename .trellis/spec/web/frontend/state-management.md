@@ -418,6 +418,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 | 在组件中直接更新其他模块的 store | `useChatStore.getState().setMessages(...)` | 通过 services.ts |
 | 持久化敏感数据 | `persist({ accessToken })` | accessToken 由 HttpOnly Cookie 管理 |
 | 状态分散在多个 store | 同一业务的状态拆分到多个 store | 合并到一个模块 store |
+| alova 拦截器 401/403 无限刷新循环 | 刷新后 retry 仍 401/403，拦截器未防重入导致循环 | `WeakSet` 追踪已刷新 method，二次 401/403 直接抛错不重试 |
+| HttpOnly Cookie 未清除导致登录页残留登录态 | `clearAuth` 仅清 Zustand，HttpOnly Cookie 无法从 JS 清除 | `clearAuth` 只清除状态，logout API 调用 + 跳转放在 services.ts 的 `logoutUser()` |
 
 ### 正确示例
 
