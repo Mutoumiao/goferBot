@@ -25,7 +25,8 @@ export interface SsrfGuardOptions {
  * 默认拒绝内网地址、非白名单域名、非 HTTPS 协议。
  */
 export function validateBaseUrl(url: string, options: SsrfGuardOptions = {}): boolean {
-  const { allowLocalhost = false, requireHttps = true } = options
+  const isDev = process.env.NODE_ENV === 'development'
+  const { allowLocalhost = isDev, requireHttps = !isDev } = options
 
   try {
     const parsed = new URL(url)
