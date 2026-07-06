@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common'
 import type { AuthApp } from '../types/auth-app.type.js'
 
-export interface AuthUser {
+interface AuthUser {
   id: string
   email: string
   name?: string

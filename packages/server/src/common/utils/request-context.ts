@@ -3,7 +3,6 @@ import type { FastifyRequest } from 'fastify'
 export interface RequestContext {
   ip?: string
   userAgent?: string
-  email?: string
   userId?: string
   requestId: string
   traceId: string
@@ -26,6 +25,3 @@ export function extractRequestContext(req: FastifyRequest): RequestContext {
   }
 }
 
-export function normalizeEmail(email: string): string {
-  return email.toLowerCase().trim()
-}

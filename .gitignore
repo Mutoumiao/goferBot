@@ -66,6 +66,7 @@ docs/design/pen/*
 docs/superpowers/*
 docs/code-wiki/*
 docs/grill-sessions/*
+docs/report/*
 
 # Docker Compose local data volumes
 .data/

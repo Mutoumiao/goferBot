@@ -156,23 +156,23 @@ node_modules/  — 第三方依赖
 
 ### 路径工具函数约定
 
-使用 `api-path.ts` 统一管理 API 前缀和路径分类：
+`api-path.ts` 提供路径分类和判断，外部仅暴露两个公共 API：
 
 ```typescript
-// 路径分类
+// 路径分类（公共 API）
 categorizePath('/api/admin/users') // 'admin-only'
 categorizePath('/api/web/auth/login') // 'web-biz'
 categorizePath('/api/auth/public-key') // 'public'
 categorizePath('/api/chat/completions') // 'common'
 
-// 路径判断
+// 单路径判断（公共 API）
 isAdminOnlyPath(path) // 仅 admin 可访问
-isWebOnlyPath(path) // 仅 web 可访问  
-isPublicPath(path) // 公开端点
-
-// 路径构建（环境变量 API_PREFIX）
-buildApiPath('chat') // '/api/chat'
 ```
+
+- `isPublicPath`、`isWebOnlyPath` 为私有函数，仅被 `categorizePath` 内部调用
+- `extractSecondSegment`、`extractThirdSegment` 为内部辅助，未 export
+- `PathCategory` 类型为内部返回类型，无外部直接引用
+- `buildApiPath`、`getApiPrefix`、`initializeApiPath` 为历史遗留代码，已删除
 
 **约定**：
 - 路径分类判断必须使用 `categorizePath`，禁止硬编码 `/admin/`、`/web/` 前缀判断
@@ -194,3 +194,62 @@ buildApiPath('chat') // '/api/chat'
 - `@AllowApp('both')` 无实际用途，会导致安全隐患
 
 **例外**：`@Public()` 装饰器保留，用于标记公开端点（如 `/auth/public-key`）
+
+---
+
+## 基础设施导出约定
+
+### 原则：导出即契约
+
+基础设施模块（`common/`）的任何 `export` 都是公共契约，必须验证外部消费者是否存在。
+
+### 检测规则
+
+| 场景 | 检测方式 | 处理 |
+|------|----------|------|
+| 接口仅自身文件签名使用 | `grep "import.*SymbolName" src/` 无外部结果 | 去 `export`，降级为私有 |
+| 方法仅内部调用 | `grep "\.methodName\(" src/` 仅自身文件 | `public` → `private` |
+| 空钩子函数（兼容性存根） | 函数体为空 | 删除函数 + 调用点 |
+
+### 降级示例
+
+```typescript
+// Before — 过度导出
+export interface AuthUser { id: string; email: string }     // 仅 CurrentUser 装饰器内用
+export interface SseFrame { event?: string; data: unknown }  // 仅 SseResponseHelper.write() 用
+export interface FinalizeStep { name: string; run: () => Promise<unknown> } // 仅 StreamFinalizeService 内用
+
+// After — 最小导出面
+interface AuthUser { id: string; email: string }
+interface SseFrame { event?: string; data: unknown }
+interface FinalizeStep { name: string; run: () => Promise<unknown> }
+```
+
+### 已验证的干净基础设施
+
+以下文件经 grep 消费者分析，所有导出均被外部引用：
+
+- `ssrf-guard.ts` — `validateBaseUrl`、`setAllowedHostnames`、`getAllowedHostnames`
+- `filename-sanitizer.ts` — `sanitizeFilename`、`buildStorageKey`
+- `request-context.ts` — `RequestContext`、`extractRequestContext`
+- `request-context-storage.ts` — `RequestContextStorage`、`getRequestContext`
+- `with-trace.ts` — `withTrace`
+- `api-path.ts` — `categorizePath`、`isAdminOnlyPath`
+
+### 反模式：单用途回调数组
+
+```typescript
+// Don't — 为单个回调建数组
+private onCloseCallbacks: Array<() => void> = []
+// ...
+this.onCloseCallbacks.push(() => cleanup())
+// ...
+for (const cb of this.onCloseCallbacks) { try { cb() } catch {} }
+
+// Do — 直接存回调引用
+private closeCleanup: (() => void) | null = null
+// ...
+this.closeCleanup = () => cleanup()
+// ...
+this.closeCleanup?.()
+```

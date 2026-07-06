@@ -1,12 +1,12 @@
 import { Injectable, Scope } from '@nestjs/common'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 
-export interface SseFrame {
+interface SseFrame {
   event?: string
   data: unknown
 }
 
-export interface SseErrorFrame {
+interface SseErrorFrame {
   event: 'error'
   data: {
     conversation_id?: string
@@ -18,7 +18,7 @@ export interface SseErrorFrame {
 @Injectable({ scope: Scope.REQUEST })
 export class SseResponseHelper {
   private reply: FastifyReply | null = null
-  private onCloseCallbacks: Array<() => void> = []
+  private closeCleanup: (() => void) | null = null
 
   /**
    * 初始化 SSE 响应：设置 header、监听客户端断开。
@@ -30,13 +30,11 @@ export class SseResponseHelper {
 
     const onClose = () => {
       abortController.abort()
-      this.runCloseCallbacks()
+      this.closeCleanup?.()
     }
 
     reply.raw.on('close', onClose)
-    this.onCloseCallbacks.push(() => {
-      reply.raw.removeListener('close', onClose)
-    })
+    this.closeCleanup = () => reply.raw.removeListener('close', onClose)
 
     reply.raw.statusCode = 200
     reply.raw.setHeader('Content-Type', 'text/event-stream')
@@ -91,24 +89,7 @@ export class SseResponseHelper {
     if (this.reply && !this.reply.raw.destroyed) {
       this.reply.raw.end()
     }
-    this.runCloseCallbacks()
-  }
-
-  /**
-   * 注册在连接关闭或响应结束时执行的清理回调。
-   */
-  onClose(callback: () => void): void {
-    this.onCloseCallbacks.push(callback)
-  }
-
-  private runCloseCallbacks(): void {
-    for (const cb of this.onCloseCallbacks) {
-      try {
-        cb()
-      } catch {
-        // 忽略清理回调中的错误
-      }
-    }
-    this.onCloseCallbacks = []
+    this.closeCleanup?.()
+    this.closeCleanup = null
   }
 }

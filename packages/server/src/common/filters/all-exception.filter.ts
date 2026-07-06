@@ -9,7 +9,7 @@ import {
 import { FastifyReply, FastifyRequest } from 'fastify'
 import { AppException } from '../../lib/app-error.js'
 
-export interface ErrorResponse {
+interface ErrorResponse {
   success: false
   error: {
     code: string
@@ -40,7 +40,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
 
-    const _isDevelopment = process.env.NODE_ENV === 'development'
+    const isDevelopment = process.env.NODE_ENV === 'development'
 
     let code = 'INTERNAL_ERROR'
     let message = '服务器内部错误'
@@ -50,7 +50,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code = exception.code
       const res = exception.getResponse() as { error: { message: string; details?: unknown } }
       message = res.error.message
-      if (_isDevelopment) {
+      if (isDevelopment) {
         details = res.error.details
       }
     } else if (exception instanceof HttpException) {
@@ -61,13 +61,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const obj = res as Record<string, unknown>
         code = (obj.code as string) || this.mapStatusToCode(status)
         message = (obj.message as string) || message
-        if (_isDevelopment) {
+        if (isDevelopment) {
           details = obj.details
         }
       }
     } else if (exception instanceof Error) {
-      message = '服务器内部错误'
-      if (_isDevelopment) {
+      if (isDevelopment) {
         details = exception.message
       }
     }

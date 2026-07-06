@@ -6,15 +6,16 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common'
 import type { FastifyRequest } from 'fastify'
+import { sanitizeFilename } from '../utils/filename-sanitizer.js'
 
-export interface FileValidationOptions {
+interface FileValidationOptions {
   allowedMimeTypes?: string[]
   allowedExtensions?: string[]
   maxSizeBytes?: number
   fieldName?: string
 }
 
-export interface ValidatedFile {
+interface ValidatedFile {
   filename: string
   ext: string
   mimeType: string
@@ -50,7 +51,7 @@ export class FileValidationPipe implements PipeTransform {
       })
     }
 
-    const filename = this.sanitizeFilename(data.filename)
+    const filename = sanitizeFilename(data.filename)
     const ext = this.getExt(filename)
     if (!ext || !allowedExtensions.includes(ext)) {
       throw new UnsupportedMediaTypeException({
@@ -103,31 +104,6 @@ export class FileValidationPipe implements PipeTransform {
       buffer,
       folderId,
     }
-  }
-
-  private sanitizeFilename(name: string): string {
-    // H7: 先解码 URL 编码，防止 %2e%2e 等绕过
-    let decoded = name
-    try {
-      decoded = decodeURIComponent(name)
-    } catch {
-      // 解码失败则使用原始值继续校验
-    }
-    // 拒绝路径遍历字符（.. / \）以及空字符
-    if (decoded.includes('..') || decoded.includes('/') || decoded.includes('\\')) {
-      throw new UnsupportedMediaTypeException({
-        code: 'UNSUPPORTED_TYPE',
-        message: '文件名包含非法字符',
-      })
-    }
-    const clean = decoded.replace(/[\x00-\x1f\x7f]/g, '').trim()
-    if (!clean) {
-      throw new UnsupportedMediaTypeException({
-        code: 'UNSUPPORTED_TYPE',
-        message: '文件名非法',
-      })
-    }
-    return clean
   }
 
   private getExt(name: string): string | null {

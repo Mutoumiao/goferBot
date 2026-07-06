@@ -4,12 +4,12 @@ import { QueueService } from '../../processors/queue/queue.service.js'
 import { RequestContextStorage } from '../request-context-storage.js'
 import { withTrace } from '../utils/with-trace.js'
 
-export interface FinalizeStep {
+interface FinalizeStep {
   name: string
   run: () => Promise<unknown>
 }
 
-export interface FinalizeContext {
+interface FinalizeContext {
   userId?: string
   sessionId?: string
   span?: string
@@ -24,7 +24,7 @@ export class StreamFinalizeService {
 
   constructor(@Optional() private readonly queueService?: QueueService) {}
 
-  async isDurable(): Promise<boolean> {
+  private async isDurable(): Promise<boolean> {
     return (await this.queueService?.isHealthy()) ?? false
   }
 

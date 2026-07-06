@@ -4,7 +4,7 @@ import { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
 import { BYPASS_RESPONSE_KEY } from '../decorators/bypass-response.decorator.js'
 
-export interface ApiResponse<T> {
+interface ApiResponse<T> {
   success: true
   data: T
   meta: {
@@ -41,7 +41,7 @@ function serializeBigInt(value: unknown): unknown {
 
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) { }
 
   intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ApiResponse<T>> {
     const handler = context.getHandler()
@@ -55,25 +55,15 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
 
     return next.handle().pipe(
       map((data) => {
-        if (typeof data === 'undefined') {
-          return {
-            success: true as const,
-            data: null,
-            meta: {
-              requestId,
-              timestamp: new Date().toISOString(),
-            },
-          } as ApiResponse<T>
-        }
-
-        return {
+        const result = {
           success: true as const,
-          data: serializeBigInt(data) as T,
+          data: typeof data === 'undefined' ? null : (serializeBigInt(data) as T),
           meta: {
             requestId,
             timestamp: new Date().toISOString(),
           },
-        } as ApiResponse<T>
+        }
+        return result as ApiResponse<T>
       }),
     )
   }

@@ -29,10 +29,8 @@ export class AppGuard implements CanActivate {
       return true
     }
 
-    const tokenApp = user.app
-
     const expectedApp = category === 'admin-only' ? 'admin' : 'web'
-    if (tokenApp !== expectedApp) {
+    if (user.app !== expectedApp) {
       throw appMismatchError()
     }
 

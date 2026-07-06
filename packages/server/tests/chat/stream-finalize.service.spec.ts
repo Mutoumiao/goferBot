@@ -11,25 +11,6 @@ describe('StreamFinalizeService', () => {
     vi.restoreAllMocks()
   })
 
-  describe('isDurable', () => {
-    it('returns true when queue service is healthy', async () => {
-      mockQueueService = { isHealthy: vi.fn().mockResolvedValue(true) }
-      service = new StreamFinalizeService(mockQueueService as QueueService)
-      expect(await service.isDurable()).toBe(true)
-    })
-
-    it('returns false when queue service is not healthy', async () => {
-      mockQueueService = { isHealthy: vi.fn().mockResolvedValue(false) }
-      service = new StreamFinalizeService(mockQueueService as QueueService)
-      expect(await service.isDurable()).toBe(false)
-    })
-
-    it('returns false when queue service is not provided', async () => {
-      service = new StreamFinalizeService(undefined)
-      expect(await service.isDurable()).toBe(false)
-    })
-  })
-
   describe('schedule', () => {
     it('enqueues job when queue is healthy', async () => {
       mockQueueService = {

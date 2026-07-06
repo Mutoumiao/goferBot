@@ -58,22 +58,6 @@ export function invalidRefreshTokenError(details?: string): AppException {
   )
 }
 
-export function decryptFailedError(): AppException {
-  return new AppException('DECRYPT_FAILED', '密码解密失败，请刷新页面后重试', 400)
-}
-
-export function validationError(message: string): AppException {
-  return new AppException('VALIDATION_ERROR', message, 400)
-}
-
-export function captchaRequiredError(): AppException {
-  return new AppException('CAPTCHA_REQUIRED', '请输入验证码', 400)
-}
-
-export function captchaInvalidError(): AppException {
-  return new AppException('CAPTCHA_INVALID', '验证码错误或已过期', 400)
-}
-
 export function appMismatchError(): AppException {
   return new AppException('APP_MISMATCH', '令牌应用不匹配', 403)
 }
@@ -93,11 +77,6 @@ export function invitationCodeExpiredError(): AppException {
 export function invitationCodeMaxUsesError(): AppException {
   return new AppException('INVITATION_CODE_MAX_USES', '邀请码已达使用上限', 400)
 }
-
-export function systemRoleDeleteDeniedError(): AppException {
-  return new AppException('SYSTEM_ROLE_DELETE_DENIED', '系统预置角色不可删除', 400)
-}
-
 export function superAdminProtectedError(): AppException {
   return new AppException('SUPER_ADMIN_PROTECTED', '必须保留至少一个启用的超级管理员', 400)
 }

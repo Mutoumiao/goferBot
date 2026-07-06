@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware.js'
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware.js'
-import { initializeApiPath } from './common/utils/api-path.js'
+
 import { setAllowedHostnames } from './common/utils/ssrf-guard.js'
 import { SuperAdminBootstrapService } from './modules/user/services/super-admin-bootstrap.service.js'
 
@@ -29,9 +29,6 @@ export function logLevelToNestLevels(
 
 export async function bootstrap(app: NestFastifyApplication) {
   const configService = app.get(ConfigService)
-
-  // 初始化 API 路径工具模块
-  initializeApiPath(configService)
 
   // 注入 SSRF 白名单（支持通过环境变量扩展 LLM Provider）
   const ssrfAllowedHosts = configService.get<string>('SSRF_ALLOWED_HOSTNAMES')
