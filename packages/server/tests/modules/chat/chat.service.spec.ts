@@ -13,16 +13,17 @@ import type { SettingsService } from '@/modules/settings/settings.service.js'
 
 function createMockSettings(overrides: Partial<Settings> = {}): Settings {
   return {
+    version: 2,
     providers: {
       deepseek: {
         id: 'deepseek',
         name: 'DeepSeek',
-        type: 'llm',
         enabled: true,
         apiKey: 'key',
-        model: 'deepseek-chat',
         baseUrl: 'https://api.deepseek.com',
+        isCompleteUrl: false,
         timeoutMs: 300_000,
+        models: [{ name: 'deepseek-chat', type: 'llm', enabled: true }],
       },
     },
     chat: {

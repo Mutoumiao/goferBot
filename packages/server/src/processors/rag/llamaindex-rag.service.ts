@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
 import type { LlamaIndexProviderConfig } from '../../modules/chat/llm/llama-index-provider.service.js'
-import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
+import {
+  LlamaIndexProvider,
+  resolveLlmBaseURL,
+} from '../../modules/chat/llm/llama-index-provider.service.js'
 import { ConfigChangedEvent, MODEL_PROVIDER_ERROR_CODES } from '../../modules/settings/constants.js'
-import type { ModelProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
+import type { ResolvedProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
 import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 import type { GroundingResult } from './grounding.service.js'
@@ -86,7 +89,7 @@ export class LlamaIndexRagService implements OnModuleInit {
       return
     }
 
-    let provider: ModelProvider
+    let provider: ResolvedProvider
     try {
       provider = this.modelProviderService.resolveProvider(
         'rag.llmProvider',
@@ -110,7 +113,7 @@ export class LlamaIndexRagService implements OnModuleInit {
     this.llm = new LlamaIndexProvider({
       apiKey: provider.apiKey,
       model: provider.model,
-      baseURL: provider.baseUrl || undefined,
+      baseURL: resolveLlmBaseURL(provider.baseUrl, provider.isCompleteUrl),
       timeout: config.rag.timeoutMs ?? provider.timeoutMs,
     } satisfies LlamaIndexProviderConfig)
     this.logger.debug(`RAG LLM refreshed: ${provider.model}`)

@@ -3,9 +3,21 @@ import { OpenAIEmbedding } from '@llamaindex/openai'
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
 import { ConfigChangedEvent, MODEL_PROVIDER_ERROR_CODES } from '../../modules/settings/constants.js'
-import type { Settings } from '../../modules/settings/dto/settings.dto.js'
+import type { ResolvedProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
 import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
+
+/**
+ * 根据 isCompleteUrl 解析 Embedding baseURL。
+ * - false（默认）：baseUrl 是 API 网关地址，SDK 自动拼 /embeddings
+ * - true：baseUrl 是完整请求地址，strip /embeddings 后缀供 SDK 重新拼接
+ */
+function resolveEmbeddingBaseURL(baseUrl: string, isCompleteUrl: boolean): string | undefined {
+  if (!baseUrl) return undefined
+  if (!isCompleteUrl) return baseUrl
+  // ponytail: strip 已知端点后缀，SDK 会重新拼接
+  return baseUrl.replace(/\/embeddings$/, '')
+}
 
 @Injectable()
 export class LlamaIndexEmbeddingService implements OnModuleInit {
@@ -54,15 +66,13 @@ export class LlamaIndexEmbeddingService implements OnModuleInit {
     this.modelInstance = new OpenAIEmbedding({
       model: provider.model,
       apiKey: provider.apiKey,
-      baseURL: provider.baseUrl || undefined,
+      baseURL: resolveEmbeddingBaseURL(provider.baseUrl, provider.isCompleteUrl),
       dimensions: provider.dimensions,
     })
     this.logger.debug(`Embedding model refreshed: ${provider.model}`)
   }
 
-  private tryResolveProvider(
-    config: Settings,
-  ): { apiKey: string; model: string; baseUrl: string; dimensions?: number } | null {
+  private tryResolveProvider(config: Settings): ResolvedProvider | null {
     if (!config.rag.embeddingProvider) return null
     try {
       return this.modelProviderService.resolveProvider('rag.embeddingProvider', 'embedding', config)

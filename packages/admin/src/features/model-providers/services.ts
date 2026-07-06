@@ -1,9 +1,16 @@
 import { toast } from 'sonner'
-import type { ModelProvider } from '@/api/system-config'
-import { deleteProvider, getProvider, listProviders, saveProvider } from '@/api/system-config'
+import type { FetchModelsResult, Model, ModelProvider, ProviderPreset } from '@/api/system-config'
+import {
+  deleteProvider,
+  fetchProviderPresets,
+  fetchRemoteModels,
+  getProvider,
+  listProviders,
+  saveProvider,
+} from '@/api/system-config'
 import { mapErrorMessage } from '@/utils/error-mapper'
 
-export type { ModelProvider }
+export type { FetchModelsResult, Model, ModelProvider, ProviderPreset }
 
 export async function getProviders(): Promise<Record<string, ModelProvider>> {
   return await listProviders().send()
@@ -38,5 +45,25 @@ export async function deleteProviderService(id: string): Promise<boolean> {
     const msg = mapErrorMessage(err)
     toast.error(msg)
     return false
+  }
+}
+
+export async function fetchPresets(): Promise<ProviderPreset[]> {
+  try {
+    return await fetchProviderPresets().send()
+  } catch {
+    return []
+  }
+}
+
+export async function fetchRemoteModelsService(params: {
+  baseUrl: string
+  apiKey: string
+  isCompleteUrl: boolean
+}): Promise<FetchModelsResult> {
+  try {
+    return await fetchRemoteModels(params).send()
+  } catch (err) {
+    return { success: false, models: [], error: mapErrorMessage(err) }
   }
 }

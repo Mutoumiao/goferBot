@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ModelProvider, RagSettings } from '@/api/system-config'
 import { getProviders } from '@/features/model-providers/services'
 import { getCategoryConfig, saveCategoryConfig } from '../services'
+import { ProviderModelCascader } from './ProviderModelCascader'
 
 export function RagSettingsForm() {
   const [form] = Form.useForm<RagSettings>()
@@ -42,26 +43,24 @@ export function RagSettingsForm() {
     }
   }
 
-  const llmOptions = providers
-    .filter((p) => p.type === 'llm')
-    .map((p) => ({ value: p.id, label: `${p.name} (${p.model})` }))
-  const embOptions = providers
-    .filter((p) => p.type === 'embedding')
-    .map((p) => ({ value: p.id, label: `${p.name} (${p.model})` }))
-  const rerankOptions = providers
-    .filter((p) => p.type === 'reranker')
-    .map((p) => ({ value: p.id, label: `${p.name} (${p.model})` }))
-
   return (
     <Form form={form} layout="vertical">
-      <Form.Item name="llmProvider" label="LLM Provider">
-        <Select allowClear options={llmOptions} placeholder="选择 LLM Provider" />
+      <Form.Item name="llmProvider" label="LLM 模型">
+        <ProviderModelCascader providers={providers} modelType="llm" placeholder="选择 LLM 模型" />
       </Form.Item>
-      <Form.Item name="embeddingProvider" label="Embedding Provider">
-        <Select allowClear options={embOptions} placeholder="选择 Embedding Provider" />
+      <Form.Item name="embeddingProvider" label="Embedding 模型">
+        <ProviderModelCascader
+          providers={providers}
+          modelType="embedding"
+          placeholder="选择 Embedding 模型"
+        />
       </Form.Item>
-      <Form.Item name="rerankerProvider" label="Reranker Provider">
-        <Select allowClear options={rerankOptions} placeholder="选择 Reranker Provider（可选）" />
+      <Form.Item name="rerankerProvider" label="Reranker 模型">
+        <ProviderModelCascader
+          providers={providers}
+          modelType="reranker"
+          placeholder="选择 Reranker 模型（可选）"
+        />
       </Form.Item>
       <Form.Item name="timeoutMs" label="超时 (ms)">
         <InputNumber min={1000} step={1000} className="w-full" />

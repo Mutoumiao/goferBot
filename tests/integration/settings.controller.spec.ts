@@ -22,34 +22,34 @@ const nextIp = createIpGenerator(20)
 const openaiProvider = {
   id: 'openai',
   name: 'OpenAI',
-  type: 'llm',
   enabled: true,
-  model: 'gpt-4',
   apiKey: 'sk-test',
   baseUrl: '',
+  isCompleteUrl: false,
   timeoutMs: 300_000,
+  models: [{ name: 'gpt-4', type: 'llm', enabled: true }],
 }
 
 const claudeProvider = {
   id: 'claude',
   name: 'Claude',
-  type: 'llm',
   enabled: true,
-  model: 'claude-3',
   apiKey: 'sk-test',
   baseUrl: '',
+  isCompleteUrl: false,
   timeoutMs: 300_000,
+  models: [{ name: 'claude-3', type: 'llm', enabled: true }],
 }
 
 const disabledProvider = {
   id: 'deepseek',
   name: 'DeepSeek',
-  type: 'llm',
   enabled: false,
-  model: 'deepseek-chat',
   apiKey: 'sk-test',
   baseUrl: '',
+  isCompleteUrl: false,
   timeoutMs: 300_000,
+  models: [{ name: 'deepseek-chat', type: 'llm', enabled: true }],
 }
 
 describe('SettingsController (provider-pool)', () => {

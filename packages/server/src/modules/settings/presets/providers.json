@@ -1,0 +1,80 @@
+[
+  {
+    "key": "deepseek",
+    "label": "DeepSeek",
+    "name": "DeepSeek",
+    "baseUrl": "https://api.deepseek.com/v1"
+  },
+  {
+    "key": "qwen-ali",
+    "label": "Qwen (阿里云)",
+    "name": "Qwen (阿里云)",
+    "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  },
+  {
+    "key": "qwen-tencent",
+    "label": "Qwen (腾讯云)",
+    "name": "Qwen (腾讯云)",
+    "baseUrl": "https://api.tongyi.qq.com/v1"
+  },
+  {
+    "key": "ollama",
+    "label": "Ollama (本地)",
+    "name": "Ollama",
+    "baseUrl": "http://localhost:11434/v1"
+  },
+  {
+    "key": "openai",
+    "label": "OpenAI",
+    "name": "OpenAI",
+    "baseUrl": "https://api.openai.com/v1"
+  },
+  {
+    "key": "azure-openai",
+    "label": "Azure OpenAI",
+    "name": "Azure OpenAI",
+    "baseUrl": ""
+  },
+  {
+    "key": "claude",
+    "label": "Claude (Anthropic)",
+    "name": "Claude",
+    "baseUrl": "https://api.anthropic.com/v1"
+  },
+  {
+    "key": "cohere",
+    "label": "Cohere",
+    "name": "Cohere",
+    "baseUrl": "https://api.cohere.com/v1"
+  },
+  {
+    "key": "gemini",
+    "label": "Gemini (Google)",
+    "name": "Gemini",
+    "baseUrl": "https://generativelanguage.googleapis.com/v1"
+  },
+  {
+    "key": "mistral",
+    "label": "Mistral",
+    "name": "Mistral",
+    "baseUrl": "https://api.mistral.ai/v1"
+  },
+  {
+    "key": "groq",
+    "label": "Groq",
+    "name": "Groq",
+    "baseUrl": "https://api.groq.com/openai/v1"
+  },
+  {
+    "key": "together",
+    "label": "Together AI",
+    "name": "Together AI",
+    "baseUrl": "https://api.together.xyz/v1"
+  },
+  {
+    "key": "custom",
+    "label": "自定义配置",
+    "name": "",
+    "baseUrl": ""
+  }
+]

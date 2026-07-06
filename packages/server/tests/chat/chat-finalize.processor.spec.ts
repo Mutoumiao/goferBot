@@ -29,12 +29,12 @@ function buildSettings(overrides: Partial<Settings> = {}): Settings {
   const defaultProvider: ModelProvider = {
     id: 'default-llm',
     name: 'Default LLM',
-    type: 'llm',
     enabled: true,
-    model: 'gpt-4o-mini',
     apiKey: 'sk-test-api-key',
     baseUrl: 'https://api.openai.com',
+    isCompleteUrl: false,
     timeoutMs: 30_000,
+    models: [{ name: 'gpt-4o-mini', type: 'llm', enabled: true }],
   }
   const fallbackProvider: ModelProvider = {
     ...defaultProvider,
@@ -43,6 +43,7 @@ function buildSettings(overrides: Partial<Settings> = {}): Settings {
     apiKey: 'sk-test-backup-key',
   }
   const base: Settings = {
+    version: 2,
     providers: {
       'default-llm': defaultProvider,
       'backup-llm': fallbackProvider,
@@ -200,12 +201,12 @@ describe('ChatFinalizeProcessor', () => {
       const disabledProvider: ModelProvider = {
         id: 'disabled-llm',
         name: 'Disabled LLM',
-        type: 'llm',
         enabled: false,
-        model: 'gpt-4o',
         apiKey: 'sk-disabled-key',
         baseUrl: 'https://api.openai.com',
+        isCompleteUrl: false,
         timeoutMs: 30_000,
+        models: [{ name: 'gpt-4o', type: 'llm', enabled: true }],
       }
       mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
         buildSettings({
@@ -242,20 +243,19 @@ describe('ChatFinalizeProcessor', () => {
       const embeddingProvider: ModelProvider = {
         id: 'embed-llm',
         name: 'Embed',
-        type: 'embedding',
         enabled: true,
-        model: 'text-embedding-3-small',
         apiKey: 'sk-embed-key',
         baseUrl: 'https://api.openai.com',
+        isCompleteUrl: false,
         timeoutMs: 30_000,
+        models: [{ name: 'text-embedding-3-small', type: 'embedding', enabled: true }],
       }
       const backupLlm: ModelProvider = {
         ...embeddingProvider,
         id: 'backup-llm',
         name: 'Backup LLM',
-        type: 'llm',
-        model: 'gpt-4o-mini',
         apiKey: 'sk-test-backup-key',
+        models: [{ name: 'gpt-4o-mini', type: 'llm', enabled: true }],
       }
       mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
         buildSettings({
@@ -287,12 +287,12 @@ describe('ChatFinalizeProcessor', () => {
       const incompleteProvider: ModelProvider = {
         id: 'incomplete-llm',
         name: 'Incomplete',
-        type: 'llm',
         enabled: true,
-        model: '',
         apiKey: '',
         baseUrl: 'https://api.openai.com',
+        isCompleteUrl: false,
         timeoutMs: 30_000,
+        models: [],
       }
       mockSystemConfigService.getDecryptedSystemConfig = vi.fn().mockResolvedValue(
         buildSettings({
@@ -302,8 +302,8 @@ describe('ChatFinalizeProcessor', () => {
               ...incompleteProvider,
               id: 'backup-llm',
               name: 'Backup LLM',
-              model: 'gpt-4o-mini',
               apiKey: 'sk-test-backup-key',
+              models: [{ name: 'gpt-4o-mini', type: 'llm', enabled: true }],
             },
           },
           chat: {

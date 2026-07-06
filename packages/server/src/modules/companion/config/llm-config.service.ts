@@ -1,6 +1,7 @@
 import { ChatOpenAI } from '@langchain/openai'
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
+import { resolveLlmBaseURL } from '../../chat/llm/llama-index-provider.service.js'
 import { ConfigChangedEvent, MODEL_PROVIDER_ERROR_CODES } from '../../settings/constants.js'
 import type { Settings } from '../../settings/dto/settings.dto.js'
 import { ModelProviderService } from '../../settings/model-provider.service.js'
@@ -60,7 +61,7 @@ export class LlmConfigService implements OnModuleInit {
     return {
       apiKey: provider.apiKey,
       model: provider.model,
-      baseURL: provider.baseUrl || undefined,
+      baseURL: resolveLlmBaseURL(provider.baseUrl, provider.isCompleteUrl),
       timeout: provider.timeoutMs,
     }
   }

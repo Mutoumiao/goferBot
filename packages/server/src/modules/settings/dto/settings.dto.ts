@@ -11,19 +11,48 @@ export const baseUrlSchema = z
     message: `baseUrl 必须是合法 URL 或空字符串，仅允许: ${getAllowedHostnames().join(', ')}`,
   })
 
-export const modelProviderSchema = z.object({
-  id: z.string().min(1, 'provider id 不能为空'),
-  name: z.string().min(1, '名称不能为空'),
+export const modelSchema = z.object({
+  name: z.string().min(1, '模型名称不能为空'),
   type: providerTypeSchema,
   enabled: z.boolean().default(true),
-  model: z.string().min(1, '模型名称不能为空'),
-  apiKey: z.string(),
-  baseUrl: baseUrlSchema,
-  timeoutMs: z.number().min(1000, 'timeout 至少 1000ms').default(300_000),
   dimensions: z.number().int().min(1).optional(),
   maxLength: z.number().int().min(1).optional(),
 })
+export type Model = z.infer<typeof modelSchema>
+
+export const modelProviderSchema = z.object({
+  id: z.string().min(1, 'provider id 不能为空'),
+  name: z.string().min(1, '名称不能为空'),
+  notes: z.string().optional(),
+  enabled: z.boolean().default(true),
+  apiKey: z.string(),
+  baseUrl: baseUrlSchema,
+  isCompleteUrl: z.boolean().default(false),
+  timeoutMs: z.number().min(1000, 'timeout 至少 1000ms').default(300_000),
+  models: z.array(modelSchema).default([]),
+})
 export type ModelProvider = z.infer<typeof modelProviderSchema>
+
+/**
+ * ResolvedProvider — provider + model 扁平化视图
+ *
+ * resolveProvider() 返回此类型：provider 级字段 + 被选中的 model 级字段。
+ * 消费端（RAG/Chat/Companion）可直接使用 .model / .dimensions 等，无需感知 models 数组。
+ */
+export interface ResolvedProvider {
+  id: string
+  name: string
+  notes?: string
+  enabled: boolean
+  apiKey: string
+  baseUrl: string
+  isCompleteUrl: boolean
+  timeoutMs: number
+  model: string
+  type: ProviderType
+  dimensions?: number
+  maxLength?: number
+}
 
 const chatConfigSchema = z.object({
   defaultProvider: z.string().min(1, 'defaultProvider 不能为空').optional(),
@@ -61,6 +90,7 @@ const appearanceConfigSchema = z.object({
 })
 
 export const settingsSchema = z.object({
+  version: z.number().default(2),
   providers: z.record(z.string(), modelProviderSchema).default({}),
   chat: chatConfigSchema.default({ enabledProviders: [], temperature: 0.7 }),
   rag: ragConfigSchema.default({
@@ -81,7 +111,15 @@ export type Settings = z.infer<typeof settingsSchema>
 
 export class SettingsDto extends createZodDto(settingsSchema) {}
 
-export class ProviderDto extends createZodDto(modelProviderSchema) {}
+/**
+ * 输入用 schema：新建 Provider 时 id 可为空，由 SystemConfigService.saveProvider 自动生成。
+ * 存储用 modelProviderSchema 保持 id 非空约束（settingsSchema.parse 校验）。
+ */
+const saveProviderSchema = modelProviderSchema.extend({
+  id: z.string().default(''),
+})
+
+export class ProviderDto extends createZodDto(saveProviderSchema) {}
 
 export class ChatSettingsDto extends createZodDto(chatConfigSchema) {}
 export class RagSettingsDto extends createZodDto(ragConfigSchema) {}

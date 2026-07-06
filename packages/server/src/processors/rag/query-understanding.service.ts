@@ -1,9 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
-import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
+import {
+  LlamaIndexProvider,
+  resolveLlmBaseURL,
+} from '../../modules/chat/llm/llama-index-provider.service.js'
 import type { LlmMessage } from '../../modules/chat/llm/llm-provider.interface.js'
 import { ConfigChangedEvent } from '../../modules/settings/constants.js'
-import type { ModelProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
+import type { ResolvedProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
 import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 
@@ -73,7 +76,7 @@ export class QueryUnderstandingService implements OnModuleInit {
       return
     }
 
-    let provider: ModelProvider
+    let provider: ResolvedProvider
     try {
       provider = this.modelProviderService.resolveProvider('rag.llmProvider', 'llm', config)
     } catch (err) {
@@ -93,7 +96,7 @@ export class QueryUnderstandingService implements OnModuleInit {
     this.llm = new LlamaIndexProvider({
       apiKey: provider.apiKey,
       model: provider.model,
-      baseURL: provider.baseUrl || undefined,
+      baseURL: resolveLlmBaseURL(provider.baseUrl, provider.isCompleteUrl),
       timeout: config.rag.timeoutMs ?? provider.timeoutMs,
     })
   }

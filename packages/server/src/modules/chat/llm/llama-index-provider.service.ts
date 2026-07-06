@@ -17,6 +17,21 @@ export interface LlamaIndexProviderConfig {
   organization?: string
 }
 
+/**
+ * 根据 isCompleteUrl 解析 LLM baseURL。
+ * - false（默认）：baseUrl 是 API 网关地址，SDK 自动拼 /chat/completions
+ * - true：baseUrl 是完整请求地址，strip /chat/completions 后缀供 SDK 重新拼接
+ */
+export function resolveLlmBaseURL(
+  baseUrl: string | undefined,
+  isCompleteUrl: boolean,
+): string | undefined {
+  if (!baseUrl) return undefined
+  if (!isCompleteUrl) return baseUrl
+  // ponytail: strip 已知端点后缀，SDK 会重新拼接
+  return baseUrl.replace(/\/chat\/completions$/, '')
+}
+
 @Injectable()
 export class LlamaIndexProvider implements LlmProvider {
   readonly providerKey = 'llama-index'

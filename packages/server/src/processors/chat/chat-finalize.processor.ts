@@ -3,9 +3,11 @@ import type { Job } from 'bullmq'
 import { RequestContextStorage } from '../../common/request-context-storage.js'
 import { withTrace } from '../../common/utils/with-trace.js'
 import { ConversationService } from '../../modules/chat/conversation.service.js'
+import { resolveLlmBaseURL } from '../../modules/chat/llm/llama-index-provider.service.js'
 import { LlmProviderFactory } from '../../modules/chat/llm/llm-provider.factory.js'
 import type { LlmProvider } from '../../modules/chat/llm/llm-provider.interface.js'
 import type { ModelProvider } from '../../modules/settings/dto/settings.dto.js'
+import { parseModelKey } from '../../modules/settings/model-provider.service.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 import type { ChatFinalizeJobData } from '../../queue/index.js'
 
@@ -92,21 +94,27 @@ export class ChatFinalizeProcessor {
       ...enabledIds.filter((id) => id !== preferredId),
     ]
 
-    for (const id of candidateIds) {
-      const provider = config.providers[id]
-      if (!provider || provider.type !== TITLE_PROVIDER_SCOPE || !provider.enabled) continue
-      if (!provider.model || !provider.apiKey) {
+    for (const key of candidateIds) {
+      const { providerId, modelName } = parseModelKey(key)
+      const provider = config.providers[providerId]
+      if (!provider?.enabled) continue
+
+      const model = modelName
+        ? provider.models.find((m) => m.name === modelName && m.type === TITLE_PROVIDER_SCOPE)
+        : provider.models.find((m) => m.type === TITLE_PROVIDER_SCOPE && m.enabled)
+      if (!model?.enabled) continue
+      if (!provider.apiKey) {
         this.logger.warn(
-          withTrace(`[chat-finalize] title provider ${id} missing model/apiKey, skipping`, ctx),
+          withTrace(`[chat-finalize] title provider ${providerId} missing apiKey, skipping`, ctx),
         )
         continue
       }
       try {
-        return this.createLlmProvider(provider)
+        return this.createLlmProvider(provider, model.name)
       } catch (err) {
         this.logger.warn(
           withTrace(
-            `[chat-finalize] title provider ${id} init failed: ${err instanceof Error ? err.message : String(err)}`,
+            `[chat-finalize] title provider ${providerId} init failed: ${err instanceof Error ? err.message : String(err)}`,
             ctx,
           ),
         )
@@ -122,14 +130,14 @@ export class ChatFinalizeProcessor {
     return null
   }
 
-  private createLlmProvider(provider: ModelProvider): LlmProvider {
+  private createLlmProvider(provider: ModelProvider, modelName: string): LlmProvider {
     const timeoutMs = Number.isFinite(provider.timeoutMs)
       ? provider.timeoutMs
       : TITLE_PROVIDER_TIMEOUT_MS
     return this.llmProviderFactory.create(provider.id, {
       apiKey: provider.apiKey,
-      model: provider.model,
-      baseURL: provider.baseUrl,
+      model: modelName,
+      baseURL: resolveLlmBaseURL(provider.baseUrl, provider.isCompleteUrl),
       timeout: timeoutMs,
     })
   }

@@ -112,38 +112,41 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
 
   const systemConfigService = {
     getDecryptedSystemConfig: vi.fn().mockResolvedValue({
+      version: 2,
       providers: {
         openai: {
           id: 'openai',
           name: 'OpenAI',
-          type: 'llm',
           enabled: true,
           apiKey: 'key',
-          model: 'gpt-4o',
           baseUrl: '',
+          isCompleteUrl: false,
           timeoutMs: 300_000,
+          models: [{ name: 'gpt-4o', type: 'llm', enabled: true }],
         },
         openaiEmbedding: {
           id: 'openaiEmbedding',
           name: 'OpenAI Embedding',
-          type: 'embedding',
           enabled: true,
           apiKey: 'key',
-          model: 'text-embedding-3-small',
           baseUrl: '',
+          isCompleteUrl: false,
           timeoutMs: 300_000,
-          dimensions: 1536,
+          models: [
+            { name: 'text-embedding-3-small', type: 'embedding', enabled: true, dimensions: 1536 },
+          ],
         },
         reranker: {
           id: 'reranker',
           name: 'BGE Reranker',
-          type: 'reranker',
           enabled: true,
           apiKey: '',
-          model: 'BAAI/bge-reranker-v2-m3',
           baseUrl: '',
+          isCompleteUrl: false,
           timeoutMs: 60_000,
-          maxLength: 512,
+          models: [
+            { name: 'BAAI/bge-reranker-v2-m3', type: 'reranker', enabled: true, maxLength: 512 },
+          ],
         },
       },
       chat: { defaultProvider: 'openai', enabledProviders: ['openai'], temperature: 0.7 },
@@ -169,9 +172,19 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
 
   const modelProviderService = {
     resolveProvider: vi.fn().mockImplementation((_path: string, type: string, config: any) => {
-      if (type === 'llm') return config.providers.openai
-      if (type === 'embedding') return config.providers.openaiEmbedding
-      if (type === 'reranker') return config.providers.reranker
+      const flatten = (p: any) => {
+        const m = p.models?.[0]
+        return {
+          ...p,
+          model: m?.name,
+          type: m?.type,
+          dimensions: m?.dimensions,
+          maxLength: m?.maxLength,
+        }
+      }
+      if (type === 'llm') return flatten(config.providers.openai)
+      if (type === 'embedding') return flatten(config.providers.openaiEmbedding)
+      if (type === 'reranker') return flatten(config.providers.reranker)
       return undefined
     }),
     ...overrides.modelProviderService,

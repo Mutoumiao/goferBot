@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { OnEvent } from '@nestjs/event-emitter'
 import { ConfigChangedEvent } from '../../modules/settings/constants.js'
-import type { ModelProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
+import type { ResolvedProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
 import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 
@@ -87,7 +87,7 @@ export class BgeRerankService implements OnModuleInit {
       return
     }
 
-    let provider: ModelProvider
+    let provider: ResolvedProvider
     try {
       provider = this.modelProviderService.resolveProvider(
         'rag.rerankerProvider',

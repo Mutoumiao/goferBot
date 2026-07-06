@@ -3,6 +3,8 @@ import type { ChatMessagesChunk } from '@goferbot/data'
 import { BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import { StreamFinalizeService } from '../../common/services/stream-finalize.service.js'
 import { MODEL_PROVIDER_ERROR_CODES } from '../settings/constants.js'
+import type { ModelProvider } from '../settings/dto/settings.dto.js'
+import { parseModelKey } from '../settings/model-provider.service.js'
 import { SettingsService } from '../settings/settings.service.js'
 import { ConversationService } from './conversation.service.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
@@ -16,6 +18,18 @@ import { ModelRegistryService } from './model-registry.service.js'
 
 function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
   return m.role === 'system' || m.role === 'user' || m.role === 'assistant'
+}
+
+/**
+ * 根据 isCompleteUrl 解析 LLM baseURL。
+ * - false（默认）：baseUrl 是 API 网关地址，SDK 自动拼 /chat/completions
+ * - true：baseUrl 是完整请求地址，strip /chat/completions 后缀供 SDK 重新拼接
+ */
+function resolveLlmBaseURL(baseUrl: string, isCompleteUrl: boolean): string {
+  if (!baseUrl) return 'https://api.openai.com'
+  if (!isCompleteUrl) return baseUrl
+  // ponytail: strip 已知端点后缀，SDK 会重新拼接
+  return baseUrl.replace(/\/chat\/completions$/, '')
 }
 
 @Injectable()
@@ -197,7 +211,7 @@ export class ChatService {
   }
 
   private async createProvider(
-    providerConfig: { id: string; apiKey: string; model: string; baseUrl: string },
+    providerConfig: { apiKey: string; baseUrl: string; isCompleteUrl: boolean },
     model: string,
     timeoutMs: number,
   ): Promise<LlmProvider> {
@@ -205,10 +219,11 @@ export class ChatService {
       throw new BadRequestException({ code: 'LLM_NOT_CONFIGURED', message: '未配置 LLM API Key' })
     }
 
+    const baseURL = resolveLlmBaseURL(providerConfig.baseUrl, providerConfig.isCompleteUrl)
     return this.llmFactory.create('openai-compatible', {
       apiKey: providerConfig.apiKey,
       model,
-      baseURL: providerConfig.baseUrl || 'https://api.openai.com',
+      baseURL,
       timeout: timeoutMs,
     })
   }
@@ -232,17 +247,23 @@ export class ChatService {
       })
     }
 
-    let providerId = resolvedKey
+    // 解析模型级别 key：{providerId}#{modelName} 或纯 {providerId}
+    const { providerId: parsedProviderId, modelName: parsedModelName } = parseModelKey(resolvedKey)
+    let providerId = parsedProviderId
+    let modelName = parsedModelName
+
+    // 优先从注册表查找（注册表存储模型级别 key）
     const modelInfo = this.modelRegistry.lookup(resolvedKey)
     if (modelInfo) {
       providerId = modelInfo.providerKey
+      modelName = modelInfo.model
     }
 
     const enabledProviders = settings.chat.enabledProviders
     if (
       enabledProviders.length > 0 &&
-      !enabledProviders.includes(providerId) &&
-      !enabledProviders.includes(resolvedKey)
+      !enabledProviders.includes(resolvedKey) &&
+      !enabledProviders.includes(providerId)
     ) {
       throw new BadRequestException({
         code: MODEL_PROVIDER_ERROR_CODES.NOT_ENABLED,
@@ -250,17 +271,11 @@ export class ChatService {
       })
     }
 
-    const provider = settings.providers[providerId]
+    const provider: ModelProvider | undefined = settings.providers[providerId]
     if (!provider) {
       throw new BadRequestException({
         code: MODEL_PROVIDER_ERROR_CODES.NOT_FOUND,
         message: `模型提供商不存在：${providerId}`,
-      })
-    }
-    if (provider.type !== 'llm') {
-      throw new BadRequestException({
-        code: MODEL_PROVIDER_ERROR_CODES.TYPE_MISMATCH,
-        message: `模型提供商类型不匹配：${providerId} 是 ${provider.type}，需要 llm`,
       })
     }
     if (!provider.enabled) {
@@ -269,10 +284,31 @@ export class ChatService {
         message: `模型提供商已禁用：${providerId}`,
       })
     }
+
+    // 从 provider.models 中查找 LLM 模型
+    const model = modelName
+      ? provider.models.find((m) => m.name === modelName && m.type === 'llm')
+      : provider.models.find((m) => m.type === 'llm' && m.enabled)
+    if (!model?.enabled) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.TYPE_MISMATCH,
+        message: `模型提供商 ${providerId} 没有启用的 LLM 模型${modelName ? `：${modelName}` : ''}`,
+      })
+    }
+
     const timeoutMs = provider.timeoutMs
+    const resolvedModelName = dtoModel ?? model.name
     return {
-      provider: await this.createProvider(provider, dtoModel ?? provider.model, timeoutMs),
-      model: dtoModel ?? provider.model,
+      provider: await this.createProvider(
+        {
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl,
+          isCompleteUrl: provider.isCompleteUrl,
+        },
+        resolvedModelName,
+        timeoutMs,
+      ),
+      model: resolvedModelName,
       timeoutMs,
     }
   }

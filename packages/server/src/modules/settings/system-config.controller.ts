@@ -90,6 +90,22 @@ export class SystemConfigController {
     return this.maskProviders(providers)
   }
 
+  @Get('providers/presets')
+  @RequirePermission('modelProviders:read')
+  getPresets() {
+    return this.systemConfigService.getPresets()
+  }
+
+  @Post('providers/fetch-models')
+  @HttpCode(200)
+  @RequirePermission('modelProviders:create')
+  async fetchModels(@Body() dto: { baseUrl: string; apiKey: string; isCompleteUrl: boolean }) {
+    if (!dto.baseUrl) {
+      throw new BadRequestException({ code: 'INVALID_BASE_URL', message: 'baseUrl 不能为空' })
+    }
+    return this.systemConfigService.fetchModels(dto)
+  }
+
   @Get('providers/:id')
   @RequirePermission('modelProviders:read')
   async getProvider(@Param('id') id: string): Promise<ModelProvider> {

@@ -1,8 +1,9 @@
-import { Button, Form, message, Select, Slider } from 'antd'
+import { Button, Form, message, Slider } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import type { ChatSettings, ModelProvider } from '@/api/system-config'
 import { getProviders } from '@/features/model-providers/services'
 import { getCategoryConfig, saveCategoryConfig } from '../services'
+import { ProviderModelCascader } from './ProviderModelCascader'
 
 export function ChatSettingsForm() {
   const [form] = Form.useForm<ChatSettings>()
@@ -12,8 +13,7 @@ export function ChatSettingsForm() {
   const load = useCallback(async () => {
     try {
       const [all, config] = await Promise.all([getProviders(), getCategoryConfig('chat')])
-      const list = Object.values(all).filter((p) => p.type === 'llm')
-      setProviders(list)
+      setProviders(Object.values(all))
       if (config) {
         form.setFieldsValue({
           enabledProviders: config.enabledProviders ?? [],
@@ -41,19 +41,21 @@ export function ChatSettingsForm() {
     }
   }
 
-  const llmOptions = providers.map((p) => ({ value: p.id, label: `${p.name} (${p.model})` }))
-
   return (
     <Form form={form} layout="vertical">
-      <Form.Item name="defaultProvider" label="默认 Provider">
-        <Select allowClear options={llmOptions} placeholder="选择默认 LLM Provider" />
+      <Form.Item name="defaultProvider" label="默认模型">
+        <ProviderModelCascader
+          providers={providers}
+          modelType="llm"
+          placeholder="选择默认 LLM 模型"
+        />
       </Form.Item>
-      <Form.Item name="enabledProviders" label="启用的 Providers">
-        <Select
-          mode="multiple"
-          allowClear
-          options={llmOptions}
-          placeholder="选择启用的 LLM Providers"
+      <Form.Item name="enabledProviders" label="启用的模型">
+        <ProviderModelCascader
+          providers={providers}
+          modelType="llm"
+          multiple
+          placeholder="选择启用的 LLM 模型"
         />
       </Form.Item>
       <Form.Item name="temperature" label="Temperature">

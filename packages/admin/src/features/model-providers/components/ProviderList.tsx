@@ -1,12 +1,19 @@
-import { Button, Card, Modal, Space, Switch, Table, Tag } from 'antd'
+import { Button, Card, Collapse, Modal, Space, Switch, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Edit, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
-import type { ModelProvider } from '../services'
+import type { Model, ModelProvider } from '../services'
 import { deleteProviderService, getProviders, saveProviderService } from '../services'
 import { ProviderForm } from './ProviderForm'
+
+const TYPE_LABELS: Record<string, string> = {
+  llm: 'LLM',
+  embedding: 'Embedding',
+  reranker: 'Reranker',
+  'document-parser': 'Document Parser',
+}
 
 export function ProviderList() {
   const [data, setData] = useState<ModelProvider[]>([])
@@ -86,68 +93,114 @@ export function ProviderList() {
     void load()
   }
 
-  const columns: ColumnsType<ModelProvider> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 140 },
-    { title: '名称', dataIndex: 'name', key: 'name', width: 160 },
+  const modelColumns: ColumnsType<Model> = [
+    { title: '模型名称', dataIndex: 'name', key: 'name' },
     {
       title: '类型',
       dataIndex: 'type',
       key: 'type',
       width: 120,
-      render: (type: string) => <Tag>{type}</Tag>,
-    },
-    { title: '模型', dataIndex: 'model', key: 'model', width: 180 },
-    {
-      title: 'Base URL',
-      dataIndex: 'baseUrl',
-      key: 'baseUrl',
-      render: (v: string) => <span className="font-mono text-xs text-slate-500">{v}</span>,
+      render: (type: string) => <Tag>{TYPE_LABELS[type] ?? type}</Tag>,
     },
     {
       title: '启用',
       dataIndex: 'enabled',
       key: 'enabled',
-      width: 100,
-      render: (_: boolean, record) => (
-        <Switch
-          size="small"
-          checked={record.enabled}
-          loading={processingId === record.id}
-          disabled={processingId !== null && processingId !== record.id}
-          onChange={() => void handleToggle(record)}
-        />
-      ),
+      width: 80,
+      render: (enabled: boolean) => <Switch size="small" checked={enabled} disabled />,
     },
     {
-      title: '操作',
-      key: 'actions',
+      title: '额外参数',
+      key: 'extra',
       width: 160,
-      render: (_: unknown, record) => (
-        <Space size="small">
-          <Button
-            type="text"
-            size="small"
-            icon={<Edit size={14} />}
-            disabled={processingId !== null}
-            onClick={() => handleOpenEdit(record)}
-          >
-            编辑
-          </Button>
-          <Button
-            type="text"
-            size="small"
-            danger
-            icon={<Trash2 size={14} />}
-            loading={processingId === record.id}
-            disabled={processingId !== null && processingId !== record.id}
-            onClick={() => void handleDelete(record)}
-          >
-            删除
-          </Button>
-        </Space>
-      ),
+      render: (_: unknown, record: Model) => {
+        const parts: string[] = []
+        if (record.dimensions !== undefined) parts.push(`dim=${record.dimensions}`)
+        if (record.maxLength !== undefined) parts.push(`maxLen=${record.maxLength}`)
+        return parts.length > 0 ? (
+          <span className="font-mono text-xs text-text-tertiary">{parts.join(', ')}</span>
+        ) : (
+          <span className="text-xs text-text-quaternary">-</span>
+        )
+      },
     },
   ]
+
+  const collapseItems = data.map((provider) => ({
+    key: provider.id,
+    label: (
+      <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+        <span className="font-medium text-text-primary">{provider.name}</span>
+        <Space size={4}>
+          {Array.from(new Set(provider.models.map((m) => m.type))).map((type) => (
+            <Tag key={type}>{TYPE_LABELS[type] ?? type}</Tag>
+          ))}
+        </Space>
+        <span className="text-xs text-text-tertiary">{provider.models.length} 个模型</span>
+      </div>
+    ),
+    children: (
+      <div className="space-y-3">
+        <Table<Model>
+          rowKey={(record) => `${provider.id}#${record.name}`}
+          dataSource={provider.models}
+          columns={modelColumns}
+          pagination={false}
+          size="small"
+        />
+        <div className="flex items-center justify-between">
+          <div className="space-y-1 text-xs text-text-secondary">
+            <div>
+              <span className="text-text-tertiary">Base URL: </span>
+              <span className="font-mono">{provider.baseUrl || '(空)'}</span>
+              {provider.isCompleteUrl && (
+                <Tag color="blue" className="ml-2">
+                  完整 URL
+                </Tag>
+              )}
+            </div>
+            <div>
+              <span className="text-text-tertiary">API Key: </span>
+              <span className="font-mono">{provider.apiKey || '(空)'}</span>
+            </div>
+          </div>
+          <Space>
+            <Button
+              type="text"
+              size="small"
+              icon={<Edit size={14} />}
+              disabled={processingId !== null}
+              onClick={() => handleOpenEdit(provider)}
+            >
+              编辑
+            </Button>
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<Trash2 size={14} />}
+              loading={processingId === provider.id}
+              disabled={processingId !== null && processingId !== provider.id}
+              onClick={() => void handleDelete(provider)}
+            >
+              删除
+            </Button>
+          </Space>
+        </div>
+      </div>
+    ),
+    extra: (
+      <div onClick={(e) => e.stopPropagation()}>
+        <Switch
+          size="small"
+          checked={provider.enabled}
+          loading={processingId === provider.id}
+          disabled={processingId !== null && processingId !== provider.id}
+          onChange={() => void handleToggle(provider)}
+        />
+      </div>
+    ),
+  }))
 
   return (
     <div className="space-y-4">
@@ -166,23 +219,16 @@ export function ProviderList() {
         }
       />
 
-      <Card>
-        <Table<ModelProvider>
-          rowKey="id"
-          loading={loading}
-          dataSource={data}
-          columns={columns}
-          pagination={false}
-          locale={{
-            emptyText: (
-              <EmptyState
-                description="暂无 Provider"
-                actionText="新建第一个 Provider"
-                onAction={() => handleOpenCreate()}
-              />
-            ),
-          }}
-        />
+      <Card loading={loading}>
+        {data.length === 0 && !loading ? (
+          <EmptyState
+            description="暂无 Provider"
+            actionText="新建第一个 Provider"
+            onAction={() => handleOpenCreate()}
+          />
+        ) : (
+          <Collapse items={collapseItems} />
+        )}
       </Card>
 
       <ProviderForm

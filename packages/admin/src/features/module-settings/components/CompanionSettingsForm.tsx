@@ -1,8 +1,9 @@
-import { Button, Form, message, Select } from 'antd'
+import { Button, Form, message } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import type { CompanionSettings, ModelProvider } from '@/api/system-config'
 import { getProviders } from '@/features/model-providers/services'
 import { getCategoryConfig, saveCategoryConfig } from '../services'
+import { ProviderModelCascader } from './ProviderModelCascader'
 
 export function CompanionSettingsForm() {
   const [form] = Form.useForm<CompanionSettings>()
@@ -12,7 +13,7 @@ export function CompanionSettingsForm() {
   const load = useCallback(async () => {
     try {
       const [all, config] = await Promise.all([getProviders(), getCategoryConfig('companion')])
-      setProviders(Object.values(all).filter((p) => p.type === 'llm'))
+      setProviders(Object.values(all))
       if (config) {
         form.setFieldsValue({ provider: config.provider })
       }
@@ -36,12 +37,14 @@ export function CompanionSettingsForm() {
     }
   }
 
-  const options = providers.map((p) => ({ value: p.id, label: `${p.name} (${p.model})` }))
-
   return (
     <Form form={form} layout="vertical">
-      <Form.Item name="provider" label="Provider">
-        <Select allowClear options={options} placeholder="选择 LLM Provider" />
+      <Form.Item name="provider" label="Companion 模型">
+        <ProviderModelCascader
+          providers={providers}
+          modelType="llm"
+          placeholder="选择 Companion LLM 模型"
+        />
       </Form.Item>
       <Form.Item>
         <Button type="primary" loading={saving} onClick={handleSave}>

@@ -187,6 +187,10 @@ export async function submitTempChat(
 /**
  * 业务编排：加载模型 providers 列表
  * 只在首次加载（store 中无数据）时请求，避免每次进入 chat 页面重复调用
+ *
+ * 后端 /settings/chat/providers 返回 provider 级别 { builtIn, custom }，
+ * 每个 provider 含 models 数组。此处展开为模型级别条目（key = {providerId}#{modelName}），
+ * 仅包含 enabled 的 LLM 模型。
  */
 export async function fetchProviders(): Promise<void> {
   const store = useChatStore.getState()
@@ -197,18 +201,26 @@ export async function fetchProviders(): Promise<void> {
   store.setInitError(null)
   try {
     const res = await getChatProviders().send()
-    const builtIn: ProviderListItem[] = (res?.builtIn ?? []).map((p) => ({
-      key: p.id,
-      name: p.name,
-      model: p.model,
-      isBuiltin: true,
-    }))
-    const custom: ProviderListItem[] = (res?.custom ?? []).map((p) => ({
-      key: p.id,
-      name: p.name,
-      model: p.model,
-      isBuiltin: false,
-    }))
+    const builtIn: ProviderListItem[] = (res?.builtIn ?? []).flatMap((p) =>
+      p.models
+        .filter((m) => m.type === 'llm' && m.enabled)
+        .map((m) => ({
+          key: `${p.id}#${m.name}`,
+          name: p.name,
+          model: m.name,
+          isBuiltin: true,
+        })),
+    )
+    const custom: ProviderListItem[] = (res?.custom ?? []).flatMap((p) =>
+      p.models
+        .filter((m) => m.type === 'llm' && m.enabled)
+        .map((m) => ({
+          key: `${p.id}#${m.name}`,
+          name: p.name,
+          model: m.name,
+          isBuiltin: false,
+        })),
+    )
     store.setAvailableProviders([...builtIn, ...custom])
   } catch (e) {
     store.setInitError(e instanceof Error ? e.message : '初始化失败')

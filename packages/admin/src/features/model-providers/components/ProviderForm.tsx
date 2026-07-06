@@ -1,18 +1,19 @@
-import { Form, Input, InputNumber, Modal, Select, Switch } from 'antd'
-import type { ModelProvider, ProviderType } from '@/api/system-config'
-import { saveProviderService } from '../services'
+import { Col, Form, Input, InputNumber, Modal, message, Row, Select, Switch } from 'antd'
+import { useEffect, useState } from 'react'
+import type { Model, ModelProvider, ProviderPreset, ProviderType } from '@/api/system-config'
+import { fetchPresets, fetchRemoteModelsService, saveProviderService } from '../services'
+import { ProviderModelsTable } from './ProviderModelsTable'
 
 interface FormValues {
-  id: string
+  id?: string
   name: string
-  type: ProviderType
-  model: string
+  notes?: string
   apiKey: string
   baseUrl: string
+  isCompleteUrl: boolean
   timeoutMs: number
   enabled: boolean
-  dimensions?: number
-  maxLength?: number
+  models: Model[]
 }
 
 interface ProviderFormProps {
@@ -22,66 +23,146 @@ interface ProviderFormProps {
   onSuccess: () => void
 }
 
+const CUSTOM_PRESET = 'custom'
+
+const DEFAULT_VALUES: FormValues = {
+  name: '',
+  apiKey: '',
+  baseUrl: '',
+  isCompleteUrl: false,
+  timeoutMs: 300_000,
+  enabled: true,
+  models: [],
+}
+
 export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFormProps) {
   const [form] = Form.useForm<FormValues>()
   const isEdit = !!provider
+  const [presets, setPresets] = useState<ProviderPreset[]>([])
+  const [presetKey, setPresetKey] = useState<string>(CUSTOM_PRESET)
+  const [fetching, setFetching] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    void fetchPresets().then(setPresets)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    if (provider) {
+      form.setFieldsValue({ ...provider })
+      setPresetKey(CUSTOM_PRESET)
+    } else {
+      form.setFieldsValue({ ...DEFAULT_VALUES })
+      setPresetKey(CUSTOM_PRESET)
+    }
+  }, [open, provider, form])
+
+  const handlePresetChange = (key: string) => {
+    setPresetKey(key)
+    if (key === CUSTOM_PRESET) return
+    const preset = presets.find((p) => p.key === key)
+    if (preset) {
+      form.setFieldsValue({ name: preset.name, baseUrl: preset.baseUrl })
+    }
+  }
+
+  const handleFetchModels = async (): Promise<void> => {
+    const baseUrl = form.getFieldValue('baseUrl')
+    const apiKey = form.getFieldValue('apiKey') ?? ''
+    const isCompleteUrl = form.getFieldValue('isCompleteUrl') ?? false
+    if (!baseUrl) {
+      message.warning('请先填写请求地址')
+      return
+    }
+    setFetching(true)
+    try {
+      const result = await fetchRemoteModelsService({ baseUrl, apiKey, isCompleteUrl })
+      if (result.success && result.models.length > 0) {
+        const existing = (form.getFieldValue('models') ?? []) as Model[]
+        const existingNames = new Set(existing.map((m) => m.name))
+        const newModels = result.models
+          .filter((m) => !existingNames.has(m.name))
+          .map<Model>((m) => ({
+            name: m.name,
+            type: m.type as ProviderType,
+            enabled: true,
+            ...(m.dimensions !== undefined && { dimensions: m.dimensions }),
+            ...(m.maxLength !== undefined && { maxLength: m.maxLength }),
+          }))
+        form.setFieldsValue({ models: [...existing, ...newModels] })
+        message.success(`获取到 ${newModels.length} 个新模型`)
+      } else {
+        message.error(result.error || '未获取到模型')
+      }
+    } finally {
+      setFetching(false)
+    }
+  }
+
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields()
+      setSaving(true)
+      const payload: ModelProvider = {
+        // R2: 新建时 id 留空，由后端 saveProvider 自动生成；编辑时保留原 id
+        id: values.id ?? '',
+        name: values.name,
+        apiKey: values.apiKey,
+        baseUrl: values.baseUrl,
+        isCompleteUrl: values.isCompleteUrl ?? false,
+        timeoutMs: values.timeoutMs,
+        enabled: values.enabled ?? true,
+        models: values.models ?? [],
+        ...(values.notes ? { notes: values.notes } : {}),
+      }
+      const ok = await saveProviderService(payload)
+      if (ok) onSuccess()
+    } catch {
+      // 校验失败时保持 Modal 打开
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const presetOptions = [
+    { value: CUSTOM_PRESET, label: '自定义配置' },
+    ...presets.map((p) => ({ value: p.key, label: p.label })),
+  ]
 
   return (
     <Modal
       title={isEdit ? '编辑 Provider' : '新建 Provider'}
       open={open}
-      width={560}
+      width={720}
       okText="保存"
       cancelText="取消"
+      confirmLoading={saving}
       onCancel={onCancel}
+      onOk={handleOk}
       destroyOnHidden
-      onOk={async () => {
-        try {
-          const values = await form.validateFields()
-          const ok = await saveProviderService(values as ModelProvider)
-          if (ok) {
-            onSuccess()
-          }
-        } catch {
-          // 校验失败时保持 Modal 打开
-        }
-      }}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        preserve={false}
-        className="pt-2"
-        initialValues={
-          provider
-            ? { ...provider }
-            : {
-                type: 'llm' as ProviderType,
-                enabled: true,
-                timeoutMs: 30000,
-              }
-        }
-      >
-        <Form.Item name="id" label="ID" rules={[{ required: true, message: '请输入 ID' }]}>
-          <Input disabled={isEdit} placeholder="唯一标识，如 deepseek" />
+      <Form form={form} layout="vertical" preserve={false} className="pt-2">
+        <Form.Item label="预设提供商">
+          <Select value={presetKey} onChange={handlePresetChange} options={presetOptions} />
         </Form.Item>
-        <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
-          <Input placeholder="显示名称" />
-        </Form.Item>
-        <Form.Item name="type" label="类型" rules={[{ required: true, message: '请选择类型' }]}>
-          <Select
-            disabled={isEdit}
-            options={[
-              { value: 'llm', label: 'LLM' },
-              { value: 'embedding', label: 'Embedding' },
-              { value: 'reranker', label: 'Reranker' },
-              { value: 'document-parser', label: 'Document Parser' },
-            ]}
-          />
-        </Form.Item>
-        <Form.Item name="model" label="模型" rules={[{ required: true, message: '请输入模型' }]}>
-          <Input placeholder="如 deepseek-chat" />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="name"
+              label="供应商名称"
+              rules={[{ required: true, message: '请输入名称' }]}
+            >
+              <Input placeholder="如 DeepSeek" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="notes" label="备注">
+              <Input placeholder="可选备注" />
+            </Form.Item>
+          </Col>
+        </Row>
         <Form.Item
           name="apiKey"
           label="API Key"
@@ -89,50 +170,37 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
         >
           <Input.Password placeholder="sk-..." />
         </Form.Item>
-        <Form.Item
-          name="baseUrl"
-          label="Base URL"
-          rules={[
-            { required: true, message: '请输入 Base URL' },
-            {
-              validator: (_, value) => {
-                if (!value || /^https?:\/\//.test(value)) return Promise.resolve()
-                return Promise.reject(new Error('必须以 http:// 或 https:// 开头'))
-              },
-            },
-          ]}
-        >
-          <Input placeholder="https://api.example.com/v1" />
-        </Form.Item>
+        <Row gutter={8} align="middle">
+          <Col flex="auto">
+            <Form.Item
+              name="baseUrl"
+              label="请求地址"
+              rules={[
+                { required: true, message: '请输入请求地址' },
+                {
+                  validator: (_, value) => {
+                    if (!value || /^https?:\/\//.test(value)) return Promise.resolve()
+                    return Promise.reject(new Error('必须以 http:// 或 https:// 开头'))
+                  },
+                },
+              ]}
+            >
+              <Input placeholder="https://api.example.com/v1" />
+            </Form.Item>
+          </Col>
+          <Col flex="none">
+            <Form.Item name="isCompleteUrl" label="完整 URL" valuePropName="checked">
+              <Switch checkedChildren="是" unCheckedChildren="否" />
+            </Form.Item>
+          </Col>
+        </Row>
+        <ProviderModelsTable onFetchModels={handleFetchModels} fetching={fetching} />
         <Form.Item
           name="timeoutMs"
           label="超时 (ms)"
           rules={[{ required: true, message: '请输入超时时间' }]}
         >
           <InputNumber min={1000} step={1000} className="w-full" />
-        </Form.Item>
-        <Form.Item noStyle shouldUpdate={(prev, next) => prev.type !== next.type}>
-          {({ getFieldValue }) => {
-            const type = getFieldValue('type') as ProviderType
-            if (type === 'embedding') {
-              return (
-                <Form.Item name="dimensions" label="Dimensions">
-                  <InputNumber min={1} className="w-full" placeholder="如 1536" />
-                </Form.Item>
-              )
-            }
-            if (type === 'reranker') {
-              return (
-                <Form.Item name="maxLength" label="Max Length">
-                  <InputNumber min={1} className="w-full" placeholder="如 512" />
-                </Form.Item>
-              )
-            }
-            return null
-          }}
-        </Form.Item>
-        <Form.Item name="enabled" valuePropName="checked">
-          <Switch checkedChildren="启用" unCheckedChildren="禁用" />
         </Form.Item>
       </Form>
     </Modal>

@@ -3,17 +3,25 @@ import { z } from 'zod'
 export const providerTypeSchema = z.enum(['llm', 'embedding', 'reranker', 'document-parser'])
 export type ProviderType = z.infer<typeof providerTypeSchema>
 
+export const modelSchema = z.object({
+  name: z.string().min(1, '模型名称不能为空'),
+  type: providerTypeSchema,
+  enabled: z.boolean().default(true),
+  dimensions: z.number().int().min(1).optional(),
+  maxLength: z.number().int().min(1).optional(),
+})
+export type Model = z.infer<typeof modelSchema>
+
 export const modelProviderSchema = z.object({
   id: z.string().min(1, 'provider id 不能为空'),
   name: z.string().min(1, '名称不能为空'),
-  type: providerTypeSchema,
+  notes: z.string().optional(),
   enabled: z.boolean().default(true),
-  model: z.string().min(1, '模型名称不能为空'),
   apiKey: z.string(),
   baseUrl: z.string().default(''),
+  isCompleteUrl: z.boolean().default(false),
   timeoutMs: z.number().min(1000, 'timeout 至少 1000ms').default(300_000),
-  dimensions: z.number().int().min(1).optional(),
-  maxLength: z.number().int().min(1).optional(),
+  models: z.array(modelSchema).default([]),
 })
 export type ModelProvider = z.infer<typeof modelProviderSchema>
 
@@ -58,6 +66,7 @@ export const appearanceConfigSchema = z.object({
 export type AppearanceSettings = z.infer<typeof appearanceConfigSchema>
 
 export const settingsSchema = z.object({
+  version: z.number().default(2),
   providers: z.record(z.string(), modelProviderSchema).default({}),
   chat: chatConfigSchema.default({ enabledProviders: [], temperature: 0.7 }),
   rag: ragConfigSchema.default({

@@ -10,9 +10,10 @@ import {
 } from './constants.js'
 import type { CategoryDto, ModelProvider, Settings } from './dto/settings.dto.js'
 import { settingsSchema } from './dto/settings.dto.js'
-import { ModelProviderService } from './model-provider.service.js'
+import { ModelProviderService, parseModelKey } from './model-provider.service.js'
 
 const DEFAULT_CONFIG: Settings = {
+  version: 2,
   providers: {},
   chat: { enabledProviders: [], temperature: 0.7 },
   rag: {
@@ -75,12 +76,12 @@ function migrateLegacyFlatConfig(config: Record<string, unknown>): Settings {
       base.providers[id] = {
         id,
         name: p.name,
-        type: 'llm',
         enabled: true,
-        model: p.model,
         apiKey: p.apiKey,
         baseUrl: p.baseUrl ?? '',
+        isCompleteUrl: false,
         timeoutMs: 300_000,
+        models: [{ name: p.model, type: 'llm', enabled: true }],
       }
     }
   }
@@ -103,13 +104,19 @@ function migrateLegacyFlatConfig(config: Record<string, unknown>): Settings {
     base.providers[id] = {
       id,
       name: id,
-      type: 'embedding',
       enabled: true,
-      model: ep.model,
       apiKey: ep.apiKey,
       baseUrl: ep.baseUrl ?? '',
+      isCompleteUrl: false,
       timeoutMs: 300_000,
-      dimensions: ep.dimensions,
+      models: [
+        {
+          name: ep.model,
+          type: 'embedding',
+          enabled: true,
+          ...(ep.dimensions !== undefined && { dimensions: ep.dimensions }),
+        },
+      ],
     }
     base.rag.embeddingProvider = id
   }
@@ -137,12 +144,12 @@ function migrateLegacyNestedConfig(config: Record<string, unknown>): Settings {
         base.providers[id] = {
           id,
           name: p.name,
-          type: 'llm',
           enabled: true,
-          model: p.model,
           apiKey: p.apiKey,
           baseUrl: p.baseUrl ?? '',
+          isCompleteUrl: false,
           timeoutMs: 300_000,
+          models: [{ name: p.model, type: 'llm', enabled: true }],
         }
       }
     }
@@ -161,12 +168,12 @@ function migrateLegacyNestedConfig(config: Record<string, unknown>): Settings {
       base.providers[id] = {
         id,
         name: id,
-        type: 'llm',
         enabled: true,
-        model: rag.model as string,
         apiKey: rag.apiKey as string,
         baseUrl: (rag.baseUrl as string) ?? '',
+        isCompleteUrl: false,
         timeoutMs: (rag.timeoutMs as number) ?? 60_000,
+        models: [{ name: rag.model as string, type: 'llm', enabled: true }],
       }
       base.rag.llmProvider = id
     }
@@ -179,13 +186,19 @@ function migrateLegacyNestedConfig(config: Record<string, unknown>): Settings {
       base.providers[id] = {
         id,
         name: id,
-        type: 'embedding',
         enabled: true,
-        model: emb.model as string,
         apiKey: emb.apiKey as string,
         baseUrl: (emb.baseUrl as string) ?? '',
+        isCompleteUrl: false,
         timeoutMs: 300_000,
-        dimensions: emb.dimensions as number | undefined,
+        models: [
+          {
+            name: emb.model as string,
+            type: 'embedding',
+            enabled: true,
+            ...(emb.dimensions !== undefined && { dimensions: emb.dimensions as number }),
+          },
+        ],
       }
       base.rag.embeddingProvider = id
     }
@@ -197,13 +210,19 @@ function migrateLegacyNestedConfig(config: Record<string, unknown>): Settings {
     base.providers[id] = {
       id,
       name: id,
-      type: 'reranker',
       enabled: true,
-      model: rer.model as string,
       apiKey: '',
       baseUrl: '',
+      isCompleteUrl: false,
       timeoutMs: 60_000,
-      maxLength: rer.maxLength as number | undefined,
+      models: [
+        {
+          name: rer.model as string,
+          type: 'reranker',
+          enabled: true,
+          ...(rer.maxLength !== undefined && { maxLength: rer.maxLength as number }),
+        },
+      ],
     }
     base.rag.rerankerProvider = id
   }
@@ -215,12 +234,12 @@ function migrateLegacyNestedConfig(config: Record<string, unknown>): Settings {
       base.providers[id] = {
         id,
         name: id,
-        type: 'llm',
         enabled: true,
-        model: comp.model as string,
         apiKey: comp.apiKey as string,
         baseUrl: (comp.baseUrl as string) ?? '',
+        isCompleteUrl: false,
         timeoutMs: (comp.timeoutMs as number) ?? 60_000,
+        models: [{ name: comp.model as string, type: 'llm', enabled: true }],
       }
       base.companion.provider = id
     }
@@ -271,11 +290,15 @@ export class SettingsService {
     const providers = masked.providers
     const builtIn: ModelProvider[] = []
 
+    const hasEnabledLlm = (p: ModelProvider): boolean =>
+      p.enabled && p.models.some((m) => m.type === 'llm' && m.enabled)
+
     switch (category) {
       case 'chat': {
         for (const id of masked.chat.enabledProviders) {
-          const provider = providers[id]
-          if (provider && provider.type === 'llm' && provider.enabled) {
+          const { providerId } = parseModelKey(id)
+          const provider = providers[providerId]
+          if (provider && hasEnabledLlm(provider)) {
             builtIn.push(provider)
           }
         }
@@ -284,8 +307,9 @@ export class SettingsService {
       case 'rag': {
         const ragLlmId = masked.rag.llmProvider
         if (ragLlmId) {
-          const provider = providers[ragLlmId]
-          if (provider && provider.type === 'llm' && provider.enabled) {
+          const { providerId } = parseModelKey(ragLlmId)
+          const provider = providers[providerId]
+          if (provider && hasEnabledLlm(provider)) {
             builtIn.push(provider)
           }
         }
@@ -294,8 +318,9 @@ export class SettingsService {
       case 'companion': {
         const companionId = masked.companion.provider
         if (companionId) {
-          const provider = providers[companionId]
-          if (provider && provider.type === 'llm' && provider.enabled) {
+          const { providerId } = parseModelKey(companionId)
+          const provider = providers[providerId]
+          if (provider && hasEnabledLlm(provider)) {
             builtIn.push(provider)
           }
         }
@@ -422,7 +447,8 @@ export class SettingsService {
       }
       merged = this.mergeDeep(merged, userOnly) as Settings
     }
-    const parsed = settingsSchema.parse(merged)
+    const migrated = this.migrateProviders(merged)
+    const parsed = settingsSchema.parse(migrated)
     this.modelProviderService.validateProviderReferences(parsed)
     return parsed
   }
@@ -432,9 +458,30 @@ export class SettingsService {
     const merged = config
       ? (this.mergeDeep(this.cloneDefault(), config) as Settings)
       : this.cloneDefault()
-    const parsed = settingsSchema.parse(merged)
+    const migrated = this.migrateProviders(merged)
+    const parsed = settingsSchema.parse(migrated)
     this.modelProviderService.validateProviderReferences(parsed)
     return parsed
+  }
+
+  /**
+   * 在 schema.parse 之前迁移 providers：将旧格式（单 model 字段）转换为新格式（models 数组）。
+   * 防止 Zod strip 掉 model/type/dimensions/maxLength 等 provider 级旧字段后丢失数据。
+   */
+  private migrateProviders(config: Record<string, unknown>): Record<string, unknown> {
+    if (
+      !config.providers ||
+      typeof config.providers !== 'object' ||
+      Array.isArray(config.providers)
+    ) {
+      return config
+    }
+    return {
+      ...config,
+      providers: this.modelProviderService.migrateProvidersRecord(
+        config.providers as Record<string, unknown>,
+      ),
+    }
   }
 
   private async getRawUserConfig(userId: string): Promise<Record<string, unknown> | null> {
