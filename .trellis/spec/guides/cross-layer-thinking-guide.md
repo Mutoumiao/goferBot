@@ -285,6 +285,22 @@ SessionStart 过滤器和每轮钩子解析。模板更改必须针对
 
 ---
 
+## 共享标识符契约检查清单
+
+当一个标识符格式（如 `{providerId}#{modelName}`）被多层代码共享使用时，必须有一个权威所有者，禁止各层各自实现。
+
+### 检查清单：引入跨层共享标识符后
+
+- [ ] **有权威所有者**：标识符的解析/构造函数在某一层定义（如 `@goferbot/data` 或 server 服务层），其他层 import 使用，不自实现
+- [ ] **不硬编码分隔符**：所有层通过常量（如 `MODEL_KEY_SEPARATOR`）引用分隔符，不写死 `'#'`
+- [ ] **前端解析不重写**：前端 UI 组件（如 Cascader 的 path ↔ key 转换）复用权威解析函数，不重新 split/join
+- [ ] **向后兼容**：解析函数处理旧格式（如纯 providerId 无 `#` 部分），不假设总是完整格式
+- [ ] **测试覆盖边界**：至少覆盖：完整格式、旧格式（无 `#`）、空值、多层 `#`、特殊字符
+
+**真实案例**：Provider/Model 重构中，`{providerId}#{modelName}` 格式在 server（`parseModelKey`/`buildModelKey`）、admin（`ProviderModelCascader` 的 `keyToPath`/`buildOptions`）、web（`fetchProviders` 中直接拼接）三层各有一套实现。首次实现时三处一致，但后续若格式演进（如增加维度信息），不同步更新会导致运行时解析失败。修复方式：将 `parseModelKey`/`buildModelKey`/`MODEL_KEY_SEPARATOR` 下沉到 `@goferbot/data` 共享契约层。
+
+---
+
 ## 何时创建流程文档
 
 在以下情况下创建详细的流程文档：

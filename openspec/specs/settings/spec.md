@@ -30,23 +30,23 @@ APP_CONFIG (用户个人配置)
 
 ### 模块职责划分
 
-| 模块 | 职责 | 关键文件 |
-|------|------|----------|
-| `SettingsService` | 用户配置 CRUD、配置合并、遗留迁移 | [settings.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/settings.service.ts) |
-| `SystemConfigService` | 系统配置 CRUD、Provider 池管理、事件通知 | [system-config.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.service.ts) |
+| 模块                   | 职责                                      | 关键文件                                                                                                                                         |
+|------------------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `SettingsService`      | 用户配置 CRUD、配置合并、遗留迁移         | [settings.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/settings.service.ts)             |
+| `SystemConfigService`  | 系统配置 CRUD、Provider 池管理、事件通知  | [system-config.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.service.ts)   |
 | `ModelProviderService` | Provider 引用验证、模型级解析、旧格式迁移 | [model-provider.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/model-provider.service.ts) |
-| `ConfigCryptoService` | API Key 加密/解密/掩码 | [config-crypto.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/config-crypto.service.ts) |
+| `ConfigCryptoService`  | API Key 加密/解密/掩码                    | [config-crypto.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/config-crypto.service.ts)   |
 
 ### 配置分类
 
-| 分类 | 说明 | 用户可修改 | 默认值 |
-|------|------|-----------|--------|
-| `providers` | 模型提供商池（LLM/Embedding/Reranker） | 否 | `{}` |
-| `chat` | 聊天配置（默认提供商、启用列表、温度） | 否 | `{ enabledProviders: [], temperature: 0.7 }` |
-| `rag` | RAG 配置（LLM/Embedding/Reranker 引用） | 否 | `{ timeoutMs: 60000, rerankerAllowedModelPrefixes: [...] }` |
-| `companion` | 伴侣配置（提供商引用） | 否 | `{}` |
-| `indexing` | 索引配置（上下文嵌入、Chunk 大小） | 否 | `{ contextualEmbedding: false, parentChunkSize: 800, childChunkSize: 150 }` |
-| `appearance` | 外观配置（主题、字号） | 是 | `{ mode: 'light', fontSizeLevel: 3 }` |
+| 分类         | 说明                                    | 用户可修改 | 默认值                                                                      |
+|--------------|-----------------------------------------|------------|-----------------------------------------------------------------------------|
+| `providers`  | 模型提供商池（LLM/Embedding/Reranker）  | 否         | `{}`                                                                        |
+| `chat`       | 聊天配置（默认提供商、启用列表、温度）  | 否         | `{ enabledProviders: [], temperature: 0.7 }`                                |
+| `rag`        | RAG 配置（LLM/Embedding/Reranker 引用） | 否         | `{ timeoutMs: 60000, rerankerAllowedModelPrefixes: [...] }`                 |
+| `companion`  | 伴侣配置（提供商引用）                  | 否         | `{}`                                                                        |
+| `indexing`   | 索引配置（上下文嵌入、Chunk 大小）      | 否         | `{ contextualEmbedding: false, parentChunkSize: 800, childChunkSize: 150 }` |
+| `appearance` | 外观配置（主题、字号）                  | 是         | `{ mode: 'light', fontSizeLevel: 3 }`                                       |
 
 ## Requirements（需求）
 
@@ -90,6 +90,11 @@ APP_CONFIG (用户个人配置)
 - **WHEN** 引用配置（如 `chat.defaultProvider`、`rag.embeddingProvider`）被解析时
 - **THEN** 系统通过 `ModelProviderService.resolveProvider()` 解析 `{providerId}#{modelName}` key，在 `provider.models` 中查找匹配类型且 enabled 的模型，返回 `ResolvedProvider` 扁平化视图
 
+#### Scenario: dto.model 覆盖校验
+- **WHEN** 聊天请求通过 `dto.model` 传入与默认配置不同的模型名时
+- **THEN** 系统验证该模型存在于对应 Provider 的 `models` 数组中，且类型为 `llm` 且 `enabled=true`
+- **AND** 验证不通过时返回 `MODEL_PROVIDER_TYPE_MISMATCH` 错误，防止用户绕过配置指定未授权的模型
+
 #### Scenario: 完整 URL 模式
 - **WHEN** Provider 的 `isCompleteUrl = true` 时
 - **THEN** SDK 直接使用 `baseUrl` 作为完整请求路径，不拼接 `/chat/completions` 或 `/embeddings` 等默认后缀
@@ -113,6 +118,16 @@ APP_CONFIG (用户个人配置)
 #### Scenario: 代理获取远程模型列表
 - **WHEN** 前端请求 `POST /admin/providers/fetch-models`（传入 `baseUrl`、`apiKey`、`isCompleteUrl`）
 - **THEN** 系统代理调用远程 `/models` 端点，解析 OpenAI 兼容格式响应，根据模型名推断 `type`，返回统一的 `{ success, models: FetchedModel[], error? }` 结构
+
+#### Scenario: fetch-models SSRF 防护
+- **WHEN** `POST /admin/providers/fetch-models` 的 `baseUrl` 指向内网地址（如 `169.254.169.254`、`127.0.0.1`、`localhost` 生产环境）
+- **THEN** 系统返回 400 错误，提示 baseUrl 不合法或指向受限内网地址
+- **AND** 生产环境不允许 localhost/127.0.0.1，开发环境放行 localhost
+
+#### Scenario: fetch-models 响应大小限制
+- **WHEN** 远程 `/models` 端点返回超过 1MB 的响应体
+- **THEN** 系统拒绝解析并返回错误，防止内存溢出（OOM）
+- **AND** 系统同时检查 `Content-Length` 头和实际响应体大小
 
 ### Requirement: 用户偏好设置
 
@@ -207,128 +222,128 @@ APP_CONFIG (用户个人配置)
 
 ### 用户配置端点
 
-| 方法 | 路径 | 说明 | 权限 |
-|------|------|------|------|
-| GET | `/settings` | 获取用户配置（已掩码） | JWT |
-| GET | `/settings/:category` | 获取指定分类配置 | JWT |
-| GET | `/settings/:category/providers` | 获取可用模型列表（仅 chat/rag/companion） | JWT |
-| POST | `/settings` | 保存用户配置（仅 appearance） | JWT |
-| POST | `/settings/:category` | 保存分类配置（仅 appearance） | JWT |
+| 方法 | 路径                            | 说明                                      | 权限 |
+|------|---------------------------------|-------------------------------------------|------|
+| GET  | `/settings`                     | 获取用户配置（已掩码）                    | JWT  |
+| GET  | `/settings/:category`           | 获取指定分类配置                          | JWT  |
+| GET  | `/settings/:category/providers` | 获取可用模型列表（仅 chat/rag/companion） | JWT  |
+| POST | `/settings`                     | 保存用户配置（仅 appearance）             | JWT  |
+| POST | `/settings/:category`           | 保存分类配置（仅 appearance）             | JWT  |
 
 ### 系统配置端点（管理员）
 
-| 方法 | 路径 | 说明 | 权限 |
-|------|------|------|------|
-| GET | `/admin/system-config` | 获取系统配置（已掩码） | `moduleSettings:read` |
-| GET | `/admin/system-config/:category` | 获取系统配置分类 | `moduleSettings:read` |
-| POST | `/admin/system-config/:category` | 保存系统配置分类 | `moduleSettings:update` |
-| POST | `/admin/system-config/reload` | 触发配置重载 | `moduleSettings:update` |
+| 方法 | 路径                             | 说明                   | 权限                    |
+|------|----------------------------------|------------------------|-------------------------|
+| GET  | `/admin/system-config`           | 获取系统配置（已掩码） | `moduleSettings:read`   |
+| GET  | `/admin/system-config/:category` | 获取系统配置分类       | `moduleSettings:read`   |
+| POST | `/admin/system-config/:category` | 保存系统配置分类       | `moduleSettings:update` |
+| POST | `/admin/system-config/reload`    | 触发配置重载           | `moduleSettings:update` |
 
 ### Provider 池端点（管理员）
 
-| 方法 | 路径 | 说明 | 权限 |
-|------|------|------|------|
-| GET | `/admin/providers` | 获取所有 Provider（已掩码） | `modelProviders:read` |
-| GET | `/admin/providers/presets` | 获取预设提供商列表 | `modelProviders:read` |
-| GET | `/admin/providers/:id` | 获取指定 Provider（已掩码） | `modelProviders:read` |
-| POST | `/admin/providers` | 保存 Provider（新建时 id 留空，后端自动生成） | `modelProviders:create` |
-| POST | `/admin/providers/fetch-models` | 代理获取远程模型列表 | `modelProviders:create` |
-| DELETE | `/admin/providers/:id` | 删除 Provider | `modelProviders:delete` |
+| 方法   | 路径                            | 说明                                          | 权限                    |
+|--------|---------------------------------|-----------------------------------------------|-------------------------|
+| GET    | `/admin/providers`              | 获取所有 Provider（已掩码）                   | `modelProviders:read`   |
+| GET    | `/admin/providers/presets`      | 获取预设提供商列表                            | `modelProviders:read`   |
+| GET    | `/admin/providers/:id`          | 获取指定 Provider（已掩码）                   | `modelProviders:read`   |
+| POST   | `/admin/providers`              | 保存 Provider（新建时 id 留空，后端自动生成） | `modelProviders:create` |
+| POST   | `/admin/providers/fetch-models` | 代理获取远程模型列表                          | `modelProviders:create` |
+| DELETE | `/admin/providers/:id`          | 删除 Provider                                 | `modelProviders:delete` |
 
 ## Data Models（数据模型）
 
 ### ModelProvider
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| id | string | 是 | Provider 唯一标识（新建时留空，后端根据 name 自动生成 `{slug}-{random4}`） |
-| name | string | 是 | 显示名称 |
-| notes | string | 否 | 备注 |
-| enabled | boolean | 否 | 是否启用（默认 true） |
-| apiKey | string | 是 | API 密钥（存储时加密，返回时掩码） |
-| baseUrl | string | 否 | 自定义基础 URL（默认空） |
-| isCompleteUrl | boolean | 否 | 是否完整 URL（默认 false；true 时 SDK 不拼接默认路径） |
-| timeoutMs | number | 否 | 超时时间（默认 300000） |
-| models | Model[] | 否 | 模型列表（一个 Provider 可包含多种类型的模型，默认 `[]`） |
+| 字段          | 类型    | 必填 | 说明                                                                       |
+|---------------|---------|------|----------------------------------------------------------------------------|
+| id            | string  | 是   | Provider 唯一标识（新建时留空，后端根据 name 自动生成 `{slug}-{random4}`） |
+| name          | string  | 是   | 显示名称                                                                   |
+| notes         | string  | 否   | 备注                                                                       |
+| enabled       | boolean | 否   | 是否启用（默认 true）                                                      |
+| apiKey        | string  | 是   | API 密钥（存储时加密，返回时掩码）                                         |
+| baseUrl       | string  | 否   | 自定义基础 URL（默认空）                                                   |
+| isCompleteUrl | boolean | 否   | 是否完整 URL（默认 false；true 时 SDK 不拼接默认路径）                     |
+| timeoutMs     | number  | 否   | 超时时间（默认 300000）                                                    |
+| models        | Model[] | 否   | 模型列表（一个 Provider 可包含多种类型的模型，默认 `[]`）                  |
 
 ### Model
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| name | string | 是 | 模型名（如 `deepseek-chat`） |
-| type | 'llm'\|'embedding'\|'reranker'\|'document-parser' | 是 | 模型类型 |
-| enabled | boolean | 否 | 是否启用（默认 true） |
-| dimensions | number | 否 | Embedding 维度（仅 embedding 类型，远程 API 模型通常自动获取） |
-| maxLength | number | 否 | 最大输入长度（仅 reranker 类型） |
+| 字段       | 类型                                              | 必填 | 说明                                                           |
+|------------|---------------------------------------------------|------|----------------------------------------------------------------|
+| name       | string                                            | 是   | 模型名（如 `deepseek-chat`）                                   |
+| type       | 'llm'\|'embedding'\|'reranker'\|'document-parser' | 是   | 模型类型                                                       |
+| enabled    | boolean                                           | 否   | 是否启用（默认 true）                                          |
+| dimensions | number                                            | 否   | Embedding 维度（仅 embedding 类型，远程 API 模型通常自动获取） |
+| maxLength  | number                                            | 否   | 最大输入长度（仅 reranker 类型）                               |
 
 > **模型唯一标识**：消费端使用 `{providerId}#{modelName}` 格式（如 `deepseek#deepseek-chat`）引用具体模型。`ModelProviderService.parseModelKey()` / `buildModelKey()` 提供解析与构造。
 
 ### Settings
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| version | number | 2 | 配置格式版本（v1: 单 model 字段; v2: models 数组） |
-| providers | Record<string, ModelProvider> | `{}` | 模型提供商池 |
-| chat | ChatSettings | 见下方 | 聊天配置 |
-| rag | RagSettings | 见下方 | RAG 配置 |
-| companion | CompanionSettings | `{}` | 伴侣配置 |
-| indexing | IndexingSettings | 见下方 | 索引配置 |
-| appearance | AppearanceSettings | 见下方 | 外观配置 |
+| 字段       | 类型                          | 默认值 | 说明                                               |
+|------------|-------------------------------|--------|----------------------------------------------------|
+| version    | number                        | 2      | 配置格式版本（v1: 单 model 字段; v2: models 数组） |
+| providers  | Record<string, ModelProvider> | `{}`   | 模型提供商池                                       |
+| chat       | ChatSettings                  | 见下方 | 聊天配置                                           |
+| rag        | RagSettings                   | 见下方 | RAG 配置                                           |
+| companion  | CompanionSettings             | `{}`   | 伴侣配置                                           |
+| indexing   | IndexingSettings              | 见下方 | 索引配置                                           |
+| appearance | AppearanceSettings            | 见下方 | 外观配置                                           |
 
 ### ChatSettings
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| defaultProvider | string | undefined | 默认聊天提供商 ID |
-| enabledProviders | string[] | `[]` | 启用的提供商 ID 列表 |
-| temperature | number | 0.7 | 温度参数（0-2） |
+| 字段             | 类型     | 默认值    | 说明                 |
+|------------------|----------|-----------|----------------------|
+| defaultProvider  | string   | undefined | 默认聊天提供商 ID    |
+| enabledProviders | string[] | `[]`      | 启用的提供商 ID 列表 |
+| temperature      | number   | 0.7       | 温度参数（0-2）      |
 
 ### RagSettings
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| llmProvider | string | undefined | RAG LLM 提供商 ID |
-| embeddingProvider | string | undefined | Embedding 提供商 ID |
-| rerankerProvider | string | undefined | 重排提供商 ID |
-| timeoutMs | number | 60000 | 超时时间 |
-| rerankerAllowedModelPrefixes | string[] | `['BAAI/', 'Xorbits/', 'sentence-transformers/']` | 允许的重排模型前缀 |
+| 字段                         | 类型     | 默认值                                            | 说明                |
+|------------------------------|----------|---------------------------------------------------|---------------------|
+| llmProvider                  | string   | undefined                                         | RAG LLM 提供商 ID   |
+| embeddingProvider            | string   | undefined                                         | Embedding 提供商 ID |
+| rerankerProvider             | string   | undefined                                         | 重排提供商 ID       |
+| timeoutMs                    | number   | 60000                                             | 超时时间            |
+| rerankerAllowedModelPrefixes | string[] | `['BAAI/', 'Xorbits/', 'sentence-transformers/']` | 允许的重排模型前缀  |
 
 ### IndexingSettings
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| contextualEmbedding | boolean | false | 是否启用上下文嵌入 |
-| contextualWindow | number | 1 | 上下文窗口大小 |
-| parentChunkSize | number | 800 | 父 Chunk 大小 |
-| childChunkSize | number | 150 | 子 Chunk 大小 |
-| synonymDict | Record<'zh'\|'en', Record<string, string[]>> | `{ zh: {}, en: {} }` | 同义词词典 |
+| 字段                | 类型                                         | 默认值               | 说明               |
+|---------------------|----------------------------------------------|----------------------|--------------------|
+| contextualEmbedding | boolean                                      | false                | 是否启用上下文嵌入 |
+| contextualWindow    | number                                       | 1                    | 上下文窗口大小     |
+| parentChunkSize     | number                                       | 800                  | 父 Chunk 大小      |
+| childChunkSize      | number                                       | 150                  | 子 Chunk 大小      |
+| synonymDict         | Record<'zh'\|'en', Record<string, string[]>> | `{ zh: {}, en: {} }` | 同义词词典         |
 
 ### AppearanceSettings
 
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| mode | 'light'\|'dark'\|'system' | 'light' | 主题模式 |
-| fontSizeLevel | number | 3 | 字号级别（1-5） |
+| 字段          | 类型                      | 默认值  | 说明            |
+|---------------|---------------------------|---------|-----------------|
+| mode          | 'light'\|'dark'\|'system' | 'light' | 主题模式        |
+| fontSizeLevel | number                    | 3       | 字号级别（1-5） |
 
 ## Error Codes（错误码）
 
-| 错误码 | 说明 |
-|--------|------|
-| `CATEGORY_READ_ONLY` | 用户端不允许修改该分类 |
-| `INVALID_CONFIG_FIELDS` | 用户端不允许保存指定字段 |
-| `INVALID_CONFIG_CATEGORY` | 无效的配置分类 |
-| `INVALID_PROVIDER_CATEGORY` | 该分类不支持读取可用模型 |
-| `MODEL_PROVIDER_NOT_CONFIGURED` | 未配置模型提供商 |
-| `MODEL_PROVIDER_NOT_FOUND` | 引用的模型提供商不存在 |
-| `MODEL_PROVIDER_TYPE_MISMATCH` | 模型提供商类型不匹配 |
-| `MODEL_PROVIDER_DISABLED` | 模型提供商已禁用 |
-| `PROVIDER_IN_USE` | 该模型提供商仍被配置引用 |
-| `INVALID_ENCRYPTED_FORMAT` | 加密格式无效 |
+| 错误码                          | 说明                     |
+|---------------------------------|--------------------------|
+| `CATEGORY_READ_ONLY`            | 用户端不允许修改该分类   |
+| `INVALID_CONFIG_FIELDS`         | 用户端不允许保存指定字段 |
+| `INVALID_CONFIG_CATEGORY`       | 无效的配置分类           |
+| `INVALID_PROVIDER_CATEGORY`     | 该分类不支持读取可用模型 |
+| `MODEL_PROVIDER_NOT_CONFIGURED` | 未配置模型提供商         |
+| `MODEL_PROVIDER_NOT_FOUND`      | 引用的模型提供商不存在   |
+| `MODEL_PROVIDER_TYPE_MISMATCH`  | 模型提供商类型不匹配     |
+| `MODEL_PROVIDER_DISABLED`       | 模型提供商已禁用         |
+| `PROVIDER_IN_USE`               | 该模型提供商仍被配置引用 |
+| `INVALID_ENCRYPTED_FORMAT`      | 加密格式无效             |
 
 ## Events（事件）
 
-| 事件名 | 数据 | 说明 |
-|--------|------|------|
+| 事件名           | 数据                                     | 说明         |
+|------------------|------------------------------------------|--------------|
 | `config.changed` | `ConfigChangedEvent(category, isSystem)` | 配置变更通知 |
 
 ## Security（安全）

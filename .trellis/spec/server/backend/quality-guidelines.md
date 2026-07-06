@@ -140,6 +140,34 @@ node_modules/  — 第三方依赖
 1. **忘记 organizeImports**：保存前确保 biome 自动执行了 import 排序
 2. **覆盖 rules 后不写注释**：每个 overrides 块应注明原因
 3. **CI 检查失败后本地不修复**：`biome ci` 失败应立即在本地 `biome lint --write` 修复
+4. **Controller 使用内联类型绕过 Zod 验证**：`@Body() dto: { baseUrl: string }` 这样的内联类型不会被全局 `ZodValidationPipe` 校验，等同于信任未校验的用户输入。**必须**使用 `createZodDto(schema)` 生成的 DTO 类，确保所有字段都经过 Zod schema 验证。
+
+  ```typescript
+  // ❌ 错误：内联类型绕过全局 ZodValidationPipe
+  async fetchModels(@Body() dto: { baseUrl: string; apiKey: string }) {
+    return this.service.fetchModels(dto)
+  }
+
+  // ✅ 正确：使用 createZodDto 生成的 DTO 类
+  async fetchModels(@Body() dto: FetchModelsDto) {
+    return this.service.fetchModels(dto)
+  }
+  ```
+
+5. **代理远程 API 不做响应大小限制**：`fetch()` + `resp.json()` 会将完整响应体加载到内存中，恶意远程服务器可返回超大 JSON 导致 OOM。必须设置响应大小上限（建议 1MB），先检查 `Content-Length` 头，再检查实际 `text.length`。
+
+  ```typescript
+  // ❌ 错误：无大小限制直接解析
+  const json = await resp.json()
+
+  // ✅ 正确：先检查大小再解析
+  const MAX_RESPONSE_SIZE = 1_000_000
+  const contentLength = Number.parseInt(resp.headers.get('content-length') ?? '0', 10)
+  if (contentLength > MAX_RESPONSE_SIZE) throw new Error('response too large')
+  const text = await resp.text()
+  if (text.length > MAX_RESPONSE_SIZE) throw new Error('response too large')
+  const json = JSON.parse(text)
+  ```
 
 ---
 
