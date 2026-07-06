@@ -9,7 +9,6 @@ import type { LlmProvider } from '@/modules/chat/llm/llm-provider.interface.js'
 import type { ModelRegistryService } from '@/modules/chat/model-registry.service.js'
 import { MODEL_PROVIDER_ERROR_CODES } from '@/modules/settings/constants.js'
 import type { Settings } from '@/modules/settings/dto/settings.dto.js'
-import type { ModelProviderService } from '@/modules/settings/model-provider.service.js'
 import type { SettingsService } from '@/modules/settings/settings.service.js'
 
 function createMockSettings(overrides: Partial<Settings> = {}): Settings {
@@ -59,24 +58,6 @@ function createMockSettingsService(overrides = {}) {
   }
 }
 
-function createMockModelProviderService(overrides = {}) {
-  return {
-    resolveProvider: vi
-      .fn()
-      .mockImplementation((_path: string, _type: string, config: Settings) => {
-        const provider = config.providers.deepseek
-        if (!provider) {
-          throw new BadRequestException({
-            code: MODEL_PROVIDER_ERROR_CODES.NOT_FOUND,
-            message: 'provider not found',
-          })
-        }
-        return provider
-      }),
-    ...overrides,
-  }
-}
-
 function createMockModelRegistry(overrides = {}) {
   return {
     lookup: vi.fn(),
@@ -121,7 +102,6 @@ function createMockProvider(overrides = {}): LlmProvider {
 describe('ChatService', () => {
   let service: ChatService
   let settingsService: ReturnType<typeof createMockSettingsService>
-  let modelProviderService: ReturnType<typeof createMockModelProviderService>
   let modelRegistry: ReturnType<typeof createMockModelRegistry>
   let conversationService: ReturnType<typeof createMockConversationService>
   let llmFactory: ReturnType<typeof createMockLlmFactory>
@@ -131,7 +111,6 @@ describe('ChatService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     settingsService = createMockSettingsService()
-    modelProviderService = createMockModelProviderService()
     modelRegistry = createMockModelRegistry()
     conversationService = createMockConversationService()
     llmFactory = createMockLlmFactory()
@@ -144,7 +123,6 @@ describe('ChatService', () => {
 
     service = new ChatService(
       settingsService as unknown as SettingsService,
-      modelProviderService as unknown as ModelProviderService,
       modelRegistry as unknown as ModelRegistryService,
       conversationService as unknown as ConversationService,
       llmFactory as unknown as LlmProviderFactory,
@@ -321,7 +299,6 @@ describe('ChatService', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       service = new ChatService(
         settingsService as unknown as SettingsService,
-        modelProviderService as unknown as ModelProviderService,
         modelRegistry as unknown as ModelRegistryService,
         conversationService as unknown as ConversationService,
         llmFactory as unknown as LlmProviderFactory,

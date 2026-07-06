@@ -3,7 +3,6 @@ import type { ChatMessagesChunk } from '@goferbot/data'
 import { BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import { StreamFinalizeService } from '../../common/services/stream-finalize.service.js'
 import { MODEL_PROVIDER_ERROR_CODES } from '../settings/constants.js'
-import { ModelProviderService } from '../settings/model-provider.service.js'
 import { SettingsService } from '../settings/settings.service.js'
 import { ConversationService } from './conversation.service.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
@@ -25,7 +24,6 @@ export class ChatService {
 
   constructor(
     private readonly settingsService: SettingsService,
-    private readonly modelProviderService: ModelProviderService,
     private readonly modelRegistry: ModelRegistryService,
     private readonly conversationService: ConversationService,
     private readonly llmFactory: LlmProviderFactory,
@@ -252,11 +250,25 @@ export class ChatService {
       })
     }
 
-    const provider = this.modelProviderService.resolveProvider(
-      `providers.${providerId}`,
-      'llm',
-      settings,
-    )
+    const provider = settings.providers[providerId]
+    if (!provider) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_FOUND,
+        message: `模型提供商不存在：${providerId}`,
+      })
+    }
+    if (provider.type !== 'llm') {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.TYPE_MISMATCH,
+        message: `模型提供商类型不匹配：${providerId} 是 ${provider.type}，需要 llm`,
+      })
+    }
+    if (!provider.enabled) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.DISABLED,
+        message: `模型提供商已禁用：${providerId}`,
+      })
+    }
     const timeoutMs = provider.timeoutMs
     return {
       provider: await this.createProvider(provider, dtoModel ?? provider.model, timeoutMs),
