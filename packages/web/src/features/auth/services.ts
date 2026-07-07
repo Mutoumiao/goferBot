@@ -17,6 +17,12 @@ export interface RegisterResult {
 
 const REMEMBER_EMAIL_KEY = 'goferbot_remember_email'
 
+const AUTH_COOKIE_NAME = 'goferbot_web_access_token'
+
+function hasAuthCookie(): boolean {
+  return document.cookie.includes(AUTH_COOKIE_NAME)
+}
+
 let _fetchMePromise: Promise<boolean> | null = null
 
 // Error message whitelist for security - only allow safe characters
@@ -161,6 +167,11 @@ export async function refreshAuth(): Promise<boolean> {
  */
 export async function fetchMe(): Promise<boolean> {
   if (_fetchMePromise) return _fetchMePromise
+
+  if (!hasAuthCookie()) {
+    useAuthStore.getState().clearAuth()
+    return false
+  }
 
   _fetchMePromise = (async (): Promise<boolean> => {
     try {

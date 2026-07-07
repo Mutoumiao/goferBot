@@ -42,6 +42,10 @@ describe('auth services', () => {
     useAuthStore.setState({ user: null, isAuthenticated: false, isInitialized: false })
     localStorage.clear()
     vi.clearAllMocks()
+    Object.defineProperty(document, 'cookie', {
+      value: 'goferbot_web_access_token=test-token',
+      writable: true,
+    })
   })
 
   describe('loginUser', () => {
@@ -243,6 +247,29 @@ describe('auth services', () => {
 
       expect(result).toBe(false)
       expect(useAuthStore.getState().user).toBeNull()
+    })
+
+    it('does not call API when no auth cookie', async () => {
+      Object.defineProperty(document, 'cookie', {
+        value: '',
+        writable: true,
+      })
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(false)
+      expect(useAuthStore.getState().user).toBeNull()
+    })
+
+    it('concurrent calls share the same promise', async () => {
+      vi.mocked(getMe).mockReturnValue({
+        send: vi.fn().mockResolvedValue(mockUser),
+      } as any)
+
+      const [result1, result2] = await Promise.all([fetchCurrentUser(), fetchCurrentUser()])
+
+      expect(result1).toBe(true)
+      expect(result2).toBe(true)
     })
   })
 

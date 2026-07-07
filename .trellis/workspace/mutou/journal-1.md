@@ -108,3 +108,40 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 完成 Provider/Model 重构：安全审查 + Spec 更新 + 归档
+
+**Date**: 2026-07-07
+**Task**: 完成 Provider/Model 重构：安全审查 + Spec 更新 + 归档
+**Branch**: `master`
+
+### Summary
+
+完成 07-06-provider-model-redesign 任务收尾：安全审查修复（SSRF 防护、模型覆盖校验、响应大小限制）、trellis-update-spec 更新（Trellis quality-guidelines 新增两条 Common Mistake、cross-layer-thinking-guide 新增共享标识符契约清单、OpenSpec settings 新增 3 个业务 Scenario）、任务归档到 archive/2026-07/。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8a0f568` | (see git log) |
+| `7ac6220` | (see git log) |
+| `db99727` | (see git log) |
+| `f43e60a` | (see git log) |
+| `266f149` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

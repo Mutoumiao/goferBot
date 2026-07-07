@@ -240,6 +240,90 @@ export const alovaInstance = createAlova({
 
 ---
 
+## 认证登录最佳实践
+
+### 分层架构原则
+
+认证逻辑严格遵循 **Component → Service → API → Store** 分层原则：
+
+- **Store 层**（`stores/auth.ts`）：仅管理纯状态，不直接调用 API
+- **Service 层**（`services/auth.ts`）：处理业务逻辑、API 调用、互斥锁、Cookie 前置检查
+- **API 层**（`api/auth.ts`）：定义 alova 请求配置
+- **Guard 层**（`utils/auth-guard.ts`）：调用 Service 层方法进行认证初始化
+
+### Cookie 前置检查
+
+在调用 `/auth/me` 接口前，先检查 `document.cookie` 是否包含对应的 access token：
+
+```typescript
+const AUTH_COOKIE_NAME = 'goferbot_admin_access_token'
+
+function hasAuthCookie(): boolean {
+  return document.cookie.includes(AUTH_COOKIE_NAME)
+}
+
+export async function fetchMe(): Promise<boolean> {
+  if (!hasAuthCookie()) {
+    useAuthStore.getState().clearAuth()
+    return false
+  }
+  // ... API 调用逻辑
+}
+```
+
+**设计理由**：如果没有 access token cookie，说明用户未登录或会话已完全失效，调用 `/auth/me` 只会返回 401，浪费一次请求。
+
+### 互斥锁实现
+
+使用模块级 Promise 缓存防止并发请求：
+
+```typescript
+let _fetchMePromise: Promise<boolean> | null = null
+
+export async function fetchMe(): Promise<boolean> {
+  if (_fetchMePromise) return _fetchMePromise
+
+  _fetchMePromise = (async (): Promise<boolean> => {
+    try {
+      // 业务逻辑
+    } finally {
+      _fetchMePromise = null
+    }
+  })()
+
+  return _fetchMePromise
+}
+```
+
+### Token 刷新无限循环防护
+
+使用 WeakSet 追踪已触发过刷新的请求，防止 401/403 重试后仍失败时的无限刷新循环：
+
+```typescript
+const refreshedMethods = new WeakSet<object>()
+
+async function doRefreshAndRetry(method) {
+  if (refreshedMethods.has(method)) {
+    useAuthStore.getState().clearAuth()
+    throw new Error('Auth loop detected')
+  }
+
+  refreshedMethods.add(method)
+  // ... 刷新逻辑
+}
+```
+
+### 状态初始化
+
+认证状态初始化流程：
+
+1. 页面加载 → `waitForAuthInit()` 等待 Zustand hydration 完成
+2. hydration 完成后 → 调用 `fetchCurrentUser()`（Service 层）
+3. `fetchCurrentUser()` 检查 Cookie → 无 Cookie 直接清空状态
+4. 有 Cookie → 发起 `/auth/me` 请求验证会话
+
+---
+
 ## 常见错误
 
 | 错误模式 | 正确做法 |
@@ -249,3 +333,7 @@ export const alovaInstance = createAlova({
 | 在组件中直接调用 alova | 通过 services.ts 封装 |
 | 忽略认证状态初始化 | 使用 waitForAuthInit 等待状态初始化 |
 | 在 useEffect 中同步读取 Zustand state | 使用 selector 或 useEffect 依赖数组 |
+| Store 层直接调用 API | 将 API 调用移至 Service 层 |
+| 无 Cookie 时仍调用 `/auth/me` | 添加 Cookie 前置检查，无 Cookie 直接清空状态 |
+| 并发调用 `/auth/me` | 使用互斥锁防止重复请求 |
+| alova 拦截器 401/403 无限刷新循环 | 使用 WeakSet 追踪已刷新请求 |

@@ -77,18 +77,45 @@ export async function refreshAuth(): Promise<boolean> {
   }
 }
 
-export async function fetchCurrentUser(): Promise<boolean> {
-  try {
-    const user = await getCurrentUser().send()
-    useAuthStore.getState().setUser(user as AdminUser)
-    return true
-  } catch (err) {
-    const status = (err as { status?: number }).status
-    if (status === 401 || status === 403) {
-      useAuthStore.getState().clearAuth()
-    }
+const AUTH_COOKIE_NAME = 'goferbot_admin_access_token'
+
+function hasAuthCookie(): boolean {
+  return document.cookie.includes(AUTH_COOKIE_NAME)
+}
+
+let _fetchMePromise: Promise<boolean> | null = null
+
+export async function fetchMe(): Promise<boolean> {
+  if (_fetchMePromise) return _fetchMePromise
+
+  if (!hasAuthCookie()) {
+    useAuthStore.getState().clearAuth()
     return false
   }
+
+  _fetchMePromise = (async (): Promise<boolean> => {
+    try {
+      const user = await getCurrentUser().send()
+      useAuthStore.getState().setUser(user as AdminUser)
+      return true
+    } catch (err) {
+      const status = (err as { status?: number }).status
+      if (status === 401 || status === 403) {
+        useAuthStore.getState().clearAuth()
+      } else {
+        useAuthStore.setState({ isInitialized: true })
+      }
+      return false
+    } finally {
+      _fetchMePromise = null
+    }
+  })()
+
+  return _fetchMePromise
+}
+
+export async function fetchCurrentUser(): Promise<boolean> {
+  return fetchMe()
 }
 
 export async function logoutService(): Promise<void> {
@@ -112,8 +139,4 @@ export function setRememberedEmail(email: string | null): void {
   } else {
     localStorage.removeItem('goferbot_admin_remember_email')
   }
-}
-
-export function hasRefreshToken(): boolean {
-  return false
 }

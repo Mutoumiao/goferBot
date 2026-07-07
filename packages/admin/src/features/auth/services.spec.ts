@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchCurrentUser,
   getRememberedEmail,
-  hasRefreshToken,
   loginService,
   logoutService,
   refreshAuth,
@@ -22,6 +21,7 @@ const {
   mockSetAuth,
   mockSetUser,
   mockClearAuth,
+  mockSetState,
   mockEncryptPassword,
   mockClearPublicKeyCache,
 } = vi.hoisted(() => ({
@@ -36,6 +36,7 @@ const {
   mockSetAuth: vi.fn(),
   mockSetUser: vi.fn(),
   mockClearAuth: vi.fn(),
+  mockSetState: vi.fn(),
   mockEncryptPassword: vi.fn().mockResolvedValue('encrypted-password'),
   mockClearPublicKeyCache: vi.fn(),
 }))
@@ -54,6 +55,7 @@ vi.mock('@/stores/auth', () => ({
       setUser: mockSetUser,
       clearAuth: mockClearAuth,
     }),
+    setState: mockSetState,
   },
 }))
 
@@ -74,7 +76,13 @@ vi.mock('@/utils/password-encryption', () => ({
 }))
 
 describe('auth services', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    Object.defineProperty(document, 'cookie', {
+      value: 'goferbot_admin_access_token=test-token',
+      writable: true,
+    })
+  })
 
   it('loginService validates input', async () => {
     expect((await loginService('', 'x')).success).toBe(false)
@@ -141,10 +149,61 @@ describe('auth services', () => {
     expect(await refreshAuth()).toBe(true)
   })
 
-  it('fetchCurrentUser clears auth on 401', async () => {
-    mockGetCurrentUser.mockRejectedValueOnce({ status: 401 })
-    expect(await fetchCurrentUser()).toBe(false)
-    expect(mockClearAuth).toHaveBeenCalled()
+  describe('fetchCurrentUser', () => {
+    it('returns true and updates user on success', async () => {
+      const mockUser = { id: '1', email: 'a@b.com', roles: ['admin'] }
+      mockGetCurrentUser.mockResolvedValueOnce(mockUser)
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(true)
+      expect(mockGetCurrentUser).toHaveBeenCalled()
+      expect(mockSetUser).toHaveBeenCalledWith(mockUser)
+    })
+
+    it('clears auth on 401', async () => {
+      mockGetCurrentUser.mockRejectedValueOnce({ status: 401 })
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(false)
+      expect(mockGetCurrentUser).toHaveBeenCalled()
+      expect(mockClearAuth).toHaveBeenCalled()
+    })
+
+    it('sets isInitialized on non-401 failure', async () => {
+      mockGetCurrentUser.mockRejectedValueOnce(new Error('network error'))
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(false)
+      expect(mockGetCurrentUser).toHaveBeenCalled()
+      expect(mockSetState).toHaveBeenCalledWith({ isInitialized: true })
+    })
+
+    it('does not call API when no auth cookie', async () => {
+      Object.defineProperty(document, 'cookie', {
+        value: '',
+        writable: true,
+      })
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(false)
+      expect(mockGetCurrentUser).not.toHaveBeenCalled()
+      expect(mockClearAuth).toHaveBeenCalled()
+    })
+
+    it('concurrent calls share the same promise', async () => {
+      const mockUser = { id: '1', email: 'a@b.com', roles: ['admin'] }
+      mockGetCurrentUser.mockResolvedValueOnce(mockUser)
+
+      const [result1, result2] = await Promise.all([fetchCurrentUser(), fetchCurrentUser()])
+
+      expect(result1).toBe(true)
+      expect(result2).toBe(true)
+      expect(mockGetCurrentUser).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('logoutService calls API, clears auth, shows success and navigates on success', async () => {
@@ -175,10 +234,5 @@ describe('auth services', () => {
     expect(getRememberedEmail()).toBe('a@b.com')
     setRememberedEmail(null)
     expect(getRememberedEmail()).toBeNull()
-  })
-
-  it('hasRefreshToken always returns false (refresh token moved to HttpOnly Cookie)', () => {
-    // Refresh token is now managed via HttpOnly cookies, hasRefreshToken is kept for backward compatibility
-    expect(hasRefreshToken()).toBe(false)
   })
 })

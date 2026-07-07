@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/auth'
+import { fetchCurrentUser } from '@/features/auth/services'
 
 export function waitForAuthInit(maxMs = 5000): Promise<boolean> {
   return new Promise((resolve) => {
@@ -6,7 +7,6 @@ export function waitForAuthInit(maxMs = 5000): Promise<boolean> {
     const check = async () => {
       const state = useAuthStore.getState()
 
-      // 已完成初始化，直接返回当前状态
       if (state.isInitialized) {
         resolve(!!state.user)
         return
@@ -22,8 +22,7 @@ export function waitForAuthInit(maxMs = 5000): Promise<boolean> {
         return
       }
 
-      // hydration 完成，调用 fetchMe 从服务器验证
-      const ok = await useAuthStore.getState().fetchMe()
+      const ok = await fetchCurrentUser()
       resolve(ok)
     }
     check()

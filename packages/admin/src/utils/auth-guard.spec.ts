@@ -18,11 +18,9 @@ describe('auth-guard', () => {
         isAuthenticated: false,
         isInitialized: false,
         _hydrated: false,
-        fetchMePromise: null,
         clearAuth: (() => undefined) as never,
         setUser: (() => undefined) as never,
         setInitialized: ((v: boolean) => useAuthStore.setState({ isInitialized: v })) as never,
-        fetchMe: (async () => false) as never,
       },
       true,
     )
@@ -123,21 +121,10 @@ describe('auth-guard', () => {
     ).toBe(false)
   })
 
-  it('waitForAuthInit resolves with false when fetchMe fails', async () => {
-    useAuthStore.setState({
-      _hydrated: true,
-      isInitialized: false,
-      fetchMe: (async () => false) as never,
-    } as never)
-    const result = await waitForAuthInit()
-    expect(result).toBe(false)
-  })
-
   it('waitForAuthInit times out and marks initialized when not hydrated', async () => {
     useAuthStore.setState({
       _hydrated: false,
       isInitialized: false,
-      fetchMe: (async () => false) as never,
     } as never)
     const start = Date.now()
     const result = await waitForAuthInit(150)

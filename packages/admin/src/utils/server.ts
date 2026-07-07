@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 
 let isRefreshing = false
 let refreshSubscribers: Array<{ resolve: () => void; reject: (err: Error) => void }> = []
+const refreshedMethods = new WeakSet<object>()
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
@@ -49,9 +50,15 @@ async function doRefreshAndRetry(method: {
     throw new Error('Logout request')
   }
 
+  if (refreshedMethods.has(method)) {
+    useAuthStore.getState().clearAuth()
+    throw new Error('Auth loop detected')
+  }
+
   if (!isRefreshing) {
     isRefreshing = true
     try {
+      refreshedMethods.add(method)
       const ok = await refreshToken()
       if (ok) {
         onRefreshed()
@@ -91,6 +98,10 @@ const responded = {
     method: { send: () => unknown; config: { headers: Record<string, string> } },
   ) {
     if (isUnauthorized(response.status) && !isLoginPage()) {
+      if (refreshedMethods.has(method)) {
+        useAuthStore.getState().clearAuth()
+        throw new Error('Auth loop detected')
+      }
       return doRefreshAndRetry(method)
     }
     if (!response.ok) {
@@ -127,6 +138,10 @@ const responded = {
   ): Promise<void> {
     const status = error.status
     if (status && isUnauthorized(status) && !isLoginPage()) {
+      if (refreshedMethods.has(method)) {
+        useAuthStore.getState().clearAuth()
+        throw error
+      }
       return doRefreshAndRetry(method) as Promise<void>
     }
     throw error
