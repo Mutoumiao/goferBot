@@ -36,6 +36,51 @@ APP_CONFIG (用户个人配置)
 | `SystemConfigService`  | 系统配置 CRUD、Provider 池管理、事件通知  | [system-config.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/system-config.service.ts)   |
 | `ModelProviderService` | Provider 引用验证、模型级解析、旧格式迁移 | [model-provider.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/model-provider.service.ts) |
 | `ConfigCryptoService`  | API Key 加密/解密/掩码                    | [config-crypto.service.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/config-crypto.service.ts)   |
+| `ProviderRegistry`     | Provider 类实例缓存、懒加载、配置变更失效 | [providers/index.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/server/src/modules/settings/providers/index.ts)               |
+
+### Provider 类体系架构
+
+系统采用类继承体系实现多 Provider 协议支持，消费端通过 `ProviderRegistry` 获取实例。
+
+```
+BaseProvider (抽象基类)
+  ├── fetchModels()         → OpenAI /models 协议
+  ├── toLlamaIndex()        → 返回 LlamaIndex 客户端
+  ├── toLangChain()         → 返回 LangChain 客户端
+  └── inferModelType()      → 根据模型名推断类型
+
+DeepSeekProvider (OpenAI 协议)
+  └── fetchModels()         → 复用 BaseProvider.defaultFetchModels()
+
+OllamaProvider (自定义协议)
+  ├── fetchModels()         → /api/tags 协议
+  ├── toLlamaIndex()        → 返回 Ollama 客户端
+  └── toLangChain()         → 返回 ChatOllama 客户端
+
+CustomProvider (无远程模型)
+  └── fetchModels()         → 抛出 FETCH_MODELS_NOT_SUPPORTED
+```
+
+#### ProviderRegistry 缓存机制
+
+`ProviderRegistry` 是 NestJS 单例服务，管理 Provider 实例的生命周期：
+
+| 特性 | 说明 |
+|------|------|
+| 缓存键 | `{providerId}#{modelName}` |
+| 缓存策略 | 懒加载，首次获取时创建并缓存 |
+| 失效机制 | `config.changed` 事件触发时清除全部缓存 |
+| 预设创建 | `createFromPreset()` 创建临时实例（不缓存），供 fetchModels 端点使用 |
+
+#### 消费端调用模式
+
+```typescript
+// ChatService / RagService / Companion
+const provider = await providerRegistry.get(providerId, modelName)
+const llamaIndexClient = provider.toLlamaIndex()      // Chat/RAG
+const langChainClient = provider.toLangChain()        // Companion
+const models = await provider.fetchModels()           // 配置页面
+```
 
 ### 配置分类
 
@@ -376,6 +421,9 @@ async fetchModels(@Body() dto: FetchModelsDto): Promise<FetchModelsResult> {
 | `MODEL_PROVIDER_DISABLED`       | 模型提供商已禁用         |
 | `PROVIDER_IN_USE`               | 该模型提供商仍被配置引用 |
 | `INVALID_ENCRYPTED_FORMAT`      | 加密格式无效             |
+| `MODEL_NOT_ENABLED`             | 指定模型在提供商中未启用 |
+| `FETCH_MODELS_NOT_SUPPORTED`    | 自定义供应商不支持自动获取模型列表 |
+| `UNKNOWN_PRESET`                | 未知预设供应商           |
 
 ## Events（事件）
 

@@ -86,4 +86,5 @@ e2e/artifacts/.last-run.json
 .trae/
 .zed/
 .cursor/
+.codebuddy/
 
