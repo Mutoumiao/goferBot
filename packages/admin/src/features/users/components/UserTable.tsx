@@ -1,48 +1,37 @@
-import { useNavigate } from '@tanstack/react-router'
+import type { MenuProps } from 'antd'
 import {
   Avatar,
   Button,
   Card,
+  Dropdown,
   Input,
+  Modal,
   message,
-  Popconfirm,
   Select,
   Space,
   Switch,
   Table,
-  Tag,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { Edit, KeyRound, Plus, RefreshCw, Search, Trash2, UserCog, Users } from 'lucide-react'
+import { MoreHorizontal, Plus, RefreshCw, Search, Trash2, Users } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
-import { StatusTag } from '@/components/common/StatusTag'
+import { useAuthStore } from '@/stores/auth'
 import { confirmPasswordAction } from '@/utils/confirm-action'
 import type { AdminUserResponse, ListUsersQuery } from '../services'
 import { assignUserRole, deleteUserService, fetchUsers, toggleUserStatus } from '../services'
+import { getMenuItems } from './menuItems'
 import { resetPasswordModal } from './ResetPasswordDialog'
 import { assignRoleModal } from './RoleAssignDialog'
+import { renderRoleTags } from './renderRoleTags'
 import { createUserModal } from './UserCreateForm'
+import { editUserModal } from './UserEditModal'
 
 type RoleFilter = 'all' | 'super_admin' | 'admin' | 'user'
 
 export interface UserTableProps {
   initialQuery?: ListUsersQuery
-}
-
-function renderRoleTags(roles: string[]) {
-  return (
-    <Space size={4}>
-      {roles.includes('super_admin') && <Tag color="red">超级管理员</Tag>}
-      {roles.includes('admin') && !roles.includes('super_admin') && (
-        <Tag color="purple">管理员</Tag>
-      )}
-      {roles.includes('user') && !roles.includes('admin') && !roles.includes('super_admin') && (
-        <Tag>普通用户</Tag>
-      )}
-    </Space>
-  )
 }
 
 function avatarColor(roles: string[]): string {
@@ -52,7 +41,7 @@ function avatarColor(roles: string[]): string {
 }
 
 export function UserTable({ initialQuery }: UserTableProps) {
-  const navigate = useNavigate()
+  const currentUser = useAuthStore((s) => s.user)
   const [data, setData] = useState<AdminUserResponse[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -95,7 +84,6 @@ export function UserTable({ initialQuery }: UserTableProps) {
     }
     void load(q)
   }
-
   const handleReset = () => {
     setSearchInput('')
     setRoleFilter('all')
@@ -109,14 +97,12 @@ export function UserTable({ initialQuery }: UserTableProps) {
     void load(query)
   }
 
+  const handleEdit = async (user: AdminUserResponse) => {
+    const success = await editUserModal(user)
+    if (success) void load(query)
+  }
+
   const handleDelete = async (user: AdminUserResponse) => {
-    const result = await confirmPasswordAction(
-      '删除用户',
-      <>
-        确定要删除用户 <b>{user.email}</b> 吗？该操作不可撤销。
-      </>,
-    )
-    if (!result.confirmed) return
     await deleteUserService(user.id)
     void load(query)
   }
@@ -138,7 +124,6 @@ export function UserTable({ initialQuery }: UserTableProps) {
       void load(query)
     }
   }
-
   const handleBatchEnable = async () => {
     const result = await confirmPasswordAction(
       '批量启用用户',
@@ -157,7 +142,6 @@ export function UserTable({ initialQuery }: UserTableProps) {
     setSelectedRowKeys([])
     void load(query)
   }
-
   const handleBatchDisable = async () => {
     const result = await confirmPasswordAction(
       '批量禁用用户',
@@ -217,16 +201,20 @@ export function UserTable({ initialQuery }: UserTableProps) {
       render: (roles: string[] | undefined) => renderRoleTags(roles ?? []),
     },
     {
-      title: '状态',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 120,
-      render: (isActive: boolean) =>
-        isActive ? (
-          <StatusTag status="success" text="已启用" />
-        ) : (
-          <StatusTag status="default" text="已禁用" />
-        ),
+      title: '启用',
+      key: 'enabled',
+      width: 80,
+      render: (_: unknown, record) => {
+        const isSelf = currentUser ? record.id === currentUser.id : false
+        return (
+          <Switch
+            size="small"
+            checked={record.isActive}
+            disabled={isSelf}
+            onChange={() => void handleToggleStatus(record)}
+          />
+        )
+      },
     },
     {
       title: '创建时间',
@@ -240,55 +228,42 @@ export function UserTable({ initialQuery }: UserTableProps) {
     {
       title: '操作',
       key: 'actions',
-      width: 320,
+      width: 80,
       render: (_: unknown, record) => {
-        const roles = record.roles ?? []
-        const isAdminUser = roles.includes('admin') || roles.includes('super_admin')
+        if (!currentUser) return null
+        const items = getMenuItems(record, currentUser)
+        if (items.length === 0) return null
+
+        const menuItems: MenuProps['items'] = items.map((item) => ({
+          key: item.key,
+          label: (
+            <span className="flex items-center gap-2">
+              {item.icon}
+              {item.label}
+            </span>
+          ),
+          danger: item.danger,
+          onClick: () => {
+            if (item.key === 'edit') void handleEdit(record)
+            else if (item.key === 'resetPassword') void handleResetPassword(record)
+            else if (item.key === 'assignRole') void handleAssignRole(record)
+            else if (item.key === 'delete') {
+              Modal.confirm({
+                title: '删除用户',
+                content: `确定删除用户 ${record.email}？删除后数据无法恢复。`,
+                okText: '删除',
+                okButtonProps: { danger: true },
+                cancelText: '取消',
+                onOk: () => handleDelete(record),
+              })
+            }
+          },
+        }))
+
         return (
-          <Space size="small">
-            <Button
-              type="text"
-              size="small"
-              icon={<Edit size={14} />}
-              onClick={() => navigate({ to: `/_authenticated/users/${record.id}` })}
-            >
-              编辑
-            </Button>
-            {isAdminUser && (
-              <Button
-                type="text"
-                size="small"
-                icon={<KeyRound size={14} />}
-                onClick={() => void handleResetPassword(record)}
-              >
-                重置密码
-              </Button>
-            )}
-            <Button
-              type="text"
-              size="small"
-              icon={<UserCog size={14} />}
-              onClick={() => void handleAssignRole(record)}
-            >
-              分配角色
-            </Button>
-            <Switch
-              size="small"
-              checked={record.isActive}
-              onChange={() => void handleToggleStatus(record)}
-            />
-            <Popconfirm
-              title="确定删除此用户？"
-              onConfirm={() => void handleDelete(record)}
-              okText="删除"
-              okButtonProps={{ danger: true }}
-              cancelText="取消"
-            >
-              <Button type="text" size="small" danger icon={<Trash2 size={14} />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </Space>
+          <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+            <Button type="text" size="small" icon={<MoreHorizontal size={14} />} />
+          </Dropdown>
         )
       },
     },
@@ -417,7 +392,7 @@ export function UserTable({ initialQuery }: UserTableProps) {
               />
             ),
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1000 }}
         />
       </Card>
     </div>

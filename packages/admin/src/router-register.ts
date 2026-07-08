@@ -6,7 +6,6 @@ import {
   Settings as SettingsIcon,
   Shield,
   Ticket,
-  User,
   Users,
 } from 'lucide-react'
 import { PERMISSIONS } from './constants/permissions'
@@ -18,7 +17,6 @@ export type RouteKey =
   | 'login'
   | 'dashboard'
   | 'users'
-  | 'userDetail'
   | 'roles'
   | 'roleDetail'
   | 'audit'
@@ -59,14 +57,6 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     path: '/users' as RoutePath,
     icon: Users,
     nav: true,
-    requiredPermission: PERMISSIONS.USERS_READ,
-  },
-  userDetail: {
-    key: 'userDetail',
-    title: '用户详情',
-    path: '/users/$id' as RoutePath,
-    icon: User,
-    nav: false,
     requiredPermission: PERMISSIONS.USERS_READ,
   },
   roles: {

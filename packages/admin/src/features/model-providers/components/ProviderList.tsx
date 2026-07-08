@@ -213,7 +213,7 @@ export function ProviderList() {
               刷新
             </Button>
             <Button type="primary" icon={<Plus size={14} />} onClick={() => handleOpenCreate()}>
-              新建 Provider
+              新建提供商
             </Button>
           </Space>
         }
@@ -223,7 +223,7 @@ export function ProviderList() {
         {data.length === 0 && !loading ? (
           <EmptyState
             description="暂无 Provider"
-            actionText="新建第一个 Provider"
+            actionText="新建提供商"
             onAction={() => handleOpenCreate()}
           />
         ) : (

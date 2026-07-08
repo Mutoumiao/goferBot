@@ -1,5 +1,5 @@
 import { Alert, Button, Empty, Space } from 'antd'
-import { AlertCircle, Inbox, RefreshCw } from 'lucide-react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 
 export interface EmptyStateProps {
   description?: string
@@ -44,7 +44,6 @@ export function EmptyState({
 
   return (
     <div className="flex min-h-[240px] flex-col items-center justify-center py-16">
-      {icon ?? <Inbox className="mb-4 h-16 w-16 text-slate-300" />}
       <Empty
         image={Empty.PRESENTED_IMAGE_SIMPLE}
         description={<span className="text-text-secondary">{description}</span>}
