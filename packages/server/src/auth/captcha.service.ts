@@ -115,7 +115,11 @@ export class CaptchaService {
   }
 
   /** 基于 Origin 白名单的验证码校验。如果验证码未启用或 Origin 在白名单中，直接跳过验证。 */
-  async verifyWithOrigin(origin: string | undefined, captchaId: string, inputCode: string): Promise<boolean> {
+  async verifyWithOrigin(
+    origin: string | undefined,
+    captchaId: string,
+    inputCode: string,
+  ): Promise<boolean> {
     if (!this.isCaptchaEnabled()) {
       return true
     }

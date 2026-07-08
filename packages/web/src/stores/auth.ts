@@ -32,8 +32,7 @@ function purgeLegacyAuthCache() {
       if (raw && isLegacyUserShape(JSON.parse(raw))) {
         localStorage.removeItem(key)
       }
-    } catch {
-    }
+    } catch {}
   }
 }
 

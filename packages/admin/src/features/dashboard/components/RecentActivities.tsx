@@ -9,31 +9,7 @@ export interface RecentActivitiesProps {
 export function RecentActivities({ activities }: RecentActivitiesProps) {
   return (
     <Card title="最近活动" extra={<Tag color="blue">实时</Tag>}>
-      <List
-        dataSource={activities}
-        locale={{ emptyText: '暂无活动' }}
-        renderItem={(item: RecentActivity) => (
-          <List.Item>
-            <List.Item.Meta
-              avatar={
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
-                  {item.icon === 'login' && <Activity size={14} />}
-                  {item.icon === 'create' && <FileText size={14} />}
-                  {item.icon === 'delete' && <AlertCircle size={14} />}
-                  {item.icon === 'rag' && <Workflow size={14} />}
-                </div>
-              }
-              title={
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-700">{item.title}</span>
-                  <span className="text-xs text-slate-400">{formatRelative(item.time)}</span>
-                </div>
-              }
-              description={item.description}
-            />
-          </List.Item>
-        )}
-      />
+      {/* 最近活动列表 */}
     </Card>
   )
 }

@@ -77,21 +77,10 @@ export async function refreshAuth(): Promise<boolean> {
   }
 }
 
-const AUTH_COOKIE_NAME = 'goferbot_admin_access_token'
-
-function hasAuthCookie(): boolean {
-  return document.cookie.includes(AUTH_COOKIE_NAME)
-}
-
 let _fetchMePromise: Promise<boolean> | null = null
 
 export async function fetchMe(): Promise<boolean> {
   if (_fetchMePromise) return _fetchMePromise
-
-  if (!hasAuthCookie()) {
-    useAuthStore.getState().clearAuth()
-    return false
-  }
 
   _fetchMePromise = (async (): Promise<boolean> => {
     try {

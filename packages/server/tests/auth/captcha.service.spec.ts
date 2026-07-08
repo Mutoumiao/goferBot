@@ -19,7 +19,11 @@ interface MockRedis {
   del: ReturnType<typeof vi.fn>
 }
 
-const createMockConfigService = (captchaEnabled?: boolean, whitelistOrigins?: string, nodeEnv?: string) => ({
+const createMockConfigService = (
+  captchaEnabled?: boolean,
+  whitelistOrigins?: string,
+  nodeEnv?: string,
+) => ({
   get: vi.fn((key: string) => {
     if (key === 'CAPTCHA_ENABLED') {
       return captchaEnabled
@@ -117,7 +121,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -137,7 +141,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -156,9 +160,9 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue(null),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => { }),
+        del: vi.fn(async () => {}),
       }
       service = new CaptchaService(mockAuthRedis, mockConfigService)
 
@@ -183,7 +187,10 @@ describe('CaptchaService', () => {
     })
 
     it('CS-06b: 验证码启用且 Origin 在白名单中时直接跳过验证返回 true', async () => {
-      mockConfigService = createMockConfigService(true, 'http://localhost:1421,http://localhost:3000')
+      mockConfigService = createMockConfigService(
+        true,
+        'http://localhost:1421,http://localhost:3000',
+      )
       service = new CaptchaService(mockAuthRedis, mockConfigService)
 
       const ok = await service.verifyWithOrigin('http://localhost:1421', '', '')
@@ -196,7 +203,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -215,7 +222,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -233,7 +240,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -251,7 +258,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -269,7 +276,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -288,7 +295,7 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('ABCD'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
         del: vi.fn(async (key: string) => {
           mockRedis.del(key)
@@ -308,9 +315,9 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue(pngBuf.toString('base64')),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => { }),
+        del: vi.fn(async () => {}),
       }
       service = new CaptchaService(mockAuthRedis, mockConfigService)
 
@@ -325,9 +332,9 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue(null),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => { }),
+        del: vi.fn(async () => {}),
       }
       service = new CaptchaService(mockAuthRedis, mockConfigService)
 
@@ -342,9 +349,9 @@ describe('CaptchaService', () => {
         get: vi.fn().mockResolvedValue('WXYZ'),
       })
       mockAuthRedis = {
-        setex: vi.fn(async () => { }),
+        setex: vi.fn(async () => {}),
         get: vi.fn(async (key: string) => mockRedis.get(key)),
-        del: vi.fn(async () => { }),
+        del: vi.fn(async () => {}),
       }
       service = new CaptchaService(mockAuthRedis, mockConfigService)
 

@@ -41,7 +41,7 @@ function serializeBigInt(value: unknown): unknown {
 
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
-  constructor(private readonly reflector: Reflector) { }
+  constructor(private readonly reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ApiResponse<T>> {
     const handler = context.getHandler()

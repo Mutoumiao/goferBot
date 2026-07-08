@@ -40,9 +40,16 @@ export class AdminAuthController {
     @Req() req: FastifyRequest,
   ) {
     const origin = req.headers.origin as string | undefined
-    const captchaOk = await this.captchaService.verifyWithOrigin(origin, dto.captchaId ?? '', dto.captchaCode ?? '')
+    const captchaOk = await this.captchaService.verifyWithOrigin(
+      origin,
+      dto.captchaId ?? '',
+      dto.captchaCode ?? '',
+    )
     if (!captchaOk) {
-      throw new BadRequestException({ code: 'CAPTCHA_INVALID', message: '验证码无效，请刷新后重试' })
+      throw new BadRequestException({
+        code: 'CAPTCHA_INVALID',
+        message: '验证码无效，请刷新后重试',
+      })
     }
 
     const password = this.decryptAndValidate(dto.encryptedPassword)

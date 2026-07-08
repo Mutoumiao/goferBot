@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { FastifyReply } from 'fastify'
+import {
+  ADMIN_ACCESS_COOKIE,
+  ADMIN_REFRESH_COOKIE,
+  WEB_ACCESS_COOKIE,
+  WEB_REFRESH_COOKIE,
+} from '@goferbot/data'
 import type { AuthApp } from './types/auth-app.type.js'
-
-export const WEB_ACCESS_COOKIE = 'goferbot_web_access_token'
-export const WEB_REFRESH_COOKIE = 'goferbot_web_refresh_token'
-export const ADMIN_ACCESS_COOKIE = 'goferbot_admin_access_token'
-export const ADMIN_REFRESH_COOKIE = 'goferbot_admin_refresh_token'
 
 export function getCookieNamesForApp(app: AuthApp): {
   accessToken: string

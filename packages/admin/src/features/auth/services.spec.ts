@@ -78,10 +78,6 @@ vi.mock('@/utils/password-encryption', () => ({
 describe('auth services', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    Object.defineProperty(document, 'cookie', {
-      value: 'goferbot_admin_access_token=test-token',
-      writable: true,
-    })
   })
 
   it('loginService validates input', async () => {
@@ -179,19 +175,6 @@ describe('auth services', () => {
       expect(result).toBe(false)
       expect(mockGetCurrentUser).toHaveBeenCalled()
       expect(mockSetState).toHaveBeenCalledWith({ isInitialized: true })
-    })
-
-    it('does not call API when no auth cookie', async () => {
-      Object.defineProperty(document, 'cookie', {
-        value: '',
-        writable: true,
-      })
-
-      const result = await fetchCurrentUser()
-
-      expect(result).toBe(false)
-      expect(mockGetCurrentUser).not.toHaveBeenCalled()
-      expect(mockClearAuth).toHaveBeenCalled()
     })
 
     it('concurrent calls share the same promise', async () => {

@@ -1,4 +1,4 @@
-import type { User } from '@goferbot/data'
+import { type User } from '@goferbot/data'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/auth', () => ({
@@ -42,10 +42,6 @@ describe('auth services', () => {
     useAuthStore.setState({ user: null, isAuthenticated: false, isInitialized: false })
     localStorage.clear()
     vi.clearAllMocks()
-    Object.defineProperty(document, 'cookie', {
-      value: 'goferbot_web_access_token=test-token',
-      writable: true,
-    })
   })
 
   describe('loginUser', () => {
@@ -242,18 +238,6 @@ describe('auth services', () => {
       vi.mocked(getMe).mockReturnValue({
         send: vi.fn().mockRejectedValue(new Error('unauthorized')),
       } as any)
-
-      const result = await fetchCurrentUser()
-
-      expect(result).toBe(false)
-      expect(useAuthStore.getState().user).toBeNull()
-    })
-
-    it('does not call API when no auth cookie', async () => {
-      Object.defineProperty(document, 'cookie', {
-        value: '',
-        writable: true,
-      })
 
       const result = await fetchCurrentUser()
 

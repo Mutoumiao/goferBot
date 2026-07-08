@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
+import { ADMIN_REFRESH_COOKIE, WEB_REFRESH_COOKIE } from '@goferbot/data'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AppException } from '../lib/app-error.js'
 import { PermissionService } from '../modules/admin/services/permission.service.js'
@@ -255,8 +256,7 @@ export class AuthService {
   }
 
   async refreshToken(app: AuthApp, req: FastifyRequest, res: FastifyReply) {
-    const refreshCookieName =
-      app === 'admin' ? 'goferbot_admin_refresh_token' : 'goferbot_web_refresh_token'
+    const refreshCookieName = app === 'admin' ? ADMIN_REFRESH_COOKIE : WEB_REFRESH_COOKIE
     const refreshToken = req.cookies?.[refreshCookieName]
     if (!refreshToken) {
       this.cookieHelper.clearAuthCookies(res, app)

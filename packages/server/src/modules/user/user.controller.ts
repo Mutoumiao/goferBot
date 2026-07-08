@@ -31,7 +31,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   @Get('me')
   async getMe(@CurrentUser() user: { id: string; app: AuthApp }) {

@@ -13,7 +13,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwordEncryption: PasswordEncryptionService,
-  ) { }
+  ) {}
 
   @Public()
   @Get('public-key')

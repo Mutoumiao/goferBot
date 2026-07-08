@@ -24,4 +24,3 @@ export function extractRequestContext(req: FastifyRequest): RequestContext {
     traceId,
   }
 }
-

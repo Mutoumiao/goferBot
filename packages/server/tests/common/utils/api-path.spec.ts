@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  categorizePath,
-  isAdminOnlyPath,
-} from '../../../src/common/utils/api-path.js'
+import { categorizePath, isAdminOnlyPath } from '../../../src/common/utils/api-path.js'
 
 describe('api-path', () => {
   describe('isAdminOnlyPath', () => {

@@ -1,4 +1,4 @@
-import type { User } from '@goferbot/data'
+import { type User } from '@goferbot/data'
 import { toast } from 'sonner'
 import { getMe, login, logout, refresh, register, updateMe, uploadAvatar } from '@/api/auth'
 import { ROUTES_REGISTER } from '@/router-register'
@@ -16,12 +16,6 @@ export interface RegisterResult {
 }
 
 const REMEMBER_EMAIL_KEY = 'goferbot_remember_email'
-
-const AUTH_COOKIE_NAME = 'goferbot_web_access_token'
-
-function hasAuthCookie(): boolean {
-  return document.cookie.includes(AUTH_COOKIE_NAME)
-}
 
 let _fetchMePromise: Promise<boolean> | null = null
 
@@ -167,11 +161,6 @@ export async function refreshAuth(): Promise<boolean> {
  */
 export async function fetchMe(): Promise<boolean> {
   if (_fetchMePromise) return _fetchMePromise
-
-  if (!hasAuthCookie()) {
-    useAuthStore.getState().clearAuth()
-    return false
-  }
 
   _fetchMePromise = (async (): Promise<boolean> => {
     try {

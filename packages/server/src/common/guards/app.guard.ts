@@ -7,7 +7,7 @@ import { categorizePath } from '../utils/api-path.js'
 
 @Injectable()
 export class AppGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) { }
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<FastifyRequest>()
