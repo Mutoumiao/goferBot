@@ -57,8 +57,11 @@
 证据来源：
 - `packages/admin/src/routes/_authenticated/roles.tsx`
 - `packages/admin/src/features/roles/services.ts`
+- `packages/admin/src/features/users/components/RoleSelect.tsx`
 - `packages/server/src/modules/admin/role.controller.ts`
 - `packages/server/src/modules/admin/role.service.ts`
+- `packages/data/src/constants/permissions.ts`
+- `packages/data/src/constants/role-permissions.ts`
 
 #### Scenario: 创建自定义角色
 - **WHEN** 管理员创建一个新角色时
@@ -86,17 +89,30 @@
 
 #### Scenario: 权限码体系
 - **WHEN** 系统初始化权限体系时
-- **THEN** 系统 SHALL 定义以下权限分组：
+- **THEN** 系统 SHALL 定义以下权限分组（共 21 个权限码）：
+  - 仪表盘：dashboard:read
   - 用户管理：users:read, users:create, users:update, users:delete, users:reset-password
   - 角色管理：roles:read, roles:create, roles:update, roles:delete
-  - 邀请码管理：invitations:read, invitations:create, invitations:revoke
+  - 邀请码管理：invitations:read, invitations:create, invitations:update, invitations:delete
   - 审计日志：audit:read, audit:export
   - 系统配置：settings:read, settings:update
   - 系统运维：system:metrics, system:maintenance, system:logs
 - **AND** 预置 3 个角色：
-  - `super_admin`（双 app）：所有权限（通配符 `*`）
-  - `admin`（admin app）：users:read/create/update/reset-password, roles:read, invitations:read/create/revoke, audit:read, settings:read/update, system:metrics/logs
+  - `super_admin`（admin app）：所有权限（通配符 `*`）
+  - `admin`（admin app）：全部 21 个权限
   - `user`（web app）：无管理权限码，仅可使用 web 端业务功能
+- **AND** 权限常量（`PERMISSIONS`、`ROLE_PERMISSIONS`、`PERMISSION_GROUPS`）MUST 在 `@goferbot/data` 包中定义，前后端统一导入，禁止各自硬编码
+
+#### Scenario: 角色列表 API 返回所有角色
+- **WHEN** 前端调用 `GET /admin/roles` 获取角色列表时
+- **THEN** 系统返回所有角色（包括 `app='web'` 的 `user` 角色），不按 app 字段过滤
+- **AND** 系统角色（super_admin/admin/user）与自定义角色统一展示，通过 `isSystem` 字段区分
+
+#### Scenario: 角色分配规则
+- **WHEN** 管理员为用户分配角色时
+- **THEN** `super_admin` 角色 MUST NOT 出现在分配列表中
+- **AND** 当前登录用户拥有的角色在分配列表中设为禁用状态（tooltip 提示"无法分配与您相同的角色"）
+- **AND** 角色选项动态从后端 API 获取，新增自定义角色自动可见
 
 ### Requirement: 邀请码管理页面
 Admin 后台 SHALL 提供邀请码管理页面，支持生成、查看、作废邀请码。
