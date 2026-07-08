@@ -2,6 +2,7 @@ import { Col, Form, Input, InputNumber, Modal, message, Row, Select, Switch } fr
 import { useEffect, useState } from 'react'
 import type { Model, ModelProvider, ProviderPreset, ProviderType } from '@/api/system-config'
 import { fetchPresets, fetchRemoteModelsService, saveProviderService } from '../services'
+import { mapErrorMessage } from '@/utils/error-mapper'
 import { ProviderModelsTable } from './ProviderModelsTable'
 
 interface FormValues {
@@ -71,18 +72,21 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
   const handleFetchModels = async (): Promise<void> => {
     const baseUrl = form.getFieldValue('baseUrl')
     const apiKey = form.getFieldValue('apiKey') ?? ''
-    const isCompleteUrl = form.getFieldValue('isCompleteUrl') ?? false
     if (!baseUrl) {
       message.warning('请先填写请求地址')
       return
     }
+    if (presetKey === CUSTOM_PRESET) {
+      message.warning('自定义供应商不支持自动获取模型')
+      return
+    }
     setFetching(true)
     try {
-      const result = await fetchRemoteModelsService({ baseUrl, apiKey, isCompleteUrl })
-      if (result.success && result.models.length > 0) {
+      const models = await fetchRemoteModelsService({ presetKey, baseUrl, apiKey })
+      if (models.length > 0) {
         const existing = (form.getFieldValue('models') ?? []) as Model[]
         const existingNames = new Set(existing.map((m) => m.name))
-        const newModels = result.models
+        const newModels = models
           .filter((m) => !existingNames.has(m.name))
           .map<Model>((m) => ({
             name: m.name,
@@ -94,8 +98,10 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
         form.setFieldsValue({ models: [...existing, ...newModels] })
         message.success(`获取到 ${newModels.length} 个新模型`)
       } else {
-        message.error(result.error || '未获取到模型')
+        message.warning('未获取到模型')
       }
+    } catch (err) {
+      message.error(mapErrorMessage(err))
     } finally {
       setFetching(false)
     }
@@ -194,7 +200,11 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
             </Form.Item>
           </Col>
         </Row>
-        <ProviderModelsTable onFetchModels={handleFetchModels} fetching={fetching} />
+        <ProviderModelsTable
+          onFetchModels={handleFetchModels}
+          fetching={fetching}
+          hasFetchModels={presetKey !== CUSTOM_PRESET}
+        />
         <Form.Item
           name="timeoutMs"
           label="超时 (ms)"

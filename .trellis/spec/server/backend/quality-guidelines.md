@@ -122,8 +122,10 @@ node_modules/  — 第三方依赖
 | 做 | 不做 |
 |----|------|
 | ✅ Controller → Service → Repository 分层 | ❌ Controller 直接操作数据库 |
-| ✅ Zod Schema 在 data 包共享 | ❌ 前后端各自定义验证规则 |
+| ✅ Zod Schema 在 `@goferbot/data` 统一定义 | ❌ Server 本地重复定义 `@goferbot/data` 已有的 Schema |
 | ✅ 分页走 PaginationResult<T> 统一格式 | ❌ 各自实现分页逻辑 |
+| ✅ Controller 返回纯业务数据（ResponseInterceptor 自动装入 `data` 字段） | ❌ Controller 自己包装 `{success, ...}`、`{code, ...}` 等传输层字段 |
+| ✅ 跨层响应类型在 `@goferbot/data` 定义 Zod Schema 并导出 | ❌ 响应类型在 server 和 admin 两端各自定义 interface |
 
 ---
 
@@ -134,6 +136,7 @@ node_modules/  — 第三方依赖
 - ❌ 绕过 biome.json 的 overrides 规则
 - ❌ 在 `prisma/migrations/` 中手动修改迁移文件
 - ❌ 使用 `any` 类型（server 除外，通过 overrides 关闭）
+- ❌ Controller 返回值中自行添加 `success`/`error`/`code` 等传输层字段 — ResponseInterceptor 已提供统一信封，Controller 只返回业务数据填入 `data`
 
 ## Common Mistakes
 
@@ -168,6 +171,68 @@ node_modules/  — 第三方依赖
   if (text.length > MAX_RESPONSE_SIZE) throw new Error('response too large')
   const json = JSON.parse(text)
   ```
+
+6. **Controller 自行包装传输层字段，与 ResponseInterceptor 冲突**：项目全局 `ResponseInterceptor` 会将非 SSE 端点的返回值自动包装为统一信封：
+
+  ```typescript
+  // ResponseInterceptor 自动生成的结构（无需手动编写）
+  {
+    success: true,         // 框架统一注入
+    data: T,               // ← Controller 的返回值填入此处
+    meta: {
+      requestId: string,   // 请求追踪 ID
+      timestamp: string,   // 响应时间戳
+    }
+  }
+  ```
+
+  **Controller 只负责返回纯业务数据**，`data` 字段的内容。传输层字段（`success`、`error`、`code` 等）由框架统一处理，Controller 不应越权。
+
+  ```typescript
+  // ❌ 错误：Controller 自己套了一层壳，把 success/error 混入业务数据
+  // 实际返回 → { success: true, data: { success: true, models: [...] }, meta: {...} }
+  //                                                                 ↑ 冗余的 success，语义错位
+  async fetchModels(@Body() dto: FetchModelsDto): Promise<FetchModelsResult> {
+    return this.service.fetchModels(dto)
+    // FetchModelsResult = { success, models, error? }  ← 这些是传输层的东西，不该出现在 data 里
+  }
+
+  // ✅ 正确：Controller 只返回纯业务数据
+  // 实际返回 → { success: true, data: { models: [...] }, meta: {...} }
+  async fetchModels(@Body() dto: FetchModelsDto) {
+    const result = await this.service.fetchModels(dto)
+    if (!result.success) throw new BadRequestException(result.error)
+    return { models: result.models }   // ← 纯业务数据，自动填入 data
+  }
+
+  // ✅ 更佳：Service 失败直接抛异常，Controller 变得极简
+  // Service 层：fetch() 失败 → throw new HttpException(...)
+  // Controller：return { models: ... }
+  ```
+
+  **关键规则**：
+  - ResponseInterceptor 已经提供了 `{success, data, meta}` 信封，Controller **只需关心 `data` 里放什么**
+  - `success`、`error`、`code`、`message` 等传输层字段是框架的事，不要出现在 Controller 返回值里
+  - Service 失败通过 `throw` 传递，不要用 `return { success: false }` 让 Controller 透传
+
+7. **Server DTO 禁止重复定义 `@goferbot/data` 中已有的 Schema**：`packages/data` 是所有 Schema 的**唯一权威源**。Server 的 DTO 文件（如 `packages/server/src/modules/settings/dto/settings.dto.ts`）MUST 从 `@goferbot/data` 导入 Schema，而非本地独立定义一份。
+
+  ```typescript
+  // ❌ 错误：Server DTO 独立定义了 modelSchema/modelProviderSchema/settingsSchema
+  // packages/server/.../dto/settings.dto.ts:
+  export const modelSchema = z.object({ name: z.string(), ... })  // 与 @goferbot/data 重复！
+  export const modelProviderSchema = z.object({ ... })
+  export const settingsSchema = z.object({ ... })
+
+  // ✅ 正确：从 @goferbot/data 导入 Schema，仅在本文件扩展
+  import { modelSchema, modelProviderSchema, settingsSchema } from '@goferbot/data/schemas'
+  import { createZodDto } from 'nestjs-zod'
+
+  export class SettingsDto extends createZodDto(settingsSchema) {}
+  export class ProviderDto extends createZodDto(modelProviderSchema) {}
+  ```
+
+  **服务器独有的 DTO**（如 `FetchModelsDto`、`ProviderPreset` 等）如涉及前端消费的响应类型，MUST 在 `@goferbot/data` 中定义 Zod Schema 并导出类型，禁止在 server 和 admin 两端各自定义 interface。
 
 ---
 
@@ -222,6 +287,22 @@ isAdminOnlyPath(path) // 仅 admin 可访问
 - `@AllowApp('both')` 无实际用途，会导致安全隐患
 
 **例外**：`@Public()` 装饰器保留，用于标记公开端点（如 `/auth/public-key`）
+
+### 设计决策：角色列表 API 不按 app 过滤
+
+**Context**：`GET /admin/roles` 接口需要返回所有角色供权限管理使用，但原实现按 `app='admin'` 过滤导致 `app='web'` 的 `user` 角色无法显示。
+
+**Options Considered**：
+1. **方案 A**：修改 seeder 中 `user` 角色的 `app` 字段为 `'admin'` — 破坏多 App 安全隔离边界
+2. **方案 B**：新增 `GET /admin/roles/all` 接口 — 增加 API 复杂度，存在重复端点
+3. **方案 C**：移除 `listRoles` 的 `app` 参数过滤，返回所有角色 — 仅扩展示数据，不改变写入或权限逻辑
+
+**Decision**：选择方案 C，因为：
+- `app` 字段的安全隔离作用在 JWT Token、AppGuard、PermissionGuard、AuthPolicy、DB 复合唯一键等 6 层实现，仅移除 listRoles 的展示过滤不影响安全
+- 系统角色（super_admin、admin、user）是内置角色，应在权限管理中可见
+- 新增自定义角色自动显示，无需额外配置
+
+**风险**：LOW — 仅扩展示数据范围，不改变写入或权限校验逻辑
 
 ---
 

@@ -1,7 +1,8 @@
 import type {
   CategorySettingsMap,
+  FetchedModel,
   ModelProvider,
-  ProviderType,
+  ProviderPreset,
   SettingCategory,
   Settings,
 } from '@goferbot/data'
@@ -12,37 +13,16 @@ export type {
   CategorySettingsMap,
   ChatSettings,
   CompanionSettings,
+  FetchedModel,
   IndexingSettings,
   Model,
   ModelProvider,
+  ProviderPreset,
   ProviderType,
   RagSettings,
   SettingCategory,
   Settings,
 } from '@goferbot/data'
-
-/** 预设提供商模板 */
-export interface ProviderPreset {
-  key: string
-  label: string
-  name: string
-  baseUrl: string
-}
-
-/** 远程获取的模型条目 */
-export interface FetchedModel {
-  name: string
-  type: ProviderType
-  dimensions?: number
-  maxLength?: number
-}
-
-/** 远程获取模型列表的结果 */
-export interface FetchModelsResult {
-  success: boolean
-  models: FetchedModel[]
-  error?: string
-}
 
 export const listProviders = () =>
   alovaInstance.Get<Record<string, ModelProvider>>('/admin/providers')
@@ -60,10 +40,10 @@ export const fetchProviderPresets = () =>
   alovaInstance.Get<ProviderPreset[]>('/admin/providers/presets')
 
 export const fetchRemoteModels = (data: {
+  presetKey: string
   baseUrl: string
   apiKey: string
-  isCompleteUrl: boolean
-}) => alovaInstance.Post<FetchModelsResult>('/admin/providers/fetch-models', data)
+}) => alovaInstance.Post<{ models: FetchedModel[] }>('/admin/providers/fetch-models', data)
 
 export const getSystemConfig = () => alovaInstance.Get<Settings>('/admin/system-config')
 

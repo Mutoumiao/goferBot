@@ -14,6 +14,8 @@ interface ProviderModelsTableProps {
   /** 获取模型列表回调，由父组件处理网络请求 */
   onFetchModels: () => Promise<void>
   fetching: boolean
+  /** 是否显示一键获取模型列表按钮（自定义供应商不显示） */
+  hasFetchModels?: boolean
 }
 
 interface ModelRowProps {
@@ -74,7 +76,7 @@ function ModelRow({ field, onRemove, isLocal }: ModelRowProps) {
  * 模型列表表格：使用 Form.List 管理动态行。
  * 顶部按钮：[+ 添加模型] [一键获取模型列表]
  */
-export function ProviderModelsTable({ onFetchModels, fetching }: ProviderModelsTableProps) {
+export function ProviderModelsTable({ onFetchModels, fetching, hasFetchModels = true }: ProviderModelsTableProps) {
   const form = Form.useFormInstance() as FormInstance
   const baseUrl = (Form.useWatch('baseUrl', form) as string | undefined) ?? ''
   const isLocal = /localhost|127\.0\.0\.1/.test(baseUrl)
@@ -93,15 +95,19 @@ export function ProviderModelsTable({ onFetchModels, fetching }: ProviderModelsT
               >
                 添加模型
               </Button>
-              <Button size="small" loading={fetching} onClick={() => void onFetchModels()}>
-                一键获取模型列表
-              </Button>
+              {hasFetchModels && (
+                <Button size="small" loading={fetching} onClick={() => void onFetchModels()}>
+                  一键获取模型列表
+                </Button>
+              )}
             </div>
           </div>
           <div className="space-y-2">
             {fields.length === 0 && (
               <div className="rounded border border-dashed border-border-subtle py-4 text-center text-xs text-text-tertiary">
-                暂无模型，点击「添加模型」或「一键获取模型列表」
+                {hasFetchModels
+                  ? '暂无模型，点击「添加模型」或「一键获取模型列表」'
+                  : '暂无模型，点击「添加模型」手动添加'}
               </div>
             )}
             {fields.map((field) => (

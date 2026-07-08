@@ -24,6 +24,9 @@ Admin 前端使用 **Biome** 作为代码规范工具，配合 **Vitest** 进行
 | 直接操作 DOM | 使用 `document.getElementById` | 使用 React refs |
 | 未验证路由参数 | 直接使用 `params.id` | 使用 Zod 或 TypeScript 类型守卫 |
 | 重复代码 | 多个组件中存在相同逻辑 | 提取为自定义 Hook 或工具函数 |
+| 前后端共享常量定义在前端 | 角色权限映射（`ROLE_PERMISSIONS`）、权限码（`PERMISSIONS`）、角色标签等常量仅在 `packages/admin` 中硬编码 | 迁移到 `@goferbot/data` 作为共享常量，前后端从同一源导入 |
+| 在 Promise 内调用 React Hooks | `Modal.confirm({ onOk: () => Form.useForm() })` 等模式 | 使用 `let` 闭包变量 + `Modal.confirm` + `modal.update()` 模式 |
+| 角色列表硬编码 | 在组件内定义 `ALL_ROLES`、`ASSIGNABLE_ROLES` 等静态常量 | 从后端 API `GET /admin/roles` 动态获取，支持新增自定义角色 |
 
 ---
 
@@ -47,6 +50,52 @@ Admin 前端使用 **Biome** 作为代码规范工具，配合 **Vitest** 进行
 1. **路由守卫**：受保护路由必须在 `_authenticated` 路由组内
 2. **权限检查**：使用 `auth-guard.ts` 中的 `hasPermission`/`hasAnyPermission`
 3. **SUPER_ADMIN 豁免**：SUPER_ADMIN 拥有所有权限，无需额外检查
+
+### 命令式弹窗模式
+
+当需要以命令式方式（非 JSX）打开弹窗并等待用户确认时，使用以下模式避免 React Hooks 违规：
+
+```tsx
+export function roleForm(initial?: RoleData): Promise<RoleData | null> {
+  return new Promise((resolve) => {
+    let formValues = { ...initial }
+    const modal = Modal.confirm({
+      title: initial ? '编辑角色' : '新建角色',
+      content: (
+        <Form
+          initialValues={initial}
+          onValuesChange={(_, all) => { formValues = all }}
+        >
+          {/* fields */}
+        </Form>
+      ),
+      onOk: () => resolve(formValues),
+      onCancel: () => resolve(null),
+    })
+  })
+}
+```
+
+**关键点**：
+- 使用 `let` 闭包变量存储表单状态，而非 `useState`
+- 使用 `onValuesChange` 同步表单值到闭包变量
+- 使用 `Modal.confirm` + `modal.update({content})` 更新内容
+
+### 动态角色获取
+
+角色列表必须从后端 API 动态获取，禁止硬编码：
+
+```tsx
+// ✅ 正确：从后端 API 获取
+const { data: roles } = useQueryWithRetry(fetchRoles)
+
+// ❌ 错误：硬编码角色列表
+const ALL_ROLES = [{ value: 'admin', label: '管理员' }, { value: 'user', label: '用户' }]
+```
+
+**角色分配规则**：
+- `super_admin` 角色永不出现在分配列表中
+- 当前用户拥有的角色在分配时设为 `disabled`，并显示 tooltip 提示
 
 ### 数据获取
 

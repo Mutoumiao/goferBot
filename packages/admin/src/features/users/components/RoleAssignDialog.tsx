@@ -1,23 +1,19 @@
-import { Modal, Select } from 'antd'
+import { Modal } from 'antd'
+import type { ModalStaticFunctions } from 'antd/es/modal/confirm'
 import type { AdminRoleCode } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth'
 import type { AdminUserResponse } from '../services'
+import { RoleSelect } from './RoleSelect'
 
-const ROLE_OPTIONS: { value: AdminRoleCode; label: string }[] = [
-  { value: 'user', label: '普通用户' },
-  { value: 'admin', label: '管理员' },
-  { value: 'super_admin', label: '超级管理员' },
-]
-
-function rolesEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false
-  const sortedA = [...a].sort()
-  const sortedB = [...b].sort()
-  return sortedA.every((v, i) => v === sortedB[i])
-}
-
-export function assignRoleModal(user: AdminUserResponse): Promise<AdminRoleCode[] | null> {
+export function assignRoleModal(
+  user: AdminUserResponse,
+  modalApi?: Omit<ModalStaticFunctions, 'warn'>,
+): Promise<AdminRoleCode | null> {
+  const modal = modalApi ?? Modal
   return new Promise((resolve) => {
-    let currentRoles: AdminRoleCode[] = [...(user.roles ?? [])] as AdminRoleCode[]
+    const currentUserRoles = (useAuthStore.getState().user?.roles ?? []) as AdminRoleCode[]
+    const currentRole: AdminRoleCode = (user.roles?.[0] as AdminRoleCode | undefined) ?? 'user'
+    let selectedRole: AdminRoleCode = currentRole
 
     const renderContent = () => (
       <div className="space-y-3 pt-2">
@@ -26,38 +22,37 @@ export function assignRoleModal(user: AdminUserResponse): Promise<AdminRoleCode[
         </p>
         <div>
           <label className="mb-1 block text-sm text-slate-600">角色</label>
-          <Select
-            mode="multiple"
-            value={currentRoles}
+          <RoleSelect
+            currentUserRoles={currentUserRoles}
+            defaultValue={currentRole}
             onChange={(v) => {
-              currentRoles = v
-              modal.update({ content: renderContent() })
+              selectedRole = v
+              roleModalRef.update({ content: renderContent() })
             }}
-            style={{ width: '100%' }}
-            options={ROLE_OPTIONS}
           />
         </div>
       </div>
     )
 
-    const modal = Modal.confirm({
+    const roleModalRef = modal.confirm({
       title: '分配角色',
+      icon: null,
       width: 400,
       content: renderContent(),
       okText: '确认',
       cancelText: '取消',
-      onOk: async () => {
-        if (rolesEqual(currentRoles, user.roles ?? [])) {
+      onOk: () => {
+        if (selectedRole === currentRole) {
           resolve(null)
-          modal.destroy()
+          roleModalRef.destroy()
           return
         }
-        resolve(currentRoles)
-        modal.destroy()
+        resolve(selectedRole)
+        roleModalRef.destroy()
       },
       onCancel: () => {
         resolve(null)
-        modal.destroy()
+        roleModalRef.destroy()
       },
     })
   })

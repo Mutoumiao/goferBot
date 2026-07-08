@@ -17,7 +17,7 @@ export class RoleController {
   @Get()
   @RequirePermission('roles:read')
   async list() {
-    return this.roleService.listRoles('admin' as AuthApp)
+    return this.roleService.listRoles()
   }
 
   @Get('permissions')

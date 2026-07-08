@@ -114,6 +114,10 @@ export const pagerRequestSchema = z.object({
 | 复杂逻辑内联 | 在 `.refine()` 中写复杂逻辑 | 提取为独立函数 |
 | 未使用的 Schema | 定义了但未导出或使用 | 删除或导出 |
 | 未导出的工具函数 | 内部函数未导出 | 导出供其他模块使用 |
+| 跨层响应类型未在 `@goferbot/data` 定义 | Admin/Server 响应类型（如 `FetchModelsResult`、`ProviderPreset`）在 server 和 admin 各自定义 interface，未使用 Zod Schema 共享 | 在 `@goferbot/data` 中定义 Zod Schema + 导出类型，确保前后端类型一致 |
+| Server DTO 重复定义 `@goferbot/data` 中已有的 Schema | `packages/server/.../dto/settings.dto.ts` 本地定义了与 `@goferbot/data` 完全相同的 `modelSchema`/`modelProviderSchema`/`settingsSchema` | 从 `@goferbot/data` 导入 Schema，使用 `createZodDto(schema)` 生成 DTO |
+| 前后端共享常量未在 `@goferbot/data` 定义 | 角色权限映射（`ROLE_PERMISSIONS`）、权限码常量（`PERMISSIONS`）、角色标签等仅在 `packages/admin` 中硬编码，server 侧无访问 | 将共享常量迁移到 `packages/data/src/constants/`，前后端统一导入 |
+| 权限常量与后端 seeder 不一致 | 前端定义的 `PERMISSIONS` 常量数量或值与后端 `permission.seeder.ts` 不匹配 | 前端权限常量必须与后端 seeder 完全对齐，修改 seeder 后同步更新 `@goferbot/data` |
 
 ### 安全
 
@@ -280,3 +284,5 @@ pnpm --filter @goferbot/data build
 6. **Schema 定义后未使用**：增加维护负担
 7. **错误消息使用英文**：不符合项目规范
 8. **工具函数未导出**：无法被其他模块复用
+9. **跨层响应类型未定义为 Zod Schema**：`@goferbot/data` 包是前后端共享契约的**唯一权威源**。所有跨层消费的请求/响应类型（如 `FetchModelsResult`、`FetchedModel`、`ProviderPreset`）MUST 在此定义为 Zod Schema 并导出 `z.infer` 类型。禁止在 server 和 admin 两端各自定义 interface — 这会导致类型不一致且无法被 `nestjs-zod` 的 `ZodValidationPipe` 校验。
+10. **Server DTO 独立定义与 `@goferbot/data` 重复的 Schema**：如 `packages/server/.../dto/settings.dto.ts` 中重新定义了 `modelSchema`/`modelProviderSchema`/`settingsSchema`，这些 Schema 已在 `@goferbot/data` 中定义。重复定义导致"单一真源"原则被破坏，修改一处 Schema 时可能遗漏同步另一处。Server DTO MUST 从 `@goferbot/data` 导入 Schema，使用 `createZodDto(schema)` 模式生成 DTO 类。

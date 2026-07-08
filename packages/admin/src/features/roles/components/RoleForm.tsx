@@ -1,95 +1,128 @@
 import { Form, Input, Modal } from 'antd'
 import { createRoleService, editRoleService, fetchRole } from '../services'
 
-interface FormValues {
-  code?: string
-  name: string
-  description?: string
-}
-
 export function RoleFormModal(props: { roleCode?: string } = {}): Promise<boolean> {
-  return new Promise((resolve) => {
-    const [form] = Form.useForm<FormValues>()
-    const isEdit = !!props.roleCode
+  const isEdit = !!props.roleCode
 
-    const modal = Modal.confirm({
+  return new Promise((resolve) => {
+    let formCode = ''
+    let formName = ''
+    let formDescription = ''
+    let fieldErrors: Record<string, string> = {}
+
+    const renderContent = () => (
+      <Form layout="vertical" preserve={false} className="pt-2">
+        {!isEdit && (
+          <Form.Item
+            label="角色编码"
+            validateStatus={fieldErrors.code ? 'error' : undefined}
+            help={fieldErrors.code}
+            tooltip="kebab-case 格式，例如：auditor"
+          >
+            <Input
+              placeholder="例如：auditor"
+              defaultValue={formCode}
+              onChange={(e) => {
+                formCode = e.target.value
+                delete fieldErrors.code
+                roleModalRef.update({ content: renderContent() })
+              }}
+            />
+          </Form.Item>
+        )}
+        <Form.Item
+          label="角色名称"
+          validateStatus={fieldErrors.name ? 'error' : undefined}
+          help={fieldErrors.name}
+        >
+          <Input
+            placeholder="例如：审计员"
+            defaultValue={formName}
+            onChange={(e) => {
+              formName = e.target.value
+              delete fieldErrors.name
+              roleModalRef.update({ content: renderContent() })
+            }}
+          />
+        </Form.Item>
+        <Form.Item label="描述">
+          <Input.TextArea
+            rows={3}
+            placeholder="选填"
+            defaultValue={formDescription}
+            onChange={(e) => {
+              formDescription = e.target.value
+              roleModalRef.update({ content: renderContent() })
+            }}
+          />
+        </Form.Item>
+      </Form>
+    )
+
+    const roleModalRef = Modal.confirm({
       title: isEdit ? '编辑角色' : '新建角色',
       width: 480,
-      content: (
-        <Form form={form} layout="vertical" preserve={false} className="pt-2">
-          {!isEdit && (
-            <Form.Item
-              name="code"
-              label="角色编码"
-              rules={[
-                { required: true, message: '请输入角色编码' },
-                {
-                  pattern: /^[a-z][a-z0-9_-]*$/,
-                  message: '角色编码需以小写字母开头，仅含小写字母、数字、下划线、连字符',
-                },
-              ]}
-              tooltip="kebab-case 格式，例如：auditor"
-            >
-              <Input placeholder="例如：auditor" />
-            </Form.Item>
-          )}
-          <Form.Item
-            name="name"
-            label="角色名称"
-            rules={[{ required: true, message: '请输入角色名称' }]}
-          >
-            <Input placeholder="例如：审计员" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={3} placeholder="选填" />
-          </Form.Item>
-        </Form>
-      ),
+      content: renderContent(),
       okText: isEdit ? '保存修改' : '创建',
       cancelText: '取消',
       onOk: async () => {
-        try {
-          const values = await form.validateFields()
-          if (isEdit && props.roleCode) {
-            const current = await fetchRole(props.roleCode)
-            const res = await editRoleService(props.roleCode, {
-              name: values.name,
-              description: values.description,
-              permissions: current?.permissions ?? [],
-            })
-            if (res.success) {
-              resolve(true)
-              modal.destroy()
-            } else {
-              return Promise.reject(new Error(res.error))
-            }
-          } else {
-            const res = await createRoleService({
-              code: values.code ?? '',
-              name: values.name,
-              description: values.description,
-            })
-            if (res.success) {
-              resolve(true)
-              modal.destroy()
-            } else {
-              return Promise.reject(new Error(res.error))
-            }
+        fieldErrors = {}
+
+        if (!isEdit) {
+          if (!formCode) {
+            fieldErrors.code = '请输入角色编码'
+          } else if (!/^[a-z][a-z0-9_-]*$/.test(formCode)) {
+            fieldErrors.code = '角色编码需以小写字母开头，仅含小写字母、数字、下划线、连字符'
           }
-        } catch {
+        }
+        if (!formName) {
+          fieldErrors.name = '请输入角色名称'
+        }
+
+        if (Object.keys(fieldErrors).length > 0) {
+          roleModalRef.update({ content: renderContent() })
           return Promise.reject(new Error('validation failed'))
+        }
+
+        if (isEdit && props.roleCode) {
+          const current = await fetchRole(props.roleCode)
+          const res = await editRoleService(props.roleCode, {
+            name: formName,
+            description: formDescription || undefined,
+            permissions: current?.permissions ?? [],
+          })
+          if (res.success) {
+            resolve(true)
+            roleModalRef.destroy()
+          } else {
+            return Promise.reject(new Error(res.error))
+          }
+        } else {
+          const res = await createRoleService({
+            code: formCode,
+            name: formName,
+            description: formDescription || undefined,
+          })
+          if (res.success) {
+            resolve(true)
+            roleModalRef.destroy()
+          } else {
+            return Promise.reject(new Error(res.error))
+          }
         }
       },
       onCancel: () => {
         resolve(false)
-        modal.destroy()
+        roleModalRef.destroy()
       },
     })
 
     if (isEdit && props.roleCode) {
       void fetchRole(props.roleCode).then((r) => {
         if (r) {
-          form.setFieldsValue({ name: r.name, description: r.description ?? undefined })
+          formName = r.name
+          formDescription = r.description ?? ''
+          roleModalRef.update({ content: renderContent() })
         }
       })
     }

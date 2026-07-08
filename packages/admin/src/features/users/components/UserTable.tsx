@@ -1,11 +1,11 @@
 import type { MenuProps } from 'antd'
 import {
+  App,
   Avatar,
   Button,
   Card,
   Dropdown,
   Input,
-  Modal,
   message,
   Select,
   Space,
@@ -25,8 +25,7 @@ import { getMenuItems } from './menuItems'
 import { resetPasswordModal } from './ResetPasswordDialog'
 import { assignRoleModal } from './RoleAssignDialog'
 import { renderRoleTags } from './renderRoleTags'
-import { createUserModal } from './UserCreateForm'
-import { editUserModal } from './UserEditModal'
+import { showCreateUserModal, showEditUserModal } from './UserFormModal'
 
 type RoleFilter = 'all' | 'super_admin' | 'admin' | 'user'
 
@@ -41,6 +40,7 @@ function avatarColor(roles: string[]): string {
 }
 
 export function UserTable({ initialQuery }: UserTableProps) {
+  const { modal: appModal } = App.useApp()
   const currentUser = useAuthStore((s) => s.user)
   const [data, setData] = useState<AdminUserResponse[]>([])
   const [total, setTotal] = useState(0)
@@ -98,7 +98,7 @@ export function UserTable({ initialQuery }: UserTableProps) {
   }
 
   const handleEdit = async (user: AdminUserResponse) => {
-    const success = await editUserModal(user)
+    const success = await showEditUserModal(user, appModal)
     if (success) void load(query)
   }
 
@@ -108,19 +108,19 @@ export function UserTable({ initialQuery }: UserTableProps) {
   }
 
   const handleCreate = async () => {
-    const success = await createUserModal()
+    const success = await showCreateUserModal(appModal)
     if (success) void load(query)
   }
 
   const handleResetPassword = async (user: AdminUserResponse) => {
-    const success = await resetPasswordModal(user)
+    const success = await resetPasswordModal(user, appModal)
     if (success) message.success('密码已重置')
   }
 
   const handleAssignRole = async (user: AdminUserResponse) => {
-    const roles = await assignRoleModal(user)
-    if (roles) {
-      await assignUserRole(user.id, roles)
+    const role = await assignRoleModal(user, appModal)
+    if (role) {
+      await assignUserRole(user.id, [role])
       void load(query)
     }
   }
@@ -248,8 +248,9 @@ export function UserTable({ initialQuery }: UserTableProps) {
             else if (item.key === 'resetPassword') void handleResetPassword(record)
             else if (item.key === 'assignRole') void handleAssignRole(record)
             else if (item.key === 'delete') {
-              Modal.confirm({
+              appModal.confirm({
                 title: '删除用户',
+                icon: null,
                 content: `确定删除用户 ${record.email}？删除后数据无法恢复。`,
                 okText: '删除',
                 okButtonProps: { danger: true },
