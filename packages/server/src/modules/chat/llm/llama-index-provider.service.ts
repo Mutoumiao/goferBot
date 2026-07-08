@@ -1,5 +1,4 @@
 import { OpenAI } from '@llamaindex/openai'
-import { Injectable } from '@nestjs/common'
 import type {
   LlmInvokeOptions,
   LlmMessage,
@@ -19,8 +18,7 @@ export interface LlamaIndexProviderConfig {
 
 /**
  * 根据 isCompleteUrl 解析 LLM baseURL。
- * - false（默认）：baseUrl 是 API 网关地址，SDK 自动拼 /chat/completions
- * - true：baseUrl 是完整请求地址，strip /chat/completions 后缀供 SDK 重新拼接
+ * 已废弃：Provider 类体系接管了 baseURL 解析。保留供 RAG 兼容。
  */
 export function resolveLlmBaseURL(
   baseUrl: string | undefined,
@@ -28,35 +26,44 @@ export function resolveLlmBaseURL(
 ): string | undefined {
   if (!baseUrl) return undefined
   if (!isCompleteUrl) return baseUrl
-  // ponytail: strip 已知端点后缀，SDK 会重新拼接
   return baseUrl.replace(/\/chat\/completions$/, '')
 }
 
-@Injectable()
+type ChatClient = Pick<OpenAI, 'chat'>
+
 export class LlamaIndexProvider implements LlmProvider {
   readonly providerKey = 'llama-index'
   readonly capabilities = ['streaming', 'blocking']
 
-  private readonly client: OpenAI
+  private readonly client: ChatClient
 
-  constructor(readonly config: LlamaIndexProviderConfig) {
-    this.client = new OpenAI({
-      model: config.model,
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-      timeout: config.timeout,
-      additionalSessionOptions: {
-        defaultHeaders: config.customHeaders,
-        organization: config.organization,
-      },
-    })
+  /**
+   * 支持两种构造方式：
+   * - 传入 pre-created client（ProviderRegistry 方式）
+   * - 传入 config（兼容旧代码）
+   */
+  constructor(clientOrConfig: ChatClient | LlamaIndexProviderConfig) {
+    if (this.isClient(clientOrConfig)) {
+      this.client = clientOrConfig
+    } else {
+      const config = clientOrConfig
+      this.client = new OpenAI({
+        model: config.model,
+        apiKey: config.apiKey,
+        baseURL: config.baseURL,
+        timeout: config.timeout,
+        additionalSessionOptions: {
+          defaultHeaders: config.customHeaders,
+          organization: config.organization,
+        },
+      })
+    }
   }
 
   async *stream(messages: LlmMessage[], options?: LlmStreamOptions): AsyncIterable<LlmStreamChunk> {
     const response = await this.client.chat({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       stream: true,
-      // M7: 传递 temperature 和 signal 到 LLM 调用
       ...(options?.temperature !== undefined && { temperature: options.temperature }),
       ...(options?.abortSignal && { signal: options.abortSignal }),
     })
@@ -74,7 +81,6 @@ export class LlamaIndexProvider implements LlmProvider {
   async invoke(messages: LlmMessage[], options?: LlmInvokeOptions): Promise<string> {
     const response = await this.client.chat({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      // M7: 传递 temperature 到 LLM 调用
       ...(options?.temperature !== undefined && { temperature: options.temperature }),
     })
 
@@ -95,5 +101,12 @@ export class LlamaIndexProvider implements LlmProvider {
     return (
       typeof (value as { [Symbol.asyncIterator]?: unknown })?.[Symbol.asyncIterator] === 'function'
     )
+  }
+
+  private isClient(value: unknown): value is ChatClient {
+    if (value instanceof OpenAI) return true
+    // 支持测试 mock 对象（带 _providerReady 标记）
+    if (typeof value === 'object' && value !== null && '_providerReady' in value) return true
+    return false
   }
 }

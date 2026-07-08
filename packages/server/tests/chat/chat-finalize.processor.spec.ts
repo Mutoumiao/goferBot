@@ -2,8 +2,8 @@ import type { Job } from 'bullmq'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RequestContextStorage } from '../../src/common/request-context-storage.js'
 import type { ConversationService } from '../../src/modules/chat/conversation.service.js'
-import type { LlmProviderFactory } from '../../src/modules/chat/llm/llm-provider.factory.js'
 import type { ModelProvider, Settings } from '../../src/modules/settings/dto/settings.dto.js'
+import type { ProviderRegistry } from '../../src/modules/settings/providers/index.js'
 import type { SystemConfigService } from '../../src/modules/settings/system-config.service.js'
 import { ChatFinalizeProcessor } from '../../src/processors/chat/chat-finalize.processor.js'
 import type { ChatFinalizeJobData } from '../../src/queue/index.js'
@@ -76,7 +76,7 @@ describe('ChatFinalizeProcessor', () => {
   let processor: ChatFinalizeProcessor
   let mockConversationService: Partial<ConversationService>
   let mockSystemConfigService: Partial<SystemConfigService>
-  let mockLlmProviderFactory: Partial<LlmProviderFactory>
+  let mockProviderRegistry: Partial<ProviderRegistry>
 
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -87,18 +87,18 @@ describe('ChatFinalizeProcessor', () => {
     mockSystemConfigService = {
       getDecryptedSystemConfig: vi.fn().mockResolvedValue(buildSettings()),
     }
-    mockLlmProviderFactory = {
-      create: vi.fn().mockReturnValue({
-        providerKey: 'gpt-4o-mini',
-        capabilities: [],
-        stream: vi.fn(),
-        invoke: vi.fn(),
+    mockProviderRegistry = {
+      get: vi.fn().mockResolvedValue({
+        toLlamaIndex: () => ({
+          _providerReady: true,
+          chat: vi.fn().mockResolvedValue({ message: { content: 'title' } }),
+        }),
       }),
     }
     processor = new ChatFinalizeProcessor(
       mockConversationService as ConversationService,
       mockSystemConfigService as SystemConfigService,
-      mockLlmProviderFactory as LlmProviderFactory,
+      mockProviderRegistry as ProviderRegistry,
     )
   })
 
@@ -124,17 +124,12 @@ describe('ChatFinalizeProcessor', () => {
 
       await processor.process(job)
 
-      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith('default-llm', {
-        apiKey: 'sk-test-api-key',
-        model: 'gpt-4o-mini',
-        baseURL: 'https://api.openai.com',
-        timeout: 30_000,
-      })
+      expect(mockProviderRegistry.get).toHaveBeenCalledWith('default-llm', 'gpt-4o-mini')
       expect(mockConversationService.generateTitle).toHaveBeenCalledWith(
         'session-1',
         'Hi',
         'Hello, world!',
-        expect.objectContaining({ providerKey: 'gpt-4o-mini' }),
+        expect.objectContaining({ providerKey: 'llama-index' }),
       )
     })
 
@@ -152,7 +147,7 @@ describe('ChatFinalizeProcessor', () => {
 
       await processor.process(job)
 
-      expect(mockLlmProviderFactory.create).not.toHaveBeenCalled()
+      expect(mockProviderRegistry.get).not.toHaveBeenCalled()
       expect(mockConversationService.generateTitle).not.toHaveBeenCalled()
     })
 
@@ -170,12 +165,7 @@ describe('ChatFinalizeProcessor', () => {
 
       await processor.process(job)
 
-      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith('backup-llm', {
-        apiKey: 'sk-test-backup-key',
-        model: 'gpt-4o-mini',
-        baseURL: 'https://api.openai.com',
-        timeout: 30_000,
-      })
+      expect(mockProviderRegistry.get).toHaveBeenCalledWith('backup-llm', 'gpt-4o-mini')
       expect(mockConversationService.generateTitle).toHaveBeenCalled()
     })
 
@@ -231,12 +221,7 @@ describe('ChatFinalizeProcessor', () => {
 
       await processor.process(job)
 
-      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
-        'backup-llm',
-        expect.objectContaining({
-          apiKey: 'sk-test-backup-key',
-        }),
-      )
+      expect(mockProviderRegistry.get).toHaveBeenCalledWith('backup-llm', 'gpt-4o')
     })
 
     it('skips non-llm providers and falls back to next enabled llm provider', async () => {
@@ -274,13 +259,7 @@ describe('ChatFinalizeProcessor', () => {
 
       await processor.process(job)
 
-      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
-        'backup-llm',
-        expect.objectContaining({
-          apiKey: 'sk-test-backup-key',
-          model: 'gpt-4o-mini',
-        }),
-      )
+      expect(mockProviderRegistry.get).toHaveBeenCalledWith('backup-llm', 'gpt-4o-mini')
     })
 
     it('skips provider when model or apiKey is missing', async () => {
@@ -317,12 +296,7 @@ describe('ChatFinalizeProcessor', () => {
 
       await processor.process(job)
 
-      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
-        'backup-llm',
-        expect.objectContaining({
-          apiKey: 'sk-test-backup-key',
-        }),
-      )
+      expect(mockProviderRegistry.get).toHaveBeenCalledWith('backup-llm', 'gpt-4o-mini')
     })
 
     it('ignores defaultProvider when not present in enabledProviders and falls back', async () => {
@@ -339,12 +313,7 @@ describe('ChatFinalizeProcessor', () => {
 
       await processor.process(job)
 
-      expect(mockLlmProviderFactory.create).toHaveBeenCalledWith(
-        'backup-llm',
-        expect.objectContaining({
-          apiKey: 'sk-test-backup-key',
-        }),
-      )
+      expect(mockProviderRegistry.get).toHaveBeenCalledWith('backup-llm', 'gpt-4o-mini')
     })
 
     it('wraps execution in RequestContextStorage.run with job trace context', async () => {

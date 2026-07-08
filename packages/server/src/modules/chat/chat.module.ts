@@ -8,7 +8,6 @@ import { ChatController } from './chat.controller.js'
 import { ChatService } from './chat.service.js'
 import { ConversationService } from './conversation.service.js'
 import { CHAT_CONTEXT_RETRIEVER } from './interfaces/chat-context-retriever.interface.js'
-import { LlmProviderFactory } from './llm/llm-provider.factory.js'
 import { ModelRegistryService } from './model-registry.service.js'
 
 @Module({
@@ -17,7 +16,6 @@ import { ModelRegistryService } from './model-registry.service.js'
   providers: [
     ChatService,
     ConversationService,
-    LlmProviderFactory,
     ModelRegistryService,
     SseResponseHelper,
     {
@@ -35,6 +33,6 @@ import { ModelRegistryService } from './model-registry.service.js'
       }),
     },
   ],
-  exports: [ConversationService, LlmProviderFactory, ModelRegistryService],
+  exports: [ConversationService, ModelRegistryService],
 })
 export class ChatModule {}

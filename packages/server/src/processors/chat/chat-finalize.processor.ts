@@ -3,11 +3,11 @@ import type { Job } from 'bullmq'
 import { RequestContextStorage } from '../../common/request-context-storage.js'
 import { withTrace } from '../../common/utils/with-trace.js'
 import { ConversationService } from '../../modules/chat/conversation.service.js'
-import { resolveLlmBaseURL } from '../../modules/chat/llm/llama-index-provider.service.js'
-import { LlmProviderFactory } from '../../modules/chat/llm/llm-provider.factory.js'
+import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
 import type { LlmProvider } from '../../modules/chat/llm/llm-provider.interface.js'
 import type { ModelProvider } from '../../modules/settings/dto/settings.dto.js'
 import { parseModelKey } from '../../modules/settings/model-provider.service.js'
+import { ProviderRegistry } from '../../modules/settings/providers/index.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 import type { ChatFinalizeJobData } from '../../queue/index.js'
 
@@ -21,7 +21,7 @@ export class ChatFinalizeProcessor {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly systemConfigService: SystemConfigService,
-    private readonly llmProviderFactory: LlmProviderFactory,
+    private readonly providerRegistry: ProviderRegistry,
   ) {}
 
   async process(job: Job<ChatFinalizeJobData>): Promise<void> {
@@ -110,7 +110,7 @@ export class ChatFinalizeProcessor {
         continue
       }
       try {
-        return this.createLlmProvider(provider, model.name)
+        return await this.createLlmProvider(provider, model.name)
       } catch (err) {
         this.logger.warn(
           withTrace(
@@ -130,15 +130,8 @@ export class ChatFinalizeProcessor {
     return null
   }
 
-  private createLlmProvider(provider: ModelProvider, modelName: string): LlmProvider {
-    const timeoutMs = Number.isFinite(provider.timeoutMs)
-      ? provider.timeoutMs
-      : TITLE_PROVIDER_TIMEOUT_MS
-    return this.llmProviderFactory.create(provider.id, {
-      apiKey: provider.apiKey,
-      model: modelName,
-      baseURL: resolveLlmBaseURL(provider.baseUrl, provider.isCompleteUrl),
-      timeout: timeoutMs,
-    })
+  private async createLlmProvider(provider: ModelProvider, modelName: string): Promise<LlmProvider> {
+    const baseProvider = await this.providerRegistry.get(provider.id, modelName)
+    return new LlamaIndexProvider(baseProvider.toLlamaIndex())
   }
 }

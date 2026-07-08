@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModelProviderService } from '@/modules/settings/model-provider.service.js'
+import type { ProviderRegistry } from '@/modules/settings/providers/index.js'
 import type { SystemConfigService } from '@/modules/settings/system-config.service.js'
 import type { SearchHit } from '@/processors/rag/elasticsearch.service.js'
 import type { RetrievedChunk } from '@/processors/rag/llamaindex-rag.service.js'
@@ -217,6 +218,8 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
     contextService,
   )
 
+  const mockLlmClient = { _providerReady: true, chat: vi.fn().mockResolvedValue({ message: { content: 'ok' } }) }
+
   const service = new LlamaIndexRagService(
     retrievalService,
     contextService,
@@ -224,6 +227,9 @@ async function createService(overrides: Record<string, any> = {}): Promise<Llama
     indexingService,
     systemConfigService as unknown as SystemConfigService,
     modelProviderService as unknown as ModelProviderService,
+    {
+      get: vi.fn().mockResolvedValue({ toLlamaIndex: () => mockLlmClient }),
+    } as unknown as ProviderRegistry,
   )
   await service.onModuleInit()
   return service

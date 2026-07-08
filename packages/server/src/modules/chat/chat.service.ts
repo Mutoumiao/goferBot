@@ -5,6 +5,7 @@ import { StreamFinalizeService } from '../../common/services/stream-finalize.ser
 import { MODEL_PROVIDER_ERROR_CODES } from '../settings/constants.js'
 import type { ModelProvider } from '../settings/dto/settings.dto.js'
 import { parseModelKey } from '../settings/model-provider.service.js'
+import { ProviderRegistry } from '../settings/providers/index.js'
 import { SettingsService } from '../settings/settings.service.js'
 import { ConversationService } from './conversation.service.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
@@ -12,8 +13,7 @@ import {
   CHAT_CONTEXT_RETRIEVER,
   type ChatContextRetriever,
 } from './interfaces/chat-context-retriever.interface.js'
-import { resolveLlmBaseURL } from './llm/llama-index-provider.service.js'
-import { LlmProviderFactory } from './llm/llm-provider.factory.js'
+import { LlamaIndexProvider } from './llm/llama-index-provider.service.js'
 import type { LlmMessage, LlmProvider } from './llm/llm-provider.interface.js'
 import { ModelRegistryService } from './model-registry.service.js'
 
@@ -29,7 +29,7 @@ export class ChatService {
     private readonly settingsService: SettingsService,
     private readonly modelRegistry: ModelRegistryService,
     private readonly conversationService: ConversationService,
-    private readonly llmFactory: LlmProviderFactory,
+    private readonly providerRegistry: ProviderRegistry,
     private readonly finalizeService: StreamFinalizeService,
     @Inject(CHAT_CONTEXT_RETRIEVER)
     @Optional()
@@ -200,21 +200,11 @@ export class ChatService {
   }
 
   private async createProvider(
-    providerConfig: { apiKey: string; baseUrl: string; isCompleteUrl: boolean },
-    model: string,
-    timeoutMs: number,
+    providerId: string,
+    modelName: string,
   ): Promise<LlmProvider> {
-    if (!providerConfig.apiKey) {
-      throw new BadRequestException({ code: 'LLM_NOT_CONFIGURED', message: '未配置 LLM API Key' })
-    }
-
-    const baseURL = resolveLlmBaseURL(providerConfig.baseUrl, providerConfig.isCompleteUrl)
-    return this.llmFactory.create('openai-compatible', {
-      apiKey: providerConfig.apiKey,
-      model,
-      baseURL,
-      timeout: timeoutMs,
-    })
+    const baseProvider = await this.providerRegistry.get(providerId, modelName)
+    return new LlamaIndexProvider(baseProvider.toLlamaIndex())
   }
 
   private async resolveProvider(
@@ -236,12 +226,10 @@ export class ChatService {
       })
     }
 
-    // 解析模型级别 key：{providerId}#{modelName} 或纯 {providerId}
     const { providerId: parsedProviderId, modelName: parsedModelName } = parseModelKey(resolvedKey)
     let providerId = parsedProviderId
     let modelName = parsedModelName
 
-    // 优先从注册表查找（注册表存储模型级别 key）
     const modelInfo = this.modelRegistry.lookup(resolvedKey)
     if (modelInfo) {
       providerId = modelInfo.providerKey
@@ -274,7 +262,6 @@ export class ChatService {
       })
     }
 
-    // 从 provider.models 中查找 LLM 模型
     const model = modelName
       ? provider.models.find((m) => m.name === modelName && m.type === 'llm')
       : provider.models.find((m) => m.type === 'llm' && m.enabled)
@@ -285,7 +272,6 @@ export class ChatService {
       })
     }
 
-    // 如果用户通过 dto.model 指定了不同模型，验证该模型在 provider 列表中且为启用的 LLM
     const resolvedModelName = dtoModel ?? model.name
     if (dtoModel && dtoModel !== model.name) {
       const overrideModel = provider.models.find(
@@ -301,15 +287,7 @@ export class ChatService {
 
     const timeoutMs = provider.timeoutMs
     return {
-      provider: await this.createProvider(
-        {
-          apiKey: provider.apiKey,
-          baseUrl: provider.baseUrl,
-          isCompleteUrl: provider.isCompleteUrl,
-        },
-        resolvedModelName,
-        timeoutMs,
-      ),
+      provider: await this.createProvider(providerId, resolvedModelName),
       model: resolvedModelName,
       timeoutMs,
     }

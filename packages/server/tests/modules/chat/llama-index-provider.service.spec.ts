@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { OpenAI } from '@llamaindex/openai'
 import { LlamaIndexProvider } from '@/modules/chat/llm/llama-index-provider.service.js'
 
 const mockChat = vi.fn()
@@ -19,6 +20,45 @@ describe('LlamaIndexProvider', () => {
 
     expect(provider.providerKey).toBe('llama-index')
     expect(provider.capabilities).toEqual(['streaming', 'blocking'])
+  })
+
+  describe('constructor with pre-created client (ProviderRegistry mode)', () => {
+    it('accepts a pre-created OpenAI client', () => {
+      const client = new OpenAI({ apiKey: 'key', model: 'gpt-4' })
+      const provider = new LlamaIndexProvider(client)
+
+      expect(provider.providerKey).toBe('llama-index')
+      expect(provider.capabilities).toEqual(['streaming', 'blocking'])
+    })
+
+    it('streams text chunks when using pre-created client', async () => {
+      mockChat.mockResolvedValue({
+        async *[Symbol.asyncIterator]() {
+          yield { delta: 'hello' }
+          yield { delta: ' world' }
+        },
+      })
+
+      const client = new OpenAI({ apiKey: 'key', model: 'gpt-4' })
+      const provider = new LlamaIndexProvider(client)
+      const chunks: string[] = []
+
+      for await (const chunk of provider.stream([{ role: 'user', content: 'hi' }])) {
+        chunks.push(chunk.text)
+      }
+
+      expect(chunks).toEqual(['hello', ' world'])
+    })
+
+    it('invoke works with pre-created client', async () => {
+      mockChat.mockResolvedValue({ message: { content: 'hello world' } })
+
+      const client = new OpenAI({ apiKey: 'key', model: 'gpt-4' })
+      const provider = new LlamaIndexProvider(client)
+      const result = await provider.invoke([{ role: 'user', content: 'hi' }])
+
+      expect(result).toBe('hello world')
+    })
   })
 
   it('streams text chunks', async () => {

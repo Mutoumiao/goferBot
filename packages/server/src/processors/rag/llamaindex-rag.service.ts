@@ -1,13 +1,10 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
-import type { LlamaIndexProviderConfig } from '../../modules/chat/llm/llama-index-provider.service.js'
-import {
-  LlamaIndexProvider,
-  resolveLlmBaseURL,
-} from '../../modules/chat/llm/llama-index-provider.service.js'
+import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
 import { ConfigChangedEvent, MODEL_PROVIDER_ERROR_CODES } from '../../modules/settings/constants.js'
 import type { ResolvedProvider, Settings } from '../../modules/settings/dto/settings.dto.js'
 import { ModelProviderService } from '../../modules/settings/model-provider.service.js'
+import { ProviderRegistry } from '../../modules/settings/providers/index.js'
 import { SystemConfigService } from '../../modules/settings/system-config.service.js'
 import type { GroundingResult } from './grounding.service.js'
 import { RagContextService } from './rag-context.service.js'
@@ -58,6 +55,7 @@ export class LlamaIndexRagService implements OnModuleInit {
     private readonly indexingService: RagIndexingService,
     private readonly systemConfigService: SystemConfigService,
     private readonly modelProviderService: ModelProviderService,
+    private readonly providerRegistry: ProviderRegistry,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -77,13 +75,13 @@ export class LlamaIndexRagService implements OnModuleInit {
 
   private async refreshConfig(): Promise<void> {
     const config = await this.systemConfigService.getDecryptedSystemConfig()
-    this.applyRagConfig(config)
+    await this.applyRagConfig(config)
     this.applyIndexingConfig(config.indexing)
   }
 
-  private applyRagConfig(config: Settings): void {
-    const providerId = config.rag.llmProvider
-    if (!providerId) {
+  private async applyRagConfig(config: Settings): Promise<void> {
+    const refKey = config.rag.llmProvider
+    if (!refKey) {
       this.logger.warn('RAG LLM 未配置：请在管理后台配置 rag.llmProvider')
       this.llm = null
       return
@@ -91,11 +89,7 @@ export class LlamaIndexRagService implements OnModuleInit {
 
     let provider: ResolvedProvider
     try {
-      provider = this.modelProviderService.resolveProvider(
-        'rag.llmProvider',
-        RAG_PROVIDER_SCOPE,
-        config,
-      )
+      provider = this.modelProviderService.resolveProvider('rag.llmProvider', RAG_PROVIDER_SCOPE, config)
     } catch (err) {
       this.logger.warn(
         `RAG LLM provider 解析失败：${err instanceof Error ? err.message : String(err)}`,
@@ -110,12 +104,8 @@ export class LlamaIndexRagService implements OnModuleInit {
       return
     }
 
-    this.llm = new LlamaIndexProvider({
-      apiKey: provider.apiKey,
-      model: provider.model,
-      baseURL: resolveLlmBaseURL(provider.baseUrl, provider.isCompleteUrl),
-      timeout: config.rag.timeoutMs ?? provider.timeoutMs,
-    } satisfies LlamaIndexProviderConfig)
+    const baseProvider = await this.providerRegistry.get(provider.id, provider.model)
+    this.llm = new LlamaIndexProvider(baseProvider.toLlamaIndex())
     this.logger.debug(`RAG LLM refreshed: ${provider.model}`)
   }
 
