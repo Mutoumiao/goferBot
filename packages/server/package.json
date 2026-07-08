@@ -27,6 +27,7 @@
     "@goferbot/data": "workspace:*",
     "@langchain/core": "^1.2.1",
     "@langchain/langgraph": "^1.4.6",
+    "@langchain/ollama": "^1.3.0",
     "@langchain/openai": "^1.5.3",
     "@llamaindex/core": "0.6.22",
     "@llamaindex/ollama": "^0.1.24",

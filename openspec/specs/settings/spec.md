@@ -117,7 +117,9 @@ APP_CONFIG (用户个人配置)
 
 #### Scenario: 代理获取远程模型列表
 - **WHEN** 前端请求 `POST /admin/providers/fetch-models`（传入 `baseUrl`、`apiKey`、`isCompleteUrl`）
-- **THEN** 系统代理调用远程 `/models` 端点，解析 OpenAI 兼容格式响应，根据模型名推断 `type`，返回统一的 `{ success, models: FetchedModel[], error? }` 结构
+- **THEN** 系统代理调用远程 `/models` 端点，解析后返回 `{ models: FetchedModel[] }` 纯业务数据
+- **AND** ResponseInterceptor 自动包装为 `{ success: true, data: { models: [...] }, meta: { requestId, timestamp } }`
+- **AND** `FetchedModel` 类型 MUST 在 `@goferbot/data` 中定义为 Zod Schema（`fetchedModelSchema`），server 和 admin 前端通过 `z.infer<typeof fetchedModelSchema>` 派生类型，禁止各自定义 interface
 
 #### Scenario: fetch-models SSRF 防护
 - **WHEN** `POST /admin/providers/fetch-models` 的 `baseUrl` 指向内网地址（如 `169.254.169.254`、`127.0.0.1`、`localhost` 生产环境）
@@ -219,6 +221,41 @@ APP_CONFIG (用户个人配置)
 - **THEN** 系统应快速失败，并显示描述性错误消息，列出所有缺失的变量
 
 ## API Endpoints（API 端点）
+
+### Response Envelope 统一格式
+
+所有 Admin API 端点（非 SSE 流式端点）的响应由 `ResponseInterceptor` **自动包装**为以下统一信封，Controller 无需手动处理：
+
+```typescript
+{
+  success: true,         // 框架统一注入（Controller 无需关心）
+  data: T,               // ← Controller 的返回值自动填入此处
+  meta: {
+    requestId: string,   // 请求追踪 ID
+    timestamp: string,   // 响应时间（ISO 8601）
+  }
+}
+```
+
+**Controller 的职责**：只返回纯业务数据（填入 `data` 的内容），不返回传输层字段（`success`/`error`/`code`/`message`）。
+
+```typescript
+// ✅ Controller 返回纯业务数据 → 自动填入 data
+// 实际响应：{ success: true, data: { models: [...] }, meta: {...} }
+async fetchModels(@Body() dto: FetchModelsDto): Promise<{ models: FetchedModel[] }> {
+  return this.service.fetchModels(dto)
+}
+
+// ❌ Controller 返回含 success/error 的对象 → data 里多出一层冗余壳
+// 实际响应：{ success: true, data: { success: true, models: [...] }, meta: {...} }
+async fetchModels(@Body() dto: FetchModelsDto): Promise<FetchModelsResult> {
+  return this.service.fetchModels(dto)  // FetchModelsResult = { success, models, error? }
+}
+```
+
+**跨层 Schema 共享**：
+- 所有跨层消费的请求/响应类型 MUST 在 `@goferbot/data` 中定义为 Zod Schema，server 和 admin 前端各自通过 `z.infer` 派生 TS 类型
+- Server DTO MUST 从 `@goferbot/data` 导入 Schema，使用 `createZodDto(schema)` 模式，禁止本地重复定义
 
 ### 用户配置端点
 
