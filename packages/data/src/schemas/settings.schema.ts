@@ -98,6 +98,23 @@ export const settingCategorySchema = z.enum([
 ])
 export type SettingCategory = z.infer<typeof settingCategorySchema>
 
+export const fetchedModelSchema = z.object({
+  name: z.string(),
+  type: providerTypeSchema,
+  dimensions: z.number().int().min(1).optional(),
+  maxLength: z.number().int().min(1).optional(),
+})
+export type FetchedModel = z.infer<typeof fetchedModelSchema>
+
+export const providerPresetSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  name: z.string(),
+  baseUrl: z.string(),
+  hasFetchModels: z.boolean().default(true),
+})
+export type ProviderPreset = z.infer<typeof providerPresetSchema>
+
 export const availableProvidersResponseSchema = z.object({
   builtIn: z.array(modelProviderSchema),
   custom: z.array(modelProviderSchema),

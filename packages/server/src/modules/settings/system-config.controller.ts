@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { PermissionGuard } from '../../auth/guards/permission.guard.js'
 import { ConfigCryptoService } from './config-crypto.service.js'
 import { SETTING_CATEGORIES, type SettingCategory } from './constants.js'
-import type { ModelProvider } from './dto/settings.dto.js'
+import type { FetchedModel, ModelProvider } from './dto/settings.dto.js'
 import {
   AppearanceSettingsDto,
   ChatSettingsDto,
@@ -25,6 +25,7 @@ import {
   RagSettingsDto,
   type Settings,
 } from './dto/settings.dto.js'
+import { ProviderRegistry } from './providers/index.js'
 import { SystemConfigService } from './system-config.service.js'
 
 type CategoryDtoMap = {
@@ -41,6 +42,7 @@ export class SystemConfigController {
   constructor(
     private readonly systemConfigService: SystemConfigService,
     private readonly crypto: ConfigCryptoService,
+    private readonly registry: ProviderRegistry,
   ) {}
 
   // ==================== System-wide settings ====================
@@ -77,9 +79,8 @@ export class SystemConfigController {
   @Post('system-config/reload')
   @HttpCode(200)
   @RequirePermission('moduleSettings:update')
-  async reloadModels(): Promise<{ success: boolean }> {
+  async reloadModels(): Promise<void> {
     await this.systemConfigService.reloadModels()
-    return { success: true }
   }
 
   // ==================== Provider pool ====================
@@ -94,14 +95,17 @@ export class SystemConfigController {
   @Get('providers/presets')
   @RequirePermission('modelProviders:read')
   getPresets() {
-    return this.systemConfigService.getPresets()
+    const presets = this.systemConfigService.getPresets()
+    return presets.map((p) => ({ ...p, hasFetchModels: p.key !== 'custom' }))
   }
 
   @Post('providers/fetch-models')
   @HttpCode(200)
   @RequirePermission('modelProviders:create')
-  async fetchModels(@Body() dto: FetchModelsDto) {
-    return this.systemConfigService.fetchModels(dto)
+  async fetchModels(@Body() dto: FetchModelsDto): Promise<{ models: FetchedModel[] }> {
+    const provider = this.registry.createFromPreset(dto.presetKey, dto.baseUrl, dto.apiKey)
+    const models = await provider.fetchModels()
+    return { models }
   }
 
   @Get('providers/:id')
@@ -122,9 +126,8 @@ export class SystemConfigController {
   @Delete('providers/:id')
   @HttpCode(200)
   @RequirePermission('modelProviders:delete')
-  async deleteProvider(@Param('id') id: string): Promise<{ success: boolean }> {
+  async deleteProvider(@Param('id') id: string): Promise<void> {
     await this.systemConfigService.deleteProvider(id)
-    return { success: true }
   }
 
   private validateCategory(category: string): asserts category is SettingCategory {

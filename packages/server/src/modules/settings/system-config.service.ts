@@ -10,7 +10,7 @@ import {
   SYSTEM_CONFIG_KEY,
   SYSTEM_USER_ID,
 } from './constants.js'
-import type { CategoryDto, ModelProvider, ProviderType, Settings } from './dto/settings.dto.js'
+import type { CategoryDto, ModelProvider, Settings } from './dto/settings.dto.js'
 import { ModelProviderService, parseModelKey } from './model-provider.service.js'
 import { SettingsService } from './settings.service.js'
 
@@ -22,19 +22,6 @@ export interface ProviderPreset {
   label: string
   name: string
   baseUrl: string
-}
-
-export interface FetchedModel {
-  name: string
-  type: ProviderType
-  dimensions?: number
-  maxLength?: number
-}
-
-export interface FetchModelsResult {
-  success: boolean
-  models: FetchedModel[]
-  error?: string
 }
 
 @Injectable()
@@ -174,79 +161,6 @@ export class SystemConfigService {
       .replace(/^-|-$/g, '')
     const suffix = Math.random().toString(36).substring(2, 6)
     return `${slug}-${suffix}`
-  }
-
-  /**
-   * 代理调用远程 /models 端点，返回可用模型列表。
-   * 后端统一解析 OpenAI 兼容格式，并根据模型名推断类型。
-   * SSRF 防护：baseUrl 已由 FetchModelsDto 的 Zod schema 校验（validateBaseUrl + skipWhitelist）。
-   */
-  async fetchModels(dto: {
-    baseUrl: string
-    apiKey: string
-    isCompleteUrl: boolean
-  }): Promise<FetchModelsResult> {
-    const url = this.resolveModelsEndpoint(dto.baseUrl, dto.isCompleteUrl)
-    try {
-      const resp = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${dto.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(15_000),
-      })
-      if (!resp.ok) {
-        const body = await resp.text().catch(() => '')
-        return {
-          success: false,
-          models: [],
-          error: `远程返回 ${resp.status}: ${body.slice(0, 200)}`,
-        }
-      }
-
-      // 限制响应体大小，防止恶意远程服务器返回超大 JSON 导致内存溢出
-      const MAX_RESPONSE_SIZE = 1_000_000 // 1MB
-      const contentLength = Number.parseInt(resp.headers.get('content-length') ?? '0', 10)
-      if (contentLength > MAX_RESPONSE_SIZE) {
-        return { success: false, models: [], error: '远程响应体过大（>1MB），已拒绝' }
-      }
-      const text = await resp.text()
-      if (text.length > MAX_RESPONSE_SIZE) {
-        return { success: false, models: [], error: '远程响应体过大（>1MB），已拒绝' }
-      }
-      const json = JSON.parse(text) as { data?: Array<{ id: string }> }
-      const rawModels = json.data ?? []
-      const models: FetchedModel[] = rawModels.map((m) => ({
-        name: m.id,
-        type: this.inferModelType(m.id),
-      }))
-      return { success: true, models }
-    } catch (err) {
-      this.logger.warn(`fetchModels failed: ${err instanceof Error ? err.message : String(err)}`)
-      return {
-        success: false,
-        models: [],
-        error: err instanceof Error ? err.message : '请求远程模型列表失败',
-      }
-    }
-  }
-
-  /** 根据 baseUrl 和 isCompleteUrl 构造 /models 端点 URL */
-  private resolveModelsEndpoint(baseUrl: string, isCompleteUrl: boolean): string {
-    if (!isCompleteUrl) return `${baseUrl}/models`
-    // ponytail: isCompleteUrl 时 baseUrl 可能含 /chat/completions 等后缀，strip 后补 /models
-    const stripped = baseUrl.replace(/\/(chat\/completions|embeddings|models)$/, '')
-    return `${stripped}/models`
-  }
-
-  /** 根据模型名推断类型 */
-  private inferModelType(name: string): ProviderType {
-    const lower = name.toLowerCase()
-    if (lower.includes('embed')) return 'embedding'
-    if (lower.includes('rerank')) return 'reranker'
-    if (lower.includes('parser') || lower.includes('ocr')) return 'document-parser'
-    return 'llm'
   }
 
   private async collectUserProviderReferences(providerId: string): Promise<string[]> {

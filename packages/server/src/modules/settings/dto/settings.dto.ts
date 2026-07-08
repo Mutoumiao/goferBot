@@ -1,6 +1,9 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
+import type { FetchedModel as SharedFetchedModel } from '@goferbot/data/schemas'
 import { getAllowedHostnames, validateBaseUrl } from '../../../common/utils/ssrf-guard.js'
+
+export type { SharedFetchedModel as FetchedModel }
 
 export const providerTypeSchema = z.enum(['llm', 'embedding', 'reranker', 'document-parser'])
 export type ProviderType = z.infer<typeof providerTypeSchema>
@@ -33,12 +36,6 @@ export const modelProviderSchema = z.object({
 })
 export type ModelProvider = z.infer<typeof modelProviderSchema>
 
-/**
- * ResolvedProvider — provider + model 扁平化视图
- *
- * resolveProvider() 返回此类型：provider 级字段 + 被选中的 model 级字段。
- * 消费端（RAG/Chat/Companion）可直接使用 .model / .dimensions 等，无需感知 models 数组。
- */
 export interface ResolvedProvider {
   id: string
   name: string
@@ -111,21 +108,14 @@ export type Settings = z.infer<typeof settingsSchema>
 
 export class SettingsDto extends createZodDto(settingsSchema) {}
 
-/**
- * 输入用 schema：新建 Provider 时 id 可为空，由 SystemConfigService.saveProvider 自动生成。
- * 存储用 modelProviderSchema 保持 id 非空约束（settingsSchema.parse 校验）。
- */
 const saveProviderSchema = modelProviderSchema.extend({
   id: z.string().default(''),
 })
 
 export class ProviderDto extends createZodDto(saveProviderSchema) {}
 
-/**
- * fetchModels 输入校验：baseUrl 必须是合法 URL 且不指向内网地址（跳过白名单，允许探测新提供商）。
- * isCompleteUrl 默认 false。apiKey 可为空（部分本地部署如 Ollama 不需要 key）。
- */
 export const fetchModelsSchema = z.object({
+  presetKey: z.enum(['deepseek', 'ollama']),
   baseUrl: z
     .string()
     .min(1, 'baseUrl 不能为空')
@@ -133,7 +123,6 @@ export const fetchModelsSchema = z.object({
       message: 'baseUrl 不合法或指向受限内网地址',
     }),
   apiKey: z.string().default(''),
-  isCompleteUrl: z.boolean().default(false),
 })
 
 export class FetchModelsDto extends createZodDto(fetchModelsSchema) {}

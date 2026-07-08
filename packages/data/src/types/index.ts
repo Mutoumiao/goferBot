@@ -67,9 +67,11 @@ import {
   type CategorySettingsMap,
   chatConfigSchema,
   companionConfigSchema,
+  fetchedModelSchema,
   indexingConfigSchema,
   modelProviderSchema,
   modelSchema,
+  providerPresetSchema,
   providerTypeSchema,
   ragConfigSchema,
   settingCategorySchema,
@@ -138,6 +140,8 @@ export type SettingsResponse = z.infer<typeof settingsResponseSchema>
 export type ProviderType = z.infer<typeof providerTypeSchema>
 export type Model = z.infer<typeof modelSchema>
 export type ModelProvider = z.infer<typeof modelProviderSchema>
+export type FetchedModel = z.infer<typeof fetchedModelSchema>
+export type ProviderPreset = z.infer<typeof providerPresetSchema>
 export type ChatSettings = z.infer<typeof chatConfigSchema>
 export type RagSettings = z.infer<typeof ragConfigSchema>
 export type CompanionSettings = z.infer<typeof companionConfigSchema>
@@ -145,16 +149,20 @@ export type IndexingSettings = z.infer<typeof indexingConfigSchema>
 export type AppearanceSettings = z.infer<typeof appearanceConfigSchema>
 export type SettingCategory = z.infer<typeof settingCategorySchema>
 export type AvailableProvidersResponse = z.infer<typeof availableProvidersResponseSchema>
-export type { CategorySettingsMap }
 
 export {
   ADMIN_ACCESS_COOKIE,
   ADMIN_REFRESH_COOKIE,
   AuthApp,
   getCookieNamesForApp,
+  PERMISSION_GROUPS,
+  PERMISSIONS,
+  type PermissionCode,
+  ROLE_PERMISSIONS,
   WEB_ACCESS_COOKIE,
   WEB_REFRESH_COOKIE,
 } from '../constants/index.js'
+export type { CategorySettingsMap }
 
 export {
   adminUserListQuerySchema,
@@ -178,6 +186,7 @@ export {
   documentSchema,
   documentStatusResponseSchema,
   documentStatusSchema,
+  fetchedModelSchema,
   folderSchema,
   indexingConfigSchema,
   invitationCodeSchema,
@@ -200,6 +209,7 @@ export {
   pagerRequestSchema,
   paginationSchema,
   providerListItemSchema,
+  providerPresetSchema,
   providerTypeSchema,
   publicKeyResponseSchema,
   ragConfigSchema,
