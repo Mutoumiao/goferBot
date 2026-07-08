@@ -230,6 +230,67 @@ export async function deleteUserService(id: string): Promise<{ success: boolean;
 
 ---
 
+## 命令式弹窗中的状态管理
+
+### 禁止模式：useState 在 new Promise / 回调闭包内
+
+`Modal.confirm()` 等 Ant Design 命令式弹窗会在调用时同步创建 React 组件树。如果在 `new Promise` 构造函数或 `onOk` 回调中调用 `useState`，每次弹窗打开时都会在**新的渲染上下文**中调用 Hook，导致 "Rendered more hooks than during the previous render" 错误。
+
+```tsx
+// ❌ 错误：useState 在 new Promise 内调用
+export function roleAssignDialog(roles: string[]): Promise<string[] | null> {
+  return new Promise((resolve) => {
+    const [selectedRoles, setSelectedRoles] = useState(roles) // Hook 违规！
+    // ...
+  })
+}
+```
+
+### 正确模式：let 闭包变量 + modal.update()
+
+使用普通 `let` 变量跟踪可变状态，通过 `modal.update()` 强制重新渲染弹窗内容：
+
+```tsx
+// ✅ 正确：let 闭包变量 + modal.update()
+export function roleAssignDialog(roles: string[]): Promise<string[] | null> {
+  return new Promise((resolve) => {
+    let currentRoles = [...roles]
+
+    const modal = Modal.confirm({
+      title: '分配角色',
+      content: renderContent(currentRoles),
+      onOk: () => {
+        if (rolesChanged) {
+          resolve(currentRoles)
+        } else {
+          resolve(null)
+        }
+        modal.destroy()
+      },
+    })
+
+    function renderContent(selected: string[]): ReactNode {
+      return (
+        <Checkbox.Group
+          value={selected}
+          onChange={(vals) => {
+            currentRoles = vals as string[]
+            modal.update({ content: renderContent(currentRoles) })
+          }}
+        />
+      )
+    }
+  })
+}
+```
+
+**要点**：
+- 状态存储在普通 `let` 变量中，不依赖 React 渲染周期
+- 每次变更后调用 `modal.update()` 触发内容重新渲染
+- 所有分支（resolve / 取消 / 关闭）统一调用 `modal.destroy()`
+
+---
+
 ## 常见错误
 
 | 错误模式 | 正确做法 |
@@ -239,3 +300,4 @@ export async function deleteUserService(id: string): Promise<{ success: boolean;
 | 未处理竞态条件 | 使用 `mountedRef` 或 `useQueryWithRetry` |
 | Hook 命名不规范 | 所有自定义 Hook 必须以 `use` 开头 |
 | 在 useEffect 依赖数组中包含动态对象 | 使用 `useMemo` 或 `useRef` 稳定引用 |
+| **在 new Promise / 回调闭包内调用 useState** | **使用 `let` 闭包变量 + `modal.update()` 管理可变状态** |

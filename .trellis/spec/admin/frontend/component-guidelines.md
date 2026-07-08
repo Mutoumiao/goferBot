@@ -225,6 +225,102 @@ export function LoginForm() {
 
 ---
 
+## 命令式弹窗模式
+
+### Modal.confirm() 编辑弹窗
+
+对于编辑/确认类操作，使用 `Modal.confirm()` 命令式弹窗（而非声明式 `<Modal>` 组件），避免额外路由页面跳转：
+
+```tsx
+import { Modal, Form, Input, Select, App } from 'antd'
+import type { AdminUserResponse, AdminRoleCode } from '@goferbot/data'
+import { updateUserService } from '../services'
+
+export function editUserModal(user: AdminUserResponse): Promise<boolean> {
+  return new Promise((resolve) => {
+    let formValues = { name: user.name ?? '', roles: [...user.roles] }
+
+    const modal = Modal.confirm({
+      title: '编辑用户',
+      width: 480,
+      content: (
+        <Form layout="vertical" initialValues={formValues}>
+          <Form.Item label="邮箱" name="email">
+            <Input disabled value={user.email} />
+          </Form.Item>
+          <Form.Item label="昵称" name="name">
+            <Input
+              defaultValue={formValues.name}
+              onChange={(e) => { formValues.name = e.target.value }}
+            />
+          </Form.Item>
+          <Form.Item label="角色" name="roles">
+            <Select
+              mode="multiple"
+              defaultValue={formValues.roles}
+              onChange={(vals) => { formValues.roles = vals as AdminRoleCode[] }}
+              options={roleOptions}
+            />
+          </Form.Item>
+        </Form>
+      ),
+      onOk: async () => {
+        const res = await updateUserService(user.id, {
+          name: formValues.name,
+          roles: formValues.roles,
+          updatedAt: user.updatedAt,
+        })
+        if (res.conflict) {
+          App.useApp().message.warning('数据已被他人修改，请刷新后重试')
+          resolve(false)
+        } else {
+          resolve(res.success)
+        }
+      },
+      onCancel: () => resolve(false),
+    })
+  })
+}
+```
+
+**要点**：
+- 返回 `Promise<boolean>` 让调用方感知操作结果
+- 表单状态用 `let` 变量管理（不依赖 React 渲染周期），详见 [hook-guidelines.md#命令式弹窗中的状态管理](hook-guidelines.md)
+- 携带 `updatedAt` 做乐观锁冲突检测
+- 不包含与编辑无关的字段（如启用/禁用状态）
+
+### Dropdown 操作菜单
+
+当操作项超过 2 个时，使用 `Dropdown` + `MoreHorizontal` 图标替代并列按钮：
+
+```tsx
+import { Dropdown } from 'antd'
+import { Ellipsis } from 'lucide-react'
+import type { MenuProps } from 'antd'
+
+function renderActions(record: AdminUserResponse): ReactNode {
+  const items: MenuProps['items'] = [
+    { key: 'edit', label: '编辑', onClick: () => handleEdit(record) },
+    // 条件显隐：角色行级可见性控制
+    ...(canAssignRole(record) ? [{ key: 'role', label: '分配角色', onClick: () => handleAssignRole(record) }] : []),
+    ...(canDelete(record) ? [{ key: 'delete', label: '删除', danger: true, onClick: () => handleDelete(record) }] : []),
+  ]
+
+  return (
+    <Dropdown menu={{ items }} trigger={['click']}>
+      <Button type="text" icon={<Ellipsis size={16} />} />
+    </Dropdown>
+  )
+}
+```
+
+**要点**：
+- 操作列宽度缩减至 ~80px
+- 使用展开运算符条件添加菜单项（条件渲染）
+- 角色行级可见性逻辑提取为独立函数 `canAssignRole` / `canDelete`
+
+---
+
 ## 常见错误
 
 | 错误模式 | 正确做法 |
