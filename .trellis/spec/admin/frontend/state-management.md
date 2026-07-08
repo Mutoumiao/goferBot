@@ -199,7 +199,7 @@ export function UserAvatar() {
 
 ### alova 配置
 
-Admin 前端使用 alova 处理服务端状态，配置了自动 Token 刷新和请求共享：
+Admin 前端使用 alova 处理服务端状态，配置了自动 Token 刷新和 NO_AUTH_TOKEN 检测：
 
 ```tsx
 export const alovaInstance = createAlova({
@@ -210,15 +210,36 @@ export const alovaInstance = createAlova({
     customFetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
   }),
   responded: {
-    onSuccess(response, method) {
+    async onSuccess(response, method) {
       if (isUnauthorized(response.status)) {
+        const body = await response.clone().json().catch(() => null)
+        const code = body?.error?.code
+
+        // NO_AUTH_TOKEN: 完全无 cookie → 直接清空登录态，不调用 refresh
+        if (code === 'NO_AUTH_TOKEN') {
+          useAuthStore.getState().clearAuth()
+          if (!isLoginPage()) {
+            window.location.replace('/login')
+          }
+          throw new Error('NO_AUTH_TOKEN')
+        }
+
+        // 循环防护
+        if (refreshedMethods.has(method)) {
+          useAuthStore.getState().clearAuth()
+          throw new Error('Auth loop detected')
+        }
         return doRefreshAndRetry(method)
       }
       return response.json().then((json) => json.data ?? json)
     },
     onError(error, method) {
       if (isUnauthorized(error.status)) {
-        return doRefreshAndRetry(method)
+        if (refreshedMethods.has(method)) {
+          useAuthStore.getState().clearAuth()
+          throw error
+        }
+        return doRefreshAndRetry(method) as Promise<void>
       }
       throw error
     },
@@ -231,11 +252,15 @@ export const alovaInstance = createAlova({
 ```
 401/403 响应
     │
-    ├─ 检查是否在登录页
-    │     ├── 是 → 直接抛出错误
-    │     └── 否 → 尝试刷新 Token
+    ├─ 解析响应体 error.code
+    │     ├── "NO_AUTH_TOKEN" → 无 cookie → clearAuth()，不调用 refresh
+    │     │                       ├─ 已在登录页 → 仅清空状态
+    │     │                       └─ 不在登录页 → 跳转 /login
+    │     └── "AUTH_ERROR" 或其他 → 尝试刷新 Token
     │               ├─ 刷新成功 → 重试原请求
     │               └─ 刷新失败 → 清除认证状态 → 重定向到登录页
+    │
+    └─ 循环防护（WeakSet 追踪已刷新请求）
 ```
 
 ---
@@ -247,31 +272,20 @@ export const alovaInstance = createAlova({
 认证逻辑严格遵循 **Component → Service → API → Store** 分层原则：
 
 - **Store 层**（`stores/auth.ts`）：仅管理纯状态，不直接调用 API
-- **Service 层**（`services/auth.ts`）：处理业务逻辑、API 调用、互斥锁、Cookie 前置检查
+- **Service 层**（`services/auth.ts`）：处理业务逻辑、API 调用、互斥锁
 - **API 层**（`api/auth.ts`）：定义 alova 请求配置
 - **Guard 层**（`utils/auth-guard.ts`）：调用 Service 层方法进行认证初始化
 
-### Cookie 前置检查
+### NO_AUTH_TOKEN 错误码处理
 
-在调用 `/auth/me` 接口前，先检查 `document.cookie` 是否包含对应的 access token：
+Server 端在 401 响应中通过 `error.code` 区分两种场景：
 
-```typescript
-const AUTH_COOKIE_NAME = 'goferbot_admin_access_token'
+| 错误码 | 含义 | 前端行为 |
+|--------|------|----------|
+| `NO_AUTH_TOKEN` | 完全无 cookie（首次访问/清空 cookie） | `clearAuth()` + 跳转 `/login`，**不调用 refresh** |
+| `AUTH_ERROR` | cookie 存在但 token 过期/无效 | 走现有 refresh 流程 |
 
-function hasAuthCookie(): boolean {
-  return document.cookie.includes(AUTH_COOKIE_NAME)
-}
-
-export async function fetchMe(): Promise<boolean> {
-  if (!hasAuthCookie()) {
-    useAuthStore.getState().clearAuth()
-    return false
-  }
-  // ... API 调用逻辑
-}
-```
-
-**设计理由**：如果没有 access token cookie，说明用户未登录或会话已完全失效，调用 `/auth/me` 只会返回 401，浪费一次请求。
+**设计理由**：access token cookie 为 HttpOnly，JavaScript 无法读取，因此不能在前端通过 `document.cookie` 做 cookie 前置检查。改为由 server 端返回不同 error code 来区分两种 401 场景。
 
 ### 互斥锁实现
 
@@ -319,8 +333,11 @@ async function doRefreshAndRetry(method) {
 
 1. 页面加载 → `waitForAuthInit()` 等待 Zustand hydration 完成
 2. hydration 完成后 → 调用 `fetchCurrentUser()`（Service 层）
-3. `fetchCurrentUser()` 检查 Cookie → 无 Cookie 直接清空状态
-4. 有 Cookie → 发起 `/auth/me` 请求验证会话
+3. `fetchCurrentUser()` 发起 `/auth/me` 请求验证会话
+4. 401 → alova interceptor 根据 `error.code` 分流：
+   - `NO_AUTH_TOKEN`：清空状态，跳转登录
+   - `AUTH_ERROR`：尝试 refresh token 后重试
+5. 200 → 写入 user 状态，标记初始化完成
 
 ---
 
@@ -334,6 +351,6 @@ async function doRefreshAndRetry(method) {
 | 忽略认证状态初始化 | 使用 waitForAuthInit 等待状态初始化 |
 | 在 useEffect 中同步读取 Zustand state | 使用 selector 或 useEffect 依赖数组 |
 | Store 层直接调用 API | 将 API 调用移至 Service 层 |
-| 无 Cookie 时仍调用 `/auth/me` | 添加 Cookie 前置检查，无 Cookie 直接清空状态 |
+| 无 Cookie 时仍调用 `/auth/me` | Server 端通过 `NO_AUTH_TOKEN` 错误码分流，前端 interceptor 统一处理 |
 | 并发调用 `/auth/me` | 使用互斥锁防止重复请求 |
 | alova 拦截器 401/403 无限刷新循环 | 使用 WeakSet 追踪已刷新请求 |

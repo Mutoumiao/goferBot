@@ -238,27 +238,28 @@
 - **WHEN** 认证流程中发生错误时
 - **THEN** 系统返回结构化错误响应 `{ success: false, error: { code, message } }`：
 
-| 错误码                     | HTTP | 触发条件                                 |
-|----------------------------|------|------------------------------------------|
-| `AUTH_INVALID_CREDENTIALS` | 401  | 邮箱或密码错误                           |
-| `ACCOUNT_DISABLED`         | 403  | 账号已被管理员禁用                       |
-| `NO_ADMIN_ROLE`            | 403  | 非管理员尝试访问管理后台                 |
-| `INVALID_TOKEN_TYPE`       | 401  | JWT payload type 字段不正确              |
-| `TOKEN_NOT_FOUND`          | 401  | RefreshToken jtiHash 在数据库中不存在    |
-| `TOKEN_REPLAY`             | 401  | 同一 RefreshToken 被重复使用（重放攻击） |
-| `TOKEN_REVOKED`            | 401  | RefreshToken 已被主动撤销                |
-| `SESSION_REVOKED`          | 401  | 关联 AuthSession 已被撤销                |
-| `USER_NOT_FOUND`           | 401  | JWT payload 中的 userId 在数据库中不存在 |
-| `INVALID_REFRESH_TOKEN`    | 401  | RefreshToken 无效或已过期                |
-| `CAPTCHA_REQUIRED`         | 400  | 请求缺少验证码                           |
-| `CAPTCHA_INVALID`          | 400  | 验证码错误或已过期                       |
-| `APP_MISMATCH`             | 403  | token.app 与端点要求的 app 不匹配        |
-| `INVITATION_CODE_INVALID`  | 400  | 邀请码不存在                             |
-| `INVITATION_CODE_USED`     | 400  | 标准邀请码已被使用                       |
-| `INVITATION_CODE_EXPIRED`  | 400  | 邀请码已过期                             |
-| `INVITATION_CODE_MAX_USES` | 400  | 测试邀请码达到使用上限                   |
-| `SYSTEM_ROLE_DELETE_DENIED`| 400  | 尝试删除系统预置角色                     |
-| `SUPER_ADMIN_PROTECTED`    | 400  | 尝试禁用/删除最后一个 super_admin        |
+| 错误码                      | HTTP | 触发条件                                                   |
+|-----------------------------|------|------------------------------------------------------------|
+| `AUTH_INVALID_CREDENTIALS`  | 401  | 邮箱或密码错误                                             |
+| `NO_AUTH_TOKEN`             | 401  | 请求未携带对应 app 的 access token cookie（完全无 cookie） |
+| `ACCOUNT_DISABLED`          | 403  | 账号已被管理员禁用                                         |
+| `NO_ADMIN_ROLE`             | 403  | 非管理员尝试访问管理后台                                   |
+| `INVALID_TOKEN_TYPE`        | 401  | JWT payload type 字段不正确                                |
+| `TOKEN_NOT_FOUND`           | 401  | RefreshToken jtiHash 在数据库中不存在                      |
+| `TOKEN_REPLAY`              | 401  | 同一 RefreshToken 被重复使用（重放攻击）                   |
+| `TOKEN_REVOKED`             | 401  | RefreshToken 已被主动撤销                                  |
+| `SESSION_REVOKED`           | 401  | 关联 AuthSession 已被撤销                                  |
+| `USER_NOT_FOUND`            | 401  | JWT payload 中的 userId 在数据库中不存在                   |
+| `INVALID_REFRESH_TOKEN`     | 401  | RefreshToken 无效或已过期                                  |
+| `CAPTCHA_REQUIRED`          | 400  | 请求缺少验证码                                             |
+| `CAPTCHA_INVALID`           | 400  | 验证码错误或已过期                                         |
+| `APP_MISMATCH`              | 403  | token.app 与端点要求的 app 不匹配                          |
+| `INVITATION_CODE_INVALID`   | 400  | 邀请码不存在                                               |
+| `INVITATION_CODE_USED`      | 400  | 标准邀请码已被使用                                         |
+| `INVITATION_CODE_EXPIRED`   | 400  | 邀请码已过期                                               |
+| `INVITATION_CODE_MAX_USES`  | 400  | 测试邀请码达到使用上限                                     |
+| `SYSTEM_ROLE_DELETE_DENIED` | 400  | 尝试删除系统预置角色                                       |
+| `SUPER_ADMIN_PROTECTED`     | 400  | 尝试禁用/删除最后一个 super_admin                          |
 
 ### Requirement: Auth Redis 独立连接
 系统 SHALL 为认证模块维护独立的 Redis 连接，MUST NOT 与 Queue（BullMQ）或 Cache（CacheService）共享 Redis 连接。
@@ -335,11 +336,12 @@
 
 #### Scenario: JwtStrategy 路径感知解析
 - **WHEN** JwtStrategy 验证 token 时
-- **THEN** 系统 SHALL 根据请求路径从正确的 Cookie 名称中提取 token：
-  - Admin 专属路径（`/admin/*`）→ 从 `goferbot_admin_access_token` 读取
-  - Web 专属路径（`/web/*`）→ 从 `goferbot_web_access_token` 读取
-  - 通用路径（`/auth/me`、`/user/*`、`/settings/*`、`/chat/*`、`/session/*`、`/knowledge-base/*`、`/companion/*`）→ 同域下两个 Cookie 可能同时存在，根据请求头 `X-App-Context` 决定读取优先级：`X-App-Context: admin` 先尝试 admin Cookie 再 web，`X-App-Context: web` 或无该头时先尝试 web Cookie 再 admin，取首个验证通过的 token（由 AppGuard 最终校验 app 匹配）
-  - 公开路径（`/auth/public-key`、`/auth/captcha`、`/web/auth/login`、`/admin/auth/login`、`/web/auth/register`）→ 不读取 Cookie（无认证要求）
+- **THEN** 系统 SHALL 根据请求路径从正确的 Cookie 名称中提取 token（app-aware 提取）：
+  - Admin 专属路径（`/admin/*`）→ 仅从 `goferbot_admin_access_token` 读取
+  - Web 专属路径（`/web/*`）→ 仅从 `goferbot_web_access_token` 读取
+  - 通用路径（`/auth/me`、`/user/*`、`/settings/*`、`/chat/*`、`/session/*`、`/knowledge-base/*`、`/companion/*`）→ 仅通过请求头 `X-App-Context` 判定 app，admin 取 admin cookie，否则取 web cookie，不再 fallback
+  - 公开路径 → 不读取 Cookie（无认证要求）
+- **AND** JwtAuthGuard 在 passport 验证前先检查对应 app 的 cookie 是否存在，若不存在则直接返回 `NO_AUTH_TOKEN`（401），不进入 JWT 验证流程
 
 #### Scenario: 前端自动添加 X-App-Context 请求头
 - **WHEN** 前端 API 客户端发起请求时
@@ -385,7 +387,10 @@
 
 #### Scenario: 401 触发 Token 刷新
 - **WHEN** API 请求返回 401 时
-- **THEN** 前端拦截器 SHALL 触发单次 refresh 请求（single-flight），所有并发 401 请求共享同一刷新结果，刷新成功后重试原请求
+- **THEN** 前端拦截器 SHALL 解析响应体 `error.code`：
+  - `NO_AUTH_TOKEN`：完全无 cookie → `clearAuth()` + 跳转 `/login`，MUST NOT 调用 refresh
+  - `AUTH_ERROR` 或其他：cookie 存在但 token 过期/无效 → 触发单次 refresh 请求（single-flight），所有并发 401 请求共享同一刷新结果，刷新成功后重试原请求
+- **AND** 若当前已在 `/login` 页面收到 `NO_AUTH_TOKEN`，仅清空状态不重复跳转
 
 #### Scenario: 403 不触发刷新
 - **WHEN** API 请求返回 403 时

@@ -5,6 +5,10 @@ import { AppException } from '../lib/app-error.js'
  * 统一构造认证领域的业务异常，确保错误码和 HTTP 状态码一致
  */
 
+export function noAuthTokenError(): AppException {
+  return new AppException('NO_AUTH_TOKEN', '未登录或令牌已过期', 401)
+}
+
 export function invalidCredentialsError(): AppException {
   return new AppException('AUTH_INVALID_CREDENTIALS', '邮箱或密码错误', 401)
 }

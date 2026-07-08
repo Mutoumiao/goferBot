@@ -1,6 +1,7 @@
 import { createAlova } from 'alova'
 import adapterFetch from 'alova/fetch'
 import ReactHook from 'alova/react'
+import { useAuthStore } from '@/stores/auth'
 
 let isRefreshing = false
 let refreshSubscribers: Array<{ resolve: () => void; reject: (err: Error) => void }> = []
@@ -82,8 +83,22 @@ function isLoginPage() {
 }
 
 const responded = {
-  onSuccess(response: Response, method: AlovaMethod) {
-    if (isUnauthorized(response.status) && !isLoginPage()) {
+  async onSuccess(response: Response, method: AlovaMethod) {
+    if (isUnauthorized(response.status)) {
+      const body = await response
+        .clone()
+        .json()
+        .catch(() => null)
+      const code = body?.error?.code
+
+      if (code === 'NO_AUTH_TOKEN') {
+        useAuthStore.getState().clearAuth()
+        if (!isLoginPage()) {
+          window.location.replace('/login')
+        }
+        throw new Error('NO_AUTH_TOKEN')
+      }
+
       // 已尝试过刷新但仍 401/403 → 不再循环，直接抛错由上层处理（clearAuth / 跳转登录）
       if (refreshedMethods.has(method)) {
         throw Object.assign(new Error('Session expired'), { status: response.status })
@@ -120,7 +135,7 @@ const responded = {
   },
   onError(error: { status?: number }, method: AlovaMethod) {
     const status = error.status
-    if (status && isUnauthorized(status) && !isLoginPage()) {
+    if (status && isUnauthorized(status)) {
       if (refreshedMethods.has(method)) {
         throw error
       }

@@ -1,11 +1,19 @@
-import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router'
 import { ConfigProvider, theme } from 'antd'
 import { Activity, ArrowRight, Server, Shield, ShieldCheck, Zap } from 'lucide-react'
 import { useMemo } from 'react'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { ROUTES_REGISTER } from '@/router-register'
+import { getAuthSnapshot, waitForAuthInit } from '@/utils/auth-guard'
 
 export const Route = createFileRoute('/login')({
+  beforeLoad: async () => {
+    await waitForAuthInit()
+    const snapshot = getAuthSnapshot()
+    if (snapshot.isAuthenticated) {
+      throw redirect({ to: ROUTES_REGISTER.dashboard.path })
+    }
+  },
   component: LoginPage,
   staticData: {
     meta: ROUTES_REGISTER.login,
@@ -70,11 +78,11 @@ function FeatureItem({
 }) {
   return (
     <div
-      className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-white/[0.03]"
+      className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-white/3"
       style={{ animation: 'fadeInUp 0.6s ease-out both' }}
     >
       <div
-        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
         style={{
           background: 'rgba(212,168,83,0.08)',
           border: '1px solid rgba(212,168,83,0.12)',

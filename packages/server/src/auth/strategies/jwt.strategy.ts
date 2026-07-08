@@ -4,8 +4,8 @@ import { PassportStrategy } from '@nestjs/passport'
 import type { FastifyRequest } from 'fastify'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { isAdminOnlyPath } from '../../common/utils/api-path.js'
-import { ADMIN_ACCESS_COOKIE, WEB_ACCESS_COOKIE } from '../cookie.helper.js'
 import { accountDisabledError, tokenRevokedError } from '../errors.js'
+import { getCookieNamesForApp } from '../cookie.helper.js'
 import { AuthRepository } from '../repositories/auth.repository.js'
 import type { AuthApp } from '../types/auth-app.type.js'
 
@@ -22,7 +22,7 @@ const APP_CONTEXT_WEB: AuthApp = 'web'
 const APP_CONTEXT_ADMIN: AuthApp = 'admin'
 const HEADER_APP_CONTEXT = 'x-app-context'
 
-function getAppForRequest(request: FastifyRequest): AuthApp {
+export function getAppForRequest(request: FastifyRequest): AuthApp {
   const path = request.routeOptions?.url ?? request.url?.split('?')[0] ?? '/'
 
   if (isAdminOnlyPath(path)) {
@@ -35,9 +35,10 @@ function getAppForRequest(request: FastifyRequest): AuthApp {
   return APP_CONTEXT_WEB
 }
 
-function extractTokenFromAnyCookie(request: FastifyRequest): string | null {
+function extractTokenForApp(request: FastifyRequest): string | null {
+  const app = getAppForRequest(request)
   const cookies = (request.cookies ?? {}) as Record<string, string | undefined>
-  return cookies[ADMIN_ACCESS_COOKIE] ?? cookies[WEB_ACCESS_COOKIE] ?? null
+  return cookies[getCookieNamesForApp(app).accessToken] ?? null
 }
 
 @Injectable()
@@ -49,11 +50,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly authRepository: AuthRepository,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: FastifyRequest) => {
-          return extractTokenFromAnyCookie(req)
-        },
-      ]),
+      jwtFromRequest: ExtractJwt.fromExtractors([(req: FastifyRequest) => extractTokenForApp(req)]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET'),
       passReqToCallback: true,

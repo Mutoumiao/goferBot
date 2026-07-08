@@ -93,11 +93,25 @@ function isLoginPage() {
 }
 
 const responded = {
-  onSuccess(
+  async onSuccess(
     response: Response,
     method: { send: () => unknown; config: { headers: Record<string, string> } },
   ) {
-    if (isUnauthorized(response.status) && !isLoginPage()) {
+    if (isUnauthorized(response.status)) {
+      const body = await response
+        .clone()
+        .json()
+        .catch(() => null)
+      const code = body?.error?.code
+
+      if (code === 'NO_AUTH_TOKEN') {
+        useAuthStore.getState().clearAuth()
+        if (!isLoginPage()) {
+          window.location.replace('/login')
+        }
+        throw new Error('NO_AUTH_TOKEN')
+      }
+
       if (refreshedMethods.has(method)) {
         useAuthStore.getState().clearAuth()
         throw new Error('Auth loop detected')
@@ -137,7 +151,7 @@ const responded = {
     method: { send: () => unknown; config: { headers: Record<string, string> } },
   ): Promise<void> {
     const status = error.status
-    if (status && isUnauthorized(status) && !isLoginPage()) {
+    if (status && isUnauthorized(status)) {
       if (refreshedMethods.has(method)) {
         useAuthStore.getState().clearAuth()
         throw error

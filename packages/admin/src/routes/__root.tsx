@@ -7,7 +7,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { waitForAuthInit } from '@/utils/auth-guard'
 import appCss from '../globals.css?url'
 
-const PUBLIC_ROUTES = ['/login', '/forbidden']
+const PUBLIC_ROUTES = ['/forbidden']
 
 function NotFound() {
   return (
