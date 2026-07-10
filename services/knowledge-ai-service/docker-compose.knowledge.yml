@@ -1,0 +1,75 @@
+# Knowledge AI stack: Elasticsearch + knowledge-ai-service
+# Usage (from repo root):
+#   docker compose -f docker-compose.dev.yml -f services/knowledge-ai-service/docker-compose.knowledge.yml up -d
+#
+# Joins existing network goferbot-infra (from docker-compose.dev.yml name: goferbot-infra).
+# Optional Langfuse profile is not required for core path.
+
+name: goferbot-knowledge
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: goferbot-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - cluster.name=goferbot-knowledge
+    ports:
+      # Bind localhost only — ES has security disabled for local/dev
+      - "127.0.0.1:${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - ../../.data/elasticsearch:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks:
+      - goferbot-infra
+
+  knowledge-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: goferbot-knowledge-ai
+    restart: unless-stopped
+    environment:
+      KNOWLEDGE_AI_SERVICE_TOKEN: ${KNOWLEDGE_AI_SERVICE_TOKEN:-dev-token-change-me}
+      # development | production — production rejects weak default tokens and disables /docs
+      ENVIRONMENT: ${KNOWLEDGE_AI_ENVIRONMENT:-development}
+      # Reach postgres on infra network by service name when both stacks share network.
+      # Use KNOWLEDGE_AI_* vars so host-oriented ELASTICSEARCH_URL / DATABASE_URL (127.0.0.1)
+      # from root .env are NOT injected into the container (would break ES/PG connectivity).
+      DATABASE_URL: ${KNOWLEDGE_AI_DATABASE_URL:-postgresql://gofer:gofer_dev_pass@postgres:5432/goferbot}
+      ELASTICSEARCH_URL: ${KNOWLEDGE_AI_ELASTICSEARCH_URL:-http://elasticsearch:9200}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-knowledge_chunks}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1536}
+      HOST: 0.0.0.0
+      PORT: 8090
+      # Optional Langfuse — leave empty for local
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-}
+    ports:
+      # Bind localhost only — not a public user API
+      - "127.0.0.1:${KNOWLEDGE_AI_PORT:-8090}:8090"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health/live')\""]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 20s
+    networks:
+      - goferbot-infra
+
+networks:
+  goferbot-infra:
+    external: true
+    name: goferbot-infra_goferbot-infra
