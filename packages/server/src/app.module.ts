@@ -22,8 +22,8 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
 import { SessionModule } from './modules/session/session.module.js'
 import { SettingsModule } from './modules/settings/settings.module.js'
 import { UserModule } from './modules/user/user.module.js'
+import { KnowledgeAiModule } from './processors/knowledge-ai/knowledge-ai.module.js'
 import { QueueModule } from './processors/queue/queue.module.js'
-import { RagModule } from './processors/rag/rag.module.js'
 import { StorageModule } from './processors/storage/storage.module.js'
 import { CacheModule } from './shared/cache/cache.module.js'
 
@@ -70,12 +70,12 @@ const ROOT_ENV_PATH = resolve(__dirname, '../../../.env')
     QueueModule.forRoot(),
     StorageModule,
     KnowledgeBaseModule,
+    KnowledgeAiModule,
     SessionModule,
     ChatModule,
     CompanionModule,
     AdminModule,
     SettingsModule,
-    RagModule,
   ],
   providers: [
     // 全局响应拦截器
