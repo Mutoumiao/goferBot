@@ -3,8 +3,10 @@ import type {
   chatMessagesChunkSchema,
   chatMessagesRequestSchema,
   chatProvidersResponseSchema,
+  chatSourceItemSchema,
   messageListQuerySchema,
   messageListResponseSchema,
+  messageMetadataSchema,
   messageSchema,
   providerListItemSchema,
   sessionListResponseSchema,
@@ -12,6 +14,8 @@ import type {
 import type { createSessionRequestSchema, sessionSchema } from '../schemas/session.schema.js'
 
 export type Message = z.infer<typeof messageSchema>
+export type ChatSourceItem = z.infer<typeof chatSourceItemSchema>
+export type MessageMetadata = z.infer<typeof messageMetadataSchema>
 export type Session = z.infer<typeof sessionSchema>
 export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>
 export type MessageListResponse = z.infer<typeof messageListResponseSchema>

@@ -26,8 +26,10 @@ import {
   chatMessagesChunkSchema,
   chatMessagesRequestSchema,
   chatProvidersResponseSchema,
+  chatSourceItemSchema,
   messageListQuerySchema,
   messageListResponseSchema,
+  messageMetadataSchema,
   messageSchema,
   providerListItemSchema,
   sessionListResponseSchema,
@@ -100,6 +102,8 @@ export type DocumentStatus = z.infer<typeof documentStatusSchema>
 export type DocumentStatusResponse = z.infer<typeof documentStatusResponseSchema>
 
 export type Message = z.infer<typeof messageSchema>
+export type ChatSourceItem = z.infer<typeof chatSourceItemSchema>
+export type MessageMetadata = z.infer<typeof messageMetadataSchema>
 export type Session = z.infer<typeof sessionSchema>
 export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>
 export type UpdateSessionRequest = z.infer<typeof updateSessionRequestSchema>

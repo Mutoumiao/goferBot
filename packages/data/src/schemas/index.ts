@@ -28,8 +28,10 @@ export {
   chatMessagesChunkSchema,
   chatMessagesRequestSchema,
   chatProvidersResponseSchema,
+  chatSourceItemSchema,
   messageListQuerySchema,
   messageListResponseSchema,
+  messageMetadataSchema,
   messageSchema,
   sessionListResponseSchema,
 } from './chat.schema.js'

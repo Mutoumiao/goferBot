@@ -1,12 +1,32 @@
 import { z } from 'zod'
 import { createPagedResponseSchema, paginationSchema } from './common.schema.js'
 
+/** Chat knowledge Q&A source citation (multi-KB: kb_id required). */
+export const chatSourceItemSchema = z.object({
+  kb_id: z.string().uuid(),
+  document_id: z.string().uuid(),
+  chunk_id: z.string().uuid().nullable().optional(),
+  content: z.string().nullable().optional(),
+  score: z.number().nullable().optional(),
+  parent_id: z.string().uuid().nullable().optional(),
+})
+
+export const messageMetadataSchema = z
+  .object({
+    sources: z.array(chatSourceItemSchema).optional(),
+    retrieval_empty: z.boolean().optional(),
+    error: z.string().optional(),
+  })
+  .passthrough()
+
 export const messageSchema = z.object({
   id: z.string(),
   sessionId: z.string(),
   role: z.enum(['user', 'assistant', 'system']),
   content: z.string(),
   createdAt: z.string(),
+  status: z.enum(['streaming', 'completed', 'cancelled', 'failed']).optional(),
+  metadata: messageMetadataSchema.nullable().optional(),
   files: z
     .array(
       z.object({
@@ -56,17 +76,44 @@ export const chatMessagesRequestSchema = z.object({
   parent_message_id: z.string().uuid().nullable().optional(),
   provider_key: z.string().optional(),
   model: z.string().optional(),
-  knowledge_base_ids: z.array(z.string().uuid()).optional(),
+  /** Phase 1: Chat = knowledge Q&A; at least one KB is required. */
+  knowledge_base_ids: z.array(z.string().uuid()).min(1, '至少选择一个知识库'),
+  retrieval_mode: z.enum(['strict', 'loose']).optional().default('strict'),
 })
 
-export const chatMessagesChunkSchema = z.object({
-  event: z.enum(['message', 'message_end', 'error']),
-  conversation_id: z.string().uuid(),
-  message_id: z.string().uuid(),
-  answer: z.string(),
-  done: z.boolean().optional(),
-  error: z.string().optional(),
-})
+export const chatMessagesChunkSchema = z.discriminatedUnion('event', [
+  z.object({
+    event: z.literal('sources'),
+    conversation_id: z.string().uuid(),
+    message_id: z.string().uuid(),
+    sources: z.array(chatSourceItemSchema),
+    retrieval_empty: z.boolean().optional(),
+    done: z.boolean().optional(),
+  }),
+  z.object({
+    event: z.literal('message'),
+    conversation_id: z.string().uuid(),
+    message_id: z.string().uuid(),
+    answer: z.string(),
+    done: z.boolean().optional(),
+  }),
+  z.object({
+    event: z.literal('message_end'),
+    conversation_id: z.string().uuid(),
+    message_id: z.string().uuid(),
+    answer: z.string().optional().default(''),
+    done: z.boolean().optional(),
+    retrieval_empty: z.boolean().optional(),
+  }),
+  z.object({
+    event: z.literal('error'),
+    conversation_id: z.string().uuid(),
+    message_id: z.string().uuid(),
+    answer: z.string().optional().default(''),
+    done: z.boolean().optional(),
+    error: z.string().optional(),
+  }),
+])
 
 export const messageListQuerySchema = z.object({
   conversation_id: z.string().uuid(),
