@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import type { ChatMessagesChunk } from '@goferbot/data'
-import { BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { StreamFinalizeService } from '../../common/services/stream-finalize.service.js'
+import { KnowledgeAiClient } from '../../processors/knowledge-ai/knowledge-ai.client.js'
+import { KnowledgeAiProviderResolver } from '../../processors/knowledge-ai/knowledge-ai.provider-resolver.js'
+import type { KnowledgeAiSourceItem } from '../../processors/knowledge-ai/knowledge-ai.types.js'
+import { KbRepository } from '../knowledge-base/repositories/kb.repository.js'
 import { MODEL_PROVIDER_ERROR_CODES } from '../settings/constants.js'
 import type { ModelProvider } from '../settings/dto/settings.dto.js'
 import { parseModelKey } from '../settings/model-provider.service.js'
@@ -9,17 +13,9 @@ import { ProviderRegistry } from '../settings/providers/index.js'
 import { SettingsService } from '../settings/settings.service.js'
 import { ConversationService } from './conversation.service.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
-import {
-  CHAT_CONTEXT_RETRIEVER,
-  type ChatContextRetriever,
-} from './interfaces/chat-context-retriever.interface.js'
 import { LlamaIndexProvider } from './llm/llama-index-provider.service.js'
-import type { LlmMessage, LlmProvider } from './llm/llm-provider.interface.js'
+import type { LlmProvider } from './llm/llm-provider.interface.js'
 import { ModelRegistryService } from './model-registry.service.js'
-
-function isLlmMessage(m: { role: string; content: string }): m is LlmMessage {
-  return m.role === 'system' || m.role === 'user' || m.role === 'assistant'
-}
 
 @Injectable()
 export class ChatService {
@@ -31,9 +27,9 @@ export class ChatService {
     private readonly conversationService: ConversationService,
     private readonly providerRegistry: ProviderRegistry,
     private readonly finalizeService: StreamFinalizeService,
-    @Inject(CHAT_CONTEXT_RETRIEVER)
-    @Optional()
-    private readonly contextRetriever?: ChatContextRetriever,
+    private readonly knowledgeAi: KnowledgeAiClient,
+    private readonly kbRepository: KbRepository,
+    private readonly knowledgeAiProviderResolver: KnowledgeAiProviderResolver,
   ) {}
 
   async validateChatAccess(userId: string, dto: ChatMessagesDto): Promise<void> {
@@ -45,7 +41,9 @@ export class ChatService {
       })
     }
     await this.conversationService.ensureOwnership(userId, sessionId)
-    await this.resolveProvider(userId, dto.provider_key)
+    await this.assertKbOwnership(userId, dto.knowledge_base_ids)
+    // Still validate chat provider exists (used for title gen / injection)
+    await this.resolveProviderConfig(userId, dto.provider_key, dto.model)
   }
 
   async *streamChat(
@@ -63,7 +61,6 @@ export class ChatService {
     }
     const input = dto.query
 
-    // Service 层兜底：即使 DTO 校验通过，空字符串也不应传给 LLM
     if (typeof input !== 'string' || input.trim().length === 0) {
       throw new BadRequestException({
         code: 'QUERY_EMPTY',
@@ -71,89 +68,145 @@ export class ChatService {
       })
     }
 
-    // 先解析 provider（失败时无需加载历史消息，减少无效数据库压力）
-    const { provider, timeoutMs } = await this.resolveProvider(userId, dto.provider_key, dto.model)
+    const kbIds = dto.knowledge_base_ids
+    if (!kbIds?.length) {
+      throw new BadRequestException({
+        code: 'KB_REQUIRED',
+        message: 'Chat 知识问答必须绑定至少一个知识库',
+      })
+    }
+    await this.assertKbOwnership(userId, kbIds)
+
+    const { providerConfig, timeoutMs, llmProvider, retrievalMode } =
+      await this.resolveProviderConfig(userId, dto.provider_key, dto.model)
+
     const history = await this.conversationService.loadHistory(sessionId, {
       beforeMessageId: dto.parent_message_id ?? undefined,
     })
 
     await this.conversationService.saveUserMessage(sessionId, input)
 
-    const messages: LlmMessage[] = history.filter(isLlmMessage)
+    // Assistant placeholder (streaming)
+    await this.conversationService.saveAssistantMessage(sessionId, messageId, '', {
+      status: 'streaming',
+      metadata: {},
+    })
 
-    // 将当前用户输入追加到 messages。
-    // 原因：loadHistory 在 saveUserMessage 之前调用，新会话首条消息时 history 为空。
-    // 若不追加，LLM 会收到空 messages 并报 "Empty input messages"。
-    messages.push({ role: 'user', content: input })
+    const historyPayload = history
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .slice(-10)
+      .map((m) => ({ role: m.role, content: m.content }))
 
-    if (dto.knowledge_base_ids && dto.knowledge_base_ids.length > 0) {
-      if (this.contextRetriever) {
-        const { context } = await this.contextRetriever.retrieve(userId, input, {
-          kbIds: dto.knowledge_base_ids,
-        })
-        if (context) {
-          // M2: 对 RAG 上下文做基础过滤，防止提示注入
-          const sanitizedContext = this.sanitizeRagContext(context)
-          // 将上下文拼接到当前 user message 中，而非追加 system message
-          // 原因：部分 LLM 对末尾 system message 关注度低，拼接到 user message 可确保上下文被重视
-          const userMsgIndex = messages.length - 1
-          if (userMsgIndex >= 0 && messages[userMsgIndex].role === 'user') {
-            messages[userMsgIndex] = {
-              role: 'user',
-              content: `${messages[userMsgIndex].content}\n\n以下是与问题相关的上下文信息：\n\n${sanitizedContext}`,
-            }
-          }
-        }
-      } else {
-        this.logger.warn(
-          `收到 knowledge_base_ids 但未注册 ChatContextRetriever，跳过检索。sessionId=${sessionId}`,
-        )
-      }
-    }
-
+    const mode = dto.retrieval_mode ?? retrievalMode ?? 'strict'
+    const traceId = randomUUID()
     let fullReply = ''
-    const MAX_REPLY_LENGTH = 100_000 // H1: 约 100KB 上限，防止内存溢出
+    let sources: KnowledgeAiSourceItem[] = []
+    let retrievalEmpty = false
+    let terminalStatus: 'completed' | 'cancelled' | 'failed' = 'completed'
 
     try {
-      for await (const chunk of provider.stream(messages, {
-        abortSignal: abortController.signal,
-      })) {
-        // 客户端已断开时提前终止，避免继续消耗 tokens
-        if (abortController.signal.aborted) break
-        if (chunk.text) {
-          fullReply += chunk.text
-          // H1: 超限截断，防止 LLM 超长回复导致内存溢出
-          if (fullReply.length > MAX_REPLY_LENGTH) {
-            this.logger.warn(
-              `LLM 回复长度超过上限 ${MAX_REPLY_LENGTH}，已截断。sessionId=${sessionId}`,
-            )
-            fullReply = fullReply.slice(0, MAX_REPLY_LENGTH)
-            break
-          }
+      for await (const frame of this.knowledgeAi.stream(
+        {
+          query: input,
+          kb_ids: kbIds,
+          top_k: 5,
+          retrieval_mode: mode,
+          history: historyPayload,
+          trace_id: traceId,
+          conversation_id: sessionId,
+          message_id: messageId,
+          _provider: providerConfig,
+        },
+        { signal: abortController.signal, generationTimeoutMs: timeoutMs },
+      )) {
+        if (abortController.signal.aborted) {
+          terminalStatus = 'cancelled'
+          break
+        }
+
+        if (frame.event === 'sources') {
+          sources = frame.data.sources ?? []
+          retrievalEmpty = Boolean(frame.data.retrieval_empty)
           yield {
-            event: 'message',
+            event: 'sources',
             conversation_id: sessionId,
             message_id: messageId,
-            answer: chunk.text,
+            sources: sources.map((s) => ({
+              kb_id: s.kb_id,
+              document_id: s.document_id,
+              chunk_id: s.chunk_id ?? undefined,
+              content: s.content ?? undefined,
+              score: s.score ?? undefined,
+              parent_id: s.parent_id ?? undefined,
+            })),
+            retrieval_empty: retrievalEmpty,
             done: false,
           }
+        } else if (frame.event === 'message') {
+          const delta = frame.data.delta ?? frame.data.answer ?? ''
+          if (delta) {
+            fullReply += delta
+            yield {
+              event: 'message',
+              conversation_id: sessionId,
+              message_id: messageId,
+              answer: delta,
+              done: false,
+            }
+          }
+        } else if (frame.event === 'message_end') {
+          if (frame.data.answer && !fullReply) {
+            fullReply = frame.data.answer
+          }
+          retrievalEmpty = Boolean(frame.data.retrieval_empty) || retrievalEmpty
+        } else if (frame.event === 'error') {
+          terminalStatus = 'failed'
+          const errMsg = frame.data.message || frame.data.error || '知识问答失败'
+          await this.conversationService.updateAssistantMessage(sessionId, messageId, {
+            content: fullReply,
+            status: 'failed',
+            metadata: { sources, retrieval_empty: retrievalEmpty, error: errMsg },
+          })
+          yield {
+            event: 'error',
+            conversation_id: sessionId,
+            message_id: messageId,
+            answer: '',
+            done: true,
+            error: errMsg,
+          }
+          return
         }
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
+        terminalStatus = abortController.signal.aborted ? 'cancelled' : 'failed'
+        await this.conversationService.updateAssistantMessage(sessionId, messageId, {
+          content: fullReply,
+          status: terminalStatus,
+          metadata: { sources, retrieval_empty: retrievalEmpty },
+        })
         yield {
-          event: 'error',
+          event: terminalStatus === 'cancelled' ? 'error' : 'error',
           conversation_id: sessionId,
           message_id: messageId,
           answer: '',
           done: true,
-          error: `LLM 请求超时（${timeoutMs / 1000} 秒）`,
+          error:
+            terminalStatus === 'cancelled'
+              ? '已取消'
+              : `知识问答超时（${timeoutMs / 1000} 秒）`,
         }
         return
       }
       this.logger.error(
-        `LLM 流异常 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`,
+        `Knowledge AI 流异常 sessionId=${sessionId}: ${err instanceof Error ? err.message : '未知错误'}`,
       )
+      await this.conversationService.updateAssistantMessage(sessionId, messageId, {
+        content: fullReply,
+        status: 'failed',
+        metadata: { sources, retrieval_empty: retrievalEmpty },
+      })
       yield {
         event: 'error',
         conversation_id: sessionId,
@@ -165,8 +218,12 @@ export class ChatService {
       return
     }
 
-    // 客户端在流期间主动取消：不持久化半截回复，也不触发 message_end
-    if (abortController.signal.aborted) {
+    if (abortController.signal.aborted || terminalStatus === 'cancelled') {
+      await this.conversationService.updateAssistantMessage(sessionId, messageId, {
+        content: fullReply,
+        status: 'cancelled',
+        metadata: { sources, retrieval_empty: retrievalEmpty },
+      })
       yield {
         event: 'error',
         conversation_id: sessionId,
@@ -178,15 +235,21 @@ export class ChatService {
       return
     }
 
-    // 流已完整返回：通过门面异步持久化，不阻塞响应
+    // completed (including strict empty retrieval)
+    await this.conversationService.updateAssistantMessage(sessionId, messageId, {
+      content: fullReply,
+      status: 'completed',
+      metadata: {
+        sources,
+        retrieval_empty: retrievalEmpty,
+      },
+    })
+
     this.finalizeService.schedule({ userId, sessionId, span: 'chat.stream.finalize' }, [
       {
-        name: 'persist-assistant',
-        run: () => this.conversationService.saveAssistantMessage(sessionId, messageId, fullReply),
-      },
-      {
         name: 'generate-title',
-        run: () => this.conversationService.generateTitle(sessionId, input, fullReply, provider),
+        run: () =>
+          this.conversationService.generateTitle(sessionId, input, fullReply, llmProvider),
       },
     ])
 
@@ -196,25 +259,54 @@ export class ChatService {
       message_id: messageId,
       answer: '',
       done: true,
+      retrieval_empty: retrievalEmpty,
     }
   }
 
-  private async createProvider(
-    providerId: string,
-    modelName: string,
-  ): Promise<LlmProvider> {
+  private async assertKbOwnership(userId: string, kbIds: string[]): Promise<void> {
+    if (!kbIds?.length) {
+      throw new BadRequestException({
+        code: 'KB_REQUIRED',
+        message: 'Chat 知识问答必须绑定至少一个知识库',
+      })
+    }
+    for (const kbId of kbIds) {
+      const kb = await this.kbRepository.findByIdAndUser(kbId, userId)
+      if (!kb) {
+        // 404 to avoid leaking existence
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: '知识库不存在',
+        })
+      }
+    }
+  }
+
+  private async createProvider(providerId: string, modelName: string): Promise<LlmProvider> {
     const baseProvider = await this.providerRegistry.get(providerId, modelName)
     return new LlamaIndexProvider(baseProvider.toLlamaIndex())
   }
 
-  private async resolveProvider(
+  private async resolveProviderConfig(
     userId: string,
     providerKey?: string,
     dtoModel?: string,
   ): Promise<{
-    provider: LlmProvider
+    providerConfig: {
+      llm_model?: string
+      llm_api_key?: string
+      llm_base_url?: string
+      embedding_model?: string
+      embedding_api_key?: string
+      embedding_base_url?: string
+      rerank_model?: string
+      rerank_api_key?: string
+      rerank_base_url?: string
+    }
     model: string
     timeoutMs: number
+    llmProvider: LlmProvider
+    retrievalMode: 'strict' | 'loose'
   }> {
     const settings = await this.settingsService.getDecryptedSettings(userId)
     const resolvedKey = providerKey?.trim() || settings.chat.defaultProvider
@@ -285,21 +377,47 @@ export class ChatService {
       }
     }
 
-    const timeoutMs = provider.timeoutMs
+    // Embedding/rerank MUST match IndexingWorker (rag.embeddingProvider pool), not only chat LLM provider.
+    // Otherwise hybrid vector search uses a different space than indexed chunks.
+    let embeddingResolved: Awaited<
+      ReturnType<KnowledgeAiProviderResolver['resolveEmbeddingConfig']>
+    >
+    try {
+      embeddingResolved = await this.knowledgeAiProviderResolver.resolveEmbeddingConfig(userId)
+    } catch (err) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.TYPE_MISMATCH,
+        message: err instanceof Error ? err.message : '未配置可用的 embedding 模型',
+      })
+    }
+
+    const timeoutMs =
+      Number(process.env.KNOWLEDGE_AI_GENERATION_TIMEOUT_MS) || provider.timeoutMs || 180_000
+
+    const llmProvider = await this.createProvider(providerId, resolvedModelName)
+    const retrievalMode =
+      settings.rag?.retrievalMode === 'loose' ? ('loose' as const) : ('strict' as const)
+
     return {
-      provider: await this.createProvider(providerId, resolvedModelName),
+      providerConfig: {
+        llm_model: resolvedModelName,
+        llm_api_key: provider.apiKey,
+        llm_base_url: provider.baseUrl,
+        embedding_model: embeddingResolved.embedding_model,
+        embedding_api_key: embeddingResolved.embedding_api_key,
+        embedding_base_url: embeddingResolved.embedding_base_url,
+        ...(embeddingResolved.rerank_model
+          ? {
+              rerank_model: embeddingResolved.rerank_model,
+              rerank_api_key: embeddingResolved.rerank_api_key,
+              rerank_base_url: embeddingResolved.rerank_base_url,
+            }
+          : {}),
+      },
       model: resolvedModelName,
       timeoutMs,
+      llmProvider,
+      retrievalMode,
     }
-  }
-
-  /** M2: 对 RAG 检索到的上下文做基础过滤，降低提示注入风险 */
-  private sanitizeRagContext(context: string): string {
-    // ponytail: 仅移除明显的 System Prompt 残留行，不过度清洗
-    return context
-      .split('\n')
-      .filter((line) => !/^\s*(system|user|assistant)\s*:/i.test(line))
-      .join('\n')
-      .trim()
   }
 }

@@ -141,6 +141,8 @@ export class SessionService {
         role: m.role,
         content: m.content,
         createdAt: m.createdAt.toISOString(),
+        status: (m as { status?: string }).status,
+        metadata: (m as { metadata?: unknown }).metadata ?? null,
       })),
       total,
       hasMore: skip + messages.length < total,

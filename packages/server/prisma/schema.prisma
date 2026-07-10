@@ -142,6 +142,10 @@ model Message {
   sessionId String   @map("session_id")
   role      String
   content   String
+  /// streaming | completed | cancelled | failed
+  status    String   @default("completed")
+  /// e.g. { sources, retrieval_empty }
+  metadata  Json?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

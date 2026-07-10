@@ -53,12 +53,34 @@ export class ConversationService {
     sessionId: string,
     messageId: string,
     content: string,
+    options?: { status?: string; metadata?: unknown },
   ): Promise<Message> {
     return this.messageRepository.create({
       id: messageId,
       sessionId,
       role: 'assistant',
       content,
+      status: options?.status ?? 'completed',
+      metadata: options?.metadata ?? undefined,
+    })
+  }
+
+  async updateAssistantMessage(
+    sessionId: string,
+    messageId: string,
+    data: { content?: string; status?: string; metadata?: unknown },
+  ): Promise<Message> {
+    const existing = await this.messageRepository.findById(messageId)
+    if (!existing || existing.sessionId !== sessionId) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: '消息不存在',
+      })
+    }
+    return this.messageRepository.update(messageId, {
+      content: data.content,
+      status: data.status,
+      metadata: data.metadata as object | undefined,
     })
   }
 
@@ -66,6 +88,19 @@ export class ConversationService {
     sessionId: string,
     options?: { beforeMessageId?: string },
   ): Promise<Array<{ role: string; content: string }>> {
+    const toHistory = (
+      messages: Array<{ role: string; content: string; status?: string | null }>,
+    ) =>
+      messages
+        .filter((m) => {
+          if (m.role === 'user') return Boolean(m.content?.trim())
+          if (m.role !== 'assistant') return false
+          // Skip incomplete / failed assistant turns so they do not pollute L1 context
+          if (m.status && m.status !== 'completed') return false
+          return Boolean(m.content?.trim())
+        })
+        .map((m) => ({ role: m.role, content: m.content }))
+
     if (options?.beforeMessageId) {
       const beforeMessage = await this.messageRepository.findById(options.beforeMessageId)
       if (!beforeMessage || beforeMessage.sessionId !== sessionId) {
@@ -78,14 +113,14 @@ export class ConversationService {
         sessionId,
         options.beforeMessageId,
         {
-          select: { role: true, content: true },
+          select: { role: true, content: true, status: true },
         },
       )
-      return messages as Array<{ role: string; content: string }>
+      return toHistory(messages as Array<{ role: string; content: string; status?: string | null }>)
     }
 
     const messages = await this.messageRepository.findBySessionId(sessionId)
-    return messages.map((m) => ({ role: m.role, content: m.content }))
+    return toHistory(messages)
   }
 
   async paginateMessages(sessionId: string, options: { page: number; size: number }) {

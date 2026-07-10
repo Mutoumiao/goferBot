@@ -59,7 +59,33 @@ export class ChatController {
       size: query.size,
     })
     // 统一分页响应格式：前端 MessageListResponse 期望 { items, pagination }
-    return { items: result.data, pagination: result.pagination }
+    // 透出 status/metadata（含 sources / retrieval_empty）供历史回放
+    const items = (result.data ?? []).map((m) => {
+      const row = m as {
+        id: string
+        sessionId: string
+        role: string
+        content: string
+        createdAt: Date | string
+        status?: string | null
+        metadata?: unknown
+      }
+      return {
+        id: row.id,
+        sessionId: row.sessionId,
+        role: row.role,
+        content: row.content,
+        createdAt:
+          row.createdAt instanceof Date
+            ? row.createdAt.toISOString()
+            : typeof row.createdAt === 'string'
+              ? row.createdAt
+              : new Date().toISOString(),
+        status: row.status ?? undefined,
+        metadata: row.metadata ?? null,
+      }
+    })
+    return { items, pagination: result.pagination }
   }
 
   @Get('providers')
