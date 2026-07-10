@@ -1,9 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import type { Prisma } from '@prisma/client'
 import { PrismaService } from '../../processors/database/prisma.service.js'
-import { ElasticsearchService } from '../../processors/rag/elasticsearch.service.js'
+import { KnowledgeAiClient } from '../../processors/knowledge-ai/knowledge-ai.client.js'
 import { StorageService } from '../../processors/storage/storage.service.js'
 
+/**
+ * Cascade cleanup for KB / folder / document.
+ * Vector + BM25 authority lives in Knowledge AI (PG knowledge schema + ES);
+ * Nest Chunk table is legacy and still cleared for local DB consistency.
+ *
+ * Fail-closed: Knowledge AI index purge MUST succeed before Nest deletes
+ * business metadata (avoids orphan recallable vectors).
+ */
 @Injectable()
 export class KbCleanupService {
   private readonly logger = new Logger(KbCleanupService.name)
@@ -11,7 +19,7 @@ export class KbCleanupService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-    private readonly es: ElasticsearchService,
+    private readonly knowledgeAi: KnowledgeAiClient,
   ) {}
 
   async cleanupKnowledgeBase(kbId: string): Promise<void> {
@@ -20,7 +28,8 @@ export class KbCleanupService {
       select: { id: true, storageKey: true },
     })
 
-    // 批量删除 chunks 和 documents，避免长事务内循环删除
+    await this.purgeKbIndex(kbId)
+
     const docIds = docs.map((d) => d.id)
     if (docIds.length > 0) {
       await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -32,14 +41,6 @@ export class KbCleanupService {
       await this.prisma.knowledgeBase.delete({ where: { id: kbId } })
     }
 
-    // 删除 ES 索引数据（事务外执行，避免外部存储失败导致事务回滚）
-    await this.es.deleteByKbId(kbId).catch((err: unknown) => {
-      this.logger.warn(
-        `ES deleteByKbId failed for ${kbId}: ${err instanceof Error ? err.message : String(err)}`,
-      )
-    })
-
-    // ponytail: 文件删除在事务外执行，避免外部存储失败导致事务回滚
     for (const doc of docs) {
       if (doc.storageKey) {
         await this.storage.deleteFile(doc.storageKey).catch((err: unknown) => {
@@ -52,7 +53,6 @@ export class KbCleanupService {
   }
 
   async cleanupFolder(kbId: string, folderId: string): Promise<void> {
-    // 先收集所有需要删除的文档（事务外），避免事务内逐层查询
     const docs: { id: string; storageKey?: string | null }[] = []
     const stack: string[] = [folderId]
 
@@ -75,7 +75,10 @@ export class KbCleanupService {
       }
     }
 
-    // 批量删除 chunks、documents 和 folder，避免长事务内循环删除
+    for (const doc of docs) {
+      await this.purgeDocumentIndex(doc.id)
+    }
+
     const docIds = docs.map((d) => d.id)
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (docIds.length > 0) {
@@ -85,16 +88,6 @@ export class KbCleanupService {
       await tx.folder.delete({ where: { id: folderId } })
     })
 
-    // 删除 ES 索引数据（事务外执行）
-    for (const doc of docs) {
-      await this.es.deleteByDocumentId(doc.id).catch((err: unknown) => {
-        this.logger.warn(
-          `ES deleteByDocumentId failed for ${doc.id}: ${err instanceof Error ? err.message : String(err)}`,
-        )
-      })
-    }
-
-    // ponytail: 文件删除在事务外执行
     for (const doc of docs) {
       if (doc.storageKey) {
         await this.storage.deleteFile(doc.storageKey).catch((err: unknown) => {
@@ -118,20 +111,43 @@ export class KbCleanupService {
   }
 
   async cleanupDocument(documentId: string, storageKey?: string | null): Promise<void> {
+    await this.purgeDocumentIndex(documentId)
+
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await this.cleanupDocumentTx(tx, documentId)
     })
-    // 删除 ES 索引数据（事务外执行）
-    await this.es.deleteByDocumentId(documentId).catch((err: unknown) => {
-      this.logger.warn(
-        `ES deleteByDocumentId failed for ${documentId}: ${err instanceof Error ? err.message : String(err)}`,
-      )
-    })
+
     if (storageKey) {
       await this.storage.deleteFile(storageKey).catch((err: unknown) => {
         this.logger.warn(
           `Storage delete failed for ${storageKey}: ${err instanceof Error ? err.message : String(err)}`,
         )
+      })
+    }
+  }
+
+  private async purgeDocumentIndex(documentId: string): Promise<void> {
+    try {
+      await this.knowledgeAi.deleteDocument(documentId)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      this.logger.error(`Knowledge AI DELETE /documents/${documentId} failed: ${msg}`)
+      throw new ServiceUnavailableException({
+        code: 'KNOWLEDGE_AI_PURGE_FAILED',
+        message: '知识索引清理失败，业务数据未删除，请稍后重试',
+      })
+    }
+  }
+
+  private async purgeKbIndex(kbId: string): Promise<void> {
+    try {
+      await this.knowledgeAi.deleteKb(kbId)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      this.logger.error(`Knowledge AI DELETE /kb/${kbId} failed: ${msg}`)
+      throw new ServiceUnavailableException({
+        code: 'KNOWLEDGE_AI_PURGE_FAILED',
+        message: '知识库索引清理失败，业务数据未删除，请稍后重试',
       })
     }
   }

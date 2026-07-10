@@ -60,7 +60,10 @@ const chatConfigSchema = z.object({
 const ragConfigSchema = z.object({
   llmProvider: z.string().min(1, 'llmProvider 不能为空').optional(),
   embeddingProvider: z.string().min(1, 'embeddingProvider 不能为空').optional(),
+  /** Rerank API provider key（模型 type=reranker）；由 Nest 注入 Knowledge AI `_provider` */
   rerankerProvider: z.string().optional(),
+  /** Knowledge 检索模式，默认 strict（空检索 = 业务成功 + retrieval_empty） */
+  retrievalMode: z.enum(['strict', 'loose']).default('strict'),
   timeoutMs: z.number().min(1000, 'timeout 至少 1000ms').default(60_000),
   rerankerAllowedModelPrefixes: z
     .array(z.string())
@@ -92,6 +95,7 @@ export const settingsSchema = z.object({
   chat: chatConfigSchema.default({ enabledProviders: [], temperature: 0.7 }),
   rag: ragConfigSchema.default({
     timeoutMs: 60_000,
+    retrievalMode: 'strict',
     rerankerAllowedModelPrefixes: ['BAAI/', 'Xorbits/', 'sentence-transformers/'],
   }),
   companion: companionConfigSchema.default({}),

@@ -231,8 +231,8 @@ export class DocumentMoveService {
     const doc = await this.documentRepository.findById(docId)
     if (!doc || doc.kbId !== kbId) throw new NotFoundException('文档不存在')
 
+    // cleanupDocument purges Knowledge AI + Nest chunks/document + storage
     await this.cleanupService.cleanupDocument(doc.id, doc.storageKey)
-    await this.documentRepository.delete(docId)
     return { id: docId, deleted: true }
   }
 

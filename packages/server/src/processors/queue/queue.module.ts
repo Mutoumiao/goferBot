@@ -17,8 +17,8 @@ import {
 } from '../../queue/index.js'
 import type { ChatFinalizeJobData, DocumentJobData } from '../../queue/queues.js'
 import { ChatFinalizeProcessor } from '../chat/chat-finalize.processor.js'
+import { KnowledgeAiModule } from '../knowledge-ai/knowledge-ai.module.js'
 import { DocumentParser } from '../parser/document.parser.js'
-import { RagModule } from '../rag/rag.module.js'
 import { IndexingWorker } from './indexing.worker.js'
 import { QueueService } from './queue.service.js'
 import { WorkerService } from './worker.service.js'
@@ -81,7 +81,7 @@ export class QueueModule {
       imports: [
         ConfigModule,
         SettingsModule,
-        forwardRef(() => RagModule),
+        KnowledgeAiModule,
         forwardRef(() => ChatModule),
       ],
       providers,

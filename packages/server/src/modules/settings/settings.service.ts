@@ -18,6 +18,7 @@ const DEFAULT_CONFIG: Settings = {
   chat: { enabledProviders: [], temperature: 0.7 },
   rag: {
     timeoutMs: 60_000,
+    retrievalMode: 'strict',
     rerankerAllowedModelPrefixes: ['BAAI/', 'Xorbits/', 'sentence-transformers/'],
   },
   companion: {},

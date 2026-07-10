@@ -87,9 +87,32 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Queues and Redis connection closed')
   }
 
+  /**
+   * Enqueue document index job with per-document_id serial semantics.
+   * Same jobId replaces completed/failed jobs and skips if one is already active/waiting.
+   */
   async addDocumentJob(documentId: string, type: 'index'): Promise<Job<DocumentJobData>> {
     if (!this.isEnabled()) throw new Error('QueueService is disabled: Redis not available')
-    return this.documentQueue.add('index', { documentId, type })
+    // BullMQ custom jobId cannot contain ':'
+    const jobId = `doc-index-${documentId}`
+    const existing = await this.documentQueue.getJob(jobId)
+    if (existing) {
+      const state = await existing.getState()
+      if (state === 'active' || state === 'waiting' || state === 'delayed' || state === 'prioritized') {
+        this.logger.warn(`Index job already ${state} for document ${documentId}; reusing job ${jobId}`)
+        return existing
+      }
+      await existing.remove().catch(() => undefined)
+    }
+    return this.documentQueue.add(
+      'index',
+      { documentId, type },
+      {
+        jobId,
+        removeOnComplete: 100,
+        removeOnFail: 50,
+      },
+    )
   }
 
   async addEmbeddingJob(chunkIds: string[]): Promise<Job<EmbeddingJobData>> {

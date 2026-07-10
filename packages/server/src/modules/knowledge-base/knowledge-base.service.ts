@@ -93,11 +93,11 @@ export class KnowledgeBaseService {
 
   async remove(userId: string, id: string) {
     await this.ensureOwnership(userId, id)
+    // KbCleanupService.cleanupKnowledgeBase already deletes KA index + docs + KB row.
     await this.eventEmitter.emitAsync(
       KnowledgeBaseDeletedEvent.eventType,
       new KnowledgeBaseDeletedEvent(id, userId),
     )
-    await this.kbRepository.delete(id)
     await this.cacheService.delByPrefix(`${KB_LIST_CACHE_PREFIX}${userId}`)
     return { id, deleted: true }
   }

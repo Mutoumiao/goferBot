@@ -58,6 +58,15 @@ const envSchema = z.object({
   ELASTICSEARCH_PASSWORD: optionalNonEmptyString,
   ELASTICSEARCH_INDEX: optionalNonEmptyString,
 
+  // === Knowledge AI Service (Python, internal) ===
+  /** Canonical base URL for Nest → Knowledge AI. */
+  KNOWLEDGE_AI_BASE_URL: optionalNonEmptyString,
+  /** @deprecated Use KNOWLEDGE_AI_BASE_URL. Kept as fallback alias. */
+  KNOWLEDGE_AI_URL: optionalNonEmptyString,
+  KNOWLEDGE_AI_SERVICE_TOKEN: optionalNonEmptyString,
+  KNOWLEDGE_AI_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+  KNOWLEDGE_AI_GENERATION_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+
   // === 安全 ===
   SSRF_ALLOWED_HOSTNAMES: optionalNonEmptyString,
   CORS_ORIGIN: optionalNonEmptyString,
@@ -94,11 +103,42 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>
 
+/** Well-known insecure defaults that MUST NOT ship in production. */
+const WEAK_KNOWLEDGE_AI_TOKENS = new Set([
+  'dev-token-change-me',
+  'change-me',
+  'change-me-in-dev',
+  'test-service-token',
+  'secret',
+  'token',
+])
+
 export function validateEnv(config?: Record<string, unknown>): Env {
   try {
     const source = config ?? process.env
-    return envSchema.parse(source)
+    const env = envSchema.parse(source)
+
+    if (env.NODE_ENV === 'production') {
+      const token = env.KNOWLEDGE_AI_SERVICE_TOKEN?.trim() ?? ''
+      if (!token) {
+        throw new AppException(
+          'CONFIG_VALIDATION_ERROR',
+          '启动配置校验失败: production 必须设置 KNOWLEDGE_AI_SERVICE_TOKEN',
+          500,
+        )
+      }
+      if (WEAK_KNOWLEDGE_AI_TOKENS.has(token) || token.length < 16) {
+        throw new AppException(
+          'CONFIG_VALIDATION_ERROR',
+          '启动配置校验失败: production 禁止使用弱/默认 KNOWLEDGE_AI_SERVICE_TOKEN（长度≥16 且非 dev 默认值）',
+          500,
+        )
+      }
+    }
+
+    return env
   } catch (err) {
+    if (err instanceof AppException) throw err
     if (err instanceof z.ZodError) {
       const issues = err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
       throw new AppException('CONFIG_VALIDATION_ERROR', `启动配置校验失败: ${issues}`, 500)
