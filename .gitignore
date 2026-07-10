@@ -72,6 +72,16 @@ docs/report/*
 .data/
 .gstack/
 
+# Python Knowledge AI Service
+services/**/.venv/
+services/**/__pycache__/
+services/**/.pytest_cache/
+services/**/.ruff_cache/
+services/**/*.egg-info/
+services/**/dist/
+services/**/.coverage
+services/**/htmlcov/
+
 .codegraph/
 
 .claude/*

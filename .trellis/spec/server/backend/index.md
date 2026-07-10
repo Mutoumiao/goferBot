@@ -30,7 +30,8 @@
 | Auth | [auth-module-guide.md](./auth-module-guide.md) | [openspec/specs/auth/spec.md](../../../openspec/specs/auth/spec.md) |
 | Provider | [provider-module-guide.md](./provider-module-guide.md) | [openspec/specs/settings/spec.md](../../../openspec/specs/settings/spec.md) |
 | Companion | [companion-pipeline.md](./companion-pipeline.md) | [openspec/specs/companion/spec.md](../../../openspec/specs/companion/spec.md) |
-| RAG | [rag-implementation.md](./rag-implementation.md) | [openspec/specs/rag/spec.md](../../../openspec/specs/rag/spec.md) |
+| Knowledge AI | [knowledge-ai-service.md](./knowledge-ai-service.md) | [openspec/specs/knowledge-ai/spec.md](../../../openspec/specs/knowledge-ai/spec.md) |
+| RAG（能力层） | [rag-implementation.md](./rag-implementation.md) | [openspec/specs/rag/spec.md](../../../openspec/specs/rag/spec.md) |
 | Queue | [queue-implementation.md](./queue-implementation.md) | [openspec/specs/queue/spec.md](../../../openspec/specs/queue/spec.md) |
 | Document Parser | [parser-implementation.md](./parser-implementation.md) | [openspec/specs/document/spec.md](../../../openspec/specs/document/spec.md) |
 
@@ -61,17 +62,18 @@
 后端涉及的全部 OpenSpec 业务规范（按需查阅，不要预加载）：
 
 - [auth](../../../openspec/specs/auth/spec.md) — JWT 双密钥认证、Token Rotation、RBAC、CAPTCHA
-- [chat](../../../openspec/specs/chat/spec.md) — SSE 流式聊天契约、RAG 检索、Output Guardrails
-- [companion](../../../openspec/specs/companion/spec.md) — LangGraph 11 节点管线、15 Route Rules、10 Policy Packs
-- [rag](../../../openspec/specs/rag/spec.md) — RAG 5 阶段管线、ES Mapping、BGE Reranker
-- [queue](../../../openspec/specs/queue/spec.md) — 三队列架构、StreamFinalize、Job Data 契约
-- [admin](../../../openspec/specs/admin/spec.md) — 管理后台 RBAC、19 权限码、审计日志
-- [knowledge-base](../../../openspec/specs/knowledge-base/spec.md) — 知识库 CRUD、所有权验证
-- [document](../../../openspec/specs/document/spec.md) — 文档解析策略、PDF 三重回退、Parent-Child 分块
-- [session](../../../openspec/specs/session/spec.md) — Session CRUD、BaseRepository 契约
-- [settings](../../../openspec/specs/settings/spec.md) — 三层配置合并、AES 加密
+- [chat](../../../openspec/specs/chat/spec.md) — 强制多 KB、SSE sources 契约、消息状态机
+- [companion](../../../openspec/specs/companion/spec.md) — LangGraph 管线；与 Knowledge AI 隔离
+- [knowledge-ai](../../../openspec/specs/knowledge-ai/spec.md) — Python 知识域服务：索引/混合检索/问答
+- [rag](../../../openspec/specs/rag/spec.md) — RAG 能力层语义（运行时委托 knowledge-ai）
+- [queue](../../../openspec/specs/queue/spec.md) — 文档索引 Job → `/index`、StreamFinalize
+- [admin](../../../openspec/specs/admin/spec.md) — 管理后台 RBAC、审计日志
+- [knowledge-base](../../../openspec/specs/knowledge-base/spec.md) — 知识库 CRUD、级联清 Knowledge AI 索引
+- [document](../../../openspec/specs/document/spec.md) — Nest 解析 + 向 Knowledge AI 交接纯文本
+- [session](../../../openspec/specs/session/spec.md) — Session/Message、status/metadata sources
+- [settings](../../../openspec/specs/settings/spec.md) — retrievalMode、embedding/rerank、KA 连接 env
 - [user](../../../openspec/specs/user/spec.md) — 用户档案、密码策略、Super Admin Bootstrap
-- [knowledge-base/document-lifecycle](../../../openspec/specs/knowledge-base/document-lifecycle.md) — 文档生命周期、跨 KB 操作事务边界
+- [knowledge-base/document-lifecycle](../../../openspec/specs/knowledge-base/document-lifecycle.md) — 文档生命周期
 
 ---
 

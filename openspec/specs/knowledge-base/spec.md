@@ -7,12 +7,11 @@
 ## Requirements（需求）
 
 ### Requirement: 知识库 CRUD
-系统应允许已认证用户创建、读取、更新和删除自己的知识库。
+系统应允许已认证用户创建、读取、更新和删除自己的知识库。删除知识库时，系统 MUST 删除业务侧文件夹与文档元数据，并 MUST 触发 Knowledge AI 清理该 KB 下全部索引数据（PG `knowledge` + ES）；Nest Prisma MUST NOT 再以「事务内直接删业务 chunks 表」作为知识索引清理的权威方式。
 
 证据来源：
-- `packages/web/src/api/KnowledgeBase.ts`
-- `packages/web/src/features/kb/services.ts`
-- `packages/server/src/modules/` (kb-related services)
+- `packages/server/src/modules/knowledge-base/kb-cleanup.service.ts`
+- `packages/server/src/processors/knowledge-ai/knowledge-ai.client.ts`
 
 #### Scenario: 创建知识库
 - **WHEN** 已认证用户使用唯一名称创建知识库
@@ -22,9 +21,11 @@
 - **WHEN** 用户请求其知识库列表
 - **THEN** 系统返回该用户拥有的所有 KB，按创建日期排序
 
-#### Scenario: 删除知识库
+#### Scenario: 删除知识库级联索引
 - **WHEN** 用户删除其拥有的知识库
-- **THEN** 系统移除该 KB、其所有文件夹、文档、切片（chunks）以及关联的向量数据
+- **THEN** 系统 MUST 移除该 KB 及其文件夹、文档业务记录，并 MUST 调用 Knowledge AI 清理该 `kb_id` 下全部向量与全文索引（优先 `DELETE /kb/{kb_id}`）
+- **AND** 清理成功后以该 kb_id 检索 MUST NOT 再命中旧内容
+- **AND** Knowledge AI 清理失败时 MUST 阻断业务删除并返回失败，以便重试（fail-closed）
 
 #### Scenario: 无法访问其他用户的 KB
 - **WHEN** 用户尝试访问不属于自己的知识库
@@ -51,24 +52,33 @@
 - **THEN** 系统移除该文件夹及其所有后代（文档和子文件夹）
 
 ### Requirement: 文件上传与管理
-系统应支持向知识库上传文档，将文件存储在 MinIO（S3 兼容的对象存储）中，元数据存储在 PostgreSQL 中。
-
-证据来源：
-- `packages/web/src/api/file.ts`
-- `packages/web/src/features/kb/services.ts`
-- `packages/server/src/storage/minio.ts`
+系统应支持向知识库上传文档，将文件存储在 MinIO 中，元数据存储在业务 PostgreSQL，并异步触发索引。索引计算 MUST 由 Knowledge AI 执行（Nest 负责抽文本后调用 `/index`）。
 
 #### Scenario: 上传文档
 - **WHEN** 用户向知识库文件夹上传文件
-- **THEN** 系统将原始文件存储在 MinIO 中，在 PostgreSQL 中创建文档记录，并触发异步切片/索引
+- **THEN** 系统将原始文件存 MinIO，创建文档记录，并触发异步索引编排
 
-#### Scenario: 删除文档
+#### Scenario: 删除文档级联索引
 - **WHEN** 用户删除文档
-- **THEN** 系统从 MinIO 移除文件，从 PostgreSQL 移除文档记录，并从向量存储中移除所有关联的 chunks/vectors
+- **THEN** 系统 MUST 先请求 Knowledge AI `DELETE /documents/{id}` 清理索引，再从业务库与 MinIO 移除文档
 
-#### Scenario: 支持的文件类型
+#### Scenario: Phase 1 支持的文件类型
 - **WHEN** 用户上传文件
-- **THEN** 系统应接受 PDF、Markdown、纯文本和常见办公文档格式；对不支持的 MIME 类型返回验证错误
+- **THEN** Phase 1 MUST 对 **txt / markdown / pdf** 给出可预期行为（索引成功或明确 failed+原因）；不支持的类型 MUST 校验失败。docx 等办公格式 MAY 后置
+
+### Requirement: 文档索引状态与手动重试
+
+文档 MUST 暴露可观察的索引状态（至少 `indexing` / `ready` / `failed`）。failed 时 MUST 提供可读原因，并 SHOULD 支持用户或 API **手动重试**索引。重试时 Nest MUST 重新从 MinIO 读取并抽文本后调用 Knowledge AI `/index`（replace 语义）。
+
+#### Scenario: 失败可重试
+
+- **WHEN** 文档状态为 failed 且用户触发重试
+- **THEN** 系统 MUST 重新编排抽文本与 `/index`，成功后状态 MUST 变为 `ready`
+
+#### Scenario: 仅 ready 可召回
+
+- **WHEN** 文档尚未 `ready`
+- **THEN** 其内容 MUST NOT 作为成功知识问答的合格召回来源
 
 ### Requirement: 知识库所有权
 系统应强制执行严格的所有权：只有知识库所有者可以通过 API 修改它或访问其内容。

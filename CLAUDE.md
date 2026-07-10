@@ -23,7 +23,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的
 | **对象存储**   | MinIO (S3兼容)                           | -                                 |
 | **AI SDK**     | LangChain + @ant-design/x                | LangChain 1.x                     |
 | **AI 工作流**  | LangGraph StateGraph                     | -                                 |
-| **Reranker**   | @xenova/transformers (BGE Cross-Encoder) | -                                 |
+| **知识 AI**    | Python FastAPI Knowledge AI + HTTP API Rerank | services/knowledge-ai-service     |
 | **数据校验**   | Zod                                      | 3.x                               |
 | **测试**       | Vitest + Playwright                      | Vitest 4.x, Playwright latest     |
 | **包管理**     | pnpm                                     | -                                 |
@@ -66,8 +66,10 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的
 │   │   ├── modules/settings/      # 用户设置
 │   │   ├── modules/health/        # 健康检查（/health + /health/live）
 │   │   ├── common/                # 安全中间件、SseResponseHelper、全局异常过滤器
-│   │   └── processors/rag/        # RAG 管线（QueryUnderstanding→HybridRetrieval→RRF→Reranker→ParentResolution）
+│   │   └── processors/knowledge-ai/  # Nest → Knowledge AI HTTP Client（索引/流式问答）
 │   └── data/          # 共享数据契约（Zod schemas、chatMessagesChunkSchema）
+├── services/
+│   └── knowledge-ai-service/  # Python 知识域（pgvector∥ES、/index /stream）
 ├── e2e/               # 浏览器 E2E 测试（Playwright POM + Mock 双模式 + goferbot_e2e DB）
 ├── tests/             # 测试（unit/integration/e2e-api）
 ├── docs/              # 文档（guide/prd/adrs/design/discovery-report.md）
@@ -85,7 +87,7 @@ GoferBot — 云端优先的 AI Workspace / Agent OS。基于 React + NestJS 的
 | **RBAC 守卫**        | Admin 三层权限 — `beforeLoad` 路由守卫 → `useMenuConfig` 菜单过滤 → `PermissionMatrix` 组件级，19 权限码 + 3 预置角色 |
 | **Overlay Portal**   | 4 层命令式架构 — `openDialog(Comp, props)` → Promise<T>，createPortal 到 body，11 个预置弹窗                          |
 | **Token 刷新**       | 订阅者队列模式 — `isRefreshing` 互斥锁，并发 401 聚合为单次 refresh                                                   |
-| **RAG 管线**         | 5 阶段 — QueryUnderstanding → Hybrid(BM25+Vector) → RRF → BGE Reranker → ParentResolution                             |
+| **RAG / Knowledge AI** | Nest 编排 + Python Knowledge AI — L1 Merged → Hybrid(pgvector∥ES) → RRF → Parent → API Rerank；Nest 不双跑本地 RAG |
 | **Companion 工作流** | LangGraph StateGraph — 11 节点 + 3 条件路由 + 18 状态字段                                                             |
 | **测试架构**         | 4 层金字塔 — Unit(vitest) → Integration(vitest+NestJS) → E2E API(vitest+axios) → E2E Browser(Playwright)              |
 
@@ -155,7 +157,7 @@ pnpm check:ci         # biome CI 模式（不写入，错误即非零退出）
 
 | Package            | OpenSpec capability                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `packages/server/` | [auth](openspec/specs/auth/spec.md)、[chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[rag](openspec/specs/rag/spec.md)、[queue](openspec/specs/queue/spec.md)、[admin](openspec/specs/admin/spec.md)、[knowledge-base](openspec/specs/knowledge-base/spec.md)、[document](openspec/specs/document/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)、[user](openspec/specs/user/spec.md)、[document-lifecycle](openspec/specs/knowledge-base/document-lifecycle.md) |
+| `packages/server/` | [auth](openspec/specs/auth/spec.md)、[chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[knowledge-ai](openspec/specs/knowledge-ai/spec.md)、[rag](openspec/specs/rag/spec.md)、[queue](openspec/specs/queue/spec.md)、[admin](openspec/specs/admin/spec.md)、[knowledge-base](openspec/specs/knowledge-base/spec.md)、[document](openspec/specs/document/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)、[user](openspec/specs/user/spec.md)、[document-lifecycle](openspec/specs/knowledge-base/document-lifecycle.md) |
 | `packages/admin/`  | [admin](openspec/specs/admin/spec.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `packages/web/`    | [auth](openspec/specs/auth/spec.md)、[chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)                                                                                                                                                                                                                                                                                                                                        |
 | `packages/data/`   | [chat](openspec/specs/chat/spec.md)、[companion](openspec/specs/companion/spec.md)、[document](openspec/specs/document/spec.md)、[session](openspec/specs/session/spec.md)、[settings](openspec/specs/settings/spec.md)、[user](openspec/specs/user/spec.md)                                                                                                                                                                                                                                                                                           |

@@ -75,9 +75,10 @@ CustomProvider (无远程模型)
 #### 消费端调用模式
 
 ```typescript
-// ChatService / RagService / Companion
+// ChatService / Companion / Knowledge AI 注入
 const provider = await providerRegistry.get(providerId, modelName)
-const llamaIndexClient = provider.toLlamaIndex()      // Chat/RAG
+const llamaIndexClient = provider.toLlamaIndex()      // Chat 标题等本地 LLM 用途
+// 知识检索/生成：解密 settings 后由 KnowledgeAiProviderResolver 组装 _provider 注入 Python
 const langChainClient = provider.toLangChain()        // Companion
 const models = await provider.fetchModels()           // 配置页面
 ```
@@ -88,7 +89,7 @@ const models = await provider.fetchModels()           // 配置页面
 |--------------|-----------------------------------------|------------|-----------------------------------------------------------------------------|
 | `providers`  | 模型提供商池（LLM/Embedding/Reranker）  | 否         | `{}`                                                                        |
 | `chat`       | 聊天配置（默认提供商、启用列表、温度）  | 否         | `{ enabledProviders: [], temperature: 0.7 }`                                |
-| `rag`        | RAG 配置（LLM/Embedding/Reranker 引用） | 否         | `{ timeoutMs: 60000, rerankerAllowedModelPrefixes: [...] }`                 |
+| `rag`        | 知识问答/索引配置（Embedding/Rerank/retrievalMode） | 否 | `{ retrievalMode: 'strict', timeoutMs: 60000, embeddingProvider?, rerankerProvider? }` |
 | `companion`  | 伴侣配置（提供商引用）                  | 否         | `{}`                                                                        |
 | `indexing`   | 索引配置（上下文嵌入、Chunk 大小）      | 否         | `{ contextualEmbedding: false, parentChunkSize: 800, childChunkSize: 150 }` |
 | `appearance` | 外观配置（主题、字号）                  | 是         | `{ mode: 'light', fontSizeLevel: 3 }`                                       |
@@ -382,13 +383,14 @@ async fetchModels(@Body() dto: FetchModelsDto): Promise<FetchModelsResult> {
 
 ### RagSettings
 
-| 字段                         | 类型     | 默认值                                            | 说明                |
-|------------------------------|----------|---------------------------------------------------|---------------------|
-| llmProvider                  | string   | undefined                                         | RAG LLM 提供商 ID   |
-| embeddingProvider            | string   | undefined                                         | Embedding 提供商 ID |
-| rerankerProvider             | string   | undefined                                         | 重排提供商 ID       |
-| timeoutMs                    | number   | 60000                                             | 超时时间            |
-| rerankerAllowedModelPrefixes | string[] | `['BAAI/', 'Xorbits/', 'sentence-transformers/']` | 允许的重排模型前缀  |
+| 字段                         | 类型                 | 默认值                                            | 说明 |
+|------------------------------|----------------------|---------------------------------------------------|------|
+| llmProvider                  | string               | undefined                                         | 知识问答 LLM 提供商引用（可选；Chat 路径多用 chat.defaultProvider） |
+| embeddingProvider            | string               | undefined                                         | Embedding 提供商/模型 key；**索引与问答向量空间 MUST 共用解析** |
+| rerankerProvider             | string               | undefined                                         | HTTP API Rerank 提供商/模型 key（可选；失败 R1 降级） |
+| retrievalMode                | `'strict'\|'loose'`  | `'strict'`                                        | 空检索语义；Phase 1 验收默认 **strict** |
+| timeoutMs                    | number               | 60000                                             | 相关超时（可与 `KNOWLEDGE_AI_GENERATION_TIMEOUT_MS` 叠加） |
+| rerankerAllowedModelPrefixes | string[]             | `['BAAI/', 'Xorbits/', 'sentence-transformers/']` | 遗留本地 BGE 白名单字段；权威路径已改为 API Rerank，MAY 保留兼容 |
 
 ### IndexingSettings
 
@@ -445,6 +447,36 @@ async fetchModels(@Body() dto: FetchModelsDto): Promise<FetchModelsResult> {
 
 ### SSRF 防护
 - `baseUrl` 使用 `validateBaseUrl` 校验，仅允许白名单域名
+
+## Knowledge AI 连接配置（环境变量）
+
+Nest 调用 Knowledge AI 的连接参数 **不**放在用户 Setting JSON 中，而通过环境变量配置：
+
+| 变量 | 说明 | 默认/备注 |
+|------|------|-----------|
+| `KNOWLEDGE_AI_BASE_URL` | 服务根 URL（权威） | `http://127.0.0.1:8090` |
+| `KNOWLEDGE_AI_URL` | 遗留别名，仅 fallback | 废弃；日志会 warn |
+| `KNOWLEDGE_AI_SERVICE_TOKEN` | 共享服务令牌 | production **必填**且禁止弱默认（≥16）；空则 Nest fail-closed |
+| `KNOWLEDGE_AI_CONNECT_TIMEOUT_MS` | 连接/首字节超时 | 15000 |
+| `KNOWLEDGE_AI_GENERATION_TIMEOUT_MS` | 整段生成超时 | 180000 |
+
+### Requirement: Rerank 以 API Provider 配置
+
+系统 SHALL 允许通过设置配置 **Rerank HTTP API**（经 `rag.rerankerProvider` 指向 providers 池中的模型）。运行时 MUST 经 Nest 注入 Knowledge AI 请求的 `_provider`，MUST NOT 将进程内 FlagEmbedding/@xenova 作为唯一可配置路径。
+
+#### Scenario: 切换 rerank 端点
+
+- **WHEN** 配置 `rag.rerankerProvider` 指向兼容端点对应的 provider/model 并保存
+- **THEN** 后续知识问答请求 MUST 在 `_provider` 中携带 rerank 字段（由 Knowledge AI 执行 HTTP 调用）
+
+### Requirement: 检索模式 strict/loose 可配置
+
+系统 SHALL 支持知识问答 `retrieval_mode`：`strict` 与 `loose`，**默认 MUST 为 strict**。Phase 1 **验收以 strict 为准**。
+
+#### Scenario: 默认 strict
+
+- **WHEN** 用户或系统未覆盖 retrieval_mode
+- **THEN** Knowledge 问答 MUST 按 strict 处理空检索
 
 ## Migration（迁移）
 

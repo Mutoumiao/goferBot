@@ -46,24 +46,38 @@
 - **WHEN** Cache Redis 因大规模缓存穿透而压力骤增时
 - **THEN** Queue Redis 独立连接不受影响，异步任务仍可正常调度和执行
 
-### Requirement: 文档索引管线
-系统应通过 `document-processing` 队列异步处理文档索引：从 MinIO 下载文件 → 通过 DocumentParser（按 MIME 类型的策略模式）解析 → 通过 LlamaIndexRagService 建立索引。
+### Requirement: 文档索引管线（Nest 抽文本 → Knowledge AI `/index`）
+
+系统应通过 `document-processing` 队列异步处理文档索引：从 MinIO 下载文件 → 通过 DocumentParser（按 MIME 类型的策略模式）解析为纯文本 → 调用 Knowledge AI `POST /index`（双写 PG knowledge + ES）。Worker MUST NOT 在 Nest 进程内写入知识向量主存或 ES 全文作为权威索引路径。
 
 证据来源：
-- `packages/server/src/processors/queue/indexing.worker.ts#L24-L88`
-- `packages/server/src/processors/queue/queue.module.ts#L50-L59`
+- `packages/server/src/processors/queue/indexing.worker.ts`
+- `packages/server/src/processors/knowledge-ai/knowledge-ai.client.ts`
 
 #### Scenario: 文档索引成功
 - **WHEN** 添加一个类型为 `type='index'` 且包含有效 `documentId` 的文档任务
-- **THEN** worker 从存储中下载文件，通过策略分发的解析器进行解析，调用 `ragService.indexDocument()`，并将文档状态更新为 `ready`，同时记录 chunk 数量
+- **THEN** worker 从存储中下载文件，解析文本，调用 Knowledge AI `/index`，并将文档状态更新为 `ready`，同时记录 chunk 数量（若返回）
 
 #### Scenario: 索引失败
-- **WHEN** 索引失败（例如解析错误、嵌入失败）
+- **WHEN** 索引失败（例如解析错误、空文本、Knowledge AI 失败或超时）
 - **THEN** worker 将文档状态更新为 `failed`，并附带错误消息（截断至 500 字符）；ZodError 失败应包含 schema 路径详情
 
 #### Scenario: 文档状态状态机
 - **WHEN** 索引任务执行
-- **THEN** 文档经历以下状态转换：`uploaded` → `indexing` → `ready`（成功）或 `failed`（错误）；状态更新通过单次数据库写入完成，以最小化往返次数
+- **THEN** 文档经历以下状态转换：`uploaded` → `indexing` → `ready`（成功）或 `failed`（错误）
+
+#### Scenario: Embedding 配置解析
+- **WHEN** 调用 `/index`
+- **THEN** Worker MUST 通过 `KnowledgeAiProviderResolver` 解析所有者的 embedding 配置注入 `_provider`（优先 `settings.rag.embeddingProvider`）
+
+### Requirement: 文档级串行索引
+
+系统 MUST 保证同一 `document_id` 的索引 Job 串行执行（例如队列 jobId/分组 concurrency 或分布式锁）。
+
+#### Scenario: 避免并发双写
+
+- **WHEN** 用户快速连续触发同一文档的重试索引
+- **THEN** 系统 MUST NOT 并行对同一 document_id 执行两个 `/index` replace
 
 ### Requirement: 重试与并发
 系统应为每个队列配置带指数退避的重试策略和并发限制。
@@ -116,19 +130,17 @@
 - **WHEN** 后处理任务执行时（无论哪种模式）
 - **THEN** 系统在入队前捕获 RequestContext（traceId/requestId/userId），执行时通过 `RequestContextStorage.run()` 恢复，确保日志和追踪链路完整
 
-### Requirement: ChatFinalizeProcessor 两步后处理
-系统 SHALL 通过 ChatFinalizeProcessor 实现两步后处理，第一步（消息持久化）失败时触发 BullMQ 重试，第二步（标题生成）失败时仅记录日志不阻塞。
+### Requirement: ChatFinalizeProcessor 后处理
+
+助手消息正文与 sources 的**权威定稿** MUST 在 Nest Chat 流式生命周期中完成。ChatFinalize 路径 SHALL 主要用于非关键收尾（如会话标题生成）；标题失败 MUST NOT 回滚已定稿消息。若实现仍含「补写助手消息」步骤，MUST NOT 与流中定稿冲突。
 
 证据来源：
 - `packages/server/src/processors/chat/chat-finalize.processor.ts`
-
-#### Scenario: 消息持久化（关键操作）
-- **WHEN** ChatFinalizeProcessor 处理任务时
-- **THEN** Step 1 执行 `saveAssistantMessage(sessionId, messageId, fullReply)` → 失败抛异常 → BullMQ 按 attempts=5 自动重试
+- `packages/server/src/modules/chat/chat.service.ts`
 
 #### Scenario: 标题生成（非关键操作）
-- **WHEN** 消息持久化成功完成
-- **THEN** Step 2 执行 `generateTitle(sessionId, input, fullReply, provider)` → 失败仅 log 警告，不抛异常，不触发 BullMQ 重试
+- **WHEN** 助手消息已 completed 定稿后触发标题生成
+- **THEN** 标题失败仅 log 警告，MUST NOT 将消息改为 failed
 
 #### Scenario: 标题生成 Provider 选择
 - **WHEN** 标题生成需要选择 LLM Provider 时
@@ -183,23 +195,24 @@
 - **THEN** 系统 SHALL 在任务执行时通过 RequestContextStorage.run() 恢复追踪上下文，确保跨 SSE 流和队列的完整追踪链路
 
 ### Requirement: IndexingWorker 管线步骤
-系统 SHALL 通过 IndexingWorker 实现文档索引的详细管线，MUST 在索引前查询文档和知识库所有者以构建 ACL 上下文，SHOULD 通过单次数据库写入更新文档状态以最小化往返次数。
+
+系统 SHALL 通过 IndexingWorker 实现文档索引的详细管线：解析 → Knowledge AI `/index` → 回写状态。MUST 查询知识库所有者以解析 embedding 配置；MUST NOT 在 Nest 内写向量主存。
 
 证据来源：
-- `.trellis/spec/server/backend/queue-implementation.md`（IndexingWorker 管线章节、上下文嵌入元数据流程章节）
-- `packages/server/src/processors/queue/indexing.worker.ts#L24-L88`
+- `packages/server/src/processors/queue/indexing.worker.ts`
+- [knowledge-ai/spec.md](../knowledge-ai/spec.md)
 
 #### Scenario: 管线执行步骤
-- **WHEN** IndexingWorker 执行 `handleIndexJob` 处理索引任务
-- **THEN** 系统 MUST 按以下顺序执行：1. `prisma.document.findUnique` 查询文档 → 2. `prisma.knowledgeBase.findUnique` 查询知识库并提取 `ownerUserId` → 3. `storage.downloadFile` 下载文件为 Buffer → 4. `parser.parse` 解析为 ParseResult → 5. 单次写入更新 `status: 'indexing'` → 6. 调用 `ragService.indexDocument` 执行索引 → 7. 成功更新 `status: 'ready'`，失败更新 `status: 'failed'`（`errorMessage` 截断至 500 字符）并抛出异常触发 BullMQ 重试
+- **WHEN** IndexingWorker 执行 `handleIndexJob`
+- **THEN** 系统 MUST 按以下顺序执行：1. 查询 Document → 2. 查询 KnowledgeBase 取 `ownerUserId` → 3. MinIO 下载 → 4. DocumentParser 解析 → 5. 状态 `indexing` → 6. `KnowledgeAiProviderResolver.resolveEmbeddingConfig(ownerUserId)` → 7. `KnowledgeAiClient.index({ document_id, kb_id, text, metadata, _provider })` → 8. 成功 `ready` / 失败 `failed`（errorMessage ≤500）并抛出以触发 BullMQ 重试
 
-#### Scenario: 上下文嵌入元数据流程
-- **WHEN** IndexingWorker 调用 `ragService.indexDocument`
-- **THEN** 系统 MUST 传递结构化元数据：`documentTitle`（来自 `ParseResult.title`）、`sectionPath`（来自 `resolveSectionPath()` 取第一个标题或 `hierarchyPath.join(' / ')`）、`userId`（来自 `knowledgeBase.userId` 用于 ACL）、`allowedUserIds`（`[ownerUserId]`）以及 `metadata`（包含 `source_mime`、`parser_name`）
+#### Scenario: 元数据交接
+- **WHEN** 调用 `/index`
+- **THEN** metadata SHOULD 含 `source_mime`、`parser_name`、`document_title`、`section_path`、`name` 等；ACL 用户字段不再作为 ES 权威过滤
 
 #### Scenario: ZodError 特殊处理
 - **WHEN** 解析过程抛出 ZodError
-- **THEN** 系统 MUST 将 `err.issues` 映射为 `${path.join('.')}:${message}` 分号拼接的详情字符串，记录 schema 路径详情用于调试
+- **THEN** 系统 MUST 将 `err.issues` 映射为可读 schema 路径详情
 
 ### Requirement: Job Data 类型契约
 系统 SHALL 为队列任务定义强类型 Job Data 契约，MUST 确保任务数据结构严格符合类型定义。ChatFinalizeJobData 契约已在"Chat Finalize 队列"需求中定义。

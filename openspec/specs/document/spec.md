@@ -1,10 +1,36 @@
-# Document - 文档处理与向量索引
+# Document - 文档解析与索引交接
 
 ## Purpose（目的）
 
-定义 GoferBot 文档解析管线、文本分块策略、向量嵌入生成与存储、以及索引生命周期管理的系统级规范。
+定义 GoferBot **文档解析**（Nest 侧）与向 Knowledge AI **索引交接**的系统级规范。
+
+> **分块 / embedding / PG+ES 双写** 的权威执行方为 Knowledge AI（见 [knowledge-ai/spec.md](../knowledge-ai/spec.md)）。  
+> Nest IndexingWorker：MinIO 下载 → DocumentParser 抽文本 → `POST /index`。
 
 ## Requirements（需求）
+
+### Requirement: 解析与索引职责边界
+
+Phase 1 文档文本提取 MUST 由 NestJS 侧完成；Knowledge AI `/index` MUST 接收纯文本与元数据（`document_id`、`kb_id` 等），MUST NOT 以「Python 直连 MinIO 自拉取」为 Phase 1 唯一路径要求。
+
+#### Scenario: 纯文本交接
+
+- **WHEN** 文档进入索引阶段且文本提取成功
+- **THEN** Nest MUST 将文本与元数据提交 Knowledge AI `/index`
+
+#### Scenario: 提取失败
+
+- **WHEN** 文本提取失败或文本为空
+- **THEN** 文档 MUST 标记 `failed` 并带原因，MUST NOT 调用成功索引语义
+
+### Requirement: Parent-Child 分块由 Knowledge AI 执行
+
+系统 SHALL 在索引时支持 Parent-Child 分块策略，由 Knowledge AI 在 `/index` 路径执行切分与 parent 字段写入。
+
+#### Scenario: 分块写入
+
+- **WHEN** 纯文本提交索引
+- **THEN** Knowledge AI MUST 产生可 parent-resolve 的 chunk 结构并写入 PG（及 ES 全文）
 
 ### Requirement: 文档解析管线
 系统应通过策略模式（Strategy pattern）支持可插拔的文档解析器架构，根据 MIME 类型分配到特定格式的解析器。

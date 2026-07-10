@@ -18,6 +18,20 @@
 
 ## 实现跨层功能之前
 
+### 知识域专用检查（Nest ↔ Knowledge AI ↔ Web）
+
+实现/修改知识问答或索引时额外确认：
+
+| 边界 | 必须对齐 |
+|------|----------|
+| Web → Nest | `knowledge_base_ids` 至少 1 个 UUID；SSE 含 `sources` |
+| Nest → Python | Bearer 服务令牌非空；`_provider` embedding 与 Index 同源 |
+| Python → 存储 | PG `knowledge` + ES；replace 非 append |
+| 删除 | 先 KA 清索引，再业务 DB |
+| Companion | **不**走 Knowledge AI |
+
+权威 HOW：`.trellis/spec/server/backend/knowledge-ai-service.md`；权威 WHAT：`openspec/specs/knowledge-ai/spec.md`。
+
 ### 步骤 1：绘制数据流
 
 画出数据如何流动：

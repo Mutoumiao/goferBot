@@ -59,6 +59,25 @@
 - **WHEN** SessionModule 被另一个模块（如 Chat）导入
 - **THEN** 导入模块可以注入 `SessionRepository` 和 `MessageRepository` 进行直接数据访问
 
+### Requirement: 消息状态与引用元数据
+
+Chat 会话中的助手消息 MUST 能表示生成状态（至少 `completed` / `cancelled` / `failed`，`streaming` 可选）。助手消息 MUST 能持久化本轮知识引用 `sources`（metadata JSON），以便会话历史加载时展示。`sources` 条目 MUST 能保留 `kb_id` 与 `document_id`。strict 空检索完成时 metadata MUST 能保留 `retrieval_empty`。
+
+#### Scenario: 历史加载含引用
+
+- **WHEN** 用户重新打开含已完成知识问答的会话
+- **THEN** 系统 MUST 返回助手消息正文，并 MUST 能返回已保存的 sources（可为空；非空时含 kb_id/document_id）
+
+#### Scenario: 历史加载空检索标记
+
+- **WHEN** 用户打开曾发生 strict 空检索且已 completed 的助手消息
+- **THEN** 系统 MUST 能返回 `retrieval_empty` 标记，且 status MUST 仍为 completed
+
+#### Scenario: 取消状态可区分
+
+- **WHEN** 消息因客户端中断结束
+- **THEN** 持久化状态 MUST 可区分于正常 completed 与系统 failed
+
 #### Scenario: 事务支持
 - **WHEN** Repository 操作需要参与事务
 - **THEN** 它可以使用 `this.tx`（TransactionCapable）访问事务性 Prisma client

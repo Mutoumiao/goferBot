@@ -1,201 +1,191 @@
-# Chat - 聊天与 RAG 检索增强
+# Chat - 知识问答与 SSE
 
 ## Purpose（目的）
 
-定义 GoferBot 聊天会话管理、SSE 流式对话、RAG 检索增强生成管线的系统级规范。覆盖会话 CRUD、消息流式传输、混合检索、重排序、输出安全与事实校验能力。
+定义 GoferBot **Chat 知识问答**的系统级规范：会话管理、强制多知识库绑定、Nest 编排与 SSE 出口、消息落库状态机与引用元数据。
+
+> **生成与检索权威路径**：Python Knowledge AI Service（[knowledge-ai/spec.md](../knowledge-ai/spec.md)）。  
+> Nest MUST 鉴权、校验 KB 所有权、注入 `_provider` / history / `kb_ids`、落库与透传 SSE。  
+> MUST NOT 在 Nest 进程内执行 Knowledge 混合检索与知识答案主生成。  
+> Companion 为独立能力，SSE 契约分离（见 [companion/spec.md](../companion/spec.md)）。
 
 ## Requirements（需求）
 
 ### Requirement: Chat Session Management
-系统应支持创建、列出、更新和删除聊天会话，每个会话关联一个知识库。
 
-证据来源：
-- `packages/server/src/modules/chat/chat.controller.ts`
-- `packages/server/src/modules/chat/chat.service.ts`
-- `packages/web/src/stores/chat.ts`
+系统应支持创建、列出、更新和删除聊天会话。
 
 #### Scenario: Create a new session
-- **WHEN** 用户创建一个关联选定知识库的新聊天会话
+
+- **WHEN** 用户创建新聊天会话
 - **THEN** 系统创建会话记录并返回其 ID
 
 #### Scenario: List sessions with pagination
+
 - **WHEN** 用户请求其会话列表
-- **THEN** 系统返回按最后活动时间排序的分页结果，默认每页最多 50 条
+- **THEN** 系统返回按最后活动时间排序的分页结果
 
 #### Scenario: Delete a session
+
 - **WHEN** 用户删除一个聊天会话
 - **THEN** 系统删除该会话及其所有关联消息
 
-### Requirement: SSE Streaming Chat
-系统应支持 Server-Sent Events (SSE) 流式聊天响应，增量式交付 tokens。
+---
 
-证据来源：
-- `packages/server/src/modules/chat/chat.controller.ts` (SSE endpoint)
-- `packages/server/src/modules/chat/chat.service.ts` (streaming logic)
-- `packages/web/src/api/x-chat.ts` (SSE client)
+### Requirement: Chat 强制知识库绑定
 
-#### Scenario: Normal streaming response
-- **WHEN** 用户在聊天会话中发送消息
-- **THEN** 系统通过 SSE 以 `text` 事件流式传输 tokens，并在完成时发送 `done` 事件
+Chat 知识问答路径 MUST 要求请求携带至少一个合法知识库 ID（`knowledge_base_ids`）。系统 MUST 在转发 Knowledge AI 前校验用户对每一个知识库的所有权。无 KB 的「纯闲聊」MUST NOT 作为 Chat 目标能力被验收通过。
 
-#### Scenario: Stream interruption
-- **WHEN** 客户端断开 SSE 流连接
-- **THEN** 系统应中止 LLM 生成并释放资源
+#### Scenario: 无 KB 拒绝
 
-#### Scenario: Error during streaming
-- **WHEN** 流式传输过程中发生错误（例如 LLM 超时）
-- **THEN** 系统发送带有用户友好消息的 `error` 事件
+- **WHEN** 用户发送 Chat 消息且未提供任何 kb id
+- **THEN** 系统 MUST 拒绝该请求（4xx）且 MUST NOT 调用 Knowledge AI 生成
 
-#### Scenario: Stream 结束后处理
-- **WHEN** SSE 流正常结束
-- **THEN** 系统 SHALL 通过 StreamFinalizeService 调度后处理任务（异步持久化助手消息 + 自动生成会话标题）到 `chat-finalize` 队列或 queueMicrotask 降级模式
+#### Scenario: 多 KB 所有权
+
+- **WHEN** 用户提供多个 kb id 且全部属于该用户
+- **THEN** 系统 MUST 允许请求并在检索范围内使用全部 kb id
+
+#### Scenario: 含无权 KB
+
+- **WHEN** kb id 列表中存在不属于该用户的知识库
+- **THEN** 系统 MUST 拒绝请求（404 语义，避免泄露资源存在性）
+
+---
+
+### Requirement: 知识问答生成权归 Knowledge AI
+
+带知识库的 Chat 答案 MUST 由 Python Knowledge AI Service 生成（`/stream` 或 `/query`）。NestJS MUST 负责鉴权、组装 `_provider`/`_prompts`/`trace_id`/`history`/`kb_ids`、消息落库与 SSE 对外出口。
+
+#### Scenario: 转发 stream
+
+- **WHEN** 用户在已选 KB 的会话中发送消息
+- **THEN** Nest MUST 调用 Knowledge AI `/stream` 并将 SSE 透传至客户端（不整包缓冲 RAG 结果）
+
+#### Scenario: Embedding 与索引一致
+
+- **WHEN** Nest 组装 `_provider` 用于问答
+- **THEN** embedding（及可选 rerank）配置 MUST 与文档索引路径使用同一解析策略（`rag.embeddingProvider` / 可用 embedding 池 / `rag.rerankerProvider`），MUST NOT 仅取 Chat LLM 提供商下的 embedding 而与索引向量空间不一致
+
+---
+
+### Requirement: 多轮每轮重检索
+
+系统 SHALL 支持同一会话多轮对话。每一轮用户消息 MUST 重新执行 Knowledge 检索管线；Nest MUST 向 Knowledge AI 注入近期 history（默认约 10 条消息）。本轮 sources MUST 仅绑定本轮检索结果。
+
+#### Scenario: 第二轮仍检索
+
+- **WHEN** 用户在已有历史的会话中发送新问题
+- **THEN** 系统 MUST 再次调用检索/stream，MUST NOT 仅依赖首轮检索结果回答新问题
+
+---
+
+### Requirement: 消息落库状态机与 sources 元数据
+
+Nest MUST 在校验通过后先持久化用户消息；助手消息 MUST 支持状态 `streaming`（可选占位）、`completed`、`cancelled`、`failed`。成功完成时 MUST 将本轮 `sources` 写入助手消息 metadata，以便刷新后仍可展示引用。每条 source MUST 至少保留 `kb_id` 与 `document_id`。strict 空检索成功时 MUST 将 `retrieval_empty: true` 写入 metadata，且 status MUST 为 `completed`（非 `failed`）。
+
+#### Scenario: 成功落库含 sources
+
+- **WHEN** 流式问答正常结束且有召回
+- **THEN** 助手消息 status MUST 为 completed，且 metadata 中 MUST 可读取 sources；每条 source MUST 含 `kb_id` 与 `document_id`
+
+#### Scenario: 空检索业务成功落库
+
+- **WHEN** Knowledge AI 以 strict 空检索业务成功结束（无合格召回）
+- **THEN** 助手消息 status MUST 为 completed，sources MUST 为空列表，metadata MUST 含 `retrieval_empty: true`，MUST NOT 标记为 failed
+
+#### Scenario: 客户端中断
+
+- **WHEN** 客户端 abort 或连接断开
+- **THEN** 系统 MUST 尝试取消上游 Knowledge AI 调用，助手消息 MUST 标记为 cancelled，并可保留已生成部分内容
+
+#### Scenario: 上游失败
+
+- **WHEN** Knowledge AI 超时或返回不可恢复错误
+- **THEN** 助手消息 MUST 标记为 failed，用户消息 MUST 保留，客户端 MUST 可收到 error 语义（无内部栈）
+
+---
+
+### Requirement: Nest 调用 Knowledge AI 的分层超时与取消
+
+Nest Knowledge AI HTTP Client MUST 支持分层超时（连接/首字节超时与整段生成超时，可配置）以及客户端 disconnect 时的取消传播。超时 MUST 映射为助手 `failed` 与可感知 `error`，MUST NOT 与 strict 空检索业务成功混淆。空服务令牌 MUST 失败关闭。
+
+#### Scenario: 生成超时
+
+- **WHEN** 整段生成超过配置的生成超时
+- **THEN** Nest MUST 中止上游消费，助手消息 MUST 为 failed，客户端 MUST 收到错误语义
+
+#### Scenario: 取消传播
+
+- **WHEN** 浏览器 abort SSE
+- **THEN** Nest MUST 停止消费 Python 流并尽量取消上游请求
+
+---
+
+### Requirement: Chat SSE 目标契约含 sources
+
+Chat 流式响应 MUST 支持事件语义：`sources` → `message`（增量）→ `message_end`，以及 `error`。共享 Zod 契约（`packages/data` `chatMessagesChunkSchema`）MUST 容纳 `sources` 事件（含 `kb_id`/`document_id`）。`conversation_id` 与 `message_id` MUST 由 Nest 生成并在帧中携带。
+
+#### Scenario: 前端可展示引用
+
+- **WHEN** 流式响应包含非空 sources
+- **THEN** Web Chat MUST 能展示引用信息（可区分 kb）且正文按 message 增量累积
+
+#### Scenario: 与 Companion SSE 分离
+
+- **WHEN** 用户使用 Companion 对话
+- **THEN** 系统 MUST 继续使用 Companion 独立 SSE 契约，MUST NOT 强制与 Chat Knowledge SSE 合并为同一事件枚举语义
 
 #### Scenario: SSE 消息格式契约
-- **WHEN** 后端通过 SSE 发送 Chat 流式消息时
-- **THEN** 消息 SHALL 遵循 `chatMessagesChunkSchema` Zod schema 契约：`{event: 'message'|'message_end'|'error', conversation_id, message_id, answer, done?, error?}`
-- **AND** 前端 `GoferChatProvider.transformMessage` 通过 `originMessage.content + chunk.answer` 增量累积内容
-- **AND** JSON 解析失败时 SHALL 静默忽略，保留当前已累积内容
 
-#### Scenario: SSE 事件类型业务语义
-- **WHEN** 后端通过 SSE 发送 Chat 流式消息时
-- **THEN** 系统 SHALL 定义三种事件类型的业务语义：
-  - `message` 事件 — 增量 token，`answer` 字段为本次 chunk 的增量内容，前端累积拼接
-  - `message_end` 事件 — 流结束信号，`done: true`，标志流式传输完成
-  - `error` 事件 — 异常信号，`error` 字段描述错误信息
-- **AND** `event` 字段为 Zod enum 强制约束，MUST 取值为 `message` / `message_end` / `error` 之一
-- **AND** `conversation_id` / `message_id` / `answer` 为必填字段，`done` / `error` 为可选字段
+- **WHEN** 后端通过 SSE 发送 Chat 知识问答流式消息
+- **THEN** 消息 MUST 遵循更新后的共享 schema：支持 `sources` / `message` / `message_end` / `error` 语义
+- **AND** 前端 MUST 增量累积正文并处理 sources
+- **AND** JSON 解析失败时 SHOULD 忽略坏帧并保留已累积内容
 
-证据来源：
-- `packages/data/src/schemas/chat.schema.ts` (chatMessagesChunkSchema Zod 定义)
-- `.trellis/spec/web/frontend/sse-streaming-architecture.md` (chatMessagesChunkSchema 共享契约章节)
+---
 
-### Requirement: RAG Retrieval Pipeline
-系统应支持完整的 RAG 管线：Query Understanding → Hybrid Retrieval (BM25 + Vector) → RRF Fusion → Reranker → Parent Resolution → LLM Generation，带有 Redis 缓存。
+### Requirement: SSE Streaming Chat
 
-证据来源：
-- `packages/server/src/processors/rag/rag-retrieval.service.ts`
-- `packages/server/src/processors/rag/rag.module.ts`
-- `packages/server/src/processors/rag/rag-types.ts`
+系统应支持 Server-Sent Events (SSE) 流式聊天响应。对知识库问答路径，流式内容 MUST 来自 Knowledge AI 透传。
 
-#### Scenario: Complete pipeline execution
-- **WHEN** 聊天消息触发 RAG 检索
-- **THEN** 系统应执行：QueryUnderstanding → Router.decide（确定 mode/topK/candidateK/needRerank）→ retrieval（vector/bm25/hybrid）→ RRF fusion → BGE Rerank（条件性）→ Parent Resolution → Redis Cache
+#### Scenario: Normal streaming response
 
-#### Scenario: Hybrid retrieval with RRF fusion
-- **WHEN** 选择混合模式
-- **THEN** 系统并行执行 BM25（关键词）和 dense vector（语义）搜索，通过应用层加权 RRF 融合结果：`vectorWeight/(rrfK+rank+1) + bm25Weight/(rrfK+rank+1)`，默认值 vector=0.7, bm25=0.3, rrfK=60。如果一个 chunk 出现在两个渠道中，两个分数会累加。
+- **WHEN** 用户在绑定知识库的聊天会话中发送消息
+- **THEN** 系统通过 SSE 按 `sources` → `message`* → `message_end` 交付，并在完成时结束流
 
-#### Scenario: BGE Reranker re-ranking
-- **WHEN** RRF fusion 产生候选结果且 Router 确定需要重排序
-- **THEN** 系统应用 BGE-Reranker Cross-Encoder（可通过管理面板 `rag.rerankerProvider` 配置模型，白名单前缀：BAAI/Xorbits/sentence-transformers）进行第二阶段重排序，当重排序模型不可用时回退到词汇匹配（50%）+ 原始分数（50%）
+#### Scenario: Stream interruption
 
-#### Scenario: Parent-Child chunk resolution
-- **WHEN** 检索到的 chunks 是子 chunks（child=150 字符，parent=800 字符）
-- **THEN** 系统应通过 parent_id 将它们解析为其父 chunks，按 parent_id 去重，确保每个父 chunk 只出现一次
+- **WHEN** 客户端断开 SSE 流连接
+- **THEN** 系统应中止上游 Knowledge AI 生成并释放资源，助手消息按 cancelled 处理
 
-#### Scenario: Redis result caching
-- **WHEN** 检索成功完成
-- **THEN** 系统应将结果缓存到 Redis，键为 `rag:retrieval:{query}|{kbIds}|{mode}|{topK}|...|{userId}`，TTL 为 60 秒，后续相同查询返回缓存结果
+#### Scenario: Error during streaming
 
-### Requirement: ACL-Prefiltered Retrieval
-系统应在检索层面强制执行访问控制，在向量搜索的 ANN 遍历之前以及 LLM 上下文组装之前，基于用户权限过滤搜索结果。
+- **WHEN** 流式传输过程中发生错误（例如上游超时）
+- **THEN** 系统发送带有用户友好消息的 `error` 语义，助手消息按 failed 处理
 
-证据来源：
-- `packages/server/src/processors/rag/es-vector.service.ts#L42-L64`
-- `packages/server/src/processors/rag/es-filter.builder.ts#L22-L98`
-- `packages/server/src/processors/rag/rag-retrieval.service.ts#L49-L66`
+#### Scenario: Stream 结束后处理
 
-#### Scenario: Vector search pre-filter
-- **WHEN** 执行 ES knn 向量搜索
-- **THEN** 系统应通过 `knn.filter` 在 ANN 遍历之前应用 ACL 过滤器，确保未授权文档永远不会进入候选集 —— 比检索后过滤更安全
+- **WHEN** SSE 流正常结束
+- **THEN** 系统 MUST 确保助手消息已按 completed 定稿（含 sources metadata）；会话标题生成 MAY 异步执行，失败 MUST NOT 回滚已成功的消息定稿
 
-#### Scenario: Knowledge base ownership verification
-- **WHEN** 聊天会话触发 RAG 检索
-- **THEN** 系统应（1）如果未明确提供 kbIds 则拒绝请求，（2）通过 Prisma 验证用户拥有所有指定的知识库
-
-#### Scenario: User and team ACL logic
-- **WHEN** 文档 chunks 包含 `allowed_user_ids` / `allowed_team_ids` 字段
-- **THEN** 系统应使用 ES `should` 子句：如果用户在允许列表中 OR ACL 字段不存在（公共文档），则该 chunk 可见，确保与非 ACL 文档的向后兼容性
-
-### Requirement: Output Guardrails
-系统应在 LLM 生成后应用输出安全过滤器：PII 脱敏、敏感关键词检测和领域免责声明注入。
-
-证据来源：
-- `.trae/specs/enterprise-rag/spec.md` (GuardrailService)
-
-#### Scenario: PII redaction
-- **WHEN** LLM 输出包含邮箱、电话号码、身份证号码或银行卡号
-- **THEN** 系统将其脱敏为 `[EMAIL REDACTED]`、`[PHONE REDACTED]`、`[ID_CARD REDACTED]`、`[BANK_CARD REDACTED]`
-
-#### Scenario: Sensitive keyword warning
-- **WHEN** LLM 输出包含敏感关键词（政治、成人、暴力内容）
-- **THEN** 系统应在响应元数据中附加警告信息
-
-### Requirement: Output Grounding
-系统应评估 LLM 生成的答案相对于检索到的源文档的事实准确性。
-
-证据来源：
-- `.trae/specs/enterprise-rag/spec.md` (GroundingService)
-
-#### Scenario: Grounding score calculation
-- **WHEN** LLM 使用 RAG 上下文生成响应
-- **THEN** 系统使用混合 Token Overlap（40%）+ Bigram Match（60%）计算准确性分数
-
-#### Scenario: Ungrounded sentence flagging
-- **WHEN** LLM 输出中的某个句子与任何源文档都没有 token 重叠
-- **THEN** 系统在响应元数据中将其标记为"潜在生成内容"
+---
 
 ### Requirement: ChatFinalize 后处理
-系统 SHALL 在 SSE 流结束后通过 ChatFinalizeProcessor 异步处理消息持久化和基于 LLM 的会话标题生成。
 
-证据来源：
-- `packages/server/src/processors/chat/chat-finalize.processor.ts`
-- `packages/server/src/common/services/stream-finalize.service.ts`
-- `packages/server/src/queue/queues.ts#L17-L25`
+系统 SHALL 在 Chat 知识问答流结束后处理非阻塞收尾任务。助手消息正文与 sources 的**权威定稿** MUST 在 Nest Chat 流式生命周期中完成（completed/cancelled/failed）；ChatFinalize MUST NOT 作为唯一落库助手消息的路径。标题生成 MAY 仍由异步任务执行。
 
-#### Scenario: 消息持久化（关键操作）
-- **WHEN** ChatFinalizeProcessor 处理任务时
-- **THEN** Step 1 执行 `saveAssistantMessage(sessionId, messageId, fullReply)` → 失败抛异常触发 BullMQ 重试（attempts=5）
+#### Scenario: 标题生成非关键
 
-#### Scenario: 标题生成（非关键操作）
-- **WHEN** 消息持久化成功后
-- **THEN** Step 2 使用 LLM 自动生成会话标题 → 失败仅记录日志，不触发重试
+- **WHEN** 助手消息已 completed 定稿后触发标题生成
+- **THEN** 标题失败仅记录日志，MUST NOT 将消息改为 failed
 
-#### Scenario: 标题生成 Provider 选择
-- **WHEN** 自动生成会话标题时
-- **THEN** 优先使用 `config.chat.defaultProvider` → 降级使用 enabledProviders 中其他可用 LLM provider → 无可用 provider 时跳过标题生成
+---
 
-#### Scenario: 队列不可用降级
-- **WHEN** BullMQ `chat-finalize` 队列不可用时
-- **THEN** StreamFinalizeService 降级为 `queueMicrotask` 模式，在微任务中恢复 RequestContext 后同步执行后处理步骤
+## 已废止
 
-### Requirement: SSE 双轨方案业务分轨
-系统 SHALL 根据输出内容类型选择不同的 SSE 客户端方案：Chat（Markdown 富文本）使用 `@ant-design/x-sdk` 高层抽象，Companion（纯文本情感化陪伴）使用原生 `fetch` + `ReadableStream` 底层实现。
-
-证据来源：
-- `.trellis/spec/web/frontend/sse-streaming-architecture.md` (双轨对比总结章节)
-- `packages/web/src/api/x-chat.ts` (Chat SSE Client)
-- `packages/web/src/features/companion/sse-client.ts` (Companion SSE Client)
-
-#### Scenario: Chat 选择高层抽象方案
-- **WHEN** 对话输出包含 Markdown 富文本（代码块、表格、列表）时
-- **THEN** 系统 SHALL 采用 `@ant-design/x-sdk` `XRequest` 高层抽象方案：
-  - 通过 `GoferChatProvider.transformMessage` 增量累积内容
-  - 通过 `useXChat` 管理 6 状态生命周期（loading/success/error/local/updating/abort）
-  - 通过 `XMarkdown streaming.hasNextChunk` 渲染光标动画
-  - 遵循 `chatMessagesChunkSchema` Zod schema 契约
-
-#### Scenario: Companion 选择底层原生方案
-- **WHEN** 对话输出为纯文本，需要模拟真人逐字打字效果时
-- **THEN** 系统 SHALL 采用原生 `fetch` + `ReadableStream` 底层方案：
-  - 手动解析 SSE 帧（`event:{type}\ndata:{payload}\n\n`），不依赖第三方 SSE 库
-  - 通过 Zustand `useCompanionStore` 管理 `streamingContent` 状态
-  - 通过 `CompanionTypingIndicator` 渲染打字机动画
-  - 使用自定义 `event:token/done/error` 帧格式
-
-#### Scenario: SSE 方案选择决策标准
-- **WHEN** 为新的对话模块选择 SSE 方案时
-- **THEN** 系统 SHOULD 按以下标准决策：
-  - 输出包含 Markdown（代码块、表格、列表）→ Chat 方案（`@ant-design/x-sdk`）
-  - 输出为纯文本且需要模拟真人打字 → Companion 方案（原生 fetch + 打字机）
-  - 需要完全自定义 SSE 帧格式 → Companion 方案
+| 废止项 | 迁移 |
+|--------|------|
+| Nest 内 RAG Retrieval Pipeline 权威路径 | [knowledge-ai](../knowledge-ai/spec.md) |
+| ES 层 ACL 预过滤权威模型 | Nest KB 所有权 + 服务令牌 + kb_ids |
+| 旧 SSE 仅 `message`/`message_end`/`error` 且无 sources | 新契约含 `sources` |

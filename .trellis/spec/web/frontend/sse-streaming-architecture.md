@@ -44,6 +44,21 @@
 
 `AbstractChatProvider` 子类通过 `originMessage.content + chunk.answer` 逐块拼接。**关键：JSON 解析失败时静默忽略**，返回当前 `originMessage.content`，不允许抛出异常中断流式渲染——单个坏帧不应影响整体对话。
 
+### Chat Knowledge SSE：`sources` 优先
+
+知识问答契约（见 OpenSpec chat）事件顺序为 **`sources` → `message`* → `message_end` | `error`**：
+
+| event | 前端处理 |
+|-------|----------|
+| `sources` | 写入 `GoferMessage.sources` / `retrieval_empty`；可渲染 `SourceCitations`（含 `kb_id`） |
+| `message` | `content += answer`（delta） |
+| `message_end` | 收尾；可带 `retrieval_empty` |
+| `error` | 展示用户可读错误；保留已累积 content/sources |
+
+请求侧：`transformParams` MUST 带上 `knowledge_base_ids`（至少 1 个）与可选 `retrieval_mode`（默认 strict）。KB 选择器 UI：`KnowledgeBaseSelector` 强制多选至少一个。
+
+**不要**把 Companion 的 `token`/`done` 事件枚举与 Chat Knowledge 混用。
+
 ### useXChat 6 状态生命周期调试
 
 | 状态 | 触发 | 调试要点 |

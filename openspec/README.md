@@ -52,23 +52,24 @@ openspec/
 ├── config.yaml              # 项目上下文 + artifact 规则
 ├── specs/                   # Business Knowledge 权威源
 │   ├── auth/spec.md
-│   ├── chat/spec.md
-│   ├── companion/spec.md
+│   ├── chat/spec.md         # 强制多 KB、SSE sources、消息状态机
+│   ├── companion/spec.md    # 与 Knowledge AI 隔离
+│   ├── knowledge-ai/spec.md # Python 知识域服务（索引/检索/问答）
+│   ├── rag/spec.md          # RAG 能力层（运行时委托 knowledge-ai）
 │   ├── admin/spec.md
 │   ├── knowledge-base/
 │   ├── document/spec.md
-│   ├── rag/spec.md
 │   ├── queue/spec.md
 │   ├── session/spec.md
 │   ├── settings/spec.md
 │   └── user/spec.md
 ├── changes/                 # 活跃变更（propose 创建，archive 后移走）
 │   └── <change-name>/
-│       ├── proposal.md      # 变更动机与范围
-│       ├── design.md        # 技术方案
-│       ├── tasks.md         # 实施任务清单
-│       └── specs/           # Delta specs（ADDED/MODIFIED/REMOVED/RENAMED）
-└── README.md                # 本文件（导航入口）
+│       ├── proposal.md
+│       ├── design.md
+│       ├── tasks.md
+│       └── specs/           # Delta specs
+└── README.md
 ```
 
 ---

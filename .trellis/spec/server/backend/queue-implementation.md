@@ -27,10 +27,24 @@
 
 - `packages/server/src/processors/queue/queue.service.ts` — 队列管理（Redis 生命周期、入队 API）
 - `packages/server/src/processors/queue/worker.service.ts` — Worker 管理（创建、并发、失败监听）
-- `packages/server/src/processors/queue/indexing.worker.ts` — 索引 Worker（解析、RAG、状态机）
-- `packages/server/src/processors/chat/chat-finalize.processor.ts` — Chat Finalize 处理器
+- `packages/server/src/processors/queue/indexing.worker.ts` — 索引 Worker（解析文本 → Knowledge AI `/index` → 状态机）
+- `packages/server/src/processors/knowledge-ai/` — HTTP Client + embedding Provider 解析
+- `packages/server/src/processors/chat/chat-finalize.processor.ts` — Chat Finalize（标题等非关键收尾）
 
 ## Implementation Notes
+
+### IndexingWorker → Knowledge AI
+
+1. 查 Document + KnowledgeBase（取 `ownerUserId`）
+2. MinIO 下载 → `DocumentParser.parse`
+3. `status=indexing`
+4. `KnowledgeAiProviderResolver.resolveEmbeddingConfig(ownerUserId)`
+5. `KnowledgeAiClient.index({ document_id, kb_id, text, metadata, _provider })`
+6. 成功 `ready` / 失败 `failed`（message ≤500）并 rethrow 触发 BullMQ 重试
+
+**禁止**：在 Worker 内调用已删除的 `ragService.indexDocument` 或直写 ES/pgvector。
+
+> **Warning**: Chat 问答与 Index **必须**共用 `KnowledgeAiProviderResolver`，否则向量空间不一致导致召回失败。
 
 ### Redis 连接配置
 
@@ -76,6 +90,8 @@
 - [ ] 并发数限制正确（超限任务进入等待）
 - [ ] Redis 不可用时优雅降级（应用不崩溃、操作返回错误）
 - [ ] 模块销毁时连接正确关闭（先队列后 Redis）
+- [ ] 索引成功路径调用 Knowledge AI `/index` 而非本地 RAG
+- [ ] 空文本 / 无 embedding 配置 → failed 且可读原因
 
 ## Review Checklist
 

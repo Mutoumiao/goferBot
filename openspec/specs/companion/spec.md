@@ -4,7 +4,18 @@
 
 定义 GoferBot AI 伴侣（Companion）的对话管线系统级规范。覆盖 LangGraph 状态图结构、节点执行顺序、条件路由、LLM 调用约束、安全中断机制、LangChain 适配层（StructuredOutput 降级链 + LlmConfigService 热更新）。
 
+> Companion 与 **Knowledge AI / Chat 知识库问答** 隔离：独立路由、独立 SSE 契约；MUST NOT 调用 Knowledge AI 文档索引/知识检索/知识问答作为伴侣主路径。
+
 ## Requirements（需求）
+
+### Requirement: Companion 与 Knowledge AI 隔离
+
+AI Companion MUST 保持为独立产品能力：独立路由、独立 API、独立生成链路。Companion MUST NOT 调用 Knowledge AI 的文档索引/知识库检索/知识问答 API 作为记忆或对话实现；Companion 记忆 MUST NOT 写入 `knowledge.chunks` 或知识库 `kb_id` 文档索引。
+
+#### Scenario: 伴侣对话不经 Knowledge AI
+
+- **WHEN** 用户发送 Companion 消息
+- **THEN** 系统 MUST 走 Companion 既有（Nest）管线生成回复，MUST NOT 将请求转发至 Knowledge AI `/stream` 作为伴侣主路径
 
 ### Requirement: LangGraph StateGraph Execution Order
 
