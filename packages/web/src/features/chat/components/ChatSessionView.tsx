@@ -9,6 +9,7 @@ import { fetchProviders } from '../services'
 import { useChatStore } from '../store'
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
 import { ProviderSelector } from './ProviderSelector'
+import { SourceCitations } from './SourceCitations'
 
 interface ChatSessionViewProps {
   conversationId: string
@@ -23,8 +24,8 @@ interface ChatSessionViewProps {
   onAbort: () => void
   selectedProviderKey: string | null
   onChangeProvider: (key: string | null) => void
-  selectedKbId: string | null
-  onSelectKb: (kbId: string | null) => void
+  selectedKbIds: string[]
+  onChangeKbIds: (ids: string[]) => void
 }
 
 export function ChatSessionView({
@@ -36,8 +37,8 @@ export function ChatSessionView({
   onAbort,
   selectedProviderKey,
   onChangeProvider,
-  selectedKbId,
-  onSelectKb,
+  selectedKbIds,
+  onChangeKbIds,
 }: ChatSessionViewProps) {
   const [inputValue, setInputValue] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -53,6 +54,10 @@ export function ChatSessionView({
         setErrorMessage('会话尚未就绪，请稍候重试')
         return
       }
+      if (selectedKbIds.length === 0) {
+        setErrorMessage('请先选择至少一个知识库')
+        return
+      }
       setErrorMessage(null)
       setInputValue('')
       onRequest({
@@ -60,10 +65,11 @@ export function ChatSessionView({
         query: trimmed,
         conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
-        knowledge_base_ids: selectedKbId ? [selectedKbId] : undefined,
+        knowledge_base_ids: selectedKbIds,
+        retrieval_mode: 'strict',
       })
     },
-    [conversationId, selectedProviderKey, selectedKbId, onRequest],
+    [conversationId, selectedProviderKey, selectedKbIds, onRequest],
   )
 
   const bubbleItems = xMessages.map(({ id, message, status }) => ({
@@ -74,12 +80,18 @@ export function ChatSessionView({
     contentRender:
       message.role === 'assistant'
         ? (content: string) => (
-            <XMarkdown
-              content={content}
-              streaming={{
-                hasNextChunk: status === 'loading' || status === 'updating',
-              }}
-            />
+            <div>
+              <XMarkdown
+                content={content}
+                streaming={{
+                  hasNextChunk: status === 'loading' || status === 'updating',
+                }}
+              />
+              <SourceCitations
+                sources={message.sources}
+                retrievalEmpty={message.retrieval_empty}
+              />
+            </div>
           )
         : undefined,
   }))
@@ -90,6 +102,8 @@ export function ChatSessionView({
     const timer = setTimeout(() => clearError(), 5000)
     return () => clearTimeout(timer)
   }, [error, clearError])
+
+  const canSend = Boolean(inputValue.trim()) && selectedKbIds.length > 0
 
   return (
     <div className="relative flex h-full flex-col bg-white">
@@ -107,8 +121,10 @@ export function ChatSessionView({
           {!isLoadingHistory && xMessages.length === 0 && (
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">
-                <h3 className="text-lg font-medium text-text-primary">开始新对话</h3>
-                <p className="mt-2 text-sm text-text-secondary">在下方输入消息，开始与 AI 对话</p>
+                <h3 className="text-lg font-medium text-text-primary">开始知识库问答</h3>
+                <p className="mt-2 text-sm text-text-secondary">
+                  请先选择知识库，再输入问题（强制绑定 KB）
+                </p>
               </div>
             </div>
           )}
@@ -142,21 +158,23 @@ export function ChatSessionView({
               data-testid="error-banner"
             >
               <p className="text-sm text-destructive-foreground">{errorMessage}</p>
-              <Button
-                data-testid="error-retry-btn"
-                variant="destructive"
-                size="sm"
-                onClick={onRetry}
-                className="mt-2"
-              >
-                重试
-              </Button>
+              {errorMessage.includes('知识库') ? null : (
+                <Button
+                  data-testid="error-retry-btn"
+                  variant="destructive"
+                  size="sm"
+                  onClick={onRetry}
+                  className="mt-2"
+                >
+                  重试
+                </Button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* 底部悬浮输入区 — Sender 自带边框，无需外层 card */}
+      {/* 底部悬浮输入区 */}
       <div className="flex justify-center px-4 pb-6 pt-2">
         <Sender
           value={inputValue}
@@ -164,7 +182,11 @@ export function ChatSessionView({
           onSubmit={handleSubmit}
           onCancel={onAbort}
           loading={isRequesting}
-          placeholder="继续追问，或让 AI 生成需求条目..."
+          placeholder={
+            selectedKbIds.length === 0
+              ? '请先选择知识库，再输入问题…'
+              : '继续追问，或让 AI 基于知识库回答…'
+          }
           submitType="enter"
           autoSize={{ minRows: 3, maxRows: 6 }}
           footer={
@@ -180,9 +202,10 @@ export function ChatSessionView({
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <KnowledgeBaseSelector
-                  selectedId={selectedKbId}
-                  onSelect={onSelectKb}
+                  selectedIds={selectedKbIds}
+                  onChange={onChangeKbIds}
                   disabled={isRequesting}
+                  required
                 />
                 <ProviderSelector
                   providers={availableProviders}
@@ -210,7 +233,7 @@ export function ChatSessionView({
             ) : (
               <SendButton
                 type="primary"
-                disabled={!inputValue.trim()}
+                disabled={!canSend}
                 style={{
                   borderRadius: 8,
                   width: 38,

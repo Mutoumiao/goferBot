@@ -17,14 +17,22 @@ interface ChatPageByTabProps {
 }
 
 function messagesToMessageInfos(messages: Message[]) {
-  return messages.map((message) => ({
-    id: message.id,
-    message: {
-      content: message.content,
-      role: message.role as GoferMessage['role'],
-    },
-    status: 'success' as const,
-  }))
+  return messages.map((message) => {
+    const meta = message.metadata as
+      | { sources?: GoferMessage['sources']; retrieval_empty?: boolean }
+      | null
+      | undefined
+    return {
+      id: message.id,
+      message: {
+        content: message.content,
+        role: message.role as GoferMessage['role'],
+        sources: meta?.sources,
+        retrieval_empty: meta?.retrieval_empty,
+      },
+      status: 'success' as const,
+    }
+  })
 }
 
 function xMessagesToMessages(
@@ -37,13 +45,19 @@ function xMessagesToMessages(
     role: xMsg.message.role,
     content: xMsg.message.content,
     createdAt: new Date().toISOString(),
+    metadata:
+      xMsg.message.sources || xMsg.message.retrieval_empty
+        ? {
+            sources: xMsg.message.sources,
+            retrieval_empty: xMsg.message.retrieval_empty,
+          }
+        : undefined,
   }))
 }
 
 export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
   const tab = useWorkspaceStore((s) => s.tabs.find((t) => t.id === tabId))
   const pendingSentRef = useRef(false)
-  // 记录上一次有效的 conversationId，用于区分「新建会话（undefined → id）」和「切换会话（id → id）」
   const prevConversationIdRef = useRef<string | undefined>(undefined)
 
   const providerRef = useState(() => createGoferProvider())[0]
@@ -51,7 +65,7 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
   const conversationId = tab?.conversationId
 
   const { selectedProviderKey, setSelectedProviderKey } = useChatStore()
-  const [selectedKbId, setSelectedKbId] = useState<string | null>(null)
+  const [selectedKbIds, setSelectedKbIds] = useState<string[]>([])
 
   const {
     messages: xMessages,
@@ -70,6 +84,8 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         return {
           content: messageInfo?.message?.content || '已取消回复',
           role: 'assistant',
+          sources: messageInfo?.message?.sources,
+          retrieval_empty: messageInfo?.message?.retrieval_empty,
         }
       }
       return {
@@ -79,19 +95,14 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
     },
   })
 
-  // 初始化 providers
   useEffect(() => {
     fetchProviders()
   }, [])
 
-  // 当 conversationId 变化时重置 pending 发送标记，避免切换会话后漏发
   useEffect(() => {
     pendingSentRef.current = false
   }, [])
 
-  // 当 tab 绑定 conversationId 时加载历史消息。
-  // - 新建会话（存在 pending message）：不清空，让 pending 自动发送的用户消息自然显示。
-  // - 切换/初始加载已有会话（无 pending）：先清空旧消息，避免加载新历史期间显示旧内容。
   useEffect(() => {
     if (!conversationId) {
       prevConversationIdRef.current = conversationId
@@ -107,7 +118,6 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
       return
     }
 
-    // 没有 pending 时（切换会话或刷新后直接加载），先清空旧消息
     const pendingKey = getPendingMessageKey(conversationId)
     const hasPending = !!sessionStorage.getItem(pendingKey)
     if (!hasPending) {
@@ -127,14 +137,13 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
     }
   }, [conversationId, setMessages])
 
-  // 同步 useXChat 消息到 conversation store
   useEffect(() => {
     if (!conversationId || xMessages.length === 0) return
     const messages = xMessagesToMessages(xMessages, conversationId)
     useConversationStore.getState().setMessages(conversationId, messages)
   }, [conversationId, xMessages])
 
-  // 自动发送 pending message
+  // Auto-send pending; restore KB selection from pending payload
   useEffect(() => {
     if (pendingSentRef.current) return
     if (!conversationId) return
@@ -156,6 +165,16 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
       pending = { content: raw }
     }
 
+    const kbIds = pending.knowledgeBaseIds?.filter(Boolean) ?? []
+    if (kbIds.length) {
+      setSelectedKbIds(kbIds)
+    }
+
+    if (kbIds.length === 0) {
+      // Cannot call Knowledge AI without KB — leave message for user to pick KB and resend
+      return
+    }
+
     let cancelled = false
     queueMicrotask(() => {
       if (cancelled) return
@@ -164,7 +183,8 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         query: pending.content.trim(),
         conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
-        knowledge_base_ids: pending.knowledgeBaseIds,
+        knowledge_base_ids: kbIds,
+        retrieval_mode: 'strict',
       } as GoferInput)
     })
 
@@ -175,16 +195,17 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
 
   const handleRetry = useCallback(() => {
     const lastUserMsg = [...xMessages].reverse().find((m) => m.message.role === 'user')
-    if (lastUserMsg && conversationId) {
+    if (lastUserMsg && conversationId && selectedKbIds.length > 0) {
       onRequest({
         response_mode: 'streaming',
         query: lastUserMsg.message.content,
         conversation_id: conversationId,
         provider_key: selectedProviderKey ?? undefined,
-        knowledge_base_ids: selectedKbId ? [selectedKbId] : undefined,
+        knowledge_base_ids: selectedKbIds,
+        retrieval_mode: 'strict',
       } as GoferInput)
     }
-  }, [xMessages, conversationId, onRequest, selectedProviderKey, selectedKbId])
+  }, [xMessages, conversationId, onRequest, selectedProviderKey, selectedKbIds])
 
   if (!tab) {
     return (
@@ -209,8 +230,8 @@ export function ChatPageByTab({ tabId }: ChatPageByTabProps) {
         onAbort={abort}
         selectedProviderKey={selectedProviderKey}
         onChangeProvider={setSelectedProviderKey}
-        selectedKbId={selectedKbId}
-        onSelectKb={setSelectedKbId}
+        selectedKbIds={selectedKbIds}
+        onChangeKbIds={setSelectedKbIds}
       />
     </XProvider>
   )

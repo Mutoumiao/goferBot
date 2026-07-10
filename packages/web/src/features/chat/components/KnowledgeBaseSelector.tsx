@@ -7,23 +7,35 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/utils/cn'
 
 interface KnowledgeBaseSelectorProps {
-  selectedId: string | null
-  onSelect: (kbId: string | null) => void
+  /** Multi-select KB ids (Chat requires at least one). */
+  selectedIds: string[]
+  onChange: (ids: string[]) => void
   disabled?: boolean
+  /** Visual hint that selection is required before send. */
+  required?: boolean
 }
 
 export function KnowledgeBaseSelector({
-  selectedId,
-  onSelect,
+  selectedIds,
+  onChange,
   disabled = false,
+  required = true,
 }: KnowledgeBaseSelectorProps) {
   const { data, loading, error, send } = useRequest(() => getKbForSelector(), { immediate: true })
 
   const kbList: KbSelectorEntry[] = Array.isArray(data) ? data : []
+  const selectedSet = new Set(selectedIds)
 
   const handleToggle = (kbId: string) => {
-    onSelect(selectedId === kbId ? null : kbId)
+    if (selectedSet.has(kbId)) {
+      onChange(selectedIds.filter((id) => id !== kbId))
+    } else {
+      onChange([...selectedIds, kbId])
+    }
   }
+
+  const count = selectedIds.length
+  const missingRequired = required && count === 0
 
   return (
     <Popover>
@@ -33,14 +45,21 @@ export function KnowledgeBaseSelector({
           size="sm"
           data-testid="kb-selector-trigger"
           disabled={disabled}
-          className="inline-flex h-auto items-center gap-1 rounded px-2 py-0.5 text-xs text-text-secondary hover:bg-surface-2 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className={cn(
+            'inline-flex h-auto items-center gap-1 rounded px-2 py-0.5 text-xs hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50',
+            missingRequired
+              ? 'text-error hover:text-error'
+              : 'text-text-secondary hover:text-text-primary',
+          )}
         >
           <HashIcon className="size-3.5" />
-          <span>知识库</span>
-          {selectedId && (
+          <span>知识库{required ? ' *' : ''}</span>
+          {count > 0 ? (
             <span className="ml-0.5 rounded-full bg-brand-primary px-1.5 py-px text-[10px] text-white">
-              1
+              {count}
             </span>
+          ) : (
+            <span className="ml-0.5 text-[10px] text-error">必选</span>
           )}
         </Button>
       </PopoverTrigger>
@@ -77,17 +96,23 @@ export function KnowledgeBaseSelector({
           <div className="p-4 text-center text-sm text-text-secondary">请先创建知识库</div>
         )}
 
+        {!loading && !error && kbList.length > 0 && (
+          <div className="border-b border-border-default px-3 py-2 text-[11px] text-text-tertiary">
+            可多选；发送前至少选择一个
+          </div>
+        )}
+
         {!loading &&
           !error &&
           kbList.map((kb) => {
-            const isSelected = selectedId === kb.id
+            const isSelected = selectedSet.has(kb.id)
             return (
               <button
                 key={kb.id}
                 type="button"
                 data-testid="kb-selector-item"
                 className={cn(
-                  'flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl border-none bg-transparent text-left',
+                  'flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-3 py-2 text-left text-sm transition-colors first:rounded-t-xl last:rounded-b-xl',
                   isSelected
                     ? 'bg-surface-2 text-brand-primary'
                     : 'text-text-primary hover:bg-surface-2',
