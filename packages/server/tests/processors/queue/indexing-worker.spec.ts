@@ -6,7 +6,8 @@ describe('IndexingWorker', () => {
   let mockPrisma: any
   let mockStorage: any
   let mockParser: any
-  let mockRagService: any
+  let mockKnowledgeAi: any
+  let mockProviderResolver: any
 
   beforeEach(() => {
     vi.resetAllMocks()
@@ -25,68 +26,90 @@ describe('IndexingWorker', () => {
     mockParser = {
       parse: vi.fn().mockResolvedValue({
         content: 'test content',
+        title: 'Doc',
         sections: [],
         hierarchyPath: [],
         metadata: {},
       }),
     }
-    mockRagService = {
-      indexDocument: vi.fn().mockResolvedValue({ totalChunks: 10 }),
+    mockKnowledgeAi = {
+      index: vi.fn().mockResolvedValue({
+        document_id: 'd1',
+        kb_id: 'kb1',
+        chunk_count: 10,
+        status: 'ok',
+      }),
     }
-    worker = new IndexingWorker(mockPrisma, mockStorage, mockParser, mockRagService)
+    mockProviderResolver = {
+      resolveEmbeddingConfig: vi.fn().mockResolvedValue({
+        embedding_model: 'text-embedding-3-small',
+        embedding_api_key: 'key',
+        embedding_base_url: 'https://api.example.com',
+      }),
+    }
+    worker = new IndexingWorker(
+      mockPrisma,
+      mockStorage,
+      mockParser,
+      mockKnowledgeAi,
+      mockProviderResolver,
+    )
   })
 
-  it('AC-02: handleIndexJob drives full pipeline and sets status to ready', async () => {
+  it('AC-02: handleIndexJob calls Knowledge AI /index and sets status to ready', async () => {
     mockPrisma.document.findUnique.mockResolvedValue({
       id: 'd1',
       kbId: 'kb1',
+      name: 'a.txt',
       storageKey: 'k1',
       mimeType: 'text/plain',
       status: 'uploaded',
     })
     mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ id: 'kb1', userId: 'user1' })
 
-    await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
+    await worker.handleIndexJob({ id: 'job-1', data: { documentId: 'd1', type: 'index' } } as any)
 
-    expect(mockRagService.indexDocument).toHaveBeenCalledWith(
-      'd1',
-      'kb1',
-      'test content',
-      undefined,
-      undefined,
+    expect(mockProviderResolver.resolveEmbeddingConfig).toHaveBeenCalledWith('user1')
+    expect(mockKnowledgeAi.index).toHaveBeenCalledWith(
       expect.objectContaining({
-        source_mime: 'text/plain',
-      }),
-      expect.objectContaining({
-        userId: 'user1',
-        allowedUserIds: ['user1'],
+        document_id: 'd1',
+        kb_id: 'kb1',
+        text: 'test content',
+        metadata: expect.objectContaining({
+          source_mime: 'text/plain',
+          name: 'a.txt',
+        }),
+        _provider: expect.objectContaining({
+          embedding_model: 'text-embedding-3-small',
+        }),
       }),
     )
     expect(mockPrisma.document.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'd1' },
-        data: expect.objectContaining({ status: 'ready' }),
+        data: expect.objectContaining({ status: 'ready', errorMessage: null }),
       }),
     )
   })
 
-  it('AC-03: stage changes map to correct document statuses', async () => {
+  it('AC-03: stage changes map to indexing then ready', async () => {
     mockPrisma.document.findUnique.mockResolvedValue({
       id: 'd1',
       kbId: 'kb1',
+      name: 'a.txt',
       storageKey: 'k1',
       mimeType: 'text/plain',
       status: 'uploaded',
     })
+    mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ id: 'kb1', userId: 'user1' })
     const statusUpdates: string[] = []
     mockPrisma.document.update.mockImplementation(({ data }: any) => {
       statusUpdates.push(data.status)
       return Promise.resolve({})
     })
 
-    await worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any)
-    expect(mockPrisma.document.update).toHaveBeenCalledTimes(2)
-    expect(statusUpdates).toContain('indexing')
+    await worker.handleIndexJob({ id: 'job-1', data: { documentId: 'd1', type: 'index' } } as any)
+    expect(statusUpdates).toEqual(['indexing', 'ready'])
   })
 
   it('AC-04: handleIndexJob throws when document not found', async () => {
@@ -96,21 +119,45 @@ describe('IndexingWorker', () => {
     ).rejects.toThrow('Document not found')
   })
 
-  it('AC-05: indexDocument failure sets status to failed after retries exhausted', async () => {
-    const failedHandler = async (job: any, err: Error) => {
-      if (job?.data?.documentId) {
-        await mockPrisma.document.update({
-          where: { id: job.data.documentId },
-          data: { status: 'failed', errorMessage: err.message.slice(0, 500) },
-        })
-      }
-    }
-
-    await failedHandler({ data: { documentId: 'd1' } }, new Error('Embedding API error: 500'))
-
-    expect(mockPrisma.document.update).toHaveBeenCalledWith({
-      where: { id: 'd1' },
-      data: { status: 'failed', errorMessage: 'Embedding API error: 500' },
+  it('AC-05: Knowledge AI index failure sets status to failed', async () => {
+    mockPrisma.document.findUnique.mockResolvedValue({
+      id: 'd1',
+      kbId: 'kb1',
+      name: 'a.txt',
+      storageKey: 'k1',
+      mimeType: 'text/plain',
+      status: 'uploaded',
     })
+    mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ id: 'kb1', userId: 'user1' })
+    mockKnowledgeAi.index.mockRejectedValue(new Error('Knowledge AI /index failed: 503'))
+
+    await expect(
+      worker.handleIndexJob({ id: 'job-1', data: { documentId: 'd1', type: 'index' } } as any),
+    ).rejects.toThrow('Knowledge AI /index failed: 503')
+
+    expect(mockPrisma.document.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'd1' },
+        data: expect.objectContaining({
+          status: 'failed',
+          errorMessage: expect.stringContaining('Knowledge AI /index failed: 503'),
+        }),
+      }),
+    )
+  })
+
+  it('AC-06: missing owner cannot resolve embedding provider', async () => {
+    mockPrisma.document.findUnique.mockResolvedValue({
+      id: 'd1',
+      kbId: 'kb1',
+      name: 'a.txt',
+      storageKey: 'k1',
+      mimeType: 'text/plain',
+    })
+    mockPrisma.knowledgeBase.findUnique.mockResolvedValue({ id: 'kb1', userId: null })
+
+    await expect(
+      worker.handleIndexJob({ data: { documentId: 'd1', type: 'index' } } as any),
+    ).rejects.toThrow(/no owner/)
   })
 })

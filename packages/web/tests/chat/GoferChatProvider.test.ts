@@ -1,94 +1,81 @@
 import { describe, expect, it } from 'vitest'
 import { GoferChatProvider } from '@/features/chat/providers/GoferChatProvider'
 
+const KB = '11111111-1111-1111-1111-111111111111'
+const DOC = '22222222-2222-2222-2222-222222222222'
+const MSG = '33333333-3333-3333-3333-333333333333'
+const CONV = '44444444-4444-4444-4444-444444444444'
+
 describe('GoferChatProvider', () => {
+  // AbstractChatProvider requires a "manual" request adapter
   const provider = new GoferChatProvider({
-    request: () => ({ manual: true, options: {} }) as any,
+    request: { manual: true } as any,
   })
 
-  describe('transformParams', () => {
-    it('fills required fields with defaults', () => {
-      const result = provider.transformParams({ query: 'hello' }, {} as any)
+  it('accumulates sources then message deltas', () => {
+    const afterSources = provider.transformMessage({
+      originMessage: { content: '', role: 'assistant' },
+      chunk: {
+        data: JSON.stringify({
+          event: 'sources',
+          conversation_id: CONV,
+          message_id: MSG,
+          sources: [{ kb_id: KB, document_id: DOC, content: 'ctx' }],
+          retrieval_empty: false,
+        }),
+      },
+    } as any)
 
-      expect(result.response_mode).toBe('streaming')
-      expect(result.query).toBe('hello')
-      expect(result.conversation_id).toBe('')
-    })
+    expect(afterSources.sources).toHaveLength(1)
+    expect(afterSources.sources?.[0].kb_id).toBe(KB)
+    expect(afterSources.content).toBe('')
 
-    it('passes through optional fields', () => {
-      const result = provider.transformParams(
-        {
-          query: 'hello',
-          conversation_id: 's1',
-          provider_key: 'deepseek',
-          parent_message_id: 'm1',
-          inputs: { key: 'value' },
-          files: ['f1'],
-          knowledge_base_ids: ['kb1', 'kb2'],
-        },
-        {} as any,
-      )
+    const afterDelta = provider.transformMessage({
+      originMessage: afterSources,
+      chunk: {
+        data: JSON.stringify({
+          event: 'message',
+          conversation_id: CONV,
+          message_id: MSG,
+          answer: 'hello',
+        }),
+      },
+    } as any)
 
-      expect(result.query).toBe('hello')
-      expect(result.conversation_id).toBe('s1')
-      expect(result.provider_key).toBe('deepseek')
-      expect(result.parent_message_id).toBe('m1')
-      expect(result.inputs).toEqual({ key: 'value' })
-      expect(result.files).toEqual(['f1'])
-      expect(result.knowledge_base_ids).toEqual(['kb1', 'kb2'])
-    })
+    expect(afterDelta.content).toBe('hello')
+    expect(afterDelta.sources).toHaveLength(1)
 
-    it('omits undefined optional fields', () => {
-      const result = provider.transformParams({ query: 'hello' }, {} as any)
+    const afterEnd = provider.transformMessage({
+      originMessage: afterDelta,
+      chunk: {
+        data: JSON.stringify({
+          event: 'message_end',
+          conversation_id: CONV,
+          message_id: MSG,
+          answer: 'hello world',
+          retrieval_empty: false,
+        }),
+      },
+    } as any)
 
-      expect(result.knowledge_base_ids).toBeUndefined()
-      expect(result.provider_key).toBeUndefined()
-    })
+    expect(afterEnd.content).toBe('hello world')
+    expect(afterEnd.sources).toHaveLength(1)
   })
 
-  describe('transformLocalMessage', () => {
-    it('returns user message from query', () => {
-      const result = provider.transformLocalMessage({ query: 'hello' })
-
-      expect(result).toEqual({ content: 'hello', role: 'user' })
-    })
-  })
-
-  describe('transformMessage', () => {
-    it('appends answer chunk to origin message', () => {
-      const result = provider.transformMessage({
-        originMessage: { content: 'prev', role: 'assistant' },
-        chunk: { data: JSON.stringify({ answer: ' world' }) },
-      } as any)
-
-      expect(result).toEqual({ content: 'prev world', role: 'assistant' })
-    })
-
-    it('returns error content on error event', () => {
-      const result = provider.transformMessage({
-        originMessage: { content: '', role: 'assistant' },
-        chunk: { data: JSON.stringify({ error: 'something wrong' }) },
-      } as any)
-
-      expect(result).toEqual({ content: 'something wrong', role: 'assistant' })
-    })
-
-    it('returns origin content when done', () => {
-      const result = provider.transformMessage({
-        originMessage: { content: 'final', role: 'assistant' },
-        chunk: { data: JSON.stringify({ done: true }) },
-      } as any)
-
-      expect(result).toEqual({ content: 'final', role: 'assistant' })
-    })
-
-    it('ignores invalid JSON chunk data', () => {
-      const result = provider.transformMessage({
-        originMessage: { content: 'prev', role: 'assistant' },
-        chunk: { data: 'not json' },
-      } as any)
-
-      expect(result).toEqual({ content: 'prev', role: 'assistant' })
-    })
+  it('marks retrieval_empty on sources event', () => {
+    const msg = provider.transformMessage({
+      originMessage: { content: '', role: 'assistant' },
+      chunk: {
+        data: JSON.stringify({
+          event: 'sources',
+          conversation_id: CONV,
+          message_id: MSG,
+          sources: [],
+          retrieval_empty: true,
+        }),
+      },
+    } as any)
+    expect(msg.retrieval_empty).toBe(true)
+    expect(msg.sources).toEqual([])
   })
 })

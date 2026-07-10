@@ -19,7 +19,7 @@ import { PrismaService } from '@/processors/database/prisma.service.js'
  *   - 本测试（AC-APP-BOOTSTRAP）直接编译整个 AppModule，覆盖跨模块的真实 DI 组合。
  *
  * 注意：为避免真实 Prisma 连接，使用 PrismaService 替身（空对象）作为最小可用依赖。
- *       其他 Provider（QueueModule、ChatModule、SettingsModule、RagModule 等）均使用
+ *       其他 Provider（QueueModule、ChatModule、SettingsModule、KnowledgeAiModule 等）均使用
  *       真实实现，这正是本测试"真实验证"的价值所在。
  */
 describe('App Bootstrap DI Integration', () => {

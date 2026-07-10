@@ -58,6 +58,7 @@ function buildSettings(overrides: Partial<Settings> = {}): Settings {
       embeddingProvider: 'default-llm',
       rerankerAllowedModelPrefixes: ['BAAI/'],
       timeoutMs: 60_000,
+      retrievalMode: 'strict',
     },
     companion: {},
     indexing: {

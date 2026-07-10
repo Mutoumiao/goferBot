@@ -15,7 +15,7 @@ const mockKbList = [
 ]
 
 describe('KnowledgeBaseSelector', () => {
-  const onSelect = vi.fn()
+  const onChange = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -29,7 +29,7 @@ describe('KnowledgeBaseSelector', () => {
 
   it('renders trigger and opens selector', async () => {
     const user = userEvent.setup()
-    render(<KnowledgeBaseSelector selectedId={null} onSelect={onSelect} />)
+    render(<KnowledgeBaseSelector selectedIds={[]} onChange={onChange} />)
 
     await user.click(screen.getByTestId('kb-selector-trigger'))
 
@@ -40,29 +40,40 @@ describe('KnowledgeBaseSelector', () => {
 
   it('selects a knowledge base on click', async () => {
     const user = userEvent.setup()
-    render(<KnowledgeBaseSelector selectedId={null} onSelect={onSelect} />)
+    render(<KnowledgeBaseSelector selectedIds={[]} onChange={onChange} />)
 
     await user.click(screen.getByTestId('kb-selector-trigger'))
     const items = screen.getAllByTestId('kb-selector-item')
     await user.click(items[0])
 
-    expect(onSelect).toHaveBeenCalledWith('kb1')
+    expect(onChange).toHaveBeenCalledWith(['kb1'])
   })
 
   it('deselects when clicking already selected item', async () => {
     const user = userEvent.setup()
-    render(<KnowledgeBaseSelector selectedId="kb1" onSelect={onSelect} />)
+    render(<KnowledgeBaseSelector selectedIds={['kb1']} onChange={onChange} />)
 
     await user.click(screen.getByTestId('kb-selector-trigger'))
     const items = screen.getAllByTestId('kb-selector-item')
     await user.click(items[0])
 
-    expect(onSelect).toHaveBeenCalledWith(null)
+    expect(onChange).toHaveBeenCalledWith([])
+  })
+
+  it('supports multi-select', async () => {
+    const user = userEvent.setup()
+    render(<KnowledgeBaseSelector selectedIds={['kb1']} onChange={onChange} />)
+
+    await user.click(screen.getByTestId('kb-selector-trigger'))
+    const items = screen.getAllByTestId('kb-selector-item')
+    await user.click(items[1])
+
+    expect(onChange).toHaveBeenCalledWith(['kb1', 'kb2'])
   })
 
   it('marks selected item with aria-pressed', async () => {
     const user = userEvent.setup()
-    render(<KnowledgeBaseSelector selectedId="kb2" onSelect={onSelect} />)
+    render(<KnowledgeBaseSelector selectedIds={['kb2']} onChange={onChange} />)
 
     await user.click(screen.getByTestId('kb-selector-trigger'))
     const items = screen.getAllByTestId('kb-selector-item')
@@ -80,7 +91,7 @@ describe('KnowledgeBaseSelector', () => {
     } as any)
 
     const user = userEvent.setup()
-    render(<KnowledgeBaseSelector selectedId={null} onSelect={onSelect} />)
+    render(<KnowledgeBaseSelector selectedIds={[]} onChange={onChange} />)
 
     await user.click(screen.getByTestId('kb-selector-trigger'))
     await user.click(screen.getByTestId('kb-selector-retry'))
