@@ -1,7 +1,22 @@
 import { ConfigProvider as AntConfigProvider, App, theme } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { type AppearanceMode, useSettingsStore } from '@/stores/settings'
+import { bindAntdAppApis } from '@/utils/antd-app'
+
+/**
+ * 将 App.useApp() 实例挂到模块级，供 confirm-action / 命令式 Modal 等非组件代码使用。
+ * 必须作为 <App> 的子节点。
+ */
+function AntdAppApiBridge({ children }: { children: ReactNode }) {
+  const { message, modal, notification } = App.useApp()
+
+  useEffect(() => {
+    bindAntdAppApis({ message, modal, notification })
+  }, [message, modal, notification])
+
+  return children
+}
 
 function resolveAntTheme(appearance: AppearanceMode) {
   if (appearance === 'dark') {
@@ -56,7 +71,9 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   return (
     <AntConfigProvider theme={resolvedTheme} componentSize="middle" locale={zhCN}>
-      <App>{children}</App>
+      <App>
+        <AntdAppApiBridge>{children}</AntdAppApiBridge>
+      </App>
     </AntConfigProvider>
   )
 }

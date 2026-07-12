@@ -6,7 +6,6 @@ import {
   Card,
   Dropdown,
   Input,
-  message,
   Select,
   Space,
   Switch,
@@ -40,7 +39,7 @@ function avatarColor(roles: string[]): string {
 }
 
 export function UserTable({ initialQuery }: UserTableProps) {
-  const { modal: appModal } = App.useApp()
+  const { modal: appModal, message } = App.useApp()
   const currentUser = useAuthStore((s) => s.user)
   const [data, setData] = useState<AdminUserResponse[]>([])
   const [total, setTotal] = useState(0)

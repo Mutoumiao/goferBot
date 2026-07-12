@@ -1,4 +1,4 @@
-import { Button, Form, InputNumber, message, Select } from 'antd'
+import { App, Button, Form, InputNumber, Select } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import type { ModelProvider, RagSettings } from '@/api/system-config'
 import { getProviders } from '@/features/model-providers/services'
@@ -6,6 +6,7 @@ import { getCategoryConfig, saveCategoryConfig } from '../services'
 import { ProviderModelCascader } from './ProviderModelCascader'
 
 export function RagSettingsForm() {
+  const { message } = App.useApp()
   const [form] = Form.useForm<RagSettings>()
   const [providers, setProviders] = useState<ModelProvider[]>([])
   const [saving, setSaving] = useState(false)
@@ -26,7 +27,7 @@ export function RagSettingsForm() {
     } catch {
       message.error('加载失败，请稍后重试')
     }
-  }, [form])
+  }, [form, message])
 
   useEffect(() => {
     void load()

@@ -1,4 +1,4 @@
-import { Col, Form, Input, InputNumber, Modal, message, Row, Select, Switch } from 'antd'
+import { App, Col, Form, Input, InputNumber, Modal, Row, Select, Switch } from 'antd'
 import { useEffect, useState } from 'react'
 import type { Model, ModelProvider, ProviderPreset, ProviderType } from '@/api/system-config'
 import { fetchPresets, fetchRemoteModelsService, saveProviderService } from '../services'
@@ -14,7 +14,6 @@ interface FormValues {
   isCompleteUrl: boolean
   timeoutMs: number
   enabled: boolean
-  models: Model[]
 }
 
 interface ProviderFormProps {
@@ -33,32 +32,38 @@ const DEFAULT_VALUES: FormValues = {
   isCompleteUrl: false,
   timeoutMs: 300_000,
   enabled: true,
-  models: [],
 }
 
 export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFormProps) {
+  const { message } = App.useApp()
   const [form] = Form.useForm<FormValues>()
   const isEdit = !!provider
   const [presets, setPresets] = useState<ProviderPreset[]>([])
   const [presetKey, setPresetKey] = useState<string>(CUSTOM_PRESET)
   const [fetching, setFetching] = useState(false)
   const [saving, setSaving] = useState(false)
+  /** 模型列表独立受控，不走 Form.List，避免 Modal 下不同步 */
+  const [models, setModels] = useState<Model[]>([])
+  const baseUrl = Form.useWatch('baseUrl', form) as string | undefined
 
   useEffect(() => {
     if (!open) return
     void fetchPresets().then(setPresets)
   }, [open])
 
-  useEffect(() => {
-    if (!open) return
+  const initFormValues = () => {
+    form.resetFields()
     if (provider) {
-      form.setFieldsValue({ ...provider })
+      const { models: providerModels, ...rest } = provider
+      form.setFieldsValue({ ...rest })
+      setModels(providerModels ?? [])
       setPresetKey(CUSTOM_PRESET)
     } else {
       form.setFieldsValue({ ...DEFAULT_VALUES })
+      setModels([])
       setPresetKey(CUSTOM_PRESET)
     }
-  }, [open, provider, form])
+  }
 
   const handlePresetChange = (key: string) => {
     setPresetKey(key)
@@ -70,9 +75,9 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
   }
 
   const handleFetchModels = async (): Promise<void> => {
-    const baseUrl = form.getFieldValue('baseUrl')
+    const currentBaseUrl = form.getFieldValue('baseUrl')
     const apiKey = form.getFieldValue('apiKey') ?? ''
-    if (!baseUrl) {
+    if (!currentBaseUrl) {
       message.warning('请先填写请求地址')
       return
     }
@@ -82,24 +87,28 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
     }
     setFetching(true)
     try {
-      const models = await fetchRemoteModelsService({ presetKey, baseUrl, apiKey })
-      if (models.length > 0) {
-        const existing = (form.getFieldValue('models') ?? []) as Model[]
-        const existingNames = new Set(existing.map((m) => m.name))
-        const newModels = models
-          .filter((m) => !existingNames.has(m.name))
-          .map<Model>((m) => ({
-            name: m.name,
-            type: m.type as ProviderType,
-            enabled: true,
-            ...(m.dimensions !== undefined && { dimensions: m.dimensions }),
-            ...(m.maxLength !== undefined && { maxLength: m.maxLength }),
-          }))
-        form.setFieldsValue({ models: [...existing, ...newModels] })
-        message.success(`获取到 ${newModels.length} 个新模型`)
-      } else {
+      const remoteModels = await fetchRemoteModelsService({
+        presetKey,
+        baseUrl: currentBaseUrl,
+        apiKey,
+      })
+      if (remoteModels.length === 0) {
         message.warning('未获取到模型')
+        return
       }
+
+      const existingNames = new Set(models.map((m) => m.name))
+      const newModels = remoteModels
+        .filter((m) => !existingNames.has(m.name))
+        .map<Model>((m) => ({
+          name: m.name,
+          type: m.type as ProviderType,
+          enabled: true,
+          ...(m.dimensions !== undefined && { dimensions: m.dimensions }),
+          ...(m.maxLength !== undefined && { maxLength: m.maxLength }),
+        }))
+      setModels((prev) => [...prev, ...newModels])
+      message.success(`获取到 ${newModels.length} 个新模型`)
     } catch (err) {
       message.error(mapErrorMessage(err))
     } finally {
@@ -110,17 +119,26 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
   const handleOk = async () => {
     try {
       const values = await form.validateFields()
+      if (models.length === 0) {
+        message.warning('请至少添加一个模型')
+        return
+      }
+      if (models.some((m) => !m.name.trim())) {
+        message.warning('模型名不能为空')
+        return
+      }
       setSaving(true)
       const payload: ModelProvider = {
         // R2: 新建时 id 留空，由后端 saveProvider 自动生成；编辑时保留原 id
-        id: values.id ?? '',
+        id: provider?.id ?? '',
         name: values.name,
         apiKey: values.apiKey,
         baseUrl: values.baseUrl,
         isCompleteUrl: values.isCompleteUrl ?? false,
         timeoutMs: values.timeoutMs,
-        enabled: values.enabled ?? true,
-        models: values.models ?? [],
+        // enabled 不在表单控件中编辑，沿用原值；新建默认 true
+        enabled: provider?.enabled ?? true,
+        models,
         ...(values.notes ? { notes: values.notes } : {}),
       }
       const ok = await saveProviderService(payload)
@@ -132,14 +150,11 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
     }
   }
 
-  const presetOptions = [
-    { value: CUSTOM_PRESET, label: '自定义配置' },
-    ...presets.map((p) => ({ value: p.key, label: p.label })),
-  ]
+  const presetOptions = [...presets.map((p) => ({ value: p.key, label: p.label }))]
 
   return (
     <Modal
-      title={isEdit ? '编辑 Provider' : '新建 Provider'}
+      title={isEdit ? '编辑提供商' : '新建提供商'}
       open={open}
       width={720}
       okText="保存"
@@ -147,9 +162,13 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
       confirmLoading={saving}
       onCancel={onCancel}
       onOk={handleOk}
+      mask={{ closable: false }}
       destroyOnHidden
+      afterOpenChange={(visible) => {
+        if (visible) initFormValues()
+      }}
     >
-      <Form form={form} layout="vertical" preserve={false} className="pt-2">
+      <Form form={form} layout="vertical" className="pt-2" initialValues={DEFAULT_VALUES}>
         <Form.Item label="预设提供商">
           <Select value={presetKey} onChange={handlePresetChange} options={presetOptions} />
         </Form.Item>
@@ -201,9 +220,12 @@ export function ProviderForm({ open, provider, onCancel, onSuccess }: ProviderFo
           </Col>
         </Row>
         <ProviderModelsTable
+          models={models}
+          onChange={setModels}
           onFetchModels={handleFetchModels}
           fetching={fetching}
           hasFetchModels={presetKey !== CUSTOM_PRESET}
+          baseUrl={baseUrl}
         />
         <Form.Item
           name="timeoutMs"

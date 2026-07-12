@@ -1,15 +1,15 @@
-import { Modal } from 'antd'
-import type { ModalStaticFunctions } from 'antd/es/modal/confirm'
 import type { AdminRoleCode } from '@/stores/auth'
 import { useAuthStore } from '@/stores/auth'
+import type { AppModal } from '@/utils/antd-app'
+import { getAppModal } from '@/utils/antd-app'
 import type { AdminUserResponse } from '../services'
 import { RoleSelect } from './RoleSelect'
 
 export function assignRoleModal(
   user: AdminUserResponse,
-  modalApi?: Omit<ModalStaticFunctions, 'warn'>,
+  modalApi?: AppModal,
 ): Promise<AdminRoleCode | null> {
-  const modal = modalApi ?? Modal
+  const modal = modalApi ?? getAppModal()
   return new Promise((resolve) => {
     const currentUserRoles = (useAuthStore.getState().user?.roles ?? []) as AdminRoleCode[]
     const currentRole: AdminRoleCode = (user.roles?.[0] as AdminRoleCode | undefined) ?? 'user'

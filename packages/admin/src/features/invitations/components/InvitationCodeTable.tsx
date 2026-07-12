@@ -1,4 +1,5 @@
 import {
+  App,
   Button,
   Card,
   DatePicker,
@@ -6,7 +7,6 @@ import {
   Input,
   InputNumber,
   Modal,
-  message,
   Popconfirm,
   Select,
   Space,
@@ -74,6 +74,7 @@ function formatUseCount(useCount: number, maxUses: number | null): string {
 }
 
 export function InvitationCodeTable() {
+  const { message } = App.useApp()
   const [data, setData] = useState<InvitationCode[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)

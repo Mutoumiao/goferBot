@@ -1,14 +1,15 @@
-import { Input, Modal } from 'antd'
-import type { ModalStaticFunctions } from 'antd/es/modal/confirm'
+import { Input } from 'antd'
+import type { AppModal } from '@/utils/antd-app'
+import { getAppModal } from '@/utils/antd-app'
 import { confirmPasswordAction } from '@/utils/confirm-action'
 import type { AdminUserResponse } from '../services'
 import { resetUserPassword } from '../services'
 
 export function resetPasswordModal(
   user: AdminUserResponse,
-  modalApi?: Omit<ModalStaticFunctions, 'warn'>,
+  modalApi?: AppModal,
 ): Promise<boolean> {
-  const modal = modalApi ?? Modal
+  const modal = modalApi ?? getAppModal()
   return new Promise((resolve) => {
     let password = ''
     let confirm = ''

@@ -1,7 +1,8 @@
-import { Avatar, Form, Input, Modal } from 'antd'
-import type { ModalStaticFunctions } from 'antd/es/modal/confirm'
+import { Avatar, Form, Input } from 'antd'
 import type { AdminRoleCode } from '@/stores/auth'
 import { useAuthStore } from '@/stores/auth'
+import type { AppModal } from '@/utils/antd-app'
+import { getAppModal } from '@/utils/antd-app'
 import type { AdminUserResponse } from '../services'
 import { createUserService, updateUserService } from '../services'
 import { RoleSelect } from './RoleSelect'
@@ -10,10 +11,8 @@ export interface UserFormModalResult {
   success: boolean
 }
 
-export function showCreateUserModal(
-  modalApi?: Omit<ModalStaticFunctions, 'warn'>,
-): Promise<boolean> {
-  const modal = modalApi ?? Modal
+export function showCreateUserModal(modalApi?: AppModal): Promise<boolean> {
+  const modal = modalApi ?? getAppModal()
   return new Promise((resolve) => {
     const currentUserRoles = (useAuthStore.getState().user?.roles ?? []) as AdminRoleCode[]
 
@@ -125,9 +124,9 @@ export function showCreateUserModal(
 
 export function showEditUserModal(
   user: AdminUserResponse,
-  modalApi?: Omit<ModalStaticFunctions, 'warn'>,
+  modalApi?: AppModal,
 ): Promise<boolean> {
-  const modal = modalApi ?? Modal
+  const modal = modalApi ?? getAppModal()
   return new Promise((resolve) => {
     let formName = user.name ?? ''
 

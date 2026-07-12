@@ -1,11 +1,12 @@
 import { useRouter } from '@tanstack/react-router'
-import { Button, Card, Form, Input, message, Typography } from 'antd'
+import { App, Button, Card, Form, Input, Typography } from 'antd'
 import { useState } from 'react'
 import { changePassword } from '@/api/auth'
 
 const { Title, Text } = Typography
 
 export function PasswordChangeForm() {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 

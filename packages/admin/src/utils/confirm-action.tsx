@@ -1,6 +1,7 @@
-import { Modal } from 'antd'
 import { useState } from 'react'
 import { verifyPassword } from '@/api/auth'
+import type { AppModal } from '@/utils/antd-app'
+import { getAppModal } from '@/utils/antd-app'
 import { mapErrorMessage } from '@/utils/error-mapper'
 
 export interface ConfirmPasswordResult {
@@ -12,11 +13,16 @@ export interface ConfirmPasswordResult {
  * 危险操作二次确认（带密码 + 后端校验）。
  * 返回 Promise：密码校验通过 → resolve({ confirmed: true, password })；
  * 取消或密码错误 → resolve({ confirmed: false })。
+ *
+ * @param modalApi 优先传入 App.useApp().modal；省略时使用 ConfigProvider 桥接实例
  */
 export function confirmPasswordAction(
   title: string,
   content?: React.ReactNode,
+  modalApi?: AppModal,
 ): Promise<ConfirmPasswordResult> {
+  const Modal = modalApi ?? getAppModal()
+
   return new Promise((resolve) => {
     let inputPassword = ''
     let passwordError = '密码不能为空'

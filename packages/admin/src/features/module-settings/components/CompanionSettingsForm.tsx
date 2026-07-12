@@ -1,4 +1,4 @@
-import { Button, Form, message } from 'antd'
+import { App, Button, Form } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import type { CompanionSettings, ModelProvider } from '@/api/system-config'
 import { getProviders } from '@/features/model-providers/services'
@@ -6,6 +6,7 @@ import { getCategoryConfig, saveCategoryConfig } from '../services'
 import { ProviderModelCascader } from './ProviderModelCascader'
 
 export function CompanionSettingsForm() {
+  const { message } = App.useApp()
   const [form] = Form.useForm<CompanionSettings>()
   const [providers, setProviders] = useState<ModelProvider[]>([])
   const [saving, setSaving] = useState(false)
@@ -20,7 +21,7 @@ export function CompanionSettingsForm() {
     } catch {
       message.error('加载失败，请稍后重试')
     }
-  }, [form])
+  }, [form, message])
 
   useEffect(() => {
     void load()

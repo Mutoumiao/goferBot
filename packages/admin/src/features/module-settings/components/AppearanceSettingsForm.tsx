@@ -1,9 +1,10 @@
-import { Button, Form, InputNumber, message, Select } from 'antd'
+import { App, Button, Form, InputNumber, Select } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import type { AppearanceSettings } from '@/api/system-config'
 import { getCategoryConfig, saveCategoryConfig } from '../services'
 
 export function AppearanceSettingsForm() {
+  const { message } = App.useApp()
   const [form] = Form.useForm<AppearanceSettings>()
   const [saving, setSaving] = useState(false)
 
@@ -19,7 +20,7 @@ export function AppearanceSettingsForm() {
     } catch {
       message.error('加载失败，请稍后重试')
     }
-  }, [form])
+  }, [form, message])
 
   useEffect(() => {
     void load()

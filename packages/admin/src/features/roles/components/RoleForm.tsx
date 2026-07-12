@@ -1,8 +1,13 @@
-import { Form, Input, Modal } from 'antd'
+import { Form, Input } from 'antd'
+import type { AppModal } from '@/utils/antd-app'
+import { getAppModal } from '@/utils/antd-app'
 import { createRoleService, editRoleService, fetchRole } from '../services'
 
-export function RoleFormModal(props: { roleCode?: string } = {}): Promise<boolean> {
+export function RoleFormModal(
+  props: { roleCode?: string; modalApi?: AppModal } = {},
+): Promise<boolean> {
   const isEdit = !!props.roleCode
+  const Modal = props.modalApi ?? getAppModal()
 
   return new Promise((resolve) => {
     let formCode = ''

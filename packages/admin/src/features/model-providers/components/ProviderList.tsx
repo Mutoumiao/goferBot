@@ -1,4 +1,4 @@
-import { Button, Card, Collapse, Modal, Space, Switch, Table, Tag } from 'antd'
+import { App, Button, Card, Collapse, Space, Switch, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Edit, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -16,6 +16,7 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export function ProviderList() {
+  const { modal } = App.useApp()
   const [data, setData] = useState<ModelProvider[]>([])
   const [loading, setLoading] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
@@ -50,7 +51,7 @@ export function ProviderList() {
 
   const handleDelete = async (provider: ModelProvider) => {
     if (processingId) return
-    Modal.confirm({
+    modal.confirm({
       title: '删除 Provider',
       content: (
         <span>

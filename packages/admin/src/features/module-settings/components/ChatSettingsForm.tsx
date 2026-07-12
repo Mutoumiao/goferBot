@@ -1,4 +1,4 @@
-import { Button, Form, message, Slider } from 'antd'
+import { App, Button, Form, Slider } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import type { ChatSettings, ModelProvider } from '@/api/system-config'
 import { getProviders } from '@/features/model-providers/services'
@@ -6,6 +6,7 @@ import { getCategoryConfig, saveCategoryConfig } from '../services'
 import { ProviderModelCascader } from './ProviderModelCascader'
 
 export function ChatSettingsForm() {
+  const { message } = App.useApp()
   const [form] = Form.useForm<ChatSettings>()
   const [providers, setProviders] = useState<ModelProvider[]>([])
   const [saving, setSaving] = useState(false)
@@ -24,7 +25,7 @@ export function ChatSettingsForm() {
     } catch {
       message.error('加载失败，请稍后重试')
     }
-  }, [form])
+  }, [form, message])
 
   useEffect(() => {
     void load()

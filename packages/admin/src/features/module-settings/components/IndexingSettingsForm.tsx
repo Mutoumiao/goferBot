@@ -1,9 +1,10 @@
-import { Button, Form, InputNumber, message, Switch } from 'antd'
+import { App, Button, Form, InputNumber, Switch } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import type { IndexingSettings } from '@/api/system-config'
 import { getCategoryConfig, saveCategoryConfig } from '../services'
 
 export function IndexingSettingsForm() {
+  const { message } = App.useApp()
   const [form] = Form.useForm<IndexingSettings>()
   const [saving, setSaving] = useState(false)
 
@@ -22,7 +23,7 @@ export function IndexingSettingsForm() {
     } catch {
       message.error('加载失败，请稍后重试')
     }
-  }, [form])
+  }, [form, message])
 
   useEffect(() => {
     void load()
