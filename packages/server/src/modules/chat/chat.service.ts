@@ -9,11 +9,16 @@ import { KbRepository } from '../knowledge-base/repositories/kb.repository.js'
 import { MODEL_PROVIDER_ERROR_CODES } from '../settings/constants.js'
 import type { ModelProvider } from '../settings/dto/settings.dto.js'
 import { parseModelKey } from '../settings/model-provider.service.js'
-import { ProviderRegistry } from '../settings/providers/index.js'
+import {
+  inferKnowledgeAiProviderKind,
+  normalizeProviderServiceRoot,
+  ProviderRegistry,
+  rewriteLoopbackForKnowledgeAi,
+} from '../settings/providers/index.js'
 import { SettingsService } from '../settings/settings.service.js'
 import { ConversationService } from './conversation.service.js'
 import type { ChatMessagesDto } from './dto/chat.dto.js'
-import { LlamaIndexProvider } from './llm/llama-index-provider.service.js'
+import { LangChainLlmProvider } from './llm/langchain-llm-provider.service.js'
 import type { LlmProvider } from './llm/llm-provider.interface.js'
 import { ModelRegistryService } from './model-registry.service.js'
 
@@ -284,7 +289,7 @@ export class ChatService {
 
   private async createProvider(providerId: string, modelName: string): Promise<LlmProvider> {
     const baseProvider = await this.providerRegistry.get(providerId, modelName)
-    return new LlamaIndexProvider(baseProvider.toLlamaIndex())
+    return new LangChainLlmProvider(baseProvider.toLangChain())
   }
 
   private async resolveProviderConfig(
@@ -296,12 +301,15 @@ export class ChatService {
       llm_model?: string
       llm_api_key?: string
       llm_base_url?: string
+      llm_provider_kind?: 'ollama' | 'openai_compat'
       embedding_model?: string
       embedding_api_key?: string
       embedding_base_url?: string
+      embedding_provider_kind?: 'ollama' | 'openai_compat'
       rerank_model?: string
       rerank_api_key?: string
       rerank_base_url?: string
+      rerank_provider_kind?: 'ollama' | 'openai_compat'
     }
     model: string
     timeoutMs: number
@@ -394,23 +402,43 @@ export class ChatService {
     const timeoutMs =
       Number(process.env.KNOWLEDGE_AI_GENERATION_TIMEOUT_MS) || provider.timeoutMs || 180_000
 
+    const llmBaseUrl = provider.baseUrl?.trim()
+    if (!llmBaseUrl) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_CONFIGURED,
+        message: `模型提供商 ${providerId} 未配置 baseUrl：Knowledge AI 不使用默认厂商地址，请在 Admin 填写 API Base URL`,
+      })
+    }
+    if (!provider.apiKey?.trim()) {
+      throw new BadRequestException({
+        code: MODEL_PROVIDER_ERROR_CODES.NOT_CONFIGURED,
+        message: `模型提供商 ${providerId} 未配置 apiKey`,
+      })
+    }
+
     const llmProvider = await this.createProvider(providerId, resolvedModelName)
     const retrievalMode =
       settings.rag?.retrievalMode === 'loose' ? ('loose' as const) : ('strict' as const)
+
+    const llmKind = inferKnowledgeAiProviderKind(provider.id, provider.name, llmBaseUrl)
+    const llmRoot = rewriteLoopbackForKnowledgeAi(normalizeProviderServiceRoot(llmBaseUrl))
 
     return {
       providerConfig: {
         llm_model: resolvedModelName,
         llm_api_key: provider.apiKey,
-        llm_base_url: provider.baseUrl,
+        llm_base_url: llmRoot,
+        llm_provider_kind: llmKind,
         embedding_model: embeddingResolved.embedding_model,
         embedding_api_key: embeddingResolved.embedding_api_key,
         embedding_base_url: embeddingResolved.embedding_base_url,
+        embedding_provider_kind: embeddingResolved.embedding_provider_kind,
         ...(embeddingResolved.rerank_model
           ? {
               rerank_model: embeddingResolved.rerank_model,
               rerank_api_key: embeddingResolved.rerank_api_key,
               rerank_base_url: embeddingResolved.rerank_base_url,
+              rerank_provider_kind: embeddingResolved.rerank_provider_kind,
             }
           : {}),
       },

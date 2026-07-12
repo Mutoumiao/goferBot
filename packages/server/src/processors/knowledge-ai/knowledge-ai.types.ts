@@ -1,15 +1,23 @@
 /** Nest ↔ Knowledge AI HTTP contracts (Python service). */
 
+/** Vendor adapter selector — paths live inside Knowledge AI adapters, not Admin baseUrl. */
+export type KnowledgeAiVendorKind = 'ollama' | 'openai_compat'
+
 export interface KnowledgeAiProviderConfig {
   embedding_model?: string
   embedding_api_key?: string
   embedding_base_url?: string
+  /** ollama → /api/embed; openai_compat → /v1/embeddings */
+  embedding_provider_kind?: KnowledgeAiVendorKind
   rerank_model?: string
   rerank_api_key?: string
   rerank_base_url?: string
+  /** ollama has no HTTP rerank — Knowledge AI no-ops */
+  rerank_provider_kind?: KnowledgeAiVendorKind
   llm_model?: string
   llm_api_key?: string
   llm_base_url?: string
+  llm_provider_kind?: KnowledgeAiVendorKind
 }
 
 export interface KnowledgeAiPromptsConfig {

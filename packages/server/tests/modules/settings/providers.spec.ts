@@ -5,7 +5,7 @@
  *   - BaseProvider / DeepSeekProvider fetchModels (OpenAI 协议)
  *   - OllamaProvider fetchModels (自定义 /api/tags 协议)
  *   - CustomProvider fetchModels (抛出 AppException)
- *   - toLlamaIndex / toLangChain 客户端创建
+ *   - toLangChain 客户端创建
  *   - 响应体大小限制 (OOM 防护)
  *   - ProviderRegistry 缓存 / 失效
  */
@@ -46,13 +46,6 @@ describe('BaseProvider', () => {
     expect(p.type).toBe('llm')
   })
 
-  it('toLlamaIndex creates OpenAI client with correct config', () => {
-    const p = new BaseProvider(DEFAULT_CONFIG)
-    const client = p.toLlamaIndex()
-    expect(client).toBeDefined()
-    expect(typeof client.chat).toBe('function')
-  })
-
   it('toLangChain creates ChatOpenAI client', () => {
     const p = new BaseProvider(DEFAULT_CONFIG)
     const client = p.toLangChain()
@@ -66,20 +59,13 @@ describe('BaseProvider', () => {
     expect(client).toBeDefined()
   })
 
-  it('resolveLlmBaseURL returns baseUrl + /chat/completions for non-complete URL', () => {
-    const p = new BaseProvider(DEFAULT_CONFIG)
-    const client = p.toLlamaIndex()
-    // Client was created without error — baseURL was properly resolved
-    expect(client).toBeDefined()
-  })
-
-  it('resolveLlmBaseURL strips suffix for complete URL', () => {
+  it('toLangChain works with isCompleteUrl', () => {
     const p = new BaseProvider({
       ...DEFAULT_CONFIG,
       baseUrl: 'https://api.example.com/v1/chat/completions',
       isCompleteUrl: true,
     })
-    const client = p.toLlamaIndex()
+    const client = p.toLangChain()
     expect(client).toBeDefined()
   })
 
@@ -307,15 +293,16 @@ describe('OllamaProvider SDK 客户端', () => {
     expect(client).toBeDefined()
   })
 
-  it('toLlamaIndex creates Ollama client', () => {
+  it('toLangChain creates ChatOllama client', () => {
     const provider = new OllamaProvider(DEFAULT_CONFIG_OLLAMA)
-    const client = provider.toLlamaIndex()
+    const client = provider.toLangChain()
     expect(client).toBeDefined()
+    expect(typeof client.invoke).toBe('function')
   })
 
   it('resolveOllamaHost falls back to localhost:11434', () => {
     const provider = new OllamaProvider({ ...DEFAULT_CONFIG_OLLAMA, baseUrl: '' })
-    const client = provider.toLlamaIndex()
+    const client = provider.toLangChain()
     expect(client).toBeDefined()
   })
 })

@@ -89,7 +89,7 @@ function createMockConversationService(overrides = {}) {
 function createMockProviderRegistry(mockChatClient: Record<string, unknown> = {}) {
   return {
     get: vi.fn().mockResolvedValue({
-      toLlamaIndex: () => mockChatClient,
+      toLangChain: () => mockChatClient,
     }),
   }
 }
@@ -115,12 +115,9 @@ describe('ChatService', () => {
     conversationService = createMockConversationService()
 
     mockChatClient = {
-      _providerReady: true,
-      chat: vi.fn().mockResolvedValue({
-        async *[Symbol.asyncIterator]() {
-          yield { delta: 'hello' }
-        },
-        message: { content: 'hello' },
+      invoke: vi.fn().mockResolvedValue({ content: 'hello' }),
+      stream: vi.fn().mockImplementation(async function* () {
+        yield { content: 'hello' }
       }),
     } as any
     providerRegistry = createMockProviderRegistry(mockChatClient)

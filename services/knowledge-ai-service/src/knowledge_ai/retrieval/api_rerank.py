@@ -34,6 +34,12 @@ async def api_rerank(
         # No rerank configured: pass-through truncate (not degraded failure)
         return candidates[:top_k], False
 
+    kind = (provider.rerank_provider_kind or "openai_compat").strip().lower()
+    if kind == "ollama":
+        # Ollama has no official HTTP /rerank; skip without marking degraded.
+        logger.info("rerank_provider_kind=ollama: skip HTTP rerank (pass-through)")
+        return candidates[:top_k], False
+
     try:
         ranked = await _call_rerank_api(query, candidates, provider)
         return ranked[:top_k], False

@@ -92,8 +92,7 @@ export class ProviderRegistry implements OnModuleInit {
       throw modelNotEnabledError(providerId, modelName)
     }
 
-    const ProviderClass =
-      PROVIDER_REGISTRY[providerId] ?? BaseProvider
+    const ProviderClass = resolveProviderClass(providerId, provider.name, provider.baseUrl)
 
     return new ProviderClass({
       id: provider.id,
@@ -109,4 +108,81 @@ export class ProviderRegistry implements OnModuleInit {
       maxLength: model.maxLength,
     })
   }
+}
+
+/**
+ * Resolve adapter class: exact preset key, then id/name/baseUrl heuristics.
+ * Saved provider ids look like `ollama-u8n2`, not bare `ollama`.
+ */
+export function resolveProviderClass(
+  providerId: string,
+  name?: string,
+  baseUrl?: string,
+): typeof BaseProvider {
+  if (PROVIDER_REGISTRY[providerId]) {
+    return PROVIDER_REGISTRY[providerId]
+  }
+  const blob = `${providerId} ${name ?? ''} ${baseUrl ?? ''}`.toLowerCase()
+  if (blob.includes('ollama') || /:11434\b/.test(blob)) {
+    return OllamaProvider
+  }
+  if (blob.includes('deepseek')) {
+    return DeepSeekProvider
+  }
+  return BaseProvider
+}
+
+/** Vendor kind for Knowledge AI embedding/rerank adapters (not path fragments). */
+export type KnowledgeAiProviderKind = 'ollama' | 'openai_compat'
+
+export function inferKnowledgeAiProviderKind(
+  providerId: string,
+  name?: string,
+  baseUrl?: string,
+): KnowledgeAiProviderKind {
+  const blob = `${providerId} ${name ?? ''} ${baseUrl ?? ''}`.toLowerCase()
+  if (blob.includes('ollama') || /:11434\b/.test(blob)) {
+    return 'ollama'
+  }
+  return 'openai_compat'
+}
+
+/**
+ * Strip vendor path suffixes so adapters own /api/embed vs /v1/embeddings.
+ * Admin should store service root only (e.g. http://host:11434).
+ */
+export function normalizeProviderServiceRoot(baseUrl: string): string {
+  let u = baseUrl.trim().replace(/\/+$/, '')
+  const suffixes = [
+    '/chat/completions',
+    '/embeddings',
+    '/models',
+    '/api/embed',
+    '/api/embeddings',
+    '/api/tags',
+    '/v1',
+    '/api',
+  ]
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const s of suffixes) {
+      if (u.toLowerCase().endsWith(s)) {
+        u = u.slice(0, -s.length).replace(/\/+$/, '')
+        changed = true
+      }
+    }
+  }
+  return u
+}
+
+/**
+ * When Knowledge AI runs in Docker and Nest is on the host, rewrite loopback
+ * so the container can reach host Ollama/APIs (e.g. host.docker.internal).
+ * Set KNOWLEDGE_AI_LOOPBACK_HOST empty to disable.
+ */
+export function rewriteLoopbackForKnowledgeAi(url: string): string {
+  const host = process.env.KNOWLEDGE_AI_LOOPBACK_HOST?.trim()
+  if (!host) return url
+  return url.replace(/^(https?:\/\/)(localhost|127\.0\.0\.1)(?=[:/]|$)/i, `$1${host}`)
 }

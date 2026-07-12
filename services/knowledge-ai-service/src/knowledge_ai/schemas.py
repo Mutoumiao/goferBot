@@ -22,12 +22,16 @@ class ProviderConfig(BaseModel):
     embedding_model: str | None = None
     embedding_api_key: str | None = None
     embedding_base_url: str | None = None
+    # ollama | openai_compat — adapters own paths (/api/embed vs /v1/embeddings)
+    embedding_provider_kind: str | None = None
     rerank_model: str | None = None
     rerank_api_key: str | None = None
     rerank_base_url: str | None = None
+    rerank_provider_kind: str | None = None
     llm_model: str | None = None
     llm_api_key: str | None = None
     llm_base_url: str | None = None
+    llm_provider_kind: str | None = None
 
 
 class PromptsConfig(BaseModel):

@@ -1,4 +1,3 @@
-import { Ollama } from '@llamaindex/ollama'
 import { ChatOllama } from '@langchain/ollama'
 import { BaseProvider, type FetchedModel } from './base.provider.js'
 
@@ -25,13 +24,6 @@ export class OllamaProvider extends BaseProvider {
       name: m.name,
       type: m.details?.family?.includes('bert') ? 'embedding' : 'llm',
     }))
-  }
-
-  toLlamaIndex(): Ollama {
-    return new Ollama({
-      model: this.model,
-      config: { host: this.resolveOllamaHost() },
-    })
   }
 
   toLangChain(overrides?: Record<string, unknown>): ChatOllama {

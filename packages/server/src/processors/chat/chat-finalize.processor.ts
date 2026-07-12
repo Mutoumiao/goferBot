@@ -3,7 +3,7 @@ import type { Job } from 'bullmq'
 import { RequestContextStorage } from '../../common/request-context-storage.js'
 import { withTrace } from '../../common/utils/with-trace.js'
 import { ConversationService } from '../../modules/chat/conversation.service.js'
-import { LlamaIndexProvider } from '../../modules/chat/llm/llama-index-provider.service.js'
+import { LangChainLlmProvider } from '../../modules/chat/llm/langchain-llm-provider.service.js'
 import type { LlmProvider } from '../../modules/chat/llm/llm-provider.interface.js'
 import type { ModelProvider } from '../../modules/settings/dto/settings.dto.js'
 import { parseModelKey } from '../../modules/settings/model-provider.service.js'
@@ -132,6 +132,6 @@ export class ChatFinalizeProcessor {
 
   private async createLlmProvider(provider: ModelProvider, modelName: string): Promise<LlmProvider> {
     const baseProvider = await this.providerRegistry.get(provider.id, modelName)
-    return new LlamaIndexProvider(baseProvider.toLlamaIndex())
+    return new LangChainLlmProvider(baseProvider.toLangChain())
   }
 }

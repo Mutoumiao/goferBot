@@ -90,9 +90,9 @@ describe('ChatFinalizeProcessor', () => {
     }
     mockProviderRegistry = {
       get: vi.fn().mockResolvedValue({
-        toLlamaIndex: () => ({
-          _providerReady: true,
-          chat: vi.fn().mockResolvedValue({ message: { content: 'title' } }),
+        toLangChain: () => ({
+          invoke: vi.fn().mockResolvedValue({ content: 'title' }),
+          stream: vi.fn(),
         }),
       }),
     }
@@ -130,7 +130,7 @@ describe('ChatFinalizeProcessor', () => {
         'session-1',
         'Hi',
         'Hello, world!',
-        expect.objectContaining({ providerKey: 'llama-index' }),
+        expect.objectContaining({ providerKey: 'langchain' }),
       )
     })
 

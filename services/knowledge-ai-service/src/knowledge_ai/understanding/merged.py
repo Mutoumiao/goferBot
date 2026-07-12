@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 import httpx
 
 from knowledge_ai.prompts.defaults import UNDERSTANDING_PROMPT
+from knowledge_ai.provider_require import require_http_base_url, require_model_name
 from knowledge_ai.schemas import HistoryMessage, PromptsConfig, ProviderConfig
 
 logger = logging.getLogger("knowledge_ai.understanding")
@@ -66,14 +67,15 @@ class MergedUnderstanding:
 
     async def _single_llm_call(self, system: str, user: str) -> str:
         """Exactly one chat completions request (retries are transport-level only)."""
-        base = (self.provider.llm_base_url or "https://api.openai.com/v1").rstrip("/")
+        base = require_http_base_url(self.provider.llm_base_url, "llm_base_url")
+        model = require_model_name(self.provider.llm_model, "llm_model")
         url = f"{base}/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.provider.llm_api_key}",
             "Content-Type": "application/json",
         }
         body = {
-            "model": self.provider.llm_model or "gpt-4o-mini",
+            "model": model,
             "temperature": 0,
             "messages": [
                 {"role": "system", "content": system},

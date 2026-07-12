@@ -1,4 +1,3 @@
-import { OpenAI } from '@llamaindex/openai'
 import { ChatOpenAI } from '@langchain/openai'
 import type { FetchedModel, ProviderType } from '@goferbot/data'
 
@@ -51,20 +50,10 @@ export class BaseProvider {
     return this.defaultFetchModels()
   }
 
-  /** 返回 LlamaIndex 客户端（Chat/RAG 消费） */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toLlamaIndex(): any {
-    const client = new OpenAI({
-      apiKey: this.apiKey,
-      model: this.model,
-      baseURL: this.resolveLlmBaseURL(),
-      timeout: this.timeoutMs,
-    })
-    // 标记为 Provider 构造的客户端，供 LlamaIndexProvider.isClient() 识别
-    return Object.assign(client, { _providerReady: true })
-  }
-
-  /** 返回 LangChain 客户端（Companion 消费）。overrides 用于覆盖 temperature 等参数 */
+  /**
+   * LangChain 聊天客户端（Companion + Chat 标题生成）。
+   * RAG 索引/检索不在 Nest 侧调用，由 Knowledge AI 供应商适配器处理。
+   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toLangChain(overrides?: Record<string, unknown>): any {
     return new ChatOpenAI({
