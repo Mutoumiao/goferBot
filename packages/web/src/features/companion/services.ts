@@ -21,67 +21,67 @@ import type {
   UpdateCompanionStatusPayload,
 } from './types'
 
-const BASE = '/api'
+// alova baseURL 已含 /api，此处只写业务 path，避免 /api/api 双前缀
 
 // ---- 伴侣 CRUD ----
 
 export function createCompanion(payload: CreateCompanionPayload) {
-  return alovaInstance.Post<Companion>(`${BASE}/companions`, payload)
+  return alovaInstance.Post<Companion>('/companions', payload)
 }
 
 export function listCompanions(params?: FetchParams) {
-  return alovaInstance.Get<CompanionListResponse>(`${BASE}/companions`, {
+  return alovaInstance.Get<CompanionListResponse>('/companions', {
     params,
   })
 }
 
 export function getCompanion(id: string) {
-  return alovaInstance.Get<Companion>(`${BASE}/companions/${id}`)
+  return alovaInstance.Get<Companion>(`/companions/${id}`)
 }
 
 export function updateCompanion(id: string, payload: UpdateCompanionPayload) {
-  return alovaInstance.Put<Companion>(`${BASE}/companions/${id}`, payload)
+  return alovaInstance.Put<Companion>(`/companions/${id}`, payload)
 }
 
 export function deleteCompanion(id: string) {
-  return alovaInstance.Delete<void>(`${BASE}/companions/${id}`)
+  return alovaInstance.Delete<void>(`/companions/${id}`)
 }
 
 export function updateCompanionStatus(id: string, payload: UpdateCompanionStatusPayload) {
-  return alovaInstance.Patch<Companion>(`${BASE}/companions/${id}/status`, payload)
+  return alovaInstance.Patch<Companion>(`/companions/${id}/status`, payload)
 }
 
 // ---- 会话管理 ----
 
 export function createConversation(payload: CreateConversationPayload) {
-  return alovaInstance.Post<Conversation>(`${BASE}/companion/conversations`, payload)
+  return alovaInstance.Post<Conversation>('/companion/conversations', payload)
 }
 
 export function listConversations(companionId: string, params?: { page?: number; size?: number }) {
-  return alovaInstance.Get<ConversationListResponse>(`${BASE}/companion/conversations`, {
+  return alovaInstance.Get<ConversationListResponse>('/companion/conversations', {
     params: { ...params, companionId },
   })
 }
 
 export function getConversation(id: string) {
-  return alovaInstance.Get<Conversation>(`${BASE}/companion/conversations/${id}`)
+  return alovaInstance.Get<Conversation>(`/companion/conversations/${id}`)
 }
 
 // ---- 聊天 / 消息 / 反馈 / 记忆 ----
 
 export function listMessages(conversationId: string, params?: { page?: number; size?: number }) {
   return alovaInstance.Get<MessageListResponse>(
-    `${BASE}/companion/conversations/${conversationId}/messages`,
+    `/companion/conversations/${conversationId}/messages`,
     { params },
   )
 }
 
 export function submitFeedback(messageId: string, payload: CreateFeedbackPayload) {
-  return alovaInstance.Post<Feedback>(`${BASE}/companion/messages/${messageId}/feedback`, payload)
+  return alovaInstance.Post<Feedback>(`/companion/messages/${messageId}/feedback`, payload)
 }
 
 export function listMemories(companionId: string, params?: { page?: number; size?: number }) {
-  return alovaInstance.Get<MemoryListResponse>(`${BASE}/companion/memories`, {
+  return alovaInstance.Get<MemoryListResponse>('/companion/memories', {
     params: { ...params, companionId },
   })
 }

@@ -127,7 +127,18 @@ export const useCompanionStore = create<CompanionState>((set) => ({
   setIsLoadingHistory: (v) => set({ isLoadingHistory: v }),
   setIsStreaming: (v) => set({ isStreaming: v }),
   setStreamingContent: (content) => set({ streamingContent: content }),
-  appendStreamingChunk: (chunk) => set((s) => ({ streamingContent: s.streamingContent + chunk })),
+  appendStreamingChunk: (chunk) =>
+    set((s) => {
+      const next = s.streamingContent + chunk
+      const id = s.streamingMessageId
+      return {
+        streamingContent: next,
+        // 同步更新消息列表，避免只写 streamingContent 而气泡内容一直为空
+        messages: id
+          ? s.messages.map((m) => (m.id === id ? { ...m, content: next, streaming: true } : m))
+          : s.messages,
+      }
+    }),
   setStreamingMessageId: (id) => set({ streamingMessageId: id }),
   setHasMore: (v) => set({ hasMore: v }),
   setCursor: (cursor) => set({ cursor }),

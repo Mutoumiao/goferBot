@@ -1,6 +1,6 @@
 import { Sender } from '@ant-design/x'
 import { useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 import {
@@ -28,6 +28,7 @@ const sseClient = new CompanionSseClient()
 export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
   const navigate = useNavigate()
   const abortRef = useRef<AbortController | null>(null)
+  const [inputValue, setInputValue] = useState('')
 
   const {
     messages,
@@ -115,6 +116,8 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
         }
       }
 
+      setInputValue('')
+
       const userMsg: CompanionMessage = {
         id: `user-${Date.now()}`,
         conversationId: conv.id,
@@ -140,31 +143,50 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
       const controller = new AbortController()
       abortRef.current = controller
 
-      let doneReceived = false
+      let terminalReceived = false
 
       const handleEvent = (event: CompanionSseEvent) => {
         if (event.event === 'token') {
-          const chunk = typeof event.data === 'string' ? event.data : String(event.data)
-          appendStreamingChunk(chunk)
+          const chunk = typeof event.data === 'string' ? event.data : String(event.data ?? '')
+          if (chunk) appendStreamingChunk(chunk)
         } else if (event.event === 'done') {
-          doneReceived = true
-          const data = event.data as { messageId: string; content: string; createdAt: string }
+          terminalReceived = true
+          const data = event.data as {
+            messageId?: string
+            content?: string
+            fullReply?: string
+            createdAt?: string
+          }
+          const finalContent =
+            data.content ||
+            data.fullReply ||
+            useCompanionStore.getState().streamingContent ||
+            ''
           updateMessage(assistantId, {
-            content: data.content || useCompanionStore.getState().streamingContent,
+            content: finalContent || '（无内容）',
             streaming: false,
           })
           setIsStreaming(false)
           setStreamingMessageId(null)
         } else if (event.event === 'error') {
-          toast.error('AI 回复出错，请重试')
-          updateMessage(assistantId, { streaming: false })
+          terminalReceived = true
+          const errData = event.data as { message?: string }
+          const msg = errData?.message || 'AI 回复出错，请重试'
+          toast.error(msg)
+          updateMessage(assistantId, {
+            content:
+              useCompanionStore.getState().streamingContent ||
+              `（回复失败：${msg.slice(0, 80)}）`,
+            streaming: false,
+          })
           setIsStreaming(false)
           setStreamingMessageId(null)
         }
       }
 
       const handleError = (err: Error) => {
-        if (!doneReceived) {
+        if (!terminalReceived) {
+          terminalReceived = true
           toast.error(err.message || '流式响应中断')
           updateMessage(assistantId, {
             content: '（回复中断，请重试）',
@@ -184,14 +206,18 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
           signal: controller.signal,
         })
 
-        if (!doneReceived) {
+        if (!terminalReceived) {
           updateMessage(assistantId, {
             content: useCompanionStore.getState().streamingContent || '（无内容）',
             streaming: false,
           })
+          setIsStreaming(false)
+          setStreamingMessageId(null)
         }
       } catch {
         resetStreaming()
+        setIsStreaming(false)
+        setStreamingMessageId(null)
       }
     },
     [
@@ -294,8 +320,8 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
 
       <div className="flex justify-center px-4 pb-6 pt-2">
         <Sender
-          value=""
-          onChange={() => {}}
+          value={inputValue}
+          onChange={setInputValue}
           onSubmit={handleSendMessage}
           loading={isStreaming}
           placeholder={`和 ${companion.name} 说点什么...`}

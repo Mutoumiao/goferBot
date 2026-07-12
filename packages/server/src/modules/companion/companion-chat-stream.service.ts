@@ -53,12 +53,39 @@ export class CompanionChatStreamService {
         return
       }
 
-      this.pipeline.assertFinalState(fullState)
+      // 图可能因 LLM 配置缺失未跑完节点；完整性失败时仍返回可用文案
+      let integrityOk = true
+      try {
+        this.pipeline.assertFinalState(fullState)
+      } catch (integrityErr) {
+        integrityOk = false
+        this.logger.error(
+          `final state incomplete: ${integrityErr instanceof Error ? integrityErr.message : String(integrityErr)}`,
+        )
+      }
+
+      const partial =
+        typeof fullState.partialTokens === 'string' ? fullState.partialTokens.trim() : ''
+      const reply =
+        (fullState.assistantReply ?? '').trim() ||
+        partial ||
+        (integrityOk
+          ? ''
+          : '抱歉，伴侣对话管线暂不可用（可能未配置 Companion LLM）。请在管理后台检查模块配置后重试。')
+
+      if (reply) {
+        fullState.assistantReply = reply
+      }
+
       const finalState = fullState as CompanionState
 
       yield {
         event: 'done',
-        data: { fullReply: finalState.assistantReply ?? '', quality: finalState.quality },
+        data: {
+          fullReply: reply,
+          content: reply,
+          quality: finalState.quality,
+        },
       }
 
       if (finalState.summary) {
@@ -73,11 +100,22 @@ export class CompanionChatStreamService {
         yield { event: 'memories', data: { items: extracted } }
       }
 
-      queueMicrotask(() => this.pipeline.persistAssistantMessage(conversationId, finalState))
+      if (reply) {
+        queueMicrotask(() => this.pipeline.persistAssistantMessage(conversationId, finalState))
+      }
     } catch (err) {
       const code: CompanionErrorCode =
         (err as { name?: string })?.name === 'AbortError' ? 'ERR_LLM_TIMEOUT' : 'ERR_LLM_PARSE'
       this.logger.error(`streamChat error: ${(err as Error).message}`)
+      // 尽量 done + 文案，避免前端只收到 error 又被覆盖成「无内容」
+      const fallback =
+        (err as Error).message?.includes('State missing')
+          ? '抱歉，伴侣对话管线暂不可用（可能未配置 Companion LLM）。请在管理后台检查模块配置后重试。'
+          : (err as Error).message || '服务暂时不可用'
+      yield {
+        event: 'done',
+        data: { fullReply: fallback, content: fallback },
+      }
       yield this.errorEvent(code, (err as Error).message)
     }
   }

@@ -18,11 +18,14 @@ import { BypassResponse } from '../../common/decorators/bypass-response.decorato
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { CompanionChatService } from './companion-chat.service.js'
 import {
+  ConversationListQueryDto,
+  CreateConversationDto,
   CreateFeedbackDto,
   MemoryListQueryDto,
   MessageListQueryDto,
   SendMessageDto,
 } from './dto/companion.dto.js'
+import type { CompanionConversation } from '@prisma/client'
 import { CompanionRepository } from './repositories/companion.repository.js'
 import { CompanionConversationRepository } from './repositories/companion-conversation.repository.js'
 import { CompanionFeedbackRepository } from './repositories/companion-feedback.repository.js'
@@ -43,6 +46,56 @@ export class CompanionChatController {
     private readonly memoryRepo: CompanionMemoryRepository,
     private readonly sseHelper: SseResponseHelper,
   ) {}
+
+  /** 创建或复用用户与伴侣的唯一会话 */
+  @Post('conversations')
+  async createConversation(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateConversationDto,
+  ) {
+    await this.companionRepo.findByIdAndAuthorize(dto.companionId, userId)
+    const conversation = await this.conversationRepo.getOrCreate(
+      undefined,
+      userId,
+      dto.companionId,
+    )
+    if (dto.title) {
+      return this.toConversationDto(await this.conversationRepo.update(conversation.id, {
+        title: dto.title,
+      }))
+    }
+    return this.toConversationDto(conversation)
+  }
+
+  /** 会话列表（可按 companionId 过滤） */
+  @Get('conversations')
+  async listConversations(
+    @CurrentUser('id') userId: string,
+    @Query() query: ConversationListQueryDto,
+  ) {
+    if (query.companionId) {
+      await this.companionRepo.findByIdAndAuthorize(query.companionId, userId)
+    }
+    const result = await this.conversationRepo.findByUserId(userId, {
+      page: query.page ?? 1,
+      size: query.size ?? 20,
+      companionId: query.companionId,
+    })
+    return {
+      items: result.data.map((c) => this.toConversationDto(c)),
+      pagination: result.pagination,
+    }
+  }
+
+  @Get('conversations/:id')
+  async getConversation(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    await this.conversationRepo.findByIdAndAuthorize(id, userId)
+    const conversation = await this.conversationRepo.findById(id)
+    if (!conversation) {
+      throw new BadRequestException('会话不存在')
+    }
+    return this.toConversationDto(conversation)
+  }
 
   @Post('chat')
   @BypassResponse()
@@ -97,6 +150,24 @@ export class CompanionChatController {
     })
 
     return { items: result.data, pagination: result.pagination }
+  }
+
+  private toConversationDto(conversation: CompanionConversation) {
+    const lastMs = conversation.lastMessageAtMs
+    const lastMessageAt =
+      lastMs != null
+        ? new Date(Number(lastMs)).toISOString()
+        : conversation.updatedAt?.toISOString?.() ?? conversation.createdAt.toISOString()
+
+    return {
+      id: conversation.id,
+      companionId: conversation.companionId,
+      userId: conversation.userId,
+      status: 'active' as const,
+      title: conversation.title ?? undefined,
+      lastMessageAt,
+      createdAt: conversation.createdAt.toISOString(),
+    }
   }
 
   @Post('messages/:id/feedback')
