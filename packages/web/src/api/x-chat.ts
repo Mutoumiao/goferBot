@@ -29,7 +29,8 @@ function authedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Resp
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
-  return fetch(input, { ...init, headers })
+  // HttpOnly Cookie 鉴权：必须 include，否则跨端口（:1420 → :3100）SSE 无凭证 → 网络/401 失败
+  return fetch(input, { ...init, headers, credentials: 'include' })
 }
 
 export const xChatRequest = XRequest<XChatInput, SSEOutput>(`${API_BASE_URL}/chat-messages`, {
