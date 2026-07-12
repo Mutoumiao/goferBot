@@ -15,7 +15,7 @@ export interface TestUser {
 
 const E2E_DATABASE_URL =
   'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000'
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3100'
 
 /**
  * 通过 API 注册创建测试用户

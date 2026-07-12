@@ -5,7 +5,6 @@ import { bootstrap } from '../../../packages/server/src/bootstrap.js'
 import { PrismaService } from '../../../packages/server/src/processors/database/prisma.service.js'
 import { QueueService } from '../../../packages/server/src/processors/queue/queue.service.js'
 import { StorageService } from '../../../packages/server/src/processors/storage/storage.service.js'
-import { VectorService } from '../../../packages/server/src/processors/vector/vector.service.js'
 
 const mockQueueService = {
   onModuleInit: async () => {},
@@ -21,16 +20,6 @@ const mockQueueService = {
   getDocumentQueue: () => null,
   getEmbeddingQueue: () => null,
   getRedisConnection: () => null,
-}
-
-const mockVectorService = {
-  onModuleInit: async () => {},
-  ensureCollection: async () => {},
-  insertVectors: async () => {},
-  searchVectors: async () => [],
-  deleteByIds: async () => {},
-  deleteByFileId: async () => {},
-  deleteByKbId: async () => {},
 }
 
 const mockStorageService = {
@@ -64,24 +53,22 @@ export class TestAppFactory {
         }),
       )
 
-    // realMode=false 时全部使用 mock 服务；realMode=true 时默认使用真实 Queue/Vector/Storage。
-    // 当需要在真实 Storage + Vector 环境下禁用队列（避免 Worker 异步干扰）时，可传 mockQueue=true。
+    // realMode=false 时 mock Queue + Storage；realMode=true 默认走真实依赖。
+    // mockQueue=true 可在 realMode 下单独禁用队列，避免 Worker 异步干扰。
+    // VectorService 已随旧 Nest RAG 移除，向量检索由 Knowledge AI 负责。
     if (!realMode || mockQueue) {
       moduleRef.overrideProvider(QueueService).useValue(mockQueueService)
     }
 
     if (!realMode) {
-      moduleRef
-        .overrideProvider(VectorService)
-        .useValue(mockVectorService)
-        .overrideProvider(StorageService)
-        .useValue(mockStorageService)
+      moduleRef.overrideProvider(StorageService).useValue(mockStorageService)
     }
 
     const compiled = await moduleRef.compile()
 
+    // bodyLimit 与 multipart 50MB 对齐，避免大文件 inject 被 Fastify 默认 1MB 拦截
     const app = compiled.createNestApplication<NestFastifyApplication>(
-      new FastifyAdapter({ bodyLimit: 1048576 }),
+      new FastifyAdapter({ bodyLimit: 50 * 1024 * 1024 }),
     )
 
     await bootstrap(app)

@@ -22,7 +22,7 @@ describe('环境变量验证 (validateEnv)', () => {
     const result = validateEnv()
 
     expect(result.NODE_ENV).toBe('development')
-    expect(result.PORT).toBe(3000)
+    expect(result.PORT).toBe(3100)
     expect(result.LOG_LEVEL).toBe('info')
     expect(result.JWT_EXPIRES_IN).toBe('15m')
     expect(result.JWT_REFRESH_EXPIRES_IN).toBe('7d')

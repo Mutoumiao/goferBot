@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-const BASE_URL = 'http://localhost:3000/api'
+const BASE_URL = 'http://localhost:3100/api'
 
 let publicKey = null
 let webToken = null

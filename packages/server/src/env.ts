@@ -9,7 +9,7 @@ const optionalNonEmptyString = z.preprocess(
 const envSchema = z.object({
   // === 基础 ===
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().positive().default(3000),
+  PORT: z.coerce.number().int().positive().default(3100),
   API_PREFIX: z.string().default('api'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 

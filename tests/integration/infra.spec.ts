@@ -63,7 +63,7 @@ describe('E2E Infrastructure (q-16)', () => {
 
   it('AC-10b: backend health check passes', async () => {
     if (!backendOk) return
-    const res = await fetch('http://localhost:3000/api/health')
+    const res = await fetch('http://localhost:3100/api/health')
     expect(res.status).toBe(200)
   })
 

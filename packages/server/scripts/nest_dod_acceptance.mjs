@@ -4,18 +4,18 @@
  * Prerequisites:
  * - Postgres/Redis/MinIO up
  * - Knowledge AI :8090 healthy
- * - Nest listening (default http://127.0.0.1:3000)
+ * - Nest listening (default http://127.0.0.1:3100)
  * - KNOWLEDGE_AI_BASE_URL + KNOWLEDGE_AI_SERVICE_TOKEN configured for Nest
  * - TEST_INVITATION_CODES includes GF-test-code-001
  *
  * Usage:
  *   node packages/server/scripts/nest_dod_acceptance.mjs
- *   NEST_BASE=http://127.0.0.1:3000 node packages/server/scripts/nest_dod_acceptance.mjs
+ *   NEST_BASE=http://127.0.0.1:3100 node packages/server/scripts/nest_dod_acceptance.mjs
  */
 
 import { constants, publicEncrypt, randomUUID } from 'node:crypto'
 
-const BASE = (process.env.NEST_BASE || 'http://127.0.0.1:3000').replace(/\/$/, '')
+const BASE = (process.env.NEST_BASE || 'http://127.0.0.1:3100').replace(/\/$/, '')
 const API = `${BASE}/api`
 const WEB_ACCESS_COOKIE = 'goferbot_web_access_token'
 const ADMIN_ACCESS_COOKIE = 'goferbot_admin_access_token'

@@ -3,7 +3,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import {
   ADMIN_ACCESS_COOKIE,
   WEB_ACCESS_COOKIE,
-} from '../../../packages/server/src/auth/cookie.helper.js'
+} from '../../../packages/data/src/constants/cookie.js'
 
 const TEST_INVITATION_CODE = 'GF-test-code-001'
 

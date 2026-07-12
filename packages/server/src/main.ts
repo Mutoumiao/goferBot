@@ -31,7 +31,7 @@ async function main() {
     SwaggerModule.setup('api/docs', app, cleanupOpenApiDoc(document))
   }
 
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3100
   await app.listen(port, '0.0.0.0')
 
   console.log(`Server running on http://localhost:${port}`)

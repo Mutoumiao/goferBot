@@ -6,7 +6,7 @@
 
 const { execSync } = require('node:child_process')
 
-const PORTS = [3000, 5173]
+const PORTS = [3100, 1420, 1421]
 
 function killPort(port) {
   console.log(`[kill-port] Checking port ${port}...`)
