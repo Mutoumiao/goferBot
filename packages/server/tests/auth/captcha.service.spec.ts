@@ -189,7 +189,7 @@ describe('CaptchaService', () => {
     it('CS-06b: 验证码启用且 Origin 在白名单中时直接跳过验证返回 true', async () => {
       mockConfigService = createMockConfigService(
         true,
-        'http://localhost:1421,http://localhost:3000',
+        'http://localhost:1421,http://localhost:3100',
       )
       service = new CaptchaService(mockAuthRedis, mockConfigService)
 
@@ -198,7 +198,7 @@ describe('CaptchaService', () => {
     })
 
     it('CS-06c: 验证码启用且 Origin 不在白名单中时执行正常验证码校验', async () => {
-      mockConfigService = createMockConfigService(true, 'http://localhost:3000')
+      mockConfigService = createMockConfigService(true, 'http://localhost:3100')
       mockRedis = createMockRedis({
         get: vi.fn().mockResolvedValue('ABCD'),
       })
@@ -217,7 +217,7 @@ describe('CaptchaService', () => {
     })
 
     it('CS-06d: 验证码启用且 Origin 不在白名单中且验证码错误时返回 false', async () => {
-      mockConfigService = createMockConfigService(true, 'http://localhost:3000')
+      mockConfigService = createMockConfigService(true, 'http://localhost:3100')
       mockRedis = createMockRedis({
         get: vi.fn().mockResolvedValue('ABCD'),
       })
@@ -253,7 +253,7 @@ describe('CaptchaService', () => {
     })
 
     it('CS-06f: 验证码启用且 Origin 为空时执行正常验证码校验', async () => {
-      mockConfigService = createMockConfigService(true, 'http://localhost:3000')
+      mockConfigService = createMockConfigService(true, 'http://localhost:3100')
       mockRedis = createMockRedis({
         get: vi.fn().mockResolvedValue('ABCD'),
       })

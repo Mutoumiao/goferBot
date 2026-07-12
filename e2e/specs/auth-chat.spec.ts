@@ -1,3 +1,9 @@
+/**
+ * 账户与会话冒烟（真实后端）
+ *
+ * 注意：依赖邀请码 TEST_INVITATION_CODES 与验证码白名单/占位。
+ * 全量 Web 业务链请优先跑：pnpm test:e2e:web
+ */
 import { expect, test } from '@playwright/test'
 import { AuthPage } from '../pages/AuthPage'
 import { ChatPage } from '../pages/ChatPage'
@@ -19,6 +25,7 @@ test.describe('账户注册与登录（真实后端）', () => {
     await expect(authPage.passwordInput.first()).toBeVisible()
     await expect(authPage.confirmPasswordInput).toBeVisible()
     await expect(authPage.submitButton.first()).toBeVisible()
+    await expect(authPage.page.getByPlaceholder('请输入邀请码')).toBeVisible()
   })
 
   test('登录页面元素完整', async () => {
@@ -34,7 +41,8 @@ test.describe('账户注册与登录（真实后端）', () => {
     const password = 'Password123'
 
     await authPage.gotoRegister()
-    await authPage.register('E2E User', email, password)
+    const res = await authPage.register('E2E User', email, password)
+    expect(res.ok(), `注册失败 ${res.status()}`).toBeTruthy()
 
     await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
   })
@@ -47,35 +55,32 @@ test.describe('账户注册与登录（真实后端）', () => {
     await authPage.register('E2E User', email, password)
     await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
 
-    await page.goto('http://localhost:1420/login')
-    await expect(authPage.emailInput.first()).toBeVisible()
+    // 已登录访问 /login 会 beforeLoad 重定向；先退出再测登录
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: '退出登录' }).click()
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 })
 
     await authPage.login(email, password)
     await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
   })
 
-  test('错误密码登录失败', async () => {
+  test('错误密码登录失败', async ({ page }) => {
     const email = `e2e-fail-${Date.now()}@example.com`
     const password = 'Password123'
 
     await authPage.gotoRegister()
     await authPage.register('E2E User', email, password)
+    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
 
-    await authPage.gotoLogin()
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: '退出登录' }).click()
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 })
+
     await authPage.login(email, 'WrongPassword1')
-
     await authPage.expectErrorMessageContains('邮箱或密码错误')
   })
 
   test('已登录用户访问 /login 重定向首页', async ({ page }) => {
-    // NOTE: 前端尚未实现登录路由守卫（issue f-02-route-guard），
-    // 已登录用户访问 /login 应重定向到 /chat/* 的逻辑待实现。
-    // 当前先以 fixme 记录，路由守卫落地后立即恢复。
-    test.fixme(
-      true,
-      'blocked by f-02-route-guard: /login has no beforeLoad redirect for authenticated users',
-    )
-
     const email = `e2e-redirect-${Date.now()}@example.com`
     const password = 'Password123'
 
@@ -83,7 +88,7 @@ test.describe('账户注册与登录（真实后端）', () => {
     await authPage.register('E2E User', email, password)
     await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
 
-    await page.goto('http://localhost:1420/login')
+    await page.goto('/login')
     await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
   })
 })
@@ -104,43 +109,14 @@ test.describe('首页输入 -> 会话页（真实后端）', () => {
     await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
   })
 
-  test('首页显示输入框与标题', async () => {
-    await chatPage.waitForHome()
-    await expect(chatPage.homeTitle).toBeVisible()
-    await expect(chatPage.homeTextarea).toBeVisible()
+  test('首页显示输入框与标题，未选知识库时发送禁用', async ({ page }) => {
+    await page.goto('/chat', { waitUntil: 'domcontentloaded' })
+    await expect(chatPage.homeTitle).toBeVisible({ timeout: 15_000 })
+    // 占位符随是否选 KB 变化；textarea 始终存在
+    await expect(page.locator('textarea').first()).toBeVisible()
+    await expect(page.getByTestId('temp-send-btn')).toBeDisabled()
+    await expect(page.getByTestId('kb-selector-trigger')).toBeVisible()
   })
 
-  test('首页输入提交后切换到会话页并显示对话', async ({ page }) => {
-    // NOTE: 真实后端需配置可用的 LLM provider（DEEPSEEK_API_KEY 等）。
-    // 当前环境 providers 为空，聊天流无法返回 AI 回复，跳过该用例。
-    test.fixme(
-      true,
-      'blocked by no-llm-provider: backend /api/chat-messages/providers returns empty, assistant reply unavailable',
-    )
-
-    await chatPage.waitForHome()
-    await chatPage.submitFromHome('你好，请介绍一下知识库系统')
-
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
-    await chatPage.waitForAssistantReply(45_000)
-
-    const assistantCount = await chatPage.getAssistantMessageCount()
-    expect(assistantCount).toBeGreaterThanOrEqual(1)
-  })
-
-  test('会话页可以看到用户和 AI 双向对话', async ({ page }) => {
-    test.fixme(
-      true,
-      'blocked by no-llm-provider: backend /api/chat-messages/providers returns empty, assistant reply unavailable',
-    )
-
-    await chatPage.waitForHome()
-    await chatPage.submitFromHome('写一首关于 AI 的诗')
-
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
-    await chatPage.waitForAssistantReply(45_000)
-
-    const lastText = await chatPage.getLastAssistantText()
-    expect(lastText.length).toBeGreaterThan(0)
-  })
+  // 完整「选 KB → 发问 → 引用」见 knowledge-ai-rag.spec.ts
 })

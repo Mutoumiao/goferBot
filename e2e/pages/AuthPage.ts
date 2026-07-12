@@ -14,28 +14,41 @@ export class AuthPage {
 
   constructor(page: Page) {
     this.page = page
-    this.nameInput = page.locator('input[type="text"]').first()
+    this.nameInput = page.getByPlaceholder('你的名字')
     this.emailInput = page.locator('input[type="email"]').first()
     this.passwordInput = page.locator('input[type="password"]')
     this.confirmPasswordInput = page.locator('input[type="password"]').nth(1)
     this.submitButton = page.locator('button[type="submit"]').first()
-    this.errorMessage = page.locator('.bg-destructive\\/10, [data-sonner-toast], [role="alert"]')
+    // LoginForm 错误区为内联 style 红底，无 role=alert；兼容 toast
+    this.errorMessage = page.locator(
+      [
+        '.bg-destructive\\/10',
+        '[data-sonner-toast]',
+        '[role="alert"]',
+        'form div:has(svg)',
+      ].join(', '),
+    )
     this.registerSwitchButton = page.getByRole('button', { name: /立即注册/ })
     this.loginSwitchButton = page.getByRole('button', { name: /去登录/ })
     this.goBackButton = page.getByRole('button', { name: /返回登录/ })
   }
 
   private async submitAuthForm(endpoint: 'register' | 'login'): Promise<Response> {
-    const urlPart = `/api/auth/${endpoint}`
+    // 实际路径为 /api/web/auth/{login|register}（VITE_API_BASE_URL 指向 Nest）
     const [response] = await Promise.all([
-      this.page.waitForResponse((r) => r.url().includes(urlPart), { timeout: 15_000 }),
+      this.page.waitForResponse(
+        (r) =>
+          r.request().method() === 'POST' &&
+          (r.url().includes(`/web/auth/${endpoint}`) || r.url().includes(`/auth/${endpoint}`)),
+        { timeout: 20_000 },
+      ),
       this.submitButton.click(),
     ])
     return response
   }
 
   async gotoLogin() {
-    await this.page.goto('http://localhost:1420/login', { waitUntil: 'domcontentloaded' })
+    await this.page.goto('/login', { waitUntil: 'domcontentloaded' })
     await expect(this.emailInput).toBeVisible({ timeout: 10_000 })
   }
 
@@ -54,9 +67,18 @@ export class AuthPage {
     await expect(this.passwordInput.first()).toBeVisible()
   }
 
-  async register(name: string, email: string, password: string) {
+  async register(
+    name: string,
+    email: string,
+    password: string,
+    invitationCode = process.env.E2E_INVITE_CODE || 'GF-test-code-001',
+  ) {
     await this.nameInput.fill(name)
     await this.emailInput.fill(email)
+    const invite = this.page.getByPlaceholder('请输入邀请码')
+    if (await invite.isVisible().catch(() => false)) {
+      await invite.fill(invitationCode)
+    }
     await this.passwordInput.first().fill(password)
     await this.confirmPasswordInput.fill(password)
     return this.submitAuthForm('register')
@@ -65,10 +87,20 @@ export class AuthPage {
   async login(email: string, password: string) {
     await this.emailInput.fill(email)
     await this.passwordInput.first().fill(password)
+    // 前端强制 4 位验证码；后端 CAPTCHA_ENABLED=false 或 Origin 白名单可跳过真校验
+    // 须等验证码挑战加载完成，否则 Controlled input 在 challenge=null 时忽略输入
+    const captcha = this.page.getByPlaceholder('验证码')
+    if (await captcha.isVisible().catch(() => false)) {
+      await expect(this.page.getByRole('img', { name: '验证码' })).toBeVisible({
+        timeout: 15_000,
+      })
+      await captcha.fill('TEST')
+      await expect(captcha).toHaveValue('TEST')
+    }
     return this.submitAuthForm('login')
   }
 
   async expectErrorMessageContains(text: string) {
-    await expect(this.errorMessage.first()).toContainText(text)
+    await expect(this.page.getByText(text).first()).toBeVisible({ timeout: 10_000 })
   }
 }
