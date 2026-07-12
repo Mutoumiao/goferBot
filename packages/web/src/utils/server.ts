@@ -82,6 +82,42 @@ function isLoginPage() {
   return window.location.pathname === '/login'
 }
 
+function throwHttpError(response: Response, body: unknown): never {
+  const payload =
+    body && typeof body === 'object' && 'error' in (body as object)
+      ? (body as { error?: { code?: string; message?: string } }).error
+      : (body as { code?: string; message?: string } | null)
+  const message =
+    (payload && typeof payload === 'object' && 'message' in payload && payload.message) ||
+    `HTTP ${response.status}: ${response.statusText}`
+  const code =
+    payload && typeof payload === 'object' && 'code' in payload ? payload.code : undefined
+  const err = new Error(String(message)) as Error & {
+    status?: number
+    code?: string
+    cause?: unknown
+  }
+  err.status = response.status
+  err.code = code as string | undefined
+  err.cause = body
+  throw err
+}
+
+/** 登录/注册等凭据接口的 401 不应触发 token refresh */
+function isCredentialAuthFailure(code: unknown, method: AlovaMethod): boolean {
+  if (
+    code === 'AUTH_INVALID_CREDENTIALS' ||
+    code === 'CAPTCHA_INVALID' ||
+    code === 'CAPTCHA_REQUIRED' ||
+    code === 'INVALID_INVITATION_CODE' ||
+    code === 'USER_EXISTS'
+  ) {
+    return true
+  }
+  const url = String((method as { url?: string }).url ?? '')
+  return /\/auth\/(login|register)\b/.test(url) || isLoginPage()
+}
+
 const responded = {
   async onSuccess(response: Response, method: AlovaMethod) {
     if (isUnauthorized(response.status)) {
@@ -97,6 +133,11 @@ const responded = {
           window.location.replace('/login')
         }
         throw new Error('NO_AUTH_TOKEN')
+      }
+
+      // 错误密码 / 验证码等：直接抛业务错误，禁止走 refresh
+      if (isCredentialAuthFailure(code, method)) {
+        throwHttpError(response, body)
       }
 
       // 已尝试过刷新但仍 401/403 → 不再循环，直接抛错由上层处理（clearAuth / 跳转登录）

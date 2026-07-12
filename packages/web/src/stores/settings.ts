@@ -74,12 +74,29 @@ export const useSettingsStore = create<SettingsState>()(
       loadConfig: async () => {
         set({ isLoading: true, error: null })
         try {
-          const data = await alovaInstance.Get<AppConfig>('/settings').send()
-          // ponytail: 用户端只使用后端返回的 appearance/fontSizeLevel，providers 保留本地自定义
-          const userEditable: Partial<AppConfig> = {
-            appearance: data.appearance,
-            fontSizeLevel: data.fontSizeLevel,
+          // 后端 Settings.appearance = { mode, fontSizeLevel }；前端 AppConfig 为扁平字段
+          const data = (await alovaInstance.Get<Record<string, unknown>>('/settings').send()) as {
+            appearance?:
+              | 'light'
+              | 'dark'
+              | 'system'
+              | { mode?: 'light' | 'dark' | 'system'; fontSizeLevel?: number }
+            fontSizeLevel?: number
           }
+          let appearance: AppConfig['appearance'] = DEFAULT_CONFIG.appearance
+          let fontSizeLevel: AppConfig['fontSizeLevel'] = DEFAULT_CONFIG.fontSizeLevel
+          if (typeof data.appearance === 'string') {
+            appearance = data.appearance
+          } else if (data.appearance && typeof data.appearance === 'object') {
+            appearance = data.appearance.mode ?? appearance
+            if (typeof data.appearance.fontSizeLevel === 'number') {
+              fontSizeLevel = data.appearance.fontSizeLevel as AppConfig['fontSizeLevel']
+            }
+          }
+          if (typeof data.fontSizeLevel === 'number') {
+            fontSizeLevel = data.fontSizeLevel as AppConfig['fontSizeLevel']
+          }
+          const userEditable: Partial<AppConfig> = { appearance, fontSizeLevel }
           const merged = mergeAppConfig(DEFAULT_CONFIG, userEditable)
           set({ config: merged, savedConfig: merged, isLoading: false })
         } catch (e) {
@@ -90,14 +107,14 @@ export const useSettingsStore = create<SettingsState>()(
       saveConfig: async (updates) => {
         set({ isLoading: true, error: null })
         const body = updates ? mergeAppConfig(get().config, updates) : get().config
-        // ponytail: 用户端只允许保存 appearance/fontSizeLevel，其他字段由 admin 后台管理
-        const userEditable: Partial<AppConfig> = {
-          appearance: body.appearance,
+        // 后端 appearance 分类契约：{ mode, fontSizeLevel }
+        const appearancePayload = {
+          mode: body.appearance,
           fontSizeLevel: body.fontSizeLevel,
         }
 
         try {
-          await alovaInstance.Post<AppConfig>('/settings', userEditable).send()
+          await alovaInstance.Post('/settings/appearance', appearancePayload).send()
           set((s) => ({
             config: {
               ...body,
