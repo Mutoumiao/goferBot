@@ -66,8 +66,8 @@ export class FolderMoveService {
     }
 
     const copiedRoot = await this.copyTree(userId, srcKbId, folderId, targetKbId, targetFolderId)
+    // cleanupFolder 已删除源文件夹及其子树，无需二次 delete
     await this.cleanupService.cleanupFolder(srcKbId, folderId)
-    await this.prisma.folder.delete({ where: { id: folderId } })
 
     return copiedRoot
   }

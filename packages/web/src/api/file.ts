@@ -29,10 +29,10 @@ export const renameFolder = (kbId: string, folderId: string, name: string) =>
 export const deleteFolder = (kbId: string, folderId: string) =>
   alovaInstance.Delete(`/knowledge-bases/${kbId}/folders/${folderId}`)
 
-/** 获取文件夹面包屑 */
+/** 获取文件夹面包屑（根目录勿传空 folderId，服务端会 400） */
 export const getBreadcrumbs = (kbId: string, folderId?: string | null) =>
   alovaInstance.Get(`/knowledge-bases/${kbId}/breadcrumbs`, {
-    params: { folderId: folderId ?? '' },
+    params: folderId ? { folderId } : {},
   })
 
 /** 预览文档 */

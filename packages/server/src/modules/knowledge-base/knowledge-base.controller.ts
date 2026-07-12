@@ -94,10 +94,12 @@ export class KnowledgeBaseController {
     @Query('folderId') folderId?: string,
   ) {
     validateUuid(kbId, 'kbId')
-    if (folderId !== undefined) {
-      validateUuid(folderId, 'folderId')
+    // 根目录：缺省或空串均视为无 folderId（勿对 '' 做 UUID 校验）
+    const normalizedFolderId = folderId?.trim() ? folderId : undefined
+    if (normalizedFolderId !== undefined) {
+      validateUuid(normalizedFolderId, 'folderId')
     }
-    return this.folderService.getBreadcrumbs(userId, kbId, folderId)
+    return this.folderService.getBreadcrumbs(userId, kbId, normalizedFolderId)
   }
 
   @Get(':kbId/search')

@@ -28,9 +28,9 @@ export class FolderService {
   }
 
   async remove(userId: string, kbId: string, folderId: string) {
+    // treeService.remove 仅做归属校验；cleanupFolder 负责文档/索引/文件夹级联删除
     await this.treeService.remove(userId, kbId, folderId)
     await this.cleanupService.cleanupFolder(kbId, folderId)
-    await this.moveService.deleteFolder(folderId)
     return { id: folderId, deleted: true }
   }
 

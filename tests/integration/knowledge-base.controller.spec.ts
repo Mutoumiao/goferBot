@@ -61,8 +61,10 @@ describe('KnowledgeBaseController', () => {
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
-      expect(Array.isArray(body.data)).toBe(true)
-      expect(body.data.length).toBeGreaterThanOrEqual(1)
+      // 分页契约：{ items, pagination }
+      expect(Array.isArray(body.data?.items)).toBe(true)
+      expect(body.data.items.length).toBeGreaterThanOrEqual(1)
+      expect(body.data.pagination).toBeDefined()
     })
 
     it('AC-68: returns 401 without token', async () => {
@@ -335,11 +337,21 @@ describe('KnowledgeBaseController', () => {
     it('AC-81: returns 404 for non-existent KB', async () => {
       const res = await app.inject({
         method: 'PATCH',
-        url: '/api/knowledge-bases/non-existent-id',
+        url: '/api/knowledge-bases/00000000-0000-4000-8000-000000000099',
         headers: authHeader(userToken),
         payload: { name: 'Updated' },
       })
       expect(res.statusCode).toBe(404)
+    })
+
+    it('AC-81b: returns 400 for invalid KB id format', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/knowledge-bases/non-existent-id',
+        headers: authHeader(userToken),
+        payload: { name: 'Updated' },
+      })
+      expect(res.statusCode).toBe(400)
     })
   })
 
@@ -411,10 +423,19 @@ describe('KnowledgeBaseController', () => {
     it('AC-85: returns 404 for non-existent KB', async () => {
       const res = await app.inject({
         method: 'DELETE',
-        url: '/api/knowledge-bases/non-existent-id',
+        url: '/api/knowledge-bases/00000000-0000-4000-8000-000000000099',
         headers: authHeader(userToken),
       })
       expect(res.statusCode).toBe(404)
+    })
+
+    it('AC-85b: returns 400 for invalid KB id format', async () => {
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/knowledge-bases/non-existent-id',
+        headers: authHeader(userToken),
+      })
+      expect(res.statusCode).toBe(400)
     })
   })
 })

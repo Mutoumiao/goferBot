@@ -3,33 +3,35 @@ import type { UploadTask } from '../types'
 
 interface UploadProgressBarProps {
   tasks: UploadTask[]
-  activeUploadCount: number
   onRetry: (taskId: string) => void
   onClear: () => void
 }
 
-export function UploadProgressBar({
-  tasks,
-  activeUploadCount,
-  onRetry,
-  onClear,
-}: UploadProgressBarProps) {
+export function UploadProgressBar({ tasks, onRetry, onClear }: UploadProgressBarProps) {
   if (tasks.length === 0) return null
 
+  const pendingCount = tasks.filter((t) => t.status === 'queued' || t.status === 'uploading').length
+  const failedCount = tasks.filter((t) => t.status === 'failed').length
   const totalProgress =
     tasks.length > 0 ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length) : 0
 
+  let title = '上传完成'
+  if (pendingCount > 0) {
+    title = `正在上传 ${pendingCount} 个文件`
+  } else if (failedCount > 0) {
+    title = `${failedCount} 个文件上传失败`
+  }
+
   return (
-    <div className="rounded-lg border border-border-default bg-surface-1 p-3 mb-4">
+    <div className="rounded-lg border border-border-default bg-surface-1 p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-text-primary">
-          {activeUploadCount > 0 ? `正在上传 ${activeUploadCount} 个文件` : '上传完成'}
-        </span>
+        <span className="text-sm font-medium text-text-primary">{title}</span>
         <button
           type="button"
           onClick={onClear}
           className="text-text-tertiary hover:text-text-secondary"
           title="清除已完成"
+          aria-label="清除已完成"
         >
           <X className="h-4 w-4" />
         </button>
@@ -43,7 +45,7 @@ export function UploadProgressBar({
         />
       </div>
 
-      <ul className="space-y-1">
+      <ul className="space-y-1 max-h-48 overflow-y-auto">
         {tasks.map((task) => (
           <li key={task.id} className="flex items-center gap-2 text-xs">
             {task.status === 'failed' ? (
@@ -60,12 +62,15 @@ export function UploadProgressBar({
             </span>
             {task.status === 'failed' && (
               <>
-                <span className="text-red-500">上传失败</span>
+                <span className="max-w-[8rem] truncate text-red-500" title={task.error}>
+                  {task.error ?? '上传失败'}
+                </span>
                 <button
                   type="button"
                   onClick={() => onRetry(task.id)}
-                  className="text-blue-500 hover:text-blue-700 flex items-center gap-0.5"
-                  title="重试上传"
+                  disabled={!task.file}
+                  className="text-blue-500 hover:text-blue-700 flex items-center gap-0.5 disabled:opacity-40"
+                  title={task.file ? '重试上传' : '文件已失效，请重新选择'}
                 >
                   <RefreshCw className="h-3 w-3" />
                   重试
@@ -76,6 +81,7 @@ export function UploadProgressBar({
             {task.status === 'uploading' && (
               <span className="text-text-tertiary">{task.progress}%</span>
             )}
+            {task.status === 'queued' && <span className="text-text-tertiary">排队中</span>}
           </li>
         ))}
       </ul>

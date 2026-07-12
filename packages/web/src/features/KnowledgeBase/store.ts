@@ -1,6 +1,6 @@
 import type { KbEntry } from '@goferbot/data'
 import { create } from 'zustand'
-import type { DocumentItem, Folder, UploadTask } from './types'
+import type { DocumentItem, Folder, ItemSortParams, UploadTask } from './types'
 
 export type { DocumentItem, Folder, UploadTask }
 
@@ -11,6 +11,12 @@ interface KbState {
 
   uploadTasks: UploadTask[]
   maxConcurrent: number
+  /** 上传管理弹窗是否打开（与迷你浮层互斥） */
+  uploadManagerOpen: boolean
+  /** 用户手动收起迷你浮层 */
+  uploadMiniDismissed: boolean
+  /** 文件列表当前排序（迷你浮层重开上传管理时复用） */
+  fileListSort: ItemSortParams | null
   folders: Folder[]
   documents: DocumentItem[]
   currentKbId: string | null
@@ -33,6 +39,10 @@ interface KbState {
   setFileLoading: (v: boolean) => void
   setFileError: (error: string | null) => void
   setBreadcrumbs: (breadcrumbs: Folder[]) => void
+  setFileListSort: (sort: ItemSortParams | null) => void
+
+  setUploadManagerOpen: (open: boolean) => void
+  setUploadMiniDismissed: (dismissed: boolean) => void
 
   addUploadTask: (task: Omit<UploadTask, 'id' | 'progress' | 'status'>) => string
   startUploadTask: (taskId: string) => void
@@ -40,9 +50,13 @@ interface KbState {
   markUploadComplete: (taskId: string) => void
   markUploadFailed: (taskId: string, error: string) => void
   removeUploadTask: (taskId: string) => void
+  /** 仅移除 status === 'completed' 的任务，保留 failed 供重试 */
   clearCompletedUploads: () => void
 
+  /** 仅计 uploading（兼容旧调用） */
   activeUploadCount: () => number
+  /** 角标用：queued + uploading */
+  pendingUploadCount: () => number
 }
 
 export const useKbStore = create<KbState>((set, get) => ({
@@ -52,6 +66,9 @@ export const useKbStore = create<KbState>((set, get) => ({
 
   uploadTasks: [],
   maxConcurrent: 3,
+  uploadManagerOpen: false,
+  uploadMiniDismissed: false,
+  fileListSort: null,
   folders: [],
   documents: [],
   currentKbId: null,
@@ -77,11 +94,18 @@ export const useKbStore = create<KbState>((set, get) => ({
   setFileLoading: (v) => set({ fileLoading: v }),
   setFileError: (error) => set({ fileError: error }),
   setBreadcrumbs: (breadcrumbs) => set({ breadcrumbs }),
+  setFileListSort: (sort) => set({ fileListSort: sort }),
+
+  setUploadManagerOpen: (open) => set({ uploadManagerOpen: open }),
+  setUploadMiniDismissed: (dismissed) => set({ uploadMiniDismissed: dismissed }),
 
   addUploadTask: (task): string => {
     const id = crypto.randomUUID()
     const newTask: UploadTask = { ...task, id, progress: 0, status: 'queued' }
-    set({ uploadTasks: [...get().uploadTasks, newTask] })
+    set({
+      uploadTasks: [...get().uploadTasks, newTask],
+      uploadMiniDismissed: false,
+    })
     return id
   },
 
@@ -105,7 +129,7 @@ export const useKbStore = create<KbState>((set, get) => ({
     set({
       uploadTasks: get().uploadTasks.map((t) =>
         t.id === taskId && t.status === 'uploading'
-          ? { ...t, status: 'completed' as const, progress: 100 }
+          ? { ...t, status: 'completed' as const, progress: 100, file: undefined }
           : t,
       ),
     })
@@ -127,13 +151,15 @@ export const useKbStore = create<KbState>((set, get) => ({
 
   clearCompletedUploads: () => {
     set({
-      uploadTasks: get().uploadTasks.filter(
-        (t) => t.status === 'uploading' || t.status === 'queued',
-      ),
+      uploadTasks: get().uploadTasks.filter((t) => t.status !== 'completed'),
     })
   },
 
   activeUploadCount: () => {
     return get().uploadTasks.filter((t) => t.status === 'uploading').length
+  },
+
+  pendingUploadCount: () => {
+    return get().uploadTasks.filter((t) => t.status === 'queued' || t.status === 'uploading').length
   },
 }))

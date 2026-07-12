@@ -107,16 +107,17 @@ export class FolderTreeService {
     kbId: string,
     folderId: string,
   ): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
+    // 表名/列名对齐 Prisma @@map：folders / parent_id / kb_id
     const result = (await this.prisma.$queryRaw`
       WITH RECURSIVE ancestors AS (
-        SELECT id, name, "parentId"
-        FROM "Folder"
-        WHERE id = ${folderId} AND "kbId" = ${kbId}
+        SELECT id, name, parent_id AS "parentId"
+        FROM folders
+        WHERE id = ${folderId} AND kb_id = ${kbId}
         UNION ALL
-        SELECT f.id, f.name, f."parentId"
-        FROM "Folder" f
+        SELECT f.id, f.name, f.parent_id AS "parentId"
+        FROM folders f
         INNER JOIN ancestors a ON f.id = a."parentId"
-        WHERE f."kbId" = ${kbId}
+        WHERE f.kb_id = ${kbId}
       )
       SELECT id, name, "parentId" FROM ancestors
     `) as Array<{ id: string; name: string; parentId: string | null }>
@@ -126,14 +127,14 @@ export class FolderTreeService {
   async isDescendant(kbId: string, ancestorId: string, descendantId: string): Promise<boolean> {
     const result = (await this.prisma.$queryRaw`
       WITH RECURSIVE descendants AS (
-        SELECT id, "parentId"
-        FROM "Folder"
-        WHERE id = ${descendantId} AND "kbId" = ${kbId}
+        SELECT id, parent_id AS "parentId"
+        FROM folders
+        WHERE id = ${descendantId} AND kb_id = ${kbId}
         UNION ALL
-        SELECT f.id, f."parentId"
-        FROM "Folder" f
+        SELECT f.id, f.parent_id AS "parentId"
+        FROM folders f
         INNER JOIN descendants d ON f.id = d."parentId"
-        WHERE f."kbId" = ${kbId}
+        WHERE f.kb_id = ${kbId}
       )
       SELECT 1 as found FROM descendants WHERE id = ${ancestorId} AND id != ${descendantId}
       LIMIT 1

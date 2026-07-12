@@ -23,6 +23,7 @@ import {
 } from '@/api/KnowledgeBase'
 import { useKbStore } from './store'
 import type { DocumentItem, Folder, ItemSortParams } from './types'
+import { partitionUploadFiles } from './upload-validation'
 
 class ServiceError extends Error {
   status?: number
@@ -97,6 +98,34 @@ function throwServiceError(error: unknown): never {
 
 function isFolderItem(item: Folder | DocumentItem): item is Folder {
   return !('status' in item)
+}
+
+/** 文档列表 API 分页响应（或历史数组形态）→ DocumentItem[] */
+function normalizeDocumentList(payload: unknown): DocumentItem[] {
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeDocumentItem)
+  }
+  if (payload && typeof payload === 'object' && 'items' in payload) {
+    const items = (payload as { items?: unknown }).items
+    if (Array.isArray(items)) {
+      return items.map(normalizeDocumentItem)
+    }
+  }
+  return []
+}
+
+function normalizeDocumentItem(raw: unknown): DocumentItem {
+  const doc = raw as DocumentItem & { size?: number | string | null }
+  const size =
+    doc.size === null || doc.size === undefined
+      ? null
+      : typeof doc.size === 'string'
+        ? Number(doc.size)
+        : doc.size
+  return {
+    ...doc,
+    size: Number.isFinite(size as number) ? (size as number) : null,
+  }
 }
 
 // ============================================================================
@@ -188,14 +217,15 @@ export async function loadKbItems(
   const documentSort = sort ? { sortBy: sort.sortBy, sortOrder: sort.sortOrder } : undefined
 
   try {
-    const [folders, documents, breadcrumbs] = await Promise.all([
+    const [folders, documentsRes, breadcrumbs] = await Promise.all([
       apiGetFolders(kbId, folderId, folderSort).send(),
       apiGetDocuments(kbId, folderId, documentSort).send(),
       apiGetBreadcrumbs(kbId, folderId).send(),
     ])
     if (thisLoadId !== currentLoadId) return
     setFolders((folders as Folder[]) ?? [])
-    setDocuments((documents as DocumentItem[]) ?? [])
+    // 文档列表接口为分页：{ items, total, page, pageSize }；兼容旧数组响应
+    setDocuments(normalizeDocumentList(documentsRes))
     setBreadcrumbs((breadcrumbs as Folder[]) ?? [])
   } catch (e) {
     if (thisLoadId !== currentLoadId) return
@@ -524,30 +554,25 @@ export async function addFolder(kbId: string, name: string, parentId?: string | 
 // 上传操作
 // ============================================================================
 
-// ponytail: 允许的文件类型和大小限制
-const ALLOWED_MIME_TYPES = [
-  'text/plain',
-  'text/markdown',
-  'text/html',
-  'text/csv',
-  'application/pdf',
-  'application/json',
-  'application/xml',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-]
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
-
-function validateFile(file: File): { valid: boolean; error?: string } {
-  if (file.size > MAX_FILE_SIZE) {
-    return { valid: false, error: `文件 "${file.name}" 超过 50MB 限制` }
-  }
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    return { valid: false, error: `文件 "${file.name}" 类型不支持` }
-  }
-  return { valid: true }
+/** 跨多次 uploadFiles 调用的全局并发闸门（与 store.maxConcurrent 对齐） */
+const uploadConcurrencyGate = {
+  active: 0,
+  waiters: [] as Array<() => void>,
+  async acquire(max: number) {
+    if (this.active < max) {
+      this.active += 1
+      return
+    }
+    await new Promise<void>((resolve) => {
+      this.waiters.push(resolve)
+    })
+    this.active += 1
+  },
+  release() {
+    this.active = Math.max(0, this.active - 1)
+    const next = this.waiters.shift()
+    next?.()
+  },
 }
 
 export async function uploadFiles(
@@ -567,14 +592,12 @@ export async function uploadFiles(
 
   if (files.length === 0) return []
 
-  // ponytail: 客户端文件校验
-  const invalidFiles = files.filter((f) => !validateFile(f).valid)
-  if (invalidFiles.length > 0) {
-    toast.error(invalidFiles.map((f) => validateFile(f).error).join('\n'))
-    return []
-  }
+  // 与 DropZone 共用扩展名校验；过滤非法后继续上传合法文件（错误 UI 由弹窗承担）
+  const { valid: validFiles } = partitionUploadFiles(files)
+  if (validFiles.length === 0) return []
 
   const uploadOne = async (file: File): Promise<string> => {
+    // 先入队（queued 可见），再抢全局并发槽
     const taskId = addUploadTask({
       fileName: file.name,
       fileSize: file.size,
@@ -583,50 +606,47 @@ export async function uploadFiles(
       file,
     })
 
+    await uploadConcurrencyGate.acquire(maxConcurrent)
+
     const formData = new FormData()
     formData.append('file', file)
     if (folderId) formData.append('folderId', folderId)
 
     startUploadTask(taskId)
 
+    // 模拟进度；失败路径也必须 clearInterval，避免泄漏与幽灵进度更新
+    let progress = 0
+    const progressInterval = setInterval(() => {
+      progress = Math.min(progress + 10, 90)
+      updateUploadProgress(taskId, progress)
+    }, 200)
+
     try {
-      // ponytail: 简化进度模拟（0% -> 90%），真实进度需要服务器支持 XHR progress 事件
-      // 长期方案：后端使用 chunked upload 并返回实时进度
-      let progress = 0
-      const progressInterval = setInterval(() => {
-        progress = Math.min(progress + 10, 90)
-        updateUploadProgress(taskId, progress)
-      }, 200)
-
       await apiUploadFile(kbId, formData).send()
-
-      clearInterval(progressInterval)
       updateUploadProgress(taskId, 100)
       markUploadComplete(taskId)
     } catch (e) {
-      markUploadFailed(taskId, e instanceof Error ? e.message : '上传失败')
+      markUploadFailed(taskId, mapErrorMessage(e))
+    } finally {
+      clearInterval(progressInterval)
+      uploadConcurrencyGate.release()
     }
 
     return taskId
   }
 
-  const taskIds: string[] = []
-  for (const chunkFiles of chunk(files, maxConcurrent)) {
-    const chunkTaskIds = await Promise.all(chunkFiles.map(uploadOne))
-    taskIds.push(...chunkTaskIds)
-  }
+  // 全部并行入队，由全局闸门限制同时 uploading 数量
+  const taskIds = await Promise.all(validFiles.map(uploadOne))
 
-  await loadKbItems(kbId, folderId ?? null, sort)
+  // 仅当用户仍在目标目录浏览时刷新列表，避免关窗后切库/切目录被拽回
+  const current = useKbStore.getState()
+  const targetFolderId = folderId ?? null
+  if (current.currentKbId === kbId && current.currentFolderId === targetFolderId) {
+    const listSort = sort ?? current.fileListSort ?? undefined
+    await loadKbItems(kbId, targetFolderId, listSort)
+  }
 
   return taskIds
-}
-
-function chunk<T>(array: T[], size: number): T[][] {
-  const result: T[][] = []
-  for (let i = 0; i < array.length; i += size) {
-    result.push(array.slice(i, i + size))
-  }
-  return result
 }
 
 export function navigateToFolder(folderId: string | null) {

@@ -51,7 +51,8 @@ export class KbRepository extends BaseRepository<KnowledgeBase, KbCreateData, Kb
   ): Promise<KnowledgeBase[]> {
     return this.kbModel.findMany({
       where: { userId },
-      orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
+      // 置顶优先，其后按创建时间倒序，避免新建知识库被挤到末页
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }, { sortOrder: 'asc' }],
       skip: (page - 1) * size,
       take: size,
     })
@@ -74,7 +75,8 @@ export class KbRepository extends BaseRepository<KnowledgeBase, KbCreateData, Kb
         updatedAt: true,
         _count: { select: { documents: true } },
       },
-      orderBy: [{ isPinned: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
+      // 置顶优先，其后按创建时间倒序，避免新建知识库被挤到末页
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }, { sortOrder: 'asc' }],
       take: maxItems,
     }) as Promise<KbListItem[]>
   }

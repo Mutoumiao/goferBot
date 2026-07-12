@@ -12,6 +12,9 @@ describe('useKbStore', () => {
         selectedId: null,
         uploadTasks: [],
         maxConcurrent: 3,
+        uploadManagerOpen: false,
+        uploadMiniDismissed: false,
+        fileListSort: null,
         folders: [],
         documents: [],
         currentKbId: null,
@@ -189,11 +192,16 @@ describe('useKbStore', () => {
       vi.unstubAllGlobals()
     })
 
-    it('marks upload as complete', () => {
+    it('marks upload as complete and drops file blob', () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-      useKbStore
-        .getState()
-        .addUploadTask({ fileName: 'test.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      const file = new File(['x'], 'test.pdf', { type: 'application/pdf' })
+      useKbStore.getState().addUploadTask({
+        fileName: 'test.pdf',
+        fileSize: 1024,
+        kbId: 'kb1',
+        folderId: null,
+        file,
+      })
       useKbStore.setState((s) => ({
         uploadTasks: s.uploadTasks.map((t) => ({ ...t, status: 'uploading' as const })),
       }))
@@ -201,6 +209,7 @@ describe('useKbStore', () => {
       const task = useKbStore.getState().uploadTasks[0]
       expect(task.status).toBe('completed')
       expect(task.progress).toBe(100)
+      expect(task.file).toBeUndefined()
       vi.unstubAllGlobals()
     })
 
@@ -229,9 +238,13 @@ describe('useKbStore', () => {
       vi.unstubAllGlobals()
     })
 
-    it('clears completed uploads', () => {
+    it('clears only completed uploads and keeps failed', () => {
       vi.stubGlobal('crypto', {
-        randomUUID: vi.fn().mockReturnValueOnce('uuid-1').mockReturnValueOnce('uuid-2'),
+        randomUUID: vi
+          .fn()
+          .mockReturnValueOnce('uuid-1')
+          .mockReturnValueOnce('uuid-2')
+          .mockReturnValueOnce('uuid-3'),
       })
       useKbStore
         .getState()
@@ -239,14 +252,21 @@ describe('useKbStore', () => {
       useKbStore
         .getState()
         .addUploadTask({ fileName: 'b.pdf', fileSize: 2048, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'c.pdf', fileSize: 512, kbId: 'kb1', folderId: null })
       useKbStore.setState((s) => ({
-        uploadTasks: s.uploadTasks.map((t, i) =>
-          i === 0 ? { ...t, status: 'completed' as const } : { ...t, status: 'uploading' as const },
-        ),
+        uploadTasks: s.uploadTasks.map((t, i) => {
+          if (i === 0) return { ...t, status: 'completed' as const }
+          if (i === 1) return { ...t, status: 'failed' as const, error: 'err' }
+          return { ...t, status: 'uploading' as const }
+        }),
       }))
       useKbStore.getState().clearCompletedUploads()
-      expect(useKbStore.getState().uploadTasks).toHaveLength(1)
-      expect(useKbStore.getState().uploadTasks[0].id).toBe('uuid-2')
+      const remaining = useKbStore.getState().uploadTasks
+      expect(remaining).toHaveLength(2)
+      expect(remaining.map((t) => t.id).sort()).toEqual(['uuid-2', 'uuid-3'])
+      expect(remaining.find((t) => t.id === 'uuid-2')?.status).toBe('failed')
       vi.unstubAllGlobals()
     })
 
@@ -267,6 +287,51 @@ describe('useKbStore', () => {
       }))
       expect(useKbStore.getState().activeUploadCount()).toBe(1)
       vi.unstubAllGlobals()
+    })
+
+    it('returns pending upload count as queued + uploading', () => {
+      vi.stubGlobal('crypto', {
+        randomUUID: vi
+          .fn()
+          .mockReturnValueOnce('uuid-1')
+          .mockReturnValueOnce('uuid-2')
+          .mockReturnValueOnce('uuid-3'),
+      })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'a.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'b.pdf', fileSize: 2048, kbId: 'kb1', folderId: null })
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'c.pdf', fileSize: 512, kbId: 'kb1', folderId: null })
+      useKbStore.setState((s) => ({
+        uploadTasks: s.uploadTasks.map((t, i) => {
+          if (i === 0) return { ...t, status: 'uploading' as const }
+          if (i === 1) return { ...t, status: 'queued' as const }
+          return { ...t, status: 'failed' as const, error: 'x' }
+        }),
+      }))
+      expect(useKbStore.getState().pendingUploadCount()).toBe(2)
+      vi.unstubAllGlobals()
+    })
+
+    it('resets uploadMiniDismissed when adding upload task', () => {
+      vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
+      useKbStore.getState().setUploadMiniDismissed(true)
+      useKbStore
+        .getState()
+        .addUploadTask({ fileName: 'a.pdf', fileSize: 1024, kbId: 'kb1', folderId: null })
+      expect(useKbStore.getState().uploadMiniDismissed).toBe(false)
+      vi.unstubAllGlobals()
+    })
+
+    it('sets upload manager open flag', () => {
+      useKbStore.getState().setUploadManagerOpen(true)
+      expect(useKbStore.getState().uploadManagerOpen).toBe(true)
+      useKbStore.getState().setUploadManagerOpen(false)
+      expect(useKbStore.getState().uploadManagerOpen).toBe(false)
     })
   })
 

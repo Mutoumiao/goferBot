@@ -1,7 +1,9 @@
 import type { CreateKbRequest, KbSelectorResponse, UpdateKbRequest } from '@goferbot/data'
 import { alovaInstance } from '@/utils/server'
 
-export const getKbList = () => alovaInstance.Get('/knowledge-bases')
+/** 侧栏列表：提高 size，避免新建知识库落在第 2 页后「创建成功但看不见」 */
+export const getKbList = () =>
+  alovaInstance.Get('/knowledge-bases', { params: { page: 1, size: 100 } })
 
 export const getKbForSelector = () =>
   alovaInstance.Get<KbSelectorResponse>('/knowledge-bases/for-selector')

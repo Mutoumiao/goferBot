@@ -5,6 +5,7 @@ import { fetchKbList } from '../services'
 import { useKbStore } from '../store'
 import { FileBrowser } from './FileBrowser'
 import { KnowledgeBaseList } from './KnowledgeBaseList'
+import { UploadMiniPanel } from './UploadMiniPanel'
 
 export function KnowledgeBasePage() {
   const { entries, selectedId } = useKbStore()
@@ -85,6 +86,8 @@ export function KnowledgeBasePage() {
           </button>
         </div>
       )}
+
+      <UploadMiniPanel />
     </div>
   )
 }

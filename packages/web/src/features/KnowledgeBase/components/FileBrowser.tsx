@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { openDialog } from '@/overlays/services/overlay-service'
+import { openUploadManager } from '../open-upload-manager'
 import {
   addFolder,
   loadKbItems,
@@ -10,7 +11,6 @@ import {
   removeItem,
   renameItem,
   searchKbItems,
-  uploadFiles,
 } from '../services'
 import { useKbStore } from '../store'
 import {
@@ -24,8 +24,6 @@ import { FileContextMenu } from './FileContextMenu'
 import { FileGridItem } from './FileGridItem'
 import { FileListItem } from './FileListItem'
 import { KnowledgeBaseToolbar } from './KnowledgeBaseToolbar'
-import { UploadDropZone } from './UploadDropZone'
-import { UploadProgressBar } from './UploadProgressBar'
 
 interface FileBrowserProps {
   kbName: string
@@ -46,11 +44,16 @@ function LoadingState() {
   )
 }
 
-function EmptyState() {
+function EmptyState({ onUpload }: { onUpload: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[200px]">
       <FolderIcon className="h-12 w-12 text-text-tertiary mb-2" />
       <p className="text-text-secondary text-sm">暂无文件</p>
+      <p className="mt-1 text-xs text-text-tertiary">上传文档开始构建知识库</p>
+      <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onUpload}>
+        <Upload className="h-3.5 w-3.5" />
+        上传文件
+      </Button>
     </div>
   )
 }
@@ -187,25 +190,25 @@ function ListView({
 export function FileBrowser({ kbName }: FileBrowserProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortOption, setSortOption] = useState<SortOption>('updatedAt-desc')
-  const [isDragOver, setIsDragOver] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const {
-    folders,
-    documents,
-    fileLoading,
-    fileError,
-    breadcrumbs,
-    setCurrentFolderId,
-    currentKbId,
-    currentFolderId,
-    uploadTasks,
-    activeUploadCount,
-    clearCompletedUploads,
-    removeUploadTask,
-  } = useKbStore()
+  // 细粒度订阅：避免 uploadTasks 模拟进度 tick 拖垮整表重渲染
+  const folders = useKbStore((s) => s.folders)
+  const documents = useKbStore((s) => s.documents)
+  const fileLoading = useKbStore((s) => s.fileLoading)
+  const fileError = useKbStore((s) => s.fileError)
+  const breadcrumbs = useKbStore((s) => s.breadcrumbs)
+  const setCurrentFolderId = useKbStore((s) => s.setCurrentFolderId)
+  const currentKbId = useKbStore((s) => s.currentKbId)
+  const currentFolderId = useKbStore((s) => s.currentFolderId)
+  const setFileListSort = useKbStore((s) => s.setFileListSort)
+  const uploadBadgeCount = useKbStore((s) => s.pendingUploadCount())
 
   const sortParams = useMemo(() => parseSortOption(sortOption), [sortOption])
+
+  useEffect(() => {
+    setFileListSort(sortParams)
+  }, [sortParams, setFileListSort])
 
   const folderDocumentCounts = useMemo(() => {
     const counts = new Map<string, number>()
@@ -333,72 +336,9 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     }
   }, [currentKbId, currentFolderId, searchQuery, sortParams])
 
-  const handleUploadComplete = useCallback(
-    async (kbId: string, files: File[], targetFolderId?: string | null) => {
-      const folderId = targetFolderId ?? currentFolderId
-      await uploadFiles(kbId, files, folderId, sortParams)
-      if (searchQuery.trim()) {
-        setSearchQuery('')
-        await loadKbItems(kbId, folderId, sortParams)
-      }
-    },
-    [currentFolderId, searchQuery, sortParams],
-  )
-
-  const handleUpload = useCallback(() => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.multiple = true
-    input.accept = '.md,.txt,.html,.csv,.json,.pdf'
-    input.onchange = async (e) => {
-      const files = (e.target as HTMLInputElement).files
-      if (!files) return
-      const { currentKbId: latestKbId, currentFolderId: latestFolderId } = useKbStore.getState()
-      if (!latestKbId) return
-      await handleUploadComplete(latestKbId, Array.from(files), latestFolderId)
-      input.remove()
-    }
-    input.click()
-  }, [handleUploadComplete])
-
-  const handleDropFiles = useCallback(
-    async (files: File[]) => {
-      if (!currentKbId) return
-      await handleUploadComplete(currentKbId, files, currentFolderId)
-    },
-    [currentKbId, currentFolderId, handleUploadComplete],
-  )
-
-  const handleRetryUpload = useCallback(
-    async (taskId: string) => {
-      const task = uploadTasks.find((t) => t.id === taskId)
-      if (!task || !currentKbId || !task.file) return
-      removeUploadTask(taskId)
-      await handleUploadComplete(currentKbId, [task.file], task.folderId)
-    },
-    [uploadTasks, currentKbId, removeUploadTask, handleUploadComplete],
-  )
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }, [])
-
-  const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragOver(false)
-      if (e.dataTransfer.files.length > 0 && currentKbId) {
-        await handleUploadComplete(currentKbId, Array.from(e.dataTransfer.files), currentFolderId)
-      }
-    },
-    [currentKbId, currentFolderId, handleUploadComplete],
-  )
+  const handleOpenUploadManager = useCallback(() => {
+    void openUploadManager({ sort: sortParams })
+  }, [sortParams])
 
   const renderContent = () => {
     if (fileLoading) {
@@ -419,7 +359,7 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     const totalCount = folders.length + documents.length
 
     if (totalCount === 0) {
-      return <EmptyState />
+      return <EmptyState onUpload={handleOpenUploadManager} />
     }
 
     const viewProps = {
@@ -447,9 +387,6 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
       className="relative flex flex-1 flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_2px_8px_rgba(160,158,158,0.25)]"
       role="application"
       aria-label="文件浏览器"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
     >
       <KnowledgeBaseToolbar
         kbName={kbName}
@@ -459,28 +396,13 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
         onViewModeChange={setViewMode}
         sortOption={sortOption}
         onSortChange={setSortOption}
-        onUpload={handleUpload}
+        onUpload={handleOpenUploadManager}
+        uploadBadgeCount={uploadBadgeCount}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
 
-      {isDragOver && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#5B7CFA]/10">
-          <div className="rounded-2xl border-2 border-dashed border-[#5B7CFA] bg-white px-8 py-6 text-center shadow-lg">
-            <Upload className="mx-auto h-10 w-10 text-[#5B7CFA]" />
-            <p className="mt-2 text-sm font-medium text-[#1F2328]">释放文件以上传</p>
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 overflow-auto p-6">
-        {currentKbId && <UploadDropZone kbId={currentKbId} onFilesSelected={handleDropFiles} />}
-        <UploadProgressBar
-          tasks={uploadTasks}
-          activeUploadCount={activeUploadCount()}
-          onRetry={handleRetryUpload}
-          onClear={clearCompletedUploads}
-        />
         <FileContextMenu item={null} onCreateFolder={handleCreateFolder}>
           <div className="min-h-[200px]">{renderContent()}</div>
         </FileContextMenu>

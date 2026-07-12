@@ -67,7 +67,11 @@ describe('DocumentController', () => {
       })
       expect(res.statusCode).toBe(200)
       const body = res.json()
-      expect(Array.isArray(body.data)).toBe(true)
+      // 分页契约：{ items, total, page, pageSize }
+      expect(Array.isArray(body.data?.items)).toBe(true)
+      expect(typeof body.data?.total).toBe('number')
+      expect(typeof body.data?.page).toBe('number')
+      expect(typeof body.data?.pageSize).toBe('number')
     })
 
     it('AC-30: returns 400 for invalid folderId', async () => {

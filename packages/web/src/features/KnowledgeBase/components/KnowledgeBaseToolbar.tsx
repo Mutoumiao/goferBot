@@ -29,6 +29,8 @@ interface KnowledgeBaseToolbarProps {
   sortOption: SortOption
   onSortChange: (option: SortOption) => void
   onUpload?: () => void
+  /** pending = queued + uploading；>0 显示角标 */
+  uploadBadgeCount?: number
   searchQuery?: string
   onSearchChange?: (query: string) => void
 }
@@ -42,6 +44,7 @@ export function KnowledgeBaseToolbar({
   sortOption,
   onSortChange,
   onUpload,
+  uploadBadgeCount = 0,
   searchQuery = '',
   onSearchChange,
 }: KnowledgeBaseToolbarProps) {
@@ -173,11 +176,19 @@ export function KnowledgeBaseToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-lg bg-[#F4F5F7] text-[#5E6673] hover:bg-[#EBECF0]"
+          className="relative h-8 w-8 rounded-lg bg-[#F4F5F7] text-[#5E6673] hover:bg-[#EBECF0]"
           onClick={onUpload}
-          aria-label="上传文件"
+          aria-label={uploadBadgeCount > 0 ? `上传文件，${uploadBadgeCount} 个进行中` : '上传文件'}
         >
           <Upload className="h-4 w-4" />
+          {uploadBadgeCount > 0 && (
+            <span
+              data-testid="upload-badge"
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#5B7CFA] px-1 text-[10px] font-medium leading-none text-white"
+            >
+              {uploadBadgeCount > 99 ? '99+' : uploadBadgeCount}
+            </span>
+          )}
         </Button>
       </div>
     </div>

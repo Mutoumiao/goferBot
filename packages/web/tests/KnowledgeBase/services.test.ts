@@ -74,6 +74,9 @@ describe('kb services', () => {
       selectedId: null,
       uploadTasks: [],
       maxConcurrent: 3,
+      uploadManagerOpen: false,
+      uploadMiniDismissed: false,
+      fileListSort: null,
       folders: [],
       documents: [],
       currentKbId: null,
@@ -145,7 +148,7 @@ describe('kb services', () => {
   })
 
   describe('loadKbItems', () => {
-    it('sets folders, documents and breadcrumbs on success', async () => {
+    it('sets folders, documents and breadcrumbs on success (paginated documents)', async () => {
       const folders: Folder[] = [
         { id: 'f1', kbId: 'kb1', parentId: null, name: 'F', createdAt: '', updatedAt: '' },
       ]
@@ -167,7 +170,10 @@ describe('kb services', () => {
         { id: 'f2', kbId: 'kb1', parentId: null, name: 'Parent', createdAt: '', updatedAt: '' },
       ]
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue(folders) } as any)
-      vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue(documents) } as any)
+      // 与线上契约一致：GET /documents → { items, total, page, pageSize }
+      vi.mocked(getDocuments).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ items: documents, total: 1, page: 1, pageSize: 20 }),
+      } as any)
       vi.mocked(getBreadcrumbs).mockReturnValue({
         send: vi.fn().mockResolvedValue(breadcrumbs),
       } as any)
@@ -182,10 +188,42 @@ describe('kb services', () => {
       expect(useKbStore.getState().fileLoading).toBe(false)
     })
 
+    it('normalizes BigInt-serialized size string from API', async () => {
+      vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getDocuments).mockReturnValue({
+        send: vi.fn().mockResolvedValue({
+          items: [
+            {
+              id: 'd1',
+              kbId: 'kb1',
+              folderId: null,
+              name: 'e2e-test.txt',
+              ext: 'txt',
+              mimeType: 'text/plain',
+              size: '27',
+              status: 'uploaded',
+              createdAt: '',
+              updatedAt: '',
+            },
+          ],
+          total: 1,
+          page: 1,
+          pageSize: 20,
+        }),
+      } as any)
+      vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+
+      await loadKbItems('kb1', null)
+
+      expect(useKbStore.getState().documents[0]?.size).toBe(27)
+    })
+
     it('passes sort params to folder and document APIs', async () => {
       useKbStore.setState({ currentKbId: 'kb1' })
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
-      vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getDocuments).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20 }),
+      } as any)
       vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
 
       await loadKbItems('kb1', 'f1', { sortBy: 'size', sortOrder: 'desc' })
@@ -197,7 +235,9 @@ describe('kb services', () => {
     it('maps type sort to name for folders', async () => {
       useKbStore.setState({ currentKbId: 'kb1' })
       vi.mocked(getFolders).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
-      vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getDocuments).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20 }),
+      } as any)
       vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
 
       await loadKbItems('kb1', 'f1', { sortBy: 'type', sortOrder: 'asc' })
@@ -210,7 +250,9 @@ describe('kb services', () => {
       vi.mocked(getFolders).mockReturnValue({
         send: vi.fn().mockRejectedValue(new Error('fail')),
       } as any)
-      vi.mocked(getDocuments).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
+      vi.mocked(getDocuments).mockReturnValue({
+        send: vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20 }),
+      } as any)
       vi.mocked(getBreadcrumbs).mockReturnValue({ send: vi.fn().mockResolvedValue([]) } as any)
 
       await loadKbItems('kb1', null)
@@ -702,7 +744,7 @@ describe('kb services', () => {
       vi.unstubAllGlobals()
     })
 
-    it('marks upload failed on error', async () => {
+    it('marks upload failed with mapped friendly error and keeps file for retry', async () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
       vi.mocked(uploadFile).mockReturnValue({
         send: vi.fn().mockRejectedValue(new Error('up fail')),
@@ -713,11 +755,13 @@ describe('kb services', () => {
 
       const tasks = useKbStore.getState().uploadTasks
       expect(tasks[0].status).toBe('failed')
-      expect(tasks[0].error).toBe('up fail')
+      // 不回传原始 e.message，使用 mapErrorMessage 友好文案
+      expect(tasks[0].error).toBe('操作失败，请稍后重试')
+      expect(tasks[0].file).toBe(file)
       vi.unstubAllGlobals()
     })
 
-    it('saves file object in task for retry', async () => {
+    it('clears file blob after successful upload', async () => {
       vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
       vi.mocked(uploadFile).mockReturnValue({ send: vi.fn().mockResolvedValue(undefined) } as any)
 
@@ -725,7 +769,8 @@ describe('kb services', () => {
       await uploadFiles('kb1', [file])
 
       const task = useKbStore.getState().uploadTasks[0]
-      expect(task.file).toBe(file)
+      expect(task.status).toBe('completed')
+      expect(task.file).toBeUndefined()
       vi.unstubAllGlobals()
     })
   })
