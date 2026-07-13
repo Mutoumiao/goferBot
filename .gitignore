@@ -23,6 +23,8 @@ dist-ssr
 *.tsbuildinfo
 *.local
 LOCAL_NOTES.md
+# 本机私有脚本/演示素材/个人笔记（禁止提交）
+local/
 .env
 .env.e2e
 target/
