@@ -2,21 +2,25 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Logger,
   Param,
+  Patch,
   Post,
   Query,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common'
+import type { CompanionConversation } from '@prisma/client'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js'
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard.js'
 import { BypassResponse } from '../../common/decorators/bypass-response.decorator.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { CompanionChatService } from './companion-chat.service.js'
+import { CompanionMemoryService } from './companion-memory.service.js'
 import {
   ConversationListQueryDto,
   CreateConversationDto,
@@ -24,12 +28,11 @@ import {
   MemoryListQueryDto,
   MessageListQueryDto,
   SendMessageDto,
+  UpdateMemoryDto,
 } from './dto/companion.dto.js'
-import type { CompanionConversation } from '@prisma/client'
 import { CompanionRepository } from './repositories/companion.repository.js'
 import { CompanionConversationRepository } from './repositories/companion-conversation.repository.js'
 import { CompanionFeedbackRepository } from './repositories/companion-feedback.repository.js'
-import { CompanionMemoryRepository } from './repositories/companion-memory.repository.js'
 import { CompanionMessageRepository } from './repositories/companion-message.repository.js'
 
 @Controller('companion')
@@ -43,26 +46,21 @@ export class CompanionChatController {
     private readonly conversationRepo: CompanionConversationRepository,
     private readonly messageRepo: CompanionMessageRepository,
     private readonly feedbackRepo: CompanionFeedbackRepository,
-    private readonly memoryRepo: CompanionMemoryRepository,
+    private readonly memoryService: CompanionMemoryService,
     private readonly sseHelper: SseResponseHelper,
   ) {}
 
   /** 创建或复用用户与伴侣的唯一会话 */
   @Post('conversations')
-  async createConversation(
-    @CurrentUser('id') userId: string,
-    @Body() dto: CreateConversationDto,
-  ) {
+  async createConversation(@CurrentUser('id') userId: string, @Body() dto: CreateConversationDto) {
     await this.companionRepo.findByIdAndAuthorize(dto.companionId, userId)
-    const conversation = await this.conversationRepo.getOrCreate(
-      undefined,
-      userId,
-      dto.companionId,
-    )
+    const conversation = await this.conversationRepo.getOrCreate(undefined, userId, dto.companionId)
     if (dto.title) {
-      return this.toConversationDto(await this.conversationRepo.update(conversation.id, {
-        title: dto.title,
-      }))
+      return this.toConversationDto(
+        await this.conversationRepo.update(conversation.id, {
+          title: dto.title,
+        }),
+      )
     }
     return this.toConversationDto(conversation)
   }
@@ -149,7 +147,25 @@ export class CompanionChatController {
       size: query.size ?? 20,
     })
 
-    return { items: result.data, pagination: result.pagination }
+    // 历史消息带回 feedback（design D3）
+    const feedbacks = await this.feedbackRepo.findByConversation(userId, conversationId)
+    const feedbackByMessage = new Map(feedbacks.map((f) => [f.messageId, f]))
+
+    const items = result.data.map((m) => {
+      const fb = feedbackByMessage.get(m.id)
+      return {
+        ...m,
+        feedback: fb
+          ? {
+              rating: fb.rating as 'positive' | 'negative',
+              reason: fb.reason ?? undefined,
+              note: fb.note ?? undefined,
+            }
+          : null,
+      }
+    })
+
+    return { items, pagination: result.pagination }
   }
 
   private toConversationDto(conversation: CompanionConversation) {
@@ -157,7 +173,7 @@ export class CompanionChatController {
     const lastMessageAt =
       lastMs != null
         ? new Date(Number(lastMs)).toISOString()
-        : conversation.updatedAt?.toISOString?.() ?? conversation.createdAt.toISOString()
+        : (conversation.updatedAt?.toISOString?.() ?? conversation.createdAt.toISOString())
 
     return {
       id: conversation.id,
@@ -201,14 +217,20 @@ export class CompanionChatController {
     if (!query.companionId) {
       throw new BadRequestException('companionId is required')
     }
-    await this.companionRepo.findByIdAndAuthorize(query.companionId, userId)
+    return this.memoryService.list(userId, query)
+  }
 
-    const result = await this.memoryRepo.findByCompanionAndUser(query.companionId, userId, {
-      page: query.page ?? 1,
-      size: query.size ?? 20,
-      status: query.status,
-    })
+  @Patch('memories/:id')
+  async updateMemory(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateMemoryDto,
+  ) {
+    return this.memoryService.update(userId, id, dto)
+  }
 
-    return { items: result.data, pagination: result.pagination }
+  @Delete('memories/:id')
+  async deleteMemory(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.memoryService.remove(userId, id)
   }
 }

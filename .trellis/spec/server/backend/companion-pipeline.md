@@ -10,10 +10,12 @@
 
 ## Primary OpenSpec
 
-- [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) — Companion 对话管线系统级规范（节点顺序、条件分支、LLM 预算、CompanionState Schema、安全中断）
+- [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) — Companion 对话管线系统级规范（节点顺序、条件分支、LLM 预算、CompanionState、反馈/metadata/状态门闸）
 
 ## Related OpenSpec
 
+- [openspec/specs/companion-persona/spec.md](../../../../openspec/specs/companion-persona/spec.md) — 人设 / defaultPrompt / 头像 / 开场白
+- [openspec/specs/companion-care/spec.md](../../../../openspec/specs/companion-care/spec.md) — Care Plan / 手动 generate（**不**走 11 节点主路径）
 - [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — Chat SSE 双轨方案（streamMode 消费者契约）
 - [openspec/specs/settings/spec.md](../../../../openspec/specs/settings/spec.md) — LLM Provider 配置（LlmConfigService 热更新源）
 
@@ -26,54 +28,125 @@
 
 ## Development Entry
 
+- `packages/server/src/modules/companion/companion-chat-pipeline.service.ts` — **prepareContext / execute / persist** 编排入口
+- `packages/server/src/modules/companion/companion-chat-stream.service.ts` — SSE 事件顺序（token → await persist → done）
+- `packages/server/src/modules/companion/companion-sse.events.ts` — 服务端事件类型表
 - `packages/server/src/modules/companion/langgraph/graph.ts` — StateGraph 定义、节点拓扑、条件边
 - `packages/server/src/modules/companion/langgraph/nodes/` — 11 个节点实现
 - `packages/server/src/modules/companion/langgraph/prompts.ts` — 6 个 PromptTemplates
 - `packages/server/src/modules/companion/langgraph/nodes/_shared.ts` — SharedNodeFactory 统一调用入口
 - `packages/server/src/modules/companion/langgraph/interfaces.ts` — CompanionState 与节点 IO 类型
+- `packages/server/src/modules/companion/repositories/companion-message.repository.ts` — `findRecent` 最新 N 窗口
+- `packages/server/src/modules/companion/companion-care.service.ts` — 关怀（模板生成，不入 Graph）
+- `packages/server/src/modules/companion/companion-memory.service.ts` — 记忆 list/PATCH/软删
+- 黄金/集成测：`packages/server/tests/modules/companion/`、`tests/integration/companion-*-parity.spec.ts`
 
 ## Implementation Notes
 
-- **SharedNodeFactory.invokeStructured 统一调用模式**：所有调 LLM 的节点走同一条路径 `buildVariables → prompt.invoke → invokeWithFallback → fallback`。新增节点不要自己 `await llm.invoke(...)`，必须走工厂方法，否则会丢失回退保障与日志一致性。
-- **LLM 失败不抛错**：工厂方法在 LLM 失败时返回 `fallback` 而非抛异常，确保 pipeline 不因单节点 LLM 故障中断。回退值的具体定义见 OpenSpec。
-- **LangGraph streamMode 调试**：消费端用 `streamMode: 'updates'` 观察逐节点状态补丁。调试时可在每个节点末尾打日志确认 `lastFallback` 标记，区分 LLM 成功路径与回退路径。
-- **withStructuredOutput method 选择**：优先 `method: 'functionCall'`（OpenAI 原生 function calling），降级到 `method: 'jsonMode'`。不要默认使用 `jsonSchema` 模式，部分 Provider 不支持。
-- **temperature 固定为 0**：所有结构化输出节点 temperature=0，保证分类结果（safety/intent/emotion/relationship）可复现。生成节点单独配置。
-- **LlmConfigService 热更新调试**：配置变更通过事件总线广播。若发现 LLM 行为未随配置更新变化，检查事件订阅是否在模块初始化时绑定，而非请求时绑定。
-- **纯规则引擎节点模式**：Route / Policy / QualityGuard 节点零 LLM 成本，使用 O(1) 查找表。新增此类节点时禁止引入 LLM 调用，否则会破坏 LLM Call Budget 约束。
-- **Prompt 变量注入顺序**：下游节点的 PromptTemplate 通过上下文变量注入上游节点输出。变量名必须与 `buildVariables` 返回的 key 完全一致，否则静默渲染为空字符串而非报错。
-- **Memory 关键词回退模式**：基于正则的关键词触发器可强制开启记忆提取，绕过 LLM 判断。这是显式用户命令（"记住"/"以后"）的兜底，正则模式定义见 OpenSpec。
+### prepareContext 顺序（设计 A）
+
+**顺序不可调乱**：authorize → archived 门闸 → getOrCreate conversation → **并行加载** memories / `findRecent` / feedbacks → **再** `save(user)` → `incrementMessageCount` → 组装 `initialState`。
+
+| 字段 | 来源 | 禁止 |
+|------|------|------|
+| `userMessage` | 本轮请求正文 | 同时塞进 `recentMessages`（会重复进 prompt） |
+| `recentMessages` | 落库 **前** 的最新窗口 | 用 `asc+take` 取「最旧 N 条」 |
+| `messageCount` | 落库 user 后的会话累计 | 用 `recentMessages.length` 冒充（窗口≤18 且不含本轮 user） |
+| `feedbacks` | FeedbackRepository 限额加载 | 写死 `[]` |
+
+半会话语义：safety 中断 / 管线失败后允许仅 user 落库；archived 在落库前抛 `ERR_COMPANION_ARCHIVED`，**不得脏写**。
+
+### findRecent：最新 N + 正序
+
+```text
+orderBy createdAt/id DESC → take(limit) → reverse() → 时间正序
+```
+
+禁止 `orderBy: asc, take: limit`（那是会话开头的最旧 N 条）。
+
+### relationship 与 messageCount
+
+- Graph Annotation 含 `messageCount`；`relationship-stage-node` 必须用 `resolveRelationshipMessageCount(state)`（优先 `state.messageCount`）。
+- 仅在未注入时降级到 recent 长度；**新代码禁止**再写 `recentMessages.length` 作为主路径。
+
+### SSE：先 persist 再 done
+
+`CompanionChatStreamService`：有非空 reply 时 **`await persistAssistantMessage` 后再 yield `done`**。避免：
+
+1. 客户端收到完成但历史列表尚无助手；
+2. 用户连发第二轮时 `findRecent` 缺上轮助手。
+
+`persistAssistantMessage`：content + `buildPipelineMetadataSnapshot`（quality 必含；**不含**完整 system prompt）+ messageCount+1 + `lastAssistantMessage*` 刷新。
+
+### Quality 观测型（与 OpenSpec 一致）
+
+`quality → summary` 边恒连；fail **不** `end_guard` 跳过 summary/memory。Safety `refuse`/`crisis_support` 仍硬中断。
+
+### 节点 / LLM 既有约定
+
+- **SharedNodeFactory.invokeStructured**：所有调 LLM 的节点走 `buildVariables → prompt.invoke → invokeWithFallback → fallback`。禁止裸 `llm.invoke`。
+- **LLM 失败不抛错**：返回 fallback，保证管线不中断。
+- **纯规则节点**：Route / Policy / QualityGuard 零 LLM。
+- **Memory 关键词回退**：正则强制 `shouldExtract`，见 OpenSpec。
+- **关怀 generate**：模板路径，**禁止**调完整 11 节点 Graph。
 
 ## Testing Checklist
 
 - [ ] 每个节点单独测试（mock LLM 响应，覆盖成功与失败两条路径）
-- [ ] Safety 节点 `refuse` / `crisis_support` 中断测试，验证图立即 END
-- [ ] Quality guard 评分低于阈值时丢弃响应，验证 END 而非继续
-- [ ] Memory extraction 条件跳过测试（`shouldExtract === false` 时不调 LLM）
-- [ ] LLM 失败时回退值正确性测试（每个节点独立验证 fallback 字段）
-- [ ] StateGraph 状态传播正确性测试（上游节点输出可被下游节点读取）
-- [ ] 纯规则节点零 LLM 调用测试（断言 mock LLM 未被调用）
-- [ ] `streamMode: 'updates'` 流式补丁顺序与节点执行顺序一致
+- [ ] Safety `refuse` / `crisis_support` 中断：图 END、**不**落助手、user 可已落库（设计 A）
+- [ ] Quality 观测型：fail 时主回复仍落库，图继续 summary/memory
+- [ ] `messageCount`：relationship 使用累计数，非 `recent.length`（`UT-REL-msg-count` / `IT-REL-message-count`）
+- [ ] `findRecent`：最新 N 条正序（`IT-CTX-recent-limit`）
+- [ ] 反馈注入非空 + 限额 8（`IT-FB-inject`）
+- [ ] metadata 快照含 quality（`UT-MD-shape` / `IT-MD-persist`）
+- [ ] archived 门闸无脏写（`IT-ST-archived-403`）；draft 可聊（`IT-ST-draft-ok`）
+- [ ] 记忆 list/write/forbidden（`IT-MM-*`）；Care GET 不插库 / PATCH / generate（`IT-CA-*`）
+- [ ] Memory extraction 条件跳过；纯规则节点零 LLM；`streamMode: 'updates'` 顺序
 
 ## Review Checklist
 
-- [ ] 新节点是否通过 SharedNodeFactory 调用 LLM（禁止裸 `llm.invoke`）
-- [ ] 新 Route 规则是否同步更新 OpenSpec（ROUTE_RULES 表）
-- [ ] 新 Policy Pack 是否同步更新 OpenSpec（POLICY_PACKS 表）
-- [ ] temperature 是否固定为 0（结构化输出节点）
-- [ ] 新增回退值是否在 OpenSpec 中记录
-- [ ] 新增 LLM 调用是否超出 LLM Call Budget（每轮 7 次上限）
-- [ ] Prompt 变量名与 `buildVariables` key 是否完全一致
-- [ ] 纯规则节点是否误引入 LLM 调用
+- [ ] prepareContext 是否仍「先 load 再 save user」且 archived 在落库前
+- [ ] relationship 是否仍用 `messageCount` 而非 recent 窗口
+- [ ] done 前是否 await 助手落库
+- [ ] 新节点是否走 SharedNodeFactory；Route/Policy/Quality 是否零 LLM
+- [ ] 业务行为变更是否已回写 OpenSpec companion / companion-care / companion-persona
+- [ ] 关怀路径是否误接入完整 Graph
 
 ## Common Pitfalls
 
-- **LLM 超时未设回退导致管线中断**：忘记传 `fallback` 参数给 `invokeStructured`，LLM 超时后整条 pipeline 崩溃。必须为每个 LLM 节点定义回退值。
-- **Prompt 变量注入顺序错误**：下游节点引用了上游尚未产出的字段，渲染为空字符串但不报错。用 `lastFallback` 日志区分是 LLM 失败还是变量缺失。
-- **纯规则节点误用 LLM**：在 Route/Policy/QualityGuard 中"顺手"调一次 LLM 做兜底，破坏 LLM Budget 并引入非确定性。规则缺失应补规则表，而非调 LLM。
-- **withStructuredOutput 默认 method 不兼容**：未显式指定 `method` 时部分 Provider 报错或返回非结构化文本。始终显式指定 `functionCall` 或 `jsonMode`。
-- **热更新事件未订阅**：LlmConfigService 配置变更后行为不变，通常是事件订阅在请求时绑定而非模块初始化时绑定，导致新配置未生效。
-- **条件分支遗漏 END**：新增条件终止分支时忘记连接到 END 节点，导致图执行到死胡同或继续走默认路径。
+### messageCount vs recent 窗口
+
+**症状**：关系阶段长期停在早期、prompt「会话消息数量」卡在 ≤18。  
+**原因**：用 `recentMessages.length` 或把本轮 user 既放 `userMessage` 又放进 recent。  
+**正确**：累计数来自 conversation.messageCount；recent 为落库前窗口。
+
+### findRecent 取成最旧 N 条
+
+**症状**：长会话 prompt 永远是开场几句。  
+**原因**：`orderBy: { createdAt: 'asc' }, take: 18`。  
+**正确**：desc take 再 reverse。
+
+### 先 done 后落库
+
+**症状**：连发第二句时上下文缺上轮助手；刷新前历史空白。  
+**正确**：`await persistAssistantMessage` → `yield done`。
+
+### 反馈写死空数组
+
+**症状**：赞踩从不进 generate「# 8. 历史反馈」。  
+**正确**：prepareContext 从 FeedbackRepository 加载，遵守 `MESSAGE_FEEDBACK_INJECTION_LIMIT`。
+
+### Quality fail 当硬中断
+
+**症状**：低质回复被丢弃、memory 不跑。  
+**正确**：观测型——仍下发/落库 + 继续 summary/memory。
+
+### 其它既有陷阱
+
+- LLM 超时未设 fallback → 整条 pipeline 崩。
+- Prompt 变量名与 `buildVariables` key 不一致 → 静默空串。
+- 纯规则节点顺手调 LLM → 破坏 Budget。
+- 热更新事件在请求时才订阅 → 配置不生效。
 
 ## Reusable Patterns
 

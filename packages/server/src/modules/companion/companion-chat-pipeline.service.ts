@@ -1,8 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common'
+import {
+  MEMORY_INJECTION_LIMIT,
+  MESSAGE_FEEDBACK_INJECTION_LIMIT,
+  RECENT_MESSAGE_LIMIT,
+} from './langchain/constants.js'
 import { CompanionGraphService } from './langgraph/graph.js'
 import type { CompanionState, NodeExecutionContext } from './langgraph/interfaces.js'
 import { CompanionRepository } from './repositories/companion.repository.js'
 import { CompanionConversationRepository } from './repositories/companion-conversation.repository.js'
+import { CompanionFeedbackRepository } from './repositories/companion-feedback.repository.js'
 import { CompanionMemoryRepository } from './repositories/companion-memory.repository.js'
 import { CompanionMessageRepository } from './repositories/companion-message.repository.js'
 
@@ -16,6 +22,7 @@ export class CompanionChatPipelineService {
     private readonly conversationRepo: CompanionConversationRepository,
     private readonly messageRepo: CompanionMessageRepository,
     private readonly memoryRepo: CompanionMemoryRepository,
+    private readonly feedbackRepo: CompanionFeedbackRepository,
   ) {}
 
   async prepareContext(params: {
@@ -36,22 +43,50 @@ export class CompanionChatPipelineService {
     if (!companion) {
       throw new Error('ERR_COMPANION_NOT_FOUND')
     }
+    if (companion.status === 'archived') {
+      throw new Error('ERR_COMPANION_ARCHIVED')
+    }
 
     const conversation = await this.conversationRepo.getOrCreate(
       params.conversationId,
       params.userId,
       params.companionId,
     )
-    const [memories, recentMessages] = await Promise.all([
-      this.memoryRepo.findByUser(params.userId, params.companionId),
-      this.messageRepo.findRecent(conversation.id, 20),
+
+    // 先加载历史再落库本轮用户消息，避免 recentMessages 与 userMessage 重复计入 prompt
+    const [memories, recentMessages, feedbacks] = await Promise.all([
+      this.memoryRepo.findByUser(params.userId, params.companionId, MEMORY_INJECTION_LIMIT),
+      this.messageRepo.findRecent(conversation.id, RECENT_MESSAGE_LIMIT),
+      this.feedbackRepo.findRecentByCompanion(
+        params.userId,
+        params.companionId,
+        MESSAGE_FEEDBACK_INJECTION_LIMIT,
+      ),
     ])
+
+    /**
+     * 用户消息尽早提交（设计 A）：
+     * - 成功：user + assistant 各落库，messageCount +2
+     * - safety 拦截 / 管线失败 / 空回复：仅保留 user（半会话），messageCount +1；助手错误文案是否落库由 stream 层决定
+     * - archived / not found：在此之前已抛错，不得落库
+     * 本轮正文只在 state.userMessage，不得再出现在 recentMessages 中。
+     */
+    await this.messageRepo.save({
+      conversationId: conversation.id,
+      userId: params.userId,
+      companionId: params.companionId,
+      role: 'user',
+      content: params.message,
+    })
+    // 含本轮用户消息的会话累计数，供 relationship 等节点使用（非 recent 窗口长度）
+    const afterUser = await this.conversationRepo.incrementMessageCount(conversation.id)
 
     const initialState: Partial<CompanionState> = {
       userId: params.userId,
       companionId: params.companionId,
       conversationId: conversation.id,
       userMessage: params.message,
+      messageCount: afterUser.messageCount,
       existingMemories: memories.map((m) => ({
         id: m.id,
         type: m.type,
@@ -64,7 +99,10 @@ export class CompanionChatPipelineService {
         content: m.content,
         createdAt: m.createdAt,
       })),
-      feedbacks: [],
+      feedbacks: feedbacks.map((f) => ({
+        rating: f.rating as 'positive' | 'negative',
+        reason: f.reason ?? undefined,
+      })),
     }
 
     const ctx: NodeExecutionContext = {
@@ -75,6 +113,8 @@ export class CompanionChatPipelineService {
       companionPersonality: companion.personality ?? undefined,
       companionTone: companion.tone ?? undefined,
       companionBoundaries: companion.boundaries ?? undefined,
+      companionGuardrails: companion.guardrailsPrompt ?? undefined,
+      companionDefaultPrompt: companion.defaultPrompt ?? undefined,
       signal: new AbortController().signal,
     }
 
@@ -89,17 +129,12 @@ export class CompanionChatPipelineService {
     safetyBlocked: boolean
     safetyReason: string
   }> {
-    let safetyBlocked = false
-    let safetyReason = ''
-
     for await (const { patch } of this.graphService.stream(initialState, ctx)) {
       if (
         patch.safety?.boundaryAction === 'refuse' ||
         patch.safety?.boundaryAction === 'crisis_support'
       ) {
-        safetyBlocked = true
-        safetyReason = patch.safety.reason
-        yield { patch, safetyBlocked: true, safetyReason }
+        yield { patch, safetyBlocked: true, safetyReason: patch.safety.reason }
         break
       }
 
@@ -154,10 +189,20 @@ export class CompanionChatPipelineService {
 
   async persistAssistantMessage(conversationId: string, state: CompanionState): Promise<void> {
     try {
+      const content = state.assistantReply ?? ''
       await this.messageRepo.save({
         conversationId,
+        userId: state.userId,
+        companionId: state.companionId,
         role: 'assistant',
-        content: state.assistantReply ?? '',
+        content,
+        metadata: this.buildPipelineMetadataSnapshot(state),
+      })
+      await this.conversationRepo.incrementMessageCount(conversationId)
+      // 列表/预览字段：与 care generate 对齐，聊天成功后必须刷新
+      await this.companionRepo.update(state.companionId, {
+        lastAssistantMessage: content,
+        lastAssistantMessageAtMs: BigInt(Date.now()),
       })
       if (state.summary) {
         await this.conversationRepo.updateSummary(conversationId, state.summary.text)
@@ -165,5 +210,53 @@ export class CompanionChatPipelineService {
     } catch (err) {
       this.logger.error(`persistAssistantMessage failed: ${(err as Error).message}`)
     }
+  }
+
+  /** 助手消息 metadata 快照：quality 必含，不含完整 system prompt */
+  buildPipelineMetadataSnapshot(state: CompanionState): string {
+    const snapshot = {
+      safety: state.safety
+        ? {
+            safetyLevel: state.safety.safetyLevel,
+            boundaryAction: state.safety.boundaryAction,
+            reason: state.safety.reason,
+          }
+        : undefined,
+      intent: state.intent
+        ? {
+            primary: state.intent.primary,
+            userNeed: state.intent.userNeed,
+          }
+        : undefined,
+      emotion: state.emotion
+        ? {
+            primaryEmotion: state.emotion.primaryEmotion,
+            intensity: state.emotion.intensity,
+            replyTone: state.emotion.replyTone,
+          }
+        : undefined,
+      relationship: state.relationship
+        ? {
+            stage: state.relationship.stage,
+            intimacyPermission: state.relationship.intimacyPermission,
+          }
+        : undefined,
+      route: state.route
+        ? {
+            route: state.route.route,
+            responseLength: state.route.responseLength,
+          }
+        : undefined,
+      policySummary: state.policy
+        ? {
+            policy: state.policy.policy,
+            openingMove: state.policy.openingMove,
+          }
+        : undefined,
+      quality: state.quality ?? null,
+      summaryText: state.summary?.text?.slice(0, 200),
+      extractedMemoryCount: state.extractedMemories?.length ?? 0,
+    }
+    return JSON.stringify(snapshot)
   }
 }

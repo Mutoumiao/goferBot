@@ -321,6 +321,8 @@ export interface NodeExecutionContext {
   companionTone?: string
   companionBoundaries?: string
   companionGuardrails?: string
+  /** 持久化的多节 defaultPrompt，进入 generate 注入链 */
+  companionDefaultPrompt?: string
   signal?: AbortSignal
 }
 
@@ -353,6 +355,11 @@ export interface CompanionState {
     content: string
     createdAt: Date
   }>
+  /**
+   * 会话累计消息数（含本轮已落库的用户消息）。
+   * 供 relationship 等节点判断关系推进节奏；不得用 recentMessages.length 代替（窗口有上限）。
+   */
+  messageCount?: number
   feedbacks?: Array<{
     rating: 'positive' | 'negative'
     reason?: string

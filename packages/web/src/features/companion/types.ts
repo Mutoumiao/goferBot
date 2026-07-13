@@ -22,6 +22,8 @@ export interface Companion {
   guardrailsPrompt?: string
   defaultPrompt?: string
   avatarKey?: string
+  /** 服务端解析的可访问头像 URL（优先于 /api/files 拼 key） */
+  avatarUrl?: string | null
   backgroundStory?: string
   openingMessage?: string
   visibility?: string
@@ -83,6 +85,8 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+  metadata?: string | null
+  feedback?: CompanionMessageFeedback | null
 }
 
 export interface MessageListResponse {
@@ -90,17 +94,22 @@ export interface MessageListResponse {
   pagination: PaginationMeta
 }
 
+/** API 契约主类型（与 Prisma FeedbackRating / packages/data 一致） */
+export type FeedbackRating = 'positive' | 'negative'
+
 export interface CreateFeedbackPayload {
-  rating: number
-  comment?: string
+  rating: FeedbackRating
+  reason?: string
+  note?: string
 }
 
 export interface Feedback {
   id: string
   messageId: string
-  rating: number
-  comment?: string
-  createdAt: string
+  rating: FeedbackRating
+  reason?: string | null
+  note?: string | null
+  createdAt?: string
 }
 
 export interface Memory {
@@ -141,11 +150,24 @@ export interface CompanionMessage {
   createdAt: string
   feedback?: CompanionMessageFeedback | null
   streaming?: boolean
+  /** 关怀消息标记 */
+  isCare?: boolean
+  careScene?: string
 }
 
 export interface CompanionMessageFeedback {
-  rating: 'up' | 'down'
-  comment?: string
+  rating: FeedbackRating
+  reason?: string
+  note?: string
+}
+
+/** UI 拇指图标 ↔ API rating 映射（仅客户端，不得泄漏为 HTTP 主类型） */
+export function uiThumbToRating(thumb: 'up' | 'down'): FeedbackRating {
+  return thumb === 'up' ? 'positive' : 'negative'
+}
+
+export function ratingToUiThumb(rating: FeedbackRating): 'up' | 'down' {
+  return rating === 'positive' ? 'up' : 'down'
 }
 
 export type MemoryType =
@@ -163,4 +185,76 @@ export const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {
   relationship_goal: '关系目标',
   conversation_style: '对话风格',
   important_fact: '重要事实',
+}
+
+export interface UpdateMemoryPayload {
+  content?: string
+  importance?: number
+  type?: MemoryType
+  status?: 'active' | 'disabled' | 'deleted'
+}
+
+export type CareScene =
+  | 'morning'
+  | 'night'
+  | 'long_absence'
+  | 'stress_support'
+  | 'relationship_warmup'
+  | 'anniversary'
+
+export type CareTone = 'light' | 'gentle' | 'intimate'
+export type CareFrequency = 'daily' | 'weekly' | 'monthly' | 'custom'
+
+export interface CarePlan {
+  id?: string
+  companionId: string
+  enabled: boolean
+  frequency: CareFrequency
+  preferredTime?: string | null
+  scenes: CareScene[]
+  tone: CareTone
+  customPrompt?: string | null
+  nextRunAtMs?: number | null
+  isDefault?: boolean
+}
+
+export interface UpdateCarePlanPayload {
+  enabled?: boolean
+  frequency?: CareFrequency
+  preferredTime?: string | null
+  scenes?: CareScene[]
+  tone?: CareTone
+  customPrompt?: string | null
+}
+
+export interface GenerateCareEventPayload {
+  scene?: CareScene
+  tone?: CareTone
+  customPrompt?: string
+}
+
+export interface CareEvent {
+  id: string
+  companionId: string
+  conversationId: string
+  messageId: string
+  scene: CareScene
+  status: string
+  message: string
+  generatedAtMs: number
+}
+
+export const CARE_SCENE_LABELS: Record<CareScene, string> = {
+  morning: '早安问候',
+  night: '晚安陪伴',
+  long_absence: '久未聊天',
+  stress_support: '压力陪伴',
+  relationship_warmup: '关系升温',
+  anniversary: '特别纪念',
+}
+
+export const CARE_TONE_LABELS: Record<CareTone, string> = {
+  light: '轻盈',
+  gentle: '温柔',
+  intimate: '亲密',
 }

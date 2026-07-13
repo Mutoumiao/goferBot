@@ -48,7 +48,9 @@ export class LlmConfigService implements OnModuleInit {
       this.baseProvider = await this.providerRegistry.get(provider.id, provider.model)
       this.logger.debug(`Companion LLM refreshed: ${provider.model}`)
     } catch (err) {
-      this.logger.warn(`Companion LLM 配置失败：${err instanceof Error ? err.message : String(err)}`)
+      this.logger.warn(
+        `Companion LLM 配置失败：${err instanceof Error ? err.message : String(err)}`,
+      )
       this.baseProvider = null
     }
   }

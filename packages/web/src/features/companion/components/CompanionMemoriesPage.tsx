@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Brain, Clock, MessageCircle, Star } from 'lucide-react'
+import { ArrowLeft, Brain, Clock, MessageCircle, Pencil, Star, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -7,22 +7,22 @@ import { Button } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getCompanion, listMemories } from '../services'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  canSaveMemoryEdit,
+  filterMemoriesByType,
+  MEMORY_FILTER_OPTIONS,
+  nextMemoryToggleStatus,
+  removeMemoryFromList,
+  replaceMemoryInList,
+} from '../memory-ui'
+import { deleteMemory, getCompanion, listMemories, updateMemory } from '../services'
 import { type Companion, MEMORY_TYPE_LABELS, type Memory, type MemoryFilter } from '../types'
 import { CompanionStatusTag } from './CompanionStatusTag'
 
 interface CompanionMemoriesPageProps {
   companionId: string
 }
-
-const FILTER_OPTIONS: { value: MemoryFilter; label: string }[] = [
-  { value: 'all', label: '全部' },
-  { value: 'preference', label: '偏好' },
-  { value: 'boundary', label: '边界' },
-  { value: 'relationship_goal', label: '关系目标' },
-  { value: 'conversation_style', label: '对话风格' },
-  { value: 'important_fact', label: '重要事实' },
-]
 
 export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProps) {
   const navigate = useNavigate()
@@ -31,6 +31,9 @@ export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProp
   const [filter, setFilter] = useState<MemoryFilter>('all')
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [editContent, setEditContent] = useState('')
+  const [busy, setBusy] = useState(false)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -52,13 +55,68 @@ export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProp
     loadData()
   }, [loadData])
 
-  const filteredMemories = filter === 'all' ? memories : memories.filter((m) => m.type === filter)
+  const filteredMemories = filterMemoriesByType(memories, filter)
 
   const handleBack = () => {
     navigate({
       to: '/companions/$companionId/chat',
       params: { companionId },
     })
+  }
+
+  const handleSelect = (memory: Memory) => {
+    setSelectedMemory(memory)
+    setEditing(false)
+    setEditContent(memory.content)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!selectedMemory || !canSaveMemoryEdit(editContent)) return
+    setBusy(true)
+    try {
+      const updated = await updateMemory(selectedMemory.id, {
+        content: editContent.trim(),
+      }).send()
+      setMemories((prev) => replaceMemoryInList(prev, { ...selectedMemory, ...updated }))
+      setSelectedMemory({ ...selectedMemory, ...updated })
+      setEditing(false)
+      toast.success('已更新记忆')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '更新失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleToggleStatus = async () => {
+    if (!selectedMemory) return
+    const next = nextMemoryToggleStatus(selectedMemory.status)
+    setBusy(true)
+    try {
+      const updated = await updateMemory(selectedMemory.id, { status: next }).send()
+      setMemories((prev) => replaceMemoryInList(prev, { ...selectedMemory, ...updated }))
+      setSelectedMemory({ ...selectedMemory, ...updated })
+      toast.success(next === 'active' ? '已启用' : '已停用')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '操作失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selectedMemory) return
+    setBusy(true)
+    try {
+      await deleteMemory(selectedMemory.id).send()
+      setMemories((prev) => removeMemoryFromList(prev, selectedMemory.id))
+      setSelectedMemory(null)
+      toast.success('已删除记忆')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '删除失败')
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (isLoading) {
@@ -93,14 +151,16 @@ export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProp
         <div
           className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 text-base font-medium"
           style={{
-            backgroundImage: companion.avatarKey
-              ? `url(/api/files/${companion.avatarKey})`
-              : undefined,
+            backgroundImage: companion.avatarUrl
+              ? `url(${companion.avatarUrl})`
+              : companion.avatarKey
+                ? `url(/api/files/${companion.avatarKey})`
+                : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
-          {!companion.avatarKey && companion.name.charAt(0)}
+          {!companion.avatarUrl && !companion.avatarKey && companion.name.charAt(0)}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -121,7 +181,7 @@ export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProp
         <div className="flex-1 overflow-y-auto p-4">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as MemoryFilter)}>
             <TabsList className="mb-4">
-              {FILTER_OPTIONS.map((f) => (
+              {MEMORY_FILTER_OPTIONS.map((f) => (
                 <TabsTrigger key={f.value} value={f.value}>
                   {f.label}
                 </TabsTrigger>
@@ -147,7 +207,7 @@ export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProp
                       ? 'border-primary bg-primary/5'
                       : 'hover:bg-muted'
                   }`}
-                  onClick={() => setSelectedMemory(memory)}
+                  onClick={() => handleSelect(memory)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -162,9 +222,9 @@ export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProp
                       <p className="text-sm line-clamp-2">{memory.content}</p>
                     </div>
                     <div className="flex items-center gap-1 text-muted-foreground shrink-0">
-                      {Array.from({ length: 5 }).map((_, i) => (
+                      {Array.from({ length: 5 }, (_, i) => `importance-${i}`).map((starKey, i) => (
                         <Star
-                          key={i}
+                          key={starKey}
                           className={`h-3 w-3 ${
                             i < memory.importance
                               ? 'fill-amber-400 text-amber-400'
@@ -195,12 +255,72 @@ export function CompanionMemoriesPage({ companionId }: CompanionMemoriesPageProp
                 <Badge variant="secondary" className="mb-2">
                   {MEMORY_TYPE_LABELS[selectedMemory.type]}
                 </Badge>
-                <p className="text-sm leading-relaxed">{selectedMemory.content}</p>
+                {editing ? (
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={5}
+                  />
+                ) : (
+                  <p className="text-sm leading-relaxed">{selectedMemory.content}</p>
+                )}
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
                 <div>状态：{selectedMemory.status === 'active' ? '启用' : '停用'}</div>
                 <div>重要度：{'★'.repeat(selectedMemory.importance)}</div>
                 <div>更新时间：{new Date(selectedMemory.updatedAt).toLocaleString()}</div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {editing ? (
+                  <>
+                    <Button
+                      size="sm"
+                      disabled={busy || !canSaveMemoryEdit(editContent)}
+                      onClick={() => void handleSaveEdit()}
+                    >
+                      保存
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditing(false)
+                        setEditContent(selectedMemory.content)
+                      }}
+                    >
+                      取消
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditing(true)
+                      setEditContent(selectedMemory.content)
+                    }}
+                  >
+                    <Pencil className="h-3 w-3 mr-1" />
+                    编辑
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void handleToggleStatus()}
+                >
+                  {selectedMemory.status === 'active' ? '停用' : '启用'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={() => void handleDelete()}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  删除
+                </Button>
               </div>
             </div>
           </div>

@@ -33,6 +33,16 @@ export class CompanionFeedbackRepository {
     })
   }
 
+  async findByConversation(
+    userId: string,
+    conversationId: string,
+  ): Promise<CompanionMessageFeedback[]> {
+    return this.prisma.companionMessageFeedback.findMany({
+      where: { userId, conversationId },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
   async upsert(
     messageId: string,
     data: {

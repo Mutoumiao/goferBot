@@ -23,7 +23,10 @@ export {
   updateProfileRequestSchema,
   userSchema,
 } from './auth.schema.js'
-
+export {
+  buildDefaultAgentPrompt,
+  type PersonaPromptFields,
+} from './build-default-agent-prompt.js'
 export {
   chatMessagesChunkSchema,
   chatMessagesRequestSchema,
@@ -41,17 +44,28 @@ export {
   paginationSchema,
 } from './common.schema.js'
 export {
+  careEventSchema,
+  careFrequencySchema,
+  carePlanSchema,
+  careSceneSchema,
+  careToneSchema,
   companionListQuerySchema,
+  companionMessageMetadataSchema,
+  companionSseEventTypeSchema,
   conversationListQuerySchema,
   createCompanionSchema,
   createConversationSchema,
   createFeedbackSchema,
   createMemorySchema,
+  feedbackRatingSchema,
+  generateCareEventSchema,
   memoryListQuerySchema,
   messageListQuerySchema as companionMessageListQuerySchema,
   sendMessageSchema,
+  updateCarePlanSchema,
   updateCompanionSchema,
   updateCompanionStatusSchema,
+  updateMemorySchema,
 } from './companion.schema.js'
 export {
   agentMemoryCandidateSchema,

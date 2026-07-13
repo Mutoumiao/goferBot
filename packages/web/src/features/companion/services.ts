@@ -6,6 +6,8 @@
  */
 import { alovaInstance } from '@/utils/server'
 import type {
+  CareEvent,
+  CarePlan,
   Companion,
   CompanionListResponse,
   Conversation,
@@ -15,10 +17,15 @@ import type {
   CreateFeedbackPayload,
   Feedback,
   FetchParams,
+  GenerateCareEventPayload,
+  Memory,
   MemoryListResponse,
+  MemoryType,
   MessageListResponse,
+  UpdateCarePlanPayload,
   UpdateCompanionPayload,
   UpdateCompanionStatusPayload,
+  UpdateMemoryPayload,
 } from './types'
 
 // alova baseURL 已含 /api，此处只写业务 path，避免 /api/api 双前缀
@@ -80,8 +87,49 @@ export function submitFeedback(messageId: string, payload: CreateFeedbackPayload
   return alovaInstance.Post<Feedback>(`/companion/messages/${messageId}/feedback`, payload)
 }
 
-export function listMemories(companionId: string, params?: { page?: number; size?: number }) {
+export function listMemories(
+  companionId: string,
+  params?: { page?: number; size?: number; type?: MemoryType; status?: string },
+) {
   return alovaInstance.Get<MemoryListResponse>('/companion/memories', {
     params: { ...params, companionId },
   })
+}
+
+export function updateMemory(memoryId: string, payload: UpdateMemoryPayload) {
+  return alovaInstance.Patch<Memory>(`/companion/memories/${memoryId}`, payload)
+}
+
+export function deleteMemory(memoryId: string) {
+  return alovaInstance.Delete<{ success: boolean }>(`/companion/memories/${memoryId}`)
+}
+
+// ---- 头像上传 ----
+
+export function uploadCompanionAvatar(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return alovaInstance.Post<{
+    avatarKey: string
+    avatarUrl?: string
+    width: number
+    height: number
+  }>('/companions/avatar', formData)
+}
+
+// ---- Care ----
+
+export function getCarePlan(companionId: string) {
+  return alovaInstance.Get<CarePlan>(`/companions/${companionId}/care-plan`)
+}
+
+export function updateCarePlan(companionId: string, payload: UpdateCarePlanPayload) {
+  return alovaInstance.Patch<CarePlan>(`/companions/${companionId}/care-plan`, payload)
+}
+
+export function generateCareEvent(companionId: string, payload?: GenerateCareEventPayload) {
+  return alovaInstance.Post<CareEvent>(
+    `/companions/${companionId}/care-events/generate`,
+    payload ?? {},
+  )
 }

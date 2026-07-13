@@ -1,0 +1,57 @@
+[
+  {
+    "id": "UT-RT-deep-comfort",
+    "description": "emotional_support + sad + trusted_companion → deep_comfort",
+    "input": {
+      "intent": "emotional_support",
+      "emotion": "sad",
+      "relationship": "trusted_companion"
+    },
+    "expect": {
+      "route": "deep_comfort",
+      "responseLength": "medium",
+      "shouldAskQuestion": false,
+      "shouldGiveAdvice": false
+    }
+  },
+  {
+    "id": "UT-RT-calm-deescalation",
+    "description": "anxious + boundary_sensitive → calm_deescalation",
+    "input": {
+      "intent": "emotional_support",
+      "emotion": "anxious",
+      "relationship": "boundary_sensitive"
+    },
+    "expect": {
+      "route": "calm_deescalation",
+      "responseLength": "short",
+      "shouldAskQuestion": false
+    }
+  },
+  {
+    "id": "UT-RT-quiet-presence",
+    "description": "companionship_presence + lonely → quiet_presence",
+    "input": {
+      "intent": "companionship_presence",
+      "emotion": "lonely",
+      "relationship": "new_connection"
+    },
+    "expect": {
+      "route": "quiet_presence",
+      "responseLength": "very_short",
+      "shouldAskQuestion": false
+    }
+  },
+  {
+    "id": "UT-RT-fallback-no-match",
+    "description": "无法匹配规则时走默认/fallback 路由",
+    "input": {
+      "intent": "unclear",
+      "emotion": "neutral",
+      "relationship": "new_connection"
+    },
+    "expect": {
+      "hasRoute": true
+    }
+  }
+]

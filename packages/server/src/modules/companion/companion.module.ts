@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
+import { StorageModule } from '../../processors/storage/storage.module.js'
 import { SettingsModule } from '../settings/settings.module.js'
 import { CompanionController } from './companion.controller.js'
 import { CompanionService } from './companion.service.js'
+import { CompanionCareService } from './companion-care.service.js'
 import { CompanionChatController } from './companion-chat.controller.js'
 import { CompanionChatService } from './companion-chat.service.js'
 import { CompanionChatPipelineService } from './companion-chat-pipeline.service.js'
 import { CompanionChatStreamService } from './companion-chat-stream.service.js'
+import { CompanionMemoryService } from './companion-memory.service.js'
 import { LlmConfigService } from './config/llm-config.service.js'
 import { LangChainLlmService } from './langchain/langchain-llm.service.js'
 import { StructuredOutputService } from './langchain/structured-output.service.js'
@@ -26,13 +29,14 @@ import {
   SummaryNode,
 } from './langgraph/nodes/index.js'
 import { CompanionRepository } from './repositories/companion.repository.js'
+import { CompanionCareRepository } from './repositories/companion-care.repository.js'
 import { CompanionConversationRepository } from './repositories/companion-conversation.repository.js'
 import { CompanionFeedbackRepository } from './repositories/companion-feedback.repository.js'
 import { CompanionMemoryRepository } from './repositories/companion-memory.repository.js'
 import { CompanionMessageRepository } from './repositories/companion-message.repository.js'
 
 @Module({
-  imports: [SettingsModule],
+  imports: [SettingsModule, StorageModule],
   controllers: [CompanionChatController, CompanionController],
   providers: [
     LlmConfigService,
@@ -55,8 +59,11 @@ import { CompanionMessageRepository } from './repositories/companion-message.rep
     CompanionChatPipelineService,
     CompanionChatStreamService,
     CompanionService,
+    CompanionCareService,
+    CompanionMemoryService,
     SseResponseHelper,
     CompanionRepository,
+    CompanionCareRepository,
     CompanionConversationRepository,
     CompanionMemoryRepository,
     CompanionMessageRepository,
@@ -83,7 +90,10 @@ import { CompanionMessageRepository } from './repositories/companion-message.rep
     CompanionChatPipelineService,
     CompanionChatStreamService,
     CompanionService,
+    CompanionCareService,
+    CompanionMemoryService,
     CompanionRepository,
+    CompanionCareRepository,
     CompanionConversationRepository,
     CompanionMemoryRepository,
     CompanionMessageRepository,

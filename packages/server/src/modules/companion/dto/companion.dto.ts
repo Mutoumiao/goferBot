@@ -6,10 +6,13 @@ import {
   createConversationSchema,
   createFeedbackSchema,
   createMemorySchema,
+  generateCareEventSchema,
   memoryListQuerySchema,
   sendMessageSchema,
+  updateCarePlanSchema,
   updateCompanionSchema,
   updateCompanionStatusSchema,
+  updateMemorySchema,
 } from '@goferbot/data/schemas'
 import { createZodDto } from 'nestjs-zod'
 
@@ -26,5 +29,9 @@ export class MessageListQueryDto extends createZodDto(companionMessageListQueryS
 
 export class CreateMemoryDto extends createZodDto(createMemorySchema) {}
 export class MemoryListQueryDto extends createZodDto(memoryListQuerySchema) {}
+export class UpdateMemoryDto extends createZodDto(updateMemorySchema) {}
 
 export class CreateFeedbackDto extends createZodDto(createFeedbackSchema) {}
+
+export class UpdateCarePlanDto extends createZodDto(updateCarePlanSchema) {}
+export class GenerateCareEventDto extends createZodDto(generateCareEventSchema) {}

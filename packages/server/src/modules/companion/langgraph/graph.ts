@@ -1,3 +1,4 @@
+import type { RunnableConfig } from '@langchain/core/runnables'
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import { Injectable, Logger } from '@nestjs/common'
 import type { CompanionState, NodeExecutionContext } from './interfaces.js'
@@ -34,11 +35,12 @@ const CompanionGraphState = Annotation.Root({
   partialTokens: Annotation<string | undefined>(),
   existingMemories: Annotation<CompanionState['existingMemories']>(),
   recentMessages: Annotation<CompanionState['recentMessages']>(),
+  messageCount: Annotation<number | undefined>(),
   feedbacks: Annotation<CompanionState['feedbacks']>(),
   lastFallback: Annotation<string | undefined>(),
 })
 
-type Branch = 'continue' | 'end_safety' | 'end_guard' | 'skip_memory'
+type Branch = 'continue' | 'end_safety' | 'skip_memory'
 
 const _REQUIRED_FIELDS: Array<keyof CompanionState> = [
   'safety',
@@ -98,6 +100,7 @@ export class CompanionGraphService {
         companionTone: ctx.companionTone,
         companionBoundaries: ctx.companionBoundaries,
         companionGuardrails: ctx.companionGuardrails,
+        companionDefaultPrompt: ctx.companionDefaultPrompt,
       },
       signal: ctx.signal,
       streamMode: 'updates',
@@ -127,36 +130,38 @@ export class CompanionGraphService {
   }) {
     const builder = new StateGraph(CompanionGraphState)
 
-    builder.addNode('safety', (state: CompanionState) =>
-      this.runNode('safety', nodes.safety, state),
+    builder.addNode('safety', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('safety', nodes.safety, state, config),
     )
-    builder.addNode('intent', (state: CompanionState) =>
-      this.runNode('intent', nodes.intent, state),
+    builder.addNode('intent', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('intent', nodes.intent, state, config),
     )
-    builder.addNode('emotion', (state: CompanionState) =>
-      this.runNode('emotion', nodes.emotion, state),
+    builder.addNode('emotion', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('emotion', nodes.emotion, state, config),
     )
-    builder.addNode('relationship', (state: CompanionState) =>
-      this.runNode('relationship', nodes.relationship, state),
+    builder.addNode('relationship', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('relationship', nodes.relationship, state, config),
     )
-    builder.addNode('route', (state: CompanionState) => this.runNode('route', nodes.route, state))
-    builder.addNode('policy', (state: CompanionState) =>
-      this.runNode('policy', nodes.policy, state),
+    builder.addNode('route', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('route', nodes.route, state, config),
     )
-    builder.addNode('generate', (state: CompanionState) =>
-      this.runNode('generate', nodes.generate, state),
+    builder.addNode('policy', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('policy', nodes.policy, state, config),
     )
-    builder.addNode('quality', (state: CompanionState) =>
-      this.runNode('quality', nodes.quality, state),
+    builder.addNode('generate', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('generate', nodes.generate, state, config),
     )
-    builder.addNode('summary', (state: CompanionState) =>
-      this.runNode('summary', nodes.summary, state),
+    builder.addNode('quality', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('quality', nodes.quality, state, config),
     )
-    builder.addNode('memory_candidate', (state: CompanionState) =>
-      this.runNode('memory_candidate', nodes.memoryCandidate, state),
+    builder.addNode('summary', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('summary', nodes.summary, state, config),
     )
-    builder.addNode('memory_extraction', (state: CompanionState) =>
-      this.runNode('memory_extraction', nodes.memoryExtraction, state),
+    builder.addNode('memory_candidate', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('memory_candidate', nodes.memoryCandidate, state, config),
+    )
+    builder.addNode('memory_extraction', (state: CompanionState, config: RunnableConfig) =>
+      this.runNode('memory_extraction', nodes.memoryExtraction, state, config),
     )
 
     builder.addEdge(START as never, 'safety' as never)
@@ -183,21 +188,8 @@ export class CompanionGraphService {
     builder.addEdge('route' as never, 'policy' as never)
     builder.addEdge('policy' as never, 'generate' as never)
     builder.addEdge('generate' as never, 'quality' as never)
-
-    builder.addConditionalEdges(
-      'quality' as never,
-      (state: CompanionState): Branch => {
-        if (state.quality?.status === 'fail') {
-          this.logger.log('[graph] step=quality_fail')
-          return 'end_guard'
-        }
-        return 'continue'
-      },
-      {
-        continue: 'summary' as never,
-        end_guard: END as never,
-      },
-    )
+    // Quality 为观测型：fail 仍继续 summary/memory，主回复由 stream 落库（gap G-QL-01）
+    builder.addEdge('quality' as never, 'summary' as never)
 
     builder.addEdge('summary' as never, 'memory_candidate' as never)
 
@@ -227,12 +219,20 @@ export class CompanionGraphService {
       execute(state: CompanionState, ctx: NodeExecutionContext): Promise<Partial<CompanionState>>
     },
     state: CompanionState,
+    config?: RunnableConfig,
   ): Promise<Partial<CompanionState>> {
+    const conf = (config?.configurable ?? {}) as Record<string, unknown>
     const ctx: NodeExecutionContext = {
       userId: state.userId,
       companionId: state.companionId,
       conversationId: state.conversationId,
-      companionName: 'Companion',
+      companionName: (conf.companionName as string) || 'Companion',
+      companionPersonality: conf.companionPersonality as string | undefined,
+      companionTone: conf.companionTone as string | undefined,
+      companionBoundaries: conf.companionBoundaries as string | undefined,
+      companionGuardrails: conf.companionGuardrails as string | undefined,
+      companionDefaultPrompt: conf.companionDefaultPrompt as string | undefined,
+      signal: config?.signal as AbortSignal | undefined,
     }
     this.logger.log(`[graph] step=${name}_start`)
     const next = await node.execute(state, ctx)

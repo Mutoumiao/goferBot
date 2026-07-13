@@ -1,0 +1,94 @@
+[
+  {
+    "id": "UT-MEM-skip-keyword-hit",
+    "description": "命中 MEMORY_KEYWORD_REGEX → 关键词信号",
+    "input": {
+      "userMessage": "请记住我喜欢猫"
+    },
+    "expect": {
+      "keywordHit": true,
+      "fastSkip": false
+    }
+  },
+  {
+    "id": "UT-MEM-skip-keyword-miss",
+    "description": "普通聊天句不命中关键词且不触发快速跳过",
+    "input": {
+      "userMessage": "今天工作好累但是还想跟你聊聊下午发生的事情"
+    },
+    "expect": {
+      "keywordHit": false,
+      "fastSkip": false
+    }
+  },
+  {
+    "id": "UT-MEM-skip-boundary",
+    "description": "边界类表述命中关键词",
+    "input": {
+      "userMessage": "我的边界是不聊工作"
+    },
+    "expect": {
+      "keywordHit": true,
+      "fastSkip": false
+    }
+  },
+  {
+    "id": "UT-MEM-skip-empty",
+    "description": "空消息快速跳过",
+    "input": {
+      "userMessage": ""
+    },
+    "expect": {
+      "keywordHit": false,
+      "fastSkip": true,
+      "skipCategory": "unclear"
+    }
+  },
+  {
+    "id": "UT-MEM-skip-short",
+    "description": "过短且无记忆信号 → small_talk 跳过",
+    "input": {
+      "userMessage": "嗨"
+    },
+    "expect": {
+      "keywordHit": false,
+      "fastSkip": true,
+      "skipCategory": "small_talk"
+    }
+  },
+  {
+    "id": "UT-MEM-skip-greeting",
+    "description": "寒暄确认句快速跳过",
+    "input": {
+      "userMessage": "好的"
+    },
+    "expect": {
+      "keywordHit": false,
+      "fastSkip": true,
+      "skipCategory": "small_talk"
+    }
+  },
+  {
+    "id": "UT-MEM-skip-sensitive",
+    "description": "敏感凭证不入记忆",
+    "input": {
+      "userMessage": "我的密码是 abc123456 你帮我记一下"
+    },
+    "expect": {
+      "fastSkip": true,
+      "skipCategory": "unsafe"
+    }
+  },
+  {
+    "id": "UT-MEM-skip-duplicate",
+    "description": "与已有记忆内容重复则跳过",
+    "input": {
+      "userMessage": "我喜欢猫",
+      "existingMemories": [{ "content": "我喜欢猫" }]
+    },
+    "expect": {
+      "fastSkip": true,
+      "skipCategory": "duplicate"
+    }
+  }
+]

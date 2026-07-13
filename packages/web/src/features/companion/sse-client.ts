@@ -44,7 +44,8 @@ interface ChatPayload {
  * 解析标准 SSE 块（空行分隔）。
  * 后端写入：`event: xxx\ndata: {...}\n\n`
  */
-function parseSseBlock(block: string): CompanionSseEvent | null {
+/** 导出供 CompanionChatTransport 与单测复用 */
+export function parseSseBlock(block: string): CompanionSseEvent | null {
   const lines = block.split(/\r?\n/).map((l) => l.trimEnd())
   let eventName = 'message'
   const dataLines: string[] = []

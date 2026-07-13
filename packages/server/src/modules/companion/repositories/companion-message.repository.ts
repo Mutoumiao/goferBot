@@ -60,19 +60,38 @@ export class CompanionMessageRepository {
 
   async save(input: {
     conversationId: string
+    userId?: string
+    companionId?: string
     role: string
     content: string
+    metadata?: string | null
   }): Promise<CompanionMessage> {
-    const data = {
+    const data: Record<string, unknown> = {
       conversationId: input.conversationId,
       role: input.role as 'user' | 'assistant' | 'system',
       content: input.content,
     }
+    if (input.userId) data.userId = input.userId
+    if (input.companionId) data.companionId = input.companionId
+    if (input.metadata !== undefined) data.metadata = input.metadata
     return this.prisma.companionMessage.create({ data: data as never })
   }
 
-  async findRecent(conversationId: string, limit = 20): Promise<CompanionMessage[]> {
-    return this.findByConversation(conversationId, { limit })
+  /**
+   * 取会话**最近** limit 条消息，并按时间正序返回（供 prompt「最近对话」）。
+   * 注意：不得用 asc+take（那是「最旧」N 条）。
+   */
+  async findRecent(conversationId: string, limit = 18): Promise<CompanionMessage[]> {
+    const take = Math.max(0, limit)
+    if (take === 0) return []
+
+    const rows = await this.prisma.companionMessage.findMany({
+      where: { conversationId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+    })
+    // desc 取出最近窗口后反转为正序，便于 formatMessagesForPrompt
+    return rows.reverse()
   }
 
   async findByIdAndAuthorize(

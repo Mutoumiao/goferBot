@@ -38,11 +38,19 @@ export class CompanionMemoryRepository {
       size?: number
       companionId?: string
       status?: 'active' | 'disabled' | 'deleted'
+      type?:
+        | 'preference'
+        | 'boundary'
+        | 'relationship_goal'
+        | 'conversation_style'
+        | 'important_fact'
     },
   ): Promise<PaginationResult<CompanionMemory>> {
     const where: Prisma.CompanionMemoryWhereInput = { userId }
     if (options?.companionId) where.companionId = options.companionId
     if (options?.status) where.status = options.status
+    else where.status = { not: 'deleted' }
+    if (options?.type) where.type = options.type
 
     if (options?.page && options?.size) {
       const result = await this.prisma.companionMemory.paginate(
@@ -73,7 +81,17 @@ export class CompanionMemoryRepository {
   async findByCompanionAndUser(
     companionId: string,
     userId: string,
-    options?: { page?: number; size?: number; status?: 'active' | 'disabled' | 'deleted' },
+    options?: {
+      page?: number
+      size?: number
+      status?: 'active' | 'disabled' | 'deleted'
+      type?:
+        | 'preference'
+        | 'boundary'
+        | 'relationship_goal'
+        | 'conversation_style'
+        | 'important_fact'
+    },
   ): Promise<PaginationResult<CompanionMemory>> {
     return this.findByUserId(userId, { companionId, ...options })
   }

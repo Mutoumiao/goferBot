@@ -53,9 +53,11 @@ openspec/
 ├── specs/                   # Business Knowledge 权威源
 │   ├── auth/spec.md
 │   ├── chat/spec.md         # 强制多 KB、SSE sources、消息状态机
-│   ├── companion/spec.md    # 与 Knowledge AI 隔离
-│   ├── knowledge-ai/spec.md # Python 知识域服务（索引/检索/问答）
-│   ├── rag/spec.md          # RAG 能力层（运行时委托 knowledge-ai）
+│   ├── companion/spec.md           # 管线/SSE/反馈/记忆；与 Knowledge AI 隔离
+│   ├── companion-persona/spec.md   # 人设 / defaultPrompt / 头像 / 开场白
+│   ├── companion-care/spec.md      # Care Plan / 手动关怀生成
+│   ├── knowledge-ai/spec.md        # Python 知识域服务（索引/检索/问答）
+│   ├── rag/spec.md                 # RAG 能力层（运行时委托 knowledge-ai）
 │   ├── admin/spec.md
 │   ├── knowledge-base/
 │   ├── document/spec.md

@@ -49,6 +49,7 @@ export class CompanionChatStreamService {
       }
 
       if (safetyBlocked) {
+        // 设计 A：prepareContext 已提交 user；安全硬中断不落助手消息，历史为 user-only 半会话
         yield this.errorEvent('ERR_SAFETY_BLOCKED', safetyReason)
         return
       }
@@ -79,6 +80,11 @@ export class CompanionChatStreamService {
 
       const finalState = fullState as CompanionState
 
+      // 先落库再 done：客户端收到完成时历史已可读；亦避免连发时 findRecent 缺上轮助手
+      if (reply) {
+        await this.pipeline.persistAssistantMessage(conversationId, finalState)
+      }
+
       yield {
         event: 'done',
         data: {
@@ -99,24 +105,29 @@ export class CompanionChatStreamService {
         )
         yield { event: 'memories', data: { items: extracted } }
       }
-
-      if (reply) {
-        queueMicrotask(() => this.pipeline.persistAssistantMessage(conversationId, finalState))
-      }
     } catch (err) {
+      const message = (err as Error).message || '服务暂时不可用'
+      if (message === 'ERR_COMPANION_NOT_FOUND') {
+        yield this.errorEvent('ERR_COMPANION_NOT_FOUND', 'Companion not found')
+        return
+      }
+      if (message === 'ERR_COMPANION_ARCHIVED') {
+        // 门闸在用户落库前，会话保持干净
+        yield this.errorEvent('ERR_COMPANION_ARCHIVED', '该伴侣已归档，无法发送新消息')
+        return
+      }
       const code: CompanionErrorCode =
         (err as { name?: string })?.name === 'AbortError' ? 'ERR_LLM_TIMEOUT' : 'ERR_LLM_PARSE'
-      this.logger.error(`streamChat error: ${(err as Error).message}`)
-      // 尽量 done + 文案，避免前端只收到 error 又被覆盖成「无内容」
-      const fallback =
-        (err as Error).message?.includes('State missing')
-          ? '抱歉，伴侣对话管线暂不可用（可能未配置 Companion LLM）。请在管理后台检查模块配置后重试。'
-          : (err as Error).message || '服务暂时不可用'
+      this.logger.error(`streamChat error: ${message}`)
+      // 设计 A：若 prepareContext 已成功，user 已落库；此处 done 仅给客户端即时文案，不伪造成功助手消息
+      const fallback = message.includes('State missing')
+        ? '抱歉，伴侣对话管线暂不可用（可能未配置 Companion LLM）。请在管理后台检查模块配置后重试。'
+        : message
       yield {
         event: 'done',
-        data: { fullReply: fallback, content: fallback },
+        data: { fullReply: fallback, content: fallback, quality: undefined },
       }
-      yield this.errorEvent(code, (err as Error).message)
+      yield this.errorEvent(code, message)
     }
   }
 

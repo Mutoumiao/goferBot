@@ -10,115 +10,129 @@
 
 ## Primary OpenSpec
 
-- [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) — Companion 业务规范（字段定义、组件树、Memory 类型、SSE 契约权威源）
+- [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) — Companion 业务规范（前端范围、SSE/Transport、反馈、记忆管理）
 
 ## Related OpenSpec
 
-- [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — SSE 双轨方案（Companion 流式渲染参考）
+- [openspec/specs/companion-persona/spec.md](../../../../openspec/specs/companion-persona/spec.md) — 人设表单 / 头像 / 开场白
+- [openspec/specs/companion-care/spec.md](../../../../openspec/specs/companion-care/spec.md) — 关怀配置与「关怀」标记
+- [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — Knowledge Chat SSE（**勿**与 Companion Transport 混用）
 
 ## Module Dependencies
 
-- **Zustand** — `useCompanionStore` 管理消息列表与流式状态
-- **原生 fetch + ReadableStream** — Companion SSE 流式接收（不依赖 XStream）
-- **shadcn/ui** — 表单组件（Input / Textarea / Button / Dialog / AlertDialog / DropdownMenu / Badge）
-- **@ant-design/x** — `Bubble` 消息气泡组件
-- **XMarkdown** — AI 完成消息的 Markdown 渲染
+- **Zustand** — `useCompanionStore` 管理伴侣列表等 UI 状态
+- **AI SDK (`@ai-sdk/react` useChat) + `CompanionChatTransport`** — Companion 主聊天路径；映射 Nest SSE（token/done/error/summary/memories）
+- **alova** — Companion CRUD / 记忆 / 关怀 REST
+- **shadcn/ui** — 表单与布局组件
+- **Knowledge Chat 仍可用 ant-design/x** — Companion **主路径已不再依赖** Bubble/Sender
 
 ## Development Entry
 
 - `packages/web/src/features/companion/` — Companion 全部前端文件
-- `packages/web/src/features/companion/components/` — 组件树（CompanionTypingIndicator / CompanionMessageItem / CompanionForm 等）
-- `packages/web/src/features/companion/types.ts` — 前端类型定义
-- `packages/web/src/stores/companion.ts` — Companion Store（流式状态管理）
+- `packages/web/src/features/companion/components/` — 组件树（`CompanionChatPage` / `CompanionFormPage` / `CompanionCarePage` / `CompanionMemoriesPage` 等）
+- `packages/web/src/features/companion/companion-chat-transport.ts` — SSE → AI SDK Transport
+- `packages/web/src/features/companion/types.ts` — 前端类型（feedback rating=`positive`|`negative`）
+- 独立路由：`/companions/new`、`/$id/edit`、`/$id/chat`、`/$id/memories`、`/$id/care`
+
+> 业务权威：OpenSpec `companion` / `companion-persona` / `companion-care`（主规范，非仅 change delta）。
 
 ## Implementation Notes
 
+### 主聊天路径：useChat + CompanionChatTransport
+
+| 层 | 职责 | 文件 |
+|----|------|------|
+| Page | `@ai-sdk/react` `useChat` | `CompanionChatPage.tsx` |
+| Transport | Nest SSE → AI SDK 生命周期 | `companion-chat-transport.ts` |
+| 映射 | `token`→delta，`done`→finish，`error`→error | 同上 |
+| 约束 | 请求体 **禁止** 用户 LLM API Key | OpenSpec 服务端 LLM 权威 |
+
+错误时：已收 delta **保留**（`UT-TR-partial-error`）。Knowledge Chat **不要**迁到此 Transport。
+
 ### 打字机动画（CompanionTypingIndicator）
 
-与 Chat 的 `XMarkdown streaming.hasNextChunk` 不同，Companion 使用自研逐字打字机：
+- **核心**：`setInterval` + `displayedCount`，默认 18ms/字
+- **依赖陷阱**：`useEffect` 只依赖 `content`，用函数式 `setDisplayedCount(prev => …)`，勿把 `displayedCount` 放进依赖
+- **流式中**轻量打字机；**完成后**再切 `react-markdown` / 重量渲染，避免每 token 解析 Markdown
 
-- **核心机制**：`setInterval` + `displayedCount` 状态推进，每 tick `+1`
-- **默认间隔**：18ms/字（约 55 字/秒，模拟真人中等速度）
-- **光标**：尾部 `<span className="animate-pulse w-0.5 h-4 bg-current" />` 闪烁竖线
-- **完成回调**：`displayedCount >= content.length` 时 `clearInterval` 并触发 `onComplete`
-- **重置**：`content` 变长后 `useEffect` 重启 interval，光标推进新内容
-- **适用范围**：纯文本场景（AI 流式中覆写 content）；Markdown 增量渲染仍走 XMarkdown
+### CompanionMessageItem
 
-### 流式渲染性能优化
+- 用户：右对齐纯文本
+- AI 流式中：TypingIndicator
+- AI 完成：Markdown + 赞踩；`metadata.care` 等 → 「关怀」标签
+- **禁止**把 pipeline metadata JSON 当气泡正文（G-MD-02）
 
-- AI 流式中：`CompanionTypingIndicator` 直接消费 `message.content`，避免每 token 重渲染整个组件树
-- AI 完成后：切换为 `XMarkdown` 一次性渲染，`streaming={{ hasNextChunk: false }}`
-- 用户消息：纯文本 `Bubble`，无 Markdown 解析开销
-- 流式中不显示反馈按钮，避免不必要的交互节点
+### 反馈 rating 映射
 
-### CompanionMessageItem 三态渲染策略
+```text
+UI 拇指 up/down  ──映射层──►  HTTP/DTO  positive | negative
+```
 
-按 `role` + `streaming` 状态分流：
-- **用户消息**：`Bubble` `placement=end, variant=filled, shape=round`，纯文本
-- **AI 流式中**：`Bubble` `placement=start, variant=borderless`，children 为 `<CompanionTypingIndicator />`
-- **AI 完成**：`Bubble` `placement=start, variant=borderless`，children 为 `<XMarkdown />`，配点赞/踩按钮
-
-### 反馈按钮交互模式
-
-- 默认 `opacity-0`，父元素 `group hover` 时 `opacity-100`（`transition-opacity`）
-- 已投票按钮 `variant='secondary'` 高亮，未投票 `variant='ghost'`
-- 点击调用 `submitFeedback(messageId, { rating: 1 | -1 })`
+- 类型权威：`packages/data` + 前端 `FeedbackRating`
+- 映射只在客户端边界；不得把 `up`/`down` 泄漏为 API 主类型
 - 流式中不渲染反馈按钮
 
-### 头像渲染模式
+### 记忆 UI 纯函数（G-MM-03）
 
-Card 与 Header 共用逻辑：
-- 有 `avatarKey` → CSS `backgroundImage: url(/api/files/{key})`
-- 无 `avatarKey` → 首字母 fallback（`.charAt(0)` 居中）
-- 尺寸由调用方决定（Card `h-14 w-14`，Header `h-10 w-10`）
+入口：`memory-ui.ts`（与 `CompanionMemoriesPage` 共用，便于单测）
 
-### CompanionForm 双模式实现
+| 函数 | 用途 |
+|------|------|
+| `filterMemoriesByType` | 类型筛选（`all` 不过滤） |
+| `nextMemoryToggleStatus` | active ↔ disabled |
+| `replaceMemoryInList` / `removeMemoryFromList` | 列表局部更新 |
+| `canSaveMemoryEdit` | trim 后非空才可保存 |
 
-- `mode: 'create' | 'edit'` prop 切换提交端点（POST / PATCH）和 toast 文案
-- **统一 trim 处理**：所有字段 `trim()`，空字符串转 `undefined`（避免后端存空串）
-- 字段定义详见 OpenSpec，本文件不复制
+页面负责调 alova；**状态变更逻辑放纯函数**，避免只写在 JSX 里无法测。
 
-### CompanionStatusTag 三态映射
+### 关怀页
 
-`draft → default`、`published → secondary`、`archived → destructive`，中文标签由状态键查表。
+- 路由 `/companions/:id/care` → `CompanionCarePage`
+- 场景/语气标签与后端 `CARE_SCENES` × `CARE_TONES` 对齐（六场景 × 三语气）
+- 生成成功后应能在聊天历史看到消息 + 关怀标记
 
-### useCompanionStore 流式状态管理
+### 创建/编辑主路径
 
-- 流式标记 `streaming: true` 写入消息对象，UI 据此选择渲染分支
-- 完成时清 `streaming`，触发 XMarkdown 切换
-- 中断时需清理半成品消息（见 Common Pitfalls）
+- **`CompanionFormPage`**：`/companions/new`、`/companions/:id/edit`
+- 分段人设 + defaultPrompt 预览 + 头像上传；列表跳转独立路由
+- 服务端 `buildDefaultAgentPrompt` 写库；客户端预览规则宜与之一致
+- trim：空串 → `undefined`
+
+### 头像 / 状态标签
+
+- `avatarKey` → `/api/files/{key}`；否则首字母 `toUpperCase()`
+- Status：`draft→default` / `published→secondary` / `archived→destructive`
 
 ## Testing Checklist
 
-- [ ] 打字机动画流畅无卡顿（长文本下仍稳定 55 字/秒）
-- [ ] 流式渲染不阻塞主线程（输入框、滚动条可交互）
-- [ ] AI 流式中→完成切换无内容跳变（光标位置正确）
-- [ ] CompanionForm create/edit 双模式正确提交
-- [ ] 所有字段 trim 处理生效（空串 → undefined）
-- [ ] 反馈按钮 group-hover 显示/隐藏正确
-- [ ] 已投票按钮高亮状态正确
-- [ ] 头像 avatarKey / 首字母 fallback 正确切换
-- [ ] 流式中断后状态正确清理（无残留 streaming 标记）
-- [ ] 组件树正确渲染（按 OpenSpec 组件约束）
+- [ ] Transport：token/done/error 映射与部分错误保留（`packages/web/tests/companion-chat-transport.spec.ts`）
+- [ ] 记忆 UI 纯函数（`companion-memory-ui.spec.ts`：筛选/切换/列表更新/canSave）
+- [ ] 人设/头像/开场白相关单测（`companion-persona.spec.ts`）
+- [ ] 反馈 HTTP 仅 `positive`|`negative`；UI 映射隔离
+- [ ] 开场白仅 `messageCount===0` 且 opening 非空
+- [ ] Form create/edit trim；头像校验失败有提示
+- [ ] 关怀页场景/语气与后端枚举一致；生成后聊天可见标记
+- [ ] 气泡不渲染完整 pipeline metadata JSON
 
 ## Review Checklist
 
-- [ ] 新增字段是否同步更新 OpenSpec（不在本文件追加字段表）
-- [ ] Memory 类型变更是否同步更新 OpenSpec
-- [ ] 组件树变更是否同步更新 OpenSpec
-- [ ] 打字机间隔改动是否影响体感（默认 18ms）
-- [ ] 流式分支是否复用 CompanionTypingIndicator（不重复实现）
-- [ ] 反馈按钮是否复用 group-hover 模式
-- [ ] 表单是否复用 trim + undefined 处理
+- [ ] Companion 主路径是否仍是 useChat+Transport（未回退 ant-design/x 聊天）
+- [ ] 是否误改 Knowledge Chat 栈
+- [ ] rating 是否泄漏 `up`/`down` 到 API
+- [ ] 记忆写逻辑是否抽到 `memory-ui` 可测函数
+- [ ] 业务变更是否回写 OpenSpec companion / persona / care
+- [ ] 表单是否仍为独立路由主路径
 
 ## Common Pitfalls
 
-- **打字机 useEffect 依赖**：`displayedCount` 进入依赖会导致每次 tick 重启 interval；正确做法是只依赖 `content`，用函数式 `setDisplayedCount(prev => ...)` 推进
-- **流式中断未清理**：组件卸载或请求中断时若未清 `streaming` 标记，消息会卡在"流式中"状态，永远不切 XMarkdown
-- **反馈按钮在流式中渲染**：会触发不必要的 re-render，且点击会提交到不完整 messageId
-- **表单未 trim 空串**：后端存入空字符串导致列表页显示空白副标题
-- **打字机用于 Markdown**：代码块、表格会被逐字破坏渲染，Markdown 内容必须走 XMarkdown
-- **头像首字母未处理大小写**：`charAt(0)` 应配合 `toUpperCase()` 保证视觉一致
+- **打字机 useEffect 依赖**：`displayedCount` 进依赖 → 每 tick 重启 interval；只依赖 `content`。
+- **API 直接发 up/down**：契约主类型是 `positive`|`negative`，映射留在 UI 边界。
+- **记忆逻辑只写在组件 state**：补测困难；抽 `memory-ui.ts`。
+- **metadata 当正文**：pipeline 快照仅调试/侧车，气泡只显示 content。
+- **开场白重复插入**：非空会话再次进入时禁止再插 opening。
+- **流式中反馈**：无完整 messageId，易脏写。
+- **表单未 trim**：空串入库导致空白副标题。
+- **Knowledge 误迁 AI SDK**：本模块 Non-Goal。
 
 ## Reusable Patterns
 

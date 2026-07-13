@@ -18,9 +18,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { deleteCompanion, listCompanions } from '../services'
 import { useCompanionStore } from '../store'
-import type { Companion, CompanionStatus } from '../types'
+import type { CompanionStatus } from '../types'
 import { CompanionCard } from './CompanionCard'
-import { CompanionForm } from './CompanionForm'
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'all', label: '全部' },
@@ -37,8 +36,6 @@ export function CompanionListPage() {
     useCompanionStore()
 
   const [filter, setFilter] = useState<StatusFilter>('all')
-  const [formVisible, setFormVisible] = useState(false)
-  const [editingCompanion, setEditingCompanion] = useState<Companion | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   const fetchCompanions = useCallback(async () => {
@@ -69,11 +66,14 @@ export function CompanionListPage() {
   }
 
   const handleEdit = (id: string) => {
-    const companion = companions.find((c) => c.id === id)
-    if (companion) {
-      setEditingCompanion(companion)
-      setFormVisible(true)
-    }
+    navigate({
+      to: '/companions/$companionId/edit',
+      params: { companionId: id },
+    })
+  }
+
+  const handleCreate = () => {
+    navigate({ to: '/companions/new' })
   }
 
   const handleDelete = async () => {
@@ -89,12 +89,6 @@ export function CompanionListPage() {
     } finally {
       setDeleteTargetId(null)
     }
-  }
-
-  const handleFormSuccess = () => {
-    setFormVisible(false)
-    setEditingCompanion(null)
-    fetchCompanions()
   }
 
   const filteredCompanions =
@@ -113,12 +107,7 @@ export function CompanionListPage() {
           </TabsList>
         </Tabs>
 
-        <Button
-          onClick={() => {
-            setEditingCompanion(null)
-            setFormVisible(true)
-          }}
-        >
+        <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-1" />
           新建伴侣
         </Button>
@@ -136,12 +125,7 @@ export function CompanionListPage() {
               {filter === 'all' ? '点击上方按钮创建第一个伴侣' : '该状态下暂无伴侣'}
             </EmptyDescription>
             {filter === 'all' && (
-              <Button
-                onClick={() => {
-                  setEditingCompanion(null)
-                  setFormVisible(true)
-                }}
-              >
+              <Button onClick={handleCreate}>
                 <Plus className="h-4 w-4 mr-1" />
                 新建伴侣
               </Button>
@@ -161,18 +145,6 @@ export function CompanionListPage() {
           ))}
         </div>
       )}
-
-      <CompanionForm
-        open={formVisible}
-        mode={editingCompanion ? 'edit' : 'create'}
-        companionId={editingCompanion?.id}
-        initialData={editingCompanion ?? undefined}
-        onSuccess={handleFormSuccess}
-        onCancel={() => {
-          setFormVisible(false)
-          setEditingCompanion(null)
-        }}
-      />
 
       <AlertDialog
         open={!!deleteTargetId}

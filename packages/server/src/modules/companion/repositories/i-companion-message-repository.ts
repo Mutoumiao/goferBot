@@ -11,7 +11,14 @@ export interface ICompanionMessageRepository {
   ): Promise<CompanionMessage[]>
   countByConversation(conversationId: string): Promise<number>
   update(id: string, data: Prisma.CompanionMessageUpdateInput): Promise<CompanionMessage>
-  save(input: { conversationId: string; role: string; content: string }): Promise<CompanionMessage>
+  save(input: {
+    conversationId: string
+    userId?: string
+    companionId?: string
+    role: string
+    content: string
+    metadata?: string | null
+  }): Promise<CompanionMessage>
   findRecent(conversationId: string, limit?: number): Promise<CompanionMessage[]>
   findByUserAndConversation(
     conversationId: string,

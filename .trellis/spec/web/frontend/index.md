@@ -30,7 +30,7 @@
 |------|-----------------|----------------|
 | Chat SSE | [sse-streaming-architecture.md](./sse-streaming-architecture.md) | [openspec/specs/chat/spec.md](../../../openspec/specs/chat/spec.md) |
 | Overlay Portal | [overlay-portal-system.md](./overlay-portal-system.md) | （无对应 capability，4 层架构为实现模式，详见指南内 NOTE 标头） |
-| Companion UI | [companion-ui-rendering.md](./companion-ui-rendering.md) | [openspec/specs/companion/spec.md](../../../openspec/specs/companion/spec.md) |
+| Companion UI | [companion-ui-rendering.md](./companion-ui-rendering.md) | [companion](../../../openspec/specs/companion/spec.md) · [persona](../../../openspec/specs/companion-persona/spec.md) · [care](../../../openspec/specs/companion-care/spec.md) |
 
 ---
 
@@ -60,7 +60,9 @@ Web 前端涉及的 OpenSpec 业务规范（按需查阅，不要预加载）：
 
 - [auth](../../../openspec/specs/auth/spec.md) — 认证、Token 刷新、mustChangePassword 流
 - [chat](../../../openspec/specs/chat/spec.md) — SSE 契约、chatMessagesChunkSchema、双轨 SSE 业务分轨
-- [companion](../../../openspec/specs/companion/spec.md) — Memory 5 类型、CompanionForm 11 字段、组件树业务约束
+- [companion](../../../openspec/specs/companion/spec.md) — AI SDK 聊天、反馈、记忆管理、SSE/Transport
+- [companion-persona](../../../openspec/specs/companion-persona/spec.md) — 人设表单、头像、开场白
+- [companion-care](../../../openspec/specs/companion-care/spec.md) — 关怀配置与消息标记
 - [knowledge-base](../../../openspec/specs/knowledge-base/spec.md) — 知识库业务规则
 - [session](../../../openspec/specs/session/spec.md) — Session/Message 业务契约
 - [settings](../../../openspec/specs/settings/spec.md) — 用户设置业务规则

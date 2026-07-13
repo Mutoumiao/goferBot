@@ -51,10 +51,15 @@ export class GenerateNode {
     const parts: string[] = []
 
     parts.push('# 1. 人设')
-    parts.push(`你是 ${ctx.companionName}。`)
-    if (ctx.companionPersonality) parts.push(`性格/人设：${ctx.companionPersonality}`)
-    if (ctx.companionTone) parts.push(`说话语气：${ctx.companionTone}`)
-    if (ctx.companionBoundaries) parts.push(`边界提醒：${ctx.companionBoundaries}`)
+    if (ctx.companionDefaultPrompt?.trim()) {
+      // 权威：入库的多节 defaultPrompt 必须进入 generate 注入链
+      parts.push(ctx.companionDefaultPrompt.trim())
+    } else {
+      parts.push(`你是 ${ctx.companionName}。`)
+      if (ctx.companionPersonality) parts.push(`性格/人设：${ctx.companionPersonality}`)
+      if (ctx.companionTone) parts.push(`说话语气：${ctx.companionTone}`)
+      if (ctx.companionBoundaries) parts.push(`边界提醒：${ctx.companionBoundaries}`)
+    }
 
     parts.push('')
     parts.push('# 2. 长期记忆（用户明确透露、未来稳定有用的信息）')

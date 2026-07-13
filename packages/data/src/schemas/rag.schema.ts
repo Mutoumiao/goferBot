@@ -24,13 +24,21 @@ export const sectionBlockSchema = z.object({
   content: z.string().max(500_000),
 })
 
+/**
+ * Node Buffer 校验（惰性）：禁止 `z.instanceof(Buffer)`，
+ * 否则 `@goferbot/data/schemas` 在浏览器加载时会因 `Buffer is not defined` 整包崩溃
+ *（如 Companion 表单 import buildDefaultAgentPrompt 时一并拉入 rag.schema）。
+ */
+function isNodeBuffer(value: unknown): value is Buffer {
+  return typeof Buffer !== 'undefined' && typeof Buffer.isBuffer === 'function' && Buffer.isBuffer(value)
+}
+
 /** 解析器输入 —— Buffer 与 filePath 至少提供一个，MIME 必填 */
 export const parserInputSchema = z
   .object({
     filename: z.string().max(255).optional(),
     mimeType: z.string().min(1, 'mimeType 不能为空').max(128),
-    // 注意：Zod 无法直接描述 Node Buffer，这里用 z.instanceof(Buffer) 做运行时校验
-    buffer: z.instanceof(Buffer).optional(),
+    buffer: z.custom<Buffer>((val) => isNodeBuffer(val), { message: 'Expected Node Buffer' }).optional(),
     filePath: z.string().min(1).max(1024).optional(),
   })
   .refine(({ buffer, filePath }) => buffer !== undefined || filePath !== undefined, {

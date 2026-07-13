@@ -8,7 +8,8 @@ export const createCompanionSchema = z.object({
   tone: z.string().max(500).optional(),
   boundaries: z.string().max(2000).optional(),
   guardrailsPrompt: z.string().max(3000).optional(),
-  defaultPrompt: z.string().max(3000).optional(),
+  /** 服务端拼接权威；客户端可预览，最大放宽以容纳多节人设 */
+  defaultPrompt: z.string().max(12000).optional(),
   avatarKey: z.string().max(500).optional(),
   backgroundStory: z.string().max(5000).optional(),
   openingMessage: z.string().max(500).optional(),
@@ -62,12 +63,31 @@ export const memoryListQuerySchema = z.object({
   size: z.coerce.number().int().min(1).max(100).optional(),
   companionId: z.string().min(1).optional(),
   status: z.enum(['active', 'disabled', 'deleted']).optional(),
+  type: z
+    .enum(['preference', 'boundary', 'relationship_goal', 'conversation_style', 'important_fact'])
+    .optional(),
 })
 
+export const updateMemorySchema = z.object({
+  content: z.string().min(1).max(5000).optional(),
+  importance: z.number().int().min(1).max(5).optional(),
+  type: z
+    .enum(['preference', 'boundary', 'relationship_goal', 'conversation_style', 'important_fact'])
+    .optional(),
+  status: z.enum(['active', 'disabled', 'deleted']).optional(),
+})
+
+/** 反馈 rating 契约主类型：positive | negative（禁止 up/down 或 1/-1 作为 API 主类型） */
+export const feedbackRatingSchema = z.enum(['positive', 'negative'])
+
+/**
+ * POST /companion/messages/:id/feedback
+ * companionId/conversationId 可由服务端从 messageId 推导，故可选。
+ */
 export const createFeedbackSchema = z.object({
-  companionId: z.string().min(1),
-  conversationId: z.string().min(1),
-  rating: z.enum(['positive', 'negative']),
+  companionId: z.string().min(1).optional(),
+  conversationId: z.string().min(1).optional(),
+  rating: feedbackRatingSchema,
   reason: z.string().max(500).optional(),
   note: z.string().max(2000).optional(),
 })
@@ -75,3 +95,118 @@ export const createFeedbackSchema = z.object({
 export const updateCompanionStatusSchema = z.object({
   status: z.enum(['draft', 'published', 'archived']),
 })
+
+/** 助手消息 pipeline metadata 快照（完整 system prompt 不得入库） */
+export const companionMessageMetadataSchema = z.object({
+  safety: z
+    .object({
+      safetyLevel: z.string().optional(),
+      boundaryAction: z.string().optional(),
+      reason: z.string().optional(),
+    })
+    .optional(),
+  intent: z
+    .object({
+      primary: z.string().optional(),
+      userNeed: z.string().optional(),
+    })
+    .optional(),
+  emotion: z
+    .object({
+      primaryEmotion: z.string().optional(),
+      intensity: z.number().optional(),
+      replyTone: z.string().optional(),
+    })
+    .optional(),
+  relationship: z
+    .object({
+      stage: z.string().optional(),
+      intimacyPermission: z.string().optional(),
+    })
+    .optional(),
+  route: z
+    .object({
+      route: z.string().optional(),
+      responseLength: z.string().optional(),
+    })
+    .optional(),
+  policySummary: z
+    .object({
+      policy: z.string().optional(),
+      openingMove: z.string().optional(),
+    })
+    .optional(),
+  quality: z.unknown().nullable().optional(),
+  summaryText: z.string().max(200).optional(),
+  extractedMemoryCount: z.number().int().min(0).optional(),
+  /** 关怀消息标记 */
+  care: z
+    .object({
+      scene: z.string(),
+      eventId: z.string().optional(),
+    })
+    .optional(),
+})
+
+export const careSceneSchema = z.enum([
+  'morning',
+  'night',
+  'long_absence',
+  'stress_support',
+  'relationship_warmup',
+  'anniversary',
+])
+
+export const careToneSchema = z.enum(['light', 'gentle', 'intimate'])
+
+export const careFrequencySchema = z.enum(['daily', 'weekly', 'monthly', 'custom'])
+
+export const carePlanSchema = z.object({
+  id: z.string().optional(),
+  companionId: z.string().min(1),
+  enabled: z.boolean().default(true),
+  frequency: careFrequencySchema.default('daily'),
+  preferredTime: z.string().max(32).nullable().optional(),
+  scenes: z.array(careSceneSchema).min(1).default(['morning', 'night']),
+  tone: careToneSchema.default('gentle'),
+  customPrompt: z.string().max(1000).nullable().optional(),
+  nextRunAtMs: z.number().int().nullable().optional(),
+  /** GET 无行时为 true，表示未持久化默认对象 */
+  isDefault: z.boolean().optional(),
+})
+
+export const updateCarePlanSchema = z.object({
+  enabled: z.boolean().optional(),
+  frequency: careFrequencySchema.optional(),
+  preferredTime: z.string().max(32).nullable().optional(),
+  scenes: z.array(careSceneSchema).min(1).optional(),
+  tone: careToneSchema.optional(),
+  customPrompt: z.string().max(1000).nullable().optional(),
+})
+
+export const generateCareEventSchema = z.object({
+  scene: careSceneSchema.optional(),
+  tone: careToneSchema.optional(),
+  customPrompt: z.string().max(1000).optional(),
+})
+
+export const careEventSchema = z.object({
+  id: z.string(),
+  companionId: z.string(),
+  conversationId: z.string(),
+  messageId: z.string(),
+  scene: careSceneSchema,
+  status: z.enum(['pending', 'sent', 'read', 'failed']),
+  message: z.string(),
+  generatedAtMs: z.number().int(),
+})
+
+/** Companion SSE 事件名（服务端权威；Transport 映射依据） */
+export const companionSseEventTypeSchema = z.enum([
+  'token',
+  'done',
+  'error',
+  'summary',
+  'memories',
+  'heartbeat',
+])

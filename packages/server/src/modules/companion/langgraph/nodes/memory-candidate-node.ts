@@ -12,6 +12,16 @@ export class MemoryCandidateNode {
     state: CompanionState,
     ctx: NodeExecutionContext,
   ): Promise<Partial<CompanionState>> {
+    // 规则快速跳过（空/短/寒暄/重复/敏感）— 对齐参考项目三级过滤第一层
+    const fastSkip = this.shared.shouldSkipMemoryCandidateFast({
+      userText: state.userMessage,
+      assistantText: state.assistantReply,
+      existingMemories: state.existingMemories,
+    })
+    if (fastSkip) {
+      return { memoryCandidate: fastSkip }
+    }
+
     const hasKeyword = this.shared.shouldSkipByKeyword(state.userMessage)
     const fallbackCandidate: MemoryCandidate = {
       shouldExtract: hasKeyword,

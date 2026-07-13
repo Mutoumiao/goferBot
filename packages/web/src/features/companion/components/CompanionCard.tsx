@@ -28,14 +28,16 @@ export function CompanionCard({ companion, onSelect, onEdit, onDelete }: Compani
           <div
             className="h-14 w-14 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-medium"
             style={{
-              backgroundImage: companion.avatarKey
-                ? `url(/api/files/${companion.avatarKey})`
-                : undefined,
+              backgroundImage: companion.avatarUrl
+                ? `url(${companion.avatarUrl})`
+                : companion.avatarKey
+                  ? `url(/api/files/${companion.avatarKey})`
+                  : undefined,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
           >
-            {!companion.avatarKey && companion.name.charAt(0)}
+            {!companion.avatarUrl && !companion.avatarKey && companion.name.charAt(0)}
           </div>
 
           <div className="flex-1 min-w-0">

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "UT-QL-pass-clean",
+    "description": "短而干净的回复 → pass",
+    "input": {
+      "assistantReply": "我在这儿。你想慢慢说也可以。"
+    },
+    "expect": {
+      "status": "pass"
+    }
+  },
+  {
+    "id": "UT-QL-fail-label-leak",
+    "description": "内部标签泄露 → fail（high）",
+    "input": {
+      "assistantReply": "根据意图判断你现在需要陪伴。"
+    },
+    "expect": {
+      "status": "fail",
+      "violationCodes": ["internal_label_leak"]
+    }
+  },
+  {
+    "id": "UT-QL-fail-breaks-immersion",
+    "description": "AI 身份暴露 → fail",
+    "input": {
+      "assistantReply": "作为一个AI，我理解你的感受。"
+    },
+    "expect": {
+      "status": "fail",
+      "violationCodes": ["breaks_immersion"]
+    }
+  },
+  {
+    "id": "UT-QL-warn-lecture",
+    "description": "说教语气 → warn（medium）",
+    "input": {
+      "assistantReply": "你应该多出去走走。"
+    },
+    "expect": {
+      "status": "warn",
+      "violationCodes": ["forbidden_lecture"]
+    }
+  },
+  {
+    "id": "UT-QL-fail-continue-contract",
+    "description": "契约占位：quality fail 不得阻止主回复语义（实现见 2.2 graph）",
+    "input": {
+      "assistantReply": "作为一个AI，我会陪你。",
+      "qualityFailContinue": true
+    },
+    "expect": {
+      "status": "fail",
+      "note": "图条件边改完后由 IT-QL-persist / UT-QL-fail-continue 覆盖"
+    }
+  }
+]
