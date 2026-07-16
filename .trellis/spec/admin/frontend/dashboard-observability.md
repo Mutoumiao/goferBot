@@ -1,8 +1,8 @@
 # Admin Dashboard / Observability 前端开发指南
 
 > **REFERENCE_ONLY**: 此文件记录开发指南（HOW）。业务规范权威源为
-> [openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md](../../../../openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md)
-> 与 [admin/spec.md](../../../../openspec/changes/admin-dashboard-observability/specs/admin/spec.md)（WHAT）。
+> [openspec/specs/admin-observability/spec.md](../../../../openspec/specs/admin-observability/spec.md)
+> 与 [openspec/specs/admin/spec.md](../../../../openspec/specs/admin/spec.md)（WHAT）。
 
 ---
 
@@ -12,8 +12,8 @@
 
 ## Primary OpenSpec
 
-- `openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md`
-- `openspec/changes/admin-dashboard-observability/specs/admin/spec.md`
+- `openspec/specs/admin-observability/spec.md`
+- `openspec/specs/admin/spec.md`
 
 ## Related OpenSpec
 

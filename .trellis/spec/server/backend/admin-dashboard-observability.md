@@ -1,8 +1,8 @@
 # Admin Dashboard / Observability 聚合开发指南
 
 > **REFERENCE_ONLY**: 此文件记录开发指南（HOW）。业务规范权威源为
-> [openspec/specs/admin-observability/spec.md](../../../../openspec/specs/admin-observability/spec.md)（归档后）
-> 与 change delta [openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md](../../../../openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md)（WHAT）。
+> [openspec/specs/admin-observability/spec.md](../../../../openspec/specs/admin-observability/spec.md)
+> 与 [openspec/specs/admin/spec.md](../../../../openspec/specs/admin/spec.md)（WHAT）。
 
 ---
 
@@ -12,15 +12,14 @@
 
 ## Primary OpenSpec
 
-- Change delta：`openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md`
-- 归档后主规格：`openspec/specs/admin-observability/spec.md`（archive 同步后）
+- `openspec/specs/admin-observability/spec.md`
+- `openspec/specs/admin/spec.md`
 
 ## Related OpenSpec
 
-- `openspec/changes/admin-dashboard-observability/specs/admin/spec.md`
-- `openspec/changes/admin-dashboard-observability/specs/chat/spec.md`
-- `openspec/changes/admin-dashboard-observability/specs/companion/spec.md`
-- `openspec/changes/admin-dashboard-observability/specs/rag/spec.md`
+- `openspec/specs/chat/spec.md`
+- `openspec/specs/companion/spec.md`
+- `openspec/specs/rag/spec.md`
 
 ## Related Trellis Guides
 

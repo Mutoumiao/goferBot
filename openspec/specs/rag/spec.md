@@ -111,6 +111,48 @@
 - **WHEN** 检索无合格结果且 mode 为 strict
 - **THEN** 返回/流式 MUST 业务成功并标记 `retrieval_empty: true`
 
+### Requirement: 检索结果标记可供 Admin 聚合
+
+RAG/Knowledge AI 管线产出的 `retrieval_empty` 与 `degraded` 语义 MUST 能通过 Chat 助手消息 metadata 被 Admin 聚合（写入权威路径见 `chat` capability）。`retrieval_empty` 表示 strict 空检索业务成功；`degraded` 表示管线降级（例如 rerank R1），MUST NOT 单独等同于系统 5xx。
+
+证据来源：
+- `openspec/specs/chat/spec.md`
+- `packages/server/prisma/schema.prisma`（`Message.metadata`）
+- `packages/server/src/modules/admin/services/dashboard-observability.service.ts`（聚合消费方）
+
+#### Scenario: 空检索可聚合
+
+- **WHEN** 一轮知识问答以 strict 空检索业务成功结束
+- **THEN** 助手消息 metadata MUST 含 `retrieval_empty: true`
+- **AND** Admin 聚合可将该消息计入空结果样本
+
+#### Scenario: 降级可聚合
+
+- **WHEN** 检索管线发生已定义的 degraded 降级且仍完成业务响应
+- **THEN** 经 Chat 定稿后助手 metadata MUST 含 `degraded: true`
+- **AND** Admin 聚合可将该消息计入降级样本
+- **AND** 窗内无 completed 助手样本时，Admin Hub 降级率 KPI MUST 为 `insufficient_samples`（非虚构 0% 冒充有流量）
+
+#### Scenario: 可选延迟
+
+- **WHEN** 实现写入检索/生成耗时
+- **THEN** metadata MAY 含 `latencyMs`
+- **AND** 若未写入，Admin MUST NOT 伪造 RAG P95
+
+### Requirement: 索引失败可被 Admin 计数
+
+文档索引失败状态 MUST 可通过持久化文档状态在时间窗内计数，以支持 Admin Hub「索引失败数」黄金指标。
+
+证据来源：
+- `packages/server/prisma/schema.prisma`（`Document.status`、`errorMessage`、`updatedAt`）
+
+#### Scenario: 按状态与时间窗聚合失败
+
+- **WHEN** 文档 `status` 为 `failed` 且 `updatedAt` 落在观测时间窗内
+- **THEN** 该文档 MUST 计入 Admin 索引失败数
+- **AND** `status=ready` 等成功态 MUST NOT 计入失败数
+- **AND** 无失败文档时计数 MUST 为 0 且 KPI 可为 `ready`（计数型，非比率样本不足）
+
 ---
 
 ## 已废止（原 Nest 本地实现）

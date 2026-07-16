@@ -29,7 +29,7 @@
 | 模块 | Trellis 开发指南 | OpenSpec 权威源 |
 |------|-----------------|----------------|
 | Admin RBAC 守卫 | [rbac-guard-architecture.md](./rbac-guard-architecture.md) | [openspec/specs/admin/spec.md](../../../openspec/specs/admin/spec.md) + [openspec/specs/auth/spec.md](../../../openspec/specs/auth/spec.md) |
-| Dashboard 观测 Hub/详页 | [dashboard-observability.md](./dashboard-observability.md) | [admin-observability](../../../openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md) + [admin delta](../../../openspec/changes/admin-dashboard-observability/specs/admin/spec.md) |
+| Dashboard 观测 Hub/详页 | [dashboard-observability.md](./dashboard-observability.md) | [admin-observability](../../../openspec/specs/admin-observability/spec.md) + [admin](../../../openspec/specs/admin/spec.md) |
 
 ---
 
@@ -58,7 +58,7 @@
 Admin 前端涉及的 OpenSpec 业务规范（按需查阅，不要预加载）：
 
 - [admin](../../../openspec/specs/admin/spec.md) — 19 权限码、3 预置角色集、三层守卫编排、管理员认证、用户/角色/审计管理
-- [admin-observability](../../../openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md) — 观测 Hub/详页（change delta；archive 后迁主 specs）
+- [admin-observability](../../../openspec/specs/admin-observability/spec.md) — 观测 Hub/详页、KPI 三态与聚合 API
 - [auth](../../../openspec/specs/auth/spec.md) — Token 自动刷新订阅者队列、mustChangePassword 流
 - [user](../../../openspec/specs/user/spec.md) — 用户角色定义、Super Admin
 - [settings](../../../openspec/specs/settings/spec.md) — 系统配置业务规则
