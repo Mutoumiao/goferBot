@@ -64,6 +64,23 @@ import {
   updateSessionRequestSchema,
 } from '../schemas/session.schema.js'
 import {
+  dashboardSummaryQuerySchema,
+  dashboardSummarySchema,
+  healthComponentSchema,
+  hubCompanionSchema,
+  hubHealthSchema,
+  hubInventorySchema,
+  hubRagSchema,
+  kpiSchema,
+  kpiStatusSchema,
+  observabilityDetailQuerySchema,
+  observabilityDetailSchema,
+  observabilityMetricSchema,
+  observabilitySectionSchema,
+  observabilityWindowSchema,
+  sectionStatusSchema,
+} from '../schemas/dashboard.schema.js'
+import {
   appearanceConfigSchema,
   availableProvidersResponseSchema,
   type CategorySettingsMap,
@@ -104,6 +121,22 @@ export type DocumentStatusResponse = z.infer<typeof documentStatusResponseSchema
 export type Message = z.infer<typeof messageSchema>
 export type ChatSourceItem = z.infer<typeof chatSourceItemSchema>
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>
+
+export type ObservabilityWindow = z.infer<typeof observabilityWindowSchema>
+export type KpiStatus = z.infer<typeof kpiStatusSchema>
+export type SectionStatus = z.infer<typeof sectionStatusSchema>
+export type Kpi = z.infer<typeof kpiSchema>
+export type HealthComponent = z.infer<typeof healthComponentSchema>
+export type HubHealth = z.infer<typeof hubHealthSchema>
+export type HubRag = z.infer<typeof hubRagSchema>
+export type HubCompanion = z.infer<typeof hubCompanionSchema>
+export type HubInventory = z.infer<typeof hubInventorySchema>
+export type DashboardSummary = z.infer<typeof dashboardSummarySchema>
+export type DashboardSummaryQuery = z.infer<typeof dashboardSummaryQuerySchema>
+export type ObservabilityMetric = z.infer<typeof observabilityMetricSchema>
+export type ObservabilitySection = z.infer<typeof observabilitySectionSchema>
+export type ObservabilityDetail = z.infer<typeof observabilityDetailSchema>
+export type ObservabilityDetailQuery = z.infer<typeof observabilityDetailQuerySchema>
 export type Session = z.infer<typeof sessionSchema>
 export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>
 export type UpdateSessionRequest = z.infer<typeof updateSessionRequestSchema>

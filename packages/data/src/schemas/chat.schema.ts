@@ -15,6 +15,10 @@ export const messageMetadataSchema = z
   .object({
     sources: z.array(chatSourceItemSchema).optional(),
     retrieval_empty: z.boolean().optional(),
+    /** 管线降级（如检索依赖不可用仍生成回复） */
+    degraded: z.boolean().optional(),
+    /** 端到端延迟（ms），可选埋点 */
+    latencyMs: z.number().nonnegative().optional(),
     error: z.string().optional(),
   })
   .passthrough()
