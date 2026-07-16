@@ -141,6 +141,17 @@ orderBy createdAt/id DESC → take(limit) → reverse() → 时间正序
 **症状**：低质回复被丢弃、memory 不跑。  
 **正确**：观测型——仍下发/落库 + 继续 summary/memory。
 
+### 安全硬中断写助手气泡凑观测
+
+**症状**：会话历史出现「被拦截」助手行；与设计 A 冲突。  
+**正确**：`ERR_SAFETY_BLOCKED` 不 `persistAssistantMessage`；侧信道 `CompanionObsEventRepository.recordSafetyHardStop`；写失败吞错。  
+**详见**：[admin-dashboard-observability.md](./admin-dashboard-observability.md)
+
+### 助手定稿漏 latencyMs
+
+**症状**：Admin Hub P95 长期样本不足（窗内仅有旧消息）。  
+**正确**：stream 成功路径 `Date.now()-startedAt` 传入 `persistAssistantMessage(..., { latencyMs })` 写入 metadata。
+
 ### 其它既有陷阱
 
 - LLM 超时未设 fallback → 整条 pipeline 崩。

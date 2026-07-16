@@ -30,6 +30,7 @@
 | Auth | [auth-module-guide.md](./auth-module-guide.md) | [openspec/specs/auth/spec.md](../../../openspec/specs/auth/spec.md) |
 | Provider | [provider-module-guide.md](./provider-module-guide.md) | [openspec/specs/settings/spec.md](../../../openspec/specs/settings/spec.md) |
 | Companion | [companion-pipeline.md](./companion-pipeline.md) | [companion](../../../openspec/specs/companion/spec.md) · [persona](../../../openspec/specs/companion-persona/spec.md) · [care](../../../openspec/specs/companion-care/spec.md) |
+| Admin 观测聚合 | [admin-dashboard-observability.md](./admin-dashboard-observability.md) | [admin-observability](../../../openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md)（归档后改主 specs） |
 | Knowledge AI | [knowledge-ai-service.md](./knowledge-ai-service.md) | [openspec/specs/knowledge-ai/spec.md](../../../openspec/specs/knowledge-ai/spec.md) |
 | RAG（能力层） | [rag-implementation.md](./rag-implementation.md) | [openspec/specs/rag/spec.md](../../../openspec/specs/rag/spec.md) |
 | Queue | [queue-implementation.md](./queue-implementation.md) | [openspec/specs/queue/spec.md](../../../openspec/specs/queue/spec.md) |
@@ -70,6 +71,7 @@
 - [rag](../../../openspec/specs/rag/spec.md) — RAG 能力层语义（运行时委托 knowledge-ai）
 - [queue](../../../openspec/specs/queue/spec.md) — 文档索引 Job → `/index`、StreamFinalize
 - [admin](../../../openspec/specs/admin/spec.md) — 管理后台 RBAC、审计日志
+- [admin-observability](../../../openspec/changes/admin-dashboard-observability/specs/admin-observability/spec.md) — 观测 Hub/详页（change delta；archive 后迁主 specs）
 - [knowledge-base](../../../openspec/specs/knowledge-base/spec.md) — 知识库 CRUD、级联清 Knowledge AI 索引
 - [document](../../../openspec/specs/document/spec.md) — Nest 解析 + 向 Knowledge AI 交接纯文本
 - [session](../../../openspec/specs/session/spec.md) — Session/Message、status/metadata sources
