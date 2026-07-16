@@ -107,7 +107,15 @@ export class ChatService {
     let fullReply = ''
     let sources: KnowledgeAiSourceItem[] = []
     let retrievalEmpty = false
+    let degraded = false
     let terminalStatus: 'completed' | 'cancelled' | 'failed' = 'completed'
+
+    const buildChatMetadata = (extra?: Record<string, unknown>) => ({
+      sources,
+      retrieval_empty: retrievalEmpty,
+      ...(degraded ? { degraded: true } : {}),
+      ...extra,
+    })
 
     try {
       for await (const frame of this.knowledgeAi.stream(
@@ -132,6 +140,7 @@ export class ChatService {
         if (frame.event === 'sources') {
           sources = frame.data.sources ?? []
           retrievalEmpty = Boolean(frame.data.retrieval_empty)
+          degraded = Boolean(frame.data.degraded) || degraded
           yield {
             event: 'sources',
             conversation_id: sessionId,
@@ -164,13 +173,14 @@ export class ChatService {
             fullReply = frame.data.answer
           }
           retrievalEmpty = Boolean(frame.data.retrieval_empty) || retrievalEmpty
+          degraded = Boolean(frame.data.degraded) || degraded
         } else if (frame.event === 'error') {
           terminalStatus = 'failed'
           const errMsg = frame.data.message || frame.data.error || '知识问答失败'
           await this.conversationService.updateAssistantMessage(sessionId, messageId, {
             content: fullReply,
             status: 'failed',
-            metadata: { sources, retrieval_empty: retrievalEmpty, error: errMsg },
+            metadata: buildChatMetadata({ error: errMsg }),
           })
           yield {
             event: 'error',
@@ -189,7 +199,7 @@ export class ChatService {
         await this.conversationService.updateAssistantMessage(sessionId, messageId, {
           content: fullReply,
           status: terminalStatus,
-          metadata: { sources, retrieval_empty: retrievalEmpty },
+          metadata: buildChatMetadata(),
         })
         yield {
           event: terminalStatus === 'cancelled' ? 'error' : 'error',
@@ -210,7 +220,7 @@ export class ChatService {
       await this.conversationService.updateAssistantMessage(sessionId, messageId, {
         content: fullReply,
         status: 'failed',
-        metadata: { sources, retrieval_empty: retrievalEmpty },
+        metadata: buildChatMetadata(),
       })
       yield {
         event: 'error',
@@ -227,7 +237,7 @@ export class ChatService {
       await this.conversationService.updateAssistantMessage(sessionId, messageId, {
         content: fullReply,
         status: 'cancelled',
-        metadata: { sources, retrieval_empty: retrievalEmpty },
+        metadata: buildChatMetadata(),
       })
       yield {
         event: 'error',
@@ -244,10 +254,7 @@ export class ChatService {
     await this.conversationService.updateAssistantMessage(sessionId, messageId, {
       content: fullReply,
       status: 'completed',
-      metadata: {
-        sources,
-        retrieval_empty: retrievalEmpty,
-      },
+      metadata: buildChatMetadata(),
     })
 
     this.finalizeService.schedule({ userId, sessionId, span: 'chat.stream.finalize' }, [

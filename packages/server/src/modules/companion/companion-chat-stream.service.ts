@@ -6,14 +6,19 @@ import type {
 } from './companion-chat.types.js'
 import { CompanionChatPipelineService } from './companion-chat-pipeline.service.js'
 import type { CompanionState } from './langgraph/interfaces.js'
+import { CompanionObsEventRepository } from './repositories/companion-obs-event.repository.js'
 
 @Injectable()
 export class CompanionChatStreamService {
   private readonly logger = new Logger(CompanionChatStreamService.name)
 
-  constructor(private readonly pipeline: CompanionChatPipelineService) {}
+  constructor(
+    private readonly pipeline: CompanionChatPipelineService,
+    private readonly obsEvents: CompanionObsEventRepository,
+  ) {}
 
   async *streamChat(params: StreamChatParams): AsyncGenerator<ChatStreamEvent> {
+    const startedAt = Date.now()
     try {
       const { companion, conversationId, initialState, ctx } =
         await this.pipeline.prepareContext(params)
@@ -49,7 +54,14 @@ export class CompanionChatStreamService {
       }
 
       if (safetyBlocked) {
-        // 设计 A：prepareContext 已提交 user；安全硬中断不落助手消息，历史为 user-only 半会话
+        // 设计 A：不落助手消息；A1+ 侧信道写 obs_event 供看板聚合
+        await this.obsEvents.recordSafetyHardStop({
+          companionId: params.companionId,
+          conversationId,
+          userId: params.userId,
+          boundaryAction: fullState.safety?.boundaryAction,
+          reason: safetyReason,
+        })
         yield this.errorEvent('ERR_SAFETY_BLOCKED', safetyReason)
         return
       }
@@ -79,10 +91,11 @@ export class CompanionChatStreamService {
       }
 
       const finalState = fullState as CompanionState
+      const latencyMs = Date.now() - startedAt
 
       // 先落库再 done：客户端收到完成时历史已可读；亦避免连发时 findRecent 缺上轮助手
       if (reply) {
-        await this.pipeline.persistAssistantMessage(conversationId, finalState)
+        await this.pipeline.persistAssistantMessage(conversationId, finalState, { latencyMs })
       }
 
       yield {

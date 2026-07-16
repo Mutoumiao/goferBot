@@ -38,6 +38,7 @@ import { CompanionConversationRepository } from './repositories/companion-conver
 import { CompanionFeedbackRepository } from './repositories/companion-feedback.repository.js'
 import { CompanionMemoryRepository } from './repositories/companion-memory.repository.js'
 import { CompanionMessageRepository } from './repositories/companion-message.repository.js'
+import { CompanionObsEventRepository } from './repositories/companion-obs-event.repository.js'
 
 @Module({
   imports: [SettingsModule, StorageModule, PermissionModule],
@@ -74,6 +75,7 @@ import { CompanionMessageRepository } from './repositories/companion-message.rep
     CompanionMemoryRepository,
     CompanionMessageRepository,
     CompanionFeedbackRepository,
+    CompanionObsEventRepository,
   ],
   exports: [
     LlmConfigService,
@@ -105,6 +107,7 @@ import { CompanionMessageRepository } from './repositories/companion-message.rep
     CompanionMemoryRepository,
     CompanionMessageRepository,
     CompanionFeedbackRepository,
+    CompanionObsEventRepository,
   ],
 })
 export class CompanionModule {}

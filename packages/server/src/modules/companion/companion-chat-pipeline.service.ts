@@ -193,7 +193,11 @@ export class CompanionChatPipelineService {
     }
   }
 
-  async persistAssistantMessage(conversationId: string, state: CompanionState): Promise<void> {
+  async persistAssistantMessage(
+    conversationId: string,
+    state: CompanionState,
+    opts?: { latencyMs?: number },
+  ): Promise<void> {
     try {
       const content = state.assistantReply ?? ''
       await this.messageRepo.save({
@@ -202,7 +206,7 @@ export class CompanionChatPipelineService {
         companionId: state.companionId,
         role: 'assistant',
         content,
-        metadata: this.buildPipelineMetadataSnapshot(state),
+        metadata: this.buildPipelineMetadataSnapshot(state, opts),
       })
       await this.conversationRepo.incrementMessageCount(conversationId)
       // 列表/预览字段：与 care generate 对齐，聊天成功后必须刷新
@@ -219,7 +223,10 @@ export class CompanionChatPipelineService {
   }
 
   /** 助手消息 metadata 快照：quality 必含，不含完整 system prompt */
-  buildPipelineMetadataSnapshot(state: CompanionState): string {
+  buildPipelineMetadataSnapshot(
+    state: CompanionState,
+    opts?: { latencyMs?: number },
+  ): string {
     const snapshot = {
       safety: state.safety
         ? {
@@ -262,6 +269,7 @@ export class CompanionChatPipelineService {
       quality: state.quality ?? null,
       summaryText: state.summary?.text?.slice(0, 200),
       extractedMemoryCount: state.extractedMemories?.length ?? 0,
+      ...(typeof opts?.latencyMs === 'number' ? { latencyMs: opts.latencyMs } : {}),
     }
     return JSON.stringify(snapshot)
   }

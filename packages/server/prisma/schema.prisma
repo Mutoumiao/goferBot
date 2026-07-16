@@ -38,6 +38,7 @@ model User {
   companionMessageFeedbacks CompanionMessageFeedback[]
   companionCarePlans        CompanionCarePlan[]
   companionCareEvents       CompanionCareEvent[]
+  companionObsEvents        CompanionObsEvent[]
   groupChats                GroupChat[]
   groupChatMembers          GroupChatMember[]
   groupChatMessages         GroupChatMessage[]
@@ -259,6 +260,7 @@ model Companion {
   feedbacks                CompanionMessageFeedback[]
   carePlans                CompanionCarePlan[]
   careEvents               CompanionCareEvent[]
+  obsEvents                CompanionObsEvent[]
   groupChatMembers         GroupChatMember[]
 
   @@index([userId])
@@ -393,6 +395,25 @@ model CompanionCareEvent {
 
   @@index([userId, companionId, generatedAtMs])
   @@map("companion_care_events")
+}
+
+/// Companion 观测侧信道事件（设计 A：硬中断不落助手消息，观测走本表）
+model CompanionObsEvent {
+  id             String   @id @default(uuid())
+  type           String
+  companionId    String   @map("companion_id")
+  conversationId String?  @map("conversation_id")
+  userId         String?  @map("user_id")
+  boundaryAction String?  @map("boundary_action")
+  reason         String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  companion Companion @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+  @@index([companionId, createdAt])
+  @@map("companion_obs_events")
 }
 
 model GroupChat {
