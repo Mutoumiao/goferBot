@@ -14,6 +14,48 @@ export class AdminPage {
     await expect(this.page.getByText('控制台').first()).toBeVisible({ timeout: 15_000 })
   }
 
+  /** 观测 Hub：健康条 + RAG/Companion 黄金指标（非假经营看板） */
+  async expectObservabilityHub() {
+    await this.expectDashboard()
+    await expect(this.page.getByText(/依赖健康|健康状态加载/).first()).toBeVisible({
+      timeout: 20_000,
+    })
+    await expect(this.page.getByRole('heading', { name: /RAG/i })).toBeVisible()
+    await expect(this.page.getByRole('heading', { name: /Companion/i })).toBeVisible()
+    await expect(this.page.getByText('空结果率').first()).toBeVisible()
+    await expect(this.page.getByText('硬中断率').first()).toBeVisible()
+    await expect(this.page.getByText(/规模（弱化）/).first()).toBeVisible()
+    // 不得再以假 CPU/经营环比为主叙事
+    await expect(this.page.getByText(/CPU 使用率|内存占用|较昨日|环比增长/)).toHaveCount(0)
+  }
+
+  async refreshDashboard() {
+    await this.page.getByRole('button', { name: /刷新/ }).click()
+  }
+
+  async gotoRagObservability(window: '1h' | '24h' | '7d' = '24h') {
+    await this.page.goto(`/observability/rag?window=${window}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await expect(this.page).toHaveURL(/\/observability\/rag/)
+    await expect(this.page.getByText('RAG 观测').first()).toBeVisible({ timeout: 15_000 })
+  }
+
+  async gotoCompanionObservability(window: '1h' | '24h' | '7d' = '24h') {
+    await this.page.goto(`/observability/companion?window=${window}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await expect(this.page).toHaveURL(/\/observability\/companion/)
+    await expect(this.page.getByText('Companion 观测').first()).toBeVisible({ timeout: 15_000 })
+  }
+
+  async openRagDetailFromHub() {
+    const link = this.page.getByRole('link', { name: /查看详情/ }).first()
+    await expect(link).toBeVisible({ timeout: 15_000 })
+    await link.click()
+    await expect(this.page).toHaveURL(/\/observability\/rag/, { timeout: 15_000 })
+  }
+
   async gotoUsers() {
     await this.page.goto('/users', { waitUntil: 'domcontentloaded' })
     await expect(this.page).toHaveURL(/\/users/)

@@ -46,4 +46,22 @@ describe('UT-MD: pipeline metadata snapshot', () => {
     expect(meta).not.toHaveProperty('systemPrompt')
     expect(JSON.stringify(meta)).not.toContain('systemPrompt')
   })
+
+  it('writes latencyMs into snapshot when provided', () => {
+    const svc = Object.create(CompanionChatPipelineService.prototype) as CompanionChatPipelineService
+    const state = {
+      userId: 'u1',
+      companionId: 'c1',
+      conversationId: 'cv1',
+      userMessage: 'hi',
+      assistantReply: 'hello',
+      quality: { status: 'pass', score: 1, sentenceCount: 1, questionCount: 0, adviceCount: 0, violations: [] },
+    } as unknown as CompanionState
+
+    const meta = JSON.parse(svc.buildPipelineMetadataSnapshot(state, { latencyMs: 1234 })) as {
+      latencyMs?: number
+    }
+    expect(meta.latencyMs).toBe(1234)
+  })
 })
+

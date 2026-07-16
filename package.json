@@ -18,7 +18,7 @@
     "test:e2e:api:watch": "vitest --config vitest.e2e-api.config.ts",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "test:e2e:web": "playwright test --config e2e/playwright.config.ts e2e/specs/auth-chat.spec.ts e2e/specs/web-workspace-smoke.spec.ts e2e/specs/web-settings-recycle.spec.ts e2e/specs/kb-upload-dialog.spec.ts e2e/specs/kb-upload-retry.spec.ts e2e/specs/knowledge-ai-rag.spec.ts e2e/specs/companion.spec.ts e2e/specs/companion-care-feedback.spec.ts e2e/specs/companion-builtin-web.spec.ts",
-    "test:e2e:admin": "playwright test --config e2e/playwright.config.ts e2e/specs/admin-workspace.spec.ts e2e/specs/admin-provider-fetch.spec.ts e2e/specs/companion-builtin-admin.spec.ts",
+    "test:e2e:admin": "playwright test --config e2e/playwright.config.ts e2e/specs/admin-workspace.spec.ts e2e/specs/admin-provider-fetch.spec.ts e2e/specs/companion-builtin-admin.spec.ts e2e/specs/admin-dashboard-observability.spec.ts",
     "test:e2e:browser": "playwright test --config e2e/playwright.config.ts",
     "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --project=chromium",
     "test:all": "pnpm test && pnpm test:integration && pnpm test:e2e:api && pnpm test:e2e",

@@ -238,6 +238,71 @@ describe('ChatService', () => {
       expect(finalizeService.schedule).toHaveBeenCalled()
     })
 
+    it('persists metadata.degraded=true when Knowledge AI signals degraded', async () => {
+      knowledgeAi.stream = vi.fn().mockImplementation(async function* () {
+        yield {
+          event: 'sources',
+          data: {
+            sources: [],
+            retrieval_empty: true,
+            degraded: true,
+          },
+        }
+        yield { event: 'message', data: { delta: '降级回复' } }
+        yield {
+          event: 'message_end',
+          data: { answer: '降级回复', retrieval_empty: true, degraded: true },
+        }
+      })
+
+      const gen = service.streamChat(
+        'user-1',
+        {
+          conversation_id: 's1',
+          query: 'q',
+          knowledge_base_ids: [KB_ID],
+          provider_key: 'deepseek',
+        } as any,
+        new AbortController(),
+      )
+      for await (const _ of gen) {
+        // drain
+      }
+
+      expect(conversationService.updateAssistantMessage).toHaveBeenCalledWith(
+        's1',
+        expect.any(String),
+        expect.objectContaining({
+          status: 'completed',
+          metadata: expect.objectContaining({
+            degraded: true,
+            retrieval_empty: true,
+          }),
+        }),
+      )
+    })
+
+    it('omits metadata.degraded when pipeline is healthy', async () => {
+      const gen = service.streamChat(
+        'user-1',
+        {
+          conversation_id: 's1',
+          query: 'q',
+          knowledge_base_ids: [KB_ID],
+          provider_key: 'deepseek',
+        } as any,
+        new AbortController(),
+      )
+      for await (const _ of gen) {
+        // drain
+      }
+
+      const lastCall = conversationService.updateAssistantMessage.mock.calls.at(-1)
+      expect(lastCall?.[2]?.metadata).toBeDefined()
+      expect(lastCall?.[2]?.metadata).not.toHaveProperty('degraded')
+      expect(lastCall?.[2]?.metadata?.retrieval_empty).toBe(false)
+    })
+
     it('marks failed when Knowledge AI returns error event', async () => {
       knowledgeAi.stream = vi.fn().mockImplementation(async function* () {
         yield {
