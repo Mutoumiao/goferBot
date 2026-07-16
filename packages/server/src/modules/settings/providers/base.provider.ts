@@ -107,13 +107,19 @@ export class BaseProvider {
     return 'llm'
   }
 
-  /** isCompleteUrl 时 strip 后缀，否则直接拼 /chat/completions */
+  /**
+   * LangChain ChatOpenAI / OpenAI SDK 的 baseURL：必须是 API 根路径。
+   * SDK 会自行拼接 `/chat/completions`；此处若再拼一次会变成
+   * `.../chat/completions/chat/completions`，Companion 流式生成会静默落入兜底句。
+   * isCompleteUrl：用户填了完整 endpoint 时去掉尾缀，还原为根。
+   */
   protected resolveLlmBaseURL(): string | undefined {
     if (!this.baseUrl) return undefined
+    const trimmed = this.baseUrl.replace(/\/$/, '')
     if (this.isCompleteUrl) {
-      return this.baseUrl.replace(/\/(chat\/completions|embeddings|models)$/, '')
+      return trimmed.replace(/\/(chat\/completions|embeddings|models)$/, '')
     }
-    return `${this.baseUrl}/chat/completions`
+    return trimmed
   }
 
   /** 还原基础 URL（用于 fetchModels 构建完整路径） */

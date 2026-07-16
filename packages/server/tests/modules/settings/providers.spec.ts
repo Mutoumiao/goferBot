@@ -69,6 +69,24 @@ describe('BaseProvider', () => {
     expect(client).toBeDefined()
   })
 
+  it('resolveLlmBaseURL 不给 OpenAI SDK 预拼 /chat/completions', () => {
+    const p = new BaseProvider({
+      ...DEFAULT_CONFIG,
+      baseUrl: 'https://api.deepseek.com',
+      isCompleteUrl: false,
+    })
+    expect((p as any).resolveLlmBaseURL()).toBe('https://api.deepseek.com')
+  })
+
+  it('resolveLlmBaseURL isCompleteUrl 时 strip 尾缀', () => {
+    const p = new BaseProvider({
+      ...DEFAULT_CONFIG,
+      baseUrl: 'https://api.example.com/v1/chat/completions',
+      isCompleteUrl: true,
+    })
+    expect((p as any).resolveLlmBaseURL()).toBe('https://api.example.com/v1')
+  })
+
   it('inferModelType classifies models correctly', () => {
     const p = new BaseProvider(DEFAULT_CONFIG)
     expect((p as any).inferModelType('text-embedding-3-small')).toBe('embedding')

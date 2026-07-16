@@ -224,9 +224,16 @@ enum SenderType {
   agent
 }
 
+enum CompanionSource {
+  system
+  user
+}
+
 model Companion {
   id                       String          @id @default(uuid())
-  userId                   String          @map("user_id")
+  /// system 内置目录行时为 null；user 自定义时必填创建者
+  userId                   String?         @map("user_id")
+  source                   CompanionSource @default(user)
   name                     String
   headline                 String?
   description              String?
@@ -245,7 +252,7 @@ model Companion {
   createdAt                DateTime        @default(now()) @map("created_at")
   updatedAt                DateTime        @updatedAt @map("updated_at")
 
-  user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                     User?                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations            CompanionConversation[]
   messages                 CompanionMessage[]
   memories                 CompanionMemory[]
@@ -256,6 +263,7 @@ model Companion {
 
   @@index([userId])
   @@index([userId, status])
+  @@index([source, status])
   @@map("companions")
 }
 

@@ -150,6 +150,21 @@ const PERMISSIONS: PermissionDef[] = [
   },
 
   {
+    code: 'companions:read',
+    name: '查看内置伴侣',
+    description: '查看平台内置伴侣列表与详情',
+    parentCode: 'companions',
+    sortOrder: 0,
+  },
+  {
+    code: 'companions:write',
+    name: '管理内置伴侣',
+    description: '创建、更新、发布与归档平台内置伴侣',
+    parentCode: 'companions',
+    sortOrder: 10,
+  },
+
+  {
     code: 'system:metrics',
     name: '系统监控',
     description: '查看系统指标和监控',

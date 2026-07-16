@@ -1,6 +1,20 @@
 import { z } from 'zod'
 
-export const createCompanionSchema = z.object({
+/** Web 自定义简表：仅 name/description/personality 必填 + 可选开场/头像；多余键 strip */
+export const createCompanionSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    description: z.string().min(1).max(2000),
+    personality: z.string().min(1).max(2000),
+    openingMessage: z.string().max(500).optional(),
+    avatarKey: z.string().max(500).optional(),
+  })
+  .strip()
+
+export const updateCompanionSchema = createCompanionSchema.partial().strip()
+
+/** Admin 内置伴侣全量人设（含安全字段） */
+export const createAdminCompanionSchema = z.object({
   name: z.string().min(1).max(100),
   headline: z.string().max(200).optional(),
   description: z.string().max(2000).optional(),
@@ -8,21 +22,32 @@ export const createCompanionSchema = z.object({
   tone: z.string().max(500).optional(),
   boundaries: z.string().max(2000).optional(),
   guardrailsPrompt: z.string().max(3000).optional(),
-  /** 服务端拼接权威；客户端可预览，最大放宽以容纳多节人设 */
+  /** 服务端拼接权威；Admin 可预览 */
   defaultPrompt: z.string().max(12000).optional(),
   avatarKey: z.string().max(500).optional(),
   backgroundStory: z.string().max(5000).optional(),
   openingMessage: z.string().max(500).optional(),
   visibility: z.string().max(50).optional(),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
 })
 
-export const updateCompanionSchema = createCompanionSchema.partial()
+export const updateAdminCompanionSchema = createAdminCompanionSchema.partial()
 
 export const companionListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   size: z.coerce.number().int().min(1).max(100).optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
+  /** official=system+published；mine=当前用户 user 源（默认排除 archived） */
+  tab: z.enum(['official', 'mine']).optional(),
+  source: z.enum(['system', 'user']).optional(),
 })
+
+/** Web 列表/详情响应中剥离的安全与完整 prompt 字段 */
+export const WEB_COMPANION_OMIT_FIELDS = [
+  'boundaries',
+  'guardrailsPrompt',
+  'defaultPrompt',
+] as const
 
 export const createConversationSchema = z.object({
   companionId: z.string().min(1),

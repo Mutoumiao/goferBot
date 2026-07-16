@@ -40,7 +40,8 @@ export class GenerateNode {
       if ((err as Error).name === 'AbortError') {
         this.logger.warn('[generateNode] stage=aborted')
       } else {
-        this.logger.error(`[generateNode] stage=error code=GENERATE_ERROR`)
+        const msg = err instanceof Error ? err.message : String(err)
+        this.logger.error(`[generateNode] stage=error code=GENERATE_ERROR message=${msg}`)
       }
       const fallback = this.buildFallbackReply(state)
       return { assistantReply: fallback, lastFallback: 'generate-error' }

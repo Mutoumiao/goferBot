@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common'
+import { PermissionGuard } from '../../auth/guards/permission.guard.js'
 import { SseResponseHelper } from '../../common/helpers/sse-response.helper.js'
 import { StorageModule } from '../../processors/storage/storage.module.js'
+import { PermissionModule } from '../permission/permission.module.js'
 import { SettingsModule } from '../settings/settings.module.js'
+import { CompanionAdminController } from './companion-admin.controller.js'
+import { CompanionAdminService } from './companion-admin.service.js'
 import { CompanionController } from './companion.controller.js'
 import { CompanionService } from './companion.service.js'
 import { CompanionCareService } from './companion-care.service.js'
@@ -36,9 +40,11 @@ import { CompanionMemoryRepository } from './repositories/companion-memory.repos
 import { CompanionMessageRepository } from './repositories/companion-message.repository.js'
 
 @Module({
-  imports: [SettingsModule, StorageModule],
-  controllers: [CompanionChatController, CompanionController],
+  imports: [SettingsModule, StorageModule, PermissionModule],
+  controllers: [CompanionChatController, CompanionController, CompanionAdminController],
   providers: [
+    CompanionAdminService,
+    PermissionGuard,
     LlmConfigService,
     LangChainLlmService,
     StructuredOutputService,
@@ -90,6 +96,7 @@ import { CompanionMessageRepository } from './repositories/companion-message.rep
     CompanionChatPipelineService,
     CompanionChatStreamService,
     CompanionService,
+    CompanionAdminService,
     CompanionCareService,
     CompanionMemoryService,
     CompanionRepository,

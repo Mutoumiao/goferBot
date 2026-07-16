@@ -28,6 +28,14 @@ export {
   type PersonaPromptFields,
 } from './build-default-agent-prompt.js'
 export {
+  COMPANION_DEFAULT_GUARDRAILS,
+  type CompanionGlobalSafetySettings,
+  type CompanionPersonaRow,
+  type CompanionSourceKind,
+  resolvePersonaPrompt,
+  resolveUserSafety,
+} from './resolve-persona-prompt.js'
+export {
   chatMessagesChunkSchema,
   chatMessagesRequestSchema,
   chatProvidersResponseSchema,
@@ -53,6 +61,7 @@ export {
   companionMessageMetadataSchema,
   companionSseEventTypeSchema,
   conversationListQuerySchema,
+  createAdminCompanionSchema,
   createCompanionSchema,
   createConversationSchema,
   createFeedbackSchema,
@@ -62,10 +71,12 @@ export {
   memoryListQuerySchema,
   messageListQuerySchema as companionMessageListQuerySchema,
   sendMessageSchema,
+  updateAdminCompanionSchema,
   updateCarePlanSchema,
   updateCompanionSchema,
   updateCompanionStatusSchema,
   updateMemorySchema,
+  WEB_COMPANION_OMIT_FIELDS,
 } from './companion.schema.js'
 export {
   agentMemoryCandidateSchema,

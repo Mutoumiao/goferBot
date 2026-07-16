@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { CompanionService } from './companion.service.js'
 import {
   MEMORY_INJECTION_LIMIT,
   MESSAGE_FEEDBACK_INJECTION_LIMIT,
@@ -23,6 +24,7 @@ export class CompanionChatPipelineService {
     private readonly messageRepo: CompanionMessageRepository,
     private readonly memoryRepo: CompanionMemoryRepository,
     private readonly feedbackRepo: CompanionFeedbackRepository,
+    private readonly companionService: CompanionService,
   ) {}
 
   async prepareContext(params: {
@@ -39,6 +41,7 @@ export class CompanionChatPipelineService {
     const companion = await this.companionRepo.findByIdAndAuthorize(
       params.companionId,
       params.userId,
+      'chat',
     )
     if (!companion) {
       throw new Error('ERR_COMPANION_NOT_FOUND')
@@ -46,6 +49,7 @@ export class CompanionChatPipelineService {
     if (companion.status === 'archived') {
       throw new Error('ERR_COMPANION_ARCHIVED')
     }
+    // user 源 draft 允许所有者调试；system 非 published 已在 authorize 拒绝
 
     const conversation = await this.conversationRepo.getOrCreate(
       params.conversationId,
@@ -54,7 +58,7 @@ export class CompanionChatPipelineService {
     )
 
     // 先加载历史再落库本轮用户消息，避免 recentMessages 与 userMessage 重复计入 prompt
-    const [memories, recentMessages, feedbacks] = await Promise.all([
+    const [memories, recentMessages, feedbacks, resolvedPrompt] = await Promise.all([
       this.memoryRepo.findByUser(params.userId, params.companionId, MEMORY_INJECTION_LIMIT),
       this.messageRepo.findRecent(conversation.id, RECENT_MESSAGE_LIMIT),
       this.feedbackRepo.findRecentByCompanion(
@@ -62,6 +66,7 @@ export class CompanionChatPipelineService {
         params.companionId,
         MESSAGE_FEEDBACK_INJECTION_LIMIT,
       ),
+      this.companionService.resolvePromptForChat(companion),
     ])
 
     /**
@@ -114,7 +119,8 @@ export class CompanionChatPipelineService {
       companionTone: companion.tone ?? undefined,
       companionBoundaries: companion.boundaries ?? undefined,
       companionGuardrails: companion.guardrailsPrompt ?? undefined,
-      companionDefaultPrompt: companion.defaultPrompt ?? undefined,
+      // 运行时权威：user 源安全节随全局配置刷新，禁止仅信库内陈旧 defaultPrompt
+      companionDefaultPrompt: resolvedPrompt,
       signal: new AbortController().signal,
     }
 

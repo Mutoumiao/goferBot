@@ -2,6 +2,7 @@ import {
   companionListQuerySchema,
   companionMessageListQuerySchema,
   conversationListQuerySchema,
+  createAdminCompanionSchema,
   createCompanionSchema,
   createConversationSchema,
   createFeedbackSchema,
@@ -9,6 +10,7 @@ import {
   generateCareEventSchema,
   memoryListQuerySchema,
   sendMessageSchema,
+  updateAdminCompanionSchema,
   updateCarePlanSchema,
   updateCompanionSchema,
   updateCompanionStatusSchema,
@@ -20,6 +22,9 @@ export class CreateCompanionDto extends createZodDto(createCompanionSchema) {}
 export class UpdateCompanionDto extends createZodDto(updateCompanionSchema) {}
 export class UpdateCompanionStatusDto extends createZodDto(updateCompanionStatusSchema) {}
 export class CompanionListQueryDto extends createZodDto(companionListQuerySchema) {}
+
+export class CreateAdminCompanionDto extends createZodDto(createAdminCompanionSchema) {}
+export class UpdateAdminCompanionDto extends createZodDto(updateAdminCompanionSchema) {}
 
 export class CreateConversationDto extends createZodDto(createConversationSchema) {}
 export class ConversationListQueryDto extends createZodDto(conversationListQuerySchema) {}

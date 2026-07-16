@@ -1,4 +1,4 @@
-// 权限码常量 — 与后端 seeder (permission.seeder.ts) 完全对齐（共 21 个）
+// 权限码常量 — 与后端 seeder (permission.seeder.ts) 完全对齐（共 23 个）
 export const PERMISSIONS = {
   DASHBOARD_READ: 'dashboard:read',
   USERS_READ: 'users:read',
@@ -18,6 +18,8 @@ export const PERMISSIONS = {
   AUDIT_EXPORT: 'audit:export',
   SETTINGS_READ: 'settings:read',
   SETTINGS_UPDATE: 'settings:update',
+  COMPANIONS_READ: 'companions:read',
+  COMPANIONS_WRITE: 'companions:write',
   SYSTEM_METRICS: 'system:metrics',
   SYSTEM_MAINTENANCE: 'system:maintenance',
   SYSTEM_LOGS: 'system:logs',
@@ -65,6 +67,10 @@ export const PERMISSION_GROUPS: {
   {
     label: '系统配置',
     permissions: [PERMISSIONS.SETTINGS_READ, PERMISSIONS.SETTINGS_UPDATE],
+  },
+  {
+    label: '内置伴侣',
+    permissions: [PERMISSIONS.COMPANIONS_READ, PERMISSIONS.COMPANIONS_WRITE],
   },
   {
     label: '系统运维',

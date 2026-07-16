@@ -72,6 +72,9 @@ const ragConfigSchema = z.object({
 
 const companionConfigSchema = z.object({
   provider: z.string().min(1, 'provider 不能为空').optional(),
+  defaultBoundaries: z.string().max(2000).optional(),
+  defaultGuardrailsPrompt: z.string().max(3000).optional(),
+  maxUserCompanions: z.number().int().min(1).max(100).optional(),
 })
 
 const indexingConfigSchema = z.object({

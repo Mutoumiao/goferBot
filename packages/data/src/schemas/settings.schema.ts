@@ -45,6 +45,12 @@ export type RagSettings = z.infer<typeof ragConfigSchema>
 
 export const companionConfigSchema = z.object({
   provider: z.string().min(1, 'provider 不能为空').optional(),
+  /** 自定义伴侣全局行为边界（user 源运行时权威）；空则代码兜底 */
+  defaultBoundaries: z.string().max(2000).optional(),
+  /** 自定义伴侣全局安全提示词（user 源运行时权威）；空则代码兜底 */
+  defaultGuardrailsPrompt: z.string().max(3000).optional(),
+  /** 每用户有效自定义伴侣上限（draft+published，archived 不计）；缺省按 10 */
+  maxUserCompanions: z.number().int().min(1).max(100).optional(),
 })
 export type CompanionSettings = z.infer<typeof companionConfigSchema>
 
