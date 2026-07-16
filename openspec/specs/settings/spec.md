@@ -90,7 +90,7 @@ const models = await provider.fetchModels()           // 配置页面
 | `providers`  | 模型提供商池（LLM/Embedding/Reranker）  | 否         | `{}`                                                                        |
 | `chat`       | 聊天配置（默认提供商、启用列表、温度）  | 否         | `{ enabledProviders: [], temperature: 0.7 }`                                |
 | `rag`        | 知识问答/索引配置（Embedding/Rerank/retrievalMode） | 否 | `{ retrievalMode: 'strict', timeoutMs: 60000, embeddingProvider?, rerankerProvider? }` |
-| `companion`  | 伴侣配置（提供商引用）                  | 否         | `{}`                                                                        |
+| `companion`  | 伴侣配置（LLM 提供商 + 全局安全/上限）  | 否         | `{ maxUserCompanions: 10 }`（安全字段默认可空）                             |
 | `indexing`   | 索引配置（上下文嵌入、Chunk 大小）      | 否         | `{ contextualEmbedding: false, parentChunkSize: 800, childChunkSize: 150 }` |
 | `appearance` | 外观配置（主题、字号）                  | 是         | `{ mode: 'light', fontSizeLevel: 3 }`                                       |
 
@@ -369,9 +369,18 @@ async fetchModels(@Body() dto: FetchModelsDto): Promise<FetchModelsResult> {
 | providers  | Record<string, ModelProvider> | `{}`   | 模型提供商池                                       |
 | chat       | ChatSettings                  | 见下方 | 聊天配置                                           |
 | rag        | RagSettings                   | 见下方 | RAG 配置                                           |
-| companion  | CompanionSettings             | `{}`   | 伴侣配置                                           |
+| companion  | CompanionSettings             | 见下方 | 伴侣配置（LLM + 全局安全/上限）                    |
 | indexing   | IndexingSettings              | 见下方 | 索引配置                                           |
 | appearance | AppearanceSettings            | 见下方 | 外观配置                                           |
+
+### CompanionSettings
+
+| 字段                      | 类型   | 默认值    | 说明 |
+|---------------------------|--------|-----------|------|
+| provider                  | string | undefined | Companion LLM 提供商/模型引用 |
+| defaultBoundaries         | string | 空        | 自定义伴侣全局行为边界文案 |
+| defaultGuardrailsPrompt   | string | 空        | 自定义伴侣全局安全提示词 |
+| maxUserCompanions         | number | **10**    | 每用户有效自定义伴侣上限（建议 1–100） |
 
 ### ChatSettings
 
@@ -477,6 +486,58 @@ Nest 调用 Knowledge AI 的连接参数 **不**放在用户 Setting JSON 中，
 
 - **WHEN** 用户或系统未覆盖 retrieval_mode
 - **THEN** Knowledge 问答 MUST 按 strict 处理空检索
+
+### Requirement: Companion 模块全局人设与配额配置
+
+系统配置中 `settings.companion`（CompanionSettings）MUST 在既有 `provider`（LLM 引用）之外，支持以下可选字段，并由 Admin 模块设置 UI 可编辑：
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `defaultBoundaries` | string | 空 | 自定义伴侣全局行为边界文案 |
+| `defaultGuardrailsPrompt` | string | 空 | 自定义伴侣全局安全提示词 |
+| `maxUserCompanions` | number | **10** | 每用户有效自定义伴侣上限（建议校验 1–100） |
+
+上述字段为**系统级**配置（SYSTEM_CONFIG），MUST NOT 允许普通 Web 用户写入。空安全字段时，Companion 运行时 MUST 使用代码兜底（见 companion-persona），MUST NOT 以用户请求体覆盖全局安全权威。
+
+证据来源：
+- `packages/server/src/modules/settings/dto/settings.dto.ts`
+- `packages/admin/src/features/module-settings/components/CompanionSettingsForm.tsx`
+
+#### Scenario: 保存全局安全与上限
+
+- **WHEN** 管理员在模块设置中保存 companion 分类，提交 defaultBoundaries、defaultGuardrailsPrompt、maxUserCompanions 时
+- **THEN** 系统 MUST 校验并持久化到系统配置
+- **AND** 后续自定义伴侣创建上限与运行时安全合并 MUST 读取更新后的值
+
+#### Scenario: 默认上限
+
+- **WHEN** 系统配置未显式设置 maxUserCompanions 时
+- **THEN** 有效上限 MUST 为 10
+
+#### Scenario: 非法上限
+
+- **WHEN** 管理员提交超出允许范围的 maxUserCompanions 时
+- **THEN** 系统 MUST 拒绝保存并返回校验错误
+
+#### Scenario: Web 用户不可改
+
+- **WHEN** 普通 Web 用户尝试修改 companion 系统配置中的安全或上限字段时
+- **THEN** 系统 MUST 拒绝（无权限或接口不暴露写）
+
+### Requirement: CompanionSettings 配置面
+
+系统 MUST 将 `CompanionSettings`（`settings.companion`）定义为伴侣模块系统配置契约，且 MUST 至少包含：
+
+- `provider`：Companion LLM 提供商/模型引用（既有）
+- `defaultBoundaries` / `defaultGuardrailsPrompt`：自定义伴侣安全默认
+- `maxUserCompanions`：自定义数量上限，默认 10
+
+Admin「伴侣」模块设置页 MUST 在操作者具备系统配置写权限时展示并可编辑上述字段。
+
+#### Scenario: 模块设置页展示
+
+- **WHEN** 管理员打开 Companion 模块设置时
+- **THEN** 界面 MUST 提供 LLM provider 配置，以及全局边界、安全提示词、自定义数量上限的编辑控件
 
 ## Migration（迁移）
 

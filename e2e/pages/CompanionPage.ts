@@ -4,7 +4,8 @@ export class CompanionPage {
   readonly page: Page
   readonly createButton: Locator
   readonly nameInput: Locator
-  readonly headlineInput: Locator
+  readonly descriptionInput: Locator
+  readonly personalityInput: Locator
   readonly openingMessageInput: Locator
   readonly submitButton: Locator
 
@@ -12,9 +13,10 @@ export class CompanionPage {
     this.page = page
     this.createButton = page.getByRole('button', { name: /新建伴侣/ })
     this.nameInput = page.locator('#name')
-    this.headlineInput = page.locator('#headline')
+    this.descriptionInput = page.locator('#description')
+    this.personalityInput = page.locator('#personality')
     this.openingMessageInput = page.locator('#openingMessage')
-    // 独立创建页：提交按钮为「创建」
+    // 独立创建页：提交按钮为「创建并聊天」或「保存」
     this.submitButton = page.getByRole('button', { name: /创建|保存/ }).filter({
       hasNotText: /取消/,
     })
@@ -25,14 +27,48 @@ export class CompanionPage {
       await this.page.goto('/companions', { waitUntil: 'domcontentloaded' })
     })
     await expect(this.page).toHaveURL(/\/companions/, { timeout: 15_000 })
+    // 新建入口在「我的伴侣」Tab
+    await this.page.getByRole('tab', { name: /我的伴侣/ }).click().catch(async () => {
+      await this.page.getByText('我的伴侣').click()
+    })
     await expect(this.createButton.first()).toBeVisible({ timeout: 15_000 })
+  }
+
+  /**
+   * 归档「我的」自定义伴侣，为创建腾出名额（默认上限 10；archived 不占名额）。
+   * 使用浏览器 Cookie 调 API，避免污染非 pw 数据时优先归档 pw-* 名称。
+   */
+  async ensureUserCompanionQuota(keepSlots = 1, maxActive = 10): Promise<void> {
+    const apiBase = process.env.API_BASE_URL || 'http://localhost:3100/api'
+    const listRes = await this.page.request.get(`${apiBase}/companions?tab=mine&size=100`)
+    if (!listRes.ok()) return
+    const body = (await listRes.json()) as {
+      data?: { items?: Array<{ id: string; name?: string; status?: string }> }
+      items?: Array<{ id: string; name?: string; status?: string }>
+    }
+    const items = body.data?.items ?? body.items ?? []
+    const active = items.filter((c) => c.status === 'draft' || c.status === 'published')
+    const needFree = active.length - (maxActive - keepSlots)
+    if (needFree <= 0) return
+
+    const preferred = [
+      ...active.filter((c) => (c.name ?? '').startsWith('pw-')),
+      ...active.filter((c) => !(c.name ?? '').startsWith('pw-')),
+    ]
+    for (const c of preferred.slice(0, needFree)) {
+      await this.page.request.delete(`${apiBase}/companions/${c.id}`)
+    }
   }
 
   async createCompanion(options: {
     name: string
+    description?: string
+    personality?: string
     headline?: string
     openingMessage?: string
   }): Promise<string> {
+    await this.ensureUserCompanionQuota(1)
+
     const createResponsePromise = this.page.waitForResponse(
       (r) =>
         r.url().includes('/companions') &&
@@ -49,9 +85,10 @@ export class CompanionPage {
     await expect(this.page.getByRole('heading', { name: '新建伴侣' })).toBeVisible()
 
     await this.nameInput.fill(options.name)
-    if (options.headline) {
-      await this.headlineInput.fill(options.headline)
-    }
+    await this.descriptionInput.fill(
+      options.description ?? options.headline ?? 'E2E 角色说明',
+    )
+    await this.personalityInput.fill(options.personality ?? '友善、耐心')
     if (options.openingMessage) {
       await this.openingMessageInput.fill(options.openingMessage)
     }
@@ -74,6 +111,9 @@ export class CompanionPage {
       return
     }
     await this.page.goto('/companions', { waitUntil: 'domcontentloaded' })
+    await this.page.getByRole('tab', { name: /我的伴侣/ }).click().catch(async () => {
+      await this.page.getByText('我的伴侣').click()
+    })
     const card = this.page
       .locator('[class*="card"], [class*="Card"], div')
       .filter({ has: this.page.getByRole('heading', { name, exact: true }) })
@@ -205,5 +245,23 @@ export class CompanionPage {
   async openMemories() {
     await this.page.getByRole('button', { name: /记忆库/ }).click()
     await expect(this.page).toHaveURL(/\/memories/, { timeout: 15_000 })
+  }
+
+  async selectTab(tab: 'official' | 'mine') {
+    const name = tab === 'official' ? /官方推荐/ : /我的伴侣/
+    await this.page.getByRole('tab', { name }).click().catch(async () => {
+      await this.page.getByText(tab === 'official' ? '官方推荐' : '我的伴侣').click()
+    })
+  }
+
+  /** 断言创建/编辑简表不含安全与扩展创作者字段 */
+  async expectLightFormFields() {
+    await expect(this.nameInput).toBeVisible()
+    await expect(this.descriptionInput).toBeVisible()
+    await expect(this.personalityInput).toBeVisible()
+    await expect(this.page.locator('#boundaries')).toHaveCount(0)
+    await expect(this.page.locator('#guardrailsPrompt')).toHaveCount(0)
+    await expect(this.page.locator('#headline')).toHaveCount(0)
+    await expect(this.page.locator('#defaultPrompt')).toHaveCount(0)
   }
 }

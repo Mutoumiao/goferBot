@@ -56,6 +56,12 @@ export class AdminPage {
     await expect(this.page.getByText(/审计/).first()).toBeVisible({ timeout: 15_000 })
   }
 
+  async gotoCompanions() {
+    await this.page.goto('/companions', { waitUntil: 'domcontentloaded' })
+    await expect(this.page).toHaveURL(/\/companions/)
+    await expect(this.page.getByText(/内置伴侣/).first()).toBeVisible({ timeout: 15_000 })
+  }
+
   async openCreateProviderModal() {
     const btn = this.page.getByRole('button', { name: /新建|添加|创建/ }).first()
     await btn.click()

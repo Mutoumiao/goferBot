@@ -150,7 +150,7 @@ describe('Companion pipeline parity (integration)', () => {
       headers: authHeader(token),
       payload: {
         name,
-        headline: 'IT companion',
+        description: 'IT companion description',
         openingMessage: '你好，我是集成测试伴侣。',
         personality: '温和',
       },
@@ -503,8 +503,18 @@ describe('Companion pipeline parity (integration)', () => {
 
   describe('IT-ST: companion status gate', () => {
     it('IT-ST-draft-ok: draft companion owner can stream chat', async () => {
+      // Web 创建固定 published；draft 由状态接口进入，仍允许 owner 调试聊天
       const companion = await createCompanion('st-draft')
-      expect(companion.status).toBe('draft')
+      const draftRes = await app.inject({
+        method: 'PATCH',
+        url: `/api/companions/${companion.id}/status`,
+        headers: authHeader(token),
+        payload: { status: 'draft' },
+        remoteAddress: nextIp(),
+      })
+      expect(draftRes.statusCode, draftRes.body).toBeLessThan(400)
+      const draftBody = (draftRes.json().data ?? draftRes.json()) as { status: string }
+      expect(draftBody.status).toBe('draft')
       const conv = await createConversation(companion.id)
       const spy = mockPipelineExecute(
         mockFinalPatch({ assistantReply: '草稿可聊', partialTokens: '草稿可聊' }),
