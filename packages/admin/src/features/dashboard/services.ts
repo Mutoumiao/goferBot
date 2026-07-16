@@ -1,77 +1,60 @@
-import type {
-  DashboardData,
-  DashboardStats,
-  RagStats,
-  RecentActivity,
-  SystemHealth,
-} from '@/api/dashboard'
-import { fetchDashboardData as fetchDashboardApi } from '@/api/dashboard'
+import type { DashboardSummary, ObservabilityWindow } from '@goferbot/data'
+import { fetchDashboardSummary } from '@/api/dashboard'
 
-export type { DashboardData, DashboardStats, RagStats, RecentActivity, SystemHealth }
+export type { DashboardSummary }
 
-export async function getDashboardData(): Promise<DashboardData> {
-  try {
-    const data = await fetchDashboardApi()
-    return data
-  } catch {
-    return getMockData()
+/**
+ * 获取 Hub 摘要。生产路径禁止静默 mock 顶替；
+ * 仅当显式 USE_DASHBOARD_MOCK=1（Vite 环境）时才允许开发 fixture。
+ */
+export async function getDashboardSummary(
+  window: ObservabilityWindow = '24h',
+): Promise<DashboardSummary> {
+  if (import.meta.env.VITE_USE_DASHBOARD_MOCK === '1') {
+    return getDevMockSummary(window)
   }
+  return fetchDashboardSummary(window).send()
 }
 
-function getMockData(): DashboardData {
+/** @deprecated 使用 getDashboardSummary */
+export async function getDashboardData(): Promise<DashboardSummary> {
+  return getDashboardSummary('24h')
+}
+
+function getDevMockSummary(window: ObservabilityWindow): DashboardSummary {
   return {
-    stats: {
-      userCount: 1286,
-      sessionCount: 4521,
-      documentCount: 328,
-      ragTaskCount: 892,
-      userGrowth: 12.5,
-      sessionGrowth: 28.3,
-      documentGrowth: 5.2,
-      ragTaskGrowth: 18.7,
-    },
-    activities: [
-      {
-        id: '1',
-        title: '用户 admin@example.com 登录',
-        description: '来自 192.168.1.100',
-        time: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-        icon: 'login',
-      },
-      {
-        id: '2',
-        title: '创建了知识库文档',
-        description: '《产品使用手册v2.0》',
-        time: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-        icon: 'create',
-      },
-      {
-        id: '3',
-        title: 'RAG 索引任务完成',
-        description: '处理了 23 个文档',
-        time: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
-        icon: 'rag',
-      },
-      {
-        id: '4',
-        title: '禁用了用户 test@test.com',
-        description: '由 admin 操作',
-        time: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
-        icon: 'delete',
-      },
-    ],
+    window,
+    generatedAt: new Date().toISOString(),
     health: {
-      cpu: 45,
-      memory: 62,
-      disk: 38,
-      queueStatus: 'running',
+      status: 'ok',
+      components: [
+        { name: 'postgres', status: 'ok', latencyMs: 2 },
+        { name: 'redis', status: 'ok', latencyMs: 1 },
+        { name: 'minio', status: 'ok', latencyMs: 5 },
+        { name: 'knowledge-ai', status: 'ok', latencyMs: 12 },
+      ],
     },
-    ragStats: {
-      total: 892,
-      running: 12,
-      succeeded: 815,
-      failed: 23,
-      pending: 42,
+    rag: {
+      emptyRate: { status: 'ready', value: 0.08, sampleSize: 100 },
+      degradedRate: { status: 'ready', value: 0.02, sampleSize: 100 },
+      indexFailureCount: { status: 'ready', value: 3 },
+    },
+    companion: {
+      p95LatencyMs: { status: 'ready', value: 1800, unit: 'ms', sampleSize: 50 },
+      qualityFailRate: {
+        status: 'ready',
+        value: 0.05,
+        sampleSize: 50,
+        note: '观测型',
+      },
+      safetyHardStopRate: { status: 'ready', value: 0.01, sampleSize: 200 },
+      negativeFeedbackRate: { status: 'insufficient_samples', sampleSize: 0 },
+    },
+    inventory: {
+      userCount: 12,
+      knowledgeBaseCount: 4,
+      documentCount: 28,
+      companionCount: 6,
     },
   }
 }

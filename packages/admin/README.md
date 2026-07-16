@@ -27,6 +27,14 @@ cd packages/admin && npx vitest run --coverage
 
 默认访问地址：`http://localhost:1421`。
 
+### 控制台（Dashboard）说明
+
+- **定位**：系统健康 + RAG/Companion 黄金指标观测枢纽，不是经营增长/假环比看板。
+- **API**：`GET /admin/dashboard/summary`（`dashboard:read`）；详页 `GET /admin/observability/rag|companion`（`system:metrics`）。
+- **禁止生产 mock**：接口失败时展示错误态，**不会**静默用虚构业务统计顶替。
+- **开发 fixture**：仅当显式设置 `VITE_USE_DASHBOARD_MOCK=1` 时启用本地 mock。
+- **详页入口**：一期不在主导航挂观测菜单；从 Hub 卡片「查看详情」进入（需 `system:metrics`）。
+
 ---
 
 ## 2. 技术栈
@@ -52,12 +60,14 @@ packages/admin/
 │   │   ├── admin.ts         #   用户管理（CRUD / 启禁用 / 重置密码 / 分配角色）
 │   │   ├── audit.ts         #   审计日志查询 / 导出
 │   │   ├── auth.ts          #   登录 / 登出 / 刷新 / 当前用户 / 改密 / 二次校验
-│   │   ├── dashboard.ts     #   Dashboard 聚合数据
+│   │   ├── dashboard.ts     #   Hub summary + observability 详页 API
 │   │   ├── model.ts         #   模型设置 CRUD + 测试连接
-│   │   ├── rag.ts           #   RAG 任务队列
+│   │   ├── rag.ts           #   RAG 任务队列（若仍使用）
 │   │   ├── role.ts          #   角色 CRUD + 权限点
 │   │   └── session.ts       #   会话 / 消息流
 │   ├── features/            # 业务模块（按 feature 分层）
+│   │   ├── dashboard/       #   观测枢纽 Hub（健康 + RAG/Companion KPI）
+│   │   ├── observability/   #   RAG / Companion 二级观测详页
 │   │   ├── <feature>/
 │   │   │   ├── services.ts  #   唯一业务入口，调 api + 错误映射 + toast
 │   │   │   ├── services.spec.ts
@@ -92,16 +102,16 @@ routes  →  features/components  →  features/services  →  api  →  alovaIn
 | 路由 | 标题 | 角色 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `/login` | 登录 | 公共 | 管理员邮箱 + 密码登录 |
-| `/dashboard` | 控制台 | ADMIN/USER | 统计卡片、最近活动、系统健康 |
+| `/dashboard` | 控制台 | `dashboard:read` | 依赖健康 + RAG/Companion 黄金 KPI（观测 Hub） |
+| `/observability/rag` | RAG 观测 | `system:metrics` | 非主导航；Hub 直链，索引/检索/依赖分块 |
+| `/observability/companion` | Companion 观测 | `system:metrics` | 非主导航；延迟/情绪/成本安全分块 |
 | `/users` | 用户管理 | ADMIN | 列表 / 搜索 / 启禁用 / 批量 / 详情 |
 | `/users/$id` | 用户详情 | ADMIN | 编辑 / 重置密码 / 分配角色 |
 | `/roles` | 权限管理 | ADMIN | 角色列表 / 权限矩阵 |
 | `/roles/$id` | 角色详情 | ADMIN | 编辑角色 / 绑定权限 |
-| `/rag-observability` | RAG 观测 | ADMIN | 任务队列状态 / 失败明细 |
-| `/sessions` | 会话观测 | ADMIN | 会话列表 / 脱敏展示 |
-| `/sessions/$id` | 会话详情 | ADMIN | 消息流 / 检索片段 |
 | `/model-providers` | 模型提供商 | ADMIN | Provider/Model/Endpoint 管理 |
 | `/module-settings` | 模块配置 | ADMIN | Chat/RAG/Companion 模型选择 |
+| `/companions` | 内置伴侣 | `companions:read` | 系统内置伴侣管理 |
 | `/audit` | 审计日志 | ADMIN | 管理员操作记录 |
 | `/profile` | 个人中心 | ADMIN/USER | 修改密码 / 登录历史 |
 
@@ -126,15 +136,21 @@ USER    → dashboard + profile（仅基础能力）
   - `logoutService`：清空 token 与 store，跳转登录
 - 状态存储：[stores/auth.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/admin/src/stores/auth.ts)（zustand persist，命名空间 `goferbot-admin-auth`）
 
-### Dashboard（控制台）
+### Dashboard（控制台 / 观测 Hub）
 - 服务：[dashboard/services.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/admin/src/features/dashboard/services.ts)
-- 特点：**真实 API 优先 + mock 回退**。后端不可达时回退到本地 Mock，便于开发演示。
+- API：`GET /admin/dashboard/summary?window=`（`dashboard:read`）
+- 特点：**禁止生产静默 mock**；失败展示错误态。仅 `VITE_USE_DASHBOARD_MOCK=1` 允许开发 fixture。
 - 组件拆分：
-  - `StatCards`：4 张指标卡（用户数 / 会话数 / 文档数 / RAG 任务数）
-  - `RecentActivities`：最近活动列表
-  - `SystemHealth`：CPU / 内存 / 磁盘 / 队列状态
-  - `OverviewChart`：RAG 任务状态分布图
-  - `DashboardView`：整体容器（含错误重试 UI）
+  - `HealthBar`：依赖健康（postgres/redis/minio/knowledge-ai）合成 ok/degraded/down
+  - `KpiCard`：KPI 三态（ready / pending_instrumentation / insufficient_samples）+ partial
+  - `InventoryStrip`：规模弱化展示（用户/KB/文档/伴侣计数）
+  - `DashboardView`：时间窗 + 刷新 + RAG/Companion 黄金指标 + 详情入口
+
+### Observability（二级详页）
+- 服务：[observability/services.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/admin/src/features/observability/services.ts)
+- API：`GET /admin/observability/rag|companion`（`system:metrics`）
+- 组件：`ObservabilityDetailView`（顶栏 KPI + sections 分块）
+- 路由：`/observability/rag`、`/observability/companion`（`nav: false`，Hub 卡片直链；无 metrics 权限隐藏入口并由路由守卫拦截）
 
 ### Users（用户管理）
 - 服务：[users/services.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/admin/src/features/users/services.ts)
@@ -146,16 +162,6 @@ USER    → dashboard + profile（仅基础能力）
 - 服务：[roles/services.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/admin/src/features/roles/services.ts)
 - 组件：`RoleList`、`RoleForm`（create/edit 双模式）、`PermissionMatrix`
 - 特点：**完全真实 API**，不再回退 mock。权限拉取失败直接 toast 提示。
-
-### RAG Observability（RAG 观测）
-- 服务：[rag-observability/services.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/admin/src/features/rag-observability/services.ts)
-- 组件：`RAGStatusBoard`
-- 特点：当前以 Mock 数据为主，接口层已抽象，待后端就绪后无感切换。
-
-### Sessions（会话观测）
-- 服务：[sessions/services.ts](file:///d:/projects/ai-stared-project/knowledge-base/packages/admin/src/features/sessions/services.ts)
-- 组件：`SessionList`、`SessionDetail`、`MessageStream`
-- 特点：默认脱敏展示（IP / 邮箱 / 手机号），由后端下发脱敏规则。
 
 ### Models（模型设置）
 - 组件：`ModelList`、`ModelConfigForm`、`TestConnectionDrawer`
@@ -237,20 +243,20 @@ Lines        82.45%
 7. 新建 `services.spec.ts` 走查覆盖
 
 ### 调用后端真实接口
-- 已就绪接口：`/auth/*`、`/admin/users/*`、`/admin/dashboard`、`/admin/roles*`、`/admin/permissions`
-- 待后端补齐：`/admin/rag/tasks`、`/admin/sessions*`、`/admin/audit`
+- 已就绪：`/auth/*`、`/admin/users/*`、`/admin/roles*`、`/admin/permissions`、`/admin/audit`、`GET /admin/dashboard/summary`、`GET /admin/observability/rag|companion`
+- 未纳入本 change：会话回放列表等（`/admin/sessions*` 如仍有前端 stub，不在观测 Hub 范围）
 
 ### 安全红线
 - 敏感操作必须走 `confirmPasswordAction`
-- 会话详情默认脱敏，管理员查看行为写入审计日志
 - Token 存储使用独立命名空间，与 web 端隔离
 - 错误提示不得暴露具体字段（统一 "账号或密码错误"）
+- 观测详页需 `system:metrics`；生产路径禁止用 mock 顶替真实 KPI
 
 ---
 
 ## 9. 后续 Roadmap（P3）
 
-1. **真实接口全量替换**：RAG / Sessions / Audit 从 Mock 切换为真实 API
+1. **观测深化**：Companion retrieval 埋点、token 成本、Chat latencyMs 可选写入；metadata 扫描改为 DB 聚合/物化
 2. **审计写入闭环**：在关键 service 成功后触发 `POST /admin/audit`
 3. **国际化**：`error-mapper` 扩展多语言资源
 4. **覆盖率继续上探**：逐步把 UI 组件纳入覆盖率统计

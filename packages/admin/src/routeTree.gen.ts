@@ -24,6 +24,8 @@ import { Route as AuthenticatedCompanionsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedRolesIdRouteImport } from './routes/_authenticated/roles/$id'
+import { Route as AuthenticatedObservabilityRagRouteImport } from './routes/_authenticated/observability/rag'
+import { Route as AuthenticatedObservabilityCompanionRouteImport } from './routes/_authenticated/observability/companion'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -103,6 +105,18 @@ const AuthenticatedRolesIdRoute = AuthenticatedRolesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedRolesRoute,
 } as any)
+const AuthenticatedObservabilityRagRoute =
+  AuthenticatedObservabilityRagRouteImport.update({
+    id: '/observability/rag',
+    path: '/observability/rag',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedObservabilityCompanionRoute =
+  AuthenticatedObservabilityCompanionRouteImport.update({
+    id: '/observability/companion',
+    path: '/observability/companion',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -118,6 +132,8 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/roles': typeof AuthenticatedRolesRouteWithChildren
   '/users': typeof AuthenticatedUsersRoute
+  '/observability/companion': typeof AuthenticatedObservabilityCompanionRoute
+  '/observability/rag': typeof AuthenticatedObservabilityRagRoute
   '/roles/$id': typeof AuthenticatedRolesIdRoute
 }
 export interface FileRoutesByTo {
@@ -134,6 +150,8 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/roles': typeof AuthenticatedRolesRouteWithChildren
   '/users': typeof AuthenticatedUsersRoute
+  '/observability/companion': typeof AuthenticatedObservabilityCompanionRoute
+  '/observability/rag': typeof AuthenticatedObservabilityRagRoute
   '/roles/$id': typeof AuthenticatedRolesIdRoute
 }
 export interface FileRoutesById {
@@ -152,6 +170,8 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRouteWithChildren
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/observability/companion': typeof AuthenticatedObservabilityCompanionRoute
+  '/_authenticated/observability/rag': typeof AuthenticatedObservabilityRagRoute
   '/_authenticated/roles/$id': typeof AuthenticatedRolesIdRoute
 }
 export interface FileRouteTypes {
@@ -170,6 +190,8 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roles'
     | '/users'
+    | '/observability/companion'
+    | '/observability/rag'
     | '/roles/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -186,6 +208,8 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roles'
     | '/users'
+    | '/observability/companion'
+    | '/observability/rag'
     | '/roles/$id'
   id:
     | '__root__'
@@ -203,6 +227,8 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/roles'
     | '/_authenticated/users'
+    | '/_authenticated/observability/companion'
+    | '/_authenticated/observability/rag'
     | '/_authenticated/roles/$id'
   fileRoutesById: FileRoutesById
 }
@@ -320,6 +346,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRolesIdRouteImport
       parentRoute: typeof AuthenticatedRolesRoute
     }
+    '/_authenticated/observability/rag': {
+      id: '/_authenticated/observability/rag'
+      path: '/observability/rag'
+      fullPath: '/observability/rag'
+      preLoaderRoute: typeof AuthenticatedObservabilityRagRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/observability/companion': {
+      id: '/_authenticated/observability/companion'
+      path: '/observability/companion'
+      fullPath: '/observability/companion'
+      preLoaderRoute: typeof AuthenticatedObservabilityCompanionRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -345,6 +385,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedObservabilityCompanionRoute: typeof AuthenticatedObservabilityCompanionRoute
+  AuthenticatedObservabilityRagRoute: typeof AuthenticatedObservabilityRagRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -358,6 +400,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedObservabilityCompanionRoute:
+    AuthenticatedObservabilityCompanionRoute,
+  AuthenticatedObservabilityRagRoute: AuthenticatedObservabilityRagRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

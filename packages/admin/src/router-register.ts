@@ -27,6 +27,8 @@ export type RouteKey =
   | 'modelProviders'
   | 'moduleSettings'
   | 'companions'
+  | 'observabilityRag'
+  | 'observabilityCompanion'
 
 export interface RouteMeta {
   key: RouteKey
@@ -130,6 +132,23 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     icon: Heart,
     nav: true,
     requiredPermission: PERMISSIONS.COMPANIONS_READ,
+  },
+  // 一期不进主导航，仅 Hub 卡片直链 + 权限守卫
+  observabilityRag: {
+    key: 'observabilityRag',
+    title: 'RAG 观测',
+    path: '/observability/rag' as RoutePath,
+    icon: null,
+    nav: false,
+    requiredPermission: PERMISSIONS.SYSTEM_METRICS,
+  },
+  observabilityCompanion: {
+    key: 'observabilityCompanion',
+    title: 'Companion 观测',
+    path: '/observability/companion' as RoutePath,
+    icon: null,
+    nav: false,
+    requiredPermission: PERMISSIONS.SYSTEM_METRICS,
   },
 }
 

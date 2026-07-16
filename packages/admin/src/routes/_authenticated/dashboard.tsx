@@ -1,8 +1,9 @@
+import type { ObservabilityWindow } from '@goferbot/data'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { DashboardView } from '@/features/dashboard/components/DashboardView'
-import type { DashboardData } from '@/features/dashboard/services'
-import { getDashboardData } from '@/features/dashboard/services'
+import type { DashboardSummary } from '@/features/dashboard/services'
+import { getDashboardSummary } from '@/features/dashboard/services'
 import { useQueryWithRetry } from '@/hooks/useQueryWithRetry'
 import { ROUTES_REGISTER } from '@/router-register'
 
@@ -12,7 +13,9 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 })
 
 function DashboardPage() {
-  const { data, loading, error, run } = useQueryWithRetry<DashboardData>(getDashboardData, [], true)
+  const [window, setWindow] = useState<ObservabilityWindow>('24h')
+  const fetcher = useCallback(() => getDashboardSummary(window), [window])
+  const { data, loading, error, run } = useQueryWithRetry<DashboardSummary>(fetcher, [window], true)
 
   const handleRefresh = useCallback(() => {
     void run()
@@ -23,6 +26,8 @@ function DashboardPage() {
       data={data ?? undefined}
       loading={loading}
       error={error}
+      window={window}
+      onWindowChange={setWindow}
       onRefresh={handleRefresh}
     />
   )
