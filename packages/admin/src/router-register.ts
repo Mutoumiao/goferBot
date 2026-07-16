@@ -1,6 +1,7 @@
 import {
   Cpu,
   FileText,
+  Heart,
   LayoutDashboard,
   type LucideIcon,
   Settings as SettingsIcon,
@@ -25,6 +26,7 @@ export type RouteKey =
   | 'changePassword'
   | 'modelProviders'
   | 'moduleSettings'
+  | 'companions'
 
 export interface RouteMeta {
   key: RouteKey
@@ -120,6 +122,14 @@ export const ROUTES_REGISTER: Record<RouteKey, RouteMeta> = {
     icon: SettingsIcon,
     nav: true,
     requiredPermission: PERMISSIONS.SETTINGS_READ,
+  },
+  companions: {
+    key: 'companions',
+    title: '内置伴侣',
+    path: '/companions' as RoutePath,
+    icon: Heart,
+    nav: true,
+    requiredPermission: PERMISSIONS.COMPANIONS_READ,
   },
 }
 

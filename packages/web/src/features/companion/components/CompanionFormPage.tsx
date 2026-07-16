@@ -1,9 +1,10 @@
 /**
- * 独立创建/编辑页（分段人设表单 + defaultPrompt 预览 + 头像上传）
+ * Web 自定义简表：name / description / personality 必填 + 可选开场白与头像
+ * 不收集 boundaries / guardrails / defaultPrompt 预览
  */
 import { useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ImagePlus } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,13 +12,24 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { readImageDimensions, validateCompanionAvatarClient } from '../persona/avatar-validation'
-import { buildDefaultAgentPrompt } from '../persona/build-default-agent-prompt'
 import { createCompanion, getCompanion, updateCompanion, uploadCompanionAvatar } from '../services'
-import type { CompanionStatus, CreateCompanionPayload } from '../types'
+import type { CreateCompanionPayload } from '../types'
 
 interface CompanionFormPageProps {
   mode: 'create' | 'edit'
   companionId?: string
+}
+
+function extractErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as { message?: string; code?: string; data?: { message?: string; code?: string } }
+    if (e.data?.code === 'COMPANION_LIMIT_EXCEEDED' || e.code === 'COMPANION_LIMIT_EXCEEDED') {
+      return e.data?.message || e.message || '自定义伴侣数量已达上限'
+    }
+    if (e.data?.message) return e.data.message
+    if (e.message) return e.message
+  }
+  return '保存失败'
 }
 
 export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps) {
@@ -27,18 +39,11 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
   const [uploading, setUploading] = useState(false)
 
   const [name, setName] = useState('')
-  const [headline, setHeadline] = useState('')
   const [description, setDescription] = useState('')
   const [personality, setPersonality] = useState('')
-  const [tone, setTone] = useState('')
-  const [boundaries, setBoundaries] = useState('')
-  const [guardrailsPrompt, setGuardrailsPrompt] = useState('')
-  const [backgroundStory, setBackgroundStory] = useState('')
   const [openingMessage, setOpeningMessage] = useState('')
   const [avatarKey, setAvatarKey] = useState('')
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
-  const [visibility, setVisibility] = useState('private')
-  const [status, setStatus] = useState<CompanionStatus>('draft')
 
   useEffect(() => {
     if (mode !== 'edit' || !companionId) return
@@ -48,18 +53,16 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
       try {
         const c = await getCompanion(companionId).send()
         if (cancelled) return
+        if (c.source === 'system') {
+          toast.error('官方伴侣不可编辑')
+          navigate({ to: '/companions' })
+          return
+        }
         setName(c.name ?? '')
-        setHeadline(c.headline ?? '')
         setDescription(c.description ?? '')
         setPersonality(c.personality ?? '')
-        setTone(c.tone ?? '')
-        setBoundaries(c.boundaries ?? '')
-        setGuardrailsPrompt(c.guardrailsPrompt ?? '')
-        setBackgroundStory(c.backgroundStory ?? '')
         setOpeningMessage(c.openingMessage ?? '')
         setAvatarKey(c.avatarKey ?? '')
-        setVisibility(c.visibility ?? 'private')
-        setStatus(c.status)
         if (c.avatarUrl) setAvatarPreviewUrl(c.avatarUrl)
         else if (c.avatarKey) setAvatarPreviewUrl(`/api/files/${c.avatarKey}`)
       } catch (e) {
@@ -73,32 +76,6 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
       cancelled = true
     }
   }, [mode, companionId, navigate])
-
-  const previewPrompt = useMemo(
-    () =>
-      buildDefaultAgentPrompt({
-        name,
-        headline,
-        description,
-        backgroundStory,
-        personality,
-        tone,
-        boundaries,
-        guardrailsPrompt,
-        openingMessage,
-      }),
-    [
-      name,
-      headline,
-      description,
-      backgroundStory,
-      personality,
-      tone,
-      boundaries,
-      guardrailsPrompt,
-      openingMessage,
-    ],
-  )
 
   const handleAvatarChange = async (file: File | null) => {
     if (!file) return
@@ -128,29 +105,22 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
-      toast.error('请输入伴侣名称')
+    if (!name.trim() || !description.trim() || !personality.trim()) {
+      toast.error('请填写名称、角色说明与性格')
       return
     }
     const payload: CreateCompanionPayload = {
       name: name.trim(),
-      headline: headline.trim() || undefined,
-      description: description.trim() || undefined,
-      personality: personality.trim() || undefined,
-      tone: tone.trim() || undefined,
-      boundaries: boundaries.trim() || undefined,
-      guardrailsPrompt: guardrailsPrompt.trim() || undefined,
-      backgroundStory: backgroundStory.trim() || undefined,
+      description: description.trim(),
+      personality: personality.trim(),
       openingMessage: openingMessage.trim() || undefined,
       avatarKey: avatarKey.trim() || undefined,
-      visibility: visibility.trim() || undefined,
     }
 
     setSaving(true)
     try {
       if (mode === 'edit' && companionId) {
         await updateCompanion(companionId, payload).send()
-        // status 单独 patch（若变更）
         toast.success('保存成功')
         navigate({ to: '/companions/$companionId/chat', params: { companionId } })
       } else {
@@ -162,7 +132,7 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
         })
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '保存失败')
+      toast.error(extractErrorMessage(err))
     } finally {
       setSaving(false)
     }
@@ -177,7 +147,7 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="mx-auto max-w-2xl p-6">
       <div className="mb-6 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/companions' })}>
           <ArrowLeft className="h-5 w-5" />
@@ -185,176 +155,87 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
         <h1 className="text-xl font-semibold">{mode === 'create' ? '新建伴侣' : '编辑伴侣'}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-8">
-          <section className="space-y-4 rounded-xl border p-4">
-            <h2 className="font-medium">角色形象</h2>
-            <div className="flex items-start gap-4">
-              <div
-                className="flex h-28 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted text-2xl font-medium"
-                style={{
-                  backgroundImage: avatarPreviewUrl ? `url(${avatarPreviewUrl})` : undefined,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              >
-                {!avatarPreviewUrl && (name.charAt(0) || '?')}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="avatar-file">上传头像（PNG/JPEG/WebP，约 2:3，最短边≥720）</Label>
-                <Input
-                  id="avatar-file"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  disabled={uploading}
-                  onChange={(e) => void handleAvatarChange(e.target.files?.[0] ?? null)}
-                />
-                {uploading && <p className="text-xs text-muted-foreground">上传中…</p>}
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <section className="space-y-4 rounded-xl border p-4">
+          <h2 className="font-medium">角色形象</h2>
+          <div className="flex items-start gap-4">
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted text-2xl font-medium"
+              style={{
+                backgroundImage: avatarPreviewUrl ? `url(${avatarPreviewUrl})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
+              {!avatarPreviewUrl && (name.charAt(0) || '?')}
             </div>
-          </section>
-
-          <section className="space-y-4 rounded-xl border p-4">
-            <h2 className="font-medium">基础信息</h2>
-            <div className="space-y-2">
-              <Label htmlFor="name">名称 *</Label>
+            <div className="space-y-2 flex-1">
+              <Label htmlFor="avatar-file">头像（可选）</Label>
               <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="例如：星野 Luna"
-                required
+                id="avatar-file"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={uploading}
+                onChange={(e) => void handleAvatarChange(e.target.files?.[0] ?? null)}
               />
+              {uploading && <p className="text-xs text-muted-foreground">上传中…</p>}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="headline">一句话设定</Label>
-              <Input
-                id="headline"
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
-                placeholder="温柔稳定的长期聊天伴侣"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">角色说明</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </section>
-
-          <section className="space-y-4 rounded-xl border p-4">
-            <h2 className="font-medium">人物与互动</h2>
-            <div className="space-y-2">
-              <Label htmlFor="backgroundStory">人物故事</Label>
-              <Textarea
-                id="backgroundStory"
-                value={backgroundStory}
-                onChange={(e) => setBackgroundStory(e.target.value)}
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="personality">性格与互动</Label>
-              <Textarea
-                id="personality"
-                value={personality}
-                onChange={(e) => setPersonality(e.target.value)}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tone">语气风格</Label>
-              <Textarea id="tone" value={tone} onChange={(e) => setTone(e.target.value)} rows={2} />
-            </div>
-          </section>
-
-          <section className="space-y-4 rounded-xl border p-4">
-            <h2 className="font-medium">边界与开场</h2>
-            <div className="space-y-2">
-              <Label htmlFor="boundaries">边界设定</Label>
-              <Textarea
-                id="boundaries"
-                value={boundaries}
-                onChange={(e) => setBoundaries(e.target.value)}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="guardrailsPrompt">安全提示词</Label>
-              <Textarea
-                id="guardrailsPrompt"
-                value={guardrailsPrompt}
-                onChange={(e) => setGuardrailsPrompt(e.target.value)}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="openingMessage">默认开场白</Label>
-              <Textarea
-                id="openingMessage"
-                value={openingMessage}
-                onChange={(e) => setOpeningMessage(e.target.value)}
-                rows={2}
-                placeholder="空会话时展示"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="visibility">可见性</Label>
-              <Input
-                id="visibility"
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value)}
-                placeholder="private / public"
-              />
-            </div>
-          </section>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate({ to: '/companions' })}>
-              取消
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? '保存中…' : mode === 'create' ? '创建' : '保存'}
-            </Button>
           </div>
+        </section>
+
+        <section className="space-y-4 rounded-xl border p-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">名称 *</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="例如：星野 Luna"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">角色说明 *</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="用几句话介绍这个角色"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="personality">性格与互动 *</Label>
+            <Textarea
+              id="personality"
+              value={personality}
+              onChange={(e) => setPersonality(e.target.value)}
+              rows={3}
+              placeholder="性格、说话方式、相处风格"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="openingMessage">开场白（可选）</Label>
+            <Textarea
+              id="openingMessage"
+              value={openingMessage}
+              onChange={(e) => setOpeningMessage(e.target.value)}
+              rows={2}
+              placeholder="首次进入聊天时的欢迎语"
+            />
+          </div>
+        </section>
+
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={() => navigate({ to: '/companions' })}>
+            取消
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? '保存中…' : mode === 'create' ? '创建并聊天' : '保存'}
+          </Button>
         </div>
-
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <div className="rounded-xl border p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <ImagePlus className="h-4 w-4" />
-              预览
-            </div>
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                style={{
-                  backgroundImage: avatarPreviewUrl ? `url(${avatarPreviewUrl})` : undefined,
-                  backgroundSize: 'cover',
-                }}
-              >
-                {!avatarPreviewUrl && (name.charAt(0) || '?')}
-              </div>
-              <div className="min-w-0">
-                <div className="truncate font-medium">{name || '未命名角色'}</div>
-                <div className="truncate text-sm text-muted-foreground">
-                  {headline || '一句话设定'}
-                </div>
-              </div>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">状态：{status}</p>
-          </div>
-          <div className="rounded-xl border p-4">
-            <h3 className="mb-2 text-sm font-medium">defaultPrompt 预览</h3>
-            <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-xs leading-relaxed">
-              {previewPrompt || '填写人设后将生成预览'}
-            </pre>
-          </div>
-        </aside>
       </form>
     </div>
   )

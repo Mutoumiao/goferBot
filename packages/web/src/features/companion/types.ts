@@ -11,16 +11,19 @@ export interface PaginationMeta {
   totalPages: number
 }
 
+export type CompanionSource = 'system' | 'user'
+
 export interface Companion {
   id: string
+  /** system=官方目录；user=自定义 */
+  source?: CompanionSource
+  userId?: string | null
   name: string
   headline?: string
   description?: string
   personality?: string
   tone?: string
-  boundaries?: string
-  guardrailsPrompt?: string
-  defaultPrompt?: string
+  /** Web API 不再下发 boundaries/guardrails/defaultPrompt */
   avatarKey?: string
   /** 服务端解析的可访问头像 URL（优先于 /api/files 拼 key） */
   avatarUrl?: string | null
@@ -40,19 +43,13 @@ export interface CompanionListResponse {
   pagination: PaginationMeta
 }
 
+/** Web 自定义简表 */
 export interface CreateCompanionPayload {
   name: string
-  headline?: string
-  description?: string
-  personality?: string
-  tone?: string
-  boundaries?: string
-  guardrailsPrompt?: string
-  defaultPrompt?: string
-  avatarKey?: string
-  backgroundStory?: string
+  description: string
+  personality: string
   openingMessage?: string
-  visibility?: string
+  avatarKey?: string
 }
 
 export type UpdateCompanionPayload = Partial<CreateCompanionPayload>
@@ -138,6 +135,9 @@ export interface FetchParams {
   page?: number
   size?: number
   status?: CompanionStatus
+  /** official | mine */
+  tab?: 'official' | 'mine'
+  source?: CompanionSource
 }
 
 export type CompanionMessageRole = 'user' | 'assistant' | 'system'

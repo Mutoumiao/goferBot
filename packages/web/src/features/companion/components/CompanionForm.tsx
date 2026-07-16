@@ -1,3 +1,6 @@
+/**
+ * 遗留 Dialog 表单：收敛为简表，主路径请用 CompanionFormPage 独立页。
+ */
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -26,69 +29,37 @@ export function CompanionForm({
   onCancel,
 }: CompanionFormProps) {
   const [name, setName] = useState('')
-  const [headline, setHeadline] = useState('')
   const [description, setDescription] = useState('')
   const [personality, setPersonality] = useState('')
-  const [tone, setTone] = useState('')
-  const [boundaries, setBoundaries] = useState('')
-  const [guardrailsPrompt, setGuardrailsPrompt] = useState('')
-  const [defaultPrompt, setDefaultPrompt] = useState('')
-  const [backgroundStory, setBackgroundStory] = useState('')
   const [openingMessage, setOpeningMessage] = useState('')
-  const [avatarKey, setAvatarKey] = useState('')
-  const [visibility, setVisibility] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (open && initialData) {
       setName(initialData.name ?? '')
-      setHeadline(initialData.headline ?? '')
       setDescription(initialData.description ?? '')
       setPersonality(initialData.personality ?? '')
-      setTone(initialData.tone ?? '')
-      setBoundaries(initialData.boundaries ?? '')
-      setGuardrailsPrompt(initialData.guardrailsPrompt ?? '')
-      setDefaultPrompt(initialData.defaultPrompt ?? '')
-      setBackgroundStory(initialData.backgroundStory ?? '')
       setOpeningMessage(initialData.openingMessage ?? '')
-      setAvatarKey(initialData.avatarKey ?? '')
-      setVisibility(initialData.visibility ?? '')
     } else if (open) {
       setName('')
-      setHeadline('')
       setDescription('')
       setPersonality('')
-      setTone('')
-      setBoundaries('')
-      setGuardrailsPrompt('')
-      setDefaultPrompt('')
-      setBackgroundStory('')
       setOpeningMessage('')
-      setAvatarKey('')
-      setVisibility('')
     }
   }, [open, initialData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
-      toast.error('请输入伴侣名称')
+    if (!name.trim() || !description.trim() || !personality.trim()) {
+      toast.error('请填写名称、角色说明与性格')
       return
     }
 
     const payload: CreateCompanionPayload = {
       name: name.trim(),
-      headline: headline.trim() || undefined,
-      description: description.trim() || undefined,
-      personality: personality.trim() || undefined,
-      tone: tone.trim() || undefined,
-      boundaries: boundaries.trim() || undefined,
-      guardrailsPrompt: guardrailsPrompt.trim() || undefined,
-      defaultPrompt: defaultPrompt.trim() || undefined,
-      backgroundStory: backgroundStory.trim() || undefined,
+      description: description.trim(),
+      personality: personality.trim(),
       openingMessage: openingMessage.trim() || undefined,
-      avatarKey: avatarKey.trim() || undefined,
-      visibility: visibility.trim() || undefined,
     }
 
     setLoading(true)
@@ -128,87 +99,26 @@ export function CompanionForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="headline">副标题</Label>
-            <Input
-              id="headline"
-              value={headline}
-              onChange={(e) => setHeadline(e.target.value)}
-              placeholder="简短描述，展示在卡片上"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">详细描述</Label>
+            <Label htmlFor="description">角色说明 *</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="伴侣的详细描述"
+              placeholder="伴侣的角色说明"
               rows={3}
+              required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="personality">性格</Label>
-            <Input
+            <Label htmlFor="personality">性格与互动 *</Label>
+            <Textarea
               id="personality"
               value={personality}
               onChange={(e) => setPersonality(e.target.value)}
-              placeholder="例如：友善、幽默、专业"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tone">语气风格</Label>
-            <Input
-              id="tone"
-              value={tone}
-              onChange={(e) => setTone(e.target.value)}
-              placeholder="例如：亲切、正式、活泼"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="boundaries">边界设定</Label>
-            <Textarea
-              id="boundaries"
-              value={boundaries}
-              onChange={(e) => setBoundaries(e.target.value)}
-              placeholder="设定伴侣的行为边界"
+              placeholder="性格、说话方式"
               rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="guardrailsPrompt">安全提示词</Label>
-            <Textarea
-              id="guardrailsPrompt"
-              value={guardrailsPrompt}
-              onChange={(e) => setGuardrailsPrompt(e.target.value)}
-              placeholder="注入的安全约束提示词"
-              rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="defaultPrompt">默认提示词</Label>
-            <Textarea
-              id="defaultPrompt"
-              value={defaultPrompt}
-              onChange={(e) => setDefaultPrompt(e.target.value)}
-              placeholder="每次对话默认注入的系统提示词"
-              rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="backgroundStory">背景故事</Label>
-            <Textarea
-              id="backgroundStory"
-              value={backgroundStory}
-              onChange={(e) => setBackgroundStory(e.target.value)}
-              placeholder="伴侣的背景故事，用于增强角色感"
-              rows={3}
+              required
             />
           </div>
 
@@ -218,28 +128,8 @@ export function CompanionForm({
               id="openingMessage"
               value={openingMessage}
               onChange={(e) => setOpeningMessage(e.target.value)}
-              placeholder="用户首次打开聊天时的欢迎语"
+              placeholder="可选"
               rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="avatarKey">头像文件 Key</Label>
-            <Input
-              id="avatarKey"
-              value={avatarKey}
-              onChange={(e) => setAvatarKey(e.target.value)}
-              placeholder="上传头像后得到的文件 key"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="visibility">可见性</Label>
-            <Input
-              id="visibility"
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value)}
-              placeholder="例如：public / private"
             />
           </div>
 

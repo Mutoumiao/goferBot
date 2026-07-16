@@ -20,6 +20,7 @@ import { Route as AuthenticatedModuleSettingsRouteImport } from './routes/_authe
 import { Route as AuthenticatedModelProvidersRouteImport } from './routes/_authenticated/model-providers'
 import { Route as AuthenticatedInvitationsRouteImport } from './routes/_authenticated/invitations'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCompanionsRouteImport } from './routes/_authenticated/companions'
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedRolesIdRouteImport } from './routes/_authenticated/roles/$id'
@@ -81,6 +82,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCompanionsRoute = AuthenticatedCompanionsRouteImport.update({
+  id: '/companions',
+  path: '/companions',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedChangePasswordRoute =
   AuthenticatedChangePasswordRouteImport.update({
     id: '/change-password',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
+  '/companions': typeof AuthenticatedCompanionsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/invitations': typeof AuthenticatedInvitationsRoute
   '/model-providers': typeof AuthenticatedModelProvidersRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
+  '/companions': typeof AuthenticatedCompanionsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/invitations': typeof AuthenticatedInvitationsRoute
   '/model-providers': typeof AuthenticatedModelProvidersRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
+  '/_authenticated/companions': typeof AuthenticatedCompanionsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/invitations': typeof AuthenticatedInvitationsRoute
   '/_authenticated/model-providers': typeof AuthenticatedModelProvidersRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/audit'
     | '/change-password'
+    | '/companions'
     | '/dashboard'
     | '/invitations'
     | '/model-providers'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/audit'
     | '/change-password'
+    | '/companions'
     | '/dashboard'
     | '/invitations'
     | '/model-providers'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/audit'
     | '/_authenticated/change-password'
+    | '/_authenticated/companions'
     | '/_authenticated/dashboard'
     | '/_authenticated/invitations'
     | '/_authenticated/model-providers'
@@ -280,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/companions': {
+      id: '/_authenticated/companions'
+      path: '/companions'
+      fullPath: '/companions'
+      preLoaderRoute: typeof AuthenticatedCompanionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/change-password': {
       id: '/_authenticated/change-password'
       path: '/change-password'
@@ -318,6 +337,7 @@ const AuthenticatedRolesRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
+  AuthenticatedCompanionsRoute: typeof AuthenticatedCompanionsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInvitationsRoute: typeof AuthenticatedInvitationsRoute
   AuthenticatedModelProvidersRoute: typeof AuthenticatedModelProvidersRoute
@@ -330,6 +350,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
+  AuthenticatedCompanionsRoute: AuthenticatedCompanionsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInvitationsRoute: AuthenticatedInvitationsRoute,
   AuthenticatedModelProvidersRoute: AuthenticatedModelProvidersRoute,

@@ -28,6 +28,8 @@ const config = defineConfig({
     viteReact(),
   ],
   server: {
+    // 监听 0.0.0.0，便于本机 127.0.0.1 / FRP 等反向代理连入（仅绑 ::1 时 127.0.0.1 会失败）
+    host: true,
     port: 1420,
   },
   build: {

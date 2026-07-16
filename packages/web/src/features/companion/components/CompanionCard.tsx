@@ -18,6 +18,9 @@ interface CompanionCardProps {
 }
 
 export function CompanionCard({ companion, onSelect, onEdit, onDelete }: CompanionCardProps) {
+  const isSystem = companion.source === 'system'
+  const canManage = !isSystem
+
   return (
     <Card
       className="cursor-pointer transition-shadow hover:shadow-md"
@@ -44,14 +47,16 @@ export function CompanionCard({ companion, onSelect, onEdit, onDelete }: Compani
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <h3 className="font-medium text-base truncate">{companion.name}</h3>
-                {companion.headline && (
-                  <p className="text-sm text-muted-foreground truncate">{companion.headline}</p>
+                {(companion.headline || companion.description) && (
+                  <p className="text-sm text-muted-foreground truncate">
+                    {companion.headline || companion.description}
+                  </p>
                 )}
               </div>
-              <CompanionStatusTag status={companion.status} />
+              {!isSystem && <CompanionStatusTag status={companion.status} />}
             </div>
 
-            {companion.description && (
+            {companion.description && companion.headline && (
               <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
                 {companion.description}
               </p>
@@ -69,23 +74,25 @@ export function CompanionCard({ companion, onSelect, onEdit, onDelete }: Compani
                 开始聊天
               </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-sm" onClick={(e) => e.stopPropagation()}>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(companion.id)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    编辑
-                  </DropdownMenuItem>
-                  <DropdownMenuItem variant="destructive" onClick={() => onDelete(companion.id)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    删除
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {canManage && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon-sm" onClick={(e) => e.stopPropagation()}>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(companion.id)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      编辑
+                    </DropdownMenuItem>
+                    <DropdownMenuItem variant="destructive" onClick={() => onDelete(companion.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      归档
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         </div>

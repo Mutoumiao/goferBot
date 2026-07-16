@@ -256,6 +256,7 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
 
   const handleEdit = useCallback(() => {
     navigate({
+      // 官方 system 源不可进人设编辑（列表侧已隐藏；此处防御）
       to: '/companions/$companionId/edit',
       params: { companionId },
     })
@@ -310,7 +311,7 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
         onBack={handleBack}
         onOpenMemories={handleOpenMemories}
         onOpenCare={handleOpenCare}
-        onEdit={handleEdit}
+        onEdit={companion.source === 'system' ? undefined : handleEdit}
       />
 
       <div className="flex-1 overflow-y-auto">
