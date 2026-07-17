@@ -124,10 +124,11 @@ Component 调用 props.onClose(result)
 
 - **直接操作 `overlayStore`**：应通过 `overlayService` / `useOverlay` Hook，避免跳过 Promise 桥接
 - **在 `onClose` 回调中抛异常**：会被 Promise 吞掉，应在弹窗内部 try/catch 后再调用 onClose
-- **嵌套 `openDialog` 调用**：`await` 一个弹窗完成后再开另一个，容易造成栈堆积；应链式 `then` 或合并交互
+- **嵌套 `openDialog` 调用**：`await` 一个弹窗完成后再开另一个，容易造成栈堆积；应链式 `then` 或合并交互（脏表单确认：先 `await openDialog(ConfirmDialog)` 再 `onClose`）
 - **在 Overlay 系统外使用 Portal**：会绕过 z-index 管理和 closeAll 清理，应复用 OverlayHost
 - **忘记路由切换清理**：未在 `__root.tsx` 注册 `closeAll`，会导致切换页面后弹窗残留
 - **z-index 硬编码**：弹窗内部元素不要硬编码 z-index，应依赖 `entry.zIndex` 传递的层级
+- **Companion 二级误用 KB 关层**：部分 KB 小窗 `onOpenChange={() => onClose(false)}` 会随点遮罩关闭；**Companion 新建/编辑/关怀/记忆库禁止点遮罩关**，须 `preventDefault` outside 交互（见 `companion-ui-rendering.md`）
 
 ## Reusable Patterns
 

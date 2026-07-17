@@ -17,24 +17,29 @@
 - [openspec/specs/companion-persona/spec.md](../../../../openspec/specs/companion-persona/spec.md) — 人设表单 / 头像 / 开场白
 - [openspec/specs/companion-care/spec.md](../../../../openspec/specs/companion-care/spec.md) — 关怀配置与「关怀」标记
 - [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — Knowledge Chat SSE（**勿**与 Companion Transport 混用）
+- [openspec/changes/web-l1-cache-l2-dialogs](../../../../openspec/changes/web-l1-cache-l2-dialogs/) — 一级 path 缓存 + 二级弹层（实现中 / 归档后见主库 `web-shell`）
 
 ## Module Dependencies
 
-- **Zustand** — `useCompanionStore` 管理伴侣列表等 UI 状态
+- **Zustand** — `useCompanionStore`（含 `selectedCompanionId` 页内选中，不写 URL）
 - **AI SDK (`@ai-sdk/react` useChat) + `CompanionChatTransport`** — Companion 主聊天路径；映射 Nest SSE（token/done/error/summary/memories）
 - **alova** — Companion CRUD / 记忆 / 关怀 REST
+- **Overlay `openDialog`** — 新建 / 编辑 / 关怀 / 记忆库二级入口
 - **shadcn/ui** — 表单与布局组件
 - **Knowledge Chat 仍可用 ant-design/x** — Companion **主路径已不再依赖** Bubble/Sender
 
 ## Development Entry
 
 - `packages/web/src/features/companion/` — Companion 全部前端文件
-- `packages/web/src/features/companion/components/` — 组件树（`CompanionChatPage` / `CompanionFormPage` / `CompanionCarePage` / `CompanionMemoriesPage` 等）
+- `packages/web/src/features/companion/components/CompanionsWorkspace.tsx` — **一级** `/companions` 工作台（左联系人 + 右内嵌聊天）
+- `packages/web/src/features/companion/components/CompanionChatPage.tsx` — 内嵌对话（`embedded`）
+- `packages/web/src/features/companion/components/` — Form / Care / Memories 内容组件（供弹层承载，非独立路由页）
+- `packages/web/src/features/companion/dialogs/` 或 `open-*.ts` — `openCompanionCreate|Edit|Care|MemoriesDialog`（实现落点）
 - `packages/web/src/features/companion/companion-chat-transport.ts` — SSE → AI SDK Transport
 - `packages/web/src/features/companion/types.ts` — 前端类型（feedback rating=`positive`|`negative`）
-- 独立路由：`/companions/new`、`/$id/edit`、`/$id/chat`、`/$id/memories`、`/$id/care`
+- **唯一业务 path**：`/companions`（Keep-Alive 一级）；**禁止** `/companions/new`、`/$id/edit|care|memories|chat` 等二级 file route
 
-> 业务权威：OpenSpec `companion` / `companion-persona` / `companion-care`（主规范，非仅 change delta）。
+> 业务权威：OpenSpec `companion` / `companion-persona` / `companion-care`；壳层纪律见 `web-shell` / change `web-l1-cache-l2-dialogs`。
 
 ## Implementation Notes
 
@@ -85,16 +90,34 @@ UI 拇指 up/down  ──映射层──►  HTTP/DTO  positive | negative
 
 页面负责调 alova；**状态变更逻辑放纯函数**，避免只写在 JSX 里无法测。
 
-### 关怀页
+### 二级入口：命令式弹层（非路由）
 
-- 路由 `/companions/:id/care` → `CompanionCarePage`
-- 场景/语气标签与后端 `CARE_SCENES` × `CARE_TONES` 对齐（六场景 × 三语气）
+| 入口 | open API | 档位 | 成功后 |
+|------|----------|------|--------|
+| 新建 | `openCompanionCreateDialog` | 表单中大 | `onSuccess` → 关层 |
+| 编辑 | `openCompanionEditDialog` | 表单中大 | 同上；脏数据关前二次确认 |
+| 关怀 | `openCompanionCareDialog` | 工作台大面板 | 保存成功关层 |
+| 记忆库 | `openCompanionMemoriesDialog` | 工作台大面板 | 单条变更 **不** 关；用户 X 关 |
+
+**契约（与 Overlay 对齐）**：
+
+1. 必须 `openDialog(Comp, props)`；`OverlayHost` 注入 **`onClose`**；禁止直操 `overlayStore`。
+2. 业务刷新：调用方传 **`onSuccess(payload?)`**（无感、无整页 loading）；组件成功路径先 `onSuccess` 再 `onClose(true)`（或等价 resolve）。
+3. **禁止点遮罩关闭**（Companion 二级专用；**不要**照搬 `CreateKbDialog` 的 `onOpenChange={() => onClose(false)}` 默认关）。用 `onPointerDownOutside` / `onInteractOutside` preventDefault；Esc/X 走同一关闭流程。
+4. 表单脏关：`await openDialog(ConfirmDialog, …)` 确认后再 `onClose`；系统确认框可叠在业务层上。
+5. 一级 Icon Rail 切换依赖根布局 **`closeAll()`**，勿让弹层跨一级残留。
+6. path 始终 `/companions`；无「返回对话」路由按钮。
+
+### 关怀配置
+
+- `openCompanionCareDialog` → 内容来自 `CompanionCarePage` 逻辑（剥离 navigate）
+- 场景/语气与后端 `CARE_SCENES` × `CARE_TONES` 对齐（六场景 × 三语气）
 - 生成成功后应能在聊天历史看到消息 + 关怀标记
 
 ### 创建/编辑主路径
 
-- **`CompanionFormPage`**：`/companions/new`、`/companions/:id/edit`
-- 分段人设 + defaultPrompt 预览 + 头像上传；列表跳转独立路由
+- 内容：`CompanionFormPage` / 等价简表组件，由 open\* 包进 Dialog
+- 分段人设 + 可选头像；列表/聊天入口 **open 弹层**，不 `navigate` 子 path
 - 服务端 `buildDefaultAgentPrompt` 写库；客户端预览规则宜与之一致
 - trim：空串 → `undefined`
 
@@ -121,7 +144,9 @@ UI 拇指 up/down  ──映射层──►  HTTP/DTO  positive | negative
 - [ ] rating 是否泄漏 `up`/`down` 到 API
 - [ ] 记忆写逻辑是否抽到 `memory-ui` 可测函数
 - [ ] 业务变更是否回写 OpenSpec companion / persona / care
-- [ ] 表单是否仍为独立路由主路径
+- [ ] 新建/编辑/关怀/记忆是否为 **命令式弹层**（path 仍为 `/companions`）
+- [ ] 是否误加回 `/companions/$id/*` 二级 file route 或 redirect 壳
+- [ ] 弹层是否 `onClose` 桥接 + 禁遮罩关；表单脏关是否二次确认
 
 ## Common Pitfalls
 
@@ -133,6 +158,8 @@ UI 拇指 up/down  ──映射层──►  HTTP/DTO  positive | negative
 - **流式中反馈**：无完整 messageId，易脏写。
 - **表单未 trim**：空串入库导致空白副标题。
 - **Knowledge 误迁 AI SDK**：本模块 Non-Goal。
+- **二级改 path**：会拆 Keep-Alive → 闪烁；二级只用 openDialog。
+- **照搬 KB 小窗 outside=close**：Companion 二级禁止点遮罩关。
 
 ## Reusable Patterns
 

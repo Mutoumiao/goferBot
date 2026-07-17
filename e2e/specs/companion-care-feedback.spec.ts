@@ -30,11 +30,12 @@ test.describe('AI 伴侣 · 关怀与反馈', () => {
       openingMessage: '嗨，我是关怀测试。',
     })
 
-    // 进入关怀页
-    await page.getByRole('button', { name: /关怀/ }).click()
-    await expect(page).toHaveURL(/\/care/, { timeout: 15_000 })
-    await expect(page.getByText(/主动关怀|关怀计划/).first()).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText(/默认配置|尚未持久化/).first()).toBeVisible({ timeout: 10_000 })
+    // 进入关怀弹层（path 仍为 /companions）
+    await companion.openCare()
+    await expect(page).toHaveURL(/\/companions\/?$/, { timeout: 10_000 })
+    await expect(page.getByText(/默认配置|尚未持久化|启用关怀/).first()).toBeVisible({
+      timeout: 10_000,
+    })
 
     // 立即生成（模板路径，无需 LLM）
     const genPromise = page.waitForResponse(
@@ -47,8 +48,9 @@ test.describe('AI 伴侣 · 关怀与反馈', () => {
     const genRes = await genPromise
     expect(genRes.ok(), `generate failed ${genRes.status()}`).toBeTruthy()
 
-    // 生成后回到聊天
-    await expect(page).toHaveURL(/\/chat/, { timeout: 15_000 })
+    // 生成后弹层关闭，仍在伴侣工作台
+    await expect(page).toHaveURL(/\/companions\/?$/, { timeout: 15_000 })
+    await expect(page.getByTestId('companion-chat-panel')).toBeVisible({ timeout: 15_000 })
     await expect(page.locator('main')).toContainText(/.+/, { timeout: 15_000 })
 
     // 关怀消息应出现（模板含称呼/场景相关字样，或任意助手气泡）

@@ -3,13 +3,17 @@
  * 主路径不再依赖 @ant-design/x Sender。
  */
 import { useChat } from '@ai-sdk/react'
-import { useNavigate } from '@tanstack/react-router'
 import type { UIMessage } from 'ai'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { CompanionChatTransport } from '../companion-chat-transport'
+import {
+  openCompanionCareDialog,
+  openCompanionEditDialog,
+  openCompanionMemoriesDialog,
+} from '../dialogs/open-companion-dialogs'
 import { buildOpeningUiMessage, shouldShowOpeningMessage } from '../persona/opening-message'
 import {
   createConversation,
@@ -29,6 +33,9 @@ const DEFAULT_QUICK_PROMPTS = ['今天想聊点什么？', '说点开心的事�
 
 interface CompanionChatPageProps {
   companionId: string
+  /** 嵌入工作台时不整页路由跳转，返回由 onBack 处理 */
+  embedded?: boolean
+  onBack?: () => void
 }
 
 function textFromUiMessage(msg: UIMessage): string {
@@ -69,8 +76,11 @@ function isCareFromMessage(m: UIMessage): { isCare: boolean; careScene?: string 
   return { isCare: false }
 }
 
-export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
-  const navigate = useNavigate()
+export function CompanionChatPage({
+  companionId,
+  embedded = false,
+  onBack,
+}: CompanionChatPageProps) {
   const [inputValue, setInputValue] = useState('')
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [feedbackMap, setFeedbackMap] = useState<
@@ -240,31 +250,54 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
     }
   }, [])
 
-  const handleOpenMemories = useCallback(() => {
-    navigate({
-      to: '/companions/$companionId/memories',
-      params: { companionId },
-    })
-  }, [navigate, companionId])
+  function handleOpenMemories() {
+    void openCompanionMemoriesDialog({ companionId })
+  }
 
-  const handleOpenCare = useCallback(() => {
-    navigate({
-      to: '/companions/$companionId/care',
-      params: { companionId },
+  function handleOpenCare() {
+    void openCompanionCareDialog({
+      companionId,
+      onSuccess: async () => {
+        // 生成关怀后刷新消息：重拉当前会话
+        const convId = conversationRef.current?.id
+        if (!convId) return
+        try {
+          const msgRes = await listMessages(convId, { page: 1, size: 50 }).send()
+          const history = (msgRes.items ?? []).map((m) =>
+            toUiMessage({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              metadata: typeof m.metadata === 'string' ? m.metadata : null,
+            }),
+          )
+          setMessages(history)
+        } catch {
+          /* ignore */
+        }
+      },
     })
-  }, [navigate, companionId])
+  }
 
-  const handleEdit = useCallback(() => {
-    navigate({
-      // 官方 system 源不可进人设编辑（列表侧已隐藏；此处防御）
-      to: '/companions/$companionId/edit',
-      params: { companionId },
+  function handleEdit() {
+    void openCompanionEditDialog({
+      companionId,
+      onSuccess: async (c) => {
+        upsertCompanion(c)
+        companionRef.current = c
+      },
     })
-  }, [navigate, companionId])
+  }
 
-  const handleBack = useCallback(() => {
-    navigate({ to: '/companions' })
-  }, [navigate])
+  function handleBack() {
+    if (embedded && onBack) {
+      onBack()
+      return
+    }
+    if (embedded) {
+      useCompanionStore.getState().selectCompanion(null)
+    }
+  }
 
   const displayMessages: CompanionMessage[] = useMemo(() => {
     const convId = conversationRef.current?.id ?? ''
@@ -305,13 +338,18 @@ export function CompanionChatPage({ companionId }: CompanionChatPageProps) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div
+      className="flex h-full flex-col bg-surface-1"
+      data-testid="companion-chat-panel"
+      data-companion-id={companionId}
+    >
       <CompanionHeader
         companion={companion}
         onBack={handleBack}
         onOpenMemories={handleOpenMemories}
         onOpenCare={handleOpenCare}
         onEdit={companion.source === 'system' ? undefined : handleEdit}
+        embedded={embedded}
       />
 
       <div className="flex-1 overflow-y-auto">

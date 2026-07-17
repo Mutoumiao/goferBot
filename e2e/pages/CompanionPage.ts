@@ -11,32 +11,37 @@ export class CompanionPage {
 
   constructor(page: Page) {
     this.page = page
-    this.createButton = page.getByRole('button', { name: /新建伴侣/ })
+    // 工作台「新建」或空态「新建伴侣」
+    this.createButton = page
+      .getByTestId('companion-create-btn')
+      .or(page.getByRole('button', { name: /新建伴侣/ }))
     this.nameInput = page.locator('#name')
     this.descriptionInput = page.locator('#description')
     this.personalityInput = page.locator('#personality')
     this.openingMessageInput = page.locator('#openingMessage')
-    // 独立创建页：提交按钮为「创建并聊天」或「保存」
     this.submitButton = page.getByRole('button', { name: /创建|保存/ }).filter({
       hasNotText: /取消/,
     })
   }
 
   async openFromSidebar() {
-    await this.page.getByTitle('AI 伴侣', { exact: true }).click().catch(async () => {
-      await this.page.goto('/companions', { waitUntil: 'domcontentloaded' })
-    })
+    await this.page
+      .getByTestId('rail-companion')
+      .click()
+      .catch(async () => {
+        await this.page.getByTitle('AI 伴侣', { exact: true }).click().catch(async () => {
+          await this.page.goto('/companions', { waitUntil: 'domcontentloaded' })
+        })
+      })
     await expect(this.page).toHaveURL(/\/companions/, { timeout: 15_000 })
+    await expect(this.page.getByTestId('companions-workspace')).toBeVisible({ timeout: 15_000 })
     // 新建入口在「我的伴侣」Tab
-    await this.page.getByRole('tab', { name: /我的伴侣/ }).click().catch(async () => {
-      await this.page.getByText('我的伴侣').click()
-    })
+    await this.selectTab('mine')
     await expect(this.createButton.first()).toBeVisible({ timeout: 15_000 })
   }
 
   /**
-   * 归档「我的」自定义伴侣，为创建腾出名额（默认上限 10；archived 不占名额）。
-   * 使用浏览器 Cookie 调 API，避免污染非 pw 数据时优先归档 pw-* 名称。
+   * 归档「我的」自定义伴侣，为创建腾出名额。
    */
   async ensureUserCompanionQuota(keepSlots = 1, maxActive = 10): Promise<void> {
     const apiBase = process.env.API_BASE_URL || 'http://localhost:3100/api'
@@ -80,14 +85,15 @@ export class CompanionPage {
       { timeout: 20_000 },
     )
 
+    // 二级为命令式弹层：URL 始终停在 /companions
     await this.createButton.first().click()
-    await expect(this.page).toHaveURL(/\/companions\/new/, { timeout: 10_000 })
-    await expect(this.page.getByRole('heading', { name: '新建伴侣' })).toBeVisible()
+    await expect(this.page).toHaveURL(/\/companions\/?$/, { timeout: 10_000 })
+    await expect(this.page.getByRole('heading', { name: '新建伴侣' })).toBeVisible({
+      timeout: 10_000,
+    })
 
     await this.nameInput.fill(options.name)
-    await this.descriptionInput.fill(
-      options.description ?? options.headline ?? 'E2E 角色说明',
-    )
+    await this.descriptionInput.fill(options.description ?? options.headline ?? 'E2E 角色说明')
     await this.personalityInput.fill(options.personality ?? '友善、耐心')
     if (options.openingMessage) {
       await this.openingMessageInput.fill(options.openingMessage)
@@ -100,34 +106,40 @@ export class CompanionPage {
     const id = body.data?.id ?? body.id
     expect(id, '创建伴侣响应缺少 id').toBeTruthy()
 
-    // 创建成功后进入聊天页
-    await expect(this.page).toHaveURL(/\/companions\/[^/]+\/chat/, { timeout: 15_000 })
+    // 创建成功后弹层关闭，工作台自动选中
+    await expect(this.page).toHaveURL(/\/companions\/?$/, { timeout: 15_000 })
+    await expect(this.page.getByRole('heading', { name: '新建伴侣' })).toHaveCount(0, {
+      timeout: 15_000,
+    })
+    await expect(this.page.getByTestId('companions-workspace')).toBeVisible({ timeout: 15_000 })
+    await expect(this.page.getByTestId('companion-chat-panel')).toBeVisible({ timeout: 20_000 })
     return id as string
   }
 
   async openChatByName(name: string) {
-    // 若已在聊天页则跳过
-    if (this.page.url().match(/\/companions\/[^/]+\/chat/)) {
-      return
+    // 已在右侧聊天面板
+    if (await this.page.getByTestId('companion-chat-panel').isVisible().catch(() => false)) {
+      const header = this.page.getByRole('heading', { name, exact: true })
+      if (await header.isVisible().catch(() => false)) return
     }
-    await this.page.goto('/companions', { waitUntil: 'domcontentloaded' })
-    await this.page.getByRole('tab', { name: /我的伴侣/ }).click().catch(async () => {
-      await this.page.getByText('我的伴侣').click()
-    })
-    const card = this.page
-      .locator('[class*="card"], [class*="Card"], div')
-      .filter({ has: this.page.getByRole('heading', { name, exact: true }) })
-      .filter({ has: this.page.getByRole('button', { name: /开始聊天/ }) })
-      .first()
 
-    const startBtn = card.getByRole('button', { name: /开始聊天/ })
-    if (await startBtn.isVisible().catch(() => false)) {
-      await startBtn.click()
+    await this.page.goto('/companions', { waitUntil: 'domcontentloaded' })
+    await expect(this.page.getByTestId('companions-workspace')).toBeVisible({ timeout: 15_000 })
+    await this.selectTab('mine')
+
+    // 优先点左侧联系人行
+    const contact = this.page
+      .locator('[data-testid^="companion-contact-"]')
+      .filter({ hasText: name })
+      .first()
+    if (await contact.isVisible().catch(() => false)) {
+      await contact.click()
     } else {
+      // 兼容旧卡片布局
       await this.page.getByRole('heading', { name, exact: true }).click()
     }
 
-    await expect(this.page).toHaveURL(/\/companions\/[^/]+\/chat/, { timeout: 15_000 })
+    await expect(this.page.getByTestId('companion-chat-panel')).toBeVisible({ timeout: 20_000 })
     await expect(
       this.page
         .getByPlaceholder(new RegExp(`和\\s*${name}`))
@@ -137,10 +149,6 @@ export class CompanionPage {
     ).toBeVisible({ timeout: 20_000 })
   }
 
-  /**
-   * 发送消息：优先快捷提示；否则 textarea +「发送」按钮。
-   * 不用 Enter：受控 input 在 fill 后可能尚未 commit 到 React state，Enter 会带着空串提交。
-   */
   async sendMessage(text: string, options?: { useQuickPrompt?: boolean }) {
     const chatPromise = this.page.waitForResponse(
       (r) => r.url().includes('/companion/chat') && r.request().method() === 'POST',
@@ -154,15 +162,13 @@ export class CompanionPage {
       )
       .catch(() => null)
 
-    // 快捷提示按钮 accessible name 可能含图标文案，用 contains 匹配
     const quick = this.page.getByRole('button', { name: text })
     if (options?.useQuickPrompt !== false && (await quick.first().isVisible().catch(() => false))) {
       await quick.first().click()
     } else {
-      const input = this.page.locator('textarea').first()
+      const input = this.page.locator('[data-testid="companion-chat-panel"] textarea').first()
       await expect(input).toBeVisible({ timeout: 10_000 })
       await input.click()
-      // React 受控组件：fill 可能被 state 回写清空，用原生 setter + input 事件
       await input.evaluate((el, value) => {
         const ta = el as HTMLTextAreaElement
         const proto = window.HTMLTextAreaElement.prototype
@@ -218,7 +224,6 @@ export class CompanionPage {
         )
       }
 
-      // 有实质助手文案（含管线降级提示）即通过
       if (
         pageText.includes('管线暂不可用') ||
         pageText.includes('请再说一次') ||
@@ -231,10 +236,7 @@ export class CompanionPage {
       const bubbles = this.page.locator('.space-y-1 > div')
       const texts = (await bubbles.allTextContents().catch(() => [])) as string[]
       const meaningful = texts.filter(
-        (t) =>
-          t.trim().length > 4 &&
-          !t.includes('（无内容）') &&
-          !t.includes('开始新对话'),
+        (t) => t.trim().length > 4 && !t.includes('（无内容）') && !t.includes('开始新对话'),
       )
       if (meaningful.length >= 2) return
       await this.page.waitForTimeout(1000)
@@ -243,18 +245,46 @@ export class CompanionPage {
   }
 
   async openMemories() {
-    await this.page.getByRole('button', { name: /记忆库/ }).click()
-    await expect(this.page).toHaveURL(/\/memories/, { timeout: 15_000 })
+    // 只点当前可见聊天头上的「记忆库」，避免 keep-alive 隐藏实例
+    await this.page
+      .locator('[data-testid="companion-chat-panel"]:visible')
+      .getByRole('button', { name: /记忆库/ })
+      .click()
+    // 记忆库为弹层：path 不变
+    await expect(this.page).toHaveURL(/\/companions\/?$/, { timeout: 10_000 })
+    await expect(
+      this.page.getByRole('heading', { name: /记忆库/ }).or(this.page.getByText('暂无记忆')).first(),
+    ).toBeVisible({ timeout: 15_000 })
   }
 
-  async selectTab(tab: 'official' | 'mine') {
-    const name = tab === 'official' ? /官方推荐/ : /我的伴侣/
-    await this.page.getByRole('tab', { name }).click().catch(async () => {
-      await this.page.getByText(tab === 'official' ? '官方推荐' : '我的伴侣').click()
+  async openCare() {
+    await this.page
+      .locator('[data-testid="companion-chat-panel"]:visible')
+      .getByRole('button', { name: /关怀/ })
+      .click()
+    await expect(this.page).toHaveURL(/\/companions\/?$/, { timeout: 10_000 })
+    await expect(this.page.getByText(/主动关怀|关怀计划|启用关怀/).first()).toBeVisible({
+      timeout: 15_000,
     })
   }
 
-  /** 断言创建/编辑简表不含安全与扩展创作者字段 */
+  async closeTopDialog() {
+    await this.page.getByRole('button', { name: '关闭' }).last().click()
+  }
+
+  async selectTab(tab: 'official' | 'mine') {
+    const testId = tab === 'official' ? 'companion-tab-official' : 'companion-tab-mine'
+    await this.page
+      .getByTestId(testId)
+      .click()
+      .catch(async () => {
+        const name = tab === 'official' ? /官方推荐/ : /我的伴侣/
+        await this.page.getByRole('tab', { name }).click().catch(async () => {
+          await this.page.getByText(tab === 'official' ? '官方推荐' : '我的伴侣').click()
+        })
+      })
+  }
+
   async expectLightFormFields() {
     await expect(this.nameInput).toBeVisible()
     await expect(this.descriptionInput).toBeVisible()

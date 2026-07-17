@@ -1,23 +1,26 @@
 /**
- * Web 自定义简表：name / description / personality 必填 + 可选开场白与头像
- * 不收集 boundaries / guardrails / defaultPrompt 预览
+ * 新建 / 编辑伴侣 — 表单档弹层。
  */
-import { useNavigate } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
+import { openDialog } from '@/overlays/services/overlay-service'
 import { readImageDimensions, validateCompanionAvatarClient } from '../persona/avatar-validation'
 import { createCompanion, getCompanion, updateCompanion, uploadCompanionAvatar } from '../services'
-import type { CreateCompanionPayload } from '../types'
+import type { Companion, CreateCompanionPayload } from '../types'
+import { CompanionPanelShell } from './companion-panel-shell'
+import type { OverlayConfirmResult } from './overlay-confirm-dialog'
+import OverlayConfirmDialog from './overlay-confirm-dialog'
 
-interface CompanionFormPageProps {
+export type CompanionFormDialogProps = {
   mode: 'create' | 'edit'
   companionId?: string
+  onSuccess?: (companion: Companion) => void | Promise<void>
+  onClose?: (result?: unknown) => void
 }
 
 function extractErrorMessage(err: unknown): string {
@@ -32,8 +35,12 @@ function extractErrorMessage(err: unknown): string {
   return '保存失败'
 }
 
-export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps) {
-  const navigate = useNavigate()
+export default function CompanionFormDialog({
+  mode,
+  companionId,
+  onSuccess,
+  onClose,
+}: CompanionFormDialogProps) {
   const [loading, setLoading] = useState(mode === 'edit')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -45,6 +52,14 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
   const [avatarKey, setAvatarKey] = useState('')
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
 
+  const baselineRef = useRef({
+    name: '',
+    description: '',
+    personality: '',
+    openingMessage: '',
+    avatarKey: '',
+  })
+
   useEffect(() => {
     if (mode !== 'edit' || !companionId) return
     let cancelled = false
@@ -55,19 +70,27 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
         if (cancelled) return
         if (c.source === 'system') {
           toast.error('官方伴侣不可编辑')
-          navigate({ to: '/companions' })
+          onClose?.(false)
           return
         }
-        setName(c.name ?? '')
-        setDescription(c.description ?? '')
-        setPersonality(c.personality ?? '')
-        setOpeningMessage(c.openingMessage ?? '')
-        setAvatarKey(c.avatarKey ?? '')
+        const next = {
+          name: c.name ?? '',
+          description: c.description ?? '',
+          personality: c.personality ?? '',
+          openingMessage: c.openingMessage ?? '',
+          avatarKey: c.avatarKey ?? '',
+        }
+        setName(next.name)
+        setDescription(next.description)
+        setPersonality(next.personality)
+        setOpeningMessage(next.openingMessage)
+        setAvatarKey(next.avatarKey)
+        baselineRef.current = next
         if (c.avatarUrl) setAvatarPreviewUrl(c.avatarUrl)
         else if (c.avatarKey) setAvatarPreviewUrl(`/api/files/${c.avatarKey}`)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : '加载失败')
-        navigate({ to: '/companions' })
+        onClose?.(false)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -75,7 +98,29 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
     return () => {
       cancelled = true
     }
-  }, [mode, companionId, navigate])
+  }, [mode, companionId, onClose])
+
+  const isDirty = () => {
+    const b = baselineRef.current
+    return (
+      name !== b.name ||
+      description !== b.description ||
+      personality !== b.personality ||
+      openingMessage !== b.openingMessage ||
+      avatarKey !== b.avatarKey
+    )
+  }
+
+  const handleRequestClose = async () => {
+    if (!isDirty()) return true
+    const result = await openDialog<OverlayConfirmResult>(OverlayConfirmDialog, {
+      title: '放弃未保存的更改？',
+      description: '关闭后已填写内容将丢失。',
+      confirmText: '放弃',
+      cancelText: '继续编辑',
+    })
+    return result === 'confirm'
+  }
 
   const handleAvatarChange = async (file: File | null) => {
     if (!file) return
@@ -119,18 +164,16 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
 
     setSaving(true)
     try {
+      let companion: Companion
       if (mode === 'edit' && companionId) {
-        await updateCompanion(companionId, payload).send()
+        companion = await updateCompanion(companionId, payload).send()
         toast.success('保存成功')
-        navigate({ to: '/companions/$companionId/chat', params: { companionId } })
       } else {
-        const created = await createCompanion(payload).send()
+        companion = await createCompanion(payload).send()
         toast.success('创建成功')
-        navigate({
-          to: '/companions/$companionId/chat',
-          params: { companionId: created.id },
-        })
       }
+      await onSuccess?.(companion)
+      onClose?.(true)
     } catch (err) {
       toast.error(extractErrorMessage(err))
     } finally {
@@ -138,52 +181,46 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Spinner className="h-8 w-8" />
-      </div>
-    )
-  }
-
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <div className="mb-6 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/companions' })}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">{mode === 'create' ? '新建伴侣' : '编辑伴侣'}</h1>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <section className="space-y-4 rounded-xl border p-4">
-          <h2 className="font-medium">角色形象</h2>
-          <div className="flex items-start gap-4">
-            <div
-              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted text-2xl font-medium"
-              style={{
-                backgroundImage: avatarPreviewUrl ? `url(${avatarPreviewUrl})` : undefined,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            >
-              {!avatarPreviewUrl && (name.charAt(0) || '?')}
+    <CompanionPanelShell
+      tier="form"
+      title={mode === 'create' ? '新建伴侣' : '编辑伴侣'}
+      description="填写简要人设后即可开始对话"
+      onClose={onClose}
+      onRequestClose={handleRequestClose}
+    >
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Spinner className="h-8 w-8" />
+        </div>
+      ) : (
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium">角色形象</h2>
+            <div className="flex items-start gap-4">
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted text-xl font-medium"
+                style={{
+                  backgroundImage: avatarPreviewUrl ? `url(${avatarPreviewUrl})` : undefined,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
+                {!avatarPreviewUrl && (name.charAt(0) || '?')}
+              </div>
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="avatar-file">头像（可选）</Label>
+                <Input
+                  id="avatar-file"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={uploading}
+                  onChange={(e) => void handleAvatarChange(e.target.files?.[0] ?? null)}
+                />
+              </div>
             </div>
-            <div className="space-y-2 flex-1">
-              <Label htmlFor="avatar-file">头像（可选）</Label>
-              <Input
-                id="avatar-file"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                disabled={uploading}
-                onChange={(e) => void handleAvatarChange(e.target.files?.[0] ?? null)}
-              />
-              {uploading && <p className="text-xs text-muted-foreground">上传中…</p>}
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="space-y-4 rounded-xl border p-4">
           <div className="space-y-2">
             <Label htmlFor="name">名称 *</Label>
             <Input
@@ -201,7 +238,6 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="用几句话介绍这个角色"
               required
             />
           </div>
@@ -212,7 +248,6 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
               value={personality}
               onChange={(e) => setPersonality(e.target.value)}
               rows={3}
-              placeholder="性格、说话方式、相处风格"
               required
             />
           </div>
@@ -223,20 +258,23 @@ export function CompanionFormPage({ mode, companionId }: CompanionFormPageProps)
               value={openingMessage}
               onChange={(e) => setOpeningMessage(e.target.value)}
               rows={2}
-              placeholder="首次进入聊天时的欢迎语"
             />
           </div>
-        </section>
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => navigate({ to: '/companions' })}>
-            取消
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? '保存中…' : mode === 'create' ? '创建并聊天' : '保存'}
-          </Button>
-        </div>
-      </form>
-    </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleRequestClose().then((ok) => ok && onClose?.(false))}
+            >
+              取消
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? '保存中…' : mode === 'create' ? '创建并聊天' : '保存'}
+            </Button>
+          </div>
+        </form>
+      )}
+    </CompanionPanelShell>
   )
 }

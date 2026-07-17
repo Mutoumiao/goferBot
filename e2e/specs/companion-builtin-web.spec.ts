@@ -72,14 +72,15 @@ test.describe('AI 伴侣双轨列表与简表（Web）', () => {
       openingMessage: '你好，我是简表测试伴侣。',
     })
 
-    // 创建成功后进聊天
-    await expect(page).toHaveURL(/\/companions\/[^/]+\/chat/, { timeout: 15_000 })
+    // 创建成功后回到微信式工作台，右侧打开聊天
+    await expect(page).toHaveURL(/\/companions\/?$/, { timeout: 15_000 })
+    await expect(page.getByTestId('companions-workspace')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByTestId('companion-chat-panel')).toBeVisible({ timeout: 20_000 })
 
-    // 回到我的列表应能看到该卡
-    await page.goto('/companions', { waitUntil: 'domcontentloaded' })
-    await page.getByRole('tab', { name: /我的伴侣/ }).click()
-    await expect(page.getByRole('heading', { name, exact: true })).toBeVisible({
-      timeout: 15_000,
-    })
+    // 左侧「我的」列表应能看到该联系人
+    await companion.selectTab('mine')
+    await expect(
+      page.locator('[data-testid^="companion-contact-"]').filter({ hasText: name }).first(),
+    ).toBeVisible({ timeout: 15_000 })
   })
 })
