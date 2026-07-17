@@ -1,5 +1,6 @@
 import { ThumbsDown, ThumbsUp } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { ChatPendingIndicator } from '@/components/chat-pending-indicator'
 import { Button } from '@/components/ui/button'
 import type { CompanionMessage } from '../types'
 import { CompanionTypingIndicator } from './CompanionTypingIndicator'
@@ -15,16 +16,20 @@ export function CompanionMessageItem({ message, onFeedback }: CompanionMessageIt
   const isStreaming = message.streaming
   const isPositive = message.feedback?.rating === 'positive'
   const isNegative = message.feedback?.rating === 'negative'
+  const hasContent = Boolean(message.content?.trim())
 
-  const body = isStreaming ? (
-    <CompanionTypingIndicator content={message.content} />
-  ) : isUser ? (
-    <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-  ) : (
-    <div className="prose prose-sm max-w-none dark:prose-invert">
-      <ReactMarkdown>{message.content || ' '}</ReactMarkdown>
-    </div>
-  )
+  const body =
+    isStreaming && !hasContent ? (
+      <ChatPendingIndicator label="正在思考…" testId="companion-pending-indicator" />
+    ) : isStreaming ? (
+      <CompanionTypingIndicator content={message.content} />
+    ) : isUser ? (
+      <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+    ) : (
+      <div className="prose prose-sm max-w-none dark:prose-invert">
+        <ReactMarkdown>{message.content || ' '}</ReactMarkdown>
+      </div>
+    )
 
   return (
     <div className={`group flex ${isUser ? 'justify-end' : 'justify-start'}`}>

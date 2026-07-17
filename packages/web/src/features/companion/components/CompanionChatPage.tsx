@@ -6,6 +6,7 @@ import { useChat } from '@ai-sdk/react'
 import type { UIMessage } from 'ai'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { ChatPendingIndicator } from '@/components/chat-pending-indicator'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { CompanionChatTransport } from '../companion-chat-transport'
@@ -320,6 +321,14 @@ export function CompanionChatPage({
       })
   }, [messages, isStreaming, feedbackMap])
 
+  const lastDisplay = displayMessages[displayMessages.length - 1]
+  /** 已发送、助手气泡未出现或尚无正文时展示独立等待气泡 */
+  const showPendingBubble =
+    isStreaming &&
+    (!lastDisplay ||
+      lastDisplay.role === 'user' ||
+      (lastDisplay.role === 'assistant' && !lastDisplay.content?.trim()))
+
   const quickPrompts = companion?.openingMessage
     ? [companion.openingMessage, ...DEFAULT_QUICK_PROMPTS]
     : DEFAULT_QUICK_PROMPTS
@@ -327,7 +336,7 @@ export function CompanionChatPage({
   /** 仅客户端开场白（id 以 opening- 开头）时仍展示快捷提示，避免「有开场白就无法点提示」 */
   const onlyOpeningUi =
     displayMessages.length > 0 && displayMessages.every((m) => m.id.startsWith('opening-'))
-  const showQuickPrompts = displayMessages.length === 0 || onlyOpeningUi
+  const showQuickPrompts = (displayMessages.length === 0 || onlyOpeningUi) && !isStreaming
 
   if (!companion) {
     return (
@@ -358,7 +367,7 @@ export function CompanionChatPage({
             <div className="flex flex-col items-center gap-3 py-8">
               <Spinner className="h-6 w-6" />
             </div>
-          ) : displayMessages.length === 0 ? (
+          ) : displayMessages.length === 0 && !isStreaming ? (
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">
                 <h3 className="text-lg font-medium">开始新对话</h3>
@@ -377,6 +386,17 @@ export function CompanionChatPage({
               {displayMessages.map((msg) => (
                 <CompanionMessageItem key={msg.id} message={msg} onFeedback={handleFeedback} />
               ))}
+              {/* 用户消息已上屏、助手气泡尚未挂载时的等待态 */}
+              {showPendingBubble && lastDisplay?.role !== 'assistant' && (
+                <div className="flex justify-start" data-testid="companion-pending-bubble">
+                  <div className="max-w-[85%] rounded-2xl bg-muted/60 px-4 py-2">
+                    <ChatPendingIndicator
+                      label="正在思考…"
+                      testId="companion-pending-indicator"
+                    />
+                  </div>
+                </div>
+              )}
               {showQuickPrompts ? (
                 <CompanionQuickPrompts
                   prompts={DEFAULT_QUICK_PROMPTS}
