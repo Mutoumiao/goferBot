@@ -12,7 +12,6 @@ import { xChatRequest } from '@/api/x-chat'
 import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
 import { openDialog } from '@/overlays/services/overlay-service'
 import { useConversationStore } from '@/stores/conversation.store'
-import { useWorkspaceStore } from '@/stores/workspace.store'
 import { getPendingMessageKey } from './constants'
 import { GoferChatProvider } from './providers/GoferChatProvider'
 import { useChatStore } from './store'
@@ -158,12 +157,11 @@ export interface PendingMessage {
 }
 
 /**
- * 业务编排：临时会话提交 → 创建真实会话 → 持久化 pending message → 返回新会话 ID
- * 组件只需调用此函数并执行导航
+ * 业务编排：临时会话提交 → 创建真实会话 → 持久化 pending message → 返回 Session.id
+ * 调用方负责 setSelectedSessionId(sessionId)（本地状态，不写 URL）
  */
 export async function submitTempChat(
   content: string,
-  tabId: string,
   options?: { knowledgeBaseIds?: string[] },
 ): Promise<string | null> {
   const newSession = await createChatSession()
@@ -173,52 +171,69 @@ export async function submitTempChat(
     knowledgeBaseIds: options?.knowledgeBaseIds,
   }
   sessionStorage.setItem(getPendingMessageKey(newSession.id), JSON.stringify(pending))
-
-  // 更新当前 tab 的 conversationId 与标题，不再替换路由
-  const workspace = useWorkspaceStore.getState()
-  workspace.updateTab(tabId, {
-    conversationId: newSession.id,
-    title: newSession.title,
-  })
-
   return newSession.id
 }
 
+/** 模块级 in-flight，多组件 mount 同帧只发一次 providers 请求 */
+let providersInflight: Promise<void> | null = null
+
 /**
  * 业务编排：加载模型 providers 列表
- * 只在首次加载（store 中无数据）时请求，避免每次进入 chat 页面重复调用
+ * - 已成功加载则跳过（force 可强制重拉）
+ * - in-flight 合并，避免 ChatsPage + ChatSessionPanel 等同帧双请求
  *
  * 后端 /settings/chat/providers 返回 provider 级别 { builtIn, custom }，
  * 每个 provider 含 models 数组。此处展开为模型级别条目（key = {providerId}#{modelName}），
  * 仅包含 enabled 的 LLM 模型。
  */
-export async function fetchProviders(): Promise<void> {
+export async function fetchProviders(options?: { force?: boolean }): Promise<void> {
   const store = useChatStore.getState()
-  // 若已加载过 providers，不再重复请求
-  if (store.availableProviders.length > 0) return
-  if (store.isInitLoading) return
-  store.setIsInitLoading(true)
-  store.setInitError(null)
-  try {
-    const res = await getChatProviders().send()
-    const toListItems = (providers: ModelProvider[], isBuiltin: boolean): ProviderListItem[] =>
-      providers.flatMap((p) =>
-        p.models
-          .filter((m) => m.type === 'llm' && m.enabled)
-          .map((m) => ({
-            key: `${p.id}#${m.name}`,
-            name: p.name,
-            model: m.name,
-            isBuiltin,
-          })),
-      )
-    store.setAvailableProviders([
-      ...toListItems(res?.builtIn ?? [], true),
-      ...toListItems(res?.custom ?? [], false),
-    ])
-  } catch (e) {
-    store.setInitError(e instanceof Error ? e.message : '初始化失败')
-  } finally {
-    store.setIsInitLoading(false)
-  }
+  if (!options?.force && store.availableProviders.length > 0) return
+  if (providersInflight) return providersInflight
+
+  providersInflight = (async () => {
+    const s = useChatStore.getState()
+    s.setIsInitLoading(true)
+    s.setInitError(null)
+    try {
+      const res = await getChatProviders().send()
+      // 兼容 { data: { builtIn, custom } } 已被 alova 解包 / 未解包两种情况
+      const payload =
+        res && typeof res === 'object' && 'builtIn' in res
+          ? res
+          : ((res as { data?: { builtIn?: ModelProvider[]; custom?: ModelProvider[] } })?.data ??
+            {})
+      const toListItems = (providers: ModelProvider[], isBuiltin: boolean): ProviderListItem[] =>
+        (providers ?? []).flatMap((p) => {
+          if (!p || p.enabled === false) return []
+          const models = Array.isArray(p.models) ? p.models : []
+          return models
+            .filter((m) => {
+              if (!m?.name) return false
+              // type 缺省按 llm；enabled 缺省视为 true（后端 zod default 可能被序列化省略）
+              const type = m.type ?? 'llm'
+              const enabled = m.enabled !== false
+              return type === 'llm' && enabled
+            })
+            .map((m) => ({
+              key: `${p.id}#${m.name}`,
+              name: p.name || p.id,
+              model: m.name,
+              isBuiltin,
+            }))
+        })
+      const items = [
+        ...toListItems(payload.builtIn ?? [], true),
+        ...toListItems(payload.custom ?? [], false),
+      ]
+      s.setAvailableProviders(items)
+    } catch (e) {
+      s.setInitError(e instanceof Error ? e.message : '初始化失败')
+    } finally {
+      s.setIsInitLoading(false)
+      providersInflight = null
+    }
+  })()
+
+  return providersInflight
 }

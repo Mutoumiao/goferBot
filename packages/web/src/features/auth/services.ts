@@ -18,6 +18,30 @@ export interface RegisterResult {
 const REMEMBER_EMAIL_KEY = 'goferbot_remember_email'
 
 let _fetchMePromise: Promise<boolean> | null = null
+/** 递增后使仍在飞行的 /auth/me 结果作废（超时闸门用，避免晚到 setUser） */
+let _fetchMeEpoch = 0
+
+/**
+ * 作废进行中的 fetchMe 写库结果。
+ * waitForAuthInit 超时后调用，防止 3s 闸门已判定未登录、随后 me 成功又把 isAuthenticated 拉回 true。
+ */
+export function invalidatePendingFetchMe(): void {
+  _fetchMeEpoch += 1
+}
+
+function isAuthSessionFailure(err: unknown): boolean {
+  const status = (err as { status?: number }).status
+  if (status === 401 || status === 403) return true
+  const code = (err as { code?: string }).code
+  if (code === 'NO_AUTH_TOKEN' || code === 'INVALID_REFRESH_TOKEN') return true
+  const msg = err instanceof Error ? err.message : String((err as { message?: string }).message ?? '')
+  return (
+    msg === 'Auth refresh failed' ||
+    msg === 'Session expired' ||
+    msg === 'NO_AUTH_TOKEN' ||
+    msg === 'Refresh error'
+  )
+}
 
 // Error message whitelist for security - only allow safe characters
 function sanitizeErrorMessage(message: string): string {
@@ -157,22 +181,33 @@ export async function refreshAuth(): Promise<boolean> {
 
 /**
  * 获取当前用户信息（带互斥锁，防止并发请求）
- * 失败时设置 isInitialized 并在 401/403 时清除 auth 状态
+ *
+ * 失败策略：
+ * - 鉴权失败（401/403 / refresh 失败 / NO_AUTH_TOKEN）：clearAuth
+ * - 网络错误 / 5xx：仅 setInitialized，保留 user 缓存避免闪烁，isAuthenticated=false
+ * - 无论何种失败都标记 isInitialized，禁止上层因「未初始化」反复重试
+ * - 若在飞行期间被 invalidatePendingFetchMe，忽略写库（超时闸门竞态）
  */
 export async function fetchMe(): Promise<boolean> {
   if (_fetchMePromise) return _fetchMePromise
 
+  const epoch = _fetchMeEpoch
+
   _fetchMePromise = (async (): Promise<boolean> => {
     try {
       const user = await getMe().send()
+      if (epoch !== _fetchMeEpoch) return false
       useAuthStore.getState().setUser(user)
       return true
     } catch (err) {
-      const status = (err as { status?: number }).status
-      if (status === 401 || status === 403) {
+      if (epoch !== _fetchMeEpoch) return false
+      if (isAuthSessionFailure(err)) {
         useAuthStore.getState().clearAuth()
+      } else {
+        // 后端不可达或非鉴权错误：结束初始化，保持 isAuthenticated=false
+        // 不触发 full-page 跳转；由路由 beforeLoad 决定去向
+        useAuthStore.setState({ isInitialized: true, isAuthenticated: false })
       }
-      useAuthStore.setState({ isInitialized: true })
       return false
     } finally {
       _fetchMePromise = null
@@ -208,6 +243,13 @@ export async function logoutUser(): Promise<void> {
     await logout().send()
   } catch {
   } finally {
+    try {
+      window.__goferKeepAliveDestroyAll?.()
+    } catch {
+      // ignore
+    }
+    const { clearUserClientState } = await import('@/lib/session-cleanup')
+    clearUserClientState()
     useAuthStore.getState().clearAuth()
     toast.success('已退出登录')
     window.location.href = ROUTES_REGISTER.login.path

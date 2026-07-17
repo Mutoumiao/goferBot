@@ -1,5 +1,5 @@
 import { FolderIcon, Upload } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { openDialog } from '@/overlays/services/overlay-service'
@@ -234,37 +234,28 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     return () => clearTimeout(timer)
   }, [currentKbId, currentFolderId, searchQuery, sortParams])
 
-  const handleFolderClick = useCallback(
-    (folder: Folder) => {
-      setCurrentFolderId(folder.id)
-    },
-    [setCurrentFolderId],
-  )
+  function handleFolderClick(folder: Folder) {
+    setCurrentFolderId(folder.id)
+  }
 
-  const handleDocumentClick = useCallback(async (doc: DocumentItem) => {
+  async function handleDocumentClick(doc: DocumentItem) {
     const preview = await previewDocument(doc.id)
     if (!preview) return
     const PreviewDialog = (await import('@/overlays/dialogs/PreviewDialog')).default
     await openDialog(PreviewDialog, { document: doc, preview })
-  }, [])
+  }
 
-  const handleNavigate = useCallback(
-    (folderId: string | null) => {
-      setCurrentFolderId(folderId)
-    },
-    [setCurrentFolderId],
-  )
+  function handleNavigate(folderId: string | null) {
+    setCurrentFolderId(folderId)
+  }
 
-  const handleOpenItem = useCallback(
-    (item: Folder | DocumentItem) => {
-      if (!('status' in item)) {
-        setCurrentFolderId(item.id)
-      }
-    },
-    [setCurrentFolderId],
-  )
+  function handleOpenItem(item: Folder | DocumentItem) {
+    if (!('status' in item)) {
+      setCurrentFolderId(item.id)
+    }
+  }
 
-  const handleRenameItem = useCallback(async (item: Folder | DocumentItem) => {
+  async function handleRenameItem(item: Folder | DocumentItem) {
     const RenameItemDialog = (await import('@/overlays/dialogs/RenameItemDialog')).default
     await openDialog(RenameItemDialog, {
       itemName: item.name,
@@ -273,9 +264,9 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
         await renameItem(item, newName)
       },
     })
-  }, [])
+  }
 
-  const handleDeleteItem = useCallback(async (item: Folder | DocumentItem) => {
+  async function handleDeleteItem(item: Folder | DocumentItem) {
     const DeleteItemDialog = (await import('@/overlays/dialogs/DeleteItemDialog')).default
     await openDialog(DeleteItemDialog, {
       itemName: item.name,
@@ -284,39 +275,33 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
         await removeItem(item)
       },
     })
-  }, [])
+  }
 
-  const handleMoveItem = useCallback(
-    async (item: Folder | DocumentItem) => {
-      const MoveCopyDialog = (await import('./MoveCopyDialog')).default
-      await openDialog(MoveCopyDialog, {
-        mode: 'move',
-        item,
-        onConfirm: async () => {
-          if (!currentKbId) return
-          await loadKbItems(currentKbId, currentFolderId, sortParams)
-        },
-      })
-    },
-    [currentKbId, currentFolderId, sortParams],
-  )
+  async function handleMoveItem(item: Folder | DocumentItem) {
+    const MoveCopyDialog = (await import('./MoveCopyDialog')).default
+    await openDialog(MoveCopyDialog, {
+      mode: 'move',
+      item,
+      onConfirm: async () => {
+        if (!currentKbId) return
+        await loadKbItems(currentKbId, currentFolderId, sortParams)
+      },
+    })
+  }
 
-  const handleCopyItem = useCallback(
-    async (item: Folder | DocumentItem) => {
-      const MoveCopyDialog = (await import('./MoveCopyDialog')).default
-      await openDialog(MoveCopyDialog, {
-        mode: 'copy',
-        item,
-        onConfirm: async () => {
-          if (!currentKbId) return
-          await loadKbItems(currentKbId, currentFolderId, sortParams)
-        },
-      })
-    },
-    [currentKbId, currentFolderId, sortParams],
-  )
+  async function handleCopyItem(item: Folder | DocumentItem) {
+    const MoveCopyDialog = (await import('./MoveCopyDialog')).default
+    await openDialog(MoveCopyDialog, {
+      mode: 'copy',
+      item,
+      onConfirm: async () => {
+        if (!currentKbId) return
+        await loadKbItems(currentKbId, currentFolderId, sortParams)
+      },
+    })
+  }
 
-  const handleCreateFolder = useCallback(async () => {
+  async function handleCreateFolder() {
     if (!currentKbId) return
     const CreateFolderDialog = (await import('@/overlays/dialogs/CreateFolderDialog')).default
     await openDialog(CreateFolderDialog, {
@@ -324,9 +309,9 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
         await addFolder(currentKbId, name, currentFolderId)
       },
     })
-  }, [currentKbId, currentFolderId])
+  }
 
-  const handleRetry = useCallback(() => {
+  function handleRetry() {
     if (!currentKbId) return
     const trimmed = searchQuery.trim()
     if (trimmed) {
@@ -334,11 +319,11 @@ export function FileBrowser({ kbName }: FileBrowserProps) {
     } else {
       loadKbItems(currentKbId, currentFolderId, sortParams)
     }
-  }, [currentKbId, currentFolderId, searchQuery, sortParams])
+  }
 
-  const handleOpenUploadManager = useCallback(() => {
+  function handleOpenUploadManager() {
     void openUploadManager({ sort: sortParams })
-  }, [sortParams])
+  }
 
   const renderContent = () => {
     if (fileLoading) {

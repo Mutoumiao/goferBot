@@ -1,5 +1,5 @@
 import { App, Button, Card, Checkbox, Collapse, Form, Input, Tag } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { Permission, Role } from '../services'
 import { fetchPermissions, fetchRole, updateRoleService } from '../services'
@@ -15,7 +15,7 @@ export function PermissionMatrix({ roleCode, onBack }: { roleCode: string; onBac
 
   const isSuperAdmin = role?.code === SUPER_ADMIN_ROLE_CODE
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [r, perms] = await Promise.all([fetchRole(roleCode), fetchPermissions()])
       setRole(r)
@@ -24,12 +24,11 @@ export function PermissionMatrix({ roleCode, onBack }: { roleCode: string; onBac
     } catch {
       message.error('加载角色或权限列表失败，请刷新重试')
     }
-  }
+  }, [roleCode])
 
   useEffect(() => {
     void load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleCode])
+  }, [load])
 
   const grouped = useMemo(() => {
     const map = new Map<string, Permission[]>()

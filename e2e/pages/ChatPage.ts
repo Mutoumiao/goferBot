@@ -16,9 +16,9 @@ export class ChatPage {
 
   constructor(page: Page) {
     this.page = page
-    this.homeTextarea = page.getByPlaceholder('询问、总结或让 AI 帮你整理桌面资料...')
+    this.homeTextarea = page.locator('[data-testid="chat-empty-home"] textarea').first()
     this.homeSendButton = page.getByTestId('temp-send-btn')
-    this.sessionInput = page.getByPlaceholder('继续追问，或让 AI 生成需求条目...')
+    this.sessionInput = page.getByPlaceholder(/继续追问|请先选择知识库/)
     this.sessionSendButton = page
       .locator('.ant-design-x-sender-suffix button, button.ant-btn-primary')
       .first()
@@ -29,13 +29,14 @@ export class ChatPage {
     this.assistantBubbles = page.locator(
       '.ant-design-x-bubble-list .ant-design-x-bubble-assistant, [role="assistant"]',
     )
-    this.sideBar = page.locator('aside, [data-slot="sidebar"]').first()
-    this.tabBar = page.locator('[data-slot="tabbar"], nav[class*="tab-bar"]').first()
-    this.homeTitle = page.getByText('今天想从知识库里理解什么？')
-    this.sessionEmptyTitle = page.getByText('开始新对话')
+    this.sideBar = page.getByTestId('icon-rail')
+    this.tabBar = page.getByTestId('tab-bar')
+    this.homeTitle = page.getByTestId('chat-home-greeting')
+    this.sessionEmptyTitle = page.getByText('开始知识库问答')
   }
 
   async waitForHome() {
+    await expect(this.page.getByTestId('chat-empty-home')).toBeVisible({ timeout: 10_000 })
     await expect(this.homeTextarea).toBeVisible({ timeout: 10_000 })
   }
 

@@ -6,5 +6,6 @@ export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
   staticData: {
     meta: ROUTES_REGISTER.profile,
+    keepAlive: true,
   },
 })

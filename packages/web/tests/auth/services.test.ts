@@ -232,17 +232,85 @@ describe('auth services', () => {
 
       expect(result).toBe(true)
       expect(useAuthStore.getState().user).toEqual(mockUser)
+      expect(useAuthStore.getState().isAuthenticated).toBe(true)
+      expect(useAuthStore.getState().isInitialized).toBe(true)
     })
 
-    it('returns false on api failure', async () => {
+    it('returns false and clearAuth on 401', async () => {
+      useAuthStore.setState({ user: mockUser, isAuthenticated: true })
       vi.mocked(getMe).mockReturnValue({
-        send: vi.fn().mockRejectedValue(new Error('unauthorized')),
+        send: vi.fn().mockRejectedValue(Object.assign(new Error('unauthorized'), { status: 401 })),
       } as any)
 
       const result = await fetchCurrentUser()
 
       expect(result).toBe(false)
       expect(useAuthStore.getState().user).toBeNull()
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+      expect(useAuthStore.getState().isInitialized).toBe(true)
+    })
+
+    it('returns false without clearing user cache on network error', async () => {
+      useAuthStore.setState({ user: mockUser, isAuthenticated: false, isInitialized: false })
+      vi.mocked(getMe).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('Failed to fetch')),
+      } as any)
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(false)
+      // 缓存 user 可保留，但不得视为已登录，避免路由误放行
+      expect(useAuthStore.getState().user).toEqual(mockUser)
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+      expect(useAuthStore.getState().isInitialized).toBe(true)
+    })
+
+    it('returns false and marks initialized on 5xx without loop-prone clearAuth skip', async () => {
+      useAuthStore.setState({ user: mockUser, isAuthenticated: false, isInitialized: false })
+      vi.mocked(getMe).mockReturnValue({
+        send: vi
+          .fn()
+          .mockRejectedValue(Object.assign(new Error('Internal Server Error'), { status: 500 })),
+      } as any)
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(false)
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+      expect(useAuthStore.getState().isInitialized).toBe(true)
+    })
+
+    it('clearAuth when refresh failed without status', async () => {
+      useAuthStore.setState({ user: mockUser, isAuthenticated: true, isInitialized: false })
+      vi.mocked(getMe).mockReturnValue({
+        send: vi.fn().mockRejectedValue(new Error('Auth refresh failed')),
+      } as any)
+
+      const result = await fetchCurrentUser()
+
+      expect(result).toBe(false)
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+      expect(useAuthStore.getState().isInitialized).toBe(true)
+    })
+
+    it('ignores late success after invalidatePendingFetchMe', async () => {
+      const { invalidatePendingFetchMe, fetchMe } = await import('@/features/auth/services')
+      let resolveSend!: (v: typeof mockUser) => void
+      vi.mocked(getMe).mockReturnValue({
+        send: vi.fn().mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              resolveSend = resolve
+            }),
+        ),
+      } as any)
+
+      const p = fetchMe()
+      invalidatePendingFetchMe()
+      resolveSend(mockUser)
+      await expect(p).resolves.toBe(false)
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
     })
 
     it('concurrent calls share the same promise', async () => {

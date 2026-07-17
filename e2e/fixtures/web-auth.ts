@@ -13,12 +13,12 @@ export function webCredentials() {
   }
 }
 
-/** 登录并等待进入 /chat/* 工作区 */
+/** 登录并等待进入 /chats 工作区 */
 export async function loginAsWebUser(page: Page): Promise<void> {
   const { email, password } = webCredentials()
   const auth = new AuthPage(page)
   await auth.gotoLogin()
   const res = await auth.login(email, password)
   expect(res.ok(), `Web 登录失败 status=${res.status()} body 可能需检查 CAPTCHA/账号`).toBeTruthy()
-  await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+  await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
 }

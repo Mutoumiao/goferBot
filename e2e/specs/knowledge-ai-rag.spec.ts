@@ -46,7 +46,7 @@ test.describe('Knowledge AI RAG（真实后端）', () => {
     await chatPage.selectKnowledgeBaseByName(kbName)
     await chatPage.submitFromHome('青瓷茶盏编号是什么？请根据知识库回答，并写出完整编号。')
 
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
     await chatPage.waitForAssistantWithSources(120_000)
 
     await expect(chatPage.sourcesEmpty).toHaveCount(0)

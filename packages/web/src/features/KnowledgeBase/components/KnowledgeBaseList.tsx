@@ -59,8 +59,10 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
       <button
         type="button"
         className={cn(
-          'absolute inset-0 z-0 rounded-xl transition-colors',
-          isSelected ? 'bg-[#EEF2FF]' : 'border border-[#E7EAF0] bg-white hover:bg-[#F7F8FA]',
+          'absolute inset-0 z-0 rounded-xl transition-all',
+          isSelected
+            ? 'bg-brand-blue-soft shadow-sm ring-1 ring-brand-blue/20'
+            : 'border border-border-subtle bg-surface-1 hover:bg-surface-2',
         )}
         onClick={handleSelect}
         aria-pressed={isSelected}
@@ -69,11 +71,16 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
       <div className="relative z-10 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-2">
           {entry.isPinned && (
-            <Pin className="h-3 w-3 fill-[#5B7CFA] text-[#5B7CFA]" aria-hidden="true" />
+            <Pin className="h-3 w-3 fill-brand-blue text-brand-blue" aria-hidden="true" />
           )}
-          <BookOpen className={cn('h-4 w-4', isSelected ? 'text-[#5B7CFA]' : 'text-[#9AA3AF]')} />
+          <BookOpen
+            className={cn('h-4 w-4', isSelected ? 'text-brand-blue' : 'text-text-tertiary')}
+          />
           <span
-            className={cn('text-sm font-medium', isSelected ? 'text-[#5B7CFA]' : 'text-[#1F2328]')}
+            className={cn(
+              'text-sm font-medium',
+              isSelected ? 'text-brand-blue' : 'text-text-primary',
+            )}
           >
             {entry.name}
           </span>
@@ -83,7 +90,7 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
             <button
               type="button"
               className={cn(
-                'pointer-events-auto flex h-6 w-6 items-center justify-center rounded-md text-[#9AA3AF] transition-opacity hover:bg-[#F7F8FA]',
+                'pointer-events-auto flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-opacity hover:bg-surface-3',
                 isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
               )}
               onClick={(e) => e.stopPropagation()}
@@ -132,7 +139,7 @@ function KbListItem({ entry, isSelected, onSelect, onPin, onRename, onDelete }: 
       <span
         className={cn(
           'relative z-10 text-xs pointer-events-none',
-          isSelected ? 'text-[#5B7CFA]/80' : 'text-[#9AA3AF]',
+          isSelected ? 'text-brand-blue/80' : 'text-text-tertiary',
         )}
       >
         {entry.description || `${entry.fileCount ?? 0} 个文件`}
@@ -218,21 +225,24 @@ export function KnowledgeBaseList({
         sidebarOpen ? 'w-[286px]' : 'w-0',
       )}
     >
-      <aside className="flex h-full w-[286px] flex-col border-r border-[#E7EAF0] bg-[#fcfcfd]">
-        <div className="flex items-center justify-between px-5 pt-6 pb-3">
-          <h2 className="text-lg font-semibold text-[#1F2328]">知识库</h2>
+      <aside className="flex h-full w-[286px] flex-col border-r border-border-panel bg-surface-1">
+        <div className="flex items-center justify-between border-b border-border-panel px-5 pb-3 pt-5">
+          <div>
+            <h2 className="text-[15px] font-semibold tracking-tight text-text-primary">知识库</h2>
+            <p className="mt-0.5 text-[11px] text-text-tertiary">文档与同屏问答</p>
+          </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-[#E7EAF0] bg-white transition-colors hover:bg-[#F7F8FA]"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-default bg-surface-1 shadow-sm transition-colors hover:bg-surface-3"
               onClick={handleCreate}
               aria-label="新建知识库"
             >
-              <Plus className="h-4 w-4 text-[#5E6673]" />
+              <Plus className="h-4 w-4 text-text-secondary" />
             </button>
             <button
               type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-[#9AA3AF] transition-colors hover:bg-[#F7F8FA] hover:text-[#5E6673]"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-surface-3 hover:text-text-secondary"
               onClick={onToggle}
               title="收起知识库列表"
               aria-label="收起知识库列表"
@@ -242,28 +252,28 @@ export function KnowledgeBaseList({
           </div>
         </div>
 
-        <div className="mx-5 mb-4">
-          <div className="flex items-center gap-2 rounded-lg bg-[#F7F8FA] px-3 py-2.5">
-            <Search className="h-4 w-4 text-[#9AA3AF]" />
+        <div className="mx-4 mb-3 mt-3">
+          <div className="flex items-center gap-2 rounded-xl border border-border-subtle bg-surface-1 px-3 py-2.5 shadow-sm">
+            <Search className="h-4 w-4 text-text-tertiary" />
             <input
               id="kb-search"
               type="text"
               placeholder="搜索知识库"
               aria-label="搜索知识库"
               maxLength={100}
-              className="flex-1 bg-transparent text-sm text-[#1F2328] outline-none placeholder:text-[#9AA3AF]"
+              className="flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-tertiary"
             />
           </div>
         </div>
 
         <nav className="flex-1 overflow-auto px-5 pb-4">
-          {kbLoading ? (
+          {kbLoading && entries.length === 0 ? (
             <div className="space-y-2">
               <KbSkeletonCard />
               <KbSkeletonCard />
               <KbSkeletonCard />
             </div>
-          ) : loadError ? (
+          ) : loadError && entries.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8">
               <p className="text-xs text-destructive">{loadError}</p>
               <Button variant="outline" size="sm" onClick={onRetry}>

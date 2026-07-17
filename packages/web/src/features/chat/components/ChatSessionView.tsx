@@ -1,15 +1,19 @@
-import { Bubble, Sender } from '@ant-design/x'
+import { Bubble } from '@ant-design/x'
 import { XMarkdown } from '@ant-design/x-markdown'
-import { AlertCircleIcon, Paperclip, XIcon } from 'lucide-react'
+import type { ChatSourceItem } from '@goferbot/data'
+import { AlertCircleIcon, XIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { GoferInput, GoferMessage } from '../providers/GoferChatProvider'
 import { fetchProviders } from '../services'
 import { useChatStore } from '../store'
-import { KnowledgeBaseSelector } from './KnowledgeBaseSelector'
-import { ProviderSelector } from './ProviderSelector'
-import { SourceCitations } from './SourceCitations'
+import { ChatComposer } from './ChatComposer'
+import { SourceCitations, SourceDocsFloatingPanel } from './SourceCitations'
+
+function retryFetchProviders() {
+  void fetchProviders({ force: true })
+}
 
 interface ChatSessionViewProps {
   conversationId: string
@@ -42,18 +46,21 @@ export function ChatSessionView({
 }: ChatSessionViewProps) {
   const [inputValue, setInputValue] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  /** 右上角参考文档浮层（按消息点击展开） */
+  const [panelSources, setPanelSources] = useState<ChatSourceItem[] | null>(null)
 
-  const { isLoadingHistory, error, availableProviders, isInitLoading, initError, clearError } =
-    useChatStore()
+  // 细粒度订阅，避免 loadHistory / setActiveSession 等无关字段触发整页重渲染
+  const isLoadingHistory = useChatStore((s) => s.isLoadingHistory)
+  const error = useChatStore((s) => s.error)
+  const availableProviders = useChatStore((s) => s.availableProviders)
+  const isInitLoading = useChatStore((s) => s.isInitLoading)
+  const initError = useChatStore((s) => s.initError)
+  const clearError = useChatStore((s) => s.clearError)
 
   const handleSubmit = useCallback(
     (content: string) => {
       const trimmed = content.trim()
       if (!trimmed) return
-      if (!conversationId) {
-        setErrorMessage('会话尚未就绪，请稍候重试')
-        return
-      }
       if (selectedKbIds.length === 0) {
         setErrorMessage('请先选择至少一个知识库')
         return
@@ -63,7 +70,7 @@ export function ChatSessionView({
       onRequest({
         response_mode: 'streaming',
         query: trimmed,
-        conversation_id: conversationId,
+        conversation_id: conversationId || '',
         provider_key: selectedProviderKey ?? undefined,
         knowledge_base_ids: selectedKbIds,
         retrieval_mode: 'strict',
@@ -71,6 +78,10 @@ export function ChatSessionView({
     },
     [conversationId, selectedProviderKey, selectedKbIds, onRequest],
   )
+
+  function handleOpenSources(sources: ChatSourceItem[]) {
+    setPanelSources(sources)
+  }
 
   const bubbleItems = xMessages.map(({ id, message, status }) => ({
     key: id,
@@ -81,34 +92,41 @@ export function ChatSessionView({
       message.role === 'assistant'
         ? (content: string) => (
             <div>
+              <SourceCitations
+                sources={message.sources}
+                retrievalEmpty={message.retrieval_empty}
+                onOpenPanel={handleOpenSources}
+              />
               <XMarkdown
                 content={content}
                 streaming={{
                   hasNextChunk: status === 'loading' || status === 'updating',
                 }}
               />
-              <SourceCitations
-                sources={message.sources}
-                retrievalEmpty={message.retrieval_empty}
-              />
             </div>
           )
         : undefined,
   }))
 
-  // 错误自动清除
   useEffect(() => {
     if (!error) return
     const timer = setTimeout(() => clearError(), 5000)
     return () => clearTimeout(timer)
   }, [error, clearError])
 
-  const canSend = Boolean(inputValue.trim()) && selectedKbIds.length > 0
+  // 切换会话时关闭浮层
+  useEffect(() => {
+    setPanelSources(null)
+  }, [conversationId])
 
   return (
-    <div className="relative flex h-full flex-col bg-white">
-      {/* 消息区 — 占满上方空间 */}
-      <div className="flex-1 overflow-y-auto">
+    <div className="relative flex h-full flex-col bg-surface-1" data-testid="chat-session-view">
+      {/* 右上角参考文档浮层 */}
+      {panelSources && (
+        <SourceDocsFloatingPanel sources={panelSources} onClose={() => setPanelSources(null)} />
+      )}
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[760px] px-4 py-8">
           {isLoadingHistory && (
             <div className="flex flex-col items-center gap-3 py-8">
@@ -154,7 +172,7 @@ export function ChatSessionView({
 
           {errorMessage && (
             <div
-              className="rounded-lg border border-destructive/30 bg-destructive/10 p-4"
+              className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4"
               data-testid="error-banner"
             >
               <p className="text-sm text-destructive-foreground">{errorMessage}</p>
@@ -174,89 +192,36 @@ export function ChatSessionView({
         </div>
       </div>
 
-      {/* 底部悬浮输入区 */}
+      {/* 底部统一输入胶囊（与首页 ChatEmptyHome 同一组件） */}
       <div className="flex justify-center px-4 pb-6 pt-2">
-        <Sender
+        <ChatComposer
           value={inputValue}
-          onChange={setInputValue}
+          onChange={(v) => {
+            setInputValue(v)
+            if (errorMessage) setErrorMessage(null)
+          }}
           onSubmit={handleSubmit}
-          onCancel={onAbort}
+          onAbort={onAbort}
           loading={isRequesting}
+          selectedKbIds={selectedKbIds}
+          onChangeKbIds={onChangeKbIds}
+          selectedProviderKey={selectedProviderKey}
+          onChangeProvider={onChangeProvider}
+          providers={availableProviders}
+          isInitLoading={isInitLoading}
+          initError={initError}
+          onRetryProviders={retryFetchProviders}
+          error={errorMessage}
+          showDisclaimer
           placeholder={
             selectedKbIds.length === 0
               ? '请先选择知识库，再输入问题…'
-              : '继续追问，或让 AI 基于知识库回答…'
+              : '继续提问…'
           }
-          submitType="enter"
-          autoSize={{ minRows: 3, maxRows: 6 }}
-          footer={
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-[34px] w-[34px] rounded-xl bg-surface-2 text-text-secondary hover:bg-surface-3"
-                  title="添加附件"
-                  onClick={() => {}}
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <KnowledgeBaseSelector
-                  selectedIds={selectedKbIds}
-                  onChange={onChangeKbIds}
-                  disabled={isRequesting}
-                  required
-                />
-                <ProviderSelector
-                  providers={availableProviders}
-                  selectedKey={selectedProviderKey}
-                  onChange={onChangeProvider}
-                  disabled={isRequesting || isInitLoading}
-                />
-                {initError && !isInitLoading && (
-                  <button
-                    type="button"
-                    data-testid="init-retry-btn"
-                    onClick={() => void fetchProviders()}
-                    className="text-xs text-brand-primary hover:underline"
-                  >
-                    模型列表加载失败，点击重试
-                  </button>
-                )}
-              </div>
-            </div>
-          }
-          suffix={(_, { components }) => {
-            const { SendButton, LoadingButton } = components
-            return isRequesting ? (
-              <LoadingButton type="default" />
-            ) : (
-              <SendButton
-                type="primary"
-                disabled={!canSend}
-                style={{
-                  borderRadius: 8,
-                  width: 38,
-                  height: 38,
-                  minWidth: 38,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              />
-            )
-          }}
-          styles={{
-            input: {
-              fontSize: 15,
-              color: 'var(--text-primary)',
-            },
-          }}
-          className="w-full max-w-[780px] rounded-xl shadow-[0_16px_38px_rgba(0,0,0,0.08)]"
+          sendTestId="session-send-btn"
         />
       </div>
 
-      {/* 错误 toast */}
       {error && (
         <div className="absolute bottom-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-error/20 bg-surface-1 px-4 py-2.5 text-sm text-error shadow-xl">
           <AlertCircleIcon className="size-4" />

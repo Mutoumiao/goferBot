@@ -1,5 +1,4 @@
 import { Copy, FolderInput, FolderOpen, FolderPlus, Pencil, Trash2 } from 'lucide-react'
-import { useCallback } from 'react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -48,25 +47,25 @@ export function FileContextMenu({
   onCopy,
   onCreateFolder,
 }: FileContextMenuProps) {
-  const handleOpen = useCallback(() => {
+  function handleOpen() {
     if (item && onOpen) onOpen(item)
-  }, [item, onOpen])
+  }
 
-  const handleRename = useCallback(() => {
+  function handleRename() {
     if (item && onRename) onRename(item)
-  }, [item, onRename])
+  }
 
-  const handleDelete = useCallback(() => {
+  function handleDelete() {
     if (item && onDelete) onDelete(item)
-  }, [item, onDelete])
+  }
 
-  const handleMove = useCallback(() => {
+  function handleMove() {
     if (item && onMove) onMove(item)
-  }, [item, onMove])
+  }
 
-  const handleCopy = useCallback(() => {
+  function handleCopy() {
     if (item && onCopy) onCopy(item)
-  }, [item, onCopy])
+  }
 
   const isFolder = item ? !('status' in item) : false
 

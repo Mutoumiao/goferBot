@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface PasswordStrengthResult {
   score: number
@@ -42,15 +42,18 @@ export function usePasswordStrength(options?: UsePasswordStrengthOptions) {
     color: 'bg-border-default',
   })
 
-  const evaluate = useCallback(
-    (password: string) => {
-      const result = evaluatePassword(password)
-      setStrength(result)
-      options?.onStrengthChange?.(result)
-      return result
-    },
-    [options],
-  )
+  const onStrengthChangeRef = useRef(options?.onStrengthChange)
+
+  useEffect(() => {
+    onStrengthChangeRef.current = options?.onStrengthChange
+  }, [options])
+
+  const evaluate = useCallback((password: string) => {
+    const result = evaluatePassword(password)
+    setStrength(result)
+    onStrengthChangeRef.current?.(result)
+    return result
+  }, [])
 
   return { strength, evaluate }
 }

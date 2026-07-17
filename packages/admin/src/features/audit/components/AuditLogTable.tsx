@@ -1,6 +1,6 @@
 import { Button, Card, DatePicker, Select, Space, Table, Tag } from 'antd'
 import { Download, RefreshCw } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { AuditLog, AuditQuery } from '../services'
 import { exportAuditLogs, fetchAuditLogs } from '../services'
@@ -11,6 +11,8 @@ export function AuditLogTable() {
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState<AuditQuery>({ page: 1, pageSize: 20 })
   const [filters, setFilters] = useState<{ action?: string; sensitiveOnly?: boolean }>({})
+
+  const initialQueryRef = useRef<AuditQuery>({ page: 1, pageSize: 20 })
 
   const load = useCallback(async (q: AuditQuery) => {
     setLoading(true)
@@ -24,9 +26,8 @@ export function AuditLogTable() {
   }, [])
 
   useEffect(() => {
-    void load(query)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    void load(initialQueryRef.current)
+  }, [load])
 
   const handleSearch = () => {
     void load({ ...query, page: 1, ...filters })

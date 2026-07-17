@@ -387,8 +387,28 @@ async fetchModels(@Body() dto: FetchModelsDto): Promise<FetchModelsResult> {
 | 字段             | 类型     | 默认值    | 说明                 |
 |------------------|----------|-----------|----------------------|
 | defaultProvider  | string   | undefined | 默认聊天提供商 ID    |
-| enabledProviders | string[] | `[]`      | 启用的提供商 ID 列表 |
+| enabledProviders | string[] | `[]`      | 启用的提供商/模型 key 列表（`{providerId}` 或 `{providerId}#{modelName}`） |
 | temperature      | number   | 0.7       | 温度参数（0-2）      |
+
+### Requirement: GET /settings/chat/providers 可用模型列表
+
+`GET /settings/chat/providers` MUST 返回当前用户可见的 Chat 可用模型提供商列表（掩码后的 `builtIn` / `custom`）。列表项为 **Provider 级**（含 `models[]`）；Web 客户端再展开为模型级 key（`{providerId}#{modelName}`）。
+
+#### Scenario: 按 enabledProviders 过滤
+
+- **WHEN** `chat.enabledProviders` 非空
+- **THEN** 响应 `builtIn` MUST 仅包含这些 key 解析出的、且含至少一个启用 LLM 模型的 Provider（同 provider 去重）
+
+#### Scenario: enabledProviders 为空时回退
+
+- **WHEN** `chat.enabledProviders` 为空数组
+- **THEN** 系统 MUST 回退为配置池中所有「已启用且含启用 LLM 模型」的 Provider
+- **AND** MUST NOT 因 enabledProviders 为空而永久返回空列表（池中确有可用 LLM 时）
+
+#### Scenario: 无可用 LLM
+
+- **WHEN** 配置池中不存在任何启用的 LLM 模型
+- **THEN** 响应可返回空 `builtIn`/`custom`，Web 客户端 MUST 允许用户打开选择器并提示配置/重试
 
 ### RagSettings
 

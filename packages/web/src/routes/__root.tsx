@@ -3,10 +3,9 @@ import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { configResponsive } from 'ahooks'
 import { useEffect } from 'react'
-import { fetchCurrentUser } from '@/features/auth/services'
 import { OverlayHost } from '@/overlays/host/OverlayHost'
-import { ROUTES_REGISTER } from '@/router-register'
 import { useAuthStore } from '@/stores/auth'
+import { waitForAuthInit } from '@/utils/wait-for-init'
 import appCss from '../globals.css?url'
 
 /* ========== ahooks 响应式断点全局配置 ========== */
@@ -38,28 +37,23 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
+/**
+ * 认证初始化闸门
+ *
+ * - 统一走 waitForAuthInit（single-flight /auth/me + 超时保护）
+ * - 失败时禁止 window.location 硬跳转：硬跳转会重置 isInitialized，
+ *   而 localStorage 仍保留 user，导致反复请求 /auth/me 死循环
+ * - 路由守卫（beforeLoad）负责未登录时 redirect 到 /login
+ */
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthStore((s) => s._hydrated)
+  const isInitialized = useAuthStore((s) => s.isInitialized)
 
   useEffect(() => {
     if (!hydrated || useAuthStore.getState().isInitialized) return
-
-    // ponytail: HttpOnly Cookie 由浏览器自动携带；有持久化的 user 则尝试刷新当前会话
-    const user = useAuthStore.getState().user
-    if (user) {
-      fetchCurrentUser().then((ok) => {
-        if (!ok) {
-          window.location.href = ROUTES_REGISTER.login.path
-          return
-        }
-        useAuthStore.getState().setInitialized(true)
-      })
-    } else {
-      useAuthStore.getState().setInitialized(true)
-    }
+    void waitForAuthInit()
   }, [hydrated])
 
-  const isInitialized = useAuthStore((s) => s.isInitialized)
   if (!hydrated || !isInitialized) return null
 
   return <>{children}</>

@@ -1,137 +1,102 @@
 import {
   BookOpen,
-  Brain,
-  Clock,
   Heart,
   type LucideIcon,
   MessageCircle,
   Settings,
   Trash2,
-  User,
 } from 'lucide-react'
 import type { FileRoutesByFullPath } from '@/routeTree.gen'
 
-type RoutePath = keyof FileRoutesByFullPath
+type RoutePath = keyof FileRoutesByFullPath | '/chats'
 
 export type RouteKey =
   | 'login'
-  | 'chat'
+  | 'chats'
   | 'companion'
-  | 'companionChat'
-  | 'companionMemories'
   | 'knowledgeBase'
-  | 'history'
   | 'settings'
   | 'recycle'
   | 'profile'
-export type TabRouteKey = Exclude<RouteKey, 'login'>
 
 export interface RouteMeta {
   key: RouteKey
   title: string
-  path: RoutePath
-  singleton: boolean
-  closable: boolean
-  /** lucide-react 图标名，用于 Sidebar 导航项 */
+  path: RoutePath | string
+  /** 是否一级导航可 Keep-Alive 的页面 */
+  keepAlive?: boolean
+  /** lucide-react 图标，用于 Icon Rail */
   icon?: LucideIcon | null
-  /** Sidebar 分区：'primary' 为主导航，'secondary' 为底部导航，不设置则不显示在 Sidebar */
+  /** Icon Rail 分区：primary 主区，secondary 次区，null 不显示 */
   navSection?: 'primary' | 'secondary' | null
+  /** 路由前缀匹配（用于 active 与 navigate） */
+  matchPrefixes?: string[]
   bindTo?: (...args: string[]) => string
 }
 
+/** 路由元数据 + Icon Rail 配置（URL 真相源，无 Tab 工作区语义）。 */
 export const ROUTES_REGISTER = {
   login: {
     key: 'login',
     title: '登录',
-    singleton: true,
-    closable: false,
     path: '/login',
     icon: null,
     navSection: null,
   },
-  chat: {
-    key: 'chat',
-    title: '会话页',
-    singleton: true,
-    closable: true,
-    path: '/chat/$tabId',
+  chats: {
+    key: 'chats',
+    title: '会话',
+    path: '/chats',
     icon: MessageCircle,
-    navSection: null,
-    bindTo: (tabId: string) => `/chat/${tabId}`,
+    navSection: 'primary',
+    keepAlive: true,
+    matchPrefixes: ['/chats'],
   },
   companion: {
     key: 'companion',
     title: 'AI 伴侣',
-    singleton: true,
-    closable: true,
     path: '/companions',
     icon: Heart,
     navSection: 'primary',
-  },
-  companionChat: {
-    key: 'companionChat',
-    title: '伴侣对话',
-    singleton: false,
-    closable: true,
-    path: '/companions/$companionId/chat',
-    icon: MessageCircle,
-    navSection: null,
-    bindTo: (id: string) => `/companions/${id}/chat`,
-  },
-  companionMemories: {
-    key: 'companionMemories',
-    title: '记忆库',
-    singleton: false,
-    closable: true,
-    path: '/companions/$companionId/memories',
-    icon: Brain,
-    navSection: null,
-    bindTo: (id: string) => `/companions/${id}/memories`,
+    keepAlive: true,
+    matchPrefixes: ['/companions'],
   },
   knowledgeBase: {
     key: 'knowledgeBase',
     title: '知识库',
-    singleton: true,
-    closable: true,
     path: '/knowledgeBase',
     icon: BookOpen,
     navSection: 'primary',
-  },
-  history: {
-    key: 'history',
-    title: '会话历史',
-    singleton: true,
-    closable: true,
-    path: '/history',
-    icon: Clock,
-    navSection: 'primary',
+    keepAlive: true,
+    matchPrefixes: ['/knowledgeBase'],
   },
   settings: {
     key: 'settings',
     title: '设置',
-    singleton: true,
-    closable: true,
     path: '/settings',
     icon: Settings,
     navSection: 'secondary',
+    keepAlive: true,
+    matchPrefixes: ['/settings'],
   },
   recycle: {
     key: 'recycle',
     title: '回收站',
-    singleton: true,
-    closable: true,
     path: '/recycle',
     icon: Trash2,
     navSection: 'secondary',
+    keepAlive: true,
+    matchPrefixes: ['/recycle'],
   },
   profile: {
     key: 'profile',
-    title: '基础信息',
-    singleton: true,
-    closable: true,
+    title: '个人资料',
     path: '/profile',
-    icon: User,
+    /** 不进 Icon Rail：点顶栏头像进入 */
+    icon: null,
     navSection: null,
+    keepAlive: true,
+    matchPrefixes: ['/profile'],
   },
 } as const satisfies Record<RouteKey, RouteMeta>
 
@@ -139,7 +104,10 @@ export function getRouteMeta(key: RouteKey): RouteMeta {
   return ROUTES_REGISTER[key]
 }
 
-export function getTabPath(tab: { type: TabRouteKey; id: string }): string {
-  const meta = getRouteMeta(tab.type)
-  return meta.bindTo ? meta.bindTo(tab.id) : meta.path
+/** 判断 pathname 是否命中该路由的 active 前缀 */
+export function isRouteActive(meta: RouteMeta, pathname: string): boolean {
+  const prefixes = meta.matchPrefixes ?? [meta.path]
+  return prefixes.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`) || pathname.startsWith(`${p}?`),
+  )
 }

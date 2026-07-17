@@ -29,6 +29,7 @@
 | 模块 | Trellis 开发指南 | OpenSpec 权威源 |
 |------|-----------------|----------------|
 | Chat SSE | [sse-streaming-architecture.md](./sse-streaming-architecture.md) | [openspec/specs/chat/spec.md](../../../openspec/specs/chat/spec.md) |
+| Chat 工作台 UI | [chat-workspace-ui.md](./chat-workspace-ui.md) | [openspec/specs/chat/spec.md](../../../openspec/specs/chat/spec.md) · [settings](../../../openspec/specs/settings/spec.md)（providers） |
 | Overlay Portal | [overlay-portal-system.md](./overlay-portal-system.md) | （无对应 capability，4 层架构为实现模式，详见指南内 NOTE 标头） |
 | Companion UI | [companion-ui-rendering.md](./companion-ui-rendering.md) | [companion](../../../openspec/specs/companion/spec.md) · [persona](../../../openspec/specs/companion-persona/spec.md) · [care](../../../openspec/specs/companion-care/spec.md) |
 

@@ -1,6 +1,6 @@
 import type { KbSelectorEntry } from '@goferbot/data'
 import { useRequest } from 'alova/client'
-import { DatabaseIcon, HashIcon } from 'lucide-react'
+import { ChevronDown, DatabaseIcon, HashIcon } from 'lucide-react'
 import { getKbForSelector } from '@/api/KnowledgeBase'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -13,6 +13,8 @@ interface KnowledgeBaseSelectorProps {
   disabled?: boolean
   /** Visual hint that selection is required before send. */
   required?: boolean
+  /** chip = 设计稿胶囊；ghost = 紧凑工具栏 */
+  variant?: 'chip' | 'ghost'
 }
 
 export function KnowledgeBaseSelector({
@@ -20,11 +22,13 @@ export function KnowledgeBaseSelector({
   onChange,
   disabled = false,
   required = true,
+  variant = 'ghost',
 }: KnowledgeBaseSelectorProps) {
   const { data, loading, error, send } = useRequest(() => getKbForSelector(), { immediate: true })
 
   const kbList: KbSelectorEntry[] = Array.isArray(data) ? data : []
   const selectedSet = new Set(selectedIds)
+  const selectedNames = kbList.filter((k) => selectedSet.has(k.id)).map((k) => k.name)
 
   const handleToggle = (kbId: string) => {
     if (selectedSet.has(kbId)) {
@@ -36,6 +40,12 @@ export function KnowledgeBaseSelector({
 
   const count = selectedIds.length
   const missingRequired = required && count === 0
+  const label =
+    count === 0
+      ? '知识库 · 默认'
+      : count === 1
+        ? `知识库 · ${selectedNames[0] ?? '默认'}`
+        : `知识库 · ${count} 个`
 
   return (
     <Popover>
@@ -46,15 +56,31 @@ export function KnowledgeBaseSelector({
           data-testid="kb-selector-trigger"
           disabled={disabled}
           className={cn(
-            'inline-flex h-auto items-center gap-1 rounded px-2 py-0.5 text-xs hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50',
-            missingRequired
-              ? 'text-error hover:text-error'
-              : 'text-text-secondary hover:text-text-primary',
+            'inline-flex h-auto items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+            variant === 'chip'
+              ? missingRequired
+                ? 'border border-error/30 bg-error/5 text-error hover:bg-error/10'
+                : 'border border-brand-blue/20 bg-brand-blue-soft text-brand-blue hover:bg-brand-blue-soft/80'
+              : missingRequired
+                ? 'text-error hover:bg-surface-2 hover:text-error'
+                : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary',
           )}
         >
-          <HashIcon className="size-3.5" />
-          <span>知识库{required ? ' *' : ''}</span>
-          {count > 0 ? (
+          {variant === 'chip' ? (
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                missingRequired ? 'bg-error' : 'bg-brand-blue',
+              )}
+              aria-hidden
+            />
+          ) : (
+            <HashIcon className="size-3.5" />
+          )}
+          <span className="max-w-[140px] truncate">{label}</span>
+          {variant === 'chip' ? (
+            <ChevronDown className="size-3 opacity-70" />
+          ) : count > 0 ? (
             <span className="ml-0.5 rounded-full bg-brand-primary px-1.5 py-px text-[10px] text-white">
               {count}
             </span>

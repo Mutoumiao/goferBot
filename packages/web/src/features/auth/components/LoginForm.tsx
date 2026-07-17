@@ -115,7 +115,7 @@ export function LoginForm() {
         captchaCode: captchaInput,
       })
       if (result.success) {
-        navigate({ to: '/', replace: true })
+        navigate({ to: '/chats', replace: true })
       } else {
         setError(result.error ?? '登录失败')
       }

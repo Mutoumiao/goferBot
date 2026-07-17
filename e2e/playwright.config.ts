@@ -6,6 +6,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const webServerUrl = process.env.WEB_SERVER_URL || 'http://localhost:1420'
+const apiServerUrl = process.env.API_SERVER_URL || 'http://localhost:3100'
+const e2eDatabaseUrl =
+  process.env.E2E_DATABASE_URL ||
+  'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public'
+
+// CI 或不复用时强制起新进程，避免粘连旧 HMR/坏 chunk（如 useActiveEffect 白屏）
+const reuseExistingServer = process.env.PW_REUSE_SERVER === '1' || !process.env.CI
 
 export default defineConfig({
   testDir: path.resolve(__dirname, './specs'),
@@ -36,16 +43,27 @@ export default defineConfig({
   ],
   webServer: process.env.WEB_SERVER_URL
     ? undefined
-    : {
-        command: 'pnpm --filter @goferbot/web dev',
-        url: 'http://localhost:1420',
-        reuseExistingServer: true,
-        timeout: 120_000,
-        env: {
-          ...process.env,
-          // 强制使用 goferbot_e2e 数据库
-          DATABASE_URL:
-            'postgresql://gofer:gofer_dev_pass@127.0.0.1:5432/goferbot_e2e?schema=public',
+    : [
+        {
+          command: 'pnpm --filter @goferbot/server dev',
+          url: `${apiServerUrl}/health`,
+          reuseExistingServer,
+          timeout: 180_000,
+          env: {
+            ...process.env,
+            DATABASE_URL: e2eDatabaseUrl,
+            PORT: '3100',
+          },
         },
-      },
+        {
+          command: 'pnpm --filter @goferbot/web dev',
+          url: webServerUrl,
+          reuseExistingServer,
+          timeout: 120_000,
+          env: {
+            ...process.env,
+            DATABASE_URL: e2eDatabaseUrl,
+          },
+        },
+      ],
 })

@@ -29,9 +29,7 @@ import {
   submitTempChat,
 } from '@/features/chat/services'
 import { useChatStore } from '@/features/chat/store'
-import { ROUTES_REGISTER } from '@/router-register'
 import { useConversationStore } from '@/stores/conversation.store'
-import { useWorkspaceStore } from '@/stores/workspace.store'
 
 describe('chat services', () => {
   beforeEach(() => {
@@ -46,7 +44,6 @@ describe('chat services', () => {
       error: null,
     })
     useConversationStore.setState({ conversationMap: {} })
-    useWorkspaceStore.getState().reset()
     vi.clearAllMocks()
   })
 
@@ -271,14 +268,9 @@ describe('chat services', () => {
       vi.mocked(apiCreateSession).mockReturnValue({
         send: vi.fn().mockResolvedValue(session),
       } as any)
-      useWorkspaceStore
-        .getState()
-        .addTab({ type: ROUTES_REGISTER.chat.key, title: '新会话', closable: true, id: 'tab-1' })
-
-      const result = await submitTempChat('hello world', 'tab-1')
+      const result = await submitTempChat('hello world')
 
       expect(result).toBe('s1')
-      expect(useWorkspaceStore.getState().tabs[0].conversationId).toBe('s1')
       const stored = sessionStorage.getItem(getPendingMessageKey('s1'))
       expect(stored).toBeDefined()
       expect(JSON.parse(stored ?? '{}')).toEqual({ content: 'hello world' })
@@ -296,7 +288,7 @@ describe('chat services', () => {
         send: vi.fn().mockResolvedValue(session),
       } as any)
 
-      await submitTempChat('hello', 'tab-1', { knowledgeBaseIds: ['kb1', 'kb2'] })
+      await submitTempChat('hello', { knowledgeBaseIds: ['kb1', 'kb2'] })
 
       const stored = sessionStorage.getItem(getPendingMessageKey('s2'))
       expect(JSON.parse(stored ?? '{}')).toEqual({
@@ -308,7 +300,7 @@ describe('chat services', () => {
     it('returns null when session creation fails', async () => {
       vi.mocked(apiCreateSession).mockReturnValue({ send: vi.fn().mockResolvedValue(null) } as any)
 
-      const result = await submitTempChat('hello', 'tab-1')
+      const result = await submitTempChat('hello')
 
       expect(result).toBeNull()
       expect(sessionStorage.length).toBe(0)

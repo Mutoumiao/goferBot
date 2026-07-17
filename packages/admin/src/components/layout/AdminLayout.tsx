@@ -71,11 +71,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const menuDataRender = useCallback(() => menuItems as any, [menuItems])
 
-  const menuHeaderRender = useCallback(() => {
+  function menuHeaderRender() {
     return null
-  }, [])
+  }
 
-  const rightContentRender = useCallback(() => {
+  function rightContentRender() {
     return (
       <div className="flex items-center gap-2 px-4">
         <Button
@@ -126,14 +126,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </Dropdown>
       </div>
     )
-  }, [navigate, setAppearance, token.colorPrimary, user])
+  }
 
-  const breadcrumbRender = useCallback(
-    (routers: { path?: string; breadcrumbName?: string }[] = []) => {
-      return [{ path: '/', breadcrumbName: '首页' }, ...routers] as any
-    },
-    [],
-  )
+  function breadcrumbRender(routers: { path?: string; breadcrumbName?: string }[] = []) {
+    return [{ path: '/', breadcrumbName: '首页' }, ...routers] as any
+  }
 
   return (
     <ProLayout

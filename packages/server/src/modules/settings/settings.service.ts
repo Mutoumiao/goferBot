@@ -296,11 +296,24 @@ export class SettingsService {
 
     switch (category) {
       case 'chat': {
-        for (const id of masked.chat.enabledProviders) {
-          const { providerId } = parseModelKey(id)
-          const provider = providers[providerId]
-          if (provider && hasEnabledLlm(provider)) {
-            builtIn.push(provider)
+        const enabledKeys = masked.chat.enabledProviders ?? []
+        if (enabledKeys.length > 0) {
+          const seen = new Set<string>()
+          for (const id of enabledKeys) {
+            const { providerId } = parseModelKey(id)
+            if (seen.has(providerId)) continue
+            const provider = providers[providerId]
+            if (provider && hasEnabledLlm(provider)) {
+              builtIn.push(provider)
+              seen.add(providerId)
+            }
+          }
+        } else {
+          // enabledProviders 未配置时：回退为池中全部可用 LLM provider，避免前端选择器永久空置
+          for (const provider of Object.values(providers)) {
+            if (provider && hasEnabledLlm(provider)) {
+              builtIn.push(provider)
+            }
           }
         }
         break

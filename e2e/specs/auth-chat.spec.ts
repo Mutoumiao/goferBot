@@ -44,7 +44,7 @@ test.describe('账户注册与登录（真实后端）', () => {
     const res = await authPage.register('E2E User', email, password)
     expect(res.ok(), `注册失败 ${res.status()}`).toBeTruthy()
 
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
   })
 
   test('已注册用户可以登录', async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('账户注册与登录（真实后端）', () => {
 
     await authPage.gotoRegister()
     await authPage.register('E2E User', email, password)
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
 
     // 已登录访问 /login 会 beforeLoad 重定向；先退出再测登录
     await page.goto('/profile', { waitUntil: 'domcontentloaded' })
@@ -61,7 +61,7 @@ test.describe('账户注册与登录（真实后端）', () => {
     await expect(page).toHaveURL(/\/login/, { timeout: 15_000 })
 
     await authPage.login(email, password)
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
   })
 
   test('错误密码登录失败', async ({ page }) => {
@@ -70,7 +70,7 @@ test.describe('账户注册与登录（真实后端）', () => {
 
     await authPage.gotoRegister()
     await authPage.register('E2E User', email, password)
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
 
     await page.goto('/profile', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: '退出登录' }).click()
@@ -86,10 +86,10 @@ test.describe('账户注册与登录（真实后端）', () => {
 
     await authPage.gotoRegister()
     await authPage.register('E2E User', email, password)
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
 
     await page.goto('/login')
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
   })
 })
 
@@ -106,11 +106,11 @@ test.describe('首页输入 -> 会话页（真实后端）', () => {
 
     await authPage.gotoRegister()
     await authPage.register('E2E User', testEmail, testPassword)
-    await expect(page).toHaveURL(/\/chat\//, { timeout: 30_000 })
+    await expect(page).toHaveURL(/\/chats/, { timeout: 30_000 })
   })
 
   test('首页显示输入框与标题，未选知识库时发送禁用', async ({ page }) => {
-    await page.goto('/chat', { waitUntil: 'domcontentloaded' })
+    await page.goto('/chats', { waitUntil: 'domcontentloaded' })
     await expect(chatPage.homeTitle).toBeVisible({ timeout: 15_000 })
     // 占位符随是否选 KB 变化；textarea 始终存在
     await expect(page.locator('textarea').first()).toBeVisible()

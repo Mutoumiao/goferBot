@@ -132,9 +132,15 @@ function normalizeDocumentItem(raw: unknown): DocumentItem {
 // 知识库操作
 // ============================================================================
 
-export async function fetchKbList(): Promise<{ success: boolean; error?: string }> {
+export async function fetchKbList(options?: {
+  /** 无感刷新：不置 isLoading，避免 keep-alive 二次进入骨架闪烁 */
+  silent?: boolean
+}): Promise<{ success: boolean; error?: string }> {
+  const silent = options?.silent === true
   const { setEntries, setKbLoading } = useKbStore.getState()
-  setKbLoading(true)
+  if (!silent) {
+    setKbLoading(true)
+  }
   try {
     const res = await apiGetKbList().send()
     const data = res as KbListResponse
@@ -143,7 +149,9 @@ export async function fetchKbList(): Promise<{ success: boolean; error?: string 
   } catch (e) {
     return { success: false, error: mapErrorMessage(e) }
   } finally {
-    setKbLoading(false)
+    if (!silent) {
+      setKbLoading(false)
+    }
   }
 }
 

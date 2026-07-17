@@ -57,35 +57,18 @@ export const useAuthStore = create<AuthState>()(
 |-------|-----------|------|
 | `useAuthStore` | localStorage | 刷新后恢复用户资料 |
 | `useSettingsStore` | localStorage | 持久化用户设置 |
-| `useWorkspaceStore` | sessionStorage | 标签页状态（仅当前会话） |
-| `useConversationStore` | 不持久化 | 消息缓存（内存） |
+| `useConversationStore` | 不持久化 | 消息缓存（内存）；登出时 `reset()` |
+| `useChatStore` | 不持久化 tabs | UI + `selectedSessionId` + providers（模块 store） |
 
-### 持久化配置示例
+> **已删除**：`workspace.store` / `tabManager` / `TabBar`。登出仅清 `sessionStorage['gofer-workspace-v1']` 残留键 + `useConversationStore.reset()`。
 
-```tsx
-import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+### 路由驱动壳层（web-route-driven-shell）
 
-export const useWorkspaceStore = create<WorkspaceStore>()(
-  persist(
-    (set, get) => ({
-      tabs: [],
-      activeTabId: '',
-      // ... actions
-    }),
-    {
-      name: 'gofer-workspace-v1',
-      version: 1,
-      partialize: (state) => ({ tabs: state.tabs, activeTabId: state.activeTabId }),
-      storage: createJSONStorage(() => sessionStorage),
-      migrate: (persistedState, version) => {
-        // 版本迁移逻辑
-        return persistedState as WorkspaceState
-      },
-    }
-  )
-)
-```
+- 一级页：`/chats`、`/knowledgeBase`、`/companions`、`/settings`、`/recycle`、`/profile`（Keep-Alive）
+- 会话选中：`useChatStore.selectedSessionId`（**不写 URL**；忽略遗留 `?c=`）
+- 知识库选中：`/knowledgeBase?kb=<id>`（若启用）
+- 导航真相在 URL + `router.navigate`；禁止再引入 Tab 工作区
+- 登出：`clearUserClientState()` + KeepAlive `destroyAll` + full page reload
 
 ---
 
@@ -225,18 +208,18 @@ const useConversationStore = create<ConversationState>(...)  // 按 conversation
 两个 Store 通过 `useEffect` 在组件中同步：
 
 ```typescript
-// packages/web/src/features/chat/components/ChatPageByTab.tsx
+// packages/web/src/features/chat/components/ChatSessionPanel.tsx
 const { messages } = useXChat(...)  // @ant-design/x-sdk 管理的消息
 
 useEffect(() => {
   // 将 useXChat 的消息同步到全局 conversation store
-  useConversationStore.getState().setMessages(conversationId, messages)
-}, [messages, conversationId])
+  useConversationStore.getState().setMessages(sessionId, messages)
+}, [messages, sessionId])
 ```
 
 **分层理由**：
-- `useChatStore`：生命周期短（随 tab 切换重建），管理 UI 状态（isStreaming、providers、pending messages）
-- `useConversationStore`：生命周期长（内存常驻），按 conversationId 隔离消息，跨 tab 共享
+- `useChatStore`：会话选中态、providers、pending、sessionCache（模块级）
+- `useConversationStore`：按 sessionId 隔离消息缓存，跨面板复用
 
 ### Companion 流式 Store 模式
 
@@ -264,20 +247,12 @@ interface CompanionState {
 通过 `getState()` 在 store 外部访问其他 store：
 
 ```tsx
-// services.ts 中跨 store 通信
+// services / 空态发送：创建会话后写入选中态（无 Tab）
 import { useChatStore } from './store'
-import { useWorkspaceStore } from '@/stores/workspace.store'
 
-export async function createChatSession() {
-  const { addSession, setActiveSession } = useChatStore.getState()
-  const { addTab } = useWorkspaceStore.getState()
-  
-  const newSession = await apiCreateSession().send()
-  addSession(newSession)
-  setActiveSession(newSession)
-  
-  addTab({ type: 'chat', title: newSession.title, conversationId: newSession.id })
-}
+// submitTempChat 成功后：
+useChatStore.getState().setSelectedSessionId(newSession.id)
+// ChatsPage 列表 reload；右侧 ChatSessionPanel 挂载该 session
 ```
 
 ### 组件间通信
@@ -429,21 +404,15 @@ import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/features/chat/store'
 import { loadChatSessions } from '@/features/chat/services'
 
-function ChatHistoryPage() {
+function ChatsPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const { sessions, isLoadingSessions } = useChatStore((s) => ({
-    sessions: s.sessions,
-    isLoadingSessions: s.isLoadingSessions,
-  }))
-  
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadChatSessions()
-    }
-  }, [isAuthenticated])
-  
-  if (isLoadingSessions) return <Spinner />
-  return <SessionList sessions={sessions} />
+  const selectedSessionId = useChatStore((s) => s.selectedSessionId)
+
+  // 列表数据走 useLazyChatHistory + useKeepAliveSilentRefresh，非 chatStore.sessions
+  if (!isAuthenticated) return null
+  return selectedSessionId
+    ? <ChatSessionPanel sessionId={selectedSessionId} />
+    : <ChatEmptyHome />
 }
 ```
 
@@ -455,7 +424,8 @@ function ChatHistoryPage() {
 |------|----------|
 | 认证状态 | `packages/web/src/stores/auth.ts` |
 | 设置状态 | `packages/web/src/stores/settings.ts` |
-| 工作区状态 | `packages/web/src/stores/workspace.store.ts` |
+| 会话消息缓存 | `packages/web/src/stores/conversation.store.ts` |
 | 聊天模块状态 | `packages/web/src/features/chat/store.ts` |
+| 登出清理 | `packages/web/src/lib/session-cleanup.ts` |
 | 知识库模块状态 | `packages/web/src/features/KnowledgeBase/store.ts` |
 | 业务服务层 | `packages/web/src/features/chat/services.ts` |

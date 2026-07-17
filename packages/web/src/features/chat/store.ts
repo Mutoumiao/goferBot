@@ -21,6 +21,12 @@ export interface ChatState {
   isLoadingSessions: boolean
   error: string | null
 
+  /**
+   * /chats 当前打开的会话 id（桌面应用式本地状态）。
+   * 不写 URL search；一级菜单 keep-alive 切走再回来应完整恢复。
+   */
+  selectedSessionId: string | null
+
   // 初始化相关：可用 providers / 当前选中的 provider
   availableProviders: ProviderListItem[]
   selectedProviderKey: string | null
@@ -32,6 +38,7 @@ export interface ChatState {
   sessionCache: Map<string, { messages: Message[]; loaded: boolean }>
 
   setActiveSession: (session: Session | null) => void
+  setSelectedSessionId: (id: string | null) => void
   setMessages: (messages: Message[]) => void
   appendMessage: (message: Message) => void
   setIsLoadingHistory: (v: boolean) => void
@@ -84,6 +91,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sessions: [],
   isLoadingSessions: false,
   error: null,
+  selectedSessionId: null,
 
   availableProviders: [],
   selectedProviderKey: null,
@@ -93,6 +101,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sessionCache: new Map<string, { messages: Message[]; loaded: boolean }>(),
 
   setActiveSession: (session) => set({ activeSession: session }),
+  setSelectedSessionId: (id) => set({ selectedSessionId: id }),
   setMessages: (messages) => set({ messages }),
   appendMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
   setIsLoadingHistory: (v) => set({ isLoadingHistory: v }),
@@ -116,6 +125,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   clearChat: () =>
     set({
       activeSession: null,
+      selectedSessionId: null,
       messages: [],
       sessions: [],
       streamingContent: '',
@@ -129,6 +139,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   removeSession: (id) =>
     set((s) => ({
       sessions: s.sessions.filter((ses) => ses.id !== id),
+      selectedSessionId: s.selectedSessionId === id ? null : s.selectedSessionId,
     })),
   updateSession: (id, updates) =>
     set((s) => ({

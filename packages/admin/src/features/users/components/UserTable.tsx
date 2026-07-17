@@ -13,7 +13,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { MoreHorizontal, Plus, RefreshCw, Search, Trash2, Users } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuthStore } from '@/stores/auth'
@@ -54,6 +54,12 @@ export function UserTable({ initialQuery }: UserTableProps) {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
 
+  const initialQueryRef = useRef<ListUsersQuery>({
+    page: 1,
+    pageSize: 10,
+    ...initialQuery,
+  })
+
   const load = useCallback(async (q: ListUsersQuery) => {
     setLoading(true)
     try {
@@ -69,9 +75,8 @@ export function UserTable({ initialQuery }: UserTableProps) {
   }, [])
 
   useEffect(() => {
-    void load(query)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    void load(initialQueryRef.current)
+  }, [load])
 
   const handleSearch = () => {
     const q: ListUsersQuery = {

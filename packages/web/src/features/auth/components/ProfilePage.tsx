@@ -1,6 +1,7 @@
 import { ChevronRight, LogOut } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
+import { SettingsSurface } from '@/components/layout/SettingsSurface'
 import { Avatar } from '@/features/auth/components/Avatar'
 import { logoutUser, updateProfile } from '@/features/auth/services'
 import { openDialog } from '@/overlays/services/overlay-service'
@@ -55,69 +56,61 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="h-full w-full bg-[#F7F8FA]">
-      <div className="mx-auto max-w-[920px] px-10 py-10">
-        {/* 页面标题 */}
-        <h1 className="mb-8 text-[28px] font-semibold text-[#1F2328]">基础信息</h1>
+    <SettingsSurface testId="profile-page">
+      <h1 className="mb-8 text-[28px] font-semibold text-text-primary">基础信息</h1>
 
-        <div className="space-y-8">
-          {/* ====== 基础信息卡片 ====== */}
-          <section>
-            <div className="rounded-xl border border-[#E7EAF0] bg-white">
-              {/* 头像行 */}
-              <button
-                type="button"
-                className="flex h-20 w-full cursor-pointer items-center justify-between px-4 transition-colors hover:bg-[#F7F8FA]"
-                onClick={handleOpenAvatarDialog}
-                disabled={isSubmitting}
-              >
-                <span className="text-[15px] text-[#1F2328]">头像</span>
-                <div className="flex items-center gap-3">
-                  <Avatar
-                    src={user.avatar ?? undefined}
-                    fallback={user.name ?? undefined}
-                    size={52}
-                    className="rounded-[10px]"
-                  />
-                  <ChevronRight className="h-[18px] w-[18px] text-[#9AA3AF]" />
-                </div>
-              </button>
+      <div className="space-y-8">
+        <section>
+          <div className="rounded-xl border border-border-panel bg-surface-1">
+            <button
+              type="button"
+              className="flex h-20 w-full cursor-pointer items-center justify-between px-4 transition-colors hover:bg-surface-2"
+              onClick={handleOpenAvatarDialog}
+              disabled={isSubmitting}
+            >
+              <span className="text-[15px] text-text-primary">头像</span>
+              <div className="flex items-center gap-3">
+                <Avatar
+                  src={user.avatar ?? undefined}
+                  fallback={user.name ?? undefined}
+                  size={52}
+                  className="rounded-[10px]"
+                />
+                <ChevronRight className="h-[18px] w-[18px] text-text-tertiary" />
+              </div>
+            </button>
 
-              {/* 分割线 */}
-              <div className="h-px bg-[#E7EAF0]" />
+            <div className="h-px bg-border-panel" />
 
-              {/* 用户名行 */}
-              <button
-                type="button"
-                className="flex h-[66px] w-full cursor-pointer items-center justify-between px-4 transition-colors hover:bg-[#F7F8FA]"
-                onClick={handleOpenNameDialog}
-                disabled={isSubmitting}
-              >
-                <span className="text-[15px] text-[#1F2328]">用户名</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-[14px] text-[#5E6673]">{user.name ?? '—'}</span>
-                  <ChevronRight className="h-[18px] w-[18px] text-[#9AA3AF]" />
-                </div>
-              </button>
-            </div>
-          </section>
+            <button
+              type="button"
+              className="flex h-[66px] w-full cursor-pointer items-center justify-between px-4 transition-colors hover:bg-surface-2"
+              onClick={handleOpenNameDialog}
+              disabled={isSubmitting}
+            >
+              <span className="text-[15px] text-text-primary">用户名</span>
+              <div className="flex items-center gap-3">
+                <span className="text-[14px] text-text-secondary">{user.name ?? '—'}</span>
+                <ChevronRight className="h-[18px] w-[18px] text-text-tertiary" />
+              </div>
+            </button>
+          </div>
+        </section>
 
-          {/* ====== 账号安全 ====== */}
-          <section>
-            <h2 className="mb-2 text-[13px] font-medium text-[#9AA3AF]">账号安全</h2>
-            <div className="rounded-xl border border-[#E7EAF0] bg-white">
-              <button
-                type="button"
-                className="flex h-14 w-full cursor-pointer items-center justify-center rounded-xl text-[15px] font-medium text-[#DC3545] transition-colors hover:bg-[#FBEFEE]"
-                onClick={handleLogout}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                退出登录
-              </button>
-            </div>
-          </section>
-        </div>
+        <section>
+          <h2 className="mb-2 text-[13px] font-medium text-text-tertiary">账号安全</h2>
+          <div className="rounded-xl border border-border-panel bg-surface-1">
+            <button
+              type="button"
+              className="flex h-14 w-full cursor-pointer items-center justify-center rounded-xl text-[15px] font-medium text-error transition-colors hover:bg-error/5"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              退出登录
+            </button>
+          </div>
+        </section>
       </div>
-    </div>
+    </SettingsSurface>
   )
 }

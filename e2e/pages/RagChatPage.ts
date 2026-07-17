@@ -17,8 +17,8 @@ export class RagChatPage {
 
   constructor(page: Page) {
     this.page = page
-    this.homeTitle = page.getByText('今天想从知识库里理解什么？')
-    this.homeTextarea = page.locator('textarea').first()
+    this.homeTitle = page.getByTestId('chat-home-greeting')
+    this.homeTextarea = page.locator('[data-testid="chat-empty-home"] textarea').first()
     this.homeSendButton = page.getByTestId('temp-send-btn')
     this.kbSelectorTrigger = page.getByTestId('kb-selector-trigger')
     this.kbSelectorDropdown = page.getByTestId('kb-selector-dropdown')
@@ -28,12 +28,9 @@ export class RagChatPage {
   }
 
   async openChatHome() {
-    await this.page.getByTitle('聊天', { exact: true }).click().catch(async () => {
-      // 侧栏 title 来自 ROUTES_REGISTER.chat.title
-      await this.page.getByTitle('对话', { exact: true }).click().catch(() => undefined)
-    })
-    // 直接走路由更稳：打开/chat 会 redirect 到临时 tab
-    await this.page.goto('/chat', { waitUntil: 'domcontentloaded' })
+    await this.page.getByTestId('rail-chats').click().catch(() => undefined)
+    await this.page.goto('/chats', { waitUntil: 'domcontentloaded' })
+    await expect(this.page.getByTestId('chat-empty-home')).toBeVisible({ timeout: 20_000 })
     await expect(this.homeTitle).toBeVisible({ timeout: 20_000 })
   }
 

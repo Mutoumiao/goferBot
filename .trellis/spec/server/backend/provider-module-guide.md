@@ -132,6 +132,20 @@ throw modelNotEnabledError(providerId, modelName)
 throw new Error('不支持获取模型')
 ```
 
+### 7.8 GET /settings/chat/providers（Web 模型选择器数据源）
+
+实现：`SettingsService.getAvailableProviders(userId, 'chat')`。
+
+| 条件 | 行为 |
+|------|------|
+| `chat.enabledProviders` 非空 | 按 key 解析 providerId，去重后返回含启用 LLM 的 Provider |
+| `chat.enabledProviders` 为空 | **回退**为配置池中全部「enabled 且含启用 LLM」的 Provider |
+| 池中无 LLM | 返回空 `builtIn`（前端可打开选择器提示配置） |
+
+> 禁止在 `enabledProviders=[]` 时直接返回空列表却池中明明有可用 LLM——会导致 Web「选择模型」永久不可用。
+
+Web 侧展开为模型级 key 的约定见 [chat-workspace-ui.md](../../web/frontend/chat-workspace-ui.md)。
+
 ## 8. Testing Checklist
 
 | 测试项 | 说明 |

@@ -79,7 +79,7 @@ export function RegisterForm() {
     const result = await registerUser(name, email, password, invitationCode)
     setLoading(false)
     if (result.success) {
-      navigate({ to: '/', replace: true })
+      navigate({ to: '/chats', replace: true })
     } else {
       setError(result.error ?? '注册失败')
     }

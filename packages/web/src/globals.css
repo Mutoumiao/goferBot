@@ -48,74 +48,77 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * GoferBot — Ink Studio 视觉体系
+ * 目标：Rail / 列表 / 画布三级明确分层，杜绝「一片浅灰」
+ */
 :root {
-  /* 映射到项目 Pencil Design Tokens */
-  --background: #ffffff;
-  --foreground: #1a1a2e;
+  --background: #eef0f5;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #1a1a2e;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #1a1a2e;
-  --primary: #5074fa;
+  --popover-foreground: #0f172a;
+  --primary: #3b63f5;
   --primary-foreground: #ffffff;
-  --secondary: #f8f9fa;
-  --secondary-foreground: #1a1a2e;
-  --muted: #f1f3f5;
-  --muted-foreground: #6c757d;
-  --accent: #f8f9fa;
-  --accent-foreground: #1a1a2e;
-  --destructive: #ef4444;
-  --border: #dee2e6;
-  --input: #dee2e6;
-  --ring: #4f46e5;
+  --secondary: #e8ebf2;
+  --secondary-foreground: #0f172a;
+  --muted: #e4e7ef;
+  --muted-foreground: #64748b;
+  --accent: #e8ebf2;
+  --accent-foreground: #0f172a;
+  --destructive: #e11d48;
+  --border: #d0d5e0;
+  --input: #d0d5e0;
+  --ring: #3b63f5;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-primary: #4f46e5;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f8f9fa;
-  --sidebar-accent-foreground: #1a1a2e;
-  --sidebar-border: #dee2e6;
-  --sidebar-ring: #4f46e5;
+  --radius: 0.75rem;
+  --sidebar: #0c1222;
+  --sidebar-foreground: #e8ecf6;
+  --sidebar-primary: #5b8cff;
+  --sidebar-primary-foreground: #0c1222;
+  --sidebar-accent: #1a2338;
+  --sidebar-accent-foreground: #e8ecf6;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #5b8cff;
 }
 
 .dark {
-  --background: #1a1a2e;
-  --foreground: #f1f3f5;
-  --card: #252542;
-  --card-foreground: #f1f3f5;
-  --popover: #252542;
-  --popover-foreground: #f1f3f5;
-  --primary: #5074fa;
-  --primary-foreground: #1a1a2e;
-  --secondary: #2d2d4a;
-  --secondary-foreground: #f1f3f5;
-  --muted: #2d2d4a;
-  --muted-foreground: #adb5bd;
-  --accent: #2d2d4a;
-  --accent-foreground: #f1f3f5;
-  --destructive: #f87171;
+  --background: #0b0e14;
+  --foreground: #e8ecf4;
+  --card: #141a24;
+  --card-foreground: #e8ecf4;
+  --popover: #141a24;
+  --popover-foreground: #e8ecf4;
+  --primary: #6b8cff;
+  --primary-foreground: #0b0e14;
+  --secondary: #1c2433;
+  --secondary-foreground: #e8ecf4;
+  --muted: #1c2433;
+  --muted-foreground: #94a3b8;
+  --accent: #1c2433;
+  --accent-foreground: #e8ecf4;
+  --destructive: #fb7185;
   --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.15);
-  --ring: #818cf8;
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #6b8cff;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: #252542;
-  --sidebar-foreground: #f1f3f5;
-  --sidebar-primary: #818cf8;
-  --sidebar-primary-foreground: #1a1a2e;
-  --sidebar-accent: #2d2d4a;
-  --sidebar-accent-foreground: #f1f3f5;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #818cf8;
+  --sidebar: #06080f;
+  --sidebar-foreground: #e8ecf4;
+  --sidebar-primary: #8babff;
+  --sidebar-primary-foreground: #06080f;
+  --sidebar-accent: #151b28;
+  --sidebar-accent-foreground: #e8ecf4;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #8babff;
 }
 
 @layer base {
@@ -128,57 +131,99 @@
   }
 
   html {
-    @apply font-sans;
+    @apply font-sans antialiased;
   }
 }
 
-/* ===== Pencil Design Tokens ===== */
+/* ===== Product Design Tokens（Tailwind 语义色） ===== */
 @theme {
-  /* Surface */
+  /* AI 工作台：轻 SaaS 浅色（设计提示词） */
+  --color-canvas: #f0f2f7;
   --color-surface-1: #ffffff;
-  --color-surface-2: #f8f9fa;
-  --color-surface-3: #f1f3f5;
+  --color-surface-2: #f0f2f7;
+  --color-surface-3: #e6ebf2;
+  --color-surface-secondary: #f0f2f7;
 
-  /* Text */
-  --color-text-primary: #1a1a2e;
-  --color-text-secondary: #6c757d;
-  --color-text-tertiary: #adb5bd;
+  /* 文字 */
+  --color-text-primary: #1f2329;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
 
-  /* Brand */
-  --color-brand-primary: #4f46e5;
-  --color-brand-secondary: #7c3aed;
-  --color-brand-blue: #5074fa;
-  --color-brand-blue-soft: #eef1fe;
-  --color-brand-blue-ring: #dde5ff;
+  /* Brand：主色蓝 + 绿→蓝渐变辅色 */
+  --color-brand-primary: #1a73e8;
+  --color-brand-secondary: #1a9e55;
+  --color-brand-blue: #1a73e8;
+  --color-brand-blue-soft: #e8f1fc;
+  --color-brand-blue-ring: #c5daf7;
+  --color-brand-green: #1a9e55;
+
+  /* Rail 70px 图标轨 */
+  --color-rail: #f0f2f7;
+  --color-rail-fg: #6b7280;
+  --color-rail-fg-active: #1a73e8;
+  --color-rail-hover: #e6ebf2;
+  --color-rail-active: #e8f1fc;
+  --color-rail-accent: #1a73e8;
+  --color-rail-border: #e6ebf2;
 
   /* Border */
-  --color-border-default: #dee2e6;
-  --color-border-subtle: #e9ecef;
+  --color-border-default: #e6ebf2;
+  --color-border-subtle: #e6ebf2;
+  /* 二级侧栏与内容区分隔 */
+  --color-border-panel: #e6e8eb;
 
   /* Status */
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
+  --color-success: #1a9e55;
+  --color-warning: #d97706;
+  --color-error: #e11d48;
+  --color-info: #1a73e8;
 
-  /* Surface Secondary — 次级背景色（sidebar、tab-bar、页面背景等） */
-  --color-surface-secondary: #f0f1f5;
-
-  /* Auth — 登录/注册页专用（亮色主题） */
-  --color-auth-bg: #ebedf5;
-  --color-auth-surface: rgba(80, 116, 250, 0.04);
+  /* Auth */
+  --color-auth-bg: #f0f2f7;
+  --color-auth-surface: rgba(26, 115, 232, 0.05);
   --color-auth-card: #ffffff;
-  --color-auth-card-border: rgba(0, 0, 0, 0.06);
-  --color-auth-input-bg: #f5f6fb;
-  --color-auth-input-border: #dfe2eb;
-  --color-auth-input-focus: rgba(80, 116, 250, 0.35);
-  --color-auth-text-primary: #15162a;
-  --color-auth-text-secondary: #5c617a;
-  --color-auth-text-tertiary: #9da1b8;
-  --color-auth-accent: #5074fa;
-  --color-auth-accent-soft: #eef1fe;
-  --color-auth-glow: rgba(80, 116, 250, 0.08);
-  --color-auth-divider: #e9ecf2;
+  --color-auth-card-border: rgba(31, 35, 41, 0.08);
+  --color-auth-input-bg: #f7f8fa;
+  --color-auth-input-border: #e6ebf2;
+  --color-auth-input-focus: rgba(26, 115, 232, 0.35);
+  --color-auth-text-primary: #1f2329;
+  --color-auth-text-secondary: #6b7280;
+  --color-auth-text-tertiary: #9ca3af;
+  --color-auth-accent: #1a73e8;
+  --color-auth-accent-soft: #e8f1fc;
+  --color-auth-glow: rgba(26, 115, 232, 0.1);
+  --color-auth-divider: #e6ebf2;
+}
+
+.dark {
+  --color-canvas: #0b0e14;
+  --color-surface-1: #141a24;
+  --color-surface-2: #1a2130;
+  --color-surface-3: #232b3d;
+  --color-surface-secondary: #0b0e14;
+  --color-text-primary: #e8ecf4;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+  --color-brand-primary: #5b9fff;
+  --color-brand-secondary: #34d399;
+  --color-brand-blue: #5b9fff;
+  --color-brand-blue-soft: rgba(91, 159, 255, 0.16);
+  --color-brand-blue-ring: rgba(91, 159, 255, 0.35);
+  --color-brand-green: #34d399;
+  --color-rail: #121822;
+  --color-rail-fg: #94a3b8;
+  --color-rail-fg-active: #8babff;
+  --color-rail-hover: #1a2130;
+  --color-rail-active: rgba(107, 140, 255, 0.16);
+  --color-rail-accent: #8babff;
+  --color-rail-border: rgba(255, 255, 255, 0.08);
+  --color-border-default: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-panel: rgba(255, 255, 255, 0.1);
+  --color-success: #22c55e;
+  --color-warning: #fbbf24;
+  --color-error: #fb7185;
+  --color-info: #60a5fa;
 }
 
 * {
@@ -193,6 +238,58 @@ body,
 
 body {
   margin: 0;
-  background-color: var(--color-surface-1);
+  background-color: var(--color-canvas);
   color: var(--color-text-primary);
 }
+
+/* 空态柔和光晕（会话欢迎页） */
+.gofer-mesh-bg {
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(ellipse 80% 55% at 50% -10%, color-mix(in srgb, var(--color-brand-blue) 18%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 100%, color-mix(in srgb, var(--color-brand-secondary) 10%, transparent), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 0% 80%, color-mix(in srgb, var(--color-brand-blue) 8%, transparent), transparent 55%);
+}
+
+/* 细噪点纹理（可选叠在 mesh 上） */
+.gofer-noise::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 品牌绿→蓝渐变（#1A9E55 → #1A73E8） */
+.gofer-brand-gradient {
+  background-image: linear-gradient(135deg, #1a9e55 0%, #1a73e8 100%);
+}
+
+/* 双层柔和投影（设计稿卡片） */
+.gofer-soft-shadow {
+  box-shadow:
+    0 2px 8px rgba(31, 35, 41, 0.06),
+    0 1px 2px rgba(31, 35, 41, 0.04);
+}
+
+/* 右侧业务白卡：圆角 + 内阴影（卡片浮于 #F0F2F7 舞台，由 WorkspaceStage 挂载） */
+.gofer-workspace-card {
+  border-radius: 12px;
+  background-color: var(--color-surface-1, #ffffff);
+  /* 内阴影为主：不依赖父级是否裁切外阴影，圆角裁切靠 overflow:hidden */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(31, 35, 41, 0.08),
+    inset 0 2px 10px rgba(31, 35, 41, 0.06),
+    inset 0 -1px 0 rgba(31, 35, 41, 0.03);
+}
+
+.dark .gofer-workspace-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 2px 10px rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+

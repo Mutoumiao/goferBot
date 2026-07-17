@@ -314,20 +314,21 @@ const responded = {
 import { useAuthStore } from '@/stores/auth'
 import { useChatHistory } from '@/features/chat/hooks'
 
-function ChatHistoryPage() {
+function ChatsListHookExample() {
   const userId = useAuthStore((s) => s.user?.id)
+  // 生产路径优先 useLazyChatHistory（由 Keep-Alive 边界手动 load）
   const { sessions, loading, error, reload } = useChatHistory(1, 20)
-  
+
   useEffect(() => {
     if (userId) {
-      reload()
+      void reload()
     }
   }, [userId, reload])
-  
+
   if (loading) return <Spinner />
   if (error) return <ErrorState error={error} onRetry={reload} />
-  
-  return <SessionList sessions={sessions} />
+
+  return <SessionListPanel sessions={sessions} onSelect={...} onNewChat={...} />
 }
 ```
 

@@ -15,7 +15,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Copy, Plus, RefreshCw, Trash2, XCircle } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import type { CreateInvitationRequest, InvitationCode, InvitationQuery } from '../services'
 import {
@@ -85,6 +85,8 @@ export function InvitationCodeTable() {
   const [createForm] = Form.useForm<CreateFormValues>()
   const [createLoading, setCreateLoading] = useState(false)
 
+  const initialQueryRef = useRef<InvitationQuery>({ page: 1, pageSize: 10 })
+
   const load = useCallback(async (q: InvitationQuery) => {
     setLoading(true)
     try {
@@ -100,9 +102,8 @@ export function InvitationCodeTable() {
   }, [])
 
   useEffect(() => {
-    void load(query)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    void load(initialQueryRef.current)
+  }, [load])
 
   const buildApiQuery = (
     page: number,

@@ -195,7 +195,7 @@ describe('auth components', () => {
         },
         { timeout: 3000 },
       )
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/chats', replace: true })
     })
 
     it('shows error message on failure', async () => {
@@ -377,7 +377,7 @@ describe('auth components', () => {
           'TEST-INVITE-CODE',
         )
       })
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true })
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/chats', replace: true })
     })
 
     it('toggles confirm password visibility', () => {

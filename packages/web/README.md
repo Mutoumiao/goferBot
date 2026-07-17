@@ -47,64 +47,38 @@ src/
 │   │
 │   ├── chat/               #   对话领域
 │   │   ├── store.ts        #     会话状态：sessions / messages / SSE streaming
-│   │   ├── services.ts     #     业务编排：loadChatSessions / createChatSession / deleteChatSession
-│   │   ├── types.ts        #     Chat 领域类型
-│   │   ├── hooks.ts        #     useChatStream 等 Chat 专用 hooks
+│   │   ├── services.ts / hooks.ts / store.ts / types.ts
 │   │   └── components/
-│   │       ├── ChatHome.tsx
-│   │       ├── ChatInput.tsx
-│   │       ├── ChatMessage.tsx
-│   │       ├── ChatSessionList.tsx
-│   │       ├── ChatSessionPage.tsx
-│   │       ├── ChatHistoryList.tsx
-│   │       ├── ChatHistoryPage.tsx
-│   │       ├── EditorPlaceholder.tsx
-│   │       └── KnowledgeBaseSelector.tsx
+│   │       ├── ChatsPage.tsx          # /chats：左列表 + 右工作区
+│   │       ├── SessionListPanel.tsx   # 会话列表
+│   │       ├── ChatEmptyHome.tsx      # 空态
+│   │       ├── ChatSessionPanel.tsx / ChatSessionView.tsx
+│   │       ├── ChatComposer.tsx       # 统一输入
+│   │       ├── SourceCitations.tsx / ChatMessage.tsx / ChatMarkdown.tsx
+│   │       ├── KnowledgeBaseSelector.tsx / ProviderSelector.tsx
 │   │
-│   └── kb/                 #   知识库领域
-│       ├── store.ts        #     KB 状态：entries / folders / documents / uploadTasks
-│       ├── services.ts     #     业务编排：fetchKbList / loadKbItems / uploadFiles / removeDocument
-│       ├── types.ts        #     KB 领域类型（Folder / DocumentItem / UploadTask）
-│       └── components/
-│           ├── KnowledgeBasePage.tsx
-│           ├── KnowledgeBaseList.tsx
-│           ├── KnowledgeBaseToolbar.tsx
-│           ├── FileBrowser.tsx
-│           ├── FileGridItem.tsx
-│           ├── FileListItem.tsx
-│           ├── UploadDropZone.tsx
-│           └── UploadProgressBar.tsx
+│   └── KnowledgeBase/      #   知识库领域
 │
-├── stores/                 # [全局状态] 跨 feature 共享的 Zustand stores
-│   ├── auth.ts             #   persist — token / user / isAuthenticated
-│   ├── settings.ts         #   persist — LLM 配置 / dirty 追踪 / provider 管理
-│   └── tabs.ts             #   persist — 多标签管理 / home 标签保护
+├── stores/                 # [全局状态]
+│   ├── auth.ts             #   persist — user / isAuthenticated
+│   ├── settings.ts         #   persist — 用户设置
+│   └── conversation.store.ts # 消息缓存（内存）
 │
-├── utils/                  # [工具层] 纯函数 / 基础设施 — 无副作用，可跨模块复用
-│   ├── server.ts           #   alovaInstance — HTTP 客户端（baseURL/auth/401刷新/解包）
-│   ├── llm-config.ts       #   LLM 配置工具 — getLLMConfig / mergeAppConfig / DEFAULT_CONFIG
-│   ├── sse-parser.ts       #   SSE chunk 解析 — parseSSEChunk / SSEChunk 类型
-│   ├── password-encryption.ts # 密码加密 — encryptPassword / clearPublicKeyCache
-│   └── cn.ts               #   class 合并 — clsx + tailwind-merge
+├── lib/
+│   ├── route-keepalive*.tsx # Keep-Alive 壳
+│   └── session-cleanup.ts   # 登出清理
 │
-├── components/             # [视图层] 跨 feature 复用的 React 组件 — 禁止 barrel 文件
-│   ├── sidebar/            #   Sidebar
-│   └── tab-bar/            #   TabBar
+├── components/
+│   ├── sidebar/            # Icon Rail
+│   ├── layout/             # WorkspaceStage / SettingsSurface
+│   └── ui/                 # shadcn
 │
-├── routes/                 # [路由层] TanStack Router file-based routing
-│   ├── __root.tsx          #   根路由（layout 壳）
-│   ├── index.tsx           #   / — 重定向到 /app/chat
-│   ├── login.tsx           #   /login
-│   ├── register.tsx        #   /register
-│   └── app/                #   /app/* — route.tsx 通过 beforeLoad 校验 token
-│       ├── route.tsx       #     应用布局（Sidebar + TabBar + Outlet）
-│       ├── index.tsx       #     /app — 重定向到 /app/chat
-│       ├── chat.tsx        #     /app/chat — Chat 主页
-│       ├── chat/$sessionId.tsx  # /app/chat/$sessionId — 具体会话页
-│       ├── kb.tsx          #     /app/kb — 知识库页面
-│       ├── history.tsx     #     /app/history — 历史记录页面
-│       ├── settings.tsx    #     设置页面
-│       └── recycle-bin.tsx #     回收站页面
+├── routes/                 # TanStack file routes
+│   ├── _authenticated.tsx  # IconSidebar + WorkspaceStage + KeepAliveOutlet
+│   └── _authenticated/
+│       ├── chats.tsx       # 会话工作台
+│       ├── chat* / history # 旧路径 redirect → /chats
+│       ├── knowledgeBase / companions / settings / profile / recycle
 │
 ├── overlays/               # [浮层系统] Dialog / ContextMenu 管理
 │   ├── types/              #   overlay.types.ts

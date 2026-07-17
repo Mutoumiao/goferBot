@@ -29,7 +29,7 @@
 
 - `packages/web/src/api/x-chat.ts` — Chat XRequest 配置 + `authedFetch`
 - `packages/web/src/features/chat/providers/GoferChatProvider.ts` — 增量累积 Provider
-- `packages/web/src/features/chat/components/ChatPageByTab.tsx` — useXChat 接入
+- `packages/web/src/features/chat/components/ChatSessionPanel.tsx` — useXChat 接入
 - `packages/web/src/features/companion/sse-client.ts` — 原生 SSE 帧解析
 - `packages/web/src/features/companion/components/CompanionChatPage.tsx` — 事件分发
 - `packages/web/src/features/companion/store.ts` — 流式状态 Store
@@ -50,14 +50,17 @@
 
 | event | 前端处理 |
 |-------|----------|
-| `sources` | 写入 `GoferMessage.sources` / `retrieval_empty`；可渲染 `SourceCitations`（含 `kb_id`） |
+| `sources` | 写入 `GoferMessage.sources` / `retrieval_empty`；默认紧凑 `SourceCitations`，点击后右上角文档列表（**不**默认展开 content） |
 | `message` | `content += answer`（delta） |
 | `message_end` | 收尾；可带 `retrieval_empty` |
 | `error` | 展示用户可读错误；保留已累积 content/sources |
 
-请求侧：`transformParams` MUST 带上 `knowledge_base_ids`（至少 1 个）与可选 `retrieval_mode`（默认 strict）。KB 选择器 UI：`KnowledgeBaseSelector` 强制多选至少一个。
+请求侧：`transformParams` MUST 带上 `knowledge_base_ids`（至少 1 个）与可选 `retrieval_mode`（默认 strict）。KB 选择器 UI：`KnowledgeBaseSelector` 强制多选至少一个。输入区统一 `ChatComposer`（含 `ProviderSelector`）。
 
 **不要**把 Companion 的 `token`/`done` 事件枚举与 Chat Knowledge 混用。
+
+工作台布局 / 会话创建 / 模型选择陷阱 → [chat-workspace-ui.md](./chat-workspace-ui.md)。
+
 
 ### useXChat 6 状态生命周期调试
 

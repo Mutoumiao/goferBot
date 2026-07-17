@@ -1,93 +1,75 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { IconSidebar } from '@/components/sidebar/Sidebar'
-import { ROUTES_REGISTER } from '@/router-register'
 
-vi.mock('@/utils/cn', () => ({
-  cn: (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(' '),
-}))
+const mockNavigate = vi.fn()
 
-vi.mock('@/features/auth/components/Avatar', () => ({
-  Avatar: ({ fallback }: { fallback?: string }) => (
-    <div data-testid="avatar">{fallback?.[0] ?? 'U'}</div>
-  ),
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => mockNavigate,
+  useRouterState: (opts?: { select?: (s: unknown) => unknown }) => {
+    const state = { location: { pathname: '/chats' } }
+    return opts?.select ? opts.select(state) : state
+  },
 }))
 
 vi.mock('@/stores/auth', () => ({
-  useAuthStore: (selector?: (s: any) => any) => {
-    const state = { user: { name: 'Test User', avatarUrl: null } }
+  useAuthStore: (selector?: (s: { user: { name: string; avatar?: string } | null }) => unknown) => {
+    const state = { user: { name: 'Tester', avatar: undefined } }
     return selector ? selector(state) : state
   },
 }))
 
-const mockOpenRoute = vi.fn()
-
-vi.mock('@/stores/tabManager', () => ({
-  tabManager: {
-    openRoute: (...args: any[]) => mockOpenRoute(...args),
-  },
+vi.mock('@/features/auth/components/Avatar', () => ({
+  Avatar: () => <div data-testid="avatar" />,
 }))
 
-vi.mock('@/stores/workspace.store', () => ({
-  useWorkspaceStore: (selector?: (s: any) => any) => {
-    const state = {
-      activeTab: () => ({
-        id: 'tab-1',
-        type: ROUTES_REGISTER.history.key,
-        title: '会话历史',
-        closable: true,
-        createdAt: Date.now(),
-      }),
-    }
-    return selector ? selector(state) : state
-  },
-}))
+import { IconSidebar } from '@/components/sidebar/Sidebar'
 
 describe('IconSidebar', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockNavigate.mockReset()
   })
 
-  it('renders avatar and nav items from ROUTES_REGISTER', () => {
+  it('renders primary rail items: 会话 / 知识库 / 伴侣（无用户 icon，头像进个人资料）', () => {
     render(<IconSidebar />)
-
-    expect(screen.getByTestId('avatar')).toBeDefined()
-    expect(screen.getByTitle('个人资料')).toBeDefined()
-
-    const primaryRoutes = Object.values(ROUTES_REGISTER).filter((m) => m.navSection === 'primary')
-    for (const meta of primaryRoutes) {
-      expect(screen.getByTitle(meta.title)).toBeDefined()
-    }
-
-    const secondaryRoutes = Object.values(ROUTES_REGISTER).filter(
-      (m) => m.navSection === 'secondary',
-    )
-    for (const meta of secondaryRoutes) {
-      expect(screen.getByTitle(meta.title)).toBeDefined()
-    }
+    expect(screen.getByTestId('rail-chats')).toBeTruthy()
+    expect(screen.getByTestId('rail-knowledgeBase')).toBeTruthy()
+    expect(screen.getByTestId('rail-companion')).toBeTruthy()
+    expect(screen.queryByTestId('rail-profile')).toBeNull()
+    expect(screen.getByTestId('rail-avatar')).toBeTruthy()
   })
 
-  it('calls tabManager.openRoute when clicking nav item', () => {
+  it('renders secondary rail items: 设置 / 回收站', () => {
     render(<IconSidebar />)
-
-    fireEvent.click(screen.getByTitle('知识库'))
-    expect(mockOpenRoute).toHaveBeenCalledWith(ROUTES_REGISTER.knowledgeBase.key)
-
-    fireEvent.click(screen.getByTitle('设置'))
-    expect(mockOpenRoute).toHaveBeenCalledWith(ROUTES_REGISTER.settings.key)
+    expect(screen.getByTestId('rail-settings')).toBeTruthy()
+    expect(screen.getByTestId('rail-recycle')).toBeTruthy()
+    expect(screen.queryByTestId('rail-menu')).toBeNull()
   })
 
-  it('calls tabManager.openRoute(profile) when clicking avatar', () => {
+  it('marks current route active with aria-current', () => {
     render(<IconSidebar />)
-
-    fireEvent.click(screen.getByTitle('个人资料'))
-    expect(mockOpenRoute).toHaveBeenCalledWith(ROUTES_REGISTER.profile.key)
+    expect(screen.getByTestId('rail-chats').getAttribute('aria-current')).toBe('page')
+    expect(screen.getByTestId('rail-chats').getAttribute('data-active')).toBe('true')
   })
 
-  it('marks active tab', () => {
+  it('navigates with router.navigate when clicking nav item', async () => {
+    const user = userEvent.setup()
     render(<IconSidebar />)
+    await user.click(screen.getByTestId('rail-knowledgeBase'))
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/knowledgeBase' })
+  })
 
-    const historyBtn = screen.getByTitle('会话历史')
-    expect(historyBtn.className).toContain('text-text-primary')
+  it('navigates to profile when clicking avatar', async () => {
+    const user = userEvent.setup()
+    render(<IconSidebar />)
+    await user.click(screen.getByLabelText('个人资料'))
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/profile' })
+  })
+
+  it('does not navigate when clicking already active item', async () => {
+    const user = userEvent.setup()
+    render(<IconSidebar />)
+    await user.click(screen.getByTestId('rail-chats'))
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 })

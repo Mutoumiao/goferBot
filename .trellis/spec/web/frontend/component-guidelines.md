@@ -9,7 +9,7 @@
 Web 前端组件体系基于 **shadcn/ui** + **Radix UI** + **Tailwind CSS v4**。组件分为三层：
 1. **基础 UI 组件**：`components/ui/` 目录下的 shadcn/ui 自动生成组件
 2. **业务组件**：`features/*/components/` 目录下的功能模块专属组件
-3. **布局组件**：`components/sidebar/`、`components/tab-bar/` 等全局布局组件
+3. **布局组件**：`components/sidebar/`（Icon Rail）、`components/layout/`（`WorkspaceStage` / `SettingsSurface`）
 
 ---
 
@@ -49,22 +49,29 @@ export function MyComponent({
 ```
 components/
 ├── ui/                   # shadcn/ui 基础组件（自动生成，禁止手动修改）
-│   ├── button.tsx
-│   ├── dialog.tsx
-│   └── ...
-├── sidebar/              # 全局布局组件
+├── layout/               # 认证壳右侧舞台
+│   ├── WorkspaceStage.tsx    # #F0F2F7 + padding；业务白卡 / 设置 plain
+│   └── WorkspaceSurface.tsx  # SettingsSurface（居中 max-w-[925px]）
+├── sidebar/              # Icon Rail 70px（路由驱动，带 active）
 │   └── Sidebar.tsx
-└── tab-bar/              # 全局布局组件
-    ├── TabBar.tsx
-    └── TabRouteSync.tsx
+└── tab-bar/              # 已拆除（stub，勿再扩展）
 
 features/
 └── chat/
-    └── components/       # 业务组件（功能模块专属）
-        ├── ChatMessage.tsx
-        ├── ChatSessionView.tsx
-        └── ...
+    └── components/
+        ├── ChatsPage.tsx          # 左 SessionList + 右空态/会话
+        ├── SessionListPanel.tsx   # 智能对话入口 + 分组历史（无 +新会话）
+        ├── ChatEmptyHome.tsx      # 空态问候 + ChatComposer
+        ├── ChatSessionPanel.tsx   # 单会话 SSE 容器
+        ├── ChatSessionView.tsx    # 消息列表 + 引用浮层 + ChatComposer
+        ├── ChatComposer.tsx       # 统一输入（KB/模型/发送）
+        ├── SourceCitations.tsx    # 紧凑引用 + 文档浮层
+        ├── ProviderSelector.tsx   # 受控 Popover 模型选择
+        └── KnowledgeBaseSelector.tsx
 ```
+
+> Chat 工作台完整约定见 [chat-workspace-ui.md](./chat-workspace-ui.md)。
+
 
 ---
 
@@ -250,16 +257,17 @@ import { Input } from '@/components/ui/input'
 ### 业务组件
 
 位于 `features/*/components/`，实现特定业务功能。包含：
-- **页面组件**：如 `ChatPageByTab.tsx`
-- **列表组件**：如 `ChatHistoryList.tsx`
+- **页面组件**：如 `ChatsPage.tsx`
+- **列表面板**：如 `SessionListPanel.tsx`
 - **表单组件**：如 `LoginForm.tsx`
 - **展示组件**：如 `ChatMessage.tsx`
 
 ### 布局组件
 
-位于 `components/` 根目录，提供全局布局能力：
-- `Sidebar.tsx`：侧边栏导航
-- `TabBar.tsx`：标签页导航
+位于 `components/` / `components/layout/`：
+- `Sidebar.tsx` / `IconSidebar`：Icon Rail 一级导航。**当前路由 MUST 有 active 视觉**（`aria-current="page"` + 品牌浅底），点击使用 `router.navigate`
+- `WorkspaceStage.tsx`：右侧舞台 + 业务白卡 / plain 表面
+- `SettingsSurface.tsx`：设置类居中透明布局
 
 ---
 

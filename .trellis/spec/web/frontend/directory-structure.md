@@ -22,11 +22,9 @@ packages/web/src/
 │   ├── settings.ts           # 设置相关 API
 │   └── x-chat.ts             # XChat Provider 请求封装
 ├── components/               # UI 组件层
-│   ├── sidebar/              # 侧边栏组件
+│   ├── sidebar/              # Icon Rail（路由 active）
 │   │   └── Sidebar.tsx
-│   ├── tab-bar/              # 标签栏组件
-│   │   ├── TabBar.tsx
-│   │   └── TabRouteSync.tsx
+│   ├── tab-bar/              # 已拆除（stub）
 │   └── ui/                   # shadcn/ui 基础组件（自动生成）
 │       ├── button.tsx
 │       ├── dialog.tsx
@@ -61,29 +59,39 @@ packages/web/src/
 │       ├── components/
 │       ├── services.ts
 │       └── types.ts
+├── components/
+│   ├── layout/               # WorkspaceStage / SettingsSurface（认证壳）
+│   ├── sidebar/              # Icon Rail 70px
+│   └── ui/                   # shadcn
 ├── lib/                      # 工具库
-│   └── utils.ts              # 通用工具函数
+│   ├── route-keepalive.tsx   # Keep-Alive 上下文 / silent refresh
+│   ├── route-keepalive-outlet.tsx
+│   └── utils.ts
 ├── overlays/                 # Portal 命令式弹窗系统
 │   ├── dialogs/              # 预定义弹窗组件
 │   ├── hooks/                # useOverlay Hook
 │   ├── host/                 # OverlayHost + 状态管理
 │   ├── services/             # overlay-service（命令式 API）
 │   └── types/                # 类型定义
-├── routes/                   # TanStack Router 路由
-│   ├── _authenticated/       # 认证保护路由组
-│   │   ├── chat/
-│   │   ├── companions/
-│   │   └── ...
-│   ├── __root.tsx            # 根路由（全局布局）
-│   ├── _authenticated.tsx    # 认证路由布局
-│   ├── index.tsx             # 首页
-│   └── login.tsx             # 登录页
+├── routes/                   # TanStack Router 路由（仅一级业务 path）
+│   ├── __root.tsx
+│   ├── _authenticated.tsx    # 认证壳：Rail + WorkspaceStage + KeepAlive
+│   ├── index.tsx / login.tsx
+│   └── _authenticated/
+│       ├── chats.tsx         # selectedSessionId 本地态
+│       ├── companions.tsx    # selectedCompanionId 本地态；二级走弹层
+│       ├── knowledgeBase.tsx
+│       └── settings.tsx / profile.tsx / recycle.tsx
 ├── stores/                   # 全局状态（Zustand）
-│   ├── auth.ts               # 认证状态
-│   ├── conversation.store.ts # 会话消息缓存
-│   ├── settings.ts           # 用户设置
-│   ├── tabManager.ts         # 标签管理
-│   └── workspace.store.ts    # 工作区状态
+│   ├── auth.ts
+│   ├── conversation.store.ts
+│   └── settings.ts
+├── lib/
+│   ├── route-keepalive.tsx / route-keepalive-outlet.tsx
+│   └── session-cleanup.ts    # 登出清 client 状态（含 legacy gofer-workspace-v1）
+├── components/layout/
+│   ├── WorkspaceStage.tsx    # 右侧舞台 + 业务白卡 / plain
+│   └── SettingsSurface.tsx   # 设置类居中透明表面
 ├── utils/                    # 工具函数
 │   ├── auth-token.ts         # Token 相关
 │   ├── cn.ts                 # className 合并
@@ -113,7 +121,7 @@ packages/web/src/
    - `store.ts`：Zustand 状态管理，仅管理本地状态
    - `types.ts`：模块专属类型定义
 3. **全局 vs 局部**：
-   - `stores/`：全局共享状态（auth、settings、workspace）
+   - `stores/`：全局共享状态（auth、settings、conversation）
    - `features/*/store.ts`：模块局部状态
 
 ### 职责边界
@@ -154,7 +162,7 @@ features/new-feature/
 | 类型 | 规则 | 示例 |
 |------|------|------|
 | 组件 | PascalCase | `ChatSessionView.tsx` |
-| 状态管理 | camelCase + `.store.ts` | `workspace.store.ts` |
+| 状态管理 | camelCase + `.store.ts` / `.ts` | `conversation.store.ts`, `auth.ts` |
 | API 层 | camelCase + `.ts` | `auth.ts` |
 | 工具函数 | camelCase + `.ts` | `llm-config.ts` |
 | 类型定义 | `types.ts`（模块内）或特定名称 | `types.ts`, `llm-config.ts` |
@@ -164,21 +172,19 @@ features/new-feature/
 | 类型 | 规则 | 示例 |
 |------|------|------|
 | 功能模块 | PascalCase（首字母大写） | `KnowledgeBase/`, `companion/` |
-| 通用目录 | kebab-case | `tab-bar/`, `ui/` |
+| 通用目录 | kebab-case | `ui/` |
 
 ### 路由目录
 
-路由目录结构与 URL 路径保持一致：
-
 ```
 routes/_authenticated/
-├── chat/
-│   ├── $tabId.tsx        # /chat/:tabId
-│   └── index.tsx         # /chat
-└── companions/
-    ├── $companionId.chat.tsx   # /companions/:companionId/chat
-    └── $companionId.memories.tsx # /companions/:companionId/memories
+├── chats.tsx                 # /chats 会话工作台（一级真相源）
+├── knowledgeBase.tsx         # /knowledgeBase 一级
+├── companions.tsx            # /companions 一级（列表+内嵌聊天；无业务二级 file route）
+├── settings.tsx / profile.tsx / recycle.tsx
 ```
+
+**禁止**再增加：`/chat*`、`/history` redirect 壳；`/companions/new`、`/companions/$id/*` 等会拆掉一级 Keep-Alive 的业务子路由。二级 UI 走 `overlays` + `openDialog`（见 `overlay-portal-system.md`、companion 弹层封装）。
 
 ---
 
@@ -189,20 +195,21 @@ routes/_authenticated/
 ```
 features/chat/
 ├── components/
-│   ├── ChatPageByTab.tsx    # 聊天页面入口
-│   ├── ChatSessionView.tsx  # 会话视图
-│   ├── ChatMessage.tsx      # 消息气泡
-│   ├── ChatMarkdown.tsx     # Markdown 渲染
-│   ├── KnowledgeBaseSelector.tsx  # 知识库选择器
-│   └── ProviderSelector.tsx       # 模型选择器
+│   ├── ChatsPage.tsx          # /chats 入口（左列表 + 右会话）
+│   ├── SessionListPanel.tsx   # 左栏会话列表
+│   ├── ChatEmptyHome.tsx      # 空态首页
+│   ├── ChatSessionPanel.tsx   # 会话装载 + 缓存
+│   ├── ChatSessionView.tsx    # 消息区 + Composer
+│   ├── ChatComposer.tsx       # 统一输入
+│   ├── ChatMessage.tsx / ChatMarkdown.tsx / SourceCitations.tsx
+│   ├── KnowledgeBaseSelector.tsx
+│   └── ProviderSelector.tsx
 ├── providers/
-│   └── GoferChatProvider.ts # XChat Provider 实现
-├── constants.ts             # 常量定义
-├── hooks.ts                 # 自定义 Hook（分页加载等）
-├── services.ts              # 业务编排（创建会话、删除会话等）
-├── store.ts                 # 聊天模块状态
-└── types.ts                 # 类型定义
+│   └── GoferChatProvider.ts
+├── constants.ts / hooks.ts / services.ts / store.ts / types.ts
 ```
+
+> **禁止再引入**：`ChatHistoryPage` / `ChatHistoryList`（已并入 SessionListPanel）、`ChatPageByTab` / `ChatTempHome`、`tabManager` / `workspace.store` / `TabBar`。
 
 ### 全局状态示例（auth）
 
