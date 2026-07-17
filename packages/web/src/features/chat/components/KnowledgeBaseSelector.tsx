@@ -93,7 +93,7 @@ export function KnowledgeBaseSelector({
       <PopoverContent
         side="top"
         align="start"
-        className="w-72 rounded-xl border border-border-default bg-surface-1 p-0 shadow-xl"
+        className="max-h-[min(320px,50vh)] w-72 overflow-y-auto rounded-xl border border-border-default bg-surface-1 p-0 shadow-xl"
         data-testid="kb-selector-dropdown"
       >
         {loading && (

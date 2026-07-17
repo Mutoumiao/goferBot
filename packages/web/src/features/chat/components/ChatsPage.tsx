@@ -109,7 +109,10 @@ export function ChatsPage() {
   }, [selectedId, sessions])
 
   return (
-    <div className="relative flex h-full min-h-0 overflow-hidden bg-transparent" data-testid="chats-page">
+    <div
+      className="relative flex h-full min-h-0 overflow-hidden bg-transparent"
+      data-testid="chats-page"
+    >
       {!isWide && listOpen && (
         <button
           type="button"

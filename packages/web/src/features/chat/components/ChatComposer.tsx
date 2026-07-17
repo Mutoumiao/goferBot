@@ -1,6 +1,6 @@
 import type { ProviderListItem } from '@goferbot/data'
 import { ArrowUp, Square } from 'lucide-react'
-import { useEffect, type KeyboardEvent, type ReactNode } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/utils/cn'
@@ -69,9 +69,7 @@ export function ChatComposer({
 
   const resolvedPlaceholder =
     placeholder ??
-    (selectedKbIds.length === 0
-      ? '请先选择知识库，再提问…'
-      : '输入问题，基于所选知识库回答…')
+    (selectedKbIds.length === 0 ? '请先选择知识库，再提问…' : '输入问题，基于所选知识库回答…')
 
   // 进入输入区时若尚未加载模型列表则拉取（避免仅依赖页面级 silent-refresh 漏调）
   // 注意：空列表成功返回后不得 force 重试，否则会与 onRetryProviders 引用变化形成请求风暴

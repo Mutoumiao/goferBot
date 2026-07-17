@@ -1,11 +1,13 @@
-import { Bubble } from '@ant-design/x'
 import { XMarkdown } from '@ant-design/x-markdown'
 import type { ChatSourceItem } from '@goferbot/data'
+import type { UIMessage } from 'ai'
 import { AlertCircleIcon, XIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { ChatPendingIndicator } from '@/components/chat-pending-indicator'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { GoferInput, GoferMessage } from '../providers/GoferChatProvider'
+import { cn } from '@/utils/cn'
+import { getMessageSources, getRetrievalEmpty, textFromUiMessage } from '../message-sources'
 import { fetchProviders } from '../services'
 import { useChatStore } from '../store'
 import { ChatComposer } from './ChatComposer'
@@ -17,13 +19,9 @@ function retryFetchProviders() {
 
 interface ChatSessionViewProps {
   conversationId: string
-  xMessages: {
-    id: number | string
-    message: GoferMessage
-    status: 'loading' | 'success' | 'error' | 'local' | 'updating' | 'abort'
-  }[]
-  onRequest: (params: GoferInput) => void
-  isRequesting: boolean
+  messages: UIMessage[]
+  isStreaming: boolean
+  onSend: (text: string) => void
   onRetry: () => void
   onAbort: () => void
   selectedProviderKey: string | null
@@ -34,9 +32,9 @@ interface ChatSessionViewProps {
 
 export function ChatSessionView({
   conversationId,
-  xMessages,
-  onRequest,
-  isRequesting,
+  messages,
+  isStreaming,
+  onSend,
   onRetry,
   onAbort,
   selectedProviderKey,
@@ -48,6 +46,7 @@ export function ChatSessionView({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   /** 右上角参考文档浮层（按消息点击展开） */
   const [panelSources, setPanelSources] = useState<ChatSourceItem[] | null>(null)
+  const [panelMessageId, setPanelMessageId] = useState<string | null>(null)
 
   // 细粒度订阅，避免 loadHistory / setActiveSession 等无关字段触发整页重渲染
   const isLoadingHistory = useChatStore((s) => s.isLoadingHistory)
@@ -67,46 +66,20 @@ export function ChatSessionView({
       }
       setErrorMessage(null)
       setInputValue('')
-      onRequest({
-        response_mode: 'streaming',
-        query: trimmed,
-        conversation_id: conversationId || '',
-        provider_key: selectedProviderKey ?? undefined,
-        knowledge_base_ids: selectedKbIds,
-        retrieval_mode: 'strict',
-      })
+      onSend(trimmed)
     },
-    [conversationId, selectedProviderKey, selectedKbIds, onRequest],
+    [selectedKbIds, onSend],
   )
 
-  function handleOpenSources(sources: ChatSourceItem[]) {
+  const handleOpenSources = useCallback((sources: ChatSourceItem[], messageId: string) => {
     setPanelSources(sources)
-  }
+    setPanelMessageId(messageId)
+  }, [])
 
-  const bubbleItems = xMessages.map(({ id, message, status }) => ({
-    key: id,
-    role: message.role,
-    content: message.content,
-    loading: status === 'loading',
-    contentRender:
-      message.role === 'assistant'
-        ? (content: string) => (
-            <div>
-              <SourceCitations
-                sources={message.sources}
-                retrievalEmpty={message.retrieval_empty}
-                onOpenPanel={handleOpenSources}
-              />
-              <XMarkdown
-                content={content}
-                streaming={{
-                  hasNextChunk: status === 'loading' || status === 'updating',
-                }}
-              />
-            </div>
-          )
-        : undefined,
-  }))
+  const handleCloseSources = useCallback(() => {
+    setPanelSources(null)
+    setPanelMessageId(null)
+  }, [])
 
   useEffect(() => {
     if (!error) return
@@ -117,13 +90,22 @@ export function ChatSessionView({
   // 切换会话时关闭浮层
   useEffect(() => {
     setPanelSources(null)
+    setPanelMessageId(null)
   }, [conversationId])
+
+  const displayMessages = messages.filter((m) => m.role === 'user' || m.role === 'assistant')
+  const lastDisplay = displayMessages[displayMessages.length - 1]
+  const lastAssistantEmpty =
+    lastDisplay?.role === 'assistant' && !textFromUiMessage(lastDisplay).trim()
+  /** 已提交/流式中，但尚无正文：首 token 前展示等待态 */
+  const showPendingBubble =
+    isStreaming && (lastDisplay?.role === 'user' || lastAssistantEmpty || !lastDisplay)
 
   return (
     <div className="relative flex h-full flex-col bg-surface-1" data-testid="chat-session-view">
       {/* 右上角参考文档浮层 */}
       {panelSources && (
-        <SourceDocsFloatingPanel sources={panelSources} onClose={() => setPanelSources(null)} />
+        <SourceDocsFloatingPanel sources={panelSources} onClose={handleCloseSources} />
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -136,7 +118,7 @@ export function ChatSessionView({
             </div>
           )}
 
-          {!isLoadingHistory && xMessages.length === 0 && (
+          {!isLoadingHistory && displayMessages.length === 0 && !isStreaming && (
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">
                 <h3 className="text-lg font-medium text-text-primary">开始知识库问答</h3>
@@ -147,33 +129,76 @@ export function ChatSessionView({
             </div>
           )}
 
-          <Bubble.List
-            autoScroll
-            role={{
-              user: {
-                placement: 'end',
-                variant: 'filled',
-                shape: 'round',
-              },
-              assistant: {
-                placement: 'start',
-                variant: 'borderless',
-                shape: 'round',
-              },
-            }}
-            items={bubbleItems}
-            styles={{
-              content: {
-                fontSize: 14,
-                lineHeight: 1.6,
-              },
-            }}
-          />
+          <div className="space-y-4" data-testid="chat-message-list">
+            {displayMessages.map((msg, index) => {
+              const isUser = msg.role === 'user'
+              const content = textFromUiMessage(msg)
+              const isLast = index === displayMessages.length - 1
+              const streamingThis = isStreaming && isLast && msg.role === 'assistant'
+              const sources = !isUser ? getMessageSources(msg) : undefined
+              const retrievalEmpty = !isUser ? getRetrievalEmpty(msg) : false
+              const messageKey = msg.id || `msg-${conversationId}-${index}`
+              const sourcesPanelOpen = panelMessageId === messageKey
+              const waitingFirstToken = streamingThis && !content.trim()
+
+              return (
+                <div
+                  key={messageKey}
+                  className={cn('flex w-full', isUser ? 'justify-end' : 'justify-start')}
+                  data-testid={isUser ? 'chat-msg-user' : 'chat-msg-assistant'}
+                  data-message-id={msg.id}
+                >
+                  <div
+                    className={cn(
+                      'max-w-[85%] text-sm leading-relaxed',
+                      isUser
+                        ? 'rounded-2xl bg-brand-primary px-4 py-2.5 text-white'
+                        : 'text-text-primary',
+                    )}
+                  >
+                    {isUser ? (
+                      <p className="whitespace-pre-wrap">{content}</p>
+                    ) : waitingFirstToken ? (
+                      <ChatPendingIndicator label="正在检索与生成…" />
+                    ) : (
+                      <div>
+                        <SourceCitations
+                          sources={sources}
+                          retrievalEmpty={retrievalEmpty}
+                          panelOpen={sourcesPanelOpen}
+                          onOpenPanel={(s) => handleOpenSources(s, messageKey)}
+                        />
+                        <XMarkdown
+                          content={content}
+                          streaming={{
+                            hasNextChunk: streamingThis,
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* 用户消息已上屏、助手气泡尚未出现时的独立等待气泡 */}
+            {showPendingBubble && lastDisplay?.role !== 'assistant' && (
+              <div
+                className="flex w-full justify-start"
+                data-testid="chat-pending-bubble"
+              >
+                <div className="max-w-[85%] text-sm leading-relaxed text-text-primary">
+                  <ChatPendingIndicator label="正在检索与生成…" />
+                </div>
+              </div>
+            )}
+          </div>
 
           {errorMessage && (
             <div
               className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4"
               data-testid="error-banner"
+              role="alert"
             >
               <p className="text-sm text-destructive-foreground">{errorMessage}</p>
               {errorMessage.includes('知识库') ? null : (
@@ -202,7 +227,7 @@ export function ChatSessionView({
           }}
           onSubmit={handleSubmit}
           onAbort={onAbort}
-          loading={isRequesting}
+          loading={isStreaming}
           selectedKbIds={selectedKbIds}
           onChangeKbIds={onChangeKbIds}
           selectedProviderKey={selectedProviderKey}
@@ -213,17 +238,16 @@ export function ChatSessionView({
           onRetryProviders={retryFetchProviders}
           error={errorMessage}
           showDisclaimer
-          placeholder={
-            selectedKbIds.length === 0
-              ? '请先选择知识库，再输入问题…'
-              : '继续提问…'
-          }
+          placeholder={selectedKbIds.length === 0 ? '请先选择知识库，再输入问题…' : '继续提问…'}
           sendTestId="session-send-btn"
         />
       </div>
 
       {error && (
-        <div className="absolute bottom-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-error/20 bg-surface-1 px-4 py-2.5 text-sm text-error shadow-xl">
+        <div
+          className="absolute bottom-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-error/20 bg-surface-1 px-4 py-2.5 text-sm text-error shadow-xl"
+          role="status"
+        >
           <AlertCircleIcon className="size-4" />
           <span>{error}</span>
           <Button

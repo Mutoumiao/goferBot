@@ -1,23 +1,21 @@
-import { XProvider } from '@ant-design/x'
-import { useXChat } from '@ant-design/x-sdk'
-import type { Message } from '@goferbot/data'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useChat } from '@ai-sdk/react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useConversationStore } from '@/stores/conversation.store'
 import { getPendingMessageKey } from '../constants'
-import type { GoferInput, GoferMessage } from '../providers/GoferChatProvider'
-import type { PendingMessage } from '../services'
+import { KnowledgeChatTransport } from '../knowledge-chat-transport'
 import {
-  createGoferProvider,
-  fetchProviders,
-  loadChatHistory,
-  resolveSessionById,
-} from '../services'
+  historyMessageToUiMessage,
+  textFromUiMessage,
+  uiMessagesToMessages,
+} from '../message-sources'
+import type { PendingMessage } from '../services'
+import { fetchProviders, loadChatHistory, resolveSessionById } from '../services'
 import { useChatStore } from '../store'
 import { ChatSessionView } from './ChatSessionView'
 
 interface ChatSessionPanelProps {
-  /** Session.id（来自 ?c=） */
+  /** Session.id（来自 chatStore.selectedSessionId，不写 URL） */
   sessionId: string
   /** 固定注入的知识库（知识库页同屏问答）；不传则用户自选 */
   fixedKbIds?: string[]
@@ -26,47 +24,9 @@ interface ChatSessionPanelProps {
 
 const NOOP_KB_CHANGE = () => {}
 
-function messagesToMessageInfos(messages: Message[]) {
-  return messages.map((message) => {
-    const meta = message.metadata as
-      | { sources?: GoferMessage['sources']; retrieval_empty?: boolean }
-      | null
-      | undefined
-    return {
-      id: message.id,
-      message: {
-        content: message.content,
-        role: message.role as GoferMessage['role'],
-        sources: meta?.sources,
-        retrieval_empty: meta?.retrieval_empty,
-      },
-      status: 'success' as const,
-    }
-  })
-}
-
-function xMessagesToMessages(
-  xMessages: { id: number | string; message: GoferMessage }[],
-  conversationId: string,
-): Message[] {
-  return xMessages.map((xMsg, index) => ({
-    id: typeof xMsg.id === 'string' ? xMsg.id : `msg-${index}`,
-    sessionId: conversationId,
-    role: xMsg.message.role,
-    content: xMsg.message.content,
-    createdAt: new Date().toISOString(),
-    metadata:
-      xMsg.message.sources || xMsg.message.retrieval_empty
-        ? {
-            sources: xMsg.message.sources,
-            retrieval_empty: xMsg.message.retrieval_empty,
-          }
-        : undefined,
-  }))
-}
-
 /**
- * 单会话消息区：绑定 Session.id，Abort + streamGeneration 竞态守卫。
+ * 单会话消息区：I2 实例模型 — useChat 生命周期绑定 sessionId 挂载。
+ * 切换/卸载时 stop/abort；历史经 setMessages hydrate。
  */
 export function ChatSessionPanel({
   sessionId,
@@ -75,7 +35,6 @@ export function ChatSessionPanel({
 }: ChatSessionPanelProps) {
   const pendingSentRef = useRef(false)
   const streamGenerationRef = useRef(0)
-  const providerRef = useState(() => createGoferProvider())[0]
   /** 回调走 ref，避免进入 session 加载 effect 依赖导致无限重跑 */
   const onSessionInvalidRef = useRef(onSessionInvalid)
   onSessionInvalidRef.current = onSessionInvalid
@@ -85,41 +44,43 @@ export function ChatSessionPanel({
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>(fixedKbIds ?? [])
   const [resolving, setResolving] = useState(true)
 
-  const {
-    messages: xMessages,
-    onRequest,
-    isRequesting,
-    abort,
-    setMessages: setMessagesFn,
-  } = useXChat<GoferMessage, GoferMessage, GoferInput>({
-    provider: providerRef,
-    requestPlaceholder: () => ({
-      content: '正在思考中...',
-      role: 'assistant',
-    }),
-    requestFallback: (_, { error: err, messageInfo }) => {
-      if (err.name === 'AbortError') {
-        return {
-          content: messageInfo?.message?.content || '已取消回复',
-          role: 'assistant',
-          sources: messageInfo?.message?.sources,
-          retrieval_empty: messageInfo?.message?.retrieval_empty,
-        }
-      }
-      return {
-        content: '网络异常，请稍后重试',
-        role: 'assistant',
-      }
+  const selectedKbIdsRef = useRef(selectedKbIds)
+  const selectedProviderKeyRef = useRef(selectedProviderKey)
+  selectedKbIdsRef.current = selectedKbIds
+  selectedProviderKeyRef.current = selectedProviderKey
+
+  const transport = useMemo(
+    () =>
+      new KnowledgeChatTransport({
+        getConversationId: () => sessionId,
+        getKnowledgeBaseIds: () => selectedKbIdsRef.current,
+        getProviderKey: () => selectedProviderKeyRef.current ?? undefined,
+      }),
+    [sessionId],
+  )
+
+  const { messages, sendMessage, status, setMessages, stop, error, clearError } = useChat({
+    id: sessionId,
+    transport,
+    onError: (err) => {
+      // 传输错误唯一 toast 出口（勿再在 error effect 里 toast）
+      toast.error(err.message || '对话失败')
     },
   })
 
-  const abortRef = useRef(abort)
-  const setMessagesRef = useRef(setMessagesFn)
+  const isStreaming = status === 'submitted' || status === 'streaming'
+
+  const stopRef = useRef(stop)
+  const setMessagesRef = useRef(setMessages)
+  const sendMessageRef = useRef(sendMessage)
+  const clearErrorRef = useRef(clearError)
 
   useEffect(() => {
-    abortRef.current = abort
-    setMessagesRef.current = setMessagesFn
-  }, [abort, setMessagesFn])
+    stopRef.current = stop
+    setMessagesRef.current = setMessages
+    sendMessageRef.current = sendMessage
+    clearErrorRef.current = clearError
+  }, [stop, setMessages, sendMessage, clearError])
 
   useEffect(() => {
     void fetchProviders()
@@ -134,21 +95,20 @@ export function ChatSessionPanel({
 
   const hasFixedKb = Boolean(fixedKbIds?.length)
 
-  const safeAbort = useCallback(() => {
+  const safeStop = useCallback(() => {
     try {
-      abortRef.current?.()
+      stopRef.current?.()
     } catch {
-      // useXChat 内部 AbortController 可能尚未初始化
+      // stop 可能在未开始时调用
     }
   }, [])
 
-  // 切换 session / 卸载：Abort + 提升 generation
-  // 依赖仅 sessionId。abort / onSessionInvalid 经 ref 读取，禁止进 deps（useXChat 的 abort
-  // 常随每次 render 换引用 → setState → 再 render → Maximum update depth）。
+  // 切换 session / 卸载：stop + 提升 generation
+  // 依赖仅 sessionId。stop / onSessionInvalid 经 ref 读取，禁止进 deps。
   useEffect(() => {
     const generation = ++streamGenerationRef.current
     pendingSentRef.current = false
-    safeAbort()
+    safeStop()
     try {
       setMessagesRef.current?.([])
     } catch {
@@ -173,7 +133,7 @@ export function ChatSessionPanel({
       if (cached?.messages.length) {
         if (generation === streamGenerationRef.current) {
           try {
-            setMessagesRef.current?.(messagesToMessageInfos(cached.messages))
+            setMessagesRef.current?.(cached.messages.map(historyMessageToUiMessage))
           } catch {
             // ignore
           }
@@ -198,7 +158,7 @@ export function ChatSessionPanel({
       const fresh = useConversationStore.getState().conversationMap[sessionId]?.messages ?? []
       if (fresh.length) {
         try {
-          setMessagesRef.current?.(messagesToMessageInfos(fresh))
+          setMessagesRef.current?.(fresh.map(historyMessageToUiMessage))
         } catch {
           // ignore
         }
@@ -209,17 +169,47 @@ export function ChatSessionPanel({
     return () => {
       cancelled = true
       streamGenerationRef.current++
-      safeAbort()
+      safeStop()
     }
-  }, [sessionId, safeAbort])
+  }, [sessionId, safeStop])
 
+  // 仅在非流式时同步到 conversationStore，避免每个 token 写全局缓存
   useEffect(() => {
-    if (!sessionId || xMessages.length === 0) return
-    const messages = xMessagesToMessages(xMessages, sessionId)
-    useConversationStore.getState().setMessages(sessionId, messages)
-  }, [sessionId, xMessages])
+    if (!sessionId || messages.length === 0) return
+    if (status === 'submitted' || status === 'streaming') return
+    const prev = useConversationStore.getState().conversationMap[sessionId]?.messages
+    const mapped = uiMessagesToMessages(messages, sessionId, prev)
+    useConversationStore.getState().setMessages(sessionId, mapped)
+  }, [sessionId, messages, status])
 
-  // Auto-send pending
+  // 清除 residual error 状态，不再二次 toast
+  useEffect(() => {
+    if (!error) return
+    clearErrorRef.current?.()
+  }, [error])
+
+  const sendKnowledgeQuery = useCallback(
+    async (query: string, kbIds: string[]) => {
+      const generation = streamGenerationRef.current
+      const trimmed = query.trim()
+      if (!trimmed || !kbIds.length) return
+      if (generation !== streamGenerationRef.current) return
+      await sendMessageRef.current(
+        { text: trimmed },
+        {
+          body: {
+            conversation_id: sessionId,
+            knowledge_base_ids: kbIds,
+            provider_key: selectedProviderKeyRef.current ?? undefined,
+            retrieval_mode: 'strict',
+          },
+        },
+      )
+    },
+    [sessionId],
+  )
+
+  // Auto-send pending（同一 useChat 发送路径）
   useEffect(() => {
     if (pendingSentRef.current) return
     if (!sessionId || resolving) return
@@ -241,68 +231,47 @@ export function ChatSessionPanel({
       pending = { content: raw }
     }
 
-    const kbIds =
-      fixedKbIds?.length ? fixedKbIds : (pending.knowledgeBaseIds?.filter(Boolean) ?? [])
+    const kbIds = fixedKbIds?.length
+      ? fixedKbIds
+      : (pending.knowledgeBaseIds?.filter(Boolean) ?? [])
     if (kbIds.length) {
       setSelectedKbIds(kbIds)
     }
-    if (kbIds.length === 0) return
+    if (kbIds.length === 0) {
+      toast.error('请先选择至少一个知识库')
+      return
+    }
 
     const generation = streamGenerationRef.current
     queueMicrotask(() => {
       if (generation !== streamGenerationRef.current) return
-      onRequest({
-        response_mode: 'streaming',
-        query: pending.content.trim(),
-        conversation_id: sessionId,
-        provider_key: selectedProviderKey ?? undefined,
-        knowledge_base_ids: kbIds,
-        retrieval_mode: 'strict',
-      } as GoferInput)
+      void sendKnowledgeQuery(pending.content, kbIds)
     })
-  }, [sessionId, resolving, onRequest, selectedProviderKey, fixedKbIds])
+  }, [sessionId, resolving, fixedKbIds, sendKnowledgeQuery])
 
-  const handleRequest = useCallback(
-    (params: GoferInput) => {
+  const handleSend = useCallback(
+    (text: string) => {
       const generation = streamGenerationRef.current
-      const kbIds = fixedKbIds?.length ? fixedKbIds : params.knowledge_base_ids
+      const kbIds = fixedKbIds?.length ? fixedKbIds : selectedKbIds
       if (!kbIds?.length) {
         toast.error('请先选择至少一个知识库')
         return
       }
       if (generation !== streamGenerationRef.current) return
-      onRequest({
-        ...params,
-        knowledge_base_ids: kbIds,
-        conversation_id: sessionId,
-      })
+      void sendKnowledgeQuery(text, kbIds)
     },
-    [onRequest, sessionId, fixedKbIds],
-  )
-
-  const handleViewRequest = useCallback(
-    (params: unknown) => {
-      handleRequest(params as GoferInput)
-    },
-    [handleRequest],
+    [fixedKbIds, selectedKbIds, sendKnowledgeQuery],
   )
 
   const handleRetry = useCallback(() => {
-    const lastUserMsg = [...xMessages].reverse().find((m) => m.message.role === 'user')
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')
     const kbIds = fixedKbIds?.length ? fixedKbIds : selectedKbIds
     if (lastUserMsg && sessionId && kbIds.length > 0) {
-      handleRequest({
-        response_mode: 'streaming',
-        query: lastUserMsg.message.content,
-        conversation_id: sessionId,
-        provider_key: selectedProviderKey ?? undefined,
-        knowledge_base_ids: kbIds,
-        retrieval_mode: 'strict',
-      } as GoferInput)
+      void sendKnowledgeQuery(textFromUiMessage(lastUserMsg), kbIds)
     }
-  }, [xMessages, sessionId, handleRequest, selectedProviderKey, selectedKbIds, fixedKbIds])
+  }, [messages, sessionId, selectedKbIds, fixedKbIds, sendKnowledgeQuery])
 
-  if (resolving && xMessages.length === 0) {
+  if (resolving && messages.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-text-secondary">
         加载会话中…
@@ -311,19 +280,17 @@ export function ChatSessionPanel({
   }
 
   return (
-    <XProvider>
-      <ChatSessionView
-        conversationId={sessionId}
-        xMessages={xMessages}
-        onRequest={handleViewRequest}
-        isRequesting={isRequesting}
-        onRetry={handleRetry}
-        onAbort={safeAbort}
-        selectedProviderKey={selectedProviderKey}
-        onChangeProvider={setSelectedProviderKey}
-        selectedKbIds={selectedKbIds}
-        onChangeKbIds={hasFixedKb ? NOOP_KB_CHANGE : setSelectedKbIds}
-      />
-    </XProvider>
+    <ChatSessionView
+      conversationId={sessionId}
+      messages={messages}
+      isStreaming={isStreaming}
+      onSend={handleSend}
+      onRetry={handleRetry}
+      onAbort={safeStop}
+      selectedProviderKey={selectedProviderKey}
+      onChangeProvider={setSelectedProviderKey}
+      selectedKbIds={selectedKbIds}
+      onChangeKbIds={hasFixedKb ? NOOP_KB_CHANGE : setSelectedKbIds}
+    />
   )
 }

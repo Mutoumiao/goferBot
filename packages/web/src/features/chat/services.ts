@@ -8,12 +8,10 @@ import {
   getSessionById,
   getSessions,
 } from '@/api/chat'
-import { xChatRequest } from '@/api/x-chat'
 import { DeleteSessionDialog } from '@/overlays/dialogs/DeleteSessionDialog'
 import { openDialog } from '@/overlays/services/overlay-service'
 import { useConversationStore } from '@/stores/conversation.store'
 import { getPendingMessageKey } from './constants'
-import { GoferChatProvider } from './providers/GoferChatProvider'
 import { useChatStore } from './store'
 
 export async function loadChatSessions() {
@@ -138,13 +136,6 @@ export async function confirmDeleteChatSession(
   } finally {
     options?.onAfter?.()
   }
-}
-
-/** 创建 GoferChatProvider 实例 — 由 services 层组装，保持 API 集中管理 */
-export function createGoferProvider() {
-  return new GoferChatProvider({
-    request: xChatRequest,
-  })
 }
 
 /**

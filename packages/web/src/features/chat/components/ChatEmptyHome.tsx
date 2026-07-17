@@ -1,4 +1,3 @@
-import { XProvider } from '@ant-design/x'
 import { Star } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -62,72 +61,70 @@ export function ChatEmptyHome() {
   }
 
   return (
-    <XProvider>
-      <div
-        className="relative flex h-full flex-col overflow-hidden bg-surface-1"
-        data-testid="chat-empty-home"
-      >
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-10">
-          <div className="flex w-full max-w-[720px] flex-col items-center gap-7">
-            <div className="flex flex-col items-center">
-              <div
-                className="gofer-brand-gradient gofer-soft-shadow flex h-[72px] w-[72px] items-center justify-center rounded-xl text-white"
-                aria-hidden
-              >
-                <Star className="h-8 w-8 fill-white/95" />
-              </div>
-              <h1
-                className="mt-6 text-center text-[32px] font-semibold leading-tight tracking-tight text-text-primary"
-                data-testid="chat-home-greeting"
-              >
-                {greeting} {displayName}
-              </h1>
-              <p className="mt-2 max-w-md text-center text-sm text-text-secondary">
-                选择知识库后开始提问，回答将引用相关文档来源
-              </p>
+    <div
+      className="relative flex h-full flex-col overflow-hidden bg-surface-1"
+      data-testid="chat-empty-home"
+    >
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-10">
+        <div className="flex w-full max-w-[720px] flex-col items-center gap-7">
+          <div className="flex flex-col items-center">
+            <div
+              className="gofer-brand-gradient gofer-soft-shadow flex h-[72px] w-[72px] items-center justify-center rounded-xl text-white"
+              aria-hidden
+            >
+              <Star className="h-8 w-8 fill-white/95" />
             </div>
-
-            <ChatComposer
-              value={inputValue}
-              onChange={(v) => {
-                setInputValue(v)
-                if (localError) setLocalError(null)
-              }}
-              onSubmit={(content) => void handleSubmit(content)}
-              loading={isLoading}
-              selectedKbIds={selectedKbIds}
-              onChangeKbIds={setSelectedKbIds}
-              selectedProviderKey={selectedProviderKey}
-              onChangeProvider={setSelectedProviderKey}
-              providers={availableProviders}
-              isInitLoading={isInitLoading}
-              initError={initError}
-              onRetryProviders={retryFetchProviders}
-              error={localError}
-              showDisclaimer
-              maxWidthClassName="max-w-full"
-              sendTestId="temp-send-btn"
-            />
-
-            {initError && (
-              <div
-                className="flex w-full items-center justify-between gap-3 rounded-xl border border-error/25 bg-error/5 px-4 py-2.5 text-sm text-error"
-                data-testid="init-error-banner"
-              >
-                <span>模型列表加载失败：{initError}</span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={retryFetchProviders}
-                  className="text-brand-blue hover:bg-brand-blue/10"
-                >
-                  重试
-                </Button>
-              </div>
-            )}
+            <h1
+              className="mt-6 text-center text-[32px] font-semibold leading-tight tracking-tight text-text-primary"
+              data-testid="chat-home-greeting"
+            >
+              {greeting} {displayName}
+            </h1>
+            <p className="mt-2 max-w-md text-center text-sm text-text-secondary">
+              选择知识库后开始提问，回答将引用相关文档来源
+            </p>
           </div>
+
+          <ChatComposer
+            value={inputValue}
+            onChange={(v) => {
+              setInputValue(v)
+              if (localError) setLocalError(null)
+            }}
+            onSubmit={(content) => void handleSubmit(content)}
+            loading={isLoading}
+            selectedKbIds={selectedKbIds}
+            onChangeKbIds={setSelectedKbIds}
+            selectedProviderKey={selectedProviderKey}
+            onChangeProvider={setSelectedProviderKey}
+            providers={availableProviders}
+            isInitLoading={isInitLoading}
+            initError={initError}
+            onRetryProviders={retryFetchProviders}
+            error={localError}
+            showDisclaimer
+            maxWidthClassName="max-w-full"
+            sendTestId="temp-send-btn"
+          />
+
+          {initError && (
+            <div
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-error/25 bg-error/5 px-4 py-2.5 text-sm text-error"
+              data-testid="init-error-banner"
+            >
+              <span>模型列表加载失败：{initError}</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={retryFetchProviders}
+                className="text-brand-blue hover:bg-brand-blue/10"
+              >
+                重试
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-    </XProvider>
+    </div>
   )
 }
