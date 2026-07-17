@@ -1,6 +1,6 @@
 import type { ChatSourceItem } from '@goferbot/data'
 import { ChevronRight, FileTextIcon, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/utils/cn'
 
 interface SourceCitationsProps {
@@ -12,6 +12,8 @@ interface SourceCitationsProps {
    * 未传则组件内自管浮层。
    */
   onOpenPanel?: (sources: ChatSourceItem[]) => void
+  /** 父级托管浮层时的展开态（用于正确 aria-expanded） */
+  panelOpen?: boolean
 }
 
 export interface SourceDocumentRow {
@@ -71,23 +73,15 @@ export function SourceCitations({
   retrievalEmpty,
   className,
   onOpenPanel,
+  panelOpen,
 }: SourceCitationsProps) {
   const [localOpen, setLocalOpen] = useState(false)
 
-  const docs = useMemo(
-    () => (sources?.length ? uniqueSourceDocuments(sources) : []),
-    [sources],
-  )
+  const docs = useMemo(() => (sources?.length ? uniqueSourceDocuments(sources) : []), [sources])
 
   if (retrievalEmpty) {
     return (
-      <div
-        className={cn(
-          'mt-2 text-xs text-text-tertiary',
-          className,
-        )}
-        data-testid="sources-empty"
-      >
+      <div className={cn('mt-2 text-xs text-text-tertiary', className)} data-testid="sources-empty">
         未检索到相关资料
       </div>
     )
@@ -96,6 +90,8 @@ export function SourceCitations({
   if (!docs.length) return null
 
   const preview = docs.slice(0, 3)
+  const expanded = onOpenPanel ? Boolean(panelOpen) : localOpen
+
   const handleOpen = () => {
     if (onOpenPanel && sources) {
       onOpenPanel(sources)
@@ -111,7 +107,8 @@ export function SourceCitations({
         onClick={handleOpen}
         className="group inline-flex max-w-full items-center gap-1.5 rounded-lg py-0.5 text-left text-xs text-text-secondary transition-colors hover:text-text-primary"
         data-testid="sources-trigger"
-        aria-expanded={localOpen}
+        aria-expanded={expanded}
+        aria-haspopup="dialog"
       >
         <span>引用 {docs.length} 篇资料作为参考</span>
         <span className="inline-flex items-center -space-x-1" aria-hidden>
@@ -177,6 +174,23 @@ function SourceDocsPopover({
   className?: string
   dataTestId?: string
 }) {
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  useEffect(() => {
+    closeRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        onCloseRef.current()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
     <div
       className={cn(
@@ -185,6 +199,7 @@ function SourceDocsPopover({
       )}
       data-testid={dataTestId}
       role="dialog"
+      aria-modal="true"
       aria-label="参考文档列表"
     >
       <div className="flex items-center justify-between border-b border-border-panel px-3 py-2.5">
@@ -193,6 +208,7 @@ function SourceDocsPopover({
           <p className="text-[11px] text-text-tertiary">共 {docs.length} 篇</p>
         </div>
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
           className="flex h-7 w-7 items-center justify-center rounded-lg text-text-tertiary hover:bg-surface-2 hover:text-text-secondary"
