@@ -154,7 +154,7 @@ services/knowledge-ai-service/src/knowledge_ai/
 |----|--------|
 | Python unit | token 长度不等→False；RRF/parent/strict stream；redact |
 | Nest unit | Chat sources→message→end；KB 拒绝；IndexingWorker → `/index` + ready/failed |
-| Web unit | GoferChatProvider 处理 sources；KB 选择器必选 |
+| Web unit | KnowledgeChatTransport + getMessageSources；KB 选择器必选 |
 | 边界 DoD | index→retrieve sources→stream→delete 不可召回（`scripts/dod_acceptance.py`） |
 
 ### 7. Wrong vs Correct

@@ -26,7 +26,7 @@
 - **alova** — Companion CRUD / 记忆 / 关怀 REST
 - **Overlay `openDialog`** — 新建 / 编辑 / 关怀 / 记忆库二级入口
 - **shadcn/ui** — 表单与布局组件
-- **Knowledge Chat 仍可用 ant-design/x** — Companion **主路径已不再依赖** Bubble/Sender
+- **Knowledge Chat 与 Companion 均用 AI SDK useChat + 独立 Transport** — Markdown 可共用 `@ant-design/x-markdown`；Chat 侧见 [sse-streaming-architecture.md](./sse-streaming-architecture.md) 与 [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md)
 
 ## Development Entry
 

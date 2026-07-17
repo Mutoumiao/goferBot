@@ -209,13 +209,14 @@ const useConversationStore = create<ConversationState>(...)  // 按 conversation
 
 ```typescript
 // packages/web/src/features/chat/components/ChatSessionPanel.tsx
-const { messages } = useXChat(...)  // @ant-design/x-sdk 管理的消息
+const { messages } = useChat({ id: sessionId, transport })  // AI SDK
 
 useEffect(() => {
-  // 将 useXChat 的消息同步到全局 conversation store
-  useConversationStore.getState().setMessages(sessionId, messages)
+  // 将 useChat 的消息同步到全局 conversation store（缓存，非流式权威）
+  useConversationStore.getState().setMessages(sessionId, mapped)
 }, [messages, sessionId])
 ```
+
 
 **分层理由**：
 - `useChatStore`：会话选中态、providers、pending、sessionCache（模块级）

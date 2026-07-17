@@ -1,182 +1,328 @@
 # SSE 流式架构开发指南
 
-> **REFERENCE_ONLY**: 此文件记录开发指南（HOW）。业务规范权威源为 [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) 和 [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md)（WHAT）。chatMessagesChunkSchema 共享契约 / 双轨 SSE 业务分轨理由 应以 OpenSpec 为准。
+> **REFERENCE_ONLY**: 此文件记录开发指南（HOW）。业务规范权威源为 [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) 和 [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md)（WHAT）。`chatMessagesChunkSchema` 共享契约 / 双轨 SSE 业务分轨理由 应以 OpenSpec 为准。
+>
+> **客户端运行时（Knowledge Chat）**：AI SDK `useChat` + `KnowledgeChatTransport`。**不再**使用 `@ant-design/x-sdk` 的 `useXChat` / `AbstractChatProvider`。Markdown 仍可用 `@ant-design/x-markdown`。
 
 ---
 
 ## Purpose
 
-帮助开发者在 Web 端 SSE 流式架构中高效工作。本指南聚焦两条 SSE 实现路径（`@ant-design/x-sdk` 高层抽象与原生 `fetch` 底层实现）的开发模式、调试技巧与可复用模式，不重复业务契约定义。
+帮助开发者在 Web 端 SSE 流式架构中高效工作。本指南聚焦两条业务线（Knowledge Chat / Companion）在 **同一 AI SDK 运行时范式** 下的 Transport 映射、调试技巧与可复用模式，不重复业务契约定义。
 
 ## Primary OpenSpec
 
-- [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — Chat SSE 流式契约（`chatMessagesChunkSchema`、事件类型业务语义）
+- [openspec/specs/chat/spec.md](../../../../openspec/specs/chat/spec.md) — Chat SSE 流式契约（`chatMessagesChunkSchema`、事件类型业务语义、Web 客户端运行时）
 - [openspec/specs/companion/spec.md](../../../../openspec/specs/companion/spec.md) — Companion SSE 流式契约（LangGraph 管线）
 
 ## Related OpenSpec
 
-- [openspec/specs/auth/spec.md](../../../../openspec/specs/auth/spec.md) — Token 注入契约（`authedFetch` 依赖的 token 来源）
+- [openspec/specs/auth/spec.md](../../../../openspec/specs/auth/spec.md) — Cookie 会话凭证（`credentials: 'include'`）
 
 ## Module Dependencies
 
-- `@ant-design/x-sdk` — Chat SSE 客户端（`XRequest` + `useXChat`）
+- `ai` / `@ai-sdk/react` — `useChat` + 自定义 `ChatTransport`
 - `@ant-design/x-markdown` — Markdown 流式渲染（`XMarkdown` streaming）
-- 原生 `fetch` + `ReadableStream` — Companion SSE 客户端
-- `zustand` — 流式状态管理（`useCompanionStore`、`useChatStore`）
-- `zod` — 仅用于 OpenSpec 契约校验，前端不重复定义 schema
+- 原生 `fetch` + `ReadableStream` — Transport 内消费 Nest SSE
+- `zustand` — 会话列表 / conversation 缓存（非流式状态机权威）
+- `zod` — 仅用于 OpenSpec / packages/data 契约校验，前端不重复定义 wire schema
 
 ## Development Entry
 
-- `packages/web/src/api/x-chat.ts` — Chat XRequest 配置 + `authedFetch`
-- `packages/web/src/features/chat/providers/GoferChatProvider.ts` — 增量累积 Provider
-- `packages/web/src/features/chat/components/ChatSessionPanel.tsx` — useXChat 接入
-- `packages/web/src/features/companion/sse-client.ts` — 原生 SSE 帧解析
-- `packages/web/src/features/companion/components/CompanionChatPage.tsx` — 事件分发
-- `packages/web/src/features/companion/store.ts` — 流式状态 Store
+- `packages/web/src/features/chat/knowledge-chat-transport.ts` — Nest Chat SSE → UIMessageChunk
+- `packages/web/src/features/chat/message-sources.ts` — `getMessageSources` / `getRetrievalEmpty` / `historyMessageToUiMessage`
+- `packages/web/src/features/chat/components/ChatSessionPanel.tsx` — I2：`useChat` 随 `sessionId` 挂载
+- `packages/web/src/features/chat/components/ChatSessionView.tsx` — shadcn 列表 + Composer + XMarkdown
+- `packages/web/src/features/KnowledgeBase/components/KbInlineChat.tsx` — 同 Transport，固定 KB
+- `packages/web/src/features/companion/companion-chat-transport.ts` — Companion SSE → UIMessageChunk（**独立**，不与 Chat 合并）
+- `packages/web/src/features/companion/sse-client.ts` — Companion SSE 帧解析
+- `packages/web/src/features/companion/components/CompanionChatPage.tsx` — Companion useChat 接入
 
-## Implementation Notes
+---
 
-### XRequest manual: true 模式
+## Scenario: KnowledgeChatTransport 线级映射（跨层契约）
 
-`manual: true` 让开发者手动控制发送时机（而非声明即发），适配"先创建会话再发消息"的流程。配合 `authedFetch` 自定义 fetch 包装注入 `Authorization: Bearer <token>` header。Token 从 `useAuthStore.getState().token` 同步读取，避免闭包持有过期 token。
+> 本 change 触发 **Mandatory Triggers**：跨层 request/response 契约（浏览器 Transport ↔ Nest Chat SSE）。下列 7 节为可执行 code-spec。
 
-### GoferChatProvider transformMessage 增量累积
+### 1. Scope / Trigger
 
-`AbstractChatProvider` 子类通过 `originMessage.content + chunk.answer` 逐块拼接。**关键：JSON 解析失败时静默忽略**，返回当前 `originMessage.content`，不允许抛出异常中断流式渲染——单个坏帧不应影响整体对话。
+- **Trigger**：Knowledge Chat Web 主路径用 AI SDK 消费 Nest 既有 SSE；线级协议 **零变更**（不改 `chatMessagesChunkSchema`、不改 Companion 事件枚举）。
+- **In scope**：`KnowledgeChatTransport`、`message-sources` 选择器、`ChatSessionPanel` I2、`KbInlineChat`。
+- **Out of scope**：AI Data Stream 协议、卸 x-markdown、与 Companion Transport 合并、RAG 检索质量优化。
 
-### Chat Knowledge SSE：`sources` 优先
-
-知识问答契约（见 OpenSpec chat）事件顺序为 **`sources` → `message`* → `message_end` | `error`**：
-
-| event | 前端处理 |
-|-------|----------|
-| `sources` | 写入 `GoferMessage.sources` / `retrieval_empty`；默认紧凑 `SourceCitations`，点击后右上角文档列表（**不**默认展开 content） |
-| `message` | `content += answer`（delta） |
-| `message_end` | 收尾；可带 `retrieval_empty` |
-| `error` | 展示用户可读错误；保留已累积 content/sources |
-
-请求侧：`transformParams` MUST 带上 `knowledge_base_ids`（至少 1 个）与可选 `retrieval_mode`（默认 strict）。KB 选择器 UI：`KnowledgeBaseSelector` 强制多选至少一个。输入区统一 `ChatComposer`（含 `ProviderSelector`）。
-
-**不要**把 Companion 的 `token`/`done` 事件枚举与 Chat Knowledge 混用。
-
-工作台布局 / 会话创建 / 模型选择陷阱 → [chat-workspace-ui.md](./chat-workspace-ui.md)。
-
-
-### useXChat 6 状态生命周期调试
-
-| 状态 | 触发 | 调试要点 |
-|------|------|----------|
-| `loading` | `onRequest` 开始 | 流式中，`hasNextChunk=true` |
-| `success` | `done` 事件 | 流结束，光标消失 |
-| `error` | 网络错误 / 非正常中断 | 触发 `requestFallback` |
-| `local` | `onRequest` 中的 local message | 用户输入即时显示 |
-| `updating` | Pending message 重发 | `queueMicrotask` 延迟后 |
-| `abort` | `AbortController.abort()` | `requestFallback` 检测 `AbortError` |
-
-调试时优先检查 `message.status` 字段驱动 `XMarkdown.streaming.hasNextChunk`，光标动画异常通常是 status 未正确流转。
-
-### requestFallback 中断处理
-
-`requestFallback` 通过 `error.message.includes('AbortError')` 区分用户取消与网络异常：取消时保留已有内容，网络异常时提示重试。**不要在 fallback 中抛出异常**，否则会破坏 useXChat 状态机。
-
-### Pending Message 跨页传递
-
-临时会话消息通过 `sessionStorage` 传递：首页输入 → 创建临时会话 → `sessionStorage.setItem(pendingKey, JSON)` → 导航到新 tab → `queueMicrotask` 延迟发送（等待 React 渲染完成）→ 发送后清除 pending。**必须用 `queueMicrotask` 而非 `setTimeout`**，否则 useXChat 可能未挂载导致发送失败。
-
-### 原生 SSE 帧手动解析
-
-`ReadableStream` 可能分片送达，必须用 buffer 累积完整帧。SSE 标准帧分隔符是双 `\n\n`，手动处理 `event:` / `data:` 前缀，不依赖第三方 SSE 库：
+### 2. Signatures
 
 ```typescript
-const eventMatch = buffer.match(/event:(.+)\ndata:(.*)/)
-if (eventMatch) {
-  const eventType = eventMatch[1].trim()
-  const eventData = JSON.parse(eventMatch[2].trim())
-  // 分发: token / done / error
+// packages/web/src/features/chat/knowledge-chat-transport.ts
+export class KnowledgeChatTransport implements ChatTransport<UIMessage> {
+  constructor(options?: {
+    baseUrl?: string
+    getConversationId?: () => string
+    getKnowledgeBaseIds?: () => string[]
+    getProviderKey?: () => string | undefined
+    getRetrievalMode?: () => 'strict' | 'loose'
+  })
+  sendMessages(options: {
+    trigger: 'submit-message' | 'regenerate-message'
+    chatId: string
+    messageId: string | undefined
+    messages: UIMessage[]
+    abortSignal: AbortSignal | undefined
+    headers?: Record<string, string> | Headers
+    body?: object
+  }): Promise<ReadableStream<UIMessageChunk>>
+}
+
+export function parseChatSseBlock(
+  block: string,
+): { event: string; data: Record<string, unknown> } | null
+
+// packages/web/src/features/chat/message-sources.ts
+export function getMessageSources(msg: UIMessage): ChatSourceItem[] | undefined
+export function getRetrievalEmpty(msg: UIMessage): boolean
+export function textFromUiMessage(msg: UIMessage): string
+export function historyMessageToUiMessage(message: {
+  id: string
+  role: string
+  content: string
+  metadata?: unknown
+}): UIMessage
+```
+
+**HTTP（Nest 既有，Transport 调用侧）**：
+
+| 项 | 值 |
+|----|-----|
+| Method / Path | `POST {baseUrl}/chat-messages` |
+| Auth | `credentials: 'include'` + 可选 `Authorization`（`buildAuthHeader`） |
+| Content-Type | `application/json` |
+
+### 3. Contracts
+
+**Request body（Transport → Nest）**
+
+| 字段 | 类型 | 约束 |
+|------|------|------|
+| `response_mode` | `'streaming'` | 固定 |
+| `query` | string | 末条 user 文本，非空 |
+| `conversation_id` | string | body / getter / `chatId` 解析，非空 |
+| `knowledge_base_ids` | string[] | ≥1；KbInline 固定当前库 |
+| `provider_key` | string? | 可选 |
+| `retrieval_mode` | `'strict' \| 'loose'` | 默认 strict |
+| `parent_message_id` / `inputs` / `files` | optional | 透传 body |
+
+**Wire SSE（Nest → Transport，零变更）**
+
+| Wire `event` | AI SDK chunk | 说明 |
+|--------------|--------------|------|
+| `sources` | `data-sources` | 可先于 text；含 `sources[]`、`retrieval_empty?` |
+| `message` | `text-start` + `text-delta` | `answer` 增量 |
+| `message_end` | `text-end?` + `finish` | 定稿；**常不带完整 sources 列表** |
+| `error` | `error` + `finish` | **保留**已收 text |
+| 坏 JSON / 未知 event | 忽略 | 不中断流 |
+
+**UI 读取（唯一路径）**
+
+- 流式：`data-sources` part；`getMessageSources` 取 **最后一次** 有效 `data-sources`。
+- 历史：`historyMessageToUiMessage` 写入 metadata + 同构 `data-sources` part。
+- **禁止**第三份 sources 权威 store。
+
+### 4. Validation & Error Matrix
+
+| 条件 | 行为 |
+|------|------|
+| 无 `conversation_id` | throw `缺少 conversation_id…`（不发请求） |
+| 空 query | throw `消息内容为空` |
+| `knowledge_base_ids.length === 0` | throw `请先选择至少一个知识库` |
+| HTTP `!response.ok` | throw `Chat SSE 请求失败: {status}` |
+| 无 `response.body` | throw `ReadableStream 不可用` |
+| 坏 JSON SSE 帧 | `parseChatSseBlock` 返回 null，忽略 |
+| 流中 `error` 事件 | enqueue error + finish；**不**清空已收 text-delta |
+| Abort / 面板 unmount | `abortSignal` / `stop()` 中止 reader |
+
+### 5. Good / Base / Bad Cases
+
+| 类 | 场景 | 期望 |
+|----|------|------|
+| **Good** | `sources`（非空）→ `message`* → `message_end`（无 sources 字段） | 引用保留；正文完整；finish |
+| **Good** | `sources` + `retrieval_empty: true` → 固定 GUARDRAIL 正文 | 空检索提示；无假引用列表 |
+| **Base** | 仅 `message`* → `message_end` | 无引用 UI；正文正常 |
+| **Base** | 历史 hydrate 含 `metadata.sources` | `getMessageSources` 与流式一致 |
+| **Bad** | `message_end` 无条件再 enqueue `data-sources: {sources:[]}` | **引用被清空**（见 Gotcha） |
+| **Bad** | Chat 复用 `CompanionChatTransport` | 事件枚举混用，解析失败 |
+| **Bad** | effect deps 含 `stop` | Maximum update depth / 串台 |
+
+### 6. Tests Required
+
+| 层 | 断言点 |
+|----|--------|
+| Unit Transport | sources 先于 text；text 增量；message_end finish；error 保留部分 text；retrieval_empty；坏帧忽略；**message_end 不覆盖已有 sources** |
+| Unit message-sources | parts 优先于 metadata；最后一次 data-sources 胜出；historyMessageToUiMessage 可读 |
+| 组件 / 面板 | 强制 KB；切换 sessionId stop；hydrate 后引用可见 |
+| E2E（mock / real） | 选 KB → 提问 → 流式正文 + 引用摘要；历史回填；I2 不串台 |
+| 回归 | Companion smoke 无回归；Chat 主路径无 `useXChat` / `GoferChatProvider` |
+
+### 7. Wrong vs Correct
+
+#### Wrong — message_end 覆盖 sources
+
+```typescript
+// 禁止：Nest message_end 常无 sources 字段时，用空数组再写 data-sources
+if (event === 'message_end') {
+  enqueue({
+    type: 'data-sources',
+    data: { sources: data.sources ?? [] }, // getMessageSources 取最后一次 → 清空引用
+  })
+  enqueue({ type: 'finish', finishReason: 'stop' })
 }
 ```
 
-### Companion 事件分发与状态固化
+#### Correct — 跟踪 lastSources，仅按需补写
 
-- `token` 事件 → `appendStreamingChunk(chunk)` 逐 token 累积
-- `done` 事件 → `updateMessage(id, { content, streaming: false })` 固化
-- `error` 事件 → `resetStreaming()` 清空临时状态 + `toast.error()` 提示
+```typescript
+// 已收到 sources 事件时：message_end 若无 sources 数组，禁止补写空列表
+let lastSources: unknown[] | undefined
+let sourcesEventSeen = false
 
-**关键：`done` 必须固化，`error` 必须清理**，否则 streaming 状态残留导致 UI 卡死。
+if (event === 'sources') {
+  sourcesEventSeen = true
+  lastSources = Array.isArray(data.sources) ? data.sources : []
+  enqueue({ type: 'data-sources', data: { sources: lastSources, retrieval_empty: data.retrieval_empty } })
+}
 
-### CompanionTypingIndicator 打字机动画
+if (event === 'message_end') {
+  if (Array.isArray(data.sources)) {
+    // end 显式带列表才覆盖
+    enqueue({ type: 'data-sources', data: { sources: data.sources, retrieval_empty: ... } })
+  } else if (!sourcesEventSeen && data.retrieval_empty === true) {
+    // 从未 sources 事件时才写空 + empty
+    enqueue({ type: 'data-sources', data: { sources: [], retrieval_empty: true } })
+  }
+  // else: 保留既有 data-sources
+  finishText()
+  enqueue({ type: 'finish', finishReason: 'stop' })
+}
+```
 
-逐字输出模拟真人打字，由 `streamingContent` 驱动。与 Chat 的 `XMarkdown` 流式不同，Companion 是纯文本逐 token 拼接，无 Markdown 解析开销。
+#### Wrong — 第三份 sources store
+
+```typescript
+// 禁止：UI 自建 sourcesMap 作为权威
+const sourcesByMsgId = useRef(new Map())
+// 流式写入 map，渲染读 map —— 与 history metadata 分叉
+```
+
+#### Correct — 统一选择器
+
+```typescript
+const sources = getMessageSources(msg)
+const empty = getRetrievalEmpty(msg)
+```
+
+---
+
+## Implementation Notes
+
+### KnowledgeChatTransport（Chat 主路径）
+
+- POST 既有 `/chat-messages`，`credentials: 'include'` + 可选 `buildAuthHeader`。
+- Body：`query` / `conversation_id` / `knowledge_base_ids`（≥1）/ `provider_key?` / `retrieval_mode`。
+- **线级协议零变更**：`sources` → `message`* → `message_end` | `error`（见 OpenSpec chat）。
+- **禁止**复用 `CompanionChatTransport` 类；允许复制 text-id / finish 守卫模式。
+- 引用 UI：统一 `getMessageSources` / `getRetrievalEmpty`；**禁止**第三份 sources 权威 store。
+
+### 会话实例 I2
+
+`ChatSessionPanel(sessionId)` 挂载 = 一个 `useChat` 生命周期。切换会话：unmount → `stop()` → mount 新面板 → hydrate 历史。Effect 依赖仅 `sessionId`；`stop` / 回调经 **ref** 读取（禁止不稳定函数进 deps）。
+
+### Pending Message 跨页传递
+
+临时会话：首页输入 → 创建会话 → `sessionStorage` pending → 面板 mount 后 `queueMicrotask` 走同一 `sendMessage` 路径。**必须用 `queueMicrotask`**，避免 hook 未就绪。
+
+### Companion Transport（独立）
+
+- 事件：`token` / `done` / `error` / `summary` / `memories`（与 Chat **不**混用枚举）。
+- 入口：`CompanionChatTransport` + `CompanionChatPage`。
+- 详见 [companion-ui-rendering.md](./companion-ui-rendering.md)。
+
+### Markdown 流式
+
+`XMarkdown` 的 `streaming.hasNextChunk` 绑定 AI SDK `status === 'streaming' | 'submitted'`（末条 assistant），**不**依赖已删除的 useXChat 六态。
 
 ### 新模块 SSE 方案选择
 
-- 输出含 **Markdown**（代码块、表格）→ Chat 方案（`@ant-design/x-sdk`）
-- 输出为 **纯文本**，需模拟真人打字 → Companion 方案（原生 fetch + 打字机）
-- 需 **完全自定义** SSE 帧格式 → Companion 方案
+- Knowledge Chat / 知识库同屏 → `KnowledgeChatTransport` + `useChat`
+- Companion → `CompanionChatTransport` + `useChat`
+- **不要**再引入 `@ant-design/x-sdk` 聊天运行时
+
+### Design Decision: Chat 与 Companion 双 Transport
+
+**Context**：两条业务线 SSE 事件枚举与语义不同；产品要求 Knowledge Chat 与 Companion 共用 AI SDK 运行时体验。
+
+**Options**：
+1. 合并单一 Transport + 运行时分支
+2. 两套 Transport、共享模式（text-id / credentials / finish 守卫）
+
+**Decision**：选 2。Chat 独立文件 `knowledge-chat-transport.ts`；PR 拒收无关 Companion diff。
+
+**Extensibility**：新 SSE 产品线新建 Transport，不向现有类塞 if/else 协议分支。
+
+---
 
 ## Testing Checklist
 
-- [ ] Chat SSE 正确接收 `message` / `message_end` / `error` 事件，内容正确累积
-- [ ] Companion SSE 正确解析 `token` / `done` / `error` 事件
-- [ ] 用户取消时 `AbortController.abort()` 触发，`requestFallback` 保留已有内容
-- [ ] `authedFetch` 正确注入 `Authorization: Bearer <token>` header
-- [ ] Token 过期时 SSE 中断后有友好提示
-- [ ] 流式渲染无闪烁（`hasNextChunk` 与 `message.status` 正确绑定）
-- [ ] Companion `done` 事件后 streaming 状态正确固化
-- [ ] Companion `error` 事件后 streaming 状态正确清理
-- [ ] Pending Message 跨页传递后自动发送
+- [ ] Transport 单测：sources 先于 text、增量、message_end、error 保留部分内容、retrieval_empty、坏帧忽略
+- [ ] Transport 单测：`message_end` 无 sources 字段时 **不**清空已展示引用
+- [ ] 历史回填含 metadata.sources 可展示
+- [ ] 强制 KB；KbInline 固定库
+- [ ] 切换会话 stop，不串台（generation / unmount）
+- [ ] Chat 主路径无 `useXChat` / `GoferChatProvider` / `AbstractChatProvider`
+- [ ] Companion smoke 无回归；未误改 Companion Transport
+- [ ] 后端 SSE / Zod 无行为 diff
 
 ## Review Checklist
 
 - [ ] 新增 SSE 事件类型是否同步更新 OpenSpec（chat/spec.md 或 companion/spec.md）
-- [ ] `chatMessagesChunkSchema` 字段变更是否同步更新 OpenSpec
-- [ ] 双轨分轨理由变更（如新增第三轨）是否同步更新 OpenSpec
-- [ ] `authedFetch` token 读取方式变更是否影响所有 SSE 请求
-- [ ] 新增 Provider 是否正确实现 `transformMessage` 增量累积 + 静默忽略异常
+- [ ] `chatMessagesChunkSchema` 字段变更是否同步更新 OpenSpec（客户端迁移 **不应** 改 wire）
+- [ ] Chat / Companion Transport 是否仍隔离
+- [ ] sources 是否只经统一选择器读取
+- [ ] `message_end` 是否避免用空 `data-sources` 覆盖 lastSources
 
 ## Common Pitfalls
 
-- **SSE 帧解析边界问题**：`ReadableStream` 分片可能切断单帧，必须 buffer 累积到完整 `\n\n` 分隔符后再解析，否则正则匹配失败。
-- **Token 过期时 SSE 中断**：SSE 连接建立后 token 过期不会自动重连，需在 `error` 事件中检测 401 并引导重新登录。
-- **闭包持有过期 token**：`authedFetch` 若在模块加载时读取 token 并缓存，token 刷新后仍用旧值。必须在每次 fetch 调用时同步读取。
-- **`requestFallback` 抛异常**：会破坏 useXChat 状态机，导致后续消息无法发送。fallback 必须返回消息对象。
-- **`done` 事件未固化**：Companion 流结束时若忘记 `updateMessage`，`streamingContent` 残留导致下次对话混入旧内容。
-- **`queueMicrotask` vs `setTimeout`**：Pending Message 必须用 `queueMicrotask`，`setTimeout` 会导致 useXChat 未挂载时发送失败。
-- **JSON 解析失败中断流**：`transformMessage` 中 `JSON.parse` 抛异常会中断整个流式渲染，必须 try-catch 静默忽略。
+- **SSE 帧解析边界**：`ReadableStream` 分片可能切断单帧，必须 buffer 到 `\n\n`。
+- **不稳定 hook 返回值进 effect deps**：`stop`/`abort` 每帧新引用 → Maximum update depth；用 ref。
+- **切换会话串台**：必须 I2 unmount stop + generation 守卫。
+- **坏 JSON 中断流**：Transport 内 try-catch，坏帧忽略。
+- **第三份 sources store**：流式与历史必须同一 `getMessageSources` 路径。
+- **message_end 清空引用**：`getMessageSources` 取最后一次 `data-sources`；Nest `message_end` 常不带 sources 列表。必须跟踪 `lastSources` / `sourcesEventSeen`，禁止无条件 `sources: []`。见上方 Wrong vs Correct。
+- **误改 Companion**：Chat Transport 独立文件；PR 拒收无关 companion diff。
 
 ## Reusable Patterns
 
-### authedFetch Token 注入模式
-
-拦截所有需鉴权请求，统一从 store 同步读取 token 注入 header，避免闭包缓存：
+### credentials include + 可选 Authorization
 
 ```typescript
-const authedFetch = (...args: Parameters<typeof fetch>) => {
-  const token = useAuthStore.getState().token  // 同步读取，不缓存
-  return fetch(args[0], {
-    ...(typeof args[1] === 'object' ? args[1] : {}),
-    headers: {
-      ...(typeof args[1] === 'object' ? (args[1] as RequestInit).headers : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'Content-Type': 'application/json',
-    },
-  })
-}
+const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+const auth = buildAuthHeader()
+if (auth) headers.Authorization = auth
+await fetch(url, { method: 'POST', headers, credentials: 'include', body, signal })
 ```
 
-### 原生 SSE 帧解析模式
-
-buffer 累积 + 双 `\n\n` 分隔 + 正则匹配 `event:` / `data:` 前缀，不依赖第三方库。适用于需完全自定义帧格式的场景。
-
-### Zustand 流式状态管理模式
-
-`streamingContent` 逐 token 追加 + `done` 固化 + `error` 清理三段式：
+### 会话加载 effect（仅 sessionId）
 
 ```typescript
-appendStreamingChunk: (chunk) => set((s) => ({ streamingContent: s.streamingContent + chunk }))
-resetStreaming: () => set({ streamingContent: '', streamingMessageId: null, isStreaming: false })
+const stopRef = useRef(stop)
+useEffect(() => { stopRef.current = stop }, [stop])
+
+useEffect(() => {
+  const generation = ++streamGenerationRef.current
+  stopRef.current?.()
+  // resolve + load history → setMessages(hydrate)
+  return () => {
+    cancelled = true
+    streamGenerationRef.current++
+    stopRef.current?.()
+  }
+}, [sessionId]) // 禁止把 stop 放进 deps
 ```
-
-### Provider 增量累积模式
-
-`transformMessage` 返回新对象，`originMessage.content + chunk` 拼接，异常静默忽略返回当前内容。适用于所有基于 `AbstractChatProvider` 的流式 Provider。

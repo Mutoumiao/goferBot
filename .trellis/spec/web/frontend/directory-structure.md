@@ -204,10 +204,11 @@ features/chat/
 │   ├── ChatMessage.tsx / ChatMarkdown.tsx / SourceCitations.tsx
 │   ├── KnowledgeBaseSelector.tsx
 │   └── ProviderSelector.tsx
-├── providers/
-│   └── GoferChatProvider.ts
+├── knowledge-chat-transport.ts  # Nest Chat SSE → AI SDK Transport
+├── message-sources.ts           # getMessageSources / getRetrievalEmpty
 ├── constants.ts / hooks.ts / services.ts / store.ts / types.ts
 ```
+
 
 > **禁止再引入**：`ChatHistoryPage` / `ChatHistoryList`（已并入 SessionListPanel）、`ChatPageByTab` / `ChatTempHome`、`tabManager` / `workspace.store` / `TabBar`。
 
