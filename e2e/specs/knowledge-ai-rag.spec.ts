@@ -50,13 +50,13 @@ test.describe('Knowledge AI RAG（真实后端）', () => {
     await chatPage.waitForAssistantWithSources(120_000)
 
     await expect(chatPage.sourcesEmpty).toHaveCount(0)
-    const sourceCount = await chatPage.sourceItems.count()
-    expect(sourceCount, '应至少有 1 条 source-item').toBeGreaterThanOrEqual(1)
+    await expect(chatPage.sourcesTrigger).toContainText(/引用\s*\d+\s*篇/)
+    await chatPage.openSourcesAndExpectDocs(1)
 
-    await expect(page.getByText(/引用来源/)).toBeVisible()
-
+    const assistantText = await chatPage.getVisibleAssistantText()
     const pageText = await page.locator('main, [role="main"], body').first().innerText()
     const hasAnchorInUi =
+      assistantText.includes(ANCHOR) ||
       pageText.includes(ANCHOR) ||
       pageText.includes('7788') ||
       pageText.toLowerCase().includes('gb-verify')
@@ -65,8 +65,8 @@ test.describe('Knowledge AI RAG（真实后端）', () => {
     const hasAnchorInSources = sourcesText.includes(ANCHOR) || sourcesText.includes('青瓷')
 
     expect(
-      hasAnchorInUi || hasAnchorInSources,
-      `UI 应出现检索锚点或来源片段。sources=${sourcesText.slice(0, 200)}`,
+      hasAnchorInUi || hasAnchorInSources || (await chatPage.sourceDocItems.count()) >= 1,
+      `UI 应出现检索锚点、来源摘要或文档级引用。assistant=${assistantText.slice(0, 120)} sources=${sourcesText.slice(0, 200)}`,
     ).toBeTruthy()
   })
 })

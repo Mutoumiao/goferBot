@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
 
 /**
  * 知识库强制绑定后的 Chat 首页 / 会话页 POM。
- * 与旧 ChatPage 区分：占位符与 KB 选择器均已变更。
+ * UI：紧凑「引用 N 篇资料」+ SourceCitations（非旧 Bubble / source-item）。
  */
 export class RagChatPage {
   readonly page: Page
@@ -12,8 +12,11 @@ export class RagChatPage {
   readonly kbSelectorTrigger: Locator
   readonly kbSelectorDropdown: Locator
   readonly sourcesPanel: Locator
-  readonly sourceItems: Locator
+  readonly sourcesTrigger: Locator
+  readonly sourceDocItems: Locator
   readonly sourcesEmpty: Locator
+  readonly assistantMessages: Locator
+  readonly sessionView: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -23,8 +26,11 @@ export class RagChatPage {
     this.kbSelectorTrigger = page.getByTestId('kb-selector-trigger')
     this.kbSelectorDropdown = page.getByTestId('kb-selector-dropdown')
     this.sourcesPanel = page.getByTestId('sources-panel')
-    this.sourceItems = page.getByTestId('source-item')
+    this.sourcesTrigger = page.getByTestId('sources-trigger')
+    this.sourceDocItems = page.getByTestId('source-doc-item')
     this.sourcesEmpty = page.getByTestId('sources-empty')
+    this.assistantMessages = page.getByTestId('chat-msg-assistant')
+    this.sessionView = page.getByTestId('chat-session-view')
   }
 
   async openChatHome() {
@@ -41,14 +47,16 @@ export class RagChatPage {
       hasText: kbName,
     })
     await expect(item).toBeVisible({ timeout: 10_000 })
-    await item.click()
-    // 关闭 popover：再点一次 trigger 或按 Escape
+    // Popover 列表可能被 overflow 裁切，Playwright 原生 click 报 outside viewport
+    await item.evaluate((el) => {
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      ;(el as HTMLElement).click()
+    })
     await this.page.keyboard.press('Escape')
-    await expect(this.kbSelectorTrigger).toContainText(/[1-9]/, { timeout: 5_000 })
+    await expect(this.kbSelectorTrigger).toContainText(/[1-9]|·/, { timeout: 5_000 })
   }
 
   async submitFromHome(question: string) {
-    // 占位符随是否选 KB 变化，直接 fill textarea
     await this.homeTextarea.fill(question)
     await expect(this.homeSendButton).toBeEnabled({ timeout: 5_000 })
 
@@ -66,22 +74,31 @@ export class RagChatPage {
     await chatPromise
   }
 
+  /** 等待引用摘要条出现（sources 可先于正文） */
   async waitForAssistantWithSources(timeoutMs = 90_000) {
+    await expect(this.sessionView).toBeVisible({ timeout: Math.min(timeoutMs, 30_000) })
     await expect(this.sourcesPanel).toBeVisible({ timeout: timeoutMs })
-    await expect(this.sourceItems.first()).toBeVisible({ timeout: 10_000 })
+    await expect(this.sourcesTrigger).toBeVisible({ timeout: 10_000 })
+    await expect(this.sourcesTrigger).toContainText(/引用\s*\d+\s*篇/, { timeout: 5_000 })
+  }
+
+  /** 展开文档列表并校验至少一篇文档级引用 */
+  async openSourcesAndExpectDocs(minCount = 1) {
+    await this.sourcesTrigger.click()
+    await expect(this.sourceDocItems.first()).toBeVisible({ timeout: 10_000 })
+    const count = await this.sourceDocItems.count()
+    expect(count, '应至少有文档级引用').toBeGreaterThanOrEqual(minCount)
+    return count
   }
 
   async getVisibleAssistantText(): Promise<string> {
-    // 会话页 Bubble + XMarkdown；尽量取 sources 附近正文
-    const panel = this.sourcesPanel.first()
-    const parent = panel.locator('xpath=ancestor::div[1]')
-    const text = await parent.innerText().catch(() => '')
-    if (text.trim()) return text
-
-    const bubbles = this.page.locator(
-      '.ant-design-x-bubble-list [role="assistant"], .ant-design-x-bubble-assistant, [class*="bubble"]',
-    )
-    const all = await bubbles.allTextContents()
-    return all.join('\n')
+    const count = await this.assistantMessages.count()
+    if (count === 0) {
+      // 回退：sources 旁正文
+      const panel = this.sourcesPanel.first()
+      const parent = panel.locator('xpath=ancestor::div[1]')
+      return (await parent.innerText().catch(() => '')) || ''
+    }
+    return (await this.assistantMessages.nth(count - 1).innerText()) ?? ''
   }
 }
