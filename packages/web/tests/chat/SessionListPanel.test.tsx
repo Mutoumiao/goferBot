@@ -17,7 +17,12 @@ function makeSession(partial: Partial<Session> & { id: string }): Session {
 describe('SessionListPanel', () => {
   it('renders empty state', () => {
     render(
-      <SessionListPanel sessions={[]} selectedId={undefined} onSelect={vi.fn()} onNewChat={vi.fn()} />,
+      <SessionListPanel
+        sessions={[]}
+        selectedId={undefined}
+        onSelect={vi.fn()}
+        onNewChat={vi.fn()}
+      />,
     )
     expect(screen.getByTestId('session-list-empty')).toBeTruthy()
     expect(screen.getByText('暂无历史会话')).toBeTruthy()
@@ -86,7 +91,12 @@ describe('SessionListPanel', () => {
     const onNewChat = vi.fn()
     const user = userEvent.setup()
     render(
-      <SessionListPanel sessions={[]} selectedId={undefined} onSelect={vi.fn()} onNewChat={onNewChat} />,
+      <SessionListPanel
+        sessions={[]}
+        selectedId={undefined}
+        onSelect={vi.fn()}
+        onNewChat={onNewChat}
+      />,
     )
     expect(screen.queryByTestId('new-chat-btn')).toBeNull()
     await user.click(screen.getByTestId('session-home-entry'))

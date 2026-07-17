@@ -36,12 +36,7 @@ describe('ProviderSelector', () => {
     const onRetry = vi.fn()
     const user = userEvent.setup()
     render(
-      <ProviderSelector
-        providers={[]}
-        selectedKey={null}
-        onChange={vi.fn()}
-        onRetry={onRetry}
-      />,
+      <ProviderSelector providers={[]} selectedKey={null} onChange={vi.fn()} onRetry={onRetry} />,
     )
 
     // 空列表时触发器仍可点（不再因 length===0 永久 disabled）

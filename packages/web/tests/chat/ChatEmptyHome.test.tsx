@@ -4,10 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatEmptyHome } from '@/features/chat/components/ChatEmptyHome'
 import { useChatStore } from '@/features/chat/store'
 
-vi.mock('@ant-design/x', () => ({
-  XProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
-
 vi.mock('@/features/chat/services', () => ({
   submitTempChat: vi.fn(),
   fetchProviders: vi.fn(),

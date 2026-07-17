@@ -68,6 +68,16 @@ describe('SourceCitations', () => {
     expect(screen.queryByTestId('sources-docs-popover')).toBeNull()
   })
 
+  it('reflects parent panelOpen in aria-expanded', () => {
+    const sources = [makeSource({ document_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' })]
+    const { rerender } = render(
+      <SourceCitations sources={sources} onOpenPanel={() => {}} panelOpen={false} />,
+    )
+    expect(screen.getByTestId('sources-trigger').getAttribute('aria-expanded')).toBe('false')
+    rerender(<SourceCitations sources={sources} onOpenPanel={() => {}} panelOpen />)
+    expect(screen.getByTestId('sources-trigger').getAttribute('aria-expanded')).toBe('true')
+  })
+
   it('shows empty retrieval hint without full panel', () => {
     render(<SourceCitations retrievalEmpty sources={[]} />)
     expect(screen.getByTestId('sources-empty')).toBeTruthy()
@@ -85,7 +95,21 @@ describe('SourceDocsFloatingPanel', () => {
       />,
     )
     expect(screen.getByTestId('sources-floating-panel')).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByTestId('sources-panel-close'))
     await user.click(screen.getByTestId('sources-panel-close'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('closes on Escape', async () => {
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <SourceDocsFloatingPanel
+        sources={[makeSource({ document_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' })]}
+        onClose={onClose}
+      />,
+    )
+    await user.keyboard('{Escape}')
     expect(onClose).toHaveBeenCalled()
   })
 })
